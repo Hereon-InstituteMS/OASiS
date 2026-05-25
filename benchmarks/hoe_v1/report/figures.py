@@ -545,41 +545,66 @@ def fig_r5_pass_at_k(rows: list[dict[str, Any]], out_path: Path) -> None:
             for kk in ks
         ]
 
-    n_cond = len(rho_by_cond)
-    bar_w = 0.78 / n_cond
-    fig, ax = plt.subplots(figsize=(6.4, 3.6))
-    x_centres = np.arange(len(ks))
-    for i, cond in enumerate(rho_by_cond):
-        offs = (i - (n_cond - 1) / 2) * bar_w
-        bars = ax.bar(
-            x_centres + offs, rho_by_cond[cond], width=bar_w,
-            color=COND_COLOR[cond], edgecolor="white",
-            label=COND_LABEL[cond], linewidth=0.6,
-        )
-        for b, v in zip(bars, rho_by_cond[cond]):
-            ax.text(
-                b.get_x() + b.get_width() / 2, v + 0.015,
-                f"{v:.2f}", ha="center", va="bottom",
-                fontsize=8, color=COND_COLOR[cond], fontweight="bold",
-            )
+    fig, ax = plt.subplots(figsize=(6.6, 3.6))
+    x = np.array(ks)
 
-    ax.set_xticks(x_centres)
+    # One line per condition. Endpoint-labelled, no legend.
+    for cond in COND_ORDER:
+        if cond not in rho_by_cond:
+            continue
+        ys = rho_by_cond[cond]
+        color = COND_COLOR[cond]
+        is_full = (cond == "MCP_FULL")
+        ax.plot(x, ys, "-o",
+                color=color,
+                lw=2.4 if is_full else 1.8,
+                markersize=7,
+                markeredgecolor="white", markeredgewidth=1.2,
+                zorder=3 if is_full else 2)
+        # Endpoint label at k=3 in matching colour (replaces legend)
+        ax.text(3.07, ys[-1], COND_LABEL[cond],
+                color=color, fontsize=10,
+                fontweight="bold" if is_full else "normal",
+                ha="left", va="center")
+        # Numeric value at k=3 (well-separated across conditions)
+        ax.text(3.0 - 0.04, ys[-1], f"{ys[-1]:.2f}",
+                color=color, fontsize=9, fontweight="bold",
+                ha="right", va="center")
+
+    # Outlier annotation at k=1: only NoCritic (0.88); the other three
+    # cluster at 0.94 and labelling them all would re-create the overlap
+    # that motivated the redesign.
+    nc = rho_by_cond.get("MCP_NO_CRITIC")
+    if nc is not None:
+        ax.text(1.0 - 0.05, nc[0], f"{nc[0]:.2f}",
+                color=COND_COLOR["MCP_NO_CRITIC"], fontsize=9,
+                fontweight="bold", ha="right", va="center")
+    # Single annotation for the k=1 cluster of three at 0.94
+    ax.text(1.0 - 0.05, 0.945, "0.94",
+            color="#555555", fontsize=9, fontweight="bold",
+            ha="right", va="center")
+    ax.text(0.95, 0.965, "(other three)", color="#777777",
+            fontsize=7.5, ha="right", va="bottom", style="italic")
+
+    ax.set_xticks(ks)
     ax.set_xticklabels(
-        [r"$k\!=\!1$ (any seed)",
-         r"$k\!=\!2$ (majority)",
-         r"$k\!=\!3$ (all seeds)"],
-        fontsize=9,
+        [r"$k = 1$ (any)",
+         r"$k = 2$ (majority)",
+         r"$k = 3$ (all)"],
+        fontsize=10,
     )
-    ax.set_xlabel("passes required out of 3 seeds", fontsize=10)
-    ax.set_ylabel(f"share of tasks ({n_tasks} total)", fontsize=10)
-    ax.set_ylim(0.0, 1.05)
-    ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
-    ax.grid(axis="y", linestyle=":", alpha=0.4, zorder=0)
+    ax.set_xlim(0.7, 3.55)  # leave room for endpoint labels on the right
+    ax.set_xlabel(r"seeds required to pass ($k$ of 3)", fontsize=10)
+    ax.set_ylabel(f"share of {n_tasks} tasks", fontsize=10)
+    # Truncated y-axis: all data live in [0.59, 0.94]; the bottom half
+    # is wasted in the original. The truncation is stated in the caption.
+    ax.set_ylim(0.5, 1.02)
+    ax.set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
+    ax.set_yticklabels(["0.6", "0.7", "0.8", "0.9", "1.0"], fontsize=9)
+    ax.grid(axis="y", linestyle=":", alpha=0.35, zorder=0)
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
-              fontsize=9, frameon=False, ncol=1)
 
     fig.tight_layout()
     fig.savefig(out_path, dpi=200, bbox_inches="tight")
