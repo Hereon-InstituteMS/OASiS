@@ -249,43 +249,49 @@ def fig_r2_tier_c_orders(rows: list[dict[str, Any]], out_path: Path) -> None:
         formal_by_task[r["task_id"]] = float(formal)
 
     c_tasks = sorted([t for t in TASK_ORDER if t.startswith("C")])
-    fig, ax = plt.subplots(figsize=(7.0, 4.2))
+    NARR_ORDER = ["BARE", "MCP_NO_PITFALL_DB", "MCP_NO_CRITIC", "MCP_FULL"]
+    fig, ax = plt.subplots(figsize=(7.6, 3.8))
     x = np.arange(len(c_tasks))
-    bar_w = 0.20
-    for j, cond in enumerate(COND_ORDER):
-        means = []
-        errs = []
+    bar_w = 0.19
+    pad_in_group = 0.012
+    for j, cond in enumerate(NARR_ORDER):
+        means, errs = [], []
         for t in c_tasks:
             vals = obs_by_task_cond.get((t, cond), [])
             if vals:
                 means.append(float(np.mean(vals)))
                 errs.append(float(np.std(vals, ddof=0)) if len(vals) > 1 else 0.0)
             else:
-                means.append(0.0)
-                errs.append(0.0)
-        ax.bar(x + (j - 1.5) * bar_w, means, bar_w,
-               yerr=errs, capsize=2.5,
-               color=COND_COLOR[cond], edgecolor="black",
-               linewidth=0.4, label=COND_LABEL[cond],
-               error_kw={"elinewidth": 0.6})
+                means.append(0.0); errs.append(0.0)
+        offset = (j - 1.5) * (bar_w + pad_in_group)
+        ax.bar(x + offset, means, bar_w,
+               yerr=errs, capsize=3,
+               color=COND_COLOR[cond], edgecolor="white",
+               linewidth=0.8, label=COND_LABEL[cond],
+               error_kw={"elinewidth": 0.9, "ecolor": "#222222"},
+               zorder=2)
     # Reference lines at formal order per task
     for i, t in enumerate(c_tasks):
         p = formal_by_task.get(t, 2.0)
-        ax.hlines(p, i - 0.45, i + 0.45, colors="black",
-                  linestyles="--", linewidths=1.0,
-                  label="formal order $p$" if i == 0 else None)
-        ax.text(i, p + 0.06, f"$p={p:g}$", ha="center", va="bottom",
-                fontsize=7.5)
+        ax.hlines(p, i - 0.45, i + 0.45, colors="#222222",
+                  linestyles="--", linewidths=1.1,
+                  label="formal order $p$" if i == 0 else None,
+                  zorder=3)
+        ax.text(i, p + 0.07, f"$p={p:g}$", ha="center", va="bottom",
+                fontsize=8, color="#222222")
     ax.set_xticks(x)
-    ax.set_xticklabels(c_tasks)
-    ax.set_xlabel("Tier-C task")
-    ax.set_ylabel("observed convergence rate")
-    ax.set_ylim(0, 3.6)
-    ax.set_title("Tier C convergence rates (dashed = formal order $p$)",
-                 fontsize=10.5)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15),
-              ncol=5, fontsize=8, frameon=False)
-    ax.grid(True, axis="y", alpha=0.3)
+    ax.set_xticklabels(c_tasks, fontsize=10)
+    ax.tick_params(axis="x", length=0, pad=4)
+    ax.set_xlabel("Tier C task", fontsize=10)
+    ax.set_ylabel("observed convergence rate", fontsize=10)
+    ax.set_ylim(0, 3.5)
+    ax.set_yticks([0, 1, 2, 3])
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    ax.grid(axis="y", linestyle=":", alpha=0.35, zorder=0)
+    ax.set_axisbelow(True)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              ncol=5, fontsize=8.5, frameon=False)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=200, bbox_inches="tight")
@@ -403,78 +409,68 @@ def fig_r3_critic_spawn(rows: list[dict[str, Any]], out_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Fig R4 — per-tier bars with paired-delta inset
+# Fig SI tier-bars — four panels (one per tier), Figure 6 style
 # --------------------------------------------------------------------------- #
 def fig_r4_tier_bars(rows: list[dict[str, Any]], out_path: Path) -> None:
+    """Per-tier pooled pass rate per condition with Wilson 95% CIs.
+
+    Four side-by-side panels (Tier A--D), each in the same idiom as
+    Figures 5--7 (vertical bars in condition colours, Wilson 95% CI
+    whiskers, value labels above the cap). The redundant bootstrap-
+    delta inset has been removed (Figure 5 already shows those).
+    """
     tiers = ["A", "B", "C", "D"]
-    fig, (ax, ax_inset) = plt.subplots(1, 2, figsize=(9.6, 4.4),
-                                       gridspec_kw={"width_ratios": [3.2, 1.4]})
-    x = np.arange(len(tiers))
-    bar_w = 0.20
-    for j, cond in enumerate(COND_ORDER):
-        means = []; lo_err = []; hi_err = []; ns = []
-        for tier in tiers:
-            cs = [r for r in rows if r["condition"] == cond and r["tier"] == tier]
+    NARR_ORDER = ["BARE", "MCP_NO_PITFALL_DB", "MCP_NO_CRITIC", "MCP_FULL"]
+    SHORT_LABEL = {
+        "BARE":              "BARE",
+        "MCP_NO_PITFALL_DB": "MCP\n−PitDB",
+        "MCP_NO_CRITIC":     "MCP\n−Critic",
+        "MCP_FULL":          "MCP\nFull",
+    }
+    tier_titles = [f"Tier {t}\n{TIER_DESC[t].split('(')[1].rstrip(')')}"
+                   for t in tiers]
+
+    fig, axes = plt.subplots(1, 4, figsize=(11.6, 3.8),
+                             sharey=True, gridspec_kw={"wspace": 0.18})
+
+    for ti, ax in enumerate(axes):
+        tier = tiers[ti]
+        vals, lo_arr, hi_arr, kns = [], [], [], []
+        for c in NARR_ORDER:
+            cs = [r for r in rows if r["condition"] == c and r["tier"] == tier]
             k = sum(1 for r in cs if r["passed"])
             n = len(cs)
             m = k / n if n else 0.0
             lo, hi = _wilson(k, n)
-            means.append(m); lo_err.append(m-lo); hi_err.append(hi-m); ns.append((k,n))
-        offset = (j - 1.5) * bar_w
-        bars = ax.bar(x + offset, means, bar_w,
-                      color=COND_COLOR[cond], edgecolor="black",
-                      linewidth=0.4, label=COND_LABEL[cond],
-                      yerr=[lo_err, hi_err], capsize=2.5,
-                      error_kw={"elinewidth": 0.7})
-        for i, (kn, m) in enumerate(zip(ns, means)):
-            ax.text(x[i] + offset, m + 0.02, f"{kn[0]}/{kn[1]}",
-                    ha="center", va="bottom", fontsize=6.8)
-    ax.set_xticks(x)
-    ax.set_xticklabels([f"Tier {t}\n{TIER_DESC[t].split('(')[1].rstrip(')')}"
-                       for t in tiers], fontsize=8.5)
-    ax.tick_params(axis="x", length=0)
-    ax.set_ylabel("pass rate (95% Wilson CI)")
-    ax.set_ylim(0, 1.10)
-    ax.axhline(1.0, color="gray", lw=0.5, ls=":")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.10),
-              ncol=4, fontsize=8, frameon=False)
-    ax.set_title("Pass rate by difficulty tier", fontsize=10.5)
-    ax.grid(True, axis="y", alpha=0.3)
-    # Annotate Tier A ceiling
-    ax.annotate("ceiling", xy=(0, 1.0), xytext=(0, 0.6),
-                ha="center", fontsize=7.5, color="gray",
-                arrowprops=dict(arrowstyle="->", color="gray", lw=0.6))
+            vals.append(m); lo_arr.append(m - lo); hi_arr.append(hi - m); kns.append((k, n))
+        vals = np.array(vals)
+        x = np.arange(len(NARR_ORDER))
+        ax.bar(x, vals, width=0.62,
+               color=[COND_COLOR[c] for c in NARR_ORDER],
+               edgecolor="white", linewidth=1.0, zorder=2)
+        ax.errorbar(x, vals, yerr=[lo_arr, hi_arr],
+                    fmt="none", ecolor="#222222",
+                    capsize=4, capthick=1.0, lw=1.0, zorder=3)
+        for xi, v, hi, (k, n) in zip(x, vals, hi_arr, kns):
+            ax.text(xi, v + hi + 0.025,
+                    f"{v*100:.0f}%\n({k}/{n})",
+                    ha="center", va="bottom",
+                    fontsize=8.5, color="#222222")
+        ax.set_xticks(x)
+        ax.set_xticklabels([SHORT_LABEL[c] for c in NARR_ORDER], fontsize=8.5)
+        ax.tick_params(axis="x", length=0, pad=4)
+        ax.set_title(tier_titles[ti], fontsize=10.5, pad=6)
+        for s in ("top", "right"):
+            ax.spines[s].set_visible(False)
+        ax.grid(axis="y", linestyle=":", alpha=0.35, zorder=0)
+        ax.set_axisbelow(True)
+        ax.set_xlim(-0.7, len(NARR_ORDER) - 0.3)
 
-    # Inset: paired-delta bootstrap CIs
-    deltas = []
-    if STATS_JSON.exists():
-        sd = json.loads(STATS_JSON.read_text())
-        for key, label in [
-            ("bootstrap_BARE_vs_MCP_FULL", "MCP-Full\n− BARE"),
-            ("bootstrap_BARE_vs_MCP_NO_CRITIC", "MCP-NoCritic\n− BARE"),
-            ("bootstrap_MCP_FULL_vs_MCP_NO_CRITIC", "MCP-Full\n− MCP-NoCritic"),
-        ]:
-            d = sd.get(key)
-            if d:
-                deltas.append((label, d["point_estimate"], d["ci_lo"], d["ci_hi"]))
-    yy = np.arange(len(deltas))
-    ax_inset.errorbar(
-        [d[1] for d in deltas], yy,
-        xerr=[
-            [d[1] - d[2] for d in deltas],
-            [d[3] - d[1] for d in deltas],
-        ],
-        fmt="o", color="black", capsize=3, lw=1.0,
-    )
-    ax_inset.axvline(0, color="gray", lw=0.5, ls=":")
-    ax_inset.set_yticks(yy)
-    ax_inset.set_yticklabels([d[0] for d in deltas], fontsize=8)
-    ax_inset.set_xlabel("Δ pass rate (bootstrap CI)")
-    ax_inset.set_xlim(-0.15, 0.30)
-    ax_inset.set_title("Paired deltas vs baseline", fontsize=9)
-    ax_inset.grid(True, axis="x", alpha=0.3)
+    axes[0].set_ylabel("pooled pass rate", fontsize=10)
+    axes[0].set_ylim(0.0, 1.18)
+    axes[0].set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
+    axes[0].set_yticklabels(["0%", "25%", "50%", "75%", "100%"], fontsize=9)
 
-    fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=200, bbox_inches="tight")
     fig.savefig(out_path.with_suffix(".pdf"), bbox_inches="tight")
