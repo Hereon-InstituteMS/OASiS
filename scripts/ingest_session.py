@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -39,6 +40,21 @@ from core.session_analyzer import (  # noqa: E402
     filter_against_existing,
     format_candidates,
 )
+
+
+_RETRY_SUFFIX_RE = re.compile(r"\s*\(retry \d+\)\s*$", re.IGNORECASE)
+
+
+def _normalise_title(title: str) -> str:
+    """Collapse a candidate title into a dedup-friendly form.
+
+    Strips leading/trailing whitespace, lowercases, removes a trailing
+    ``(retry N)`` suffix and collapses internal whitespace.  Matches the
+    spirit of the analyzer's intra-file fuzzy dedup (SequenceMatcher
+    >0.8) without pulling SequenceMatcher into the cross-file path.
+    """
+    cleaned = _RETRY_SUFFIX_RE.sub("", title)
+    return " ".join(cleaned.lower().split())
 
 
 def _gather(path: Path) -> list[Path]:
@@ -96,10 +112,19 @@ def main() -> int:
         except Exception as e:  # noqa: BLE001
             errors.append((s, e))
 
-    # De-duplicate on (category, solver, title); keep highest confidence.
+    # De-duplicate on a normalised (category, solver, title) key.  The
+    # in-file analyzer already runs fuzzy dedup (SequenceMatcher >0.8),
+    # but cross-file candidates with cosmetic differences (trailing
+    # whitespace, capitalisation, retry-count suffix) need to be
+    # collapsed too -- otherwise the contributor sees N near-identical
+    # entries for the same root cause.
     best: dict[tuple[str, str, str], CandidateKnowledge] = {}
     for c in all_candidates:
-        key = (c.category, c.solver or "", c.title)
+        key = (
+            c.category.strip().lower(),
+            (c.solver or "").strip().lower(),
+            _normalise_title(c.title),
+        )
         if key not in best or c.confidence > best[key].confidence:
             best[key] = c
     deduped = list(best.values())

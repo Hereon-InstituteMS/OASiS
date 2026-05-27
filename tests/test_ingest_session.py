@@ -68,9 +68,10 @@ class TestIngestSingleJournal(unittest.TestCase):
             c = candidates[0]
             self.assertEqual(c.solver, "fourc")
             self.assertEqual(c.physics, "solid_mechanics")
-            # The error message should appear somewhere in the candidate
-            # description -- exact format is up to the analyzer.
-            self.assertIn("FOUR_C_THROW", c.description.upper().replace("_", "_"))
+            # The fixture's FOUR_C_THROW error message should appear in
+            # the candidate description -- exact format is up to the
+            # analyzer, but the substring must survive.
+            self.assertIn("FOUR_C_THROW", c.description)
 
 
 class TestIngestBatchDedup(unittest.TestCase):
@@ -142,6 +143,79 @@ class TestIngestCliApprove(unittest.TestCase):
         finally:
             for f in new_files:
                 f.unlink(missing_ok=True)
+
+
+class TestIngestSolverFilter(unittest.TestCase):
+    """The CLI's ``--solver`` flag must restrict candidates to that
+    solver only."""
+
+    def test_filter_drops_other_solvers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            # Two journals, two different solvers; both yield candidates.
+            j1 = _build_fixture_journal("filter-fourc-001")
+            j1.save(tmp_path)
+            j2 = SessionJournal(session_id="filter-skfem-001", started_at=1_700_000_000.0)
+            j2.record("tool_call", "run_simulation", solver="skfem", physics="poisson")
+            j2.record(
+                "tool_error", "run_simulation", solver="skfem", physics="poisson",
+                error_message="ImportError: cannot import name ElementTriP9",
+            )
+            j2.record("source_read", "developer", solver="skfem")
+            j2.record(
+                "parameter_override", "run_simulation",
+                solver="skfem", physics="poisson",
+                details={"element": "ElementTriP3"},
+            )
+            j2.record("tool_success", "run_simulation", solver="skfem", physics="poisson")
+            j2.save(tmp_path)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "ingest_session.py"),
+                    str(tmp_path),
+                    "--solver", "fourc",
+                ],
+                capture_output=True, text=True, timeout=30,
+            )
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        # The fourc candidate must appear; the skfem candidate must not.
+        self.assertIn("Solver: fourc", result.stdout)
+        self.assertNotIn("Solver: skfem", result.stdout)
+
+
+class TestIngestMixedBatchPartialFailure(unittest.TestCase):
+    """A batch containing one malformed journal and one good one must
+    surface the error for the bad file and still extract candidates
+    from the good one -- not bail out on the first failure."""
+
+    def test_one_bad_one_good(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            # Good fixture journal.
+            _build_fixture_journal("mixed-good-001").save(tmp_path)
+            # Truly malformed: not valid JSON.  `SessionJournal.load()`
+            # tolerates missing optional fields, so we need an outright
+            # parse failure to exercise the error path.
+            (tmp_path / "session_mixed-bad-001.json").write_text(
+                "{not even JSON"
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "ingest_session.py"),
+                    str(tmp_path),
+                ],
+                capture_output=True, text=True, timeout=30,
+            )
+        # CLI itself succeeds (partial failure is reported, not raised).
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("Errors:", result.stdout)
+        self.assertIn("session_mixed-bad-001.json", result.stdout)
+        # Still surfaces the good-journal candidate.
+        self.assertIn("Solver: fourc", result.stdout)
 
 
 class TestIngestCliDryRun(unittest.TestCase):

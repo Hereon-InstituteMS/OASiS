@@ -1259,13 +1259,24 @@ def register_consolidated_tools(mcp: FastMCP):
                 try:
                     all_candidates.extend(analyze_journal_file(s))
                 except Exception as e:
-                    errors.append(f"{s.name}: {e}")
-            # Cross-source de-duplication: collapse on (category, solver, title);
-            # keep the highest-confidence representative so the agent sees the
-            # strongest signal without N near-identical entries.
+                    # repr(e) keeps the exception type so a contributor
+                    # can tell `KeyError('events')` from a `FileNotFoundError`.
+                    errors.append(f"{s.name}: {e!r}")
+            # Cross-source de-duplication on a normalised key (the in-file
+            # analyzer runs fuzzy dedup already; cross-file dedup needs to
+            # match that contract or near-identical entries from N journals
+            # all survive as separate candidates).
+            import re as _re
+            _retry_re = _re.compile(r"\s*\(retry \d+\)\s*$", _re.IGNORECASE)
+            def _norm_title(t: str) -> str:
+                return " ".join(_retry_re.sub("", t).lower().split())
             best: dict[tuple[str, str, str], object] = {}
             for c in all_candidates:
-                key = (c.category, c.solver or "", c.title)
+                key = (
+                    c.category.strip().lower(),
+                    (c.solver or "").strip().lower(),
+                    _norm_title(c.title),
+                )
                 if key not in best or c.confidence > best[key].confidence:
                     best[key] = c
             candidates = list(best.values())
