@@ -6,7 +6,9 @@ keywords by regex.  The fetched files are cached on disk for 24 h to avoid
 hammering GitHub in normal test runs.
 
 The probes return ``None`` when neither a local checkout nor network is
-available; callers translate that into ``pytest.skip``.
+available; callers translate that into the test framework's skip
+mechanism (``unittest.SkipTest`` / ``pytest.skip`` -- both accept
+``SkipTest``).
 """
 
 from __future__ import annotations
@@ -69,9 +71,12 @@ def _read_network(rel_path: str) -> str | None:
 def fetch_source(rel_path: str) -> str | None:
     """Return the contents of a 4C source file, or ``None`` if unavailable.
 
-    Resolution order: local checkout ($FOURC_ROOT) → cache → network → cache.
-    Local hits skip the cache entirely so a developer iterating on 4C sees
-    their own changes immediately.
+    Resolution order: local checkout ($FOURC_ROOT) → on-disk cache →
+    network.  A successful network fetch is also written to the cache so
+    subsequent runs within the TTL hit the local copy; the value returned
+    on the network branch is the freshly-fetched content (not re-read from
+    the cache).  Local hits bypass the cache entirely so a developer
+    iterating on 4C sees their own changes immediately.
     """
     local = _read_local(rel_path)
     if local is not None:

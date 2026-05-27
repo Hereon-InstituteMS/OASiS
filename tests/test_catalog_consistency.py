@@ -185,7 +185,7 @@ class TestFourcMaterialParameters(unittest.TestCase):
         violations: list[str] = []
         for mat_name, cat_keys in self.catalog.items():
             if not cat_keys:
-                continue  # schema-incompatible entry (free-form string)
+                continue  # catalog entry declares no parameters at all
             allowed = _allowed_keys_for(mat_name, self.source)
             if allowed is None:
                 continue  # component source unmapped; nothing to compare
