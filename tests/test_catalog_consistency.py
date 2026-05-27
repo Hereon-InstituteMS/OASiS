@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from tests.groundtruth import dealii as dealii_gt  # noqa: E402
 from tests.groundtruth import fourc as fourc_gt  # noqa: E402
 from tests.groundtruth import skfem as skfem_gt  # noqa: E402
 
@@ -309,6 +310,76 @@ class TestSkfemElementMeshClasses(unittest.TestCase):
             f"\nscikit-fem catalog references Mesh* classes that do "
             f"not exist on `skfem`: {sorted(unknown)}\n"
             f"Available: {sorted(self.source_meshes)}",
+        )
+
+
+# ── deal.II ──────────────────────────────────────────────────────────────────
+
+
+_DEALII_FE_RE = re.compile(r"\bFE_[A-Z][A-Za-z0-9_]*\b")
+
+
+def _collect_dealii_fe_mentions() -> set[str]:
+    """Walk the deal.II generator package and return every ``FE_*`` class
+    name referenced in any string -- Python template code or knowledge
+    block prose.  These are the names the agent emits verbatim into
+    its generated scripts, so each one must resolve at runtime."""
+
+    out: set[str] = set()
+
+    def walk_str(s: str) -> None:
+        out.update(_DEALII_FE_RE.findall(s))
+
+    def walk(obj) -> None:
+        if isinstance(obj, str):
+            walk_str(obj)
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                walk(v)
+        elif isinstance(obj, (list, tuple, set)):
+            for v in obj:
+                walk(v)
+
+    # Walk both the runtime knowledge dicts AND the raw Python source
+    # of each generator module: the catalog stores template code as
+    # multi-line strings inside Python source, and the agent will
+    # execute that template -- so the FE_* names embedded there must
+    # also be real.
+    generators_dir = Path(__file__).parent.parent / "src" / "backends" / "dealii" / "generators"
+    if generators_dir.is_dir():
+        for py in generators_dir.glob("*.py"):
+            walk_str(py.read_text(encoding="utf-8", errors="replace"))
+
+    return out
+
+
+class TestDealiiFiniteElementClasses(unittest.TestCase):
+    """Every ``FE_*`` name the deal.II catalog mentions (in either
+    knowledge prose or generated Python template code) must be a real
+    concrete class under ``include/deal.II/fe/``."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.source = dealii_gt.fe_class_names()
+        if cls.source is None:
+            raise unittest.SkipTest(
+                "deal.II source unavailable "
+                "(set DEALII_ROOT or enable network access)"
+            )
+        cls.mentions = _collect_dealii_fe_mentions()
+
+    def test_no_unknown_fe_class_in_catalog(self):
+        unknown = self.mentions - self.source
+        # Tolerate a small denylist of "marker" or "abstract" base
+        # references that show up in prose but never get instantiated
+        # in template code.
+        unknown -= {"FE_Base", "FE_Data"}
+        self.assertFalse(
+            unknown,
+            f"\ndeal.II catalog references FE_* classes that do not "
+            f"exist in deal.II source: {sorted(unknown)}\n"
+            f"Source has {len(self.source)} concrete FE_* classes. "
+            f"First 15: {sorted(self.source)[:15]}",
         )
 
 

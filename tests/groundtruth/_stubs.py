@@ -12,13 +12,10 @@ named placeholder, not an absence.
 from __future__ import annotations
 
 
-# ── deal.II (C++ source, similar to 4C; expect source-grep style) ─────────
-def dealii_dirichlet_bc_types() -> None:
-    return None
-
-
-def dealii_quadrature_classes() -> None:
-    return None
+# deal.II finite-element classes -- implemented in ``dealii.py`` (source-grep
+# family).  Future deal.II probes (Dirichlet BC types, quadrature classes,
+# Manifold types) can either extend ``dealii.py`` or follow its pattern in
+# additional modules.
 
 
 # ── FEniCSx / dolfinx (Python introspection) ──────────────────────────────
