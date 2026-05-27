@@ -122,7 +122,14 @@ def _list_fe_headers_local() -> list[str] | None:
 
 def _list_fe_headers_cached() -> list[str] | None:
     """Cached directory listing -- saved as JSON so we do not refetch
-    the listing on every test invocation."""
+    the listing on every test invocation.
+
+    Tolerates a corrupt cache (encoding errors from a partial write,
+    invalid JSON from a interrupted serialise, or a missing-permission
+    read) by treating it as a miss and re-fetching.  Otherwise a
+    corrupted cache would silently disable the deal.II check on every
+    subsequent run until the contributor noticed.
+    """
     cached = _CACHE_DIR / _BRANCH / "_listing_fe.json"
     if not cached.is_file():
         return None
@@ -130,7 +137,7 @@ def _list_fe_headers_cached() -> list[str] | None:
         return None
     try:
         return json.loads(cached.read_text())
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError):
         return None
 
 
@@ -191,14 +198,23 @@ _CLASS_RE = re.compile(r"class\s+FE_([A-Z][A-Za-z0-9_]*)\b")
 
 
 def fe_class_names() -> set[str] | None:
-    """Set of concrete ``FE_*`` class names declared under
+    """Set of ``FE_*`` class names referenced in
     ``include/deal.II/fe/fe_*.h``.
 
     Strategy: list the directory, fetch each header (cached for 24h),
-    grep for ``class FE_<Name>``.  Returns ``None`` if the listing
-    cannot be obtained (no $DEALII_ROOT and no network); returns an
-    empty set if the listing works but no headers parsed (probable
-    code change, the test will surface it).
+    regex out ``class FE_<Name>`` occurrences.  The regex deliberately
+    over-matches: forward declarations (``class FE_Enriched;``), friend
+    declarations (``friend class FE_ABF;``) and the rare bare reference
+    inside C++ comments are all counted.  That is *safe* for the
+    "catalog mentions ⊆ source" check because over-counting source
+    only makes the check more lenient -- a name that does not exist
+    in any header still won't appear here.  Callers needing the strict
+    "declared concrete class" set should grep the header file directly.
+
+    Returns ``None`` when both ``$DEALII_ROOT`` and network are
+    unavailable so the test can skip cleanly; returns an empty set if
+    the listing succeeds but no headers parsed (probable upstream
+    code change worth surfacing).
     """
     headers = list_fe_headers()
     if headers is None:

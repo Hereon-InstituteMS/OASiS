@@ -320,36 +320,25 @@ _DEALII_FE_RE = re.compile(r"\bFE_[A-Z][A-Za-z0-9_]*\b")
 
 
 def _collect_dealii_fe_mentions() -> set[str]:
-    """Walk the deal.II generator package and return every ``FE_*`` class
-    name referenced in any string -- Python template code or knowledge
-    block prose.  These are the names the agent emits verbatim into
-    its generated scripts, so each one must resolve at runtime."""
+    """Return every ``FE_*`` class name referenced anywhere in the
+    deal.II generator package.
 
+    Scans the raw Python source of each generator module rather than
+    walking the runtime knowledge dicts -- the catalog embeds template
+    code as multi-line string literals in those modules and the agent
+    will execute the templates, so every ``FE_*`` mention in those
+    files (KNOWLEDGE prose AND template code) must resolve to a real
+    deal.II class.  Reading the .py source covers both at once.
+    """
     out: set[str] = set()
-
-    def walk_str(s: str) -> None:
-        out.update(_DEALII_FE_RE.findall(s))
-
-    def walk(obj) -> None:
-        if isinstance(obj, str):
-            walk_str(obj)
-        elif isinstance(obj, dict):
-            for v in obj.values():
-                walk(v)
-        elif isinstance(obj, (list, tuple, set)):
-            for v in obj:
-                walk(v)
-
-    # Walk both the runtime knowledge dicts AND the raw Python source
-    # of each generator module: the catalog stores template code as
-    # multi-line strings inside Python source, and the agent will
-    # execute that template -- so the FE_* names embedded there must
-    # also be real.
     generators_dir = Path(__file__).parent.parent / "src" / "backends" / "dealii" / "generators"
     if generators_dir.is_dir():
         for py in generators_dir.glob("*.py"):
-            walk_str(py.read_text(encoding="utf-8", errors="replace"))
-
+            out.update(
+                _DEALII_FE_RE.findall(
+                    py.read_text(encoding="utf-8", errors="replace")
+                )
+            )
     return out
 
 
@@ -381,6 +370,31 @@ class TestDealiiFiniteElementClasses(unittest.TestCase):
             f"Source has {len(self.source)} concrete FE_* classes. "
             f"First 15: {sorted(self.source)[:15]}",
         )
+
+    def test_under_declared_fe_classes(self):
+        """Soft check: ``FE_*`` classes that exist in deal.II source but
+        are never mentioned by the catalog.  Each unmentioned class is
+        a feature the agent will never propose -- not strictly wrong,
+        but a gap worth surfacing.
+
+        Mirrors the 4C ``test_required_keys_present_in_catalog`` --
+        prints to stderr by default, fails the test only when
+        ``OFA_STRICT_CATALOG=1`` is set so the under-declaration list
+        does not block PRs.
+        """
+        import os
+
+        strict = os.environ.get("OFA_STRICT_CATALOG") == "1"
+        gap = self.source - self.mentions
+        if gap:
+            msg = (
+                f"deal.II catalog under-declares FE_* classes "
+                f"({len(gap)} unmentioned of {len(self.source)} in source): "
+                f"{sorted(gap)}"
+            )
+            if strict:
+                self.fail(msg)
+            print(f"\n[WARN catalog drift]\n{msg}", file=sys.stderr)
 
 
 if __name__ == "__main__":
