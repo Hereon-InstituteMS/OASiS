@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from tests.groundtruth import dealii as dealii_gt  # noqa: E402
+from tests.groundtruth import fenics as fenics_gt  # noqa: E402
 from tests.groundtruth import fourc as fourc_gt  # noqa: E402
 from tests.groundtruth import kratos as kratos_gt  # noqa: E402
 from tests.groundtruth import ngsolve as ngsolve_gt  # noqa: E402
@@ -642,6 +643,99 @@ class TestKratosApplications(unittest.TestCase):
             if strict:
                 self.fail(msg)
             print(f"\n[WARN catalog drift]\n{msg}", file=sys.stderr)
+
+
+# ── FEniCSx / dolfinx ────────────────────────────────────────────────────────
+
+
+# Catalog mentions of dolfinx attributes typically follow the
+# ``dolfinx.<submodule>.<name>`` pattern.  Match dotted paths of any
+# depth so submodule additions (``dolfinx.fem.petsc.LinearProblem``,
+# ``dolfinx.io.XDMFFile``) are picked up uniformly.
+_DOLFINX_DOTTED_RE = re.compile(r"\bdolfinx(?:\.[A-Za-z_][A-Za-z0-9_]*)+\b")
+
+
+def _collect_dolfinx_path_mentions() -> set[str]:
+    """Return every ``dolfinx.<path>...`` dotted identifier referenced
+    in any FEniCSx generator file under ``src/backends/fenics/``.
+
+    Deliberately excludes ``src/tools/deep_knowledge.py`` because its
+    ``_FENICS_KNOWLEDGE`` block contains an ``api_changes`` section
+    listing OLD-vs-NEW dolfinx names side by side
+    (``dolfinx.io.gmsh.model_to_mesh`` and the current
+    ``dolfinx.io.gmshio.model_to_mesh``, etc.).  Those historical
+    names are not all simultaneously present in any given dolfinx
+    version, so a scan that includes them would falsely fail the
+    test.  The catalog files under ``src/backends/fenics/`` only
+    contain template code the agent actually executes, so paths
+    there must resolve at runtime.
+    """
+    out: set[str] = set()
+    repo_src = Path(__file__).parent.parent / "src"
+    fenics_dir = repo_src / "backends" / "fenics"
+    if fenics_dir.is_dir():
+        for py in fenics_dir.rglob("*.py"):
+            out.update(
+                _DOLFINX_DOTTED_RE.findall(
+                    py.read_text(encoding="utf-8", errors="replace")
+                )
+            )
+    return out
+
+
+class TestFenicsDolfinxAPIPaths(unittest.TestCase):
+    """Every ``dolfinx.<path>`` dotted reference the FEniCSx catalog
+    uses must resolve on the installed dolfinx package.
+
+    Skipped when dolfinx is not importable (typical in a non-conda
+    install -- the canonical dolfinx install path is conda, not pip).
+    The test runs whenever dolfinx IS available: in developer
+    environments using ``conda env create -f environment.yml``, in
+    the weekly cron job that installs ``.[all-solvers,dev]``, or in
+    any CI lane that explicitly conda-installs dolfinx.
+
+    For the contributor: this test fails when dolfinx renames an
+    API entry between releases (e.g. ``functionspace`` was
+    ``FunctionSpace`` in earlier versions) or moves a submodule
+    (e.g. ``dolfinx.fem.petsc.LinearProblem`` only exists when
+    PETSc is built in).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        if not fenics_gt.is_available():
+            raise unittest.SkipTest(
+                "dolfinx not importable -- pip wheels are not available "
+                "on most platforms; conda is the canonical install."
+            )
+        cls.mentions = _collect_dolfinx_path_mentions()
+        # Union the catalog scan with the fingerprint-script's canonical
+        # paths so a newly-added template that hasn't been scanned yet
+        # is still covered, and a path that exists in the catalog but is
+        # missing from the canonical list (drift the other direction)
+        # is also surfaced.
+        cls.checked = cls.mentions | set(fenics_gt.CATALOG_API_PATHS)
+
+    def test_no_unresolved_dolfinx_path(self):
+        # Each path is resolved via importlib walks; collect the
+        # failing ones with their failure mode for an actionable
+        # assertion message.
+        unresolved: list[str] = []
+        for path in sorted(self.checked):
+            ok = fenics_gt.has_attr(path)
+            if ok is False:
+                unresolved.append(path)
+            # ok is None -> dolfinx vanished mid-run; setUpClass would
+            # have caught the import failure earlier, so this shouldn't
+            # happen.  Leaving the branch implicit avoids hiding a
+            # genuine ImportError under a soft warning.
+        self.assertFalse(
+            unresolved,
+            f"\nFEniCSx catalog references dolfinx paths that do not "
+            f"resolve on the installed package: {unresolved}\n"
+            f"Likely an upstream rename or a build that omitted the "
+            f"submodule (e.g. petsc-less dolfinx).",
+        )
 
 
 if __name__ == "__main__":

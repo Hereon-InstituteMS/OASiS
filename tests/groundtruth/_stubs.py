@@ -18,13 +18,10 @@ from __future__ import annotations
 # additional modules.
 
 
-# ── FEniCSx / dolfinx (Python introspection) ──────────────────────────────
-def fenics_element_families() -> None:
-    return None
-
-
-def fenics_solver_types() -> None:
-    return None
+# FEniCSx / dolfinx -- implemented in ``fenics.py`` (Python introspection,
+# checks dolfinx submodule attributes via importlib walks).  Test skips when
+# dolfinx is not importable; pip wheels are not available on most platforms
+# so the canonical install is conda.
 
 
 # NGSolve -- implemented in ``ngsolve.py`` (Python introspection family).
