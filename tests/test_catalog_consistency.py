@@ -526,31 +526,36 @@ class TestNgsolveAttributes(unittest.TestCase):
 # ── Kratos ───────────────────────────────────────────────────────────────────
 
 
-# Two catalog forms collapse to one bare ``<Name>Application`` name:
+# Three catalog forms collapse to one bare ``<Name>Application`` name:
 #   * ``KratosMultiphysics.<Name>Application``  -- the actual import path
-#     the agent's generated code executes.  This is load-bearing: a typo
-#     here makes the generated script crash with ``ModuleNotFoundError``.
+#     the agent's generated code executes.  Load-bearing: a typo here
+#     makes the generated script crash with ``ModuleNotFoundError``.
 #   * ``Kratos<Name>Application``               -- pip install hints and
 #     prose lists.  Maps to the same bare name after stripping ``Kratos``.
+#   * standalone ``<Name>Application``          -- prose, ``applications``
+#     list entries, print messages.  Not load-bearing on its own, but a
+#     typo here teaches the agent the wrong import name for next time.
 _KRATOS_IMPORT_RE = re.compile(
     r"\bKratosMultiphysics\.([A-Z][A-Za-z0-9]*Application)\b"
 )
 _KRATOS_PREFIXED_RE = re.compile(
     r"\bKratos([A-Z][A-Za-z0-9]*Application)\b"
 )
+_KRATOS_BARE_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*Application)\b")
 
 
 def _collect_kratos_application_mentions() -> set[str]:
     """Return every bare ``<Name>Application`` identifier referenced
-    anywhere the Kratos catalog touches, normalising both the
-    ``KratosMultiphysics.<Name>Application`` import form and the
-    ``Kratos<Name>Application`` pip-install form.
+    anywhere the Kratos catalog touches, normalising all three of the
+    catalog conventions to the bare form.
 
     Scans the Kratos backend package recursively and the cross-cutting
-    ``src/tools/deep_knowledge.py``.  Each match is captured as the
-    bare ``<Name>Application`` (no ``Kratos`` prefix) -- the form
-    the upstream ``applications/`` directory listing uses, so the
-    subset check is a direct set comparison.
+    ``src/tools/deep_knowledge.py``.  The bare-form regex carries a
+    small false-positive risk (any uppercase identifier ending in
+    ``Application`` will match), but the scan is scoped to the
+    Kratos directory so unrelated framework names are unlikely to
+    appear; if one does, it would simply fail the subset check
+    against the upstream apps listing, which is the desired signal.
     """
     out: set[str] = set()
     repo_src = Path(__file__).parent.parent / "src"
@@ -565,6 +570,15 @@ def _collect_kratos_application_mentions() -> set[str]:
         text = py.read_text(encoding="utf-8", errors="replace")
         out.update(_KRATOS_IMPORT_RE.findall(text))
         out.update(_KRATOS_PREFIXED_RE.findall(text))
+        # Bare regex over-matches: ``\b([A-Z]\w*Application)\b`` on
+        # ``KratosChimeraApplication`` captures the whole thing
+        # (including the ``Kratos`` prefix).  Filter those out --
+        # they're already covered by ``_KRATOS_PREFIXED_RE`` which
+        # captures just the bare portion.
+        out.update(
+            m for m in _KRATOS_BARE_RE.findall(text)
+            if not m.startswith("Kratos")
+        )
     return out
 
 

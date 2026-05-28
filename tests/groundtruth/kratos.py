@@ -22,6 +22,7 @@ import os
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -61,9 +62,16 @@ def _list_applications_cached() -> list[str] | None:
 
 def _list_applications_network() -> list[str] | None:
     """Fetch the ``applications/`` directory listing via the GitHub
-    contents API.  Falls back to unauthenticated if ``gh`` is not
-    available."""
-    url = f"{_API_BASE}/contents/applications"
+    contents API at the configured ``$KRATOS_BRANCH``.  Falls back
+    to unauthenticated if ``gh`` is not available."""
+    # Pass the branch via the ``ref`` query parameter.  Without this,
+    # the API returns the repository's default branch (``master``)
+    # regardless of $KRATOS_BRANCH, and the cache key (which IS
+    # branch-segmented) silently stores the wrong listing.
+    url = (
+        f"{_API_BASE}/contents/applications"
+        f"?ref={urllib.parse.quote(_BRANCH, safe='')}"
+    )
     token = ""
     try:
         token = subprocess.run(
