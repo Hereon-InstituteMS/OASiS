@@ -57,7 +57,7 @@ jobs:
         # network hiccup resolved).
         run: |
           set -o pipefail
-          pytest tests/test_catalog_consistency.py tests/test_ingest_session.py -v -s 2>&1 | tee /tmp/catalog-test.log
+          pytest tests/test_catalog_consistency.py tests/test_ingest_session.py tests/test_introspect.py -v -s 2>&1 | tee /tmp/catalog-test.log
         # Only swallow failures on the weekly cron so the auto-issue step
         # can still run.  On PRs and pushes we WANT the workflow to fail
         # so the check is gating.
