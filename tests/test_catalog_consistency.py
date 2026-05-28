@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from tests.groundtruth import dealii as dealii_gt  # noqa: E402
 from tests.groundtruth import fourc as fourc_gt  # noqa: E402
+from tests.groundtruth import kratos as kratos_gt  # noqa: E402
 from tests.groundtruth import ngsolve as ngsolve_gt  # noqa: E402
 from tests.groundtruth import skfem as skfem_gt  # noqa: E402
 
@@ -519,6 +520,72 @@ class TestNgsolveAttributes(unittest.TestCase):
             f"\nNGSolve catalog references identifiers that are not "
             f"public attributes of ngsolve: {sorted(unknown)}\n"
             f"Source has ~{len(self.source)} public attrs.",
+        )
+
+
+# ── Kratos ───────────────────────────────────────────────────────────────────
+
+
+_KRATOS_APP_RE = re.compile(r"\bKratos[A-Z][A-Za-z0-9]*Application\b")
+
+
+def _collect_kratos_application_mentions() -> set[str]:
+    """Return every ``Kratos<Name>Application`` identifier referenced
+    anywhere the Kratos catalog touches.
+
+    Scans the Kratos backend package recursively and the cross-cutting
+    ``src/tools/deep_knowledge.py``.  The agent emits these names
+    verbatim as imports (``import KratosFluidDynamicsApplication``)
+    so every mention must correspond to a real Kratos application.
+    """
+    out: set[str] = set()
+    repo_src = Path(__file__).parent.parent / "src"
+    paths: list[Path] = []
+    kratos_dir = repo_src / "backends" / "kratos"
+    if kratos_dir.is_dir():
+        paths.extend(kratos_dir.rglob("*.py"))
+    deep_knowledge = repo_src / "tools" / "deep_knowledge.py"
+    if deep_knowledge.is_file():
+        paths.append(deep_knowledge)
+    for py in paths:
+        out.update(
+            _KRATOS_APP_RE.findall(
+                py.read_text(encoding="utf-8", errors="replace")
+            )
+        )
+    return out
+
+
+class TestKratosApplications(unittest.TestCase):
+    """Every ``Kratos<Name>Application`` the catalog mentions must be
+    a real sub-application of Kratos -- i.e. correspond to a directory
+    under ``applications/`` in the KratosMultiphysics/Kratos repo.
+
+    Probe is source-enumeration: lists the GitHub contents API for the
+    upstream ``applications/`` directory and pre-prefixes each entry
+    with ``Kratos`` for direct subset comparison.  No Kratos install
+    needed -- the probe is purely a directory listing, so the test
+    works in any CI environment that has network access.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.source = kratos_gt.application_names()
+        if cls.source is None:
+            raise unittest.SkipTest(
+                "Kratos applications listing unavailable "
+                "(set KRATOS_ROOT or enable network access)"
+            )
+        cls.mentions = _collect_kratos_application_mentions()
+
+    def test_no_unknown_application_in_catalog(self):
+        unknown = self.mentions - self.source
+        self.assertFalse(
+            unknown,
+            f"\nKratos catalog references applications that do not "
+            f"exist upstream: {sorted(unknown)}\n"
+            f"Upstream has {len(self.source)} applications. "
+            f"First 10: {sorted(self.source)[:10]}",
         )
 
 

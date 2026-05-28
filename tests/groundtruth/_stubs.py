@@ -37,13 +37,10 @@ def fenics_solver_types() -> None:
 # Use that module directly; the stub below is removed.
 
 
-# ── Kratos Multiphysics (Python + JSON registries) ────────────────────────
-def kratos_constitutive_laws() -> None:
-    return None
-
-
-def kratos_strategies() -> None:
-    return None
+# Kratos applications -- implemented in ``kratos.py`` (source-enumeration of
+# the upstream ``applications/`` directory; no Kratos install needed).
+# Finer-grained probes (constitutive laws, solver strategies) require a
+# Kratos install and would extend ``kratos.py`` or follow its pattern.
 
 
 # ── DUNE-fem (Python + C++) ───────────────────────────────────────────────
