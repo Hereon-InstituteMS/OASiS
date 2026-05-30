@@ -53,11 +53,15 @@ def _discover_env():
                 os.environ["DEAL_II_DIR"] = str(c)
                 break
     if dealii_env_root.is_dir():
+        # Best-effort discovery: append the conda env as a fallback, not as
+        # the highest-priority entry, so an explicit user-provided
+        # CMAKE_PREFIX_PATH still resolves first.  Use os.pathsep so this
+        # remains correct on Windows (`;`) too.
         existing = os.environ.get("CMAKE_PREFIX_PATH", "")
-        prefix_parts = [p for p in existing.split(":") if p]
+        prefix_parts = [p for p in existing.split(os.pathsep) if p]
         if str(dealii_env_root) not in prefix_parts:
-            prefix_parts.insert(0, str(dealii_env_root))
-            os.environ["CMAKE_PREFIX_PATH"] = ":".join(prefix_parts)
+            prefix_parts.append(str(dealii_env_root))
+            os.environ["CMAKE_PREFIX_PATH"] = os.pathsep.join(prefix_parts)
     # The conda-forge deal.II 9.1.1 package bakes a feedstock-only
     # compiler path into deal.IIConfig.cmake (/home/conda/feedstock_root/...)
     # which does not exist at runtime.  Override CC/CXX so CMake uses the
