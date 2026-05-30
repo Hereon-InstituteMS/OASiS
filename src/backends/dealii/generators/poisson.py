@@ -634,10 +634,77 @@ GENERAL_KNOWLEDGE = {
     "description": "deal.II general capabilities",
     "element_types": {
         "H1": "FE_Q(p), FE_Q_Hierarchical(p), FE_Bernstein(p), FE_Hermite(p), FE_SimplexP(p)",
+        "H1_enriched": (
+            "FE_Q_Bubbles(p) — Q with cell-interior bubble enrichment, useful "
+            "for stabilised Stokes-like saddle-point problems where extra "
+            "interior dofs cure inf-sup issues; "
+            "FE_SimplexP_Bubbles(p) — simplex P with bubble enrichment for "
+            "the same purpose on triangular/tetrahedral meshes; "
+            "FE_Q_DG0(p) — continuous Q with one discontinuous mode, "
+            "used for enriched-pressure stabilisations; "
+            "FE_Q_iso_Q1(p) — isoparametric subdivision of Q(p) into Q1 "
+            "patches, kept for multilevel/coarse-grid constructions; "
+            "FE_RannacherTurek(0) — rotated-bilinear nonconforming Q1, "
+            "the classical Rannacher-Turek element for Stokes."
+        ),
         "DG": "FE_DGQ(p), FE_DGQLegendre(p), FE_DGQHermite(p), FE_DGP(p), FE_SimplexDGP(p)",
+        "DG_advanced": (
+            "FE_DGQArbitraryNodes(quadrature) — DG_Q on a user-chosen node "
+            "set (Gauss-Lobatto, Gauss, equispaced) for matrix-free / "
+            "spectral-element style discretisations; "
+            "FE_DGPMonomial(p) — DG using the monomial polynomial basis "
+            "rather than the standard nodal basis (kept for legacy "
+            "comparison and analytic-coefficient access); "
+            "FE_DGPNonparametric(p) — DG with a non-parametric mapping, "
+            "i.e. polynomials defined in physical (not reference) space; "
+            "FE_DGVector — generic vector-valued DG wrapper around any "
+            "scalar DG family; "
+            "FE_DGBDM(k) — DG version of FE_BDM (Brezzi-Douglas-Marini) "
+            "for H(div) without inter-element continuity; "
+            "FE_DGRaviartThomas(k) — DG analogue of FE_RaviartThomas, "
+            "used in DG mixed methods; "
+            "FE_DGNedelec(k) — DG analogue of FE_Nedelec for H(curl) "
+            "discontinuous discretisations."
+        ),
         "H(div)": "FE_RaviartThomas(k), FE_BDM(k), FE_ABF(k), FE_BernardiRaugel(1)",
+        "H(div)_advanced": (
+            "FE_RaviartThomasNodal(k) — RT with a nodal degree-of-freedom "
+            "representation (alternative to the moment-based default), "
+            "convenient when interpolating from a nodal velocity field; "
+            "FE_RT_Bubbles(k) — RT enriched with interior bubble functions "
+            "for improved approximation order on a fixed mesh."
+        ),
         "H(curl)": "FE_Nedelec(k), FE_NedelecSZ(k)",
+        "H(curl)_advanced": (
+            "FE_NedelecNodal(k) — Nédélec element with a nodal-interpolation "
+            "DoF setup, useful when coupling against nodal H(curl) data."
+        ),
+        "trace_and_face": (
+            "FE_FaceQ(p) — Q-polynomial face element used for "
+            "hybridised DG (HDG) interface unknowns; "
+            "FE_FaceP(p) — P-polynomial face element, the simplex "
+            "analogue of FE_FaceQ; "
+            "FE_TraceQ(p) — trace of FE_Q on element faces, used by "
+            "Lagrange-multiplier and HDG stabilisations."
+        ),
+        "pyramid_and_wedge_3d": (
+            "FE_PyramidP(p) — continuous P element on pyramidal (square-base) "
+            "3D cells, used in transition meshes between hex and tet regions; "
+            "FE_PyramidDGP(p) — DG counterpart of FE_PyramidP; "
+            "FE_PyramidPoly — generic polynomial base for pyramid cells "
+            "(template scaffolding the two above sit on top of); "
+            "FE_WedgeP(p) — continuous P element on wedge (triangular-prism) "
+            "3D cells, the second transition shape between hex and tet; "
+            "FE_WedgeDGP(p) — DG counterpart of FE_WedgeP; "
+            "FE_WedgePoly — generic polynomial base for wedge cells."
+        ),
         "special": "FE_FaceQ(p), FE_Nothing, FE_Enriched, FE_P1NC, FESystem, hp::FECollection",
+        "internal_polynomial_bases": (
+            "FE_Poly, FE_PolyFace, FE_PolyTensor, FE_Q_Base, FE_SimplexPoly — "
+            "abstract base classes that the concrete elements above are "
+            "templated on.  Listed here only so the agent does not propose "
+            "them in user code; these classes are not directly instantiated."
+        ),
     },
     "mesh_generators": [
         "hyper_cube, hyper_rectangle, hyper_L, hyper_ball, hyper_shell",
