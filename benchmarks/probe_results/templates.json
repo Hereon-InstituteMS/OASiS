@@ -6,11 +6,11 @@
     "variant": "poisson_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3989834785461426,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -19,11 +19,11 @@
     "variant": "heat_transient_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.5668423175811768,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nks/probe_results/work/fourc/scalar_transport_heat_transient_2d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /home/herma"
   },
   {
     "backend": "fourc",
@@ -32,11 +32,11 @@
     "variant": "linear_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.585843563079834,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -45,11 +45,11 @@
     "variant": "nonlinear_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.6061220169067383,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -58,11 +58,11 @@
     "variant": "genalpha_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.5906796455383301,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -71,11 +71,11 @@
     "variant": "channel_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 60.01127505302429,
+    "error": "Timed out after 60s"
   },
   {
     "backend": "fourc",
@@ -84,11 +84,11 @@
     "variant": "cavity_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 60.013477087020874,
+    "error": "Timed out after 60s"
   },
   {
     "backend": "fourc",
@@ -97,10 +97,10 @@
     "variant": "fsi_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 15.16357946395874,
     "error": null
   },
   {
@@ -110,11 +110,11 @@
     "variant": "cantilever_static",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.0807523727416992,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -123,11 +123,11 @@
     "variant": "cantilever_dynamic",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9408457279205322,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -136,10 +136,13 @@
     "variant": "penalty_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement",
+      "nodal_cauchy_stresses_xyz"
+    ],
+    "elapsed_s": 54.92408752441406,
     "error": null
   },
   {
@@ -162,11 +165,11 @@
     "variant": "poiseuille_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9667658805847168,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nn-FEM-agent/benchmarks/probe_results/work/fourc/particle_sph_poiseuille_2d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in"
   },
   {
     "backend": "fourc",
@@ -175,11 +178,11 @@
     "variant": "single_phase_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.0731208324432373,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n:Core::Conditions::make_condition(FourC::Core::Conditions::ConditionSpec const&, FourC::Core::Conditions::InputNodeSets const&) in /home/hermann/Schreibtisch/4C-src/4C/build/lib4C."
   },
   {
     "backend": "fourc",
@@ -188,11 +191,11 @@
     "variant": "monolithic_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8275165557861328,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -201,11 +204,11 @@
     "variant": "monolithic_elch_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8961482048034668,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/ssi_monolithic_elch_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0"
   },
   {
     "backend": "fourc",
@@ -214,11 +217,11 @@
     "variant": "ale_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.0082244873046875,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -227,11 +230,11 @@
     "variant": "nernst_planck_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8862965106964111,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nbenchmarks/probe_results/work/fourc/electrochemistry_nernst_planck_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /hom"
   },
   {
     "backend": "fourc",
@@ -240,11 +243,11 @@
     "variant": "advection_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.939917802810669,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nn-FEM-agent/benchmarks/probe_results/work/fourc/level_set_advection_2d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /ho"
   },
   {
     "backend": "fourc",
@@ -253,11 +256,11 @@
     "variant": "heated_channel_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.1351807117462158,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nen-FEM-agent/benchmarks/probe_results/work/fourc/low_mach_heated_channel_2d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR i"
   },
   {
     "backend": "fourc",
@@ -266,11 +269,11 @@
     "variant": "monolithic_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.0186545848846436,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n_parameters_in_section(FourC::Core::IO::InputFile&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Teuchos::ParameterList&) in /home/herman"
   },
   {
     "backend": "fourc",
@@ -279,11 +282,11 @@
     "variant": "monolithic_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.0435092449188232,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nsch/Open-FEM-agent/benchmarks/probe_results/work/fourc/sti_monolithic_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /"
   },
   {
     "backend": "fourc",
@@ -292,11 +295,11 @@
     "variant": "penalty_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9050631523132324,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/fbi_penalty_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERR"
   },
   {
     "backend": "fourc",
@@ -305,11 +308,11 @@
     "variant": "monolithic_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9829456806182861,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n/Open-FEM-agent/benchmarks/probe_results/work/fourc/fpsi_monolithic_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /ho"
   },
   {
     "backend": "fourc",
@@ -318,11 +321,11 @@
     "variant": "dem_impact_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9604794979095459,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/pasi_dem_impact_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in"
   },
   {
     "backend": "fourc",
@@ -331,11 +334,11 @@
     "variant": "slider_bearing_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8858611583709717,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nenchmarks/probe_results/work/fourc/lubrication_slider_bearing_2d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /home/her"
   },
   {
     "backend": "fourc",
@@ -344,11 +347,11 @@
     "variant": "monodomain_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.878798246383667,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n/benchmarks/probe_results/work/fourc/cardiac_monodomain_monodomain_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /hom"
   },
   {
     "backend": "fourc",
@@ -357,11 +360,11 @@
     "variant": "single_artery_1d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9409587383270264,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nt/benchmarks/probe_results/work/fourc/arterial_network_single_artery_1d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /h"
   },
   {
     "backend": "fourc",
@@ -370,11 +373,11 @@
     "variant": "xfem_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.963690996170044,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/xfem_fluid_xfem_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERR"
   },
   {
     "backend": "fourc",
@@ -383,11 +386,11 @@
     "variant": "xfem_fsi_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.806525707244873,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nen-FEM-agent/benchmarks/probe_results/work/fourc/fsi_xfem_xfem_fsi_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERROR in /hom"
   },
   {
     "backend": "fourc",
@@ -396,11 +399,11 @@
     "variant": "fs3i_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.7913291454315186,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nnn/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/fs3i_fs3i_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERR"
   },
   {
     "backend": "fourc",
@@ -409,11 +412,11 @@
     "variant": "ehl_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.7949831485748291,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nfile: /home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/ehl_ehl_3d/input.4C.yaml\n\n\n====================================================================="
   },
   {
     "backend": "fourc",
@@ -422,11 +425,11 @@
     "variant": "airways_1d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.997894287109375,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/reduced_airways_airways_1d/input.4C.yaml\n\n\n=========================================================================\nPR"
   },
   {
     "backend": "fourc",
@@ -435,11 +438,11 @@
     "variant": "beam_contact_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9386157989501953,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nh/Open-FEM-agent/benchmarks/probe_results/work/fourc/beam_interaction_beam_contact_3d/input.4C.yaml\n\n\n=========================================================================\nPROC"
   },
   {
     "backend": "fourc",
@@ -448,11 +451,11 @@
     "variant": "beam_solid_meshtying_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.0774507522583008,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\n/Open-FEM-agent/benchmarks/probe_results/work/fourc/beam_interaction_beam_solid_meshtying_3d/input.4C.yaml\n\n\n======================================================================="
   },
   {
     "backend": "fourc",
@@ -461,11 +464,11 @@
     "variant": "fe2_3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8295211791992188,
+    "error": "Abort(1) on node 0 (rank 0 in comm 0): application called MPI_Abort(MPI_COMM_WORLD, 1) - process 0\n\n--- stdout tail ---\nreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fourc/multiscale_fe2_3d/input.4C.yaml\n\n\n=========================================================================\nPROC 0 ERRO"
   },
   {
     "backend": "fourc",
@@ -604,11 +607,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 2.6935291290283203,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/biharmonic_2d/solve.py\", line 71, in <module>\n    xdmf.write_function(uh)\n  File \"/home/hermann/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/io/utils.py\", lin"
   },
   {
     "backend": "fenics",
@@ -617,10 +620,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "phase_field"
+    ],
+    "elapsed_s": 7.417107820510864,
     "error": null
   },
   {
@@ -630,10 +635,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 1.6789765357971191,
     "error": null
   },
   {
@@ -643,10 +650,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "concentration"
+    ],
+    "elapsed_s": 1.5840771198272705,
     "error": null
   },
   {
@@ -656,11 +665,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9952449798583984,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/dg_methods_2d/solve.py\", line 37, in <module>\n    bn_plus  = (bn(\"+\") + ufl.Abs(bn(\"+\")) ) / 2.0   # outflow side\n                          ^^^^^^^\nAttributeError: module 'ufl' h"
   },
   {
     "backend": "fenics",
@@ -669,11 +678,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.1749212741851807,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/eigenvalue_2d/solve.py\", line 28, in <module>\n    M = assemble_matrix(m, bcs=[bc], diagonal=0.0)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/hermann/minicond"
   },
   {
     "backend": "fenics",
@@ -682,10 +691,12 @@
     "variant": "2d_steady",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "temperature"
+    ],
+    "elapsed_s": 0.8294658660888672,
     "error": null
   },
   {
@@ -695,10 +706,12 @@
     "variant": "2d_transient",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "temperature"
+    ],
+    "elapsed_s": 1.6152949333190918,
     "error": null
   },
   {
@@ -708,10 +721,12 @@
     "variant": "rectangle",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "temperature"
+    ],
+    "elapsed_s": 1.0639593601226807,
     "error": null
   },
   {
@@ -721,10 +736,12 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 0.7275452613830566,
     "error": null
   },
   {
@@ -734,10 +751,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 0.6223659515380859,
     "error": null
   },
   {
@@ -747,10 +766,12 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 1.188610315322876,
     "error": null
   },
   {
@@ -760,11 +781,11 @@
     "variant": "plate_hole",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.5999805927276611,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/linear_elasticity_plate_hole/solve.py\", line 11, in <module>\n    import gmsh\nModuleNotFoundError: No module named 'gmsh'\n"
   },
   {
     "backend": "fenics",
@@ -773,10 +794,12 @@
     "variant": "thick_beam",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 0.6137585639953613,
     "error": null
   },
   {
@@ -786,11 +809,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8395607471466064,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/magnetostatics_2d/solve.py\", line 63, in <module>\n    Bx_expr = fem.Expression(Az_h.dx(1),              V_vec.sub(0).collapse()[0].element.interpolation_points())\n               "
   },
   {
     "backend": "fenics",
@@ -799,10 +822,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "pressure"
+    ],
+    "elapsed_s": 0.8877983093261719,
     "error": null
   },
   {
@@ -812,10 +837,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "phase_field"
+    ],
+    "elapsed_s": 1.5523066520690918,
     "error": null
   },
   {
@@ -825,10 +852,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "velocity"
+    ],
+    "elapsed_s": 0.6879689693450928,
     "error": null
   },
   {
@@ -838,10 +867,12 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "velocity"
+    ],
+    "elapsed_s": 7.728949069976807,
     "error": null
   },
   {
@@ -851,11 +882,11 @@
     "variant": "channel_cylinder",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.49373817443847656,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/navier_stokes_channel_cylinder/solve.py\", line 12, in <module>\n    import gmsh\nModuleNotFoundError: No module named 'gmsh'\n"
   },
   {
     "backend": "fenics",
@@ -864,11 +895,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8951075077056885,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/nonlinear_pde_2d/solve.py\", line 65, in <module>\n    D_expr = fem.Expression(D_u, V_vis.element.interpolation_points())\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^"
   },
   {
     "backend": "fenics",
@@ -877,10 +908,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "u"
+    ],
+    "elapsed_s": 0.6136927604675293,
     "error": null
   },
   {
@@ -890,10 +923,12 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "u"
+    ],
+    "elapsed_s": 0.9551610946655273,
     "error": null
   },
   {
@@ -903,11 +938,11 @@
     "variant": "l_domain",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.598517656326294,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/poisson_l_domain/solve.py\", line 12, in <module>\n    import gmsh\nModuleNotFoundError: No module named 'gmsh'\n"
   },
   {
     "backend": "fenics",
@@ -916,10 +951,12 @@
     "variant": "rectangle",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "u"
+    ],
+    "elapsed_s": 0.6062102317810059,
     "error": null
   },
   {
@@ -929,10 +966,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "species_v"
+    ],
+    "elapsed_s": 2.541531801223755,
     "error": null
   },
   {
@@ -942,11 +981,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.5929298400878906,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/fenics/stokes_2d/solve.py\", line 15, in <module>\n    P2 = ufl.VectorElement(\"Lagrange\", domain.ufl_cell(), 2)\n         ^^^^^^^^^^^^^^^^^\nAttributeError: module 'ufl' has no attribute 'V"
   },
   {
     "backend": "fenics",
@@ -955,10 +994,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "temperature"
+    ],
+    "elapsed_s": 0.908846378326416,
     "error": null
   },
   {
@@ -968,10 +1009,13 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "T_old",
+      "temperature"
+    ],
+    "elapsed_s": 0.8910777568817139,
     "error": null
   },
   {
@@ -981,11 +1025,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8522820472717285,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -994,11 +1038,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8535175323486328,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1007,11 +1051,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8563382625579834,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1020,11 +1064,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8541650772094727,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1033,11 +1077,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8274295330047607,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1046,11 +1090,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8544294834136963,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1059,11 +1103,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8512566089630127,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1072,11 +1116,11 @@
     "variant": "2d_steady",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8683271408081055,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1085,11 +1129,11 @@
     "variant": "2d_transient",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8463735580444336,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1098,11 +1142,11 @@
     "variant": "rectangle",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.839245080947876,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1111,11 +1155,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8431568145751953,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1124,11 +1168,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8333566188812256,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1137,11 +1181,11 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8162450790405273,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1150,11 +1194,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8379428386688232,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1163,11 +1207,11 @@
     "variant": "thick_beam",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8520562648773193,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1176,11 +1220,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8602678775787354,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1189,11 +1233,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8366880416870117,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1202,11 +1246,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.858098030090332,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1215,11 +1259,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8507928848266602,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1228,11 +1272,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8242220878601074,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1241,11 +1285,11 @@
     "variant": "2d_minimal_surface",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8362371921539307,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1254,11 +1298,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8635737895965576,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1267,11 +1311,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8457372188568115,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1280,11 +1324,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.824462890625,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/index_set.h:22,\n                 from /home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/dealii/parallel_poisson_2d/main.cpp:8:\n/home/hermann/miniconda3/envs/ofa-dealii/includ"
   },
   {
     "backend": "dealii",
@@ -1293,11 +1337,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8603849411010742,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1306,11 +1350,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8432934284210205,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1319,11 +1363,11 @@
     "variant": "2d_adaptive",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8361444473266602,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1332,11 +1376,11 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.819399356842041,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1345,11 +1389,11 @@
     "variant": "l_domain",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8186964988708496,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1358,11 +1402,11 @@
     "variant": "rectangle",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8337368965148926,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1371,11 +1415,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.837730884552002,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1384,11 +1428,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8145537376403809,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1397,11 +1441,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8098540306091309,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1410,11 +1454,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8331553936004639,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1423,11 +1467,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8284895420074463,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "dealii",
@@ -1436,11 +1480,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.8183543682098389,
+    "error": "Compilation failed:\nIn file included from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/parallel.h:25,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II/base/aligned_vector.h:24,\n                 from /home/hermann/miniconda3/envs/ofa-dealii/include/deal."
   },
   {
     "backend": "ngsolve",
@@ -1449,10 +1493,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 0.3590071201324463,
     "error": null
   },
   {
@@ -1462,10 +1508,12 @@
     "variant": "2d_dg",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "solution"
+    ],
+    "elapsed_s": 2.3796279430389404,
     "error": null
   },
   {
@@ -1475,11 +1523,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.9603946208953857,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/dg_methods_2d/solve.py\", line 53, in <module>\n    max_val = max(abs(gfu.vec))\n                  ^^^^^^^^^^^^\nTypeError: bad operand type for abs(): 'ngsolve.la.BaseVector'\n"
   },
   {
     "backend": "ngsolve",
@@ -1488,11 +1536,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 1.141225814819336,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/eigenvalue_2d/solve.py\", line 22, in <module>\n    vtk = VTKOutput(mesh, coefs=[gfu.components[0]], names=[\"eigenmode_1\"],\n                                 ~~~~~~~~~~~~~~^^^\nInde"
   },
   {
     "backend": "ngsolve",
@@ -1501,11 +1549,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.40621352195739746,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/hdivdiv_2d/solve.py\", line 38, in <module>\n    a += div(div(tau_)) * ww * dx\n         ^^^^^^^^^^^^^^\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-"
   },
   {
     "backend": "ngsolve",
@@ -1514,11 +1562,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.39247894287109375,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/heat_2d/solve.py\", line 11, in <module>\n    f = LinearForm(0*v*dx).Assemble()\n        ^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: Linearform must have TestFunction\n"
   },
   {
     "backend": "ngsolve",
@@ -1527,11 +1575,11 @@
     "variant": "2d_steady",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.39277076721191406,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/heat_2d_steady/solve.py\", line 11, in <module>\n    f = LinearForm(0*v*dx).Assemble()\n        ^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: Linearform must have TestFun"
   },
   {
     "backend": "ngsolve",
@@ -1540,10 +1588,12 @@
     "variant": "2d_transient",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "temperature"
+    ],
+    "elapsed_s": 0.42954087257385254,
     "error": null
   },
   {
@@ -1553,11 +1603,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.41196727752685547,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/helmholtz_2d/solve.py\", line 13, in <module>\n    mesh.SetPML(pml.Radial(rad=0.7, alpha=2j), definedon=\"pml\")\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: Radial(): i"
   },
   {
     "backend": "ngsolve",
@@ -1566,11 +1616,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.38381409645080566,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/hyperelasticity_2d/solve.py\", line 25, in <module>\n    solvers.Newton(a, gfu, maxits=20, printing=True)\nTypeError: Newton() got an unexpected keyword argument 'maxits'\n"
   },
   {
     "backend": "ngsolve",
@@ -1579,11 +1629,11 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.5126533508300781,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/hyperelasticity_3d/solve.py\", line 27, in <module>\n    solvers.Newton(a, gfu, maxits=20, printing=False)\nTypeError: Newton() got an unexpected keyword argument 'maxits'\n"
   },
   {
     "backend": "ngsolve",
@@ -1592,10 +1642,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 0.33640432357788086,
     "error": null
   },
   {
@@ -1605,10 +1657,12 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "displacement"
+    ],
+    "elapsed_s": 1.2291538715362549,
     "error": null
   },
   {
@@ -1618,11 +1672,11 @@
     "variant": "3d_magnetostatics",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3911399841308594,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/maxwell_3d_magnetostatics/solve.py\", line 11, in <module>\n    geo.Add(inner, mat=\"source\")\nTypeError: Add(): incompatible function arguments. The following argument types are su"
   },
   {
     "backend": "ngsolve",
@@ -1631,11 +1685,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.5768921375274658,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/mhd_2d/solve.py\", line 93, in <module>\n    f_fl = assemble_rhs_fluid(velocity, bz_prev_gf, a_fl)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/hermann/"
   },
   {
     "backend": "ngsolve",
@@ -1644,10 +1698,13 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "flux",
+      "potential"
+    ],
+    "elapsed_s": 0.5482115745544434,
     "error": null
   },
   {
@@ -1657,10 +1714,13 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "velocity",
+      "pressure"
+    ],
+    "elapsed_s": 0.6731128692626953,
     "error": null
   },
   {
@@ -1696,11 +1756,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.4741816520690918,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/phase_field_2d/solve.py\", line 33, in <module>\n    gfc.Set(0.5 + 0.5 * tanh((x - 0.5) / (2 * eps)))\n                        ^^^^\nNameError: name 'tanh' is not defined. Did you m"
   },
   {
     "backend": "ngsolve",
@@ -1735,10 +1795,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "phi"
+    ],
+    "elapsed_s": 0.3782012462615967,
     "error": null
   },
   {
@@ -1748,10 +1810,12 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "phi"
+    ],
+    "elapsed_s": 1.3831963539123535,
     "error": null
   },
   {
@@ -1761,11 +1825,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.45359325408935547,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/stokes_2d/solve.py\", line 39, in <module>\n    gfu.vec.data += inv * f.vec\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/netgen/__init__.py"
   },
   {
     "backend": "ngsolve",
@@ -1774,11 +1838,11 @@
     "variant": "2d_hdg",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3960855007171631,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/stokes_2d_hdg/solve.py\", line 39, in <module>\n    gfu.vec.data += inv * f.vec\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/netgen/__init_"
   },
   {
     "backend": "ngsolve",
@@ -1787,11 +1851,11 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.42013120651245117,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/surface_pde_3d/solve.py\", line 20, in <module>\n    a = BilinearForm(grad(u) * grad(v) * ds).Assemble()\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgExc"
   },
   {
     "backend": "ngsolve",
@@ -1800,11 +1864,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.4869422912597656,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/ngsolve/thermal_structural_2d/solve.py\", line 11, in <module>\n    fT = LinearForm(0*vT*dx).Assemble()\n         ^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: Linearform must h"
   },
   {
     "backend": "ngsolve",
@@ -1813,10 +1877,13 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "velocity",
+      "pressure"
+    ],
+    "elapsed_s": 4.718861818313599,
     "error": null
   },
   {
@@ -1826,10 +1893,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.3562643527984619,
     "error": null
   },
   {
@@ -1839,10 +1906,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.3081526756286621,
     "error": null
   },
   {
@@ -1852,11 +1919,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.30408477783203125,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/dg_methods_2d/solve.py\", line 16, in <module>\n    ).to_simplex()   # triangles\n      ^^^^^^^^^^\nAttributeError: 'MeshQuad1' object has no attribute 'to_simplex'\n"
   },
   {
     "backend": "skfem",
@@ -1865,10 +1932,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.3329613208770752,
     "error": null
   },
   {
@@ -1878,11 +1945,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3062748908996582,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/heat_2d/solve.py\", line 16, in <module>\n    left_dofs = dofs[\"left\"].flatten()\n                ~~~~^^^^^^^^\nTypeError: 'DofsView' object is not subscriptable\n"
   },
   {
     "backend": "skfem",
@@ -1891,11 +1958,11 @@
     "variant": "2d_steady",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.31160449981689453,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/heat_2d_steady/solve.py\", line 16, in <module>\n    left_dofs = dofs[\"left\"].flatten()\n                ~~~~^^^^^^^^\nTypeError: 'DofsView' object is not subscriptable\n"
   },
   {
     "backend": "skfem",
@@ -1904,10 +1971,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "temperature"
+    ],
+    "elapsed_s": 0.3485081195831299,
     "error": null
   },
   {
@@ -1917,11 +1986,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3435859680175781,
+    "error": "/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/form/bilinear_form.py:93: ComplexWarning: Casting complex values to real discards the imaginary part\n  data[j, i, :] = self._kernel(\nTraceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-"
   },
   {
     "backend": "skfem",
@@ -1930,11 +1999,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3127412796020508,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/hyperelasticity_2d/solve.py\", line 15, in <module>\n    ).to_simplex()   # convert to triangles for better integration\n      ^^^^^^^^^^\nAttributeError: 'MeshQuad1' object has no at"
   },
   {
     "backend": "skfem",
@@ -1943,11 +2012,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.31776857376098633,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/linear_elasticity_2d/solve.py\", line 22, in <module>\n    D = ib.get_dofs(\"left\").flatten()\n        ^^^^^^^^^^^^^^^^^^^\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/"
   },
   {
     "backend": "skfem",
@@ -1956,11 +2025,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.313753604888916,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/mixed_poisson_2d/solve.py\", line 23, in <module>\n    B = asm(div_form, ib_rt, ib_dg)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/li"
   },
   {
     "backend": "skfem",
@@ -1969,11 +2038,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3122138977050781,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/navier_stokes_2d/solve.py\", line 28, in <module>\n    A_visc = asm(laplace, ib_u) / Re  # kinematic viscosity 1/Re\n             ^^^^^^^^^^^^^^^^^^\n  File \"/home/hermann/Schreibtisc"
   },
   {
     "backend": "skfem",
@@ -1982,10 +2051,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "phi"
+    ],
+    "elapsed_s": 0.35543227195739746,
     "error": null
   },
   {
@@ -1995,10 +2066,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "phi"
+    ],
+    "elapsed_s": 0.3480544090270996,
     "error": null
   },
   {
@@ -2008,11 +2081,11 @@
     "variant": "2d_tri",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.3605039119720459,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/poisson_2d_tri/solve.py\", line 25, in <module>\n    mio.write(\"result.vtu\")\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/meshio/_mesh.py\", l"
   },
   {
     "backend": "skfem",
@@ -2021,11 +2094,11 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.66654372215271,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/poisson_3d/solve.py\", line 23, in <module>\n    mio.write(\"result.vtu\")\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/meshio/_mesh.py\", line "
   },
   {
     "backend": "skfem",
@@ -2034,10 +2107,13 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "u",
+      "v"
+    ],
+    "elapsed_s": 0.5464038848876953,
     "error": null
   },
   {
@@ -2047,11 +2123,11 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.28564000129699707,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/skfem/stokes_2d/solve.py\", line 24, in <module>\n    K12 = -asm(divergence, ib_u, ib_p)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib"
   },
   {
     "backend": "skfem",
@@ -2060,10 +2136,12 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
-    "vtu_fields": null,
-    "elapsed_s": null,
+    "run_status": "completed",
+    "has_vtu": true,
+    "vtu_fields": [
+      "u"
+    ],
+    "elapsed_s": 0.3115122318267822,
     "error": null
   },
   {
@@ -2073,10 +2151,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.06340408325195312,
     "error": null
   },
   {
@@ -2086,10 +2164,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05794262886047363,
     "error": null
   },
   {
@@ -2099,10 +2177,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.06069231033325195,
     "error": null
   },
   {
@@ -2112,10 +2190,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.060450077056884766,
     "error": null
   },
   {
@@ -2125,10 +2203,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.054845571517944336,
     "error": null
   },
   {
@@ -2151,10 +2229,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05756235122680664,
     "error": null
   },
   {
@@ -2164,10 +2242,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.1376960277557373,
     "error": null
   },
   {
@@ -2177,10 +2255,10 @@
     "variant": "structures_2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05784463882446289,
     "error": null
   },
   {
@@ -2190,10 +2268,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.0614011287689209,
     "error": null
   },
   {
@@ -2203,10 +2281,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.059387922286987305,
     "error": null
   },
   {
@@ -2216,10 +2294,10 @@
     "variant": "2d_cavity",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.09985089302062988,
     "error": null
   },
   {
@@ -2229,10 +2307,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05488777160644531,
     "error": null
   },
   {
@@ -2242,10 +2320,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05630826950073242,
     "error": null
   },
   {
@@ -2255,10 +2333,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05768442153930664,
     "error": null
   },
   {
@@ -2268,10 +2346,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.0587306022644043,
     "error": null
   },
   {
@@ -2281,10 +2359,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05798149108886719,
     "error": null
   },
   {
@@ -2320,10 +2398,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.057506561279296875,
     "error": null
   },
   {
@@ -2346,10 +2424,10 @@
     "variant": "2d_nonlinear",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.06781721115112305,
     "error": null
   },
   {
@@ -2372,10 +2450,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.06039309501647949,
     "error": null
   },
   {
@@ -2385,10 +2463,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05770707130432129,
     "error": null
   },
   {
@@ -2398,10 +2476,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05586504936218262,
     "error": null
   },
   {
@@ -2411,10 +2489,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05965852737426758,
     "error": null
   },
   {
@@ -2424,11 +2502,11 @@
     "variant": "3d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
+    "run_status": "failed",
     "has_vtu": null,
     "vtu_fields": null,
-    "elapsed_s": null,
-    "error": null
+    "elapsed_s": 0.17334198951721191,
+    "error": "Traceback (most recent call last):\n  File \"/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/kratos/plasticity_3d/MainKratos.py\", line 7, in <module>\n    import KratosMultiphysics.ConstitutiveLawsApplication as CLA\nModuleNotFoundError: No module named 'KratosMultiphysics.Consti"
   },
   {
     "backend": "kratos",
@@ -2450,10 +2528,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05916786193847656,
     "error": null
   },
   {
@@ -2463,10 +2541,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.059220075607299805,
     "error": null
   },
   {
@@ -2476,10 +2554,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05726504325866699,
     "error": null
   },
   {
@@ -2489,10 +2567,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.056913137435913086,
     "error": null
   },
   {
@@ -2528,10 +2606,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.0586855411529541,
     "error": null
   },
   {
@@ -2541,10 +2619,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05804729461669922,
     "error": null
   },
   {
@@ -2554,10 +2632,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.06017184257507324,
     "error": null
   },
   {
@@ -2567,10 +2645,10 @@
     "variant": "2d",
     "gen_ok": true,
     "validate_ok": true,
-    "run_status": null,
-    "has_vtu": null,
+    "run_status": "completed",
+    "has_vtu": false,
     "vtu_fields": null,
-    "elapsed_s": null,
+    "elapsed_s": 0.05768227577209473,
     "error": null
   }
 ]
