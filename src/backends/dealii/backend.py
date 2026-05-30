@@ -417,9 +417,26 @@ def _generate_cmakelists(target_name: str) -> str:
         if not extra_hints and Path(dealii_root).is_dir():
             extra_hints = f" {dealii_root}"
 
+    # Honour CC/CXX from the environment, both as a cache override so that
+    # conda-forge deal.II packages (whose deal.IIConfig.cmake bakes in a
+    # feedstock-only compiler path like
+    # /home/conda/feedstock_root/build_artifacts/.../x86_64-conda_cos6-linux-...)
+    # do not force the build to use a non-existent toolchain.
+    cc = os.environ.get("CC", "")
+    cxx = os.environ.get("CXX", "")
+    compiler_cache = ""
+    if cc:
+        compiler_cache += (
+            f'set(CMAKE_C_COMPILER "{cc}" CACHE FILEPATH "C compiler" FORCE)\n'
+        )
+    if cxx:
+        compiler_cache += (
+            f'set(CMAKE_CXX_COMPILER "{cxx}" CACHE FILEPATH "C++ compiler" FORCE)\n'
+        )
+
     return f"""\
 cmake_minimum_required(VERSION 3.1)
-find_package(deal.II 9.0 REQUIRED
+{compiler_cache}find_package(deal.II 9.0 REQUIRED
   HINTS ${{DEAL_II_DIR}} ${{deal.II_DIR}}{extra_hints} /usr /usr/local
 )
 deal_ii_initialize_cached_variables()
