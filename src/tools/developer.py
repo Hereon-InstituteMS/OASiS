@@ -57,17 +57,53 @@ _SOURCE_LOCATIONS = {
             "source": "src/",
             "tests": "tests/input_files/",
             "modules": "src/",
-            "elements": "src/solid_3D_ele/",
+            "solid_elements": "src/solid_ele/",
+            "fluid_elements": "src/fluid_ele/",
             "materials": "src/mat/",
+            "input_parser": "src/inpar/",
             "io": "src/core/io/",
             "templates": "open-fem-agent/src/backends/fourc/",
+            "kinematics_enum": "src/inpar/4C_inpar_structure.hpp (Inpar::Solid::KinemType)",
+            "solid_element_factory": "src/solid_ele/4C_solid_ele_factory.cpp",
+            "plane_2d_helpers": "src/solid_ele/4C_solid_ele_calc_lib_plane.{hpp,cpp}",
+            "valid_materials": "src/global_legacy_module/4C_global_legacy_module_validmaterials.cpp",
         }),
         "extension_points": [
-            "New element: add to src/<module>/4C_<module>_ele_*.hpp/cpp",
-            "New material: add to src/mat/4C_mat_*.hpp/cpp",
-            "New physics module: create src/<module_name>/ with CMakeLists.txt",
-            "New boundary condition: modify src/core/io/ readers",
-            "New inline mesh: add to open-fem-agent/src/backends/fourc/inline_mesh.py",
+            "New material: add to src/mat/4C_mat_<name>.hpp/cpp.  Register the input "
+            "parser group in src/global_legacy_module/4C_global_legacy_module_validmaterials.cpp "
+            "and an enum value in src/core/legacy_enum_definitions/4C_legacy_enum_definitions_materials.cpp. "
+            "Then add a catalog entry in open-fem-agent/src/backends/fourc/generators/<physics>.py.",
+            "New solid element kinematic mode (e.g. axisymmetric — not yet in 4C as of the "
+            "tree the MCP was built against): "
+            "(1) extend the Inpar::Solid::KinemType enum in src/inpar/4C_inpar_structure.hpp; "
+            "(2) update kinem_type_string() in src/inpar/4C_inpar_structure.cpp and the input parser "
+            "so users can write 'KINEM: axisymm'; "
+            "(3) add a template specialization "
+            "SolidCalculationFormulation<celltype, KinemType::<new_mode>, ...> in "
+            "src/solid_ele/4C_solid_ele_factory.cpp, constrained to 2D cell types with `requires "
+            "(Core::FE::dim<celltype> == 2)`; "
+            "(4) implement the new kinematics in a sibling library like "
+            "src/solid_ele/4C_solid_ele_calc_lib_<mode>.hpp.  For axisymmetric specifically, "
+            "mirror the existing plane-strain/plane-stress library "
+            "(src/solid_ele/4C_solid_ele_calc_lib_plane.{hpp,cpp}) which already provides a 2D→3D "
+            "tensor lift via transform_to_3d().  Axisymmetric only differs in adding the hoop "
+            "strain component ε_θθ = u_r/r to the B-matrix and stiffness assembly; "
+            "(5) add an integration-test input under tests/input_files/ exercising the new mode "
+            "(e.g. pressurized cylinder cross-section under axial restraint for an "
+            "axisymmetric quad4 patch); "
+            "(6) declare the new mode in the agent's catalog by extending the relevant "
+            "physics generator (e.g. open-fem-agent/src/backends/fourc/generators/solid_mechanics.py) "
+            "so the catalog-consistency tests stay green.",
+            "New fluid element: same pattern under src/fluid_ele/ with its own factory.",
+            "New physics module: create src/<module_name>/ with CMakeLists.txt declaring "
+            "the module's internal dependencies via four_c_add_internal_dependency() — "
+            "see src/solid_ele/CMakeLists.txt for the canonical pattern.",
+            "New boundary condition: register a ConditionDefinition via "
+            "src/core/fem/src/condition/4C_fem_condition_definition.hpp from the relevant "
+            "src/inpar/ module's set_valid_conditions() so the input parser exposes the new key.",
+            "New inline mesh generator (Python side only): add a builder to "
+            "open-fem-agent/src/backends/fourc/inline_mesh.py and surface it via the relevant "
+            "physics generator's template; no 4C source changes needed.",
         ],
     },
     "fenics": {
