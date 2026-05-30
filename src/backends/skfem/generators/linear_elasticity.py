@@ -41,10 +41,16 @@ f = body_force.assemble(ib)
 D = ib.get_dofs("left").flatten()
 u = solve(*condense(K, f, D=D))
 
-# Tip displacement
-u_reshaped = u.reshape(2, -1)
-max_uy = u_reshaped[1].min()
-print(f"Max tip displacement: {{max_uy:.6f}}")
+# Tip displacement.  `ElementVector(ElementQuad1())` stores DOFs
+# *interleaved* (x0, y0, x1, y1, ...) — naively reshaping the flat
+# solution as `(2, -1)` would scramble x and y across rows.  Recover
+# the per-component arrays from the basis's `nodal_dofs` map, which
+# records the global-DOF index of each (component, node) pair.
+nodal_dofs = ib.nodal_dofs   # shape (n_components, n_nodes)
+ux = u[nodal_dofs[0]]
+uy = u[nodal_dofs[1]]
+max_uy = uy.min()
+print(f"Max tip displacement (uy.min): {{max_uy:.6f}}")
 
 # Write a VTU so the sweep harness (and any other downstream consumer)
 # can recover the displacement field, not just the scalar summary.
@@ -52,7 +58,11 @@ try:
     import meshio
     cells = [("quad", m.t.T)]
     points = np.column_stack([m.p.T, np.zeros(m.p.shape[1])]) if m.p.shape[0] == 2 else m.p.T
-    displacement = u_reshaped.T  # (n_nodes, 2)
+    # node ordering of `points` matches `m.p.T`, which is also what
+    # `nodal_dofs` is indexed by (one column per node), so the
+    # per-node (ux, uy) pairs line up with the corresponding row of
+    # `points` without any extra reordering.
+    displacement = np.column_stack([ux, uy])           # (n_nodes, 2)
     displacement_3 = np.column_stack([displacement, np.zeros(displacement.shape[0])])
     meshio.Mesh(points, cells, point_data={{"displacement": displacement_3}}).write("result.vtu")
 except Exception as _e:
