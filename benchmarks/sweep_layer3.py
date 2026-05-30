@@ -142,8 +142,37 @@ class CellResult:
 # Reference problem per row:
 #
 #   POISSON           -Δu = 1 on [0,1]², u = 0 on ∂Ω.  max(u) ≈ 0.0737.
+#   ELASTICITY        Each backend's `linear_elasticity/2d` (or
+#                     equivalent) template on the rectangular domain
+#                     it ships with.  Material: E=1000, ν=0.3.  The
+#                     2D plane-strain-vs-plane-stress choice is a
+#                     per-template detail and is not enforced here —
+#                     the agent has to read each generator to see
+#                     which it uses (FEniCSx and skfem both compute
+#                     λ = E·ν / ((1+ν)·(1-2ν)), i.e. the standard
+#                     plane-strain / 3D form, so for those two the
+#                     numbers are directly comparable; other backends
+#                     have not been audited here).  As a consequence,
+#                     the cross-backend numbers are NOT guaranteed to
+#                     agree as absolute values across all six cells.  Comparison metric per cell depends on
+#                     the field type:
+#                       - vector-valued displacement output (NGSolve,
+#                         FEniCSx, 4C, Kratos): the scalar reported is
+#                         the maximum L2 magnitude of the displacement
+#                         across nodes — `core.post_processing.post_process_file`
+#                         collapses multi-component point arrays via
+#                         `np.linalg.norm(arr, axis=1)` before
+#                         min/max/mean/std.
+#                       - per-component fields (deal.II writes "ux",
+#                         "uy" separately): the cell asks for one
+#                         component (typically the dominant one) so
+#                         the scalar there is the maximum of that
+#                         component, not a magnitude.
+#                     Standardising the elasticity templates so a
+#                     single closed-form reference is usable across all
+#                     backends is a follow-up.
 #
-# More rows (elasticity, heat, stokes, …) are added in follow-up PRs.
+# More rows (heat, stokes, …) are added in follow-up PRs.
 # Sweep accepts --only to filter to a comma-separated subset.
 
 _KAPPA = 1.0
@@ -183,6 +212,70 @@ MATRIX: dict[str, list[Cell]] = {
              field="solution", expected=0.0737, rtol=0.05),
         Cell("fourc",   "poisson", "poisson_2d", {},
              field="phi_1", expected=0.0737, rtol=0.05),
+    ],
+    "ELASTICITY": [
+        # skfem's `linear_elasticity/2d` template has two stacked
+        # problems: (a) it constructs a tensor-product mesh with no
+        # boundary tags and then calls `ib.get_dofs("left")`, which
+        # raises; and (b) even if (a) is fixed, the template writes a
+        # `results_summary.json` only, never a .vtu, so the sweep would
+        # then transition from `failed` to `no_vtu_output`.  Both are
+        # template bugs to address upstream.  The cell is kept so the
+        # matrix surfaces the gap on every run.
+        Cell("skfem",   "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
+             field="displacement", expected=None, rtol=0.5),
+        # ngsolve and fenics write the displacement field as
+        # "displacement" (vector).  `core.post_processing.post_process_file`
+        # collapses multi-component point arrays via the elementwise L2
+        # magnitude (`np.linalg.norm(arr, axis=1)`) before computing
+        # min/max/mean/std, so the scalar reported below is the
+        # maximum of the displacement magnitude across nodes — *not* a
+        # per-component max.  Cross-backend consistency is checked
+        # qualitatively here (both reporting numbers of comparable
+        # order of magnitude); a shared geometry that admits a closed
+        # form is a follow-up.
+        Cell("ngsolve", "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
+             field="displacement", expected=None, rtol=0.5),
+        Cell("fenics",  "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
+             field="displacement", expected=None, rtol=0.5),
+        # Kratos's `linear_elasticity/2d_nonlinear` is the only variant
+        # that imports KratosMultiphysics (the plain `linear_elasticity/2d`
+        # is one of the 8 known scipy stubs), but the script body is a
+        # placeholder that prints "StructuralMechanicsApplication
+        # available" and writes a JSON summary instead of actually running
+        # a structural analysis.  The cell completes but produces no .vtu,
+        # so the sweep reports "no_vtu_output" — which is precisely the
+        # right signal: validation passes superficially, runtime does
+        # nothing useful.  Replacement with a real Kratos cantilever
+        # analysis is a follow-up.
+        Cell("kratos",  "linear_elasticity", "2d_nonlinear", {"E": 1000, "nu": 0.3},
+             field="DISPLACEMENT", expected=None, rtol=0.5),
+        # deal.II's `linear_elasticity/2d` template needs the same
+        # compiler + TBB setup as POISSON (see the deal.II POISSON
+        # cell for the env explanation).  Output fields in the
+        # generated main.cpp are component-named via
+        # `std::vector<std::string> names = {"ux", "uy"};
+        #  data_out.add_data_vector(solution, names);`
+        # — i.e. there is no single vector field called "u" to extract
+        # from.  Use "uy" (the dominant component for a beam under a
+        # transverse load); when this build path is restored the cell
+        # can be extended with a second variant for "ux".  Pass the
+        # same explicit E/ν as the other cells so the matrix is
+        # self-contained instead of relying on template defaults.
+        Cell("dealii",  "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
+             field="uy", expected=None, rtol=0.5),
+        # 4C's `linear_elasticity/2d` template emits an input that
+        # references the legacy "WALL" element type, which is not
+        # registered in the build of 4C produced by this project's
+        # build script (4C builds it conditionally and our build did
+        # not enable it).  Run aborts at mesh-read time with
+        # "Unknown type 'WALL' of finite element".  Either re-build 4C
+        # with the wall element enabled, or update the template to use
+        # the modern `SOLID` 2D element — follow-up.  Pass the same
+        # explicit material parameters as the other cells so the matrix
+        # entry remains stable if the template's default E/nu change.
+        Cell("fourc",   "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
+             field="displacement", expected=None, rtol=0.5),
     ],
 }
 
