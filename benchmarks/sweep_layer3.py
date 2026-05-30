@@ -142,20 +142,30 @@ class CellResult:
 # Reference problem per row:
 #
 #   POISSON           -Δu = 1 on [0,1]², u = 0 on ∂Ω.  max(u) ≈ 0.0737.
-#   ELASTICITY        Plane-strain linear elasticity on the rectangular
-#                     domain each backend's `linear_elasticity/2d` (or
-#                     equivalent) template ships with.  E=1000, ν=0.3.
-#                     Comparison metric: max of the L2 magnitude of the
-#                     displacement field across nodes — this is what
-#                     `core.post_processing.post_process_file` reports
-#                     for multi-component point arrays via
-#                     `np.linalg.norm(arr, axis=1)`, so the scalar
-#                     numbers in the table for vector fields are
-#                     magnitudes, not per-component maxima.  No
-#                     closed-form reference yet because the templates
-#                     do NOT use a shared geometry — standardising the
-#                     elasticity templates so a single analytic
-#                     reference can be used is a follow-up.
+#   ELASTICITY        Each backend's `linear_elasticity/2d` (or
+#                     equivalent) template on the rectangular domain
+#                     it ships with.  Material: E=1000, ν=0.3.  The
+#                     2D plane-strain-vs-plane-stress choice is NOT
+#                     shared across templates (e.g. FEniCSx ships a
+#                     plane-stress formulation), so the cross-backend
+#                     numbers are not strictly comparable as absolute
+#                     values.  Comparison metric per cell depends on
+#                     the field type:
+#                       - vector-valued displacement output (NGSolve,
+#                         FEniCSx, 4C, Kratos): the scalar reported is
+#                         the maximum L2 magnitude of the displacement
+#                         across nodes — `core.post_processing.post_process_file`
+#                         collapses multi-component point arrays via
+#                         `np.linalg.norm(arr, axis=1)` before
+#                         min/max/mean/std.
+#                       - per-component fields (deal.II writes "ux",
+#                         "uy" separately): the cell asks for one
+#                         component (typically the dominant one) so
+#                         the scalar there is the maximum of that
+#                         component, not a magnitude.
+#                     Standardising the elasticity templates so a
+#                     single closed-form reference is usable across all
+#                     backends is a follow-up.
 #
 # More rows (heat, stokes, …) are added in follow-up PRs.
 # Sweep accepts --only to filter to a comma-separated subset.
@@ -244,8 +254,10 @@ MATRIX: dict[str, list[Cell]] = {
         # — i.e. there is no single vector field called "u" to extract
         # from.  Use "uy" (the dominant component for a beam under a
         # transverse load); when this build path is restored the cell
-        # can be extended with a second variant for "ux".
-        Cell("dealii",  "linear_elasticity", "2d", {},
+        # can be extended with a second variant for "ux".  Pass the
+        # same explicit E/ν as the other cells so the matrix is
+        # self-contained instead of relying on template defaults.
+        Cell("dealii",  "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
              field="uy", expected=None, rtol=0.5),
         # 4C's `linear_elasticity/2d` template emits an input that
         # references the legacy "WALL" element type, which is not
