@@ -31,6 +31,41 @@ class InputFormat(Enum):
     JSON = "json"           # generic
 
 
+def detect_template_language(content: str, default: str) -> str:
+    """Sniff a template's first-line markers and return the markdown
+    fence language tag that matches the *content*, not the backend's
+    declared ``input_format``.
+
+    Catches the Kratos case: ``KratosBackend.input_format() == JSON``
+    (its native config-file format), but its catalog generators emit
+    Python scripts that use the ``KratosMultiphysics`` library
+    directly.  Tagging those as ``json`` confuses any client that
+    strips fences by language.
+
+    Falls back to ``default`` (typically ``backend.input_format().value``)
+    when no marker matches.
+    """
+    head = content.lstrip()[:200]
+    if not head:
+        return default
+    python_markers = (
+        '"""', "'''",
+        "#!/",
+        "from ", "import ",
+        "def ", "class ",
+        "# -*-",
+    )
+    if head.startswith(python_markers):
+        return "python"
+    if head.startswith(("<?xml", "<")):
+        return "xml"
+    if head.startswith(("{", "[")):
+        return "json"
+    if head.startswith(("//", "#include", "template<", "namespace ")):
+        return "cpp"
+    return default
+
+
 @dataclass
 class PhysicsCapability:
     """A physics problem this backend can solve."""

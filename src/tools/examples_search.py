@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
+from core.backend import detect_template_language
 from core.registry import get_backend, available_backends
 
 # Auto-detect 4C paths
@@ -156,7 +157,7 @@ def register_example_tools(mcp: FastMCP):
                         for v in p.template_variants[:max_results]:
                             try:
                                 content = backend.generate_input(p.name, v, {})
-                                fmt = backend.input_format().value
+                                fmt = detect_template_language(content, backend.input_format().value)
                                 results.append(
                                     f"### {backend.display_name()} template: `{p.name}/{v}`\n\n```{fmt}\n{content[:8000]}```\n"
                                 )
@@ -280,7 +281,7 @@ def register_example_tools(mcp: FastMCP):
 
         try:
             content = backend.generate_input(physics, variant, {})
-            fmt = backend.input_format().value
+            fmt = detect_template_language(content, backend.input_format().value)
             return f"```{fmt}\n{content}\n```"
         except ValueError as e:
             return str(e)

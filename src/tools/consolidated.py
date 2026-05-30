@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
+from core.backend import detect_template_language
 from core.registry import get_backend, available_backends
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
@@ -475,7 +476,7 @@ def register_consolidated_tools(mcp: FastMCP):
                     variant = p.template_variants[0] if p.template_variants else "2d"
                     try:
                         content = backend.generate_input(p.name, variant, {})
-                        fmt = backend.input_format().value
+                        fmt = detect_template_language(content, backend.input_format().value)
                         return f"```{fmt}\n{content}\n```"
                     except Exception as e:
                         return f"Error generating template: {e}"
