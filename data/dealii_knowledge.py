@@ -107,10 +107,21 @@ DEALII_KNOWLEDGE = {
             "FE_SimplexP_Bubbles(p)": "Simplex Lagrange + bubble enrichment",
         },
         "H1_enriched": {
-            "FE_Q_Bubbles(p)": "Q + cell-interior bubble enrichment (caveat: condition number grows fast for p>3)",
-            "FE_Q_DG0(p)": "Lagrange Qp plus the space of cell-wise constant functions (Qp+DG0)",
-            "FE_Q_iso_Q1(p)": "Piecewise (bi-/tri-)linear functions on a macro-element of p^dim sub-cells",
-            "FE_RannacherTurek(0)": "Classical nonconforming first-order element (degree fixed to 0 upstream)",
+            "_note": (
+                "Strictly H1-conforming enrichments — safe to pick when the "
+                "formulation requires H1 continuity."
+            ),
+            "FE_Q_Bubbles(p)": "Q + cell-interior bubble enrichment (bubble vanishes on cell boundary; H1 preserved). Caveat: condition number grows fast for p>3",
+            "FE_Q_iso_Q1(p)": "Piecewise (bi-/tri-)linear functions on a macro-element of p^dim sub-cells; globally continuous so H1-conforming",
+        },
+        "nonconforming_and_qp_dg0": {
+            "_note": (
+                "These are NOT H1-conforming.  Do NOT pick them for an "
+                "H1-conforming formulation — they are listed here only so "
+                "the agent recognises them when reading existing decks."
+            ),
+            "FE_Q_DG0(p)": "Lagrange Qp PLUS cell-wise constants (Qp+DG0); the added piecewise-constant mode is discontinuous across element boundaries",
+            "FE_RannacherTurek(0)": "Classical first-order nonconforming element; continuity enforced only at face midpoints, not pointwise (degree fixed to 0 upstream)",
         },
         "DG_discontinuous": {
             "FE_DGQ(p)": "Tensor-product DG, equidistant points",

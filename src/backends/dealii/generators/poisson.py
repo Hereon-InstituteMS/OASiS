@@ -635,21 +635,32 @@ GENERAL_KNOWLEDGE = {
     "element_types": {
         "H1": "FE_Q(p), FE_Q_Hierarchical(p), FE_Bernstein(p), FE_Hermite(p), FE_SimplexP(p)",
         "H1_enriched": (
+            "Strictly H1-conforming enrichments — safe to use anywhere "
+            "the formulation needs H1 continuity:  "
             "FE_Q_Bubbles(p) — Q with cell-interior bubble enrichment "
-            "(adds one bubble per cell on top of the standard Q basis).  "
-            "Upstream caveat: condition number grows quickly for p > 3; "
-            "use the lowest applicable degree.  "
-            "FE_SimplexP_Bubbles(p) — simplex analogue of FE_Q_Bubbles "
-            "(P basis on triangles/tetrahedra plus a cell-interior bubble); "
-            "FE_Q_DG0(p) — Lagrange Qp **plus** the space of cell-wise "
-            "constant functions (Qp+DG0), continuous in the Lagrange part "
-            "and discontinuous in the added piecewise-constant part; "
+            "(the bubble vanishes on the cell boundary, so inter-element "
+            "continuity is preserved).  Upstream caveat: condition number "
+            "grows quickly for p > 3; use the lowest applicable degree.  "
+            "FE_SimplexP_Bubbles(p) — simplex analogue of FE_Q_Bubbles.  "
             "FE_Q_iso_Q1(p) — piecewise (bi-/tri-)linear functions on a "
-            "macro-element of p^dim sub-cells: the cell is conceptually "
+            "macro-element of p^dim sub-cells; the cell is conceptually "
             "split into p subdivisions per coordinate direction and a Q1 "
-            "basis is laid down on the resulting subcells; "
-            "FE_RannacherTurek(0) — classical nonconforming first-order "
-            "element (degree argument is fixed to 0 in upstream)."
+            "basis is laid down on the resulting subcells (still globally "
+            "continuous, so H1-conforming)."
+        ),
+        "nonconforming_and_qp_dg0": (
+            "NOT H1-conforming — agent should NOT pick these for an "
+            "H1-conforming formulation:  "
+            "FE_Q_DG0(p) — Lagrange Qp **plus** the space of cell-wise "
+            "constant functions (Qp+DG0).  The added piecewise-constant "
+            "part is discontinuous across element boundaries; only the "
+            "Lagrange part is continuous.  Used in mixed/stabilised "
+            "discretisations that explicitly want the extra discontinuous "
+            "mode.  "
+            "FE_RannacherTurek(0) — classical first-order *nonconforming* "
+            "element (degree argument fixed to 0 in upstream).  Continuity "
+            "is enforced only at edge/face midpoints, not pointwise across "
+            "faces."
         ),
         "DG": "FE_DGQ(p), FE_DGQLegendre(p), FE_DGQHermite(p), FE_DGP(p), FE_SimplexDGP(p)",
         "DG_advanced": (
