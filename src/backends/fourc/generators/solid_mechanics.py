@@ -265,9 +265,48 @@ class SolidMechanicsGenerator(BaseGenerator):
                     "kinematics": "linear only",
                 },
                 "MAT_crystal_plasticity": {
-                    "description": "Crystal plasticity with slip/twinning systems (FCC/BCC/HCP)",
+                    "description": (
+                        "Single-crystal plasticity with dislocation-density based hardening and "
+                        "optional deformation twinning.  Lattice families accepted by the runtime: "
+                        "FCC, BCC, D019, L10 (LAT key, default FCC).  The input parser's own "
+                        "description string advertises HCP as well, but the constructor sanity "
+                        "check rejects 'HCP' with FOUR_C_THROW — use D019 for hexagonal lattices."
+                    ),
+                    "parameters": (
+                        # elastic + Newton tolerance
+                        "TOL, YOUNG, NUE, DENS, "
+                        # crystal lattice
+                        "LAT, CTOA, ABASE, "
+                        # slip-system definition
+                        "NUMSLIPSYS, NUMSLIPSETS, SLIPSETMEMBERS, SLIPRATEEXP, GAMMADOTSLIPREF, "
+                        "DISDENSINIT, DISGENCOEFF, DISDYNRECCOEFF, TAUY0, MFPSLIP, SLIPHPCOEFF, "
+                        "SLIPBYTWIN, "
+                        # twin-system definition (all optional; NUMTWINSYS/SETS default 0)
+                        "NUMTWINSYS, NUMTWINSETS, TWINSETMEMBERS, TWINRATEEXP, GAMMADOTTWINREF, "
+                        "TAUT0, MFPTWIN, TWINHPCOEFF, TWINBYSLIP, TWINBYTWIN"
+                    ),
                     "kinematics": "nonlinear",
-                    "features": "Dislocation density evolution, Hall-Petch, multiple lattice types",
+                    "features": (
+                        "Dislocation-density evolution (generation + dynamic recovery), "
+                        "Hall-Petch via MFPSLIP/MFPTWIN with HP coefficients, "
+                        "slip-twin and twin-twin coupling, multiple lattice types"
+                    ),
+                    "pitfalls": (
+                        "Vector-size rule depends on the parameter (two distinct sizing axes):\n"
+                        "  - one entry per physical *system* (size = NUMSLIPSYS or NUMTWINSYS): "
+                        "SLIPSETMEMBERS, TWINSETMEMBERS — these are 1-based indices into the "
+                        "set table (range 1..NUMSLIPSETS or 1..NUMTWINSETS) saying which set "
+                        "each individual slip/twin system belongs to.\n"
+                        "  - one entry per *set* (size = NUMSLIPSETS or NUMTWINSETS): every "
+                        "other slip/twin vector (SLIPRATEEXP, GAMMADOTSLIPREF, DISDENSINIT, "
+                        "DISGENCOEFF, DISDYNRECCOEFF, TAUY0, MFPSLIP, SLIPHPCOEFF, SLIPBYTWIN "
+                        "and their TWIN-side counterparts TWINRATEEXP, GAMMADOTTWINREF, TAUT0, "
+                        "MFPTWIN, TWINHPCOEFF, TWINBYSLIP, TWINBYTWIN).\n"
+                        "Mixing these two sizes is a common error — NUMSLIPSYS usually exceeds "
+                        "NUMSLIPSETS (e.g. FCC has 12 systems often in 1 set).  Twinning is "
+                        "optional: leave NUMTWINSYS=NUMTWINSETS=0 and omit every TWIN-side "
+                        "vector (they all have parser defaults) for pure slip plasticity."
+                    ),
                 },
             },
             "plasticity_pitfalls": [
