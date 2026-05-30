@@ -20,6 +20,7 @@ solvers/
 simulation_outputs/
 benchmarks/results/
 benchmarks/coupling/
+benchmarks/sweep_results/
 meshes/
 
 # Machine-specific settings (users create their own from settings.json.example)
