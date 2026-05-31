@@ -1,10 +1,10 @@
 {
   "summary": {
     "n_fixtures": 13,
-    "passed": 12,
+    "passed": 13,
     "failed": 0,
     "harness_pending": 0,
-    "skipped": 1
+    "skipped": 0
   },
   "results": {
     "dealii::poisson::0": {
@@ -30,13 +30,14 @@
       "pitfall_index": 91,
       "fixture_id": "excdimensionmismatch_vmult",
       "mode": "compile_and_run",
-      "status": "skipped",
-      "expect_matched": [],
-      "forbid_violated": [],
-      "notes": [
-        "fixture requires Debug-built deal.II at ~/Schreibtisch/dealii-debug (Assert macros enabled); current install is Release-only \u2014 skip until rebuilt (task #30)"
+      "status": "passed",
+      "expect_matched": [
+        "ExcDimensionMismatch",
+        "Dimension"
       ],
-      "captured_head": ""
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "\n--------------------------------------------------------\nAn error occurred in line <773> of file <~/Schreibtisch/dealii-src/include/deal.II/lac/sparse_matrix.templates.h> in function\n    void dealii::SparseMatrix<number>::vmult(OutVector&, const InVector&) const [with OutVector = dealii::Vector<double>; InVector = dealii::Vector<double>; number = double]\nThe violated condition was: \n    n() == src.size()\nAdditional information: \n    Dimension 3 not equal to 2.\n\nStacktrace:\n-----------\n#0  ~/Schreibtisch/dealii-debug/lib/libdeal_II.g.so.9.1.1: void dealii::SparseMatrix<double>::vmult<dealii::Vector<double>, dealii::Vector<double> >(dealii::Vector<double>&, dealii::Vector<double> const&) const\n#1  ~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/dealii/excdimensionmismatch_vmult/_build/"
     },
     "dealii::linear_elasticity::92": {
       "key": "dealii::linear_elasticity::92",

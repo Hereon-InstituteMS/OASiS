@@ -68,6 +68,12 @@ class TestDealiiSignalFloor(unittest.TestCase):
                           # families) verify Signal FAMILIES but are
                           # tracked separately by the runner totals.
 
+    # Cross-cutting tier-2 totals (Signal-family verification) —
+    # includes fixtures with synthetic pitfall_index >= 90.
+    # Reported by the runner under scripts/scan_results/
+    # tier2_results.json["summary"]["passed"].
+    MIN_TIER2_RUNNER_PASSED = 13
+
     def setUp(self):
         from verify_signal_clauses import verify_backend
         self.results = verify_backend("dealii")
