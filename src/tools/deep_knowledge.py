@@ -850,10 +850,14 @@ _FENICS_KNOWLEDGE = {
             "[Syntax] Vector function space for elasticity in "
             "dolfinx is created with ('Lagrange', 1, (gdim,)) — "
             "the trailing shape tuple marks it vector-valued. "
-            "Passing ('Lagrange', 1) gives a SCALAR space. Signal: "
-            "dolfinx.fem.functionspace raises ValueError 'Invalid "
-            "ranks' or 'shape' when assembling, or the FFC form "
-            "compilation emits 'expected rank 1 trial function'.",
+            "Passing ('Lagrange', 1) gives a SCALAR space; the "
+            "weak form fails at construction when ufl.sym(ufl.grad) "
+            "is invoked on the scalar trial. Signal: ufl.sym "
+            "raises ValueError 'Symmetric part of tensor with "
+            "rank != 2 is undefined.' inside the form definition "
+            "(before assemble). (Verified empirically 2026-06-01 "
+            "— prior wording 'Invalid ranks' / 'expected rank 1 "
+            "trial' does not appear in current dolfinx.)",
             "[Syntax] Dirichlet BC value for a vector elasticity "
             "space must be np.array([0.0]*gdim, dtype="
             "default_scalar_type) — not scalar 0. dolfinx "
@@ -897,12 +901,15 @@ _FENICS_KNOWLEDGE = {
             "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises "
             "ValueError 'Unknown element family CG' — the basix "
             "name is 'Lagrange', not 'CG' or 'P1'.",
-            "[API] dolfinx XDMFFile.write_function only supports "
-            "P1 nodal geometry. Writing a P2 function silently "
-            "emits a corrupt .xdmf or raises RuntimeError 'XDMF "
-            "mesh must be P1'. Interpolate to a P1 space first, "
-            "or use VTKFile / VTXWriter. Signal: RuntimeError "
-            "'XDMF mesh must be P1' from XDMFFile.write_function.",
+            "[API] dolfinx XDMFFile.write_function requires the "
+            "Function degree to match the mesh degree. P2 on a P1 "
+            "mesh (the common case) is rejected — interpolate to a "
+            "matching-degree space, or use VTKFile / VTXWriter. "
+            "Signal: XDMFFile.write_function raises RuntimeError "
+            "'Degree of output Function must be same as mesh "
+            "degree. Maybe the Function needs to be interpolated?'. "
+            "(Verified empirically 2026-06-01 — prior wording "
+            "'XDMF mesh must be P1' does not appear.)",
         ],
         "materials": {
             "E": {"range": [1.0, 1e12], "unit": "Pa", "examples": {"steel": 210e9, "aluminum": 70e9, "rubber": 1e6}},

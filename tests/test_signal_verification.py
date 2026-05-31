@@ -183,6 +183,42 @@ class TestDealiiSignalFloor(unittest.TestCase):
             f"does — investigate before lowering the floor.")
 
 
+class TestSignalParseDiscipline(unittest.TestCase):
+    """Every pitfall whose text starts with a [Category] prefix
+    must also be parseable into a Signal: clause.
+
+    The parser regex is ``\\bSignal:\\s*(.+?)$``. Patterns like
+    ``Signal (verified 2026-06-01):`` were used during the
+    empirical audit but break the parse — the regex doesn't
+    match ``Signal`` followed by a parenthetical before the
+    colon. Locked in 2026-06-01 after the fenics audit
+    re-broke linear_elasticity#0 / #3 Signal extraction.
+    """
+
+    BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos")
+
+    def test_every_categorised_pitfall_has_parseable_signal(self):
+        from verify_signal_clauses import verify_backend
+        for be in self.BACKENDS:
+            with self.subTest(backend=be):
+                broken = [
+                    r for r in verify_backend(be)
+                    if r.pitfall_category != "(no-prefix)"
+                    and not r.signal_text]
+                if broken:
+                    names = ", ".join(
+                        f"{r.physics}#{r.pitfall_index}"
+                        for r in broken)
+                    self.fail(
+                        f"{be}: {len(broken)} pitfalls have a "
+                        f"[Category] prefix but no extractable "
+                        f"Signal text ({names}). The parser "
+                        f"requires 'Signal:' verbatim — "
+                        f"'Signal (verified ...): ...' is "
+                        f"not recognised. Rewrite as "
+                        f"'Signal: ... (Verified ...)'.")
+
+
 class TestCrossBackendGameableFloor(unittest.TestCase):
     """Cross-backend regression test for the gameable Tier-0 mode.
 
