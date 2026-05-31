@@ -208,14 +208,66 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(1)",
     "time_stepping": "Newmark-beta (beta=0.25, gamma=0.5 for average acceleration, unconditionally stable)",
     "solver": "CG + SSOR for the effective stiffness system at each time step",
+    "elements": [
+        "FE_Q<dim>(degree) — continuous Lagrange; degree=1 default, degree=2 for spectral-accuracy at moderate wave numbers",
+        "FE_Q_Hierarchical<dim>(degree) — for hp-adaptive refinement around shocks (sine-Gordon, nonlinear wave)",
+        "FE_DGQ<dim>(degree) — DG variant; preferred for discontinuous-coefficient wave problems and shock propagation",
+        "FE_Q_iso_Q1<dim>(p) — piecewise-linear on sub-cells; lumped mass matrix → explicit Newmark becomes diagonal solve",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, a, b)                 — canonical wave-equation test domain",
+        "GridGenerator::hyper_ball(tria, center, radius)       — circular drum; tests modal accuracy against Bessel-function reference",
+        "GridGenerator::hyper_shell(tria, center, inner, outer) — annular waveguide",
+        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — scattering from obstacle; tests absorbing-BC quality",
+        "GridGenerator::hyper_L(tria, -1, 1) — re-entrant corner reflects high-frequency content; tests AMR",
+        "GridGenerator::extrude_triangulation(t_in, n_slices, h, t_out) — 2D wave mesh extruded into 3D for acoustic-tank problems",
+    ],
+    "solvers": [
+        "SolverCG<>                    — effective-stiffness system is SPD if M and K are SPD (typical for the scalar wave equation); the default",
+        "SolverGMRES<>                 — needed when damping or absorbing BCs break symmetry of the effective stiffness",
+        "Explicit Newmark (beta=0)     — diagonalised, no linear solve; bound by CFL dt < h/c",
+        "SparseDirectUMFPACK           — for one-shot factorisation re-used at every time step; effective when dt and mesh are constant",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR              — works on the effective-stiffness (M + beta*dt^2*c^2*K) for typical Newmark parameters",
+        "PreconditionAMG / BoomerAMG   — at >10^5 DoFs; rebuild factorisation only when dt or mesh changes",
+        "Diagonal scaling (PreconditionJacobi) — sufficient when the mass matrix dominates (small dt) and AMG overhead isn't worth it",
+    ],
     "pitfalls": [
-        "Newmark: unconditionally stable for beta >= gamma/2 >= 1/4",
-        "System each step: (M + beta*dt^2*c^2*K)*u_(n+1) = M*u_tilde",
-        "Effective stiffness matrix is SPD if M and K are SPD",
-        "CFL-like condition for explicit Newmark (beta=0): dt < h/c",
-        "Initial acceleration: solve M*a_0 = f_0 - c^2*K*u_0",
-        "For absorbing BCs: add damping term on boundary",
-        "VTU output at selected time steps for animation",
+        "[Numerical] Newmark-beta unconditional stability requires "
+        "beta >= gamma/2 >= 1/4. The (beta=0.25, gamma=0.5) pair "
+        "is the canonical 'average acceleration' choice. Setting "
+        "beta=0 (explicit) trades stability for CFL-bound dt < h/c. "
+        "Signal: solution amplitudes grow exponentially when "
+        "beta < gamma/2.",
+        "[Syntax] Time-step system: "
+        "(M + beta*dt^2*c^2*K)*u_(n+1) = M*u_tilde. Both M and K "
+        "must be assembled ONCE before time stepping; only the "
+        "RHS (u_tilde from u_n, v_n, a_n) varies per step. "
+        "Re-assembling K each step is the most common transient-"
+        "wave performance bug. Signal: per-step wall time scales "
+        "with ndof^2 instead of with the linear-solve cost.",
+        "[Numerical] CFL-like condition for explicit Newmark "
+        "(beta=0): dt < h/c. Setting dt larger gives spurious "
+        "exponentially-growing modes. Signal: solution energy "
+        "grows exponentially even though the implicit Newmark "
+        "(beta=0.25) of the same problem stays bounded.",
+        "[Syntax] Initial acceleration must be computed by solving "
+        "M*a_0 = f_0 - c^2*K*u_0, not just zeroed out. Setting "
+        "a_0 = 0 produces a slowly-decaying transient from the "
+        "wrong initial condition. Signal: solution oscillates "
+        "with a low-frequency mode superimposed on the correct "
+        "wave pattern, especially visible at early times.",
+        "[Physics] Absorbing BCs: add a damping term on the "
+        "boundary, c * du/dt on the outflow face. Forgetting this "
+        "makes the boundary reflect waves back into the domain. "
+        "Signal: outgoing wave reflects from boundary instead of "
+        "leaving; solution shows growing standing-wave pattern.",
+        "[Integration] VTU output at every time step is "
+        "unnecessarily expensive — output every N steps and use "
+        "DataOutInterface::write_pvd_record to assemble the .pvd "
+        "time-series file. Signal: simulation wall time dominated "
+        "by I/O rather than solve.",
     ],
     "materials": {
         "wave_speed": {"range": [0.01, 10000.0], "unit": "m/s"},

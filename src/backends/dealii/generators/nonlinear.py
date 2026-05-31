@@ -141,11 +141,60 @@ KNOWLEDGE = {
                       "step-77 (SUNDIALS KINSOL)"],
     "function_space": "FE_Q<dim>(1) typically",
     "solver": "Newton-Raphson with line search. AD: Sacado/ADOL-C for tangent",
+    "elements": [
+        "FE_Q<dim>(degree) — continuous Lagrange; degree=1 standard for minimal-surface-type scalar nonlinear PDEs (step-15)",
+        "FE_Q_Hierarchical<dim>(degree) — required for hp-adaptive Newton continuation (refine where residual is largest)",
+        "FE_DGQ<dim>(degree) — DG variant; for nonlinear advection problems (Burgers, Euler) needing upwinding",
+        "FE_Q<dim>(degree) + FESystem for vector-valued nonlinear problems — minimal-surface-vector, nonlinear elasticity etc.",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, 0, 1) — canonical domain for minimal-surface tests",
+        "GridGenerator::hyper_ball(tria, center, radius) — radial nonlinear problems",
+        "GridGenerator::hyper_L(tria, -1, 1) — re-entrant corner stress concentration; tests Newton robustness near singularities",
+        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2) — for load-stepping with structured AMR",
+        "GridGenerator::cylinder(tria, radius, half_length) — torsion / large-deformation cylinder benchmarks",
+    ],
+    "solvers": [
+        "Newton-Raphson with line search — outer loop; line-search backtracks until residual decreases (Armijo rule)",
+        "SUNDIALS::KINSOL (step-77) — production-grade Newton-Krylov solver; handles trust-region globalisation automatically",
+        "Continuation / load stepping — for problems where Newton's basin is small; sweep a parameter (load, viscosity) gradually",
+        "SparseDirectUMFPACK / MUMPS — robust linear sub-solver for Newton inner iteration",
+        "Picard iteration — fixed-point alternative; larger basin of convergence than Newton but only first-order convergent",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR             — when the tangent is SPD (smooth nonlinearities, small perturbations)",
+        "PreconditionAMG / BoomerAMG  — for large problems; rebuilt at each Newton iteration",
+        "PreconditionILU              — when the tangent becomes non-symmetric near a turning point",
+    ],
     "pitfalls": [
-        "Newton needs good initial guess (interpolate boundary values)",
-        "Line search prevents divergence: alpha * delta_u",
-        "AssembleLinearization must update with current solution",
-        "For AD: use Differentiation::AD::EnergyFunctional (step-72)",
-        "SUNDIALS KINSOL can replace hand-written Newton (step-77)",
+        "[Numerical] Newton needs a good initial guess. Cold-start "
+        "from zero usually diverges for any non-trivial "
+        "nonlinearity. Interpolate boundary values onto the "
+        "initial guess, or use the previous load step's solution "
+        "during continuation. Signal: Newton fails on iteration 1 "
+        "with residual norm > 1e3 (diverging immediately).",
+        "[Numerical] Line search prevents divergence — backtrack "
+        "until the residual norm decreases. Full Newton step "
+        "(alpha=1) without line search overshoots in the early "
+        "iterations and diverges. Signal: Newton residual "
+        "oscillates between 1e-3 and 1e5 without converging.",
+        "[Syntax] AssembleLinearisation MUST update with current "
+        "solution at every Newton iteration. Using a stale solution "
+        "(e.g. always the initial guess) makes Newton converge to "
+        "the WRONG linearised system — looks like convergence but "
+        "the solution is incorrect. Signal: Newton reports "
+        "convergence in 3-5 iterations on a problem that should "
+        "take 10+, and the solution doesn't match an analytic "
+        "reference.",
+        "[API] For AD: use Differentiation::AD::EnergyFunctional "
+        "(step-72) for the energy-functional formulation, "
+        "Differentiation::AD::CellLevelBase for the residual-vector "
+        "formulation. Mixing them up produces a tangent with the "
+        "wrong sign on the off-diagonals.",
+        "[Integration] SUNDIALS KINSOL (step-77) requires deal.II "
+        "compiled with SUNDIALS support. Without it the link fails "
+        "with 'undefined reference to KINSOL::SUNDIALS::solve_with_"
+        "jacobian'. Signal: identical to the SLEPc/PETSc link "
+        "errors — same class of missing-third-party-dep failure.",
     ],
 }

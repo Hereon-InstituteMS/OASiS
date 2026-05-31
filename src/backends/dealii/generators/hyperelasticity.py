@@ -334,6 +334,33 @@ KNOWLEDGE = {
         "J": "Volume ratio: J = det(F)",
         "E": "Green-Lagrange: E = 0.5*(C - I)",
     },
+    "elements": [
+        "FESystem<dim>(FE_Q<dim>(degree), dim) — displacement-only formulation (step-18, step-72); degree=2 is the typical choice to mitigate volumetric locking at small compressibility",
+        "FESystem<dim>(FE_Q<dim>(2), dim, FE_DGP<dim>(1), 1, FE_DGP<dim>(0), 1) — three-field (u, p̃, J̃) formulation per step-44; required for nearly-incompressible hyperelasticity",
+        "FE_Q_Bubbles<dim>(degree) wrapped in FESystem for vector unknowns — improved volumetric behaviour over plain FE_Q without going to the full three-field formulation",
+        "FE_RannacherTurek<dim>() — P1-NC locking-free; cheap alternative when degree ≥ 2 FE_Q is too expensive",
+        "FE_Q_Hierarchical<dim>(degree) — for hp-adaptive refinement during load stepping (refine in regions where Newton stalls)",
+    ],
+    "mesh_generators": [
+        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2, colorize=true) — anisotropic beams and slabs; colorize=true critical for per-face BC distinction (else all faces get boundary_id=0)",
+        "GridGenerator::hyper_cube(tria, 0, 1) — unit-cube cube-compression / tension test",
+        "GridGenerator::hyper_L(tria, -1, 1) — re-entrant corner amplifies stress concentration; tests element-inversion handling",
+        "GridGenerator::cylinder(tria, radius, half_length) — bar-bending / torsion tests",
+        "GridGenerator::hyper_shell(tria, center, in, out) — pressure-vessel and balloon-inflation problems",
+        "GridGenerator::plate_with_a_hole(tria, ...) — Cook's-membrane-style stress concentration under large deformation",
+    ],
+    "solvers": [
+        "Newton-Raphson with line search — outer loop; line search MUST check det(F) > 0 to avoid element inversion",
+        "SparseDirectUMFPACK — preferred linear sub-solver for < 50k DoFs; more robust than iterative methods on the Newton tangent, which can become indefinite during line search",
+        "SolverCG<> with PreconditionSSOR — linear sub-solver beyond 50k DoFs; assumes the tangent stays SPD (true at small deformation, may break near the limit point)",
+        "SolverGMRES<>                — needed when the tangent has non-symmetric parts (e.g. follower-load tangent terms; geometric stiffness in updated Lagrangian)",
+        "Differentiation::AD::EnergyFunctional — automatic differentiation for tangent (step-72); eliminates the manual K_geo+K_mat split",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR for SPD tangents — works for small-deformation Neo-Hookean before geometric-stiffness dominates",
+        "PreconditionAMG / BoomerAMG for large problems; works on the displacement block of the three-field formulation",
+        "BlockPreconditioner — required for the three-field (u, p̃, J̃) saddle-point structure of step-44; analogous to the Stokes block preconditioner",
+    ],
     "pitfalls": [
         "Must use load stepping for large deformations (Newton diverges otherwise)",
         "MUST implement line search checking J=det(F) > 0 — without it, elements invert and the simulation crashes for any significant compression",

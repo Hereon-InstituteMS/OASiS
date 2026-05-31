@@ -6,10 +6,12 @@
     "elements": [
       "DoFs",
       "FE_SimplexP",
+      "PDEs",
       "PETSc"
     ],
     "mesh_generators": [
       "GridGenerator",
+      "boundary_id",
       "half_length",
       "inner_radius",
       "lambda_mn",
@@ -35,7 +37,6 @@
       "FE_DGVector",
       "FE_Enriched",
       "FE_FaceP",
-      "FE_FaceQ",
       "FE_NedelecSZ",
       "FE_P1NC",
       "FE_Poly",
@@ -77,7 +78,7 @@
     ]
   },
   "shared_counts": {
-    "elements": 15,
+    "elements": 16,
     "mesh_generators": 16
   },
   "no_info_buckets": [],

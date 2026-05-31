@@ -132,10 +132,58 @@ KNOWLEDGE = {
                       "step-63 (GMG with block smoothers)"],
     "function_space": "FE_Q(1) for SUPG, FE_DGQ(p) for DG",
     "solver": "BiCGStab + Jacobi for SUPG; direct for DG (block-diagonal)",
+    "elements": [
+        "FE_Q<dim>(degree) + SUPG stabilisation — streamline-upwind Petrov-Galerkin; degree=1 with proper tau is the SUPG standard",
+        "FE_DGQ<dim>(degree) + upwind flux — DG (step-12); handles discontinuous solutions and high Peclet naturally",
+        "FE_FaceQ<dim>(degree) + FE_DGQ<dim>(degree) — hybridised DG (HDG, step-51); face trace + cell DG; cheaper than full DG",
+        "FE_DGP<dim>(degree) — DG monomial basis; alternative to FE_DGQ for higher-order transport",
+        "FE_Q_Hierarchical<dim>(degree) — hp-adaptive refinement around shock layers; combine with anisotropic refinement (step-30)",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, 0, 1) — canonical transport on unit square; reference solutions in step-9",
+        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2) — anisotropic refinement for boundary-layer / shock-front resolution",
+        "GridGenerator::hyper_rectangle(tria, p1, p2) — generic channel for inlet/outlet transport tests",
+        "GridGenerator::hyper_L(tria, a, b) — L-shaped; tests discontinuity propagation around corner",
+        "GridGenerator::merge_triangulations(t1, t2, result) — heterogeneous-coefficient demos (high-diff + low-diff patches)",
+    ],
+    "solvers": [
+        "SolverBiCGStab<>             — non-symmetric system from convection term; best for SUPG",
+        "SolverGMRES<>                — robust alternative; works when BiCGStab stagnates",
+        "SparseDirectUMFPACK          — for DG up to ~10^4 cells; block-diagonal mass makes direct solves cheap",
+    ],
+    "preconditioners": [
+        "PreconditionJacobi           — for BiCGStab on SUPG; cheap diagonal scaling",
+        "PreconditionILU              — stronger preconditioning when Peclet is high",
+        "MGSmootherRelaxation with block-Jacobi (step-63) — point smoothers fail on convection-dominated systems",
+    ],
     "pitfalls": [
-        "SUPG: tau = h/(2|b|) * (coth(Pe) - 1/Pe), Pe = |b|*h/(2*eps)",
-        "DG: need FEInterfaceValues for jump/average on faces",
-        "Upwind flux: use the value from the element where b·n > 0",
-        "For high Peclet: either reduce h or use DG (SUPG may oscillate)",
+        "[Numerical] SUPG stabilisation parameter: "
+        "tau = h/(2|b|) * (coth(Pe) - 1/Pe) where "
+        "Pe = |b|*h/(2*eps). The h/(2|b|) form alone (without the "
+        "Bergant-Mizukami doubly-asymptotic factor) becomes O(1) "
+        "at low Pe and over-stabilises smooth diffusion-dominated "
+        "solutions. Signal: diffusion-dominated solutions show "
+        "small overshoots near the boundary that don't refine "
+        "away.",
+        "[Syntax] DG formulations need FEInterfaceValues for "
+        "jump/average operators on faces. Using FEValues alone "
+        "gives the cell-interior gradient but not the jump term. "
+        "Signal: DG solution looks correct globally but has "
+        "continuous-Galerkin-like behaviour at element interfaces "
+        "(no jumps where there should be).",
+        "[Physics] Upwind flux: use the value from the cell where "
+        "b·n > 0 (upstream). Switching the upwind direction inverts "
+        "transport — solutions advect BACKWARDS from the inflow. "
+        "Signal: inflow BC appears on the downstream side of the "
+        "domain.",
+        "[Numerical] At high Peclet, SUPG can still oscillate. "
+        "Either refine h or switch to DG. Signal: SUPG solution "
+        "has O(1) oscillations at the interface between high and "
+        "low values, even with tau matched to local Pe.",
+        "[Integration] Anisotropic refinement (step-30) is "
+        "essential for boundary-layer resolution at high Pe — "
+        "isotropic refinement wastes DoFs perpendicular to the "
+        "flow. Signal: boundary-layer thickness smeared across "
+        "multiple streamwise cells while resolved normal to flow.",
     ],
 }
