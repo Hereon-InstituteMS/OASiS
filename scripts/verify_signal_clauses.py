@@ -278,9 +278,12 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "RuntimeError", "TypeError", "Logger",
             "AttributeError", "KeyError", "ValueError",
             # C++ source references that appear in Kratos
-            # RuntimeError traces (verified 2026-06-01,
-            # linear_elasticity#7 audit).
+            # RuntimeError traces (verified empirically 2026-06-01
+            # across multiple probes).
             "GetValue", "kratos_parameters", "Has",
+            "ErrorNonExistingSubModelPart", "model_part",
+            "variables_list_data_value_container",
+            "GetSolutionStepValue", "SetSolutionStepValue",
             "ReadModelPart", "WriteModelPart", "GidIO", "VtkOutput",
             "CloneTimeStep", "InitializeSolutionStep",
             "RunSolutionLoop", "Initialize",

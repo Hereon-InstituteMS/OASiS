@@ -250,20 +250,20 @@
       "physics": "linear_elasticity",
       "pitfall_index": 2,
       "pitfall_category": "Syntax",
-      "signal_text": "KeyError or RuntimeError 'SubModelPart ... does not exist' from Model[...].GetSubModelPart(name) when the process tries to apply a BC.",
+      "signal_text": "RuntimeError 'Error: There is no sub model part with name \"NAME\" in model part \"PARENT\"' from ModelPart::ErrorNonExistingSubModelPart in model_part.cpp, listed alongside the available SubModelPart names. (Verified empirically 2026-06-01 \u2014 prior wording 'SubModelPart ... does not exist' used CamelCase; the real error text is lowercase 'sub model part' with spaces.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "GetSubModelPart",
-        "KeyError",
-        "Model",
-        "RuntimeError"
+        "ErrorNonExistingSubModelPart",
+        "ModelPart",
+        "RuntimeError",
+        "model_part"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "GetSubModelPart",
-        "KeyError",
-        "Model",
-        "RuntimeError"
+        "ErrorNonExistingSubModelPart",
+        "ModelPart",
+        "RuntimeError",
+        "model_part"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
@@ -529,29 +529,34 @@
       "physics": "fluid",
       "pitfall_index": 0,
       "pitfall_category": "API",
-      "signal_text": "RuntimeError 'variable VELOCITY/PRESSURE not found in variables list of ModelPart' from the VMS element InitializeSolutionStep.",
+      "signal_text": "RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: VELOCITY' from kratos/containers/variables_list_data_value_container at the first GetSolutionStepValue / SetSolutionStepValue on the node. (Verified empirically 2026-06-01 \u2014 the prior wording 'not found in variables list of ModelPart' is rearranged; the real text says 'variables list doesn't have this variable' and originates in the container code, not the VMS InitializeSolutionStep.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
+        "GetSolutionStepValue",
         "InitializeSolutionStep",
         "ModelPart",
-        "PRESSURE",
         "RuntimeError",
+        "SetSolutionStepValue",
         "VELOCITY",
-        "VMS"
+        "VMS",
+        "variables_list_data_value_container"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
+        "GetSolutionStepValue",
         "InitializeSolutionStep",
         "ModelPart",
-        "PRESSURE",
         "RuntimeError",
+        "SetSolutionStepValue",
         "VELOCITY",
-        "VMS"
+        "VMS",
+        "variables_list_data_value_container"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment"
+        "quoted-error-fragment",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",

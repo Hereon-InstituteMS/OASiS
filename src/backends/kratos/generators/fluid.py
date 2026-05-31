@@ -44,7 +44,7 @@ KNOWLEDGE = {
         "turbulence": "k-epsilon, k-omega SST via RANSApplication",
         "pitfalls": [
                         '[API] VELOCITY (vector) and PRESSURE (scalar) are the primary fluid variables — both must be added to the ModelPart via AddNodalSolutionStepVariable BEFORE any Node is created. '
-                        "Signal: RuntimeError 'variable VELOCITY/PRESSURE not found in variables list of ModelPart' from the VMS element InitializeSolutionStep.",
+                        "Signal: RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: VELOCITY' from kratos/containers/variables_list_data_value_container at the first GetSolutionStepValue / SetSolutionStepValue on the node. (Verified empirically 2026-06-01 — the prior wording 'not found in variables list of ModelPart' is rearranged; the real text says 'variables list doesn't have this variable' and originates in the container code, not the VMS InitializeSolutionStep.)",
                         '[Integration] Materials defined in FluidMaterials.json with DENSITY and DYNAMIC_VISCOSITY. Forgetting either key leaves the constitutive call returning zero stress. '
                         'Signal: solver converges to a zero pressure field with uniform velocity equal to BC (no momentum balance enforced).',
                         '[Physics] Wall BCs are mutually exclusive: no-slip (VELOCITY = 0), Navier slip (tangential traction), or wall-law (log-law for high Re). Mixing them on the same boundary applies the LAST one written in the JSON. '
