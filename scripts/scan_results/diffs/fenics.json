@@ -1,0 +1,76 @@
+{
+  "backend": "fenics",
+  "catalog_loaded": true,
+  "scan_loaded": true,
+  "drift": {},
+  "coverage_gap": {
+    "elements": [
+      "BDM",
+      "CR",
+      "DPC",
+      "HHJ",
+      "Hermite",
+      "N1E",
+      "N2E",
+      "P",
+      "RT",
+      "Regge",
+      "bubble",
+      "custom",
+      "iso",
+      "serendipity"
+    ],
+    "mesh_generators": [
+      "create_box",
+      "create_cell_partitioner",
+      "create_geometry",
+      "create_interval",
+      "create_mesh",
+      "create_rectangle",
+      "create_submesh",
+      "create_unit_cube",
+      "create_unit_interval",
+      "create_unit_square"
+    ],
+    "element_families": [
+      "BDM",
+      "CR",
+      "DPC",
+      "HHJ",
+      "Hermite",
+      "N1E",
+      "N2E",
+      "P",
+      "RT",
+      "Regge",
+      "bubble",
+      "custom",
+      "iso",
+      "serendipity"
+    ],
+    "spaces": [
+      "BDM",
+      "CR",
+      "DPC",
+      "HHJ",
+      "Hermite",
+      "N1E",
+      "N2E",
+      "P",
+      "RT",
+      "Regge",
+      "bubble",
+      "custom",
+      "iso",
+      "serendipity"
+    ]
+  },
+  "shared_counts": {
+    "elements": 0,
+    "mesh_generators": 0,
+    "element_families": 0,
+    "spaces": 0
+  },
+  "no_info_buckets": [],
+  "notes": []
+}

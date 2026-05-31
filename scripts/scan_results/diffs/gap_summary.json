@@ -1,0 +1,97 @@
+{
+  "kratos": {
+    "drift": 33,
+    "coverage_gap": 1543,
+    "shared_buckets": {
+      "constitutive_laws": 0,
+      "variables": 6
+    },
+    "no_info_buckets": [
+      "elements",
+      "boundary_conditions"
+    ],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  },
+  "fourc": {
+    "drift": 0,
+    "coverage_gap": 386,
+    "shared_buckets": {
+      "constitutive_laws": 0,
+      "boundary_conditions": 0
+    },
+    "no_info_buckets": [],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  },
+  "skfem": {
+    "drift": 1,
+    "coverage_gap": 91,
+    "shared_buckets": {
+      "elements": 14,
+      "mesh_generators": 0,
+      "element_families": 0,
+      "spaces": 0
+    },
+    "no_info_buckets": [],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  },
+  "fenics": {
+    "drift": 0,
+    "coverage_gap": 52,
+    "shared_buckets": {
+      "elements": 0,
+      "mesh_generators": 0,
+      "element_families": 0,
+      "spaces": 0
+    },
+    "no_info_buckets": [],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  },
+  "ngsolve": {
+    "drift": 2,
+    "coverage_gap": 95,
+    "shared_buckets": {
+      "elements": 0,
+      "mesh_generators": 0,
+      "element_families": 0,
+      "spaces": 4
+    },
+    "no_info_buckets": [],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  },
+  "dealii": {
+    "drift": 0,
+    "coverage_gap": 65,
+    "shared_buckets": {
+      "elements": 0,
+      "mesh_generators": 0
+    },
+    "no_info_buckets": [],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  },
+  "dune": {
+    "drift": 2,
+    "coverage_gap": 67,
+    "shared_buckets": {
+      "elements": 0,
+      "mesh_generators": 0,
+      "element_families": 0,
+      "spaces": 5
+    },
+    "no_info_buckets": [],
+    "catalog_loaded": true,
+    "scan_loaded": true,
+    "notes": []
+  }
+}

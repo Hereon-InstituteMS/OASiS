@@ -1,0 +1,96 @@
+{
+  "backend": "dune",
+  "catalog_loaded": true,
+  "scan_loaded": true,
+  "drift": {
+    "spaces": [
+      "adaptiveLeafGridView",
+      "product_space"
+    ]
+  },
+  "coverage_gap": {
+    "elements": [
+      "bdfm",
+      "bdm",
+      "checkDeprecated_dimrange",
+      "checkDeprecated_maxOrder",
+      "clone",
+      "combined",
+      "composite",
+      "dganisotropic",
+      "dglagrange",
+      "dglagrangelobatto",
+      "dglegendre",
+      "dglegendrehp",
+      "dgonb",
+      "dgonbhp",
+      "finiteVolume",
+      "lagrange",
+      "lagrangehp",
+      "p1Bubble",
+      "product",
+      "rannacherTurek",
+      "raviartThomas",
+      "storageType"
+    ],
+    "mesh_generators": [
+      "dune.alugrid.aluConformGrid",
+      "dune.alugrid.aluCubeGrid",
+      "dune.alugrid.aluGrid",
+      "dune.alugrid.aluSimplexGrid",
+      "dune.grid.onedGrid",
+      "dune.grid.yaspGrid"
+    ],
+    "element_families": [
+      "bdfm",
+      "bdm",
+      "checkDeprecated_dimrange",
+      "checkDeprecated_maxOrder",
+      "clone",
+      "combined",
+      "composite",
+      "dganisotropic",
+      "dglagrange",
+      "dglagrangelobatto",
+      "dglegendre",
+      "dglegendrehp",
+      "dgonb",
+      "dgonbhp",
+      "finiteVolume",
+      "lagrange",
+      "lagrangehp",
+      "p1Bubble",
+      "product",
+      "rannacherTurek",
+      "raviartThomas",
+      "storageType"
+    ],
+    "spaces": [
+      "bdfm",
+      "bdm",
+      "checkDeprecated_dimrange",
+      "checkDeprecated_maxOrder",
+      "clone",
+      "combined",
+      "dganisotropic",
+      "dglagrangelobatto",
+      "dglegendre",
+      "dglegendrehp",
+      "dgonb",
+      "dgonbhp",
+      "finiteVolume",
+      "lagrangehp",
+      "p1Bubble",
+      "rannacherTurek",
+      "storageType"
+    ]
+  },
+  "shared_counts": {
+    "elements": 0,
+    "mesh_generators": 0,
+    "element_families": 0,
+    "spaces": 5
+  },
+  "no_info_buckets": [],
+  "notes": []
+}
