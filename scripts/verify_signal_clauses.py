@@ -196,6 +196,10 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # probe 2026-06-01 — see maxwell#3 audit).
             "ScaleCF", "ConstantCF", "CompoundCF",
             "biform_from_py", "lform_from_py",
+            # Linear-algebra backends NGSolve wraps for inverse
+            # operations (verified 2026-06-01, maxwell#0 audit).
+            "UmfpackInverse", "PardisoInverse", "SparseCholesky",
+            "UMFPACK",
             # Common method/attribute names that appear in tracebacks
             "Assemble", "TnT", "FreeDofs", "ndof",
         })
@@ -273,6 +277,10 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # I/O
             "RuntimeError", "TypeError", "Logger",
             "AttributeError", "KeyError", "ValueError",
+            # C++ source references that appear in Kratos
+            # RuntimeError traces (verified 2026-06-01,
+            # linear_elasticity#7 audit).
+            "GetValue", "kratos_parameters", "Has",
             "ReadModelPart", "WriteModelPart", "GidIO", "VtkOutput",
             "CloneTimeStep", "InitializeSolutionStep",
             "RunSolutionLoop", "Initialize",

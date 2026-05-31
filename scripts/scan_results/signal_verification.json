@@ -375,23 +375,31 @@
       "physics": "linear_elasticity",
       "pitfall_index": 7,
       "pitfall_category": "Syntax",
-      "signal_text": "KeyError 'echo_level' from AnalysisStage.RunSolutionLoop when problem_data omits the field.",
+      "signal_text": "Parameters::GetValue raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' from kratos/sources/kratos_parameters.cpp when problem_data omits the field. (Verified empirically 2026-06-01 \u2014 prior catalog text said KeyError from RunSolutionLoop; Kratos uses RuntimeError, not Python KeyError, and the message originates in C++ GetValue, not RunSolutionLoop.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "AnalysisStage",
+        "GetValue",
         "KeyError",
-        "RunSolutionLoop"
+        "Parameters",
+        "RunSolutionLoop",
+        "RuntimeError",
+        "kratos_parameters"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "AnalysisStage",
+        "GetValue",
         "KeyError",
-        "RunSolutionLoop"
+        "Parameters",
+        "RunSolutionLoop",
+        "RuntimeError",
+        "kratos_parameters"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment"
+        "quoted-error-fragment",
+        "raise",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
