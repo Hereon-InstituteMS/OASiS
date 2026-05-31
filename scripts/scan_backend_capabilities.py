@@ -509,6 +509,506 @@ sys.stdout.write(json.dumps(out))
     return cap
 
 
+# ── NGSolve scanner ────────────────────────────────────────────────────
+
+
+def scan_ngsolve() -> BackendCapabilities:
+    """Enumerate what NGSolve exposes through its Python surface.
+
+    NGSolve is pure-Python (over a pybind11 C++ core) and lives in the
+    same ``.venv`` as the MCP, so the scanner imports it directly —
+    no subprocess dispatch needed.
+
+    Capability buckets populated:
+      * ``element_families`` — finite-element-space classes from
+        ``ngsolve.comp`` (H1, HCurl, HDiv, L2, VectorH1, ... plus the
+        many specialised facet / surface / div-div spaces). Filter
+        rule: ends in ``FESpace`` or matches one of the well-known
+        short names that NGSolve registered as aliases (H1, HCurl, ...).
+      * ``elements`` — finite-element shape classes from ``ngsolve.fem``
+        ending in ``FE`` (H1FE, L2FE, HCurlFE, HDivFE, ...). These
+        are the element-level objects the spaces are built from.
+      * ``mesh_generators`` — Netgen geometry / mesher entry points
+        (``netgen.occ.OCCGeometry``, ``netgen.csg.CSGeometry``,
+        ``netgen.geom2d.SplineGeometry``, ``Make2DProblem``, ...).
+      * ``processes`` — solver classes (``CGSolver``, ``GMRESSolver``,
+        ``QMRSolver``, ``ArnoldiSolver``) — labelled "processes" to
+        match the per-backend field naming.
+      * ``other['preconditioners']`` — preconditioner classes
+        (``MultiGridPreconditioner``, ``H1AMG``, ``HCurlAMG``,
+        ``BDDCPreconditioner``, ...).
+      * ``other['forms']`` — bilinear/linear-form classes.
+    """
+    cap = BackendCapabilities(backend="ngsolve")
+    try:
+        import ngsolve
+    except ImportError as e:
+        cap.notes.append(f"ngsolve not importable: {e}")
+        return cap
+
+    cap.version = getattr(ngsolve, "__version__", "")
+
+    # Finite-element-space families on ngsolve.comp + the short
+    # aliases on the top-level module.
+    space_aliases = {
+        "H1", "HCurl", "HDiv", "L2", "VectorH1", "VectorL2",
+        "SurfaceL2", "HCurlDiv", "HDivDiv", "FacetSurface",
+        "NormalFacetSurface", "HDivSurface", "VectorSurfaceL2",
+        "TangentialSurfaceL2",
+    }
+    families = set()
+    for name in dir(ngsolve):
+        if name in space_aliases or (
+            name.endswith("FESpace") and not name.startswith("_")
+        ):
+            families.add(name)
+    try:
+        import ngsolve.comp as _comp
+        for name in dir(_comp):
+            if name.endswith("FESpace") and not name.startswith("_"):
+                families.add(name)
+    except ImportError:
+        pass
+    cap.element_families = sorted(families)
+
+    # Element-level classes on ngsolve.fem (shape functions).
+    try:
+        import ngsolve.fem as _fem
+        cap.elements = sorted(
+            n for n in dir(_fem)
+            if n.endswith("FE") and not n.startswith("_")
+        )
+    except ImportError:
+        pass
+
+    # Solvers (called "processes" in the BackendCapabilities schema —
+    # NGSolve does not have a Kratos-style Process registry, so the
+    # solvers are the closest analogue).
+    solver_classes = {
+        "CGSolver", "GMRESSolver", "QMRSolver", "ArnoldiSolver",
+    }
+    cap.processes = sorted(
+        n for n in dir(ngsolve) if n in solver_classes
+    )
+
+    # Preconditioners — split across top-level and ngsolve.comp.
+    precond_names = set()
+    for name in dir(ngsolve):
+        if (name.endswith("Preconditioner") or name.endswith("AMG")) \
+                and not name.startswith("_"):
+            precond_names.add(name)
+    try:
+        import ngsolve.comp as _comp
+        for name in dir(_comp):
+            if (name.endswith("Preconditioner") or name.endswith("AMG")) \
+                    and not name.startswith("_"):
+                precond_names.add(name)
+    except ImportError:
+        pass
+    if precond_names:
+        cap.other["preconditioners"] = sorted(precond_names)
+
+    # Bilinear / linear form classes.
+    form_classes = sorted(
+        n for n in dir(ngsolve)
+        if (n.endswith("BilinearForm") or n.endswith("LinearForm")
+            or n.endswith("BFI") or n.endswith("LFI")
+            or n in ("SymbolicEnergy",))
+        and not n.startswith("_")
+    )
+    if form_classes:
+        cap.other["forms"] = form_classes
+
+    # Netgen geometry / mesher.
+    netgen_kinds: list[str] = []
+    for modname, attrs in (
+        ("netgen.occ", ("OCCGeometry", "WorkPlane", "Box", "Cylinder",
+                        "Sphere", "Pnt", "Glue", "OffsetCurve")),
+        ("netgen.csg", ("CSGeometry", "OrthoBrick", "Cylinder", "Plane",
+                        "Sphere")),
+        ("netgen.geom2d", ("SplineGeometry", "MakeCircle",
+                           "MakeRectangle", "unit_square")),
+    ):
+        try:
+            _m = __import__(modname, fromlist=["__name__"])
+            for a in attrs:
+                if hasattr(_m, a):
+                    netgen_kinds.append(f"{modname}.{a}")
+        except ImportError:
+            continue
+    if netgen_kinds:
+        cap.mesh_generators = sorted(netgen_kinds)
+
+    # On-disk demos — captures the discoverable tutorial surface
+    # without needing a separate harvest pass. The tutorial walk
+    # (extracting one-line descriptions per demo file) lands in
+    # the follow-up encode pass.
+    try:
+        pkg_dir = Path(ngsolve.__file__).resolve().parent
+        demos_dir = pkg_dir / "demos"
+        if demos_dir.is_dir():
+            demos = sorted(p.name for p in demos_dir.iterdir() if p.is_dir())
+            if demos:
+                cap.other["demo_groups"] = demos
+            cap.notes.append(
+                f"demos_dir={_redact_path(demos_dir)}")
+    except Exception as e:  # pragma: no cover — defensive
+        cap.notes.append(f"demos walk failed: {type(e).__name__}: {e}")
+
+    cap.notes.append(
+        f"package_dir={_redact_path(Path(ngsolve.__file__).parent)}")
+    return cap
+
+
+# ── deal.II scanner ────────────────────────────────────────────────────
+
+
+def scan_dealii() -> BackendCapabilities:
+    """Enumerate what deal.II exposes — via header walk.
+
+    deal.II is C++ with no maintained Python bindings, so the
+    capability surface is harvested by walking the installed
+    ``include/deal.II/`` directory:
+
+      * ``include/deal.II/fe/fe_*.h`` — every finite-element class.
+        Each header declares ``class FE_<Name>`` matching the
+        filename suffix.
+      * ``include/deal.II/grid/grid_generator.h`` — every mesh
+        generator (functions in the ``GridGenerator`` namespace).
+      * ``include/deal.II/lac/solver_*.h`` — every Krylov solver.
+      * ``include/deal.II/lac/precondition*.h`` — every preconditioner
+        class.
+
+    Install root is discovered through ``DEAL_II_DIR`` / ``DEALII_ROOT``
+    with a fallback to the conda env used by the user's setup
+    (``~/miniconda3/envs/ofa-dealii``). The version is read from the
+    CMake ``deal.IIConfigVersion.cmake`` file.
+    """
+    import os
+    import re
+
+    cap = BackendCapabilities(backend="dealii")
+
+    root_candidates = [
+        os.environ.get("DEAL_II_DIR", ""),
+        os.environ.get("DEALII_ROOT", ""),
+        str(Path.home() / "miniconda3/envs/ofa-dealii"),
+    ]
+    install_root = next(
+        (Path(r) for r in root_candidates if r and Path(r).is_dir()),
+        None,
+    )
+    if install_root is None:
+        cap.notes.append(
+            "deal.II install root not found; set DEAL_II_DIR or "
+            "install into ~/miniconda3/envs/ofa-dealii")
+        return cap
+
+    inc = install_root / "include" / "deal.II"
+    if not inc.is_dir():
+        cap.notes.append(
+            f"include/deal.II not under {_redact_path(install_root)}")
+        return cap
+
+    # Version
+    ver_file = (install_root / "lib" / "cmake" / "deal.II"
+                / "deal.IIConfigVersion.cmake")
+    if ver_file.is_file():
+        m = re.search(
+            r'set\(PACKAGE_VERSION\s+"([0-9.]+)"\)',
+            ver_file.read_text())
+        if m:
+            cap.version = m.group(1)
+
+    # Element families: walk fe_*.h
+    fe_dir = inc / "fe"
+    if fe_dir.is_dir():
+        skip_substrings = (
+            "_values", "_tools", "_update", "_collection",
+            "_dgvector", "_face_q",  # face elements handled as fe_face.h
+        )
+        elements: list[str] = []
+        for header in sorted(fe_dir.glob("fe_*.h")):
+            name = header.stem
+            if name.endswith(".templates") or any(s in name for s in skip_substrings):
+                continue
+            # Read the header and pick the first `class FE_<Name>`
+            # declaration so we get the actual class name (which
+            # can differ from the filename — e.g. fe_q_dg0.h →
+            # FE_Q_DG0).
+            try:
+                text = header.read_text(errors="replace")
+            except OSError:
+                continue
+            m = re.search(r"^class\s+(FE_[A-Za-z0-9_]+)", text, re.MULTILINE)
+            if m:
+                elements.append(m.group(1))
+            else:
+                # Fallback: derive from filename.
+                elements.append("FE_" + name[3:].title().replace("_", ""))
+        # De-dup while preserving order.
+        seen = set()
+        cap.elements = [x for x in elements if not (x in seen or seen.add(x))]
+
+    # Mesh generators: GridGenerator namespace in grid_generator.h
+    gg = inc / "grid" / "grid_generator.h"
+    if gg.is_file():
+        try:
+            text = gg.read_text(errors="replace")
+        except OSError:
+            text = ""
+        # Each generator is a function declaration in the
+        # GridGenerator namespace. Functions take a Triangulation
+        # by reference as their first argument, so we anchor on
+        # that to avoid catching every void function in the header.
+        gen_names = sorted(set(re.findall(
+            r"^\s+void\s+([a-z][A-Za-z0-9_]*)\s*\([^;]*Triangulation",
+            text, re.MULTILINE,
+        )))
+        cap.mesh_generators = gen_names
+
+    # Solvers + preconditioners
+    lac = inc / "lac"
+    if lac.is_dir():
+        solver_names: list[str] = []
+        for header in sorted(lac.glob("solver_*.h")):
+            name = header.stem
+            if name.endswith(".templates"):
+                continue
+            try:
+                text = header.read_text(errors="replace")
+            except OSError:
+                continue
+            m = re.search(r"^class\s+(Solver[A-Z][A-Za-z0-9_]*)",
+                          text, re.MULTILINE)
+            if m:
+                solver_names.append(m.group(1))
+        if solver_names:
+            cap.other["solvers"] = sorted(set(solver_names))
+
+        precond_names: set[str] = set()
+        for header in sorted(lac.glob("precondition*.h")):
+            try:
+                text = header.read_text(errors="replace")
+            except OSError:
+                continue
+            for m in re.finditer(
+                r"^class\s+(Precondition[A-Z][A-Za-z0-9_]*)",
+                text, re.MULTILINE,
+            ):
+                precond_names.add(m.group(1))
+        if precond_names:
+            cap.other["preconditioners"] = sorted(precond_names)
+
+    # Constitutive laws are usually user-written in deal.II — there
+    # is no central "linear-elastic law" registry to enumerate.
+    # Note this so the catalog-vs-scan diff treats the empty list
+    # as "no information", not "no capability".
+    cap.notes.append(
+        "constitutive_laws: deal.II ships no central material/law "
+        "registry; user-written. Catalog diff should treat empty "
+        "list as 'no information'.")
+    cap.notes.append(
+        "tutorials: 97 step-* tutorials live in the upstream source "
+        "tree, not in this conda install. Tutorial harvest pending.")
+    cap.notes.append(
+        f"install_root={_redact_path(install_root)}")
+    return cap
+
+
+# ── DUNE-fem scanner ───────────────────────────────────────────────────
+
+
+def scan_dune() -> BackendCapabilities:
+    """Enumerate what DUNE-fem exposes — try Python import first,
+    fall back to source walk.
+
+    DUNE-fem is a JIT-compiled UFL-on-C++ stack with a heavy
+    pybind11 surface. The MPI / UCX setup can break the import path
+    at runtime (task #31 documents the FieldVector incompatibility);
+    the scanner therefore tries the Python introspection path first,
+    and falls back to scanning the on-disk source / build tree for
+    the same files (``_spaces.py``, ``_grids.py``, ``_schemes.py``,
+    ``_functions.py``) so we get a useful snapshot even when the
+    runtime is broken.
+
+    Capability buckets:
+      * ``element_families`` — space factory functions from
+        ``dune.fem.space`` (lagrange, dgonb, raviartThomas, ...).
+      * ``mesh_generators`` — grid factories from ``dune.grid`` +
+        ``dune.alugrid``.
+      * ``processes`` — scheme factories from ``dune.fem.scheme``.
+      * ``other['function_factories']`` — function constructors
+        from ``dune.fem.function``.
+      * ``other['models']`` — model factories from ``dune.fem.model``.
+      * ``other['storage_backends']`` — discrete-function storage
+        backends supported (numpy / fem / istl / petsc).
+    """
+    import re
+
+    cap = BackendCapabilities(backend="dune")
+
+    # ── attempt 1: Python introspection ────────────────────────
+    introspection_ok = False
+    try:
+        import dune.fem  # noqa: F401
+        import dune.fem.space as _space
+        import dune.fem.scheme as _scheme
+        import dune.fem.function as _func
+        try:
+            import dune.fem.model as _model
+        except ImportError:
+            _model = None
+        try:
+            import dune.grid as _grid
+        except ImportError:
+            _grid = None
+        try:
+            import dune.alugrid as _alu
+        except ImportError:
+            _alu = None
+    except Exception as e:
+        cap.notes.append(
+            f"dune python import failed: {type(e).__name__}: "
+            f"{str(e)[:200]}; falling back to source walk")
+    else:
+        introspection_ok = True
+        cap.version = getattr(__import__("dune.fem", fromlist=["fem"]),
+                              "__version__", "")
+        # Space factories
+        cap.element_families = sorted(
+            n for n in dir(_space)
+            if not n.startswith("_") and callable(getattr(_space, n, None))
+        )
+        # Scheme factories
+        cap.processes = sorted(
+            n for n in dir(_scheme)
+            if not n.startswith("_") and callable(getattr(_scheme, n, None))
+        )
+        # Function factories
+        func_factories = sorted(
+            n for n in dir(_func)
+            if not n.startswith("_") and callable(getattr(_func, n, None))
+        )
+        if func_factories:
+            cap.other["function_factories"] = func_factories
+        if _model is not None:
+            cap.other["models"] = sorted(
+                n for n in dir(_model)
+                if not n.startswith("_") and callable(getattr(_model, n, None))
+            )
+        # Grid generators across dune.grid and dune.alugrid
+        mesh_kinds: list[str] = []
+        for prefix, mod in (("dune.grid", _grid), ("dune.alugrid", _alu)):
+            if mod is None:
+                continue
+            for n in dir(mod):
+                if n.startswith("_") or not callable(getattr(mod, n, None)):
+                    continue
+                # Heuristic: factory names end in "Grid"
+                if "Grid" in n or n.endswith("grid"):
+                    mesh_kinds.append(f"{prefix}.{n}")
+        cap.mesh_generators = sorted(mesh_kinds)
+
+    # ── attempt 2: source walk (always runs, augments introspection
+    #              and is the only path when import fails) ─────
+    src_roots = [
+        Path.home() / "Schreibtisch/dune-src/dune-fem"
+                       "/build-cmake/python/dune",
+        Path.home() / "Schreibtisch/dune-src/dune-fem/python/dune",
+    ]
+    src_root = next((p for p in src_roots if p.is_dir()), None)
+    if src_root is None:
+        if not introspection_ok:
+            cap.notes.append(
+                "dune source tree not found at "
+                "~/Schreibtisch/dune-src/dune-fem; scanner produced "
+                "no data")
+        return cap
+
+    # Storage backends: parse _spaces.py for the `storage=` choices.
+    spaces_file = src_root / "fem" / "space" / "_spaces.py"
+    if spaces_file.is_file():
+        try:
+            text = spaces_file.read_text(errors="replace")
+        except OSError:
+            text = ""
+        # Look for the storage validation set (it has been a single
+        # source of truth across versions).
+        m = re.search(
+            r'storage[\w_]*\s*=\s*[({\[]([^)}\]]+)[)}\]]',
+            text)
+        backends: set[str] = set()
+        if m:
+            for tok in re.findall(r'"([a-z]+)"', m.group(1)):
+                if tok in ("numpy", "fem", "istl", "petsc"):
+                    backends.add(tok)
+        if backends:
+            cap.other["storage_backends"] = sorted(backends)
+
+    # If the import failed, derive the factory lists from the source
+    # files so the snapshot is still informative.
+    if not introspection_ok:
+        for kind, rel in (
+            ("element_families", "fem/space/_spaces.py"),
+            ("processes",        "fem/scheme/_schemes.py"),
+        ):
+            f = src_root / rel
+            if not f.is_file():
+                continue
+            try:
+                text = f.read_text(errors="replace")
+            except OSError:
+                continue
+            funcs = sorted(set(
+                re.findall(r"^def\s+([a-zA-Z][A-Za-z0-9_]*)\s*\(",
+                           text, re.MULTILINE)
+            ))
+            if kind == "element_families":
+                cap.element_families = funcs
+            else:
+                cap.processes = funcs
+
+        # Grid generators live in the sibling dune-grid and
+        # dune-alugrid repos, NOT under dune-fem — so the
+        # source walk above misses them. Walk up the path until
+        # we land in the dune-src root that has both siblings,
+        # rather than guess at parents[N].
+        mesh_kinds: list[str] = []
+        dune_src_root: Path | None = None
+        for parent in src_root.parents:
+            if (parent / "dune-grid").is_dir() \
+                    or (parent / "dune-alugrid").is_dir():
+                dune_src_root = parent
+                break
+        if dune_src_root is None:
+            dune_src_root = src_root.parent
+        for sibling, prefix in (
+            ("dune-grid/python/dune/grid/_grids.py", "dune.grid"),
+            ("dune-alugrid/python/dune/alugrid/_grids.py", "dune.alugrid"),
+        ):
+            f = dune_src_root / sibling
+            if not f.is_file():
+                continue
+            try:
+                text = f.read_text(errors="replace")
+            except OSError:
+                continue
+            for fn in sorted(set(
+                re.findall(r"^def\s+([a-zA-Z][A-Za-z0-9_]*)\s*\(",
+                           text, re.MULTILINE)
+            )):
+                if "Grid" in fn or fn.endswith("Grid") or fn.endswith("grid"):
+                    mesh_kinds.append(f"{prefix}.{fn}")
+        if mesh_kinds:
+            cap.mesh_generators = sorted(mesh_kinds)
+
+    cap.notes.append(
+        f"source_root={_redact_path(src_root)}; "
+        f"introspection_ok={introspection_ok}")
+    return cap
+
+
 # ── dispatch ───────────────────────────────────────────────────────────
 
 
@@ -517,7 +1017,9 @@ SCANNERS = {
     "fourc": scan_fourc,
     "skfem": scan_skfem,
     "fenics": scan_fenics,
-    # dealii, ngsolve, dune scanners land in follow-up PRs.
+    "ngsolve": scan_ngsolve,
+    "dealii": scan_dealii,
+    "dune": scan_dune,
 }
 
 
@@ -553,15 +1055,26 @@ def main():
     print(f"Scanning {len(targets)} backend(s): {', '.join(targets)}")
     results = run(targets)
 
-    # Top-level summary
+    # Top-level summary — keep ALL capability buckets so the
+    # summary actually reflects what was found. Backends populate
+    # different buckets (NGSolve/skfem use elements + element_families,
+    # 4C uses conditions + constitutive_laws, Kratos uses applications
+    # + variables, deal.II uses elements + mesh_generators + other),
+    # so a 5-column print misrepresents the scan.
     summary = {
         name: {
             "version": cap.version,
             "n_applications": len(cap.applications),
             "n_elements": len(cap.elements),
+            "n_element_families": len(cap.element_families),
             "n_conditions": len(cap.conditions),
             "n_constitutive_laws": len(cap.constitutive_laws),
             "n_variables": len(cap.variables),
+            "n_mesh_generators": len(cap.mesh_generators),
+            "n_processes": len(cap.processes),
+            "n_modelers": len(cap.modelers),
+            "other_counts": {k: len(v) for k, v in cap.other.items()
+                             if isinstance(v, list)},
             "notes": cap.notes,
         }
         for name, cap in results.items()
