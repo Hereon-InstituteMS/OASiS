@@ -44,17 +44,17 @@ def _server_params():
     """
     from mcp import StdioServerParameters
 
+    # `**os.environ` already brings every parent-process variable
+    # (including FENICS_PYTHON / DEALII_ROOT / DEAL_II_DIR /
+    # FOURC_ROOT / FOURC_BINARY when the user has set them), so no
+    # separate per-backend propagation loop is needed on top of it.
+    # We then layer the test-specific PYTHONPATH and PYVISTA_OFF_SCREEN
+    # overrides on top so the spawned server runs without a display.
     env = {
         **os.environ,
         "PYTHONPATH": str(REPO_ROOT / "src"),
         "PYVISTA_OFF_SCREEN": "true",
     }
-    # Best-effort propagation of per-backend env so the spawned server
-    # can actually run the backends; pytest fixtures or CI can override.
-    for k in ("FENICS_PYTHON", "DEALII_ROOT", "DEAL_II_DIR",
-              "FOURC_ROOT", "FOURC_BINARY"):
-        if k in os.environ:
-            env[k] = os.environ[k]
     return StdioServerParameters(
         command=sys.executable,
         args=["-m", "server"],
