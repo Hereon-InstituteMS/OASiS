@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 13,
-    "passed": 13,
+    "n_fixtures": 14,
+    "passed": 14,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -69,6 +69,22 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Caught exception of type: N6dealii18StandardExceptions10ExcMessageE\nwhat(): \n--------------------------------------------------------\nAn error occurred in line <1993> of file </home/conda/feedstock_root/build_artifacts/dealii_1582272985224/work/source/grid/grid_in.cc> in function\n    void dealii::GridIn<dim, spacedim>::read_msh(std::istream&) [with int dim = 2; int spacedim = 2; std::istream = std::basic_istream<char>]\nThe violated condition was: \n    cell_type != 2\nAdditional information: \n    Found triangles while reading a file in gmsh format. deal.II does not support triangles\n--------------------------------------------------------\n\n"
+    },
+    "dealii::poisson::3": {
+      "key": "dealii::poisson::3",
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 3,
+      "fixture_id": "hanging_nodes_no_condense",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "SolverControl",
+        "iterative method"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "SolverControl: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/Schreibtisch/dealii-debug/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 20. The residual in the last step was 1.61538e-05.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase "
     },
     "dealii::poisson::1": {
       "key": "dealii::poisson::1",

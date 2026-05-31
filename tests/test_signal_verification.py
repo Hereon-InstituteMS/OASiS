@@ -62,17 +62,9 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # `passed` means one Signal: clause has been confirmed to
     # actually appear in real captured output. Floor grows as
     # more fixtures are written.
-    MIN_TIER2_PASSED = 4  # deal.II pitfalls with named (catalog-indexed)
-                          # Tier-2 fixtures. Synthetic-index fixtures
-                          # (pitfall_index >= 90 — cross-cutting Signal
-                          # families) verify Signal FAMILIES but are
-                          # tracked separately by the runner totals.
-
-    # Cross-cutting tier-2 totals (Signal-family verification) —
-    # includes fixtures with synthetic pitfall_index >= 90.
-    # Reported by the runner under scripts/scan_results/
-    # tier2_results.json["summary"]["passed"].
-    MIN_TIER2_RUNNER_PASSED = 13
+    MIN_TIER2_PASSED = 5  # deal.II pitfalls with named (catalog-indexed)
+                          # Tier-2 fixtures.
+    MIN_TIER2_RUNNER_PASSED = 14  # cross-cutting (incl. synthetic indices)
 
     def setUp(self):
         from verify_signal_clauses import verify_backend
