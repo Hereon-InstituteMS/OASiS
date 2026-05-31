@@ -213,6 +213,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # Boundary tagging / projection
             "subdomains", "boundaries", "facets",
             "find_dofs", "get_dofs", "project",
+            # scipy interop names that appear in skfem stack traces
+            "spsolve", "factorized", "scipy.sparse",
+            "scipy.sparse.linalg", "splu", "csc_matrix",
+            "csr_matrix",
+            # skfem-namespaced helpers
+            "skfem.models.poisson", "skfem.models",
+            "skfem.condense", "skfem.solve", "skfem.asm",
+            # Norms / output names that appear in user code
+            "linfty_norm", "l2_norm",
             # Common error classes / attribute names
             "ValueError", "TypeError", "shape", "ndof", "interpolate",
         })

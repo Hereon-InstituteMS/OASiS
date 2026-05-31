@@ -394,11 +394,11 @@
       "notes": [],
       "captured_head": "ElementVector(ElementQuad1()) stores DoFs interleaved.\n  n_dofs = 50, n_nodes = 25\n  ux_correct (via nodal_dofs[0])[:4] = [0. 1. 2. 3.]\n  uy_correct (via nodal_dofs[1])[:4] = [  0. 100. 200. 300.]\n  ux_wrong   (u.reshape(2,-1)[0])[:4] = [  0.   0.   1. 100.]\n  uy_wrong   (u.reshape(2,-1)[1])[:4] = [1200.   13. 1300.   14.]\nComponents extracted via reshape(2,-1) and nodal_dofs do not match \u2014 the reshape path is wrong.\n"
     },
-    "skfem::heat::93": {
-      "key": "skfem::heat::93",
+    "skfem::heat::3": {
+      "key": "skfem::heat::3",
       "backend": "skfem",
       "physics": "heat",
-      "pitfall_index": 93,
+      "pitfall_index": 3,
       "fixture_id": "forward_euler_instability",
       "mode": "python",
       "status": "passed",

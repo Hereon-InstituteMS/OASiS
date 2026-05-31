@@ -1,18 +1,18 @@
 {
-  "backend": "ngsolve",
+  "backend": "skfem",
   "totals": {
-    "n_pitfalls": 123,
-    "with_category_prefix": 10,
-    "with_signal_clause": 10,
-    "tier0_passed": 8,
-    "tier0_code_symbol_only": 4,
-    "tier0_with_domain_decoration": 4,
-    "tier0_domain_names_only": 0,
-    "tier1_passed": 10,
-    "tier0_and_1_passed": 8,
-    "tier2_passed": 2,
-    "tier2_attempted": 2,
-    "n_falsifiable": 123,
+    "n_pitfalls": 96,
+    "with_category_prefix": 9,
+    "with_signal_clause": 9,
+    "tier0_passed": 3,
+    "tier0_code_symbol_only": 2,
+    "tier0_with_domain_decoration": 1,
+    "tier0_domain_names_only": 2,
+    "tier1_passed": 6,
+    "tier0_and_1_passed": 3,
+    "tier2_passed": 1,
+    "tier2_attempted": 1,
+    "n_falsifiable": 96,
     "n_unfalsifiable": 0,
     "n_cheap_falsifiable": 0,
     "n_medium_falsifiable": 0,
@@ -23,7 +23,7 @@
   },
   "results": [
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -59,7 +59,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -77,7 +77,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -95,7 +95,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -113,7 +113,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -131,7 +131,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -149,7 +149,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -167,7 +167,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -185,560 +185,713 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "linear_elasticity",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "heat",
       "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "heat",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "heat",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "heat",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "stokes",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "stokes",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "stokes",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "stokes",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "stokes",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "stokes",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "navier_stokes",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "navier_stokes",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "navier_stokes",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "navier_stokes",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "maxwell",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "without nograds, BilinearForm.Assemble() succeeds but the direct factorisation reports a near-singular matrix (infinite condition number); ArnoldiSolver / Inverse raises a 'matrix is singular' or 'pivot too small' NgException because the gradient kernel of HCurl is in the null space of curl-curl.",
+      "pitfall_category": "Syntax",
+      "signal_text": "scipy.sparse.linalg.spsolve raises 'singular matrix' (the stiffness matrix has the Dirichlet rows still entangled), or it returns without raising and the resulting u violates the boundary condition (max |u - u_D| on the boundary is O(1) instead of O(eps)).",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "ArnoldiSolver",
-        "Assemble",
-        "BilinearForm",
-        "HCurl",
-        "Inverse",
-        "NgException",
-        "curl"
+        "spsolve"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "ArnoldiSolver",
-        "Assemble",
-        "BilinearForm",
-        "HCurl",
-        "Inverse",
-        "NgException",
-        "curl"
+        "spsolve"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "quoted-error-fragment",
         "raise",
-        "report"
+        "returns"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
+      "backend": "skfem",
+      "physics": "heat",
       "pitfall_index": 1,
       "pitfall_category": "Numerical",
-      "signal_text": "eigenvalues computed with nograds=True differ from analytic cavity eigenvalues (k^2 = (m*pi/Lx)^2 + (n*pi/Ly)^2 + (p*pi/Lz)^2) by 1-3% AND the sequence approaches from below; without nograds the same eigenvalues converge from above and within 0.1%.",
+      "signal_text": "solution decays to zero in one step regardless of dt and source term.",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "skfem",
+      "physics": "heat",
+      "pitfall_index": 2,
+      "pitfall_category": "Integration",
+      "signal_text": "solving each region in isolation gives interface temperature jumps O(1) instead of continuous (max(T_fluid - T_solid) on interface DOFs is on the order of the temperature difference, not 0).",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "skfem",
+      "physics": "heat",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "with dt above the CFL bound, linfty_norm(u_new) grows exponentially across time steps and the solution diverges to \u00b1inf within ~10 steps. Switch to backward Euler or Crank-Nicolson for unconditional stability.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "linfty_norm"
+      ],
+      "tier0_domain_names_matched": [
+        "Euler"
+      ],
+      "tier0_entities_matched": [
+        "Euler",
+        "linfty_norm"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "above",
-        "below",
-        "converge",
-        "numerical-comparison",
-        "value"
+        "diverge",
+        "grows"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
-      "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed max(|B|) is on the order of the prescribed Dirichlet value of A directly (no spatial derivative taken).",
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "value"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "stokes",
       "pitfall_index": 3,
-      "pitfall_category": "Syntax",
-      "signal_text": "GridFunction.vec[i] is a real number even though the BFI carried a 1j coefficient; .imag attribute is missing on FlatVector. NgException: 'complex values cannot be assigned to a real FESpace' when the form's coefficients are explicit complex.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FESpace",
-        "FlatVector",
-        "GridFunction",
-        "NgException"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "FESpace",
-        "FlatVector",
-        "GridFunction",
-        "NgException"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "missing",
-        "quoted-error-fragment",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
+      "backend": "skfem",
+      "physics": "stokes",
       "pitfall_index": 4,
-      "pitfall_category": "Physics",
-      "signal_text": "in 2D, fes.dim == 1 (scalar) instead of 2 (vector) on an HCurl space, and BilinearForm += curl(u)*curl(v)*dx assembles a scalar Helmholtz operator without warning.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "BilinearForm",
-        "HCurl",
-        "curl"
-      ],
-      "tier0_domain_names_matched": [
-        "Helmholtz"
-      ],
-      "tier0_entities_matched": [
-        "BilinearForm",
-        "HCurl",
-        "Helmholtz",
-        "curl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "warn"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "maxwell",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "ArnoldiSolver with shift=0.0 returns eigenvalues near 0 (gradient kernel) and misses the physical spectrum; eigenvalue residuals are O(1) instead of 1e-8 typical convergence.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ArnoldiSolver"
-      ],
-      "tier0_domain_names_matched": [
-        "convergence"
-      ],
-      "tier0_entities_matched": [
-        "ArnoldiSolver",
-        "convergence"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "returns",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "maxwell",
-      "pitfall_index": 6,
-      "pitfall_category": "API",
-      "signal_text": "numpy.array(ArnoldiSolver result) has dtype complex128; comparing to analytic real eigenvalues without .real raises TypeError or produces nan from complex>real.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ArnoldiSolver"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ArnoldiSolver"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "nan",
-        "raise",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "stokes",
       "pitfall_index": 7,
-      "pitfall_category": "Syntax",
-      "signal_text": "NgException with literal text 'curl' and 'H1HighOrderFESpace' is the BFI compile-time error a beginner hits when copying code between scalar (Poisson) and vector (Maxwell) formulations.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "H1HighOrderFESpace",
-        "NgException",
-        "curl"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "eigenvalue",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "eigenvalue",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "eigenvalue",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "eigenvalue",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "mixed_poisson",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "mixed_poisson",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "mixed_poisson",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "convection_diffusion",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "convection_diffusion",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "convection_diffusion",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "convection_diffusion",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "biharmonic",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "biharmonic",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "biharmonic",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "biharmonic",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "nonlinear",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "nonlinear",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "nonlinear",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "nonlinear",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "nonlinear",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "nonlinear",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "heat_transient",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "manufactured-solution convergence study in dt gives slope ~1 (linear) on a log-log plot instead of 2 (Crank-Nicolson).",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [
-        "Maxwell",
-        "Poisson"
+        "convergence"
       ],
       "tier0_entities_matched": [
-        "H1HighOrderFESpace",
-        "Maxwell",
-        "NgException",
-        "Poisson",
-        "curl"
+        "convergence"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
+        "converge"
       ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
-      "pitfall_index": 8,
-      "pitfall_category": "Syntax",
-      "signal_text": "NgException emitted by SymbolicBFI about 'grad' / 'HCurl' / 'scalar-valued'; the user gets an immediate compile-time error when trying to reuse the Poisson assembly on a Maxwell space.",
+      "backend": "skfem",
+      "physics": "heat_transient",
+      "pitfall_index": 1,
+      "pitfall_category": "Numerical",
+      "signal_text": "per-step wall time is dominated by factorisation, scaling as N^1.5 instead of N as the mesh is refined.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "HCurl",
-        "NgException",
-        "SymbolicBFI",
-        "grad"
+        "refined"
       ],
-      "tier0_domain_names_matched": [
-        "Maxwell",
-        "Poisson"
-      ],
+      "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "HCurl",
-        "Maxwell",
-        "NgException",
-        "Poisson",
-        "SymbolicBFI",
-        "grad"
+        "refined"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "value"
+        "wall time"
       ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "ngsolve",
-      "physics": "maxwell",
-      "pitfall_index": 9,
+      "backend": "skfem",
+      "physics": "heat_transient",
+      "pitfall_index": 2,
+      "pitfall_category": "Numerical",
+      "signal_text": "convergence-in-dt slope is 2 with Crank-Nicolson; mixing up the (1-theta) on RHS degrades to 1.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [
+        "convergence"
+      ],
+      "tier0_entities_matched": [
+        "convergence"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "skfem",
+      "physics": "heat_transient",
+      "pitfall_index": 3,
       "pitfall_category": "API",
-      "signal_text": "NgException about SymbolicLFI requiring 'scalar-valued' integrand; the same JJ vector that works on HCurl test functions raises immediately on H1 test functions.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "HCurl",
-        "NgException",
-        "SymbolicLFI"
-      ],
+      "signal_text": "user-implemented mass matrix M_assemble takes 10-100x longer than skfem.models.poisson.mass.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "HCurl",
-        "NgException",
-        "SymbolicLFI"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "raise",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "ngsolve",
-      "physics": "helmholtz",
+      "backend": "skfem",
+      "physics": "heat_transient",
+      "pitfall_index": 4,
+      "pitfall_category": "Syntax",
+      "signal_text": "time-evolving boundary temperature does not appear in the solution \u2014 max(T - T_D) at boundary DOFs is O(1) instead of 0 because the same x= argument was reused frozen.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "skfem",
+      "physics": "navier_stokes",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -755,8 +908,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "helmholtz",
+      "backend": "skfem",
+      "physics": "navier_stokes",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -773,8 +926,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "helmholtz",
+      "backend": "skfem",
+      "physics": "navier_stokes",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -791,8 +944,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "helmholtz",
+      "backend": "skfem",
+      "physics": "navier_stokes",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -809,8 +962,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "helmholtz",
+      "backend": "skfem",
+      "physics": "navier_stokes",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -827,7 +980,43 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
+      "physics": "navier_stokes",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "navier_stokes",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
       "physics": "hyperelasticity",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -845,7 +1034,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "hyperelasticity",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -863,7 +1052,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "hyperelasticity",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -881,7 +1070,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "hyperelasticity",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -899,7 +1088,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "hyperelasticity",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -917,386 +1106,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "eigenvalue",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "eigenvalue",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "eigenvalue",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "eigenvalue",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "eigenvalue",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "convection_diffusion",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "convection_diffusion",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "convection_diffusion",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "convection_diffusion",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "convection_diffusion",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "mixed_poisson",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "mixed_poisson",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "mixed_poisson",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "thermal_structural",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "thermal_structural",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "thermal_structural",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "surface_pde",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "surface_pde",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "surface_pde",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "surface_pde",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "surface_pde",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "surface_pde",
+      "backend": "skfem",
+      "physics": "hyperelasticity",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1313,116 +1124,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "plasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "plasticity",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "plasticity",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "plasticity",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "plasticity",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "plasticity",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "plasticity",
+      "backend": "skfem",
+      "physics": "hyperelasticity",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1439,7 +1142,43 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
+      "physics": "hyperelasticity",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "hyperelasticity",
+      "pitfall_index": 8,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -1457,7 +1196,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -1475,7 +1214,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -1493,7 +1232,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -1511,7 +1250,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -1529,7 +1268,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
@@ -1547,7 +1286,7 @@
       ]
     },
     {
-      "backend": "ngsolve",
+      "backend": "skfem",
       "physics": "dg_methods",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
@@ -1565,8 +1304,44 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "dg_methods",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "dg_methods",
+      "pitfall_index": 8,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1583,8 +1358,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1601,8 +1376,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1619,8 +1394,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1637,8 +1412,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1655,8 +1430,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1673,8 +1448,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "contact",
+      "backend": "skfem",
+      "physics": "time_dependent",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1691,8 +1466,26 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "time_dependent",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1709,8 +1502,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1727,8 +1520,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1745,8 +1538,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1763,8 +1556,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1781,8 +1574,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1799,8 +1592,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "time_dependent_ns",
+      "backend": "skfem",
+      "physics": "helmholtz",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1817,8 +1610,26 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "helmholtz",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1835,8 +1646,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1853,8 +1664,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1871,8 +1682,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1889,8 +1700,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1907,8 +1718,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1925,8 +1736,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "mhd",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1943,386 +1754,8 @@
       ]
     },
     {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "hdivdiv",
-      "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "nonlinear_elasticity",
-      "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
-      "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "ngsolve",
-      "physics": "phase_field",
+      "backend": "skfem",
+      "physics": "reaction_diffusion",
       "pitfall_index": 7,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",

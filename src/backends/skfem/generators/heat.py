@@ -137,9 +137,40 @@ KNOWLEDGE = {
         "description": "Heat conduction (steady/transient) — examples 19, 25, 28, 39, 50",
         "solver": "Direct sparse (scipy), or time-stepping for transient",
         "pitfalls": [
-            "Non-homogeneous Dirichlet: condense(K, f, x=boundary_values, D=boundary_dofs)",
-            "Transient: M*du/dt + K*u = f -> backward Euler: (M + dt*K)*u_new = M*u_old + dt*f",
-            "Conjugate heat transfer (example 28): couple fluid and solid subdomains",
+            "[Syntax] Non-homogeneous Dirichlet must be applied "
+            "via skfem.condense(K, f, x=boundary_values, "
+            "D=boundary_dofs). Calling skfem.solve(K, f) directly "
+            "with un-condensed K leaves the boundary DOF rows "
+            "unconstrained. Signal: scipy.sparse.linalg.spsolve "
+            "raises 'singular matrix' (the stiffness matrix has "
+            "the Dirichlet rows still entangled), or it returns "
+            "without raising and the resulting u violates the "
+            "boundary condition (max |u - u_D| on the boundary "
+            "is O(1) instead of O(eps)).",
+            "[Numerical] Transient heat: M*du/dt + K*u = f → "
+            "backward Euler is (M + dt*K)*u_new = M*u_old + dt*f. "
+            "Forgetting the M*u_old term (using K*u_old) is the "
+            "classic 'all variants of theta-method confused' bug. "
+            "Signal: solution decays to zero in one step "
+            "regardless of dt and source term.",
+            "[Integration] Conjugate heat transfer (example 28) "
+            "couples fluid and solid subdomains with a shared "
+            "interface — use skfem.subdomains and matching "
+            "Basis on each. Signal: solving each region in "
+            "isolation gives interface temperature jumps O(1) "
+            "instead of continuous (max(T_fluid - T_solid) on "
+            "interface DOFs is on the order of the temperature "
+            "difference, not 0).",
+            "[Numerical] Forward Euler (theta=0) for transient "
+            "heat: u_new = u_old - dt*M^{-1}*K*u_old + dt*M^{-1}*f. "
+            "Stability requires dt < 2/lambda_max(M^{-1}K) ~ "
+            "C*h^2/alpha (CFL condition); coarse mesh + large "
+            "diffusivity makes this dt tiny. Signal: with dt "
+            "above the CFL bound, linfty_norm(u_new) grows "
+            "exponentially across time steps and the solution "
+            "diverges to ±inf within ~10 steps. Switch to "
+            "backward Euler or Crank-Nicolson for unconditional "
+            "stability.",
         ],
     },
     "heat_transient": {
@@ -147,11 +178,34 @@ KNOWLEDGE = {
         "solver": "Backward Euler: (M + dt*K)*u_new = M*u_old + dt*f, factorized for efficiency",
         "elements": "ElementQuad1, ElementTriP1 (any standard H1 element)",
         "pitfalls": [
-            "Backward Euler: unconditionally stable, first-order accurate in time",
-            "Factor system matrix once with factorized() and reuse each time step",
-            "Crank-Nicolson (theta=0.5): (M + 0.5*dt*K)*u_new = (M - 0.5*dt*K)*u_old + dt*f",
-            "Mass matrix: use mass from skfem.models.poisson",
-            "For non-homogeneous BCs changing in time: condense at each step",
+            "[Numerical] Backward Euler is unconditionally stable "
+            "but only first-order accurate in time. Signal: "
+            "manufactured-solution convergence study in dt gives "
+            "slope ~1 (linear) on a log-log plot instead of 2 "
+            "(Crank-Nicolson).",
+            "[Numerical] Factor the system matrix once with "
+            "scipy.sparse.linalg.factorized() and reuse across "
+            "time steps. Re-factoring every step costs O(N^1.5) "
+            "vs O(N) for back-substitution. Signal: per-step "
+            "wall time is dominated by factorisation, scaling "
+            "as N^1.5 instead of N as the mesh is refined.",
+            "[Numerical] Crank-Nicolson (theta=0.5): "
+            "(M + 0.5*dt*K)*u_new = (M - 0.5*dt*K)*u_old + dt*f. "
+            "Symmetric formula required for second-order accuracy. "
+            "Signal: convergence-in-dt slope is 2 with "
+            "Crank-Nicolson; mixing up the (1-theta) on RHS "
+            "degrades to 1.",
+            "[API] Mass matrix M comes from "
+            "skfem.models.poisson.mass — re-implementing "
+            "u*v as a BilinearForm works but is slow. Signal: "
+            "user-implemented mass matrix M_assemble takes "
+            "10-100x longer than skfem.models.poisson.mass.",
+            "[Syntax] For non-homogeneous BCs that change in "
+            "time: re-condense at each step or pre-compute the "
+            "lifting once. Signal: time-evolving boundary "
+            "temperature does not appear in the solution — "
+            "max(T - T_D) at boundary DOFs is O(1) instead of "
+            "0 because the same x= argument was reused frozen.",
         ],
     },
 }
