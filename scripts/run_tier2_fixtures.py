@@ -51,7 +51,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
-DEFAULT_DEALII_PREFIX = Path.home() / "miniconda3" / "envs" / "ofa-dealii"
+# Prefer the Debug-built deal.II at ~/Schreibtisch/dealii-debug
+# (Assert macros enabled — unlocks the Assert-gated Signal families
+# like ExcDimensionMismatch). Falls back to the conda Release install
+# (~/miniconda3/envs/ofa-dealii) which leaves Assert as a no-op.
+_DEBUG_PREFIX = Path.home() / "Schreibtisch" / "dealii-debug"
+_RELEASE_PREFIX = Path.home() / "miniconda3" / "envs" / "ofa-dealii"
+DEFAULT_DEALII_PREFIX = (
+    _DEBUG_PREFIX if (_DEBUG_PREFIX / "lib" / "libdeal_II.g.so").is_file()
+    else _RELEASE_PREFIX
+)
 
 
 @dataclass
@@ -114,6 +123,20 @@ def _eval_fixture(fixture_dir: Path,
     if isinstance(extra_env, dict):
         for k, v in extra_env.items():
             env[str(k)] = str(v)
+
+    # Fixture metadata can flag that it requires the Debug-built
+    # deal.II — without it, Assert() macros are compiled out and
+    # the expected exception never fires.
+    requires_debug = bool(meta.get("requires_debug", False))
+    has_debug_lib = (_DEBUG_PREFIX / "lib" / "libdeal_II.g.so").is_file()
+    if requires_debug and not has_debug_lib and backend == "dealii":
+        result.status = "skipped"
+        result.notes.append(
+            "fixture requires Debug-built deal.II at "
+            "~/Schreibtisch/dealii-debug (Assert macros enabled); "
+            "current install is Release-only — skip until rebuilt "
+            "(task #30)")
+        return result
 
     if mode == "compile_only" and backend == "dealii":
         prefix = Path(env.get("DEAL_II_DIR",
@@ -302,7 +325,11 @@ def _eval_fixture(fixture_dir: Path,
                 "fail at run-time matching the Signal")
             result.captured_head = out[:800]
             return result
-        # Run the executable.
+        # Run the executable. Force the conda env's lib dir to
+        # the front of LD_LIBRARY_PATH so the MKL components
+        # match — without this, base conda's MKL gets loaded
+        # alongside the env-built deal.II and dlsym fails
+        # finding mkl_blas_dgemm.
         exe = build_dir / "prog"
         if not exe.is_file():
             result.status = "failed"
@@ -311,8 +338,15 @@ def _eval_fixture(fixture_dir: Path,
                 "executable")
             result.captured_head = out[:800]
             return result
+        run_env = dict(env)
+        env_lib = (Path.home() / "miniconda3" / "envs"
+                   / "ofa-dealii" / "lib")
+        debug_lib = prefix / "lib"
+        ld_paths = [str(debug_lib), str(env_lib),
+                    run_env.get("LD_LIBRARY_PATH", "")]
+        run_env["LD_LIBRARY_PATH"] = ":".join(p for p in ld_paths if p)
         rc, out = _run([str(exe)], cwd=fixture_dir,
-                       env=env, timeout=60)
+                       env=run_env, timeout=60)
         # Combine build + run output; the Signal may appear in
         # either. (Build-time warnings sometimes carry the
         # Signal text — e.g. deprecation warnings.)

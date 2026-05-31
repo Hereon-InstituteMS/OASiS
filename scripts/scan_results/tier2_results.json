@@ -1,10 +1,10 @@
 {
   "summary": {
-    "n_fixtures": 10,
-    "passed": 10,
+    "n_fixtures": 13,
+    "passed": 12,
     "failed": 0,
     "harness_pending": 0,
-    "skipped": 0
+    "skipped": 1
   },
   "results": {
     "dealii::poisson::0": {
@@ -22,6 +22,36 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "DoFHandler::n_dofs() = 4\n(expected 4 for un-refined FE_Q(1) on a single hyper_cube cell)\n"
+    },
+    "dealii::linear_elasticity::91": {
+      "key": "dealii::linear_elasticity::91",
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 91,
+      "fixture_id": "excdimensionmismatch_vmult",
+      "mode": "compile_and_run",
+      "status": "skipped",
+      "expect_matched": [],
+      "forbid_violated": [],
+      "notes": [
+        "fixture requires Debug-built deal.II at ~/Schreibtisch/dealii-debug (Assert macros enabled); current install is Release-only \u2014 skip until rebuilt (task #30)"
+      ],
+      "captured_head": ""
+    },
+    "dealii::linear_elasticity::92": {
+      "key": "dealii::linear_elasticity::92",
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 92,
+      "fixture_id": "grid_in_malformed_format",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "GridIn"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "GridIn raised: \n--------------------------------------------------------\nAn error occurred in line <1448> of file </home/conda/feedstock_root/build_artifacts/dealii_1582272985224/work/source/grid/grid_in.cc> in function\n    void dealii::GridIn<dim, spacedim>::read_msh(std::istream&) [with int dim = 2; int spacedim = 2; std::istream = std::basic_istream<char>]\nThe violated condition was: \n    line == \"$EndMeshFormat\"\nAdditional information: \n    The string <$MeshFormat> is not recognized at the present position of a Gmsh Mesh file.\n--------------------------------------------------------\n\n"
     },
     "dealii::linear_elasticity::4": {
       "key": "dealii::linear_elasticity::4",
@@ -167,6 +197,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "ElementVector(ElementQuad1()) stores DoFs interleaved.\n  n_dofs = 50, n_nodes = 25\n  ux_correct (via nodal_dofs[0])[:4] = [0. 1. 2. 3.]\n  uy_correct (via nodal_dofs[1])[:4] = [  0. 100. 200. 300.]\n  ux_wrong   (u.reshape(2,-1)[0])[:4] = [  0.   0.   1. 100.]\n  uy_wrong   (u.reshape(2,-1)[1])[:4] = [1200.   13. 1300.   14.]\nComponents extracted via reshape(2,-1) and nodal_dofs do not match \u2014 the reshape path is wrong.\n"
+    },
+    "skfem::poisson::94": {
+      "key": "skfem::poisson::94",
+      "backend": "skfem",
+      "physics": "poisson",
+      "pitfall_index": 94,
+      "fixture_id": "missing_condense_singular",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "singular",
+        "condense",
+        "magnitude"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "|u_correct|_max = 5.000e-01\n|u_wrong|_max   = 6.434e+14\nMissing condense() yields singular K; solve returns values orders of magnitude larger than the correctly condensed solution \u2014 wrong-by-magnitude signature confirmed.\n"
     }
   }
 }
