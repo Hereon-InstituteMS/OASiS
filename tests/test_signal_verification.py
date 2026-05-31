@@ -183,6 +183,65 @@ class TestDealiiSignalFloor(unittest.TestCase):
             f"does — investigate before lowering the floor.")
 
 
+class TestDocumentationReachability(unittest.TestCase):
+    """deep_knowledge.py entries with pitfall lists must either
+    correspond to a physics in the backend's supported_physics()
+    OR be explicitly tagged as documentation-only.
+
+    Quantified 2026-06-01: fenics has 13 orphaned doc entries
+    (maxwell, helmholtz, fracture, complex_valued, ...) — the
+    deep_knowledge.py text exists and the post-PR-refactor
+    workflows.py tools route through it, but
+    prepare_simulation(solver='fenics', physics='X') returns
+    'physics not supported' because there is no generator.
+
+    This floor caps the orphan count at the current value so a
+    future commit cannot add a new physics to deep_knowledge.py
+    without also adding the generator (or explicitly accepting
+    the increase by raising the cap).
+    """
+
+    # Current orphan counts measured 2026-06-01. Adjust DOWNWARD
+    # as generators are added; an UPWARD adjustment means a new
+    # orphan was introduced — pause and add the generator or
+    # explicitly justify the increase.
+    MAX_ORPHANS = {
+        "fenics": 13,
+        "dealii": 3,
+        "fourc": 2,
+    }
+
+    def test_orphaned_knowledge_does_not_grow(self):
+        import importlib
+        from core.registry import load_all_backends, get_backend
+        load_all_backends()
+        dk = importlib.import_module("tools.deep_knowledge")
+        catalogs = {
+            "fenics": dk._FENICS_KNOWLEDGE,
+            "dealii": dk._DEALII_KNOWLEDGE,
+            "fourc": dk._4C_KNOWLEDGE,
+        }
+        for be, cat in catalogs.items():
+            with self.subTest(backend=be):
+                b = get_backend(be)
+                if b is None:
+                    continue
+                supported = {p.name for p in b.supported_physics()}
+                documented = {
+                    k for k, v in cat.items()
+                    if isinstance(v, dict) and "pitfalls" in v}
+                orphans = documented - supported
+                cap = self.MAX_ORPHANS.get(be, 0)
+                self.assertLessEqual(
+                    len(orphans), cap,
+                    f"{be}: {len(orphans)} orphaned doc entries "
+                    f"(was {cap}) — {sorted(orphans)}. A new "
+                    f"physics was added to deep_knowledge.py "
+                    f"without an accompanying generator. Either "
+                    f"add the generator, or raise the cap with "
+                    f"explicit justification.")
+
+
 class TestSignalParseDiscipline(unittest.TestCase):
     """Every pitfall whose text starts with a [Category] prefix
     must also be parseable into a Signal: clause.
