@@ -630,7 +630,7 @@
     ]
   },
   "notes": [
-    "source_root=/home/hermann/Schreibtisch/4C-src/4C",
+    "source_root=~/Schreibtisch/4C-src/4C",
     "materials_source=src/global_legacy_module/4C_global_legacy_module_validmaterials.cpp"
   ]
 }

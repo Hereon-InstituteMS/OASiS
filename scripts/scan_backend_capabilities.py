@@ -23,9 +23,15 @@ Usage:
 
 This is the first foundation of the multi-week "scan every backend's
 physics / modules / capabilities and encode the gaps into the MCP"
-pipeline.  This PR ships the Kratos scanner; subsequent PRs add the
-4C / FEniCSx / scikit-fem / NGSolve / deal.II / DUNE-fem scanners
-the same way.
+pipeline.  As of this PR the Kratos, 4C, scikit-fem and FEniCSx
+scanners are wired in; NGSolve / deal.II / DUNE-fem follow in later
+PRs.
+
+Important: run via `./.venv/bin/python` (or `source .venv/bin/activate`
+first) so the in-process scanners can import `KratosMultiphysics` /
+`skfem`.  The FEniCSx scanner internally dispatches to its own
+conda env's python via `FENICS_PYTHON`, so it works regardless of
+the outer interpreter.
 """
 
 from __future__ import annotations
@@ -38,6 +44,23 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCAN_RESULTS = REPO_ROOT / "scripts" / "scan_results"
+
+
+def _redact_path(p: Path | str) -> str:
+    """Replace the user's home directory with `~` and strip the repo
+    root so committed snapshots do not embed machine-specific
+    absolute paths (which leak usernames into the repo and produce
+    noisy diffs across developers / CI).
+    """
+    s = str(p)
+    home = str(Path.home())
+    if s.startswith(home):
+        s = "~" + s[len(home):]
+    repo = str(REPO_ROOT)
+    repo_home = "~" + repo[len(home):] if repo.startswith(home) else repo
+    if s.startswith(repo_home):
+        s = "<repo>" + s[len(repo_home):]
+    return s
 
 
 # ── data model ─────────────────────────────────────────────────────────
@@ -93,17 +116,21 @@ def scan_kratos() -> BackendCapabilities:
         Modelers, Stages, OutputProcesses.  Walked via
         `Registry.HasItem(path)` + `Registry.NumberOfItems(path)`.
 
-      * `KM.KratosGlobals.HasConstitutiveLaw(name)` — point query;
-        cannot enumerate directly, only verify presence.  For the
-        scan we keep a curated probe list of constitutive-law names
-        the MCP catalog mentions (extracted at runtime from the
-        catalog) and report which are actually registered.
+      * Constitutive laws — `KM.KratosGlobals.HasConstitutiveLaw(name)`
+        only answers point queries, never enumerates.  As a
+        best-effort proxy we filter `dir(<application_module>)` for
+        names ending in `Law` per imported application, and emit the
+        result as `App::LawName` strings.  A future improvement
+        would correlate the proxy list against the C++ Registry once
+        Kratos exposes it through Python.
 
-    Element / Condition class names are not currently enumerable
-    from Python; we record the per-application module's
-    `dir(<app>)` filtered to names ending in `Element` or
-    `Condition` as a best-effort approximation.
+    Element / Condition class names are similarly approximated by
+    filtering `dir(<application_module>)` for `*Element` / `*Condition`
+    suffixes — the C++-registered class list is not exposed through
+    Python, so this dir-walk is the closest stand-in available.
     """
+    import re
+
     cap = BackendCapabilities(backend="kratos")
 
     try:
@@ -112,22 +139,34 @@ def scan_kratos() -> BackendCapabilities:
         cap.notes.append(f"KratosMultiphysics not importable: {e}")
         return cap
 
-    cap.version = str(KM.KratosGlobals.Kernel.Version())
+    # Kratos's Kernel.Version() returns a string like
+    # `10.4."2"--0-Release-x86_64` with embedded literal quote characters
+    # around the patch component.  Strip those so downstream consumers
+    # do JSON serialisation / semver parsing on a clean version string.
+    cap.version = str(KM.KratosGlobals.Kernel.Version()).replace('"', "")
 
-    # ── 1. installed applications
-    # Walk the package directory; an entry is an application if its
-    # subdirectory contains an __init__.py (i.e. it is a Python package
-    # in its own right) AND we can import it without error.
+    # ── 1. installed applications.  Two layouts are supported:
+    #   (a) `KratosMultiphysics/<X>Application/__init__.py` — pip
+    #       wheels typically ship apps as proper sub-packages.
+    #   (b) `KratosMultiphysics/<X>Application*.so` —  some
+    #       installations ship apps as top-level extension modules
+    #       without a Python wrapper.
+    # Try both; either match counts as a candidate.  Validate by
+    # actually importing — only successful imports go into
+    # `cap.applications`; failures are recorded separately.
     kpkg = Path(KM.__file__).parent
-    candidate_apps = sorted(
-        p.name for p in kpkg.iterdir()
-        if p.is_dir()
-        and p.name.endswith("Application")
-        and (p / "__init__.py").exists()
-    )
+    candidate_apps: set[str] = set()
+    for p in kpkg.iterdir():
+        if p.is_dir() and p.name.endswith("Application") and (p / "__init__.py").exists():
+            candidate_apps.add(p.name)
+        # Match e.g. StructuralMechanicsApplication.cpython-312-x86_64-linux-gnu.so
+        m = re.match(r"([A-Z][A-Za-z0-9]*Application)(?:\.[^.]+)*\.so$", p.name)
+        if m:
+            candidate_apps.add(m.group(1))
+    # No separate sorted alias — iterate the set deterministically below.
     apps_seen: list[str] = []
     apps_failed: dict[str, str] = {}
-    for app in candidate_apps:
+    for app in sorted(candidate_apps):
         try:
             __import__(f"KratosMultiphysics.{app}")
             apps_seen.append(app)
@@ -162,11 +201,17 @@ def scan_kratos() -> BackendCapabilities:
         try:
             if KM.Registry.HasItem(cat_path):
                 n = KM.Registry.NumberOfItems(cat_path)
-                # The Registry doesn't expose a clean "list child keys"
-                # — but we can enumerate by trying common sub-paths and
-                # walking what HasItems reveals.  For now we record the
-                # count; a deeper recursive walk lands in a follow-up.
-                getattr(cap, cat_attr).append(f"<{n} items at Registry[{cat_path!r}]>")
+                # Record the count in `notes` rather than injecting a
+                # placeholder string into the typed list field.  The
+                # downstream consistency test compares list contents
+                # against the MCP catalog — appending a synthetic
+                # `"<N items ...>"` entry would look like a real
+                # capability name and would always show as drift.
+                cap.notes.append(
+                    f"Registry[{cat_path!r}] has {n} items "
+                    f"(deep enumeration is a follow-up; the Python "
+                    f"Registry binding does not expose child iteration)"
+                )
         except Exception as e:
             cap.notes.append(f"Registry[{cat_path}] walk failed: {e!s:.80}")
 
@@ -194,7 +239,7 @@ def scan_kratos() -> BackendCapabilities:
     cap.constitutive_laws = sorted(claws)
 
     # ── 5. for completeness — record the package install path
-    cap.notes.append(f"package_dir={kpkg}")
+    cap.notes.append(f"package_dir={_redact_path(kpkg)}")
 
     return cap
 
@@ -252,7 +297,7 @@ def scan_fourc() -> BackendCapabilities:
         cap.notes.append("4C source root not found; tried FOURC_ROOT + "
                          "~/Schreibtisch/4C-src/4C + ~/4C")
         return cap
-    cap.notes.append(f"source_root={root}")
+    cap.notes.append(f"source_root={_redact_path(root)}")
 
     # ── 1. modules: every src/<dir> that looks like a physics module
     src = root / "src"
@@ -333,15 +378,146 @@ def scan_fourc() -> BackendCapabilities:
     return cap
 
 
+# ── scikit-fem scanner ─────────────────────────────────────────────────
+
+
+def scan_skfem() -> BackendCapabilities:
+    """scikit-fem ships as a pure-Python package — enumerate every
+    Element* and Mesh* class on the top-level module, plus the
+    bundled `skfem.models.*` form submodules and the canonical
+    refinement / IO helpers under `skfem.io`.
+    """
+    cap = BackendCapabilities(backend="skfem")
+    try:
+        import skfem
+    except ImportError as e:
+        cap.notes.append(f"scikit-fem not importable: {e}")
+        return cap
+
+    cap.version = getattr(skfem, "__version__", "")
+
+    # Element classes
+    elements = sorted(
+        n for n in dir(skfem)
+        if n.startswith("Element") and n[7:] and n[7] != "_"
+    )
+    cap.elements = elements
+
+    # Mesh classes
+    meshes = sorted(
+        n for n in dir(skfem)
+        if n.startswith("Mesh") and n[4:] and n[4] != "_"
+    )
+    cap.mesh_generators = meshes
+
+    # Bundled form modules
+    try:
+        import skfem.models as M
+        model_modules = sorted(
+            n for n in dir(M) if not n.startswith("_") and n in (
+                "elasticity", "general", "helmholtz", "poisson"
+            )
+        )
+        cap.element_families = model_modules
+    except ImportError:
+        pass
+
+    cap.notes.append(f"package_dir={_redact_path(Path(skfem.__file__).parent)}")
+    return cap
+
+
+# ── FEniCSx (dolfinx) scanner ──────────────────────────────────────────
+
+
+def scan_fenics() -> BackendCapabilities:
+    """FEniCSx lives in its own conda env (matching the user's setup
+    where the .venv runs the MCP but dolfinx is in ofa-fenicsx).
+    We dispatch a small introspection script to the env's python
+    via subprocess and parse the JSON it prints.
+
+    Three artefacts captured:
+      * `basix.ElementFamily` — every continuous, discontinuous,
+        bubble, Nedelec, RT, BDM, etc. element family the
+        installed basix provides.
+      * `basix.CellType` — every cell topology dolfinx can mesh
+        (point, interval, triangle, tetrahedron, ..., pyramid).
+      * `dolfinx.mesh.create_*` — every built-in mesh-generator
+        function name.
+
+    The env's python is discovered through `FENICS_PYTHON` (matches
+    `tools/developer.py` convention) with a fallback to the conda
+    location used by `sweep_layer3.py`.
+    """
+    import json as _json
+    import os
+    import subprocess
+
+    cap = BackendCapabilities(backend="fenics")
+
+    fenics_py = (
+        os.environ.get("FENICS_PYTHON", "")
+        or str(Path.home() / "miniconda3/envs/ofa-fenicsx/bin/python")
+    )
+    if not Path(fenics_py).is_file():
+        cap.notes.append(
+            f"FEniCSx python not found at {fenics_py}; set FENICS_PYTHON"
+        )
+        return cap
+
+    probe = """
+import json, sys
+try:
+    import basix
+    import dolfinx
+    import dolfinx.mesh
+    out = {
+        'dolfinx_version': dolfinx.__version__,
+        'basix_version': basix.__version__,
+        'element_families': [f.name for f in basix.ElementFamily],
+        'cell_types': [c.name for c in basix.CellType],
+        'mesh_creators': sorted(
+            n for n in dir(dolfinx.mesh) if n.startswith('create_')
+        ),
+    }
+except Exception as e:
+    out = {'error': f'{type(e).__name__}: {e}'}
+sys.stdout.write(json.dumps(out))
+"""
+    r = subprocess.run(
+        [fenics_py, "-c", probe],
+        capture_output=True, text=True, timeout=60,
+    )
+    if r.returncode != 0:
+        cap.notes.append(
+            f"FEniCSx probe exited {r.returncode}: {r.stderr[:200]}"
+        )
+        return cap
+    try:
+        data = _json.loads(r.stdout)
+    except _json.JSONDecodeError as e:
+        cap.notes.append(f"FEniCSx probe output not JSON: {e}")
+        return cap
+    if "error" in data:
+        cap.notes.append(f"FEniCSx probe raised: {data['error']}")
+        return cap
+
+    cap.version = data.get("dolfinx_version", "")
+    cap.element_families = data.get("element_families", [])
+    cap.mesh_generators = data.get("mesh_creators", [])
+    cap.other["cell_types"] = data.get("cell_types", [])
+    cap.other["basix_version"] = data.get("basix_version", "")
+    return cap
+
+
 # ── dispatch ───────────────────────────────────────────────────────────
 
 
 SCANNERS = {
     "kratos": scan_kratos,
     "fourc": scan_fourc,
-    # fenics, dealii, skfem, ngsolve, dune scanners land in
-    # follow-up PRs.  Each backend gets its own focused function
-    # following the same pattern.
+    "skfem": scan_skfem,
+    "fenics": scan_fenics,
+    # dealii, ngsolve, dune scanners land in follow-up PRs.
 }
 
 

@@ -1,6 +1,6 @@
 {
   "backend": "kratos",
-  "version": "10.4.\"2\"--0-Release-x86_64",
+  "version": "10.4.2--0-Release-x86_64",
   "applications": [
     "FluidDynamicsApplication",
     "LinearSolversApplication",
@@ -1563,14 +1563,12 @@
   ],
   "mesh_generators": [],
   "element_families": [],
-  "processes": [
-    "<4 items at Registry['Processes']>"
-  ],
-  "modelers": [
-    "<4 items at Registry['Modelers']>"
-  ],
+  "processes": [],
+  "modelers": [],
   "other": {},
   "notes": [
-    "package_dir=/home/hermann/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/KratosMultiphysics"
+    "Registry['Processes'] has 4 items (deep enumeration is a follow-up; the Python Registry binding does not expose child iteration)",
+    "Registry['Modelers'] has 4 items (deep enumeration is a follow-up; the Python Registry binding does not expose child iteration)",
+    "package_dir=<repo>/.venv/lib/python3.12/site-packages/KratosMultiphysics"
   ]
 }
