@@ -1,0 +1,13 @@
+{
+  "_comment": "Tier-2: NGSolve curl() on H1 basis raises NgException('Operator \"curl\" does not exist for H1HighOrderFESpace!'). The dual to the existing hcurl_grad_mismatch fixture — confirms the operator/space pairing is strictly checked in both directions. Maxwell-newbie pitfall: confusing the H1 elliptic form with the H(curl) form goes the OTHER way too.",
+  "backend": "ngsolve",
+  "physics": "maxwell",
+  "pitfall_index": 93,
+  "mode": "python",
+  "expect_in_output": [
+    "NgException",
+    "curl",
+    "does not exist for H1"
+  ],
+  "forbid_in_output": []
+}

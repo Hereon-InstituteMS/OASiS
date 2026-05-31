@@ -1,0 +1,13 @@
+{
+  "_comment": "Tier-2 numerical-comparison fixture (NOT an exception class). Forward-Euler time-stepping on the 1D heat equation with dt > h^2/(2*alpha) violates the CFL stability bound: solution.linfty_norm grows by ~400x in 20 steps. Backward / Crank-Nicolson at the same dt stays bounded. The Signal a post-execution critic should match is the magnitude RATIO between observed and analytical solution — not an exception string. Verifies the heat-equation pitfall: 'forward Euler with too-large dt produces oscillating solution that grows exponentially'. Round-3 critic noted that Tier-2 was exception-biased — this is the first true numerical-comparison entry.",
+  "backend": "skfem",
+  "physics": "heat",
+  "pitfall_index": 93,
+  "mode": "python",
+  "expect_in_output": [
+    "unstable",
+    "linfty_norm grows",
+    "CFL violated"
+  ],
+  "forbid_in_output": []
+}

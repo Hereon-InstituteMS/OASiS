@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 13,
-    "passed": 13,
+    "n_fixtures": 16,
+    "passed": 16,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -133,6 +133,22 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/finite_element.py\", line 986, in string_to_family\n    return families[family]\n           ~~~~~~~~^^^^^^^^\nKeyError: 'NotAFamily'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/unknown_element_family/source.py\", line 23, in main\n    functionspace(mesh, (\"NotAFamily\", 1))\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/function.py\", line 604, in functionspace\n    ufl_e = basix.ufl.element(\n            ^^^^^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/ufl.py\", line 1613, in element\n    famil"
     },
+    "kratos::linear_elasticity::89": {
+      "key": "kratos::linear_elasticity::89",
+      "backend": "kratos",
+      "physics": "linear_elasticity",
+      "pitfall_index": 89,
+      "fixture_id": "constitutive_law_class_not_instance",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "TypeError",
+        "incompatible function arguments"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosStructuralMechanicsApplication \n    KRATOS   ___|  |                   |                   |\n           \\___ \\  __|  __| |   |  __| __| |   |  __| _` | |\n                 | |   |    |   | (    |   |   | |   (   | |\n           _____/ \\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\__,_|_| MECHANICS\nInitializing KratosStructuralMechanicsApplication...\nDeregistering KratosMultiphysics\nDeregistering StructuralMechanicsAp"
+    },
     "kratos::linear_elasticity::0": {
       "key": "kratos::linear_elasticity::0",
       "backend": "kratos",
@@ -148,6 +164,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
+    },
+    "ngsolve::maxwell::93": {
+      "key": "ngsolve::maxwell::93",
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 93,
+      "fixture_id": "h1_curl_operator_unknown",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "NgException",
+        "curl",
+        "does not exist for H1"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/h1_curl_operator_unknown/source.py\", line 43, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/h1_curl_operator_unknown/source.py\", line 31, in main\n    a += curl(u) * curl(v) * dx  # curl on scalar H1: WRONG\n         ^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/ngsolve/utils.py\", line 64, in curl\n    add = func.Operator(\"curl\")\n          ^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: Operator \"curl\" does not exist for H1HighOrderFESpace!\n"
     },
     "ngsolve::maxwell::95": {
       "key": "ngsolve::maxwell::95",
@@ -198,6 +231,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "ElementVector(ElementQuad1()) stores DoFs interleaved.\n  n_dofs = 50, n_nodes = 25\n  ux_correct (via nodal_dofs[0])[:4] = [0. 1. 2. 3.]\n  uy_correct (via nodal_dofs[1])[:4] = [  0. 100. 200. 300.]\n  ux_wrong   (u.reshape(2,-1)[0])[:4] = [  0.   0.   1. 100.]\n  uy_wrong   (u.reshape(2,-1)[1])[:4] = [1200.   13. 1300.   14.]\nComponents extracted via reshape(2,-1) and nodal_dofs do not match \u2014 the reshape path is wrong.\n"
+    },
+    "skfem::heat::93": {
+      "key": "skfem::heat::93",
+      "backend": "skfem",
+      "physics": "heat",
+      "pitfall_index": 93,
+      "fixture_id": "forward_euler_instability",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "unstable",
+        "linfty_norm grows",
+        "CFL violated"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "forward-Euler heat eq, 20 steps, h = 0.0204\n  dt = 0.4 * CFL  \u2192 |u|_max = 9.832e-01\n  dt = 5.0 * CFL  \u2192 |u|_max = 4.296e+02\n  unstable / stable ratio = 4.4e+02\nCFL violated: dt=1.0412e-03 exceeds bound 2.0825e-04; forward-Euler is unstable here, linfty_norm grows by factor 4.4e+02.\n"
     },
     "skfem::poisson::94": {
       "key": "skfem::poisson::94",
