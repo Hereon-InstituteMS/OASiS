@@ -171,7 +171,7 @@ KNOWLEDGE = {
         "solver_types": ["stationary", "transient"],
         "pitfalls": [
                         '[API] Same field equation as Poisson but with TEMPERATURE as the unknown — TEMPERATURE must be added to ModelPart variables before any Node is created. '
-                        "Signal: RuntimeError 'variable TEMPERATURE not found in variables list of ModelPart' from the ConvectionDiffusion element InitializeSolutionStep.",
+                        "Signal: RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: TEMPERATURE' from kratos/containers/variables_list_data_value_container at the first GetSolutionStepValue / SetSolutionStepValue on the node. (Verified empirically 2026-06-01 — same wording as the VELOCITY case in fluid#0; prior catalog text 'not found in variables list of ModelPart' + 'from ConvectionDiffusion InitializeSolutionStep' is rearranged and points at the wrong call site.)",
                         '[Syntax] Non-homogeneous Dirichlet: use AssignScalarVariableProcess with constrained=True. Setting constrained=False applies the value but does NOT fix the DOF, so the solver overwrites it. '
                         'Signal: boundary temperatures drift away from the prescribed values during the solve; T_boundary - T_imposed is O(1) instead of O(eps).',
                         '[Syntax] Neumann (heat flux): use ApplyConstantScalarValueProcess on FACE_HEAT_FLUX (not TEMPERATURE). Targeting TEMPERATURE applies a Dirichlet pseudo-flux. '
