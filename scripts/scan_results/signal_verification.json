@@ -1,0 +1,1586 @@
+{
+  "backend": "dealii",
+  "totals": {
+    "n_pitfalls": 96,
+    "with_category_prefix": 63,
+    "with_signal_clause": 61,
+    "tier0_passed": 15,
+    "tier1_passed": 44,
+    "tier0_and_1_passed": 12,
+    "tier2_passed": 0
+  },
+  "results": [
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 0,
+      "pitfall_category": "Syntax",
+      "signal_text": "solver reports 'converged in 0 iterations' on a non-trivial problem because the system has only 1 DOF.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "quoted-error-fragment",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "you apply different Dirichlet values on different faces but the result has the SAME value everywhere on the boundary.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 2,
+      "pitfall_category": "Syntax",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks `Signal:` clause \u2014 cannot match in post-execution critic; the entry is descriptive, not detection-actionable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverCG reports 'breakdown' on iteration 2-3 on a refined mesh, but works on the globally-refined version of the same problem.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "quoted-error-fragment",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 4,
+      "pitfall_category": "API",
+      "signal_text": "solution has step discontinuities at the interfaces between refinement levels.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 5,
+      "pitfall_category": "Numerical",
+      "signal_text": "CG iteration count grows linearly with the coefficient contrast.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 6,
+      "pitfall_category": "Integration",
+      "signal_text": "link errors like 'undefined reference to FE_Q<3>::FE_Q(unsigned int)' even though FE_Q<3> appears to be used elsewhere.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "FE_Q"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "appears",
+        "error",
+        "quoted-error-fragment",
+        "undefined"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "Syntax",
+      "signal_text": "assembly compiles but stiffness matrix is rank-deficient (det == 0 on every cell).",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "Physics",
+      "signal_text": "displacement field is off by a constant factor independent of mesh refinement.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "numerical-comparison"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "tip deflection on a cantilever 2D beam is smaller than the 1D Euler-Bernoulli prediction by ~30%.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "Syntax",
+      "signal_text": "only the first vector component sees the body force.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "Integration",
+      "signal_text": "`ExcMessage` from grid_in.cc that the mesh contains unsupported cell type.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 5,
+      "pitfall_category": "API",
+      "signal_text": "GridIn reports 'unsupported cell type 25' (Tri6) or '28' (Quad9).",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 6,
+      "pitfall_category": "Numerical",
+      "signal_text": "tip deflection on a compressible beam converges with refinement, but converges to the wrong value as nu \u2192 0.5 (volumetric locking).",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "value",
+        "wrong"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 7,
+      "pitfall_category": "API",
+      "signal_text": "assembly enters cells you thought were 'off' and accumulates garbage into the rhs.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 8,
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverCG reports 'breakdown' or stalls at 1e-2 residual reduction.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "quoted-error-fragment",
+        "report",
+        "stall"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "heat",
+      "pitfall_index": 0,
+      "pitfall_category": "Syntax",
+      "signal_text": "per-step wall time scales with ndof^2 instead of ndof*log(ndof) for AMG.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "AMG"
+      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "heat",
+      "pitfall_index": 1,
+      "pitfall_category": "Physics",
+      "signal_text": "temperature convergence on a manufactured solution is first-order in dt even though you set theta=0.5.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "heat",
+      "pitfall_index": 2,
+      "pitfall_category": "API",
+      "signal_text": "a sharp temperature drop coinciding with the first AMR-step.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "drop"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "heat",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "temperature jumps at Dirichlet-boundary nodes between t=0 and the first time-step solution.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "heat",
+      "pitfall_index": 4,
+      "pitfall_category": "Numerical",
+      "signal_text": "forward Euler with too-large dt produces oscillating solution that grows exponentially.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "oscillat"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverCG reports 'breakdown' on iteration 2-3 with a negative inner product, before the iterative residual has dropped at all.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "drop",
+        "quoted-error-fragment",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "assembly succeeds but the saddle-point block B^T does not have the expected zero-on-diagonal structure.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "pressure field drifts to huge magnitude (~1e15) while velocity converges normally.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "drift"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "GMG residual stagnates or diverges at the first V-cycle, even though direct solver on the same matrix converges.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "diverge"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 4,
+      "pitfall_category": "Numerical",
+      "signal_text": "pressure field has a regular high-frequency checkerboard pattern superimposed on the smooth solution.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "checkerboard",
+        "pattern"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 5,
+      "pitfall_category": "Physics",
+      "signal_text": "post-processing 'is my solver more accurate?' \u2014 yes, but only on mass conservation; other error metrics scale as usual.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 6,
+      "pitfall_category": "Integration",
+      "signal_text": "reported C_D differs from the Sch\u00e4fer-Turek table by 10+%.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "differs",
+        "numerical-comparison",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "convection_diffusion",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "diffusion-dominated solutions show small overshoots near the boundary that don't refine away.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "convection_diffusion",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "DG solution looks correct globally but has continuous-Galerkin-like behaviour at element interfaces (no jumps where there should be).",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "convection_diffusion",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "inflow BC appears on the downstream side of the domain.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "appears"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "convection_diffusion",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "SUPG solution has O(1) oscillations at the interface between high and low values, even with tau matched to local Pe.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SUPG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "oscillat",
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "convection_diffusion",
+      "pitfall_index": 4,
+      "pitfall_category": "Integration",
+      "signal_text": "boundary-layer thickness smeared across multiple streamwise cells while resolved normal to flow.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "nonlinear",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "Newton fails on iteration 1 with residual norm > 1e3 (diverging immediately).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton"
+      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "nonlinear",
+      "pitfall_index": 1,
+      "pitfall_category": "Numerical",
+      "signal_text": "Newton residual oscillates between 1e-3 and 1e5 without converging.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "oscillat"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "nonlinear",
+      "pitfall_index": 2,
+      "pitfall_category": "Syntax",
+      "signal_text": "Newton reports convergence in 3-5 iterations on a problem that should take 10+, and the solution doesn't match an analytic reference.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "nonlinear",
+      "pitfall_index": 3,
+      "pitfall_category": "API",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks `Signal:` clause \u2014 cannot match in post-execution critic; the entry is descriptive, not detection-actionable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "nonlinear",
+      "pitfall_index": 4,
+      "pitfall_category": "Integration",
+      "signal_text": "identical to the SLEPc/PETSc link errors \u2014 same class of missing-third-party-dep failure.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "PETSc",
+        "SLEPc"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "missing"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverCG reports 'breakdown' immediately.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "quoted-error-fragment",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "the imaginary part of the solution is zero everywhere despite the source being complex.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "outgoing wave amplitude decays to zero at the boundary instead of leaving the domain with constant amplitude.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "amplitude",
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "solution amplitude differs from the analytic reference (Hankel function for radial problems) by a factor of 2-5x.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "amplitude",
+        "differs",
+        "numerical-comparison"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 4,
+      "pitfall_category": "Numerical",
+      "signal_text": "wave nodes are correctly spaced (h < lambda/10) but appear shifted by a constant fraction of a wavelength.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 5,
+      "pitfall_category": "Integration",
+      "signal_text": "outgoing waves reflect off the layer instead of being absorbed.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 0,
+      "pitfall_category": "Integration",
+      "signal_text": "link error 'undefined reference to SLEPc::SolverBase::SolverBase'.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SLEPc"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "undefined"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 1,
+      "pitfall_category": "Physics",
+      "signal_text": "computed lambda_11 on unit square is far from 2*pi^2 \u2248 19.74 by orders of magnitude.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 2,
+      "pitfall_category": "API",
+      "signal_text": "the spectrum has a cluster of n_dirichlet zero eigenvalues above the physical ones.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "value",
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 3,
+      "pitfall_category": "Syntax",
+      "signal_text": "all eigenvalues come out exactly 0.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 4,
+      "pitfall_category": "Integration",
+      "signal_text": "program crashes inside the EPS constructor with an MPI_ERR_COMM error.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "MPI_ERR_COMM"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "crash",
+        "error"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 5,
+      "pitfall_category": "Numerical",
+      "signal_text": "requested eigenvalue range is in [50, 150] but returned eigenvalues are in [0.1, 5].",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "eigenvalue",
+      "pitfall_index": 6,
+      "pitfall_category": "Physics",
+      "signal_text": "if the computed lambda_2 != lambda_3 to floating-point precision on a fine mesh, the eigensolver is missing degenerate modes.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "missing"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "solution amplitudes grow exponentially when beta < gamma/2.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "amplitude"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "per-step wall time scales with ndof^2 instead of with the linear-solve cost.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
+      "pitfall_index": 2,
+      "pitfall_category": "Numerical",
+      "signal_text": "solution energy grows exponentially even though the implicit Newmark (beta=0.25) of the same problem stays bounded.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newmark"
+      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
+      "pitfall_index": 3,
+      "pitfall_category": "Syntax",
+      "signal_text": "solution oscillates with a low-frequency mode superimposed on the correct wave pattern, especially visible at early times.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "oscillat",
+        "pattern"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
+      "pitfall_index": 4,
+      "pitfall_category": "Physics",
+      "signal_text": "outgoing wave reflects from boundary instead of leaving; solution shows growing standing-wave pattern.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "pattern",
+        "shows"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
+      "pitfall_index": 5,
+      "pitfall_category": "Integration",
+      "signal_text": "simulation wall time dominated by I/O rather than solve.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "hp_adaptive",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hp_adaptive",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hp_adaptive",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hp_adaptive",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hp_adaptive",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hp_adaptive",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 8,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 9,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 10,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 11,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 12,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "parallel_poisson",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "dealii",
+      "physics": "navier_stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "solver converges in one iteration but the result has no advection-driven structure.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "navier_stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "Numerical",
+      "signal_text": "pressure field has a regular high-frequency checkerboard pattern.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "checkerboard",
+        "pattern"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "navier_stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "Numerical",
+      "signal_text": "Newton fails to converge at Re=200 but converges from the Re=100 solution as initial guess.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "navier_stokes",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "time-averaged Reynolds stress underpredicts a known reference by O(dt) \u2014 disappears with smaller dt.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "appears"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "navier_stokes",
+      "pitfall_index": 4,
+      "pitfall_category": "Physics",
+      "signal_text": "pressure field drifts to ~1e15 while velocity converges normally.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "drift"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "navier_stokes",
+      "pitfall_index": 5,
+      "pitfall_category": "Integration",
+      "signal_text": "spurious oscillations near boundary layers despite stabilisation being 'on'.",
+      "tier0_passed": false,
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "oscillat",
+        "quoted-error-fragment"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    }
+  ]
+}
