@@ -521,30 +521,48 @@ async def run_cell(cell: Cell, work_dir: Path) -> CellResult:
                           error=(job.error or "")[:300])
 
     # ── extract scalar from the LAST output snapshot (final time step /
-    # converged state).  We accept every format
-    # `core.post_processing.read_mesh()` knows how to load:
+    # converged state).  Accept every format
+    # `core.post_processing.read_mesh()` knows how to load *except*
+    # `.pvtu`:
     #   .vtu    — modern XML unstructured (FEniCSx, skfem, fourc, ...)
     #   .vtk    — legacy unstructured (KratosMultiphysics `VtkOutput`)
-    #   .pvtu   — parallel-partitioned VTU
     #   .pvd    — ParaView collection / time-series index
     #   .xdmf   — XDMF (dolfinx alternative)
-    # If the set here diverges from `read_mesh`'s, working backends
-    # silently get reported as "no output" by the sweep.
+    # `.pvtu` (parallel-partitioned VTU wrapper) is intentionally
+    # excluded — it can hang PyVista when the per-rank `.vtu`
+    # partials are accessed (see the matching policy at
+    # src/tools/consolidated.py: "skip .pvtu (parallel wrappers
+    # that can hang PyVista)").  The per-rank `.vtu` partials
+    # themselves are accepted directly.
+    #
+    # Suffix matching is case-insensitive: some backends and
+    # filesystems emit upper-case (`.VTU`) and `read_mesh` itself
+    # lower-cases the suffix before dispatching.
     #
     # Sort numerically by trailing step index, NOT lexicographically:
     # backends like Kratos emit `Structure_0_1.vtk, Structure_0_2.vtk,
     # ..., Structure_0_10.vtk`, where lexicographic sort would place
     # `_10` *before* `_9` and pick the wrong snapshot as "the last".
+    # Within the same step, prefer the most-PyVista-stable format
+    # (`.vtu` > `.vtk` > `.xdmf` > `.pvd`) so two formats emitted
+    # for the same step never pick a less-supported container.
     import re as _re
-    _OUTPUT_SUFFIXES = (".vtu", ".vtk", ".pvtu", ".pvd", ".xdmf")
+    _OUTPUT_SUFFIXES = (".vtu", ".vtk", ".pvd", ".xdmf")
+    _SUFFIX_PRIORITY = {".vtu": 0, ".vtk": 1, ".xdmf": 2, ".pvd": 3}
+
     def _step_key(p):
-        # Extract the last contiguous integer run in the stem; fall back
-        # to 0 for files with no digits so they sort first.
         m = _re.findall(r"\d+", p.stem)
-        return (int(m[-1]) if m else 0, p.stem)
+        return (
+            int(m[-1]) if m else 0,
+            # Negate so higher-priority sorts AFTER lower-priority on
+            # the same step (sorted() ascending → key[-1] is "last").
+            -_SUFFIX_PRIORITY.get(p.suffix.lower(), 99),
+            p.stem,
+        )
+
     output_files = sorted(
         (f for f in backend.get_result_files(job)
-         if f.suffix in _OUTPUT_SUFFIXES),
+         if f.suffix.lower() in _OUTPUT_SUFFIXES),
         key=_step_key,
     )
     scalar = None
