@@ -214,11 +214,11 @@
       "notes": [],
       "captured_head": "GridGenerator::subdivided_hyper_rectangle (colorize=false): 1 unique boundary_id(s)\n  boundary_id = 0\n"
     },
-    "fenics::linear_elasticity::93": {
-      "key": "fenics::linear_elasticity::93",
+    "fenics::linear_elasticity::1": {
+      "key": "fenics::linear_elasticity::1",
       "backend": "fenics",
       "physics": "linear_elasticity",
-      "pitfall_index": 93,
+      "pitfall_index": 1,
       "fixture_id": "array_size_mismatch",
       "mode": "python",
       "status": "passed",
@@ -246,11 +246,11 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/curl_on_scalar_space/source.py\", line 21, in main\n    form(ufl.curl(u) * ufl.curl(v) * ufl.dx)\n         ~~~~~~~~~~~~^~~~~~~~~~~~~\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/exproperators.py\", line 186, in _mul\n    return _mult(self, o)\n           ^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/exproperators.py\", line 159, in _mult\n    raise ValueError(f\"Invalid ranks {r1} and {r2} in product.\")\nValueError: Invalid ranks 1 and 1 in product.\n"
     },
-    "fenics::linear_elasticity::96": {
-      "key": "fenics::linear_elasticity::96",
+    "fenics::linear_elasticity::8": {
+      "key": "fenics::linear_elasticity::8",
       "backend": "fenics",
       "physics": "linear_elasticity",
-      "pitfall_index": 96,
+      "pitfall_index": 8,
       "fixture_id": "unknown_element_family",
       "mode": "python",
       "status": "passed",

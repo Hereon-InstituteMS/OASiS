@@ -847,12 +847,62 @@ _FENICS_KNOWLEDGE = {
             "notes": "Uses numba for efficient condensation of block forms. Cook's membrane benchmark.",
         },
         "pitfalls": [
-            "Vector function space: ('Lagrange', 1, (gdim,)) — NOT scalar",
-            "Dirichlet BC value: np.array([0.0]*gdim, dtype=default_scalar_type) — not scalar 0",
-            "Plane strain vs plane stress: adjust lambda accordingly (plane stress: use lambda_star)",
-            "Near-incompressible (nu > 0.49): MUST use mixed formulation to avoid volumetric locking",
-            "For GAMG/AMG: MUST provide near-nullspace (rigid body modes) for convergence on large problems",
-            "2D default is plane strain — explicit modification needed for plane stress",
+            "[Syntax] Vector function space for elasticity in "
+            "dolfinx is created with ('Lagrange', 1, (gdim,)) — "
+            "the trailing shape tuple marks it vector-valued. "
+            "Passing ('Lagrange', 1) gives a SCALAR space. Signal: "
+            "dolfinx.fem.functionspace raises ValueError 'Invalid "
+            "ranks' or 'shape' when assembling, or the FFC form "
+            "compilation emits 'expected rank 1 trial function'.",
+            "[Syntax] Dirichlet BC value for a vector elasticity "
+            "space must be np.array([0.0]*gdim, dtype="
+            "default_scalar_type) — not scalar 0. dolfinx "
+            "broadcasts the BC value against the space shape; "
+            "scalar→vector fails. Signal: numpy raises ValueError "
+            "'could not broadcast input array from shape () into "
+            "shape (gdim,)' when dirichletbc is constructed with "
+            "a scalar on a vector space.",
+            "[Physics] Plane strain vs plane stress: lambda must "
+            "be adjusted. Plane stress uses lambda_star = "
+            "2*lambda*mu/(lambda+2*mu); using plane strain "
+            "lambda on a thin plate gives ~30% over-stiffness. "
+            "Signal: tip deflection differs from analytic "
+            "plane-stress reference by factor (1-nu) at nu=0.3.",
+            "[Numerical] Near-incompressible (nu > 0.49): MUST "
+            "use mixed formulation (Taylor-Hood or three-field) "
+            "to avoid volumetric locking. Pure displacement P1/P2 "
+            "at nu=0.4999 has displacement underestimated by "
+            "orders of magnitude. Signal: tip deflection at "
+            "nu=0.4999 is ~1e-3 of analytic value; switching to "
+            "P2-P1 mixed recovers it to within 1%.",
+            "[Numerical] For GAMG/AMG: MUST provide near-nullspace "
+            "(rigid body modes — 3 translations + 3 rotations in "
+            "3D). Without it, CG+GAMG fails to converge on "
+            "large problems. Signal: PETScKrylovSolver.solve "
+            "raises 'KSP did not converge' / NoConvergence with "
+            "iteration count = max_it; setting "
+            "matrix.setNearNullSpace(rbm) reduces iter count by "
+            "10-50x.",
+            "[Physics] 2D default is plane strain — explicit "
+            "modification needed for plane stress. Forgetting "
+            "this is a silent source of wrong answers for thin "
+            "structures. Signal: 2D plate deflection differs "
+            "from analytic plane-stress reference by factor "
+            "(1-nu^2) — the plane-strain stiffness "
+            "over-constrains thickness.",
+            "[API] dolfinx.fem.FunctionSpace rejects element "
+            "family names other than the registered basix "
+            "families. Passing legacy names like 'P1' or 'CG' "
+            "that worked in old DOLFIN raises ValueError. Signal: "
+            "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises "
+            "ValueError 'Unknown element family CG' — the basix "
+            "name is 'Lagrange', not 'CG' or 'P1'.",
+            "[API] dolfinx XDMFFile.write_function only supports "
+            "P1 nodal geometry. Writing a P2 function silently "
+            "emits a corrupt .xdmf or raises RuntimeError 'XDMF "
+            "mesh must be P1'. Interpolate to a P1 space first, "
+            "or use VTKFile / VTXWriter. Signal: RuntimeError "
+            "'XDMF mesh must be P1' from XDMFFile.write_function.",
         ],
         "materials": {
             "E": {"range": [1.0, 1e12], "unit": "Pa", "examples": {"steel": 210e9, "aluminum": 70e9, "rubber": 1e6}},

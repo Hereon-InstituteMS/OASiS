@@ -1,18 +1,18 @@
 {
-  "backend": "skfem",
+  "backend": "fenics",
   "totals": {
-    "n_pitfalls": 96,
+    "n_pitfalls": 113,
     "with_category_prefix": 9,
     "with_signal_clause": 9,
-    "tier0_passed": 3,
-    "tier0_code_symbol_only": 2,
-    "tier0_with_domain_decoration": 1,
-    "tier0_domain_names_only": 2,
-    "tier1_passed": 6,
-    "tier0_and_1_passed": 3,
-    "tier2_passed": 1,
-    "tier2_attempted": 1,
-    "n_falsifiable": 96,
+    "tier0_passed": 5,
+    "tier0_code_symbol_only": 3,
+    "tier0_with_domain_decoration": 2,
+    "tier0_domain_names_only": 1,
+    "tier1_passed": 9,
+    "tier0_and_1_passed": 5,
+    "tier2_passed": 2,
+    "tier2_attempted": 2,
+    "n_falsifiable": 113,
     "n_unfalsifiable": 0,
     "n_cheap_falsifiable": 0,
     "n_medium_falsifiable": 0,
@@ -23,7 +23,7 @@
   },
   "results": [
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -59,7 +59,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -77,131 +77,131 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "poisson",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "poisson",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "linear_elasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "linear_elasticity",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "linear_elasticity",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "linear_elasticity",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "heat",
       "pitfall_index": 0,
       "pitfall_category": "Syntax",
-      "signal_text": "scipy.sparse.linalg.spsolve raises 'singular matrix' (the stiffness matrix has the Dirichlet rows still entangled), or it returns without raising and the resulting u violates the boundary condition (max |u - u_D| on the boundary is O(1) instead of O(eps)).",
+      "signal_text": "dolfinx.fem.functionspace raises ValueError 'Invalid ranks' or 'shape' when assembling; or the form compilation prints 'expected rank 1 trial function'.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "spsolve"
+        "ValueError",
+        "dolfinx",
+        "fem",
+        "form"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "spsolve"
+        "ValueError",
+        "dolfinx",
+        "fem",
+        "form"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "error",
         "quoted-error-fragment",
         "raise",
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "numpy raises ValueError 'could not broadcast input array from shape () into shape (gdim,)' when dirichletbc is constructed with a scalar value on a vector space.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "ValueError",
+        "dirichletbc"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "ValueError",
+        "dirichletbc"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "raise",
+        "value"
+      ],
+      "tier2_passed": true,
+      "tier2_status": "passed",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "tip deflection differs from analytic plane-stress reference by a factor (1-nu) at nu=0.3.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "differs",
+        "numerical-comparison"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "API",
+      "signal_text": "XDMFFile.write_function raises RuntimeError 'XDMF mesh must be P1' or silently emits a corrupt .xdmf that ParaView opens but renders as nodes-only.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "RuntimeError",
+        "mesh"
+      ],
+      "tier0_domain_names_matched": [
+        "ParaView"
+      ],
+      "tier0_entities_matched": [
+        "ParaView",
+        "RuntimeError",
+        "mesh"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "raise"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "Integration",
+      "signal_text": "dolfinx.io.gmshio reads the mesh but mesh.topology.dim returns 3 with no tagged facets; subsequent locate_dofs_topological on a facet tag returns an empty array.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "dolfinx",
+        "locate_dofs_topological",
+        "mesh"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "dolfinx",
+        "locate_dofs_topological",
+        "mesh"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
         "returns"
       ],
       "tier2_passed": false,
@@ -209,68 +209,389 @@
       "notes": []
     },
     {
-      "backend": "skfem",
-      "physics": "heat",
-      "pitfall_index": 1,
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 5,
       "pitfall_category": "Numerical",
-      "signal_text": "solution decays to zero in one step regardless of dt and source term.",
+      "signal_text": "integrated reaction moment differs from applied M by 20-40% on a thick beam with torsion BC.",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "zero"
+        "differs",
+        "numerical-comparison"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "skfem",
-      "physics": "heat",
-      "pitfall_index": 2,
-      "pitfall_category": "Integration",
-      "signal_text": "solving each region in isolation gives interface temperature jumps O(1) instead of continuous (max(T_fluid - T_solid) on interface DOFs is on the order of the temperature difference, not 0).",
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 6,
+      "pitfall_category": "Syntax",
+      "signal_text": "convergence-rate study shows slope 1 instead of 2 because the user thought P2 was active when actually P1 was set.",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "skfem",
-      "physics": "heat",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "with dt above the CFL bound, linfty_norm(u_new) grows exponentially across time steps and the solution diverges to \u00b1inf within ~10 steps. Switch to backward Euler or Crank-Nicolson for unconditional stability.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "linfty_norm"
-      ],
       "tier0_domain_names_matched": [
-        "Euler"
+        "convergence"
       ],
       "tier0_entities_matched": [
-        "Euler",
-        "linfty_norm"
+        "convergence"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "above",
-        "diverge",
-        "grows"
+        "converge",
+        "shows"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 7,
+      "pitfall_category": "Numerical",
+      "signal_text": "tip deflection at nu=0.4999 is 1e-3 of the true value; switching to mixed P2-P1 recovers the analytic deflection to within 1%.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 8,
+      "pitfall_category": "API",
+      "signal_text": "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises ValueError 'Unknown element family CG' \u2014 the basix-era name is 'Lagrange', not 'CG' or 'P1'.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "ValueError",
+        "dolfinx",
+        "fem",
+        "mesh"
+      ],
+      "tier0_domain_names_matched": [
+        "Lagrange"
+      ],
+      "tier0_entities_matched": [
+        "Lagrange",
+        "ValueError",
+        "dolfinx",
+        "fem",
+        "mesh"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "raise",
+        "value"
       ],
       "tier2_passed": true,
       "tier2_status": "passed",
       "notes": []
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
+      "physics": "heat",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "heat",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -288,7 +609,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -306,7 +627,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -324,7 +645,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -342,7 +663,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -360,7 +681,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
@@ -378,9 +699,9 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "stokes",
-      "pitfall_index": 6,
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
       "tier0_passed": false,
@@ -396,9 +717,9 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "stokes",
-      "pitfall_index": 7,
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
       "tier0_passed": false,
@@ -414,7 +735,43 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
       "physics": "eigenvalue",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -432,7 +789,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "eigenvalue",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -450,7 +807,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "eigenvalue",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -468,7 +825,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "eigenvalue",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -486,7 +843,133 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
+      "physics": "eigenvalue",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
       "physics": "mixed_poisson",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -504,7 +987,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "mixed_poisson",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -522,7 +1005,7 @@
       ]
     },
     {
-      "backend": "skfem",
+      "backend": "fenics",
       "physics": "mixed_poisson",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -540,62 +1023,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "convection_diffusion",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "convection_diffusion",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "convection_diffusion",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "convection_diffusion",
+      "backend": "fenics",
+      "physics": "mixed_poisson",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -612,152 +1041,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "biharmonic",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "biharmonic",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "biharmonic",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "biharmonic",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "nonlinear",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "nonlinear",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "nonlinear",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "nonlinear",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "nonlinear",
+      "backend": "fenics",
+      "physics": "mixed_poisson",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -774,8 +1059,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "nonlinear",
+      "backend": "fenics",
+      "physics": "mixed_poisson",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -792,214 +1077,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "heat_transient",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "manufactured-solution convergence study in dt gives slope ~1 (linear) on a log-log plot instead of 2 (Crank-Nicolson).",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [
-        "convergence"
-      ],
-      "tier0_entities_matched": [
-        "convergence"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "skfem",
-      "physics": "heat_transient",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "per-step wall time is dominated by factorisation, scaling as N^1.5 instead of N as the mesh is refined.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "refined"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "refined"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "wall time"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "skfem",
-      "physics": "heat_transient",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "convergence-in-dt slope is 2 with Crank-Nicolson; mixing up the (1-theta) on RHS degrades to 1.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [
-        "convergence"
-      ],
-      "tier0_entities_matched": [
-        "convergence"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "skfem",
-      "physics": "heat_transient",
-      "pitfall_index": 3,
-      "pitfall_category": "API",
-      "signal_text": "user-implemented mass matrix M_assemble takes 10-100x longer than skfem.models.poisson.mass.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "skfem",
-      "physics": "heat_transient",
-      "pitfall_index": 4,
-      "pitfall_category": "Syntax",
-      "signal_text": "time-evolving boundary temperature does not appear in the solution \u2014 max(T - T_D) at boundary DOFs is O(1) instead of 0 because the same x= argument was reused frozen.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "navier_stokes",
+      "backend": "fenics",
+      "physics": "mixed_poisson",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1016,8 +1095,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1034,8 +1113,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1052,8 +1131,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1070,8 +1149,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1088,8 +1167,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1106,8 +1185,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1124,8 +1203,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1142,8 +1221,620 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
       "pitfall_index": 7,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1160,26 +1851,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "hyperelasticity",
-      "pitfall_index": 8,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1196,8 +1869,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1214,8 +1887,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1232,8 +1905,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1250,8 +1923,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1268,8 +1941,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1286,8 +1959,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1304,44 +1977,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "dg_methods",
-      "pitfall_index": 7,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "dg_methods",
-      "pitfall_index": 8,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1358,8 +1995,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1376,8 +2013,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1394,8 +2031,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1412,8 +2049,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1430,8 +2067,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1448,8 +2085,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1466,296 +2103,8 @@
       ]
     },
     {
-      "backend": "skfem",
-      "physics": "time_dependent",
-      "pitfall_index": 7,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "helmholtz",
-      "pitfall_index": 7,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "skfem",
-      "physics": "reaction_diffusion",
+      "backend": "fenics",
+      "physics": "magnetostatics",
       "pitfall_index": 7,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
