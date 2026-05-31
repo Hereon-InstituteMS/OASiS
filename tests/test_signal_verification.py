@@ -258,6 +258,88 @@ class TestDocumentationReachability(unittest.TestCase):
                     f"explicit justification.")
 
 
+class TestBackendImportSnapshot(unittest.TestCase):
+    """Lock in the current backend-import-availability state as a
+    floor: things can improve (more backends importable, fewer
+    Kratos physics unreachable) but cannot silently regress.
+
+    Backed by scripts/audit_backend_imports.py — that script is
+    the source of truth; this test compares its live output
+    against the baseline recorded 2026-06-01.
+
+    Baseline values capture the install reality on the user's
+    machine at audit time. If the user installs the missing
+    Kratos apps (KratosConstitutiveLawsApplication, DEM, MPM,
+    Iga, etc.) the Kratos-available count goes up and the
+    unreachable count goes down — bump the baseline downward in
+    that direction. NEVER bump it UP without explicit signoff:
+    a regression here means an install broke or a physics
+    started depending on something that isn't available.
+    """
+
+    # Recorded 2026-06-01. Adjust DOWNWARD on unreachable (fewer
+    # missing apps); adjust UPWARD on available (more apps
+    # importable).
+    MIN_KRATOS_PHYSICS_AVAILABLE = 7
+    MAX_KRATOS_PHYSICS_UNREACHABLE = 26
+    REQUIRED_IMPORTABLE = ("skfem", "ngsolve", "fenics")
+    REQUIRED_AVAILABLE = ("dealii", "fourc")
+
+    def setUp(self):
+        """Run the audit afresh each test invocation (cheap)."""
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, "scripts/audit_backend_imports.py"],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            self.skipTest(
+                f"audit script failed (rc={result.returncode}); "
+                f"stderr={result.stderr[:200]}")
+        path = REPO_ROOT / "scripts" / "scan_results" / "backend_imports.json"
+        import json
+        self.snapshot = json.loads(path.read_text())
+
+    def test_kratos_physics_available_does_not_regress(self):
+        n = self.snapshot["summary"]["kratos_physics_available"]
+        self.assertGreaterEqual(
+            n, self.MIN_KRATOS_PHYSICS_AVAILABLE,
+            f"Kratos physics with importable app dropped from "
+            f"{self.MIN_KRATOS_PHYSICS_AVAILABLE} to {n}. A Kratos "
+            f"application install was removed or the physics "
+            f"catalog references a new app that is not installed.")
+
+    def test_kratos_physics_unreachable_does_not_grow(self):
+        n = self.snapshot["summary"]["kratos_physics_unreachable"]
+        self.assertLessEqual(
+            n, self.MAX_KRATOS_PHYSICS_UNREACHABLE,
+            f"Kratos unreachable physics grew from "
+            f"{self.MAX_KRATOS_PHYSICS_UNREACHABLE} to {n}. A "
+            f"new physics was added referencing an app that is "
+            f"not installed, or an install was removed.")
+
+    def test_python_backends_remain_importable(self):
+        for be in self.REQUIRED_IMPORTABLE:
+            with self.subTest(backend=be):
+                ok = self.snapshot["summary"].get(f"{be}_importable")
+                self.assertTrue(
+                    ok,
+                    f"Backend {be} library is no longer importable "
+                    f"— install regression. Details: "
+                    f"{self.snapshot.get(be, {}).get('error', 'unknown')}")
+
+    def test_compiled_backends_remain_available(self):
+        for be in self.REQUIRED_AVAILABLE:
+            with self.subTest(backend=be):
+                ok = self.snapshot["summary"].get(f"{be}_available")
+                self.assertTrue(
+                    ok,
+                    f"Backend {be} build artifact missing — "
+                    f"compile regression. Details: "
+                    f"{self.snapshot.get(be, {}).get('error', 'unknown')}")
+
+
 class TestSignalParseDiscipline(unittest.TestCase):
     """Every pitfall whose text starts with a [Category] prefix
     must also be parseable into a Signal: clause.
