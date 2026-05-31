@@ -221,7 +221,17 @@ class TestDocumentationReachability(unittest.TestCase):
             sys.path.insert(0, src_path)
         from core.registry import load_all_backends, get_backend
         load_all_backends()
-        dk = importlib.import_module("tools.deep_knowledge")
+        try:
+            dk = importlib.import_module("tools.deep_knowledge")
+        except ImportError as e:
+            # deep_knowledge.py top-level imports mcp.server.fastmcp,
+            # which is only present in the Open-FEM-agent .venv.
+            # Skip the orphan check in environments without it
+            # (e.g. plain system python running the unit test).
+            self.skipTest(
+                f"tools.deep_knowledge unavailable ({e}); orphan "
+                f"audit requires the Open-FEM-agent .venv")
+            return
         catalogs = {
             "fenics": dk._FENICS_KNOWLEDGE,
             "dealii": dk._DEALII_KNOWLEDGE,
