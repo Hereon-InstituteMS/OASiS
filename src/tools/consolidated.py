@@ -130,6 +130,72 @@ def _list_alternative_solvers(current_solver: str, physics: str) -> str:
     return "Other solvers that support this physics:\n" + "\n".join(alternatives)
 
 
+def _load_matching_postmortems(solver: str = "", physics: str = "",
+                               signal: str = "") -> list[dict]:
+    """Load post-mortem JSONs from data/postmortems/, filtered.
+
+    The post-mortems directory is the audit trail behind the pitfall
+    DB. Each record explains WHY a pitfall was added — the surface
+    symptom that was observed, the root cause, the Table-1 category,
+    the exact pitfall entries shipped, and the detection path the
+    agent now has. The Open-FEM-Agent paper's §3.2 / §5
+    self-correction loop depends on the agent being able to retrieve
+    these at planning time.
+
+    Filters (any can be empty, treated as "match all"):
+      * solver  — exact match against the post-mortem's `backend`
+                  field (case-insensitive). NOT a fuzzy match because
+                  the post-mortem's audit value depends on knowing
+                  it's about THIS backend, not a similar one.
+      * physics — substring match against the `physics` field. A
+                  batch post-mortem like
+                  "poisson, heat, helmholtz, eigenvalue" matches any
+                  of its members.
+      * signal  — substring match across each `pitfall_db_entries`
+                  string. Useful when the post-execution critic
+                  sees a specific error and wants to find the
+                  matching post-mortem.
+
+    Returns the post-mortems as parsed dicts. Sorted by `date`
+    descending so the most-recent record comes first — typically
+    the most-relevant for the current agent session.
+
+    Files under ``data/postmortems/candidates/`` are NOT included
+    here. Candidates are the pre-review staging area
+    (Open-FEM-Agent §3.2 autonomous-growth path) — promotion to a
+    formal post-mortem is a deliberate review step (#46).
+    """
+    pm_dir = Path(__file__).resolve().parents[2] / "data" / "postmortems"
+    if not pm_dir.is_dir():
+        return []
+    solver_l = solver.lower().strip()
+    physics_l = physics.lower().strip()
+    signal_l = signal.lower().strip()
+    out: list[dict] = []
+    for path in pm_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            # Skip schema / index files.
+            continue
+        try:
+            doc = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(doc, dict):
+            continue
+        if solver_l and str(doc.get("backend", "")).lower() != solver_l:
+            continue
+        if physics_l and physics_l not in \
+                str(doc.get("physics", "")).lower():
+            continue
+        if signal_l:
+            entries = doc.get("pitfall_db_entries", []) or []
+            if not any(signal_l in str(e).lower() for e in entries):
+                continue
+        out.append(doc)
+    out.sort(key=lambda d: str(d.get("date", "")), reverse=True)
+    return out
+
+
 def _make_input_snapshot(input_content: str, solver: str = "",
                          extra: dict | None = None) -> dict:
     """Create a sanitised snapshot of simulation input for diff capture.
@@ -159,15 +225,31 @@ def register_consolidated_tools(mcp: FastMCP):
     # ═══════════════════════════════════════════════════════════
 
     @mcp.tool()
-    def knowledge(topic: str, solver: str = "", physics: str = "") -> str:
-        """Get knowledge about solvers, physics, materials, coupling, or input formats.
+    def knowledge(topic: str, solver: str = "", physics: str = "",
+                  signal: str = "") -> str:
+        """Get knowledge about solvers, physics, materials, coupling,
+        post-mortems, or input formats.
 
-        This is the single entry point for ALL domain knowledge.
+        This is the single entry point for ALL domain knowledge — the
+        catalog, the pitfall database, AND the post-mortem record
+        store. Wiring post-mortems through this same tool closes the
+        self-improvement loop: every prepare_simulation call also
+        surfaces the relevant post-mortems so the critic-gate can
+        retrieve them at planning time (Open-FEM-Agent §3.2 / §5
+        self-correction loop).
 
         Args:
             topic: What you want to know. Options:
-                - "physics" — physics-specific knowledge (needs solver + physics)
+                - "physics" — physics-specific knowledge + matching
+                  post-mortems (needs solver + physics)
                 - "pitfalls" — all known pitfalls for a solver
+                - "postmortems" — formal post-mortem records under
+                  data/postmortems/*.json, filtered by solver +
+                  physics + optional signal pattern. These are the
+                  audit-trail entries that record WHY each pitfall
+                  exists; the critic-gate should retrieve them when
+                  the agent's plan touches the matching (solver,
+                  physics) area.
                 - "materials" — material catalog for a solver
                 - "coupling" — cross-solver coupling knowledge
                 - "tsi" — thermo-structural interaction patterns
@@ -177,6 +259,10 @@ def register_consolidated_tools(mcp: FastMCP):
                 - "hardware" — parallelism, GPU, and hardware acceleration capabilities
             solver: Backend name (e.g. 'fenics', 'fourc', 'dealii', 'ngsolve')
             physics: Physics type (e.g. 'poisson', 'linear_elasticity', 'navier_stokes')
+            signal: Optional substring to filter post-mortem
+                pitfall_db_entries Signal: clauses against — useful
+                when the post-execution critic sees a specific error
+                text and wants to find the matching post-mortem.
         """
         _get_journal().record("knowledge_lookup", "knowledge",
                               solver=solver, physics=physics,
@@ -194,7 +280,33 @@ def register_consolidated_tools(mcp: FastMCP):
             ref = _find_reference_test_files(solver, physics)
             if ref:
                 result += f"\n\n{ref}"
+            # Append matching post-mortems so the agent sees both the
+            # catalog AND the audit trail in one call. Filtered to
+            # this (solver, physics) pair so the response stays
+            # focused — the agent can ask for broader post-mortems
+            # explicitly via topic="postmortems".
+            postmortems = _load_matching_postmortems(solver, physics, "")
+            if postmortems:
+                result += (
+                    f"\n\n## Relevant post-mortems "
+                    f"({len(postmortems)} record"
+                    f"{'' if len(postmortems) == 1 else 's'}):\n"
+                    + json.dumps(postmortems, indent=2))
             return result
+
+        elif topic == "postmortems":
+            postmortems = _load_matching_postmortems(solver, physics, signal)
+            if not postmortems:
+                what = ", ".join(
+                    f"{k}={v!r}" for k, v in
+                    {"solver": solver, "physics": physics,
+                     "signal": signal}.items() if v)
+                return (f"No post-mortems found"
+                        f"{' for ' + what if what else ''}. "
+                        f"data/postmortems/*.json is the canonical "
+                        f"store; absence here means the failure mode "
+                        f"has not yet been audited.")
+            return json.dumps(postmortems, indent=2)
 
         elif topic == "pitfalls" and solver:
             # Try deep knowledge
