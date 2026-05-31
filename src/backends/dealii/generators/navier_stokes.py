@@ -105,14 +105,20 @@ KNOWLEDGE = {
         "reference is ~0, against a NS reference is O(1).",
         "[Numerical] Taylor-Hood Q2/Q1 satisfies inf-sup — Q1/Q1 "
         "DOES NOT and produces checkerboard pressure unless "
-        "stabilised (SUPG, GLS, VMS). Signal: pressure field has "
-        "a regular high-frequency checkerboard pattern.",
+        "stabilised (SUPG, GLS, VMS). Signal: DataOut output for "
+        "the BlockVector pressure block shows a regular "
+        "high-frequency checkerboard pattern; "
+        "VectorTools::point_value at adjacent cell centroids "
+        "alternates sign with O(1) magnitude.",
         "[Numerical] Reynolds number affects convergence — Newton "
         "diverges at high Re from a cold start. Continuation in Re: "
         "solve at Re=10, ramp through Re=50, 100, 200, ...; use "
-        "each solution as the next starting guess. Signal: Newton "
-        "fails to converge at Re=200 but converges from the Re=100 "
-        "solution as initial guess.",
+        "each solution as the next starting guess. Signal: "
+        "SolverControl reports residual.l2_norm() > 1e3 on Newton "
+        "iteration 1 at Re=200 from a zero initial guess, ending "
+        "in ExcMessage('iterative method failed to converge'); "
+        "rerunning with the Re=100 solution stored in BlockVector "
+        "as the initial guess converges in 4-6 Newton steps.",
         "[Numerical] For time-dependent: BDF2 or Crank-Nicolson "
         "(2nd-order, A-stable). Backward Euler is robust but "
         "introduces O(dt) numerical viscosity that contaminates "

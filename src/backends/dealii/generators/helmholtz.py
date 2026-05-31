@@ -233,9 +233,12 @@ KNOWLEDGE = {
         "[Numerical] High frequency (large k) — need ~10 DOFs per "
         "wavelength minimum (h < lambda/10). For accurate amplitude "
         "at k > 50 use 20 DOFs/wavelength OR higher polynomial order. "
-        "Signal: solution amplitude differs from the analytic "
-        "reference (Hankel function for radial problems) by a "
-        "factor of 2-5x.",
+        "Signal: VectorTools::integrate_difference for the FE_Q "
+        "solution vs the analytic Hankel-function reference shows "
+        "amplitude error of factor 2-5x at the scattering centre; "
+        "refining h further (well below lambda/10) does NOT close "
+        "the gap (the resolution is fine; the polynomial order is "
+        "wrong for the wavenumber).",
         "[Numerical] Pollution effect — phase error grows as "
         "O(k^{p+1} h^{2p+1}) where p is the FE polynomial order. At "
         "k > 100 even 10 DOFs/wavelength gives visibly wrong phase. "

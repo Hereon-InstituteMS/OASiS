@@ -238,13 +238,12 @@ KNOWLEDGE = {
         "DoFRenumbering::component_wise + BlockSparseMatrix. Without "
         "the renumbering the velocity and pressure DoFs are "
         "interleaved and the BlockSparseMatrix indexing is wrong. "
-        "Signal: assembly succeeds but "
-        "`system_matrix.block(1, 1).frobenius_norm()` (the pressure "
-        "block) is NON-ZERO when it should be zero for a "
-        "saddle-point Stokes system; "
-        "`dof_handler.block_info().global().size()` returns blocks "
-        "in the wrong proportion (e.g. (n, n) instead of "
-        "(dim*n, n)).",
+        "Signal: assembly succeeds but on the assembled "
+        "BlockSparseMatrix system, block(1, 1).frobenius_norm() "
+        "(the pressure block) is NON-ZERO when it should be zero "
+        "for a saddle-point Stokes system; the DoFHandler's "
+        "BlockInfo from get_block_info() reports block sizes in "
+        "the wrong proportion (e.g. (n, n) instead of (dim*n, n)).",
         "[Physics] Pressure is determined up to a constant for pure "
         "Neumann (closed-cavity) problems — pin one DoF or add a "
         "zero-mean constraint via AffineConstraints. Signal: "
@@ -267,9 +266,12 @@ KNOWLEDGE = {
         "inf-sup stable — they look like they converge in 1D tests "
         "but produce checkerboard pressure modes in 2D. Use "
         "Taylor-Hood (Q_{p+1}/Q_p), MINI (Q1+bubble/Q1), "
-        "RT/DGQ or BDM/DGP. Signal: pressure field has a regular "
+        "RT/DGQ or BDM/DGP. Signal: DataOut output for the "
+        "BlockVector pressure component shows a regular "
         "high-frequency checkerboard pattern superimposed on the "
-        "smooth solution.",
+        "smooth solution; VectorTools::point_value evaluated at "
+        "adjacent cell centroids alternates sign with O(1) "
+        "magnitude.",
         "[Physics] FE_RaviartThomas-based H(div) velocity pairs "
         "produce EXACTLY divergence-free velocity at the discrete "
         "level — this is correct, not a bug. If the user is "
@@ -285,9 +287,10 @@ KNOWLEDGE = {
         "channel size to (2.2 × 0.41) to match the published "
         "lift/drag values; off-by-one on these dimensions makes "
         "the reference values not match. Signal: computed drag "
-        "coefficient C_D differs from the Schäfer-Turek 1996 "
-        "reference (Re=20: C_D ≈ 5.58, Re=100: C_D ≈ 3.22) by more "
-        "than 10%; the mismatch is systematic across mesh "
-        "refinement, not noise.",
+        "coefficient C_D from VectorTools::compute_mean_value or "
+        "user-side post-processing differs from the Schäfer-Turek "
+        "1996 reference (Re=20: C_D ≈ 5.58, Re=100: C_D ≈ 3.22) by "
+        "more than 10%; the mismatch is systematic across "
+        "Triangulation::refine_global, not noise.",
     ],
 }

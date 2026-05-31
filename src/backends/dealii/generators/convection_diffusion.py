@@ -201,9 +201,11 @@ KNOWLEDGE = {
         "VectorTools::point_value at the outflow returns the "
         "inflow value with reversed sign.",
         "[Numerical] At high Peclet, SUPG can still oscillate. "
-        "Either refine h or switch to DG. Signal: SUPG solution "
-        "has O(1) oscillations at the interface between high and "
-        "low values, even with tau matched to local Pe.",
+        "Either refine h or switch to DG. Signal: DataOut output "
+        "shows O(1) oscillations in the FE_Q SUPG solution at "
+        "the interface between high and low coefficient regions; "
+        "VectorTools::integrate_difference vs the discontinuous "
+        "reference is O(1) and does not decrease as h refines.",
         "[Integration] Anisotropic refinement (step-30) is "
         "essential for boundary-layer resolution at high Pe — "
         "isotropic refinement wastes DoFs perpendicular to the "

@@ -440,9 +440,12 @@ KNOWLEDGE = {
         "Without it, DataOut shows the reference configuration "
         "with the displacement field overlaid as colour — "
         "misleading for large-deformation problems. Signal: "
-        "ParaView shows the mesh in the reference config not the "
-        "deformed config; the user thinks the deformation is "
-        "small even when |u| is comparable to L.",
+        "DataOut.build_patches() called without "
+        "DataOut::set_mapping(MappingQEulerian) writes a .vtu "
+        "whose geometry is the undeformed reference triangulation; "
+        "the displacement field appears only as colour overlay, "
+        "not as actual node motion, even when "
+        "solution.linfty_norm() is comparable to the domain size.",
         "[Syntax] GridGenerator::subdivided_hyper_rectangle "
         "defaults ALL faces to boundary_id=0 (colorize=false). "
         "Pass colorize=true to get distinct IDs (0-5 in 3D: "
@@ -459,10 +462,11 @@ KNOWLEDGE = {
         "for subsequent iterations. Do NOT set boundary DOFs "
         "directly in the solution vector — this concentrates "
         "strain in boundary elements and Newton diverges. Signal: "
-        "Newton residual.l2_norm() drops normally on iteration 1 "
-        "of each load step then jumps back up by 10x on iteration "
-        "2 — caused by direct DOF-setting at the boundary on "
-        "subsequent iterations.",
+        "SolverControl reports residual.l2_norm() dropping "
+        "normally on iteration 1 of each load step then jumping "
+        "back up by 10x on iteration 2 — caused by direct "
+        "DOF-setting in the BlockVector bypassing the "
+        "AffineConstraints object on subsequent iterations.",
         "[Syntax] For FESystem (vector-valued), use "
         "fe_values[FEValuesExtractors::Vector(0)]"
         ".get_function_gradients() — NOT "

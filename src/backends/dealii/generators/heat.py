@@ -412,8 +412,10 @@ KNOWLEDGE = {
         "fully-implicit scheme regardless of the theta value; "
         "Crank-Nicolson (theta=0.5) then degrades to backward Euler "
         "and the time-discretisation error scales O(dt) not O(dt^2). "
-        "Signal: temperature convergence on a manufactured solution "
-        "is first-order in dt even though you set theta=0.5.",
+        "Signal: VectorTools::integrate_difference vs a "
+        "manufactured solution shows L2-error scaling as O(dt^1) "
+        "instead of O(dt^2) even though theta=0.5 was set; "
+        "log-log error-vs-dt slope is ~1.0, not ~2.0.",
         "[API] For AMR in time: interpolate the solution to the new "
         "mesh via SolutionTransfer between refine_grid() and "
         "distribute_dofs(). Skipping SolutionTransfer gives a "

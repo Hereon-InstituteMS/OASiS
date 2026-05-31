@@ -40,20 +40,23 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # the catalog has improved. A downward edit means a regression
     # snuck through and needs to be re-examined.
     #
-    # 2026-05-31 floor raise: all 96 deal.II pitfalls now have
+    # 2026-05-31 floor raise: all 96 deal.II pitfalls have
     # [Category] prefix + Signal: clause + pass Tier 0 (Signal
-    # references a canonical entity in element_catalog or the
-    # cross-backend entity list) + Tier 1 (Signal uses
-    # observable-symptom vocabulary). This is the strongest
-    # falsifiability floor short of Tier 2 (compile + run
-    # regression fixtures per signal), which remains
-    # multi-week work.
+    # references ≥1 real CODE SYMBOL) + Tier 1 (Signal uses
+    # observable-symptom vocabulary). Critic round 2 forced a
+    # Tier-0 split into code-symbol-only / with-domain-decoration
+    # / domain-names-only — the gameable failure-mode is
+    # "domain-names-only" entries scoring as Tier-0 hits, which
+    # MUST stay at 0.
     MIN_N_PITFALLS = 96
     MIN_WITH_CATEGORY_PREFIX = 96
     MIN_WITH_SIGNAL_CLAUSE = 96
     MIN_TIER0_PASSED = 96
     MIN_TIER1_PASSED = 96
     MIN_TIER0_AND_1_PASSED = 96
+    # New gateable signals from the critic-driven split:
+    MAX_TIER0_DOMAIN_NAMES_ONLY = 0  # gameable; MUST stay at 0
+    MIN_TIER0_CODE_SYMBOL_ONLY = 56  # strongest sub-tier
 
     def setUp(self):
         from verify_signal_clauses import verify_backend
@@ -111,6 +114,39 @@ class TestDealiiSignalFloor(unittest.TestCase):
             f"deal.II pitfalls passing BOTH Tier 0 AND Tier 1 "
             f"dropped from {self.MIN_TIER0_AND_1_PASSED} to {n}. "
             f"This is the strictest floor.")
+
+    def test_no_pitfall_relies_on_domain_names_alone(self):
+        """The gameable Tier-0 failure mode the critic flagged.
+
+        A pitfall that scores Tier-0 by mentioning ONLY a domain
+        name (Stokes, Newton, Newmark, Turek, ...) is not
+        actually grepable by a post-execution critic in real
+        deal.II output. Every Tier-0 pass MUST reference at
+        least one real code symbol.
+        """
+        n = self._count(
+            lambda r: r.tier0_domain_names_matched
+            and not r.tier0_code_symbol_matched)
+        self.assertLessEqual(
+            n, self.MAX_TIER0_DOMAIN_NAMES_ONLY,
+            f"{n} deal.II pitfalls score Tier-0 by domain names "
+            f"alone (Stokes, Newton, Turek, ...) without "
+            f"referencing a real code symbol. This is the "
+            f"gameable failure mode the critic flagged — a "
+            f"post-execution critic cannot grep for these "
+            f"signals in real deal.II output.")
+
+    def test_tier0_code_symbol_only_floor(self):
+        """Sub-floor for the strongest Tier-0 grade."""
+        n = self._count(
+            lambda r: r.tier0_code_symbol_matched
+            and not r.tier0_domain_names_matched)
+        self.assertGreaterEqual(
+            n, self.MIN_TIER0_CODE_SYMBOL_ONLY,
+            f"deal.II pitfalls passing Tier 0 by code-symbol "
+            f"reference ONLY (no decorative domain names) "
+            f"dropped from {self.MIN_TIER0_CODE_SYMBOL_ONLY} to "
+            f"{n} — the strongest sub-tier weakened.")
 
 
 class TestHarnessSelfChecks(unittest.TestCase):

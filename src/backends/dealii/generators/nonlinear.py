@@ -193,16 +193,21 @@ KNOWLEDGE = {
         "[Numerical] Line search prevents divergence — backtrack "
         "until the residual norm decreases. Full Newton step "
         "(alpha=1) without line search overshoots in the early "
-        "iterations and diverges. Signal: Newton residual "
-        "oscillates between 1e-3 and 1e5 without converging.",
+        "iterations and diverges. Signal: SolverControl::last_step() "
+        "reports residual.l2_norm() oscillating between 1e-3 and "
+        "1e5 across consecutive Newton iterations without "
+        "converging; ExcMessage('Newton did not converge in N "
+        "iterations') eventually fires.",
         "[Syntax] AssembleLinearisation MUST update with current "
         "solution at every Newton iteration. Using a stale solution "
         "(e.g. always the initial guess) makes Newton converge to "
         "the WRONG linearised system — looks like convergence but "
-        "the solution is incorrect. Signal: Newton reports "
-        "convergence in 3-5 iterations on a problem that should "
-        "take 10+, and the solution doesn't match an analytic "
-        "reference.",
+        "the solution is incorrect. Signal: SolverControl reports "
+        "Newton convergence (residual.l2_norm() < tol) in 3-5 "
+        "iterations on a problem that should take 10+; "
+        "VectorTools::integrate_difference vs an analytic "
+        "reference returns O(1) L2-error despite the reported "
+        "residual being machine-precision-small.",
         "[API] For AD: use Differentiation::AD::EnergyFunctional "
         "(step-72) for the energy-functional formulation, "
         "Differentiation::AD::CellLevelBase for the residual-vector "

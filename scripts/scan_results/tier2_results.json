@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "n_fixtures": 2,
+    "passed": 1,
+    "failed": 0,
+    "harness_pending": 0,
+    "skipped": 1
+  },
+  "results": {
+    "dealii::hyperelasticity::11": {
+      "key": "dealii::hyperelasticity::11",
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 11,
+      "fixture_id": "hyperelasticity_fevalues_scalar_on_vector",
+      "mode": "compile_only",
+      "status": "skipped",
+      "expect_matched": [],
+      "forbid_violated": [],
+      "notes": [
+        "environmental: deal.II install missing TBB headers (task #30). Fixture cannot be evaluated until the install is repaired; the Signal: clause itself may still be correct."
+      ],
+      "captured_head": "[ 50%] Building CXX object CMakeFiles/prog.dir/source.cpp.o\nIn file included from ~/miniconda3/envs/ofa-dealii/include/deal.II/fe/fe_q_base.h:21,\n                 from ~/miniconda3/envs/ofa-dealii/include/deal.II/fe/fe_q.h:23,\n                 from ~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/dealii/hyperelasticity_fevalues_scalar_on_vector/source.cpp:16:\n~/miniconda3/envs/ofa-dealii/include/deal.II/base/thread_management.h:41:14: fatal error: tbb/task.h: No such file or directory\n   41 | #    include <tbb/task.h>\n      |              ^~~~~~~~~~~~\ncompilation terminated.\ngmake[2]: *** [CMakeFiles/prog.dir/build.make:76: CMakeFiles/prog.dir/source.cpp.o] Fehler 1\ngmake[1]: *** [CMakeFiles/Makefile2:83: CMakeFiles/prog.dir/all] Fehler 2\ngmake: *** [Makefile:91: all] Fehler 2\n"
+    },
+    "skfem::linear_elasticity::0": {
+      "key": "skfem::linear_elasticity::0",
+      "backend": "skfem",
+      "physics": "linear_elasticity",
+      "pitfall_index": 0,
+      "fixture_id": "boundary_not_tagged",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ValueError",
+        "Boundary 'left' not found"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/skfem/boundary_not_tagged/source.py\", line 30, in main\n    _ = ib.get_dofs(\"left\").flatten()\n        ^^^^^^^^^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/basis/abstract_basis.py\", line 245, in get_dofs\n    facets = self.mesh.normalize_facets(facets)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/mesh/mesh.py\", line 1328, in normalize_facets\n    raise ValueError(\"Boundary '{}' not found.\".format(facets))\nValueError: Boundary 'left' not found.\n"
+    }
+  }
+}

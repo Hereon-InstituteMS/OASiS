@@ -76,8 +76,18 @@ class SignalVerification:
     pitfall_index: int                     # 0-based index into pitfalls list
     pitfall_category: str                  # [Syntax]/[Physics]/...
     signal_text: str                       # the Signal: clause itself
+    # Tier-0 split per critic 2026-05-31 round 2:
+    #   tier0_code_symbol_matched  — Signal references ≥1 real code
+    #     symbol (deal.II class, exception, library identifier).
+    #     This is the HONEST Tier-0 gate.
+    #   tier0_domain_names_matched — Signal references ≥1 textbook
+    #     concept (Stokes, Newton, Turek). Decorative; NOT
+    #     sufficient on its own for Tier 0.
+    #   tier0_passed                — true iff tier0_code_symbol_matched
     tier0_passed: bool = False
-    tier0_entities_matched: list = field(default_factory=list)
+    tier0_code_symbol_matched: list = field(default_factory=list)
+    tier0_domain_names_matched: list = field(default_factory=list)
+    tier0_entities_matched: list = field(default_factory=list)  # back-compat union
     tier1_passed: bool = False
     tier1_vocab_hits: list = field(default_factory=list)
     tier2_passed: bool = False
@@ -100,29 +110,43 @@ def _split_pitfall(text: str) -> tuple[str | None, str | None]:
     return cat, sig
 
 
-def _load_canonical_entities(backend: str) -> set[str]:
-    """Set of names a Signal can plausibly reference: catalog
-    element + mesh-generator names, plus a small set of well-known
-    error classes / external symbols (SolverCG breakdown, EPS_,
-    MPI_ERR_*, ...).
+def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
+    """Return (code_symbols, domain_names).
+
+    Senior-AI-scientist critic 2026-05-31 round 2: the prior
+    single-set design let domain words ("Stokes", "Poisson",
+    "Newton") count as Tier-0 hits, so every elasticity pitfall
+    scored on "Poisson ratio" and every flow pitfall on "Stokes".
+    That made Tier-0 a near-tautology and inflated the headline
+    pass rate.
+
+    Splitting them:
+      * **code_symbols** — names a programmer would `grep -r` for
+        in deal.II source: classes (FE_Q, SolverCG, GridIn,
+        DataOut, VectorTools), exceptions (ExcMessage,
+        ExcDimensionMismatch), function names (compress,
+        condense), and library-internal identifiers (KINSOL,
+        SLEPc, EPS_TARGET_REAL). A Tier-0 pass requires at least
+        one match here.
+      * **domain_names** — words a textbook would use: physics
+        names (Stokes, Maxwell, Laplace), method names (Newton,
+        Newmark, BDF2, Crank-Nicolson), benchmark people
+        (Turek, Ghia, Kirsch). Decorative; NEVER sufficient on
+        their own for Tier 0.
     """
-    out: set[str] = set()
+    code_symbols: set[str] = set()
+    domain_names: set[str] = set()
+
     if backend == "dealii":
         try:
             mod = importlib.import_module(
                 "backends.dealii.element_catalog")
-            out.update(getattr(mod, "ELEMENT_NAMES", set()))
-            out.update(getattr(mod, "MESH_GENERATOR_NAMES", set()))
+            code_symbols.update(getattr(mod, "ELEMENT_NAMES", set()))
+            code_symbols.update(getattr(mod, "MESH_GENERATOR_NAMES", set()))
         except ImportError:
             pass
-    # Common cross-backend error/observable names we treat as
-    # canonical for the Tier-0 entity check. This set is the
-    # "namespace of grepable strings" — anything a
-    # post-execution critic can search for in actual deal.II
-    # output, plus the well-known method/algorithm names that
-    # identify which mathematical machinery the Signal is talking
-    # about.
-    out.update({
+
+    code_symbols.update({
         # ── Krylov solvers ─────────────────────────────────────
         "SolverCG", "SolverGMRES", "SolverFGMRES", "SolverMinRes",
         "SolverBiCGStab", "SolverDirect", "SolverFIRE",
@@ -130,63 +154,105 @@ def _load_canonical_entities(backend: str) -> set[str]:
         # ── External-package solvers / linear-algebra layers ─
         "SUNDIALS", "KINSOL", "ARKode", "SLEPc", "PETSc",
         "Trilinos", "TrilinosWrappers", "MUMPS", "UMFPACK",
-        "PETScWrappers", "EPS",
+        "PETScWrappers", "EPS", "EPS_TARGET_REAL",
         # ── MPI / runtime errors ───────────────────────────────
         "MPI_Init", "MPI_Comm_size", "MPI_ERR_COMM",
-        "MPI_InitFinalize", "Utilities",
+        "MPI_InitFinalize",
         # ── Mesh / DoF infrastructure ──────────────────────────
         "GridGenerator", "GridIn", "GridOut", "GridTools",
         "Triangulation", "DoFHandler", "DoFRenumbering",
         "AffineConstraints", "ConstraintMatrix", "MappingQ",
         "MappingQEulerian", "SolutionTransfer", "MatrixFree",
         "FEValuesExtractors", "FEValues", "FEValuesBase",
-        "FEInterfaceValues", "FEEvaluation",
-        "DataOut", "DataOutInterface", "ParaView",
+        "FEInterfaceValues", "FEEvaluation", "FECollection",
+        "FESeries", "QCollection", "QGauss", "MeshWorker",
+        "DataOut", "DataOutInterface", "DataOutFaces",
         "KellyErrorEstimator", "Quadrature",
         "VectorTools", "TimerOutput", "VectorOperation",
-        "SparseMatrix", "BlockSparseMatrix",
+        "SparseMatrix", "BlockSparseMatrix", "BlockVector",
         "SparsityPattern", "BlockSparsityPattern",
-        "Turek", "Ghia",  # ASCII shortforms of Schäfer-Turek / Ghia
-        "Stokes", "Navier", "Maxwell", "Helmholtz",
-        "Laplace", "Poisson",  # method names users would grep for
+        "SparsityTools", "IndexSet", "DoFTools",
+        "VectorizedArray",
         # ── Common exception classes ──────────────────────────
         "ExcMessage", "ExcDimensionMismatch", "ExcIndexRange",
         "ExcNotImplemented", "ExcInternalError",
-        "ExcInitializeNotInitialized",
+        "ExcInitializeNotInitialized", "ExcSolverFail",
+        "ExcInvalidIterator",
         # ── Preconditioners / smoothers ────────────────────────
-        "AMG", "BoomerAMG", "SSOR", "SOR", "ILU", "ILUT",
         "PreconditionAMG", "PreconditionSSOR",
         "PreconditionJacobi", "PreconditionChebyshev",
         "PreconditionILU", "PreconditionBlock",
+        "PreconditionBlockSSOR", "PreconditionIdentity",
         "MGSmootherRelaxation",
-        # ── Numerical methods / discretisation names ──────────
-        "Newton", "Picard", "Oseen", "Jacobi", "Crank-Nicolson",
-        "Newmark", "BDF2", "Theta", "RungeKutta", "Heun",
-        # ── Stable element pairs / stabilisations ─────────────
-        "Taylor-Hood", "MINI", "Vanka", "SUPG", "GLS", "VMS",
-        "PML", "Sommerfeld", "Nitsche",
-        # ── Catalog-internal mathematical observables ─────────
-        "Hankel", "Bessel", "Schäfer-Turek", "Schaefer-Turek",
-        "Ghia", "Kirsch", "Euler-Bernoulli", "Boussinesq",
-        "LBB",  # Ladyzhenskaya-Babuška-Brezzi
-        "Lagrange",
-        # ── deal.II output-stream markers the critic can grep ─
-        "breakdown", "convergence", "checkerboard", "Mesh",
+        # ── External library output markers a critic can grep ─
+        "BoomerAMG",  # HYPRE class name, real C++ symbol
+        "p4est",
+        # ── Differentiation / AD API ──────────────────────────
+        "Differentiation",
+        # ── Output ─────────────────────────────────────────────
+        "write_vtu", "write_vtu_with_pvtu_record",
+        "write_pvd_record",
     })
-    return out
+
+    domain_names.update({
+        # ── Numerical method names (textbook concepts, not
+        #    classes — e.g. "Newton" is a method, but in code
+        #    you see SolverControl + iterate loops, not a
+        #    "Newton" class).
+        "Newton", "Picard", "Oseen", "Jacobi",
+        "Crank-Nicolson", "Newmark", "BDF2", "Theta",
+        "RungeKutta", "Heun", "Euler",
+        # ── Stable pairs / stabilisations / concepts ──────────
+        "Taylor-Hood", "MINI", "Vanka", "SUPG", "GLS", "VMS",
+        "PML", "Sommerfeld", "Nitsche", "AMG", "SSOR", "SOR",
+        "ILU", "ILUT",  # algorithm names sit between code/domain
+        # ── Benchmark people / domain-specific math objects ──
+        "Hankel", "Bessel", "Turek", "Schäfer-Turek",
+        "Schaefer-Turek", "Ghia", "Kirsch", "Euler-Bernoulli",
+        "Boussinesq", "Hermite",
+        # ── Physics / PDE / math concepts ─────────────────────
+        "Stokes", "Navier", "Maxwell", "Helmholtz",
+        "Laplace", "Poisson", "Lagrange", "LBB",
+        # ── Vocabulary in pitfall prose that's NOT a code symbol
+        "breakdown", "convergence", "checkerboard", "Mesh",
+        "ParaView",  # tool name, not a class
+    })
+
+    return code_symbols, domain_names
 
 
-def _tier0_check(signal: str, entities: set[str],
+def _load_canonical_entities(backend: str) -> set[str]:
+    """Back-compat alias — union of code-symbols and domain-names."""
+    c, d = _load_entity_split(backend)
+    return c | d
+
+
+def _tier0_check(signal: str, code_symbols: set[str],
+                 domain_names: set[str],
                  result: SignalVerification) -> None:
-    """Tier 0: Signal references at least one canonical entity."""
-    matched: list[str] = []
+    """Tier 0: Signal references ≥1 CODE SYMBOL.
+
+    Per critic 2026-05-31 round 2: domain names (Stokes, Poisson,
+    Newton) are NOT sufficient on their own. The honest Tier-0
+    gate is "Signal references at least one real deal.II code
+    symbol that a post-execution critic could grep for in actual
+    output". Domain names are recorded separately as soft
+    indicators but do not flip tier0_passed.
+    """
+    code_matched: list[str] = []
+    domain_matched: list[str] = []
     for tok in _IDENT_RE.findall(signal):
         if len(tok) < 3:
             continue
-        if tok in entities:
-            matched.append(tok)
-    result.tier0_entities_matched = sorted(set(matched))
-    result.tier0_passed = len(matched) >= 1
+        if tok in code_symbols:
+            code_matched.append(tok)
+        elif tok in domain_names:
+            domain_matched.append(tok)
+    result.tier0_code_symbol_matched = sorted(set(code_matched))
+    result.tier0_domain_names_matched = sorted(set(domain_matched))
+    result.tier0_entities_matched = sorted(
+        set(code_matched) | set(domain_matched))
+    result.tier0_passed = len(code_matched) >= 1
 
 
 def _tier1_check(signal: str, result: SignalVerification) -> None:
@@ -243,7 +309,7 @@ def _harvest_pitfalls(backend: str) -> list[tuple[str, int, str]]:
 
 
 def verify_backend(backend: str) -> list[SignalVerification]:
-    entities = _load_canonical_entities(backend)
+    code_symbols, domain_names = _load_entity_split(backend)
     results: list[SignalVerification] = []
     for physics, idx, text in _harvest_pitfalls(backend):
         cat, sig = _split_pitfall(text)
@@ -265,12 +331,35 @@ def verify_backend(backend: str) -> list[SignalVerification]:
                 "not detection-actionable")
             results.append(result)
             continue
-        _tier0_check(sig, entities, result)
+        _tier0_check(sig, code_symbols, domain_names, result)
         _tier1_check(sig, result)
-        # Tier 2 is fixture-based; record harness-pending for now.
-        result.tier2_status = "harness_pending"
+        # Tier 2 — load operational results from the fixture
+        # runner output (if present).
+        result.tier2_status = _tier2_lookup(backend, physics, idx)
+        result.tier2_passed = (result.tier2_status == "passed")
         results.append(result)
     return results
+
+
+def _tier2_lookup(backend: str, physics: str, idx: int) -> str:
+    """Look up Tier-2 fixture result for one pitfall.
+
+    Reads ``scripts/scan_results/tier2_results.json`` if present.
+    Returns one of: ``passed`` / ``failed`` / ``harness_pending`` /
+    ``not_attempted`` (when there is no fixture for this pitfall).
+    """
+    path = OUTPUT.parent / "tier2_results.json"
+    if not path.is_file():
+        return "harness_pending"
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return "harness_pending"
+    key = f"{backend}::{physics}::{idx}"
+    entry = data.get(key)
+    if not isinstance(entry, dict):
+        return "not_attempted"
+    return str(entry.get("status", "harness_pending"))
 
 
 def main():
@@ -289,11 +378,26 @@ def main():
         "with_signal_clause": sum(
             1 for r in results if r.signal_text),
         "tier0_passed": sum(1 for r in results if r.tier0_passed),
+        "tier0_code_symbol_only": sum(
+            1 for r in results
+            if r.tier0_code_symbol_matched
+            and not r.tier0_domain_names_matched),
+        "tier0_with_domain_decoration": sum(
+            1 for r in results
+            if r.tier0_code_symbol_matched
+            and r.tier0_domain_names_matched),
+        "tier0_domain_names_only": sum(
+            1 for r in results
+            if r.tier0_domain_names_matched
+            and not r.tier0_code_symbol_matched),
         "tier1_passed": sum(1 for r in results if r.tier1_passed),
         "tier0_and_1_passed": sum(
             1 for r in results
             if r.tier0_passed and r.tier1_passed),
         "tier2_passed": sum(1 for r in results if r.tier2_passed),
+        "tier2_attempted": sum(
+            1 for r in results
+            if r.tier2_status in ("passed", "failed")),
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
