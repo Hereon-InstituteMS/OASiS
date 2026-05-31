@@ -4,23 +4,22 @@
   "scan_loaded": true,
   "drift": {
     "elements": [
+      "DGP0",
+      "DoFHandler",
+      "DoFRenumbering",
       "DoFs",
       "FE_SimplexP",
+      "P1NC",
       "PDEs",
-      "PETSc"
+      "PETSc",
+      "TetGen",
+      "active_fe_index",
+      "component_wise"
     ],
     "mesh_generators": [
-      "GridGenerator",
       "boundary_id",
-      "half_length",
-      "inner_radius",
       "lambda_mn",
-      "n_per_dir",
-      "n_slices",
-      "outer_radius",
-      "refine_global",
-      "t_in",
-      "t_out"
+      "refine_global"
     ]
   },
   "truly_missing": {

@@ -334,21 +334,44 @@ KNOWLEDGE = {
         "J": "Volume ratio: J = det(F)",
         "E": "Green-Lagrange: E = 0.5*(C - I)",
     },
-    "elements": [
-        "FESystem<dim>(FE_Q<dim>(degree), dim) — displacement-only formulation (step-18, step-72); degree=2 is the typical choice to mitigate volumetric locking at small compressibility",
-        "FESystem<dim>(FE_Q<dim>(2), dim, FE_DGP<dim>(1), 1, FE_DGP<dim>(0), 1) — three-field (u, p̃, J̃) formulation per step-44; required for nearly-incompressible hyperelasticity",
-        "FE_Q_Bubbles<dim>(degree) wrapped in FESystem for vector unknowns — improved volumetric behaviour over plain FE_Q without going to the full three-field formulation",
-        "FE_RannacherTurek<dim>() — P1-NC locking-free; cheap alternative when degree ≥ 2 FE_Q is too expensive",
-        "FE_Q_Hierarchical<dim>(degree) — for hp-adaptive refinement during load stepping (refine in regions where Newton stalls)",
-    ],
-    "mesh_generators": [
-        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2, colorize=true) — anisotropic beams and slabs; colorize=true critical for per-face BC distinction (else all faces get boundary_id=0)",
-        "GridGenerator::hyper_cube(tria, 0, 1) — unit-cube cube-compression / tension test",
-        "GridGenerator::hyper_L(tria, -1, 1) — re-entrant corner amplifies stress concentration; tests element-inversion handling",
-        "GridGenerator::cylinder(tria, radius, half_length) — bar-bending / torsion tests",
-        "GridGenerator::hyper_shell(tria, center, in, out) — pressure-vessel and balloon-inflation problems",
-        "GridGenerator::plate_with_a_hole(tria, ...) — Cook's-membrane-style stress concentration under large deformation",
-    ],
+    "elements": {
+        "FESystem":
+            "Vector wrapper for displacement-only formulations "
+            "(step-18, step-72): FESystem<dim>(FE_Q<dim>(degree), "
+            "dim). Or the three-field (u, p̃, J̃) composition per "
+            "step-44 for nearly-incompressible problems.",
+        "FE_Q":
+            "Displacement field; degree=2 typical to mitigate "
+            "volumetric locking at small compressibility. Pair "
+            "with FE_DGP(degree-1) + FE_DGP(degree-2) inside "
+            "FESystem for step-44 three-field hyperelasticity.",
+        "FE_Q_Bubbles":
+            "Improved volumetric behaviour over plain FE_Q "
+            "without going to the full step-44 three-field "
+            "formulation. Cheaper compromise.",
+        "FE_RannacherTurek":
+            "Locking-free P1-NC; cheap alternative when degree "
+            "≥ 2 FE_Q is too expensive but the user needs the "
+            "incompressible-limit response.",
+        "FE_Q_Hierarchical":
+            "For hp-adaptive refinement during load stepping — "
+            "refine in regions where Newton stalls without "
+            "throwing away the previous load step's coarse-DoF "
+            "solution.",
+        "FE_DGP":
+            "Pressure and dilation fields in the step-44 "
+            "three-field formulation. FE_DGP(degree-1) for the "
+            "pressure-like field, FE_DGP(degree-2) for the "
+            "Jacobian-like field.",
+    },
+    "mesh_generators": {
+        "subdivided_hyper_rectangle": "Anisotropic beams / slabs. colorize=true REQUIRED for per-face BC distinction (else all faces share boundary_id=0).",
+        "hyper_cube": "Cube-compression / tension test.",
+        "hyper_L": "Re-entrant corner amplifies stress concentration; tests element-inversion handling.",
+        "cylinder": "Bar-bending / torsion tests.",
+        "hyper_shell": "Pressure-vessel and balloon-inflation problems.",
+        "plate_with_a_hole": "Cook's-membrane-style stress concentration under large deformation.",
+    },
     "solvers": [
         "Newton-Raphson with line search — outer loop; line search MUST check det(F) > 0 to avoid element inversion",
         "SparseDirectUMFPACK — preferred linear sub-solver for < 50k DoFs; more robust than iterative methods on the Newton tangent, which can become indefinite during line search",

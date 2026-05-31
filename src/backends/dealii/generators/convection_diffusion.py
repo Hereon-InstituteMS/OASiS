@@ -132,20 +132,35 @@ KNOWLEDGE = {
                       "step-63 (GMG with block smoothers)"],
     "function_space": "FE_Q(1) for SUPG, FE_DGQ(p) for DG",
     "solver": "BiCGStab + Jacobi for SUPG; direct for DG (block-diagonal)",
-    "elements": [
-        "FE_Q<dim>(degree) + SUPG stabilisation — streamline-upwind Petrov-Galerkin; degree=1 with proper tau is the SUPG standard",
-        "FE_DGQ<dim>(degree) + upwind flux — DG (step-12); handles discontinuous solutions and high Peclet naturally",
-        "FE_FaceQ<dim>(degree) + FE_DGQ<dim>(degree) — hybridised DG (HDG, step-51); face trace + cell DG; cheaper than full DG",
-        "FE_DGP<dim>(degree) — DG monomial basis; alternative to FE_DGQ for higher-order transport",
-        "FE_Q_Hierarchical<dim>(degree) — hp-adaptive refinement around shock layers; combine with anisotropic refinement (step-30)",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, 0, 1) — canonical transport on unit square; reference solutions in step-9",
-        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2) — anisotropic refinement for boundary-layer / shock-front resolution",
-        "GridGenerator::hyper_rectangle(tria, p1, p2) — generic channel for inlet/outlet transport tests",
-        "GridGenerator::hyper_L(tria, a, b) — L-shaped; tests discontinuity propagation around corner",
-        "GridGenerator::merge_triangulations(t1, t2, result) — heterogeneous-coefficient demos (high-diff + low-diff patches)",
-    ],
+    "elements": {
+        "FE_Q":
+            "Used with SUPG / GLS / VMS stabilisation — bare "
+            "Galerkin Q1 oscillates at high Peclet. degree=1 + "
+            "tau = h/(2|b|)*(coth(Pe) - 1/Pe) is the SUPG "
+            "standard.",
+        "FE_DGQ":
+            "DG with upwind flux (step-12) — handles "
+            "discontinuous solutions and high Peclet naturally. "
+            "Preferred over stabilised FE_Q when Pe > ~100.",
+        "FE_FaceQ":
+            "Trace component of hybridised DG (HDG, step-51) — "
+            "combined with FE_DGQ on cells, trace unknowns live "
+            "only on faces, cheaper than full DG.",
+        "FE_DGP":
+            "DG monomial basis; alternative to FE_DGQ for "
+            "higher-order accurate transport.",
+        "FE_Q_Hierarchical":
+            "For hp-adaptive refinement around shock layers; "
+            "combine with anisotropic refinement (step-30) so "
+            "h refinement is concentrated normal to the front.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Canonical transport on unit square; step-9 reference solutions.",
+        "subdivided_hyper_rectangle": "Anisotropic refinement for boundary-layer / shock-front resolution.",
+        "hyper_rectangle": "Generic channel for inlet/outlet transport tests.",
+        "hyper_L": "L-shaped; tests discontinuity propagation around corner.",
+        "merge_triangulations": "Heterogeneous-coefficient demos (high-diff + low-diff patches).",
+    },
     "solvers": [
         "SolverBiCGStab<>             — non-symmetric system from convection term; best for SUPG",
         "SolverGMRES<>                — robust alternative; works when BiCGStab stagnates",

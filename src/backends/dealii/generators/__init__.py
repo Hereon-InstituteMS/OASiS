@@ -129,7 +129,16 @@ def get_template(key: str) -> Callable:
 
 
 def get_knowledge(physics: str) -> dict:
-    """Return knowledge dict for a physics type."""
+    """Return knowledge dict for a physics type.
+
+    If the physics's KNOWLEDGE['elements'] is a dict (post-refactor
+    shape, ``{class_name: applicability_note}``), the entries are
+    joined with the canonical ``element_catalog.ELEMENTS`` records
+    and returned as a list of rich dicts. Legacy list-form entries
+    are returned verbatim — both shapes coexist during migration
+    (senior-AI-scientist critic 2026-05-31: canonical-element
+    refactor).
+    """
     if physics in _KNOWLEDGE_CACHE:
         return _KNOWLEDGE_CACHE[physics]
 
@@ -140,11 +149,36 @@ def get_knowledge(physics: str) -> dict:
     try:
         mod = importlib.import_module(module_path, package=__name__)
         knowledge = getattr(mod, dict_name)
-        _KNOWLEDGE_CACHE[physics] = knowledge
-        return knowledge
     except (ImportError, AttributeError) as exc:
         logger.debug("Cannot load knowledge for %r: %s", physics, exc)
         return {}
+
+    # Resolve elements / mesh_generators if in the structured (dict)
+    # form; pass through if legacy (list) form. Done at retrieval
+    # time, not import time, so each backend's catalog stays simple.
+    if isinstance(knowledge, dict):
+        from backends.dealii.element_catalog import (
+            resolve_elements_section,
+            resolve_mesh_generators_section,
+        )
+        patched = False
+        new_knowledge = dict(knowledge)
+        if "elements" in knowledge:
+            resolved = resolve_elements_section(knowledge["elements"])
+            if resolved is not None:
+                new_knowledge["elements"] = resolved
+                patched = True
+        if "mesh_generators" in knowledge:
+            resolved = resolve_mesh_generators_section(
+                knowledge["mesh_generators"])
+            if resolved is not None:
+                new_knowledge["mesh_generators"] = resolved
+                patched = True
+        if patched:
+            knowledge = new_knowledge
+
+    _KNOWLEDGE_CACHE[physics] = knowledge
+    return knowledge
 
 
 def list_template_keys() -> list[str]:

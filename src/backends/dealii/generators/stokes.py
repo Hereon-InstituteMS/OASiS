@@ -155,30 +155,68 @@ KNOWLEDGE = {
     "function_space": "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1",
     "solver": "Block Schur complement: A*u = f - B^T*p, then S*p = B*A^{-1}*f - g",
     "block_system": "GMRES with Schur complement preconditioner, or direct UMFPACK for small",
-    # ── Structured catalog keys — encoded 2026-05-31 against Layer A
-    #    scan vs catalog diff. Stokes is the canonical place where
-    #    LBB-stable element-pair choice MATTERS, so each entry pairs
-    #    the element with whether it is inf-sup stable on its own
-    #    or requires a stabilisation term.
-    "elements": [
-        "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1, inf-sup stable, the default for low-Re Stokes",
-        "FESystem<dim>(FE_Q<dim>(p+1), dim, FE_Q<dim>(p), 1) — generalised Taylor-Hood at higher p; stable for p ≥ 1",
-        "FE_Q_Bubbles<dim>(degree) for velocity + FE_DGP<dim>(degree-1) for pressure — MINI element; inf-sup stable, cheaper than Taylor-Hood at p=1",
-        "FE_RaviartThomas<dim>(degree) for velocity + FE_DGQ<dim>(degree) for pressure — H(div) mixed; momentum-conservative, exactly divergence-free velocity",
-        "FE_BDM<dim>(degree) for velocity + FE_DGP<dim>(degree-1) for pressure — Brezzi-Douglas-Marini; H(div) alternative to RT, fewer DoFs per cell",
-        "FE_RannacherTurek<dim>() for velocity + FE_DGQ<dim>(0) for pressure — P1-NC / P0; inf-sup stable on quads, cheap, no Taylor-Hood h^2 bubble",
-        "FE_BernardiRaugel<dim>() — vector-valued element with edge bubbles, inf-sup stable when paired with piecewise-constant pressure",
-        "FE_Nothing<dim>() — useful inside FESystem on subdomains where flow is suppressed (solid inclusions, ALE-frozen regions)",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, 0, 1)                  — driven-cavity benchmark, the canonical Stokes / Navier-Stokes verification problem",
-        "GridGenerator::channel_with_cylinder(tria, ...)        — Schäfer-Turek benchmark (2D-1, 2D-2, 2D-3); paper-quality reference for Stokes/NS up to Re~100",
-        "GridGenerator::hyper_rectangle(tria, p1, p2)           — generic channel domain; pair with inflow on the left face, outflow on the right",
-        "GridGenerator::hyper_L(tria, a, b)                     — backward-facing step; classic recirculating-flow test",
-        "GridGenerator::subdivided_hyper_rectangle(tria, reps, p1, p2) — anisotropic refinement (taller in y than long in x), for boundary-layer resolution",
-        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — flow around a cylinder in a box; lift/drag benchmarks",
-        "GridGenerator::cheese(tria, ...)                       — domain with holes; multiscale / porous-flow demo",
-    ],
+    # ── Structured catalog (post-canonical-element refactor).
+    #    Each per-physics applicability note focuses on the inf-sup
+    #    stability + conservation tradeoff specific to Stokes; the
+    #    canonical class semantics live in element_catalog.
+    "elements": {
+        "FESystem":
+            "Block-vector wrapper for ALL Stokes pairs. Most "
+            "common shape: FESystem<dim>(FE_Q<dim>(p+1), dim, "
+            "FE_Q<dim>(p), 1) for Taylor-Hood. The 'dim' "
+            "velocity components + 1 pressure component are then "
+            "block-renumbered via DoFRenumbering::component_wise.",
+        "FE_Q":
+            "Used twice in Taylor-Hood: degree p+1 for velocity, "
+            "degree p for pressure. Q2/Q1 (p=1) is the canonical "
+            "low-Re default. Q1/Q1 (equal-order) is NOT inf-sup "
+            "stable and produces checkerboard pressure unless "
+            "stabilised (SUPG / GLS / VMS).",
+        "FE_Q_Bubbles":
+            "Velocity component of the MINI element (paired with "
+            "FE_DGP pressure). Inf-sup stable at p=1, cheaper "
+            "than Taylor-Hood Q2/Q1 in DoF count.",
+        "FE_RaviartThomas":
+            "Velocity component of the RT/DGQ H(div) mixed pair. "
+            "Produces EXACTLY divergence-free discrete velocity — "
+            "the right choice when conservation matters (Darcy, "
+            "groundwater, geophysical flow).",
+        "FE_BDM":
+            "Brezzi-Douglas-Marini velocity for the BDM/DGP pair. "
+            "Fewer DoFs per cell than FE_RaviartThomas at the "
+            "same polynomial order; same divergence-free property.",
+        "FE_RannacherTurek":
+            "Velocity component of the P1NC/P0 pair (paired with "
+            "FE_DGQ(0)). Inf-sup stable on quads, cheap, no "
+            "Taylor-Hood h^2 bubble — useful when DoF budget is "
+            "tight.",
+        "FE_BernardiRaugel":
+            "Vector Lagrange + edge bubbles. Inf-sup stable when "
+            "paired with piecewise-constant pressure; competitive "
+            "with Taylor-Hood at low p.",
+        "FE_DGP":
+            "Pressure component of MINI / RT/DGP / BDM/DGP. "
+            "Discontinuous monomial basis; one degree less than "
+            "the velocity (so pair FE_Q_Bubbles(1) + FE_DGP(0), "
+            "RT(k) + DGP(k), BDM(k) + DGP(k-1)).",
+        "FE_DGQ":
+            "Pressure component of RT/DGQ pair, or of fully-DG "
+            "Stokes. Tensor-product DG; pair RT(k)+DGQ(k) for "
+            "exactly-div-free.",
+        "FE_Nothing":
+            "Use inside FESystem on subdomains where flow is "
+            "suppressed (solid inclusions in FSI, ALE-frozen "
+            "regions).",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Driven-cavity Stokes benchmark; reference values Ghia et al. (1982).",
+        "channel_with_cylinder": "Schäfer-Turek benchmark — cylinder at (0.2, 0.2) in (2.2 × 0.41) channel. Reference lift/drag at Re=20/100.",
+        "hyper_rectangle": "Generic channel domain — inflow left, outflow right.",
+        "hyper_L": "Backward-facing step; classic recirculating-flow test.",
+        "subdivided_hyper_rectangle": "Anisotropic refinement (taller in y than long in x) for boundary-layer resolution.",
+        "hyper_cube_with_cylindrical_hole": "Flow around a cylinder; vortex-shedding at Re > 47.",
+        "cheese": "Domain with holes — multiscale / porous-flow demo.",
+    },
     "solvers": [
         "SolverGMRES<>                — the canonical choice; Stokes is indefinite so SolverCG WILL fail.",
         "SolverMinRes<>               — symmetric indefinite; preferable to GMRES when a symmetric Schur preconditioner is used.",

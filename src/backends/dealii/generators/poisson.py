@@ -625,30 +625,43 @@ KNOWLEDGE = {
     #    GENERAL_KNOWLEDGE in this same module enumerates the full
     #    H1/H1_enriched/nonconforming/H_div/H_curl menu; this list
     #    is the Poisson-relevant subset only.
-    "elements": [
-        "FE_Q<dim>(degree)            — continuous Lagrange; degree=1 (default), degree=2 for smoother solutions, higher for spectral convergence on smooth problems",
-        "FE_Q_Hierarchical<dim>(degree) — hierarchical basis; required for p-adaptive refinement (coarse DoFs survive a degree change, regular Lagrange ones do not)",
-        "FE_Bernstein<dim>(degree)    — Bernstein-Bezier; better-conditioned mass matrix at high p",
-        "FE_Q_iso_Q1<dim>(p)          — piecewise (multi-)linear on p^dim sub-cells of each macro-cell; same continuity as FE_Q(1) but more DoFs",
-        "FE_DGQ<dim>(degree)          — discontinuous Galerkin Lagrange; for DG-Poisson formulations (interior-penalty)",
-        "FE_DGP<dim>(degree)          — DG with monomial pressure-like basis on hyper-cube cells",
-        # deal.II ≥ 9.3 ships fe_simplex_p.h; the conda install used
-        # at the time of catalog encoding (9.1.1) does NOT have it,
-        # so claiming it without the version gate is a false promise.
-        # When upgrading deal.II, this entry becomes immediately
-        # usable.
-        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle / tet) cells; available in deal.II ≥ 9.3 — use when the mesh is unstructured from Gmsh",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, a, b)                        — [a,b]^dim unit cube; classic Poisson on the square",
-        "GridGenerator::hyper_rectangle(tria, p1, p2)                 — axis-aligned box; non-square aspect ratio",
-        "GridGenerator::subdivided_hyper_cube(tria, n_per_dir, a, b)  — pre-subdivided to avoid repeated refine_global() calls",
-        "GridGenerator::hyper_L(tria, a, b)                           — L-shaped, has corner singularity u ~ r^{2/3} sin(2θ/3) — canonical test for adaptive refinement",
-        "GridGenerator::hyper_ball(tria, center, radius)              — circular / spherical disk; curved boundary",
-        "GridGenerator::hyper_shell(tria, center, inner, outer)       — annulus; tests boundary-conforming refinement",
-        "GridGenerator::cheese(tria, ...)                             — domain with holes; multiscale / heterogeneous-coefficient demo",
-        "GridGenerator::torus(tria, R, r)                             — 3D toroidal domain; for periodic-boundary studies",
-    ],
+    "elements": {
+        "FE_Q":
+            "Canonical Poisson choice. degree=1 default; degree=2 "
+            "smoother solutions; higher degree for spectral "
+            "convergence on smooth problems.",
+        "FE_Q_Hierarchical":
+            "Required for p-adaptive refinement on Poisson — "
+            "coarse-level DoFs survive a degree change.",
+        "FE_Bernstein":
+            "For high-p Poisson where mass-matrix conditioning "
+            "matters (modal analysis, transient diffusion).",
+        "FE_Q_iso_Q1":
+            "Cheap multi-linear-on-sub-cells alternative to "
+            "FE_Q(p); diagonal lumped mass matrix.",
+        "FE_DGQ":
+            "Discontinuous Galerkin Poisson via interior-penalty "
+            "formulation; needed when coefficients are "
+            "discontinuous across cells (heterogeneous media).",
+        "FE_DGP":
+            "Monomial DG basis; alternative to FE_DGQ for higher-"
+            "order accurate Poisson on hyper-cube meshes.",
+        "FE_SimplexP":
+            "Lagrange on simplex (triangle / tet) cells — needed "
+            "when the mesh comes from unstructured Gmsh / "
+            "Triangle / TetGen. (Available in deal.II ≥ 9.3; "
+            "the canonical element-catalog has the version gate.)",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Classic Poisson on the unit square / cube.",
+        "hyper_rectangle": "Non-square aspect ratio.",
+        "subdivided_hyper_cube": "Pre-subdivided to avoid repeated refine_global() calls.",
+        "hyper_L": "Re-entrant-corner singularity; canonical adaptive-refinement test.",
+        "hyper_ball": "Curved boundary; tests boundary-conforming refinement.",
+        "hyper_shell": "Annulus; layered radial Poisson problems.",
+        "cheese": "Heterogeneous-coefficient demos.",
+        "torus": "3D periodic-boundary studies.",
+    },
     "solvers": [
         "SolverCG<>                   — Poisson is symmetric positive-definite; CG is the default",
         "SolverGMRES<>                — only needed if coefficients break symmetry (e.g. when stabilisation is added)",

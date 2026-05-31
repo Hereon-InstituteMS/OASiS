@@ -208,20 +208,31 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(1)",
     "time_stepping": "Newmark-beta (beta=0.25, gamma=0.5 for average acceleration, unconditionally stable)",
     "solver": "CG + SSOR for the effective stiffness system at each time step",
-    "elements": [
-        "FE_Q<dim>(degree) — continuous Lagrange; degree=1 default, degree=2 for spectral-accuracy at moderate wave numbers",
-        "FE_Q_Hierarchical<dim>(degree) — for hp-adaptive refinement around shocks (sine-Gordon, nonlinear wave)",
-        "FE_DGQ<dim>(degree) — DG variant; preferred for discontinuous-coefficient wave problems and shock propagation",
-        "FE_Q_iso_Q1<dim>(p) — piecewise-linear on sub-cells; lumped mass matrix → explicit Newmark becomes diagonal solve",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, a, b)                 — canonical wave-equation test domain",
-        "GridGenerator::hyper_ball(tria, center, radius)       — circular drum; tests modal accuracy against Bessel-function reference",
-        "GridGenerator::hyper_shell(tria, center, inner, outer) — annular waveguide",
-        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — scattering from obstacle; tests absorbing-BC quality",
-        "GridGenerator::hyper_L(tria, -1, 1) — re-entrant corner reflects high-frequency content; tests AMR",
-        "GridGenerator::extrude_triangulation(t_in, n_slices, h, t_out) — 2D wave mesh extruded into 3D for acoustic-tank problems",
-    ],
+    "elements": {
+        "FE_Q":
+            "degree=1 default for the linear wave equation; "
+            "degree=2 for spectral accuracy at moderate wave "
+            "numbers.",
+        "FE_Q_Hierarchical":
+            "For hp-adaptive refinement around shocks (sine-"
+            "Gordon, nonlinear wave) — coarse-DoF wavefront "
+            "survives degree changes.",
+        "FE_DGQ":
+            "DG variant; preferred for discontinuous-coefficient "
+            "wave problems and shock propagation.",
+        "FE_Q_iso_Q1":
+            "Lumped mass matrix becomes diagonal — explicit "
+            "Newmark (beta=0) reduces to a diagonal solve per "
+            "step, enabling matrix-free explicit time integration.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Canonical wave-equation test domain.",
+        "hyper_ball": "Circular drum; tests modal accuracy against Bessel-function reference.",
+        "hyper_shell": "Annular waveguide.",
+        "hyper_cube_with_cylindrical_hole": "Scattering from obstacle; tests absorbing-BC quality.",
+        "hyper_L": "Re-entrant corner reflects high-frequency content; tests AMR.",
+        "extrude_triangulation": "2D wave mesh → 3D acoustic-tank problems.",
+    },
     "solvers": [
         "SolverCG<>                    — effective-stiffness system is SPD if M and K are SPD (typical for the scalar wave equation); the default",
         "SolverGMRES<>                 — needed when damping or absorbing BCs break symmetry of the effective stiffness",

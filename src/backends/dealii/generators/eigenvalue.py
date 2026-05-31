@@ -149,21 +149,34 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-36 (SLEPc eigenvalue problem)"],
     "function_space": "FE_Q<dim>(1)",
     "solver": "SLEPc Krylov-Schur (default), Arnoldi, Lanczos, LOBPCG",
-    "elements": [
-        "FE_Q<dim>(degree) — continuous Lagrange; degree=1 for Laplace eigenproblems, degree=2 for plate/biharmonic-like eigenproblems on H1",
-        "FE_Q_Hierarchical<dim>(degree) — for spectral methods at high p; eigenvalue convergence is exponential in p for smooth eigenfunctions",
-        "FE_Nedelec<dim>(degree) — H(curl) eigenproblems for Maxwell cavity resonators (E-field formulation)",
-        "FE_RaviartThomas<dim>(degree) — H(div) eigenproblems for acoustic modal analysis with mass-conservation",
-        "FESystem<dim>(FE_Q<dim>(degree), dim) — vector eigenproblems for elasticity (free vibration / modal analysis)",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, 0, 1)                — square / cube domain; exact Laplace eigenvalues are lambda_mn = pi^2*(m^2+n^2+...) for verification",
-        "GridGenerator::hyper_ball(tria, center, radius)      — circular drum problem; Bessel-function eigenvalues",
-        "GridGenerator::hyper_L(tria, a, b)                   — L-shaped drum; famous 'hear the shape of a drum' counterexample-domain class",
-        "GridGenerator::hyper_shell(tria, center, in, out)    — annular domain; for cavity-resonator eigenmodes",
-        "GridGenerator::moebius(tria, ...)                    — non-orientable surface; numerical curiosity but exercises the eigensolver",
-        "GridGenerator::cheese(tria, ...)                     — domain with holes; spectrum exhibits localised modes",
-    ],
+    "elements": {
+        "FE_Q":
+            "degree=1 for Laplace eigenproblems on a unit square / "
+            "ball / L-shape. degree=2 for plate-like eigenproblems "
+            "on H1.",
+        "FE_Q_Hierarchical":
+            "For spectral methods at high p — eigenvalue "
+            "convergence is exponential in p for smooth "
+            "eigenfunctions.",
+        "FE_Nedelec":
+            "H(curl) eigenproblems — Maxwell cavity resonators "
+            "(E-field formulation).",
+        "FE_RaviartThomas":
+            "H(div) eigenproblems — acoustic modal analysis with "
+            "mass conservation.",
+        "FESystem":
+            "Vector eigenproblems — elasticity free-vibration / "
+            "modal analysis. Compose FESystem<dim>(FE_Q, dim) for "
+            "the displacement field.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Square / cube — exact Laplace eigenvalues lambda_mn = pi^2*(m^2+n^2+...) for verification.",
+        "hyper_ball": "Circular drum — Bessel-function eigenvalues as reference.",
+        "hyper_L": "L-shaped drum — 'hear the shape of a drum' counterexample-class domain.",
+        "hyper_shell": "Annular — cavity-resonator eigenmodes.",
+        "moebius": "Non-orientable surface; exercises the eigensolver on a topologically non-trivial domain.",
+        "cheese": "Domain with holes; spectrum exhibits localised modes.",
+    },
     "solvers": [
         "SLEPc::SolverKrylovSchur     — default; robust for the largest or smallest few eigenpairs",
         "SLEPc::SolverArnoldi         — fallback when Krylov-Schur stalls (rare; usually a sign of ill-conditioning)",

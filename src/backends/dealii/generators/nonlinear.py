@@ -141,19 +141,31 @@ KNOWLEDGE = {
                       "step-77 (SUNDIALS KINSOL)"],
     "function_space": "FE_Q<dim>(1) typically",
     "solver": "Newton-Raphson with line search. AD: Sacado/ADOL-C for tangent",
-    "elements": [
-        "FE_Q<dim>(degree) — continuous Lagrange; degree=1 standard for minimal-surface-type scalar nonlinear PDEs (step-15)",
-        "FE_Q_Hierarchical<dim>(degree) — required for hp-adaptive Newton continuation (refine where residual is largest)",
-        "FE_DGQ<dim>(degree) — DG variant; for nonlinear advection problems (Burgers, Euler) needing upwinding",
-        "FE_Q<dim>(degree) + FESystem for vector-valued nonlinear problems — minimal-surface-vector, nonlinear elasticity etc.",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, 0, 1) — canonical domain for minimal-surface tests",
-        "GridGenerator::hyper_ball(tria, center, radius) — radial nonlinear problems",
-        "GridGenerator::hyper_L(tria, -1, 1) — re-entrant corner stress concentration; tests Newton robustness near singularities",
-        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2) — for load-stepping with structured AMR",
-        "GridGenerator::cylinder(tria, radius, half_length) — torsion / large-deformation cylinder benchmarks",
-    ],
+    "elements": {
+        "FE_Q":
+            "degree=1 standard for minimal-surface-type scalar "
+            "nonlinear PDEs (step-15). Wrap in FESystem for "
+            "vector-valued nonlinear problems (minimal-surface-"
+            "vector, nonlinear elasticity, etc.).",
+        "FE_Q_Hierarchical":
+            "Required for hp-adaptive Newton continuation — "
+            "refine where residual is largest without losing "
+            "coarse-DoF Newton history.",
+        "FE_DGQ":
+            "DG variant for nonlinear advection (Burgers, "
+            "compressible Euler) where upwind flux is essential.",
+        "FESystem":
+            "Vector wrapper for vector-valued nonlinear "
+            "problems — composed with FE_Q for displacement / "
+            "velocity components.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Canonical domain for minimal-surface tests.",
+        "hyper_ball": "Radial nonlinear problems.",
+        "hyper_L": "Re-entrant corner; tests Newton robustness near singularities.",
+        "subdivided_hyper_rectangle": "For load-stepping with structured AMR.",
+        "cylinder": "Torsion / large-deformation cylinder benchmarks.",
+    },
     "solvers": [
         "Newton-Raphson with line search — outer loop; line-search backtracks until residual decreases (Armijo rule)",
         "SUNDIALS::KINSOL (step-77) — production-grade Newton-Krylov solver; handles trust-region globalisation automatically",

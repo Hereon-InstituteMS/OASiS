@@ -47,21 +47,39 @@ KNOWLEDGE = {
                        "step-55 (Stokes, MPI parallel)"],
     "function_space": "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1",
     "solver": "Newton iteration for nonlinear convection term, UMFPACK or GMRES+ILU for linear sub-problems",
-    "elements": [
-        "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1, default for moderate-Re NS",
-        "FESystem<dim>(FE_Q<dim>(p+1), dim, FE_Q<dim>(p), 1) — generalised Taylor-Hood; p ≥ 2 for high-fidelity DNS-like runs",
-        "FE_Q + FE_DGP (continuous velocity + discontinuous pressure) — MINI-like; cheaper at p=1 if combined with bubble-enrichment on velocity",
-        "FE_RaviartThomas<dim>(degree) for velocity + FE_DGQ<dim>(degree) for pressure — H(div) mixed; exactly divergence-free at the discrete level (momentum-conservative; the right pick when conservation matters)",
-        "FE_DGQ<dim>(degree) for velocity AND pressure — fully DG formulation; for advection-dominated NS where upwinding helps",
-    ],
-    "mesh_generators": [
-        "GridGenerator::channel_with_cylinder(tria, ...) — Schäfer-Turek benchmark; (0.2, 0.2) cylinder, (2.2 × 0.41) channel matches the published Re=20/100 lift/drag table",
-        "GridGenerator::hyper_cube(tria, 0, 1) — driven-cavity benchmark; reference values (Ghia, Ghia, Shin 1982) at Re=100/400/1000/3200/5000/7500/10000",
-        "GridGenerator::hyper_L(tria, a, b) — backward-facing step; reattachment-length benchmark",
-        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — flow around cylinder; vortex-shedding at Re > 47",
-        "GridGenerator::subdivided_hyper_rectangle(tria, reps, p1, p2) — channel flow with prescribed-aspect-ratio elements (boundary-layer resolution)",
-        "GridGenerator::cheese(tria, ...) — porous-media-like NS demo",
-    ],
+    "elements": {
+        "FESystem":
+            "Block wrapper for ALL NS pairs. Standard Taylor-Hood "
+            "shape: FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), "
+            "1). Generalised Q_{p+1}/Q_p for higher-order runs.",
+        "FE_Q":
+            "Velocity (degree p+1) and pressure (degree p) in "
+            "Taylor-Hood. Equal-order Q1/Q1 needs SUPG / GLS / "
+            "VMS stabilisation to be inf-sup stable.",
+        "FE_Q_Bubbles":
+            "Velocity component of MINI-like (Q1+bubble / Q1) — "
+            "cheaper than Taylor-Hood Q2/Q1 in DoF count, "
+            "inf-sup stable.",
+        "FE_DGP":
+            "Pressure component of MINI-like (Q1+bubble / DGP0).",
+        "FE_RaviartThomas":
+            "Velocity of RT/DGQ H(div) pair. Exactly "
+            "divergence-free velocity — the right pick when "
+            "momentum conservation matters (geophysical flow, "
+            "groundwater coupled with advection).",
+        "FE_DGQ":
+            "Pressure of RT/DGQ pair, or velocity AND pressure "
+            "in fully-DG NS for advection-dominated problems "
+            "where upwinding helps stability.",
+    },
+    "mesh_generators": {
+        "channel_with_cylinder": "Schäfer-Turek benchmark — cylinder (0.2, 0.2) in (2.2 × 0.41) channel matches published Re=20/100 lift/drag.",
+        "hyper_cube": "Driven-cavity benchmark; Ghia/Ghia/Shin (1982) reference values at Re=100/400/1000/3200/5000/7500/10000.",
+        "hyper_L": "Backward-facing step; reattachment-length benchmark.",
+        "hyper_cube_with_cylindrical_hole": "Flow around cylinder; vortex-shedding at Re > 47.",
+        "subdivided_hyper_rectangle": "Channel flow with prescribed-aspect elements (boundary-layer resolution).",
+        "cheese": "Porous-media-like NS demo.",
+    },
     "solvers": [
         "Newton iteration — outer loop for the stationary nonlinear problem (step-57); converges quadratically near the solution",
         "Picard/Oseen iteration — first-order linearisation, larger basin of convergence than Newton; useful as a Newton warm-start",

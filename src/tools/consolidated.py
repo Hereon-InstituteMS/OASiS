@@ -280,18 +280,36 @@ def register_consolidated_tools(mcp: FastMCP):
             ref = _find_reference_test_files(solver, physics)
             if ref:
                 result += f"\n\n{ref}"
-            # Append matching post-mortems so the agent sees both the
-            # catalog AND the audit trail in one call. Filtered to
-            # this (solver, physics) pair so the response stays
-            # focused — the agent can ask for broader post-mortems
-            # explicitly via topic="postmortems".
+            # Append post-mortem BREADCRUMBS (ids only) — not full
+            # records — at plan time. Rationale (senior-AI-scientist
+            # critic, 2026-05-31): full post-mortems include
+            # surface_symptom / root_cause / agent_detection_after_fix,
+            # which are diagnostic fields for human review (#46), not
+            # pre-execution guidance. Auto-including them at plan
+            # time produces linear token bloat in N_postmortems and
+            # competes with the catalog for the agent's attention.
+            # The pitfall_db_entries the catalog already exposes ARE
+            # the pre-execution actionable content; the full
+            # post-mortem belongs to the post-execution critic when
+            # it has a Signal: to match. Agent can fetch the full
+            # record explicitly via
+            # `knowledge(topic="postmortems", solver=..., signal=...)`.
             postmortems = _load_matching_postmortems(solver, physics, "")
             if postmortems:
+                breadcrumbs = [
+                    {"id": pm.get("id", "?"),
+                     "categories": pm.get("categories", []),
+                     "date": pm.get("date", "")}
+                    for pm in postmortems
+                ]
                 result += (
-                    f"\n\n## Relevant post-mortems "
+                    f"\n\n## Post-mortem breadcrumbs "
                     f"({len(postmortems)} record"
-                    f"{'' if len(postmortems) == 1 else 's'}):\n"
-                    + json.dumps(postmortems, indent=2))
+                    f"{'' if len(postmortems) == 1 else 's'} — "
+                    f"fetch full records via knowledge"
+                    f"(topic='postmortems', solver=..., signal=...)"
+                    f" when a post-execution Signal needs lookup):\n"
+                    + json.dumps(breadcrumbs, indent=2))
             return result
 
         elif topic == "postmortems":

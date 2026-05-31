@@ -337,34 +337,64 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-8 (basic)", "step-17 (MPI parallel)", "step-18 (incremental)"],
     "function_space": "FESystem<dim>(FE_Q<dim>(1), dim) — vector Lagrange",
     "solver": "CG + PreconditionSSOR (serial), SolverCG + BoomerAMG (parallel)",
-    # ── Structured catalog keys (encoded 2026-05-31 from Layer A
-    #    scan vs catalog diff — see data/postmortems/
-    #    dealii-elasticity-catalog-structure.json). Each entry pairs
-    #    the upstream class name with a short note on why a user
-    #    would choose it for elasticity specifically — generic
-    #    "FE_Q is a Lagrange element" notes go in the deal.II
-    #    documentation, this catalog is physics-keyed.
-    "elements": [
-        "FE_Q<dim>(degree)            — continuous Lagrange, the default; wrap in FESystem<dim>(FE_Q<dim>(degree), dim) for vector-valued u",
-        "FE_Q_Bubbles<dim>(degree)    — bubble-enriched Lagrange; useful when the linear elasticity is paired with an incompressible Stokes pressure (avoids LBB instability without dropping to mixed elements)",
-        "FE_Q_Hierarchical<dim>(degree) — hierarchical basis; preferred for p-adaptive refinement so coarse-level DoFs survive a polynomial-degree change",
-        "FE_Q_DG0<dim>(degree)        — continuous Lagrange enriched with one piecewise-constant DG mode per cell; mass-matrix lumping",
-        "FE_Bernstein<dim>(degree)    — Bernstein-Bezier basis; better-conditioned mass matrix at high p, used in IGA-adjacent workflows",
-        "FE_RannacherTurek<dim>()     — P1-non-conforming on quads/hexes; locking-free for nearly-incompressible elasticity (Poisson ratio approaching 0.5)",
-        "FE_Nothing<dim>()            — placeholder element with zero DoFs; used inside FESystem on subdomains where displacement is fully constrained",
-        "FESystem<dim>(...)           — the vector wrapper itself; do not forget it (a bare FE_Q gives scalar u, not the elasticity displacement field)",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, a, b)                    — unit-cube / square in [a,b]^dim; smallest reproducer for any elasticity problem",
-        "GridGenerator::hyper_rectangle(tria, p1, p2)             — axis-aligned box from p1 to p2; cantilever beams (typical {0,0}-{L,h})",
-        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2) — same box but with per-direction element counts; aspect-ratio control",
-        "GridGenerator::plate_with_a_hole(tria, ...)              — Kirsch problem, classic stress-concentration-factor test",
-        "GridGenerator::hyper_L(tria, a, b)                       — L-shaped domain with re-entrant corner; standard benchmark for singularity-driven adaptive refinement",
-        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner_radius, outer_radius) — generalisation of plate_with_a_hole to 3D",
-        "GridGenerator::cylinder(tria, radius, half_length)       — circular cylinder; useful for axisymmetric beam tests",
-        "GridGenerator::hyper_shell(tria, center, inner, outer)   — spherical / cylindrical shell; pressure vessels",
-        "GridGenerator::merge_triangulations(t1, t2, result)      — combine two domains; needed for inclusion / dissimilar-material problems",
-    ],
+    # ── Structured catalog keys, post-canonical-element refactor.
+    #    Each entry is { class_name: physics-keyed applicability
+    #    note }. The canonical class description / header / version
+    #    gate lives in `backends.dealii.element_catalog.ELEMENTS`;
+    #    `get_knowledge('linear_elasticity')` joins them at
+    #    retrieval time. Encoded 2026-05-31; refactored after the
+    #    senior-AI-scientist critic flagged per-physics duplication
+    #    as the top-1 risk.
+    "elements": {
+        "FE_Q":
+            "Default for linear elasticity. Wrap as "
+            "FESystem<dim>(FE_Q<dim>(degree), dim) for the vector "
+            "displacement field. degree=2 strongly preferred when "
+            "the Poisson ratio approaches 0.5 to avoid volumetric "
+            "locking; degree=1 is fine away from that limit.",
+        "FE_Q_Bubbles":
+            "Useful when elasticity is paired with an "
+            "incompressible Stokes pressure (FSI / poromechanics) — "
+            "the bubble enrichment helps LBB stability without "
+            "dropping to a full mixed formulation.",
+        "FE_Q_Hierarchical":
+            "Use when running p-adaptive refinement during load "
+            "stepping — coarse-level DoFs survive a polynomial-"
+            "degree change.",
+        "FE_Q_DG0":
+            "Lumped-mass dynamics; the DG0 enrichment gives a "
+            "diagonal block in the time-stepping matrix.",
+        "FE_Bernstein":
+            "Higher-p elasticity where mass-matrix conditioning "
+            "matters (modal analysis, transient with implicit "
+            "integration).",
+        "FE_RannacherTurek":
+            "Locking-free P1-non-conforming element on quads/hexes — "
+            "the cheap alternative to degree-2 FE_Q for nearly-"
+            "incompressible elasticity.",
+        "FE_Nothing":
+            "Placeholder inside FESystem on subdomains where "
+            "displacement should be inactive (FSI solid region "
+            "when modelling the fluid, or vice versa). Zero "
+            "DoFs there, but you still need a manifold-id or "
+            "hp::DoFHandler::active_fe_index switch to actually "
+            "skip assembly.",
+        "FESystem":
+            "The vector wrapper. A bare FE_Q gives scalar u, "
+            "NOT the displacement field — forgetting FESystem is "
+            "the single most common deal.II elasticity bug.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Smallest reproducer for any elasticity problem; the [0,1]^dim cube.",
+        "hyper_rectangle": "Cantilever beams (typical {0,0}-{L,h}) — non-square aspect ratios.",
+        "subdivided_hyper_rectangle": "Per-direction element counts; aspect-ratio control for beam tests.",
+        "plate_with_a_hole": "Kirsch problem — classic stress-concentration-factor test.",
+        "hyper_L": "Re-entrant corner — singularity-driven adaptive refinement benchmark.",
+        "hyper_cube_with_cylindrical_hole": "3D generalisation of plate_with_a_hole.",
+        "cylinder": "Axisymmetric beam tests, torsion problems.",
+        "hyper_shell": "Pressure vessels — spherical / cylindrical shells.",
+        "merge_triangulations": "Combine two domains for inclusion / dissimilar-material problems.",
+    },
     "preconditioners": [
         "PreconditionSSOR<>          — serial default for symmetric positive-definite elasticity stiffness; cheap, works well up to ~10^5 DoFs",
         "PreconditionAMG / BoomerAMG — parallel AMG for >10^5 DoFs; via TrilinosWrappers (BoomerAMG is HYPRE through Trilinos)",

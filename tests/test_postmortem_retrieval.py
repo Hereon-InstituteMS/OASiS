@@ -204,11 +204,16 @@ class TestKnowledgeMCPToolReturnsPostmortems(unittest.TestCase):
             for d in records:
                 self.assertEqual(d.get("backend"), "dealii")
 
-    def test_knowledge_physics_includes_postmortems(self):
-        """When the agent asks for catalog knowledge of a physics
-        we have a post-mortem for, the post-mortem is included in
-        the same response. This is the auto-surfacing path that
-        makes the loop close by default."""
+    def test_knowledge_physics_includes_postmortem_breadcrumbs_only(self):
+        """At PLAN time, knowledge(topic='physics', ...) auto-includes
+        only post-mortem BREADCRUMBS — IDs + categories + date — NOT
+        the full record. Rationale per the 2026-05-31 senior-AI-
+        scientist critic: full records include diagnostic fields
+        (surface_symptom, root_cause, agent_detection_after_fix) that
+        belong to post-execution critic review, and including all
+        records in the plan-time response produces linear token bloat
+        in N_postmortems. The agent fetches the full record
+        explicitly when it has a Signal: to match against."""
         try:
             r = asyncio.run(self._call_tool(
                 "knowledge",
@@ -219,12 +224,23 @@ class TestKnowledgeMCPToolReturnsPostmortems(unittest.TestCase):
             pytest.skip(f"mcp client SDK not importable: {e}")
 
         self.assertFalse(r["isError"], f"raised: {r['text'][:300]}")
-        # The response should contain BOTH the catalog content
-        # AND a 'Relevant post-mortems' section.
-        self.assertIn("Relevant post-mortems", r["text"])
-        # Sanity: at least one of the post-mortem IDs we know is
-        # committed for dealii linear_elasticity.
+        # The plan-time response carries the breadcrumb header...
+        self.assertIn("Post-mortem breadcrumbs", r["text"])
+        # ...and at least one known breadcrumb ID.
         self.assertIn("dealii-elasticity-catalog-structure", r["text"])
+        # ...but MUST NOT include the diagnostic / full-record
+        # fields. surface_symptom and root_cause are present only
+        # on the full record retrieved via topic='postmortems';
+        # leaking them at plan time is the regression we are
+        # guarding against.
+        self.assertNotIn("surface_symptom", r["text"],
+                         "full post-mortem leaked into plan-time "
+                         "response — breadcrumbs-only contract "
+                         "broken")
+        self.assertNotIn("root_cause", r["text"],
+                         "full post-mortem leaked into plan-time "
+                         "response — breadcrumbs-only contract "
+                         "broken")
 
 
 if __name__ == "__main__":

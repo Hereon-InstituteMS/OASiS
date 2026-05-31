@@ -144,6 +144,17 @@ def _normalise_set(names: list[str] | set[str]) -> set[str]:
 # ── catalog walk ────────────────────────────────────────────────────────
 
 
+# When walking a resolved-element dict (post-canonical-element
+# refactor — see backends/dealii/element_catalog.py), only these
+# fields contribute to the catalog's "claims" surface. The other
+# fields (header, math_space, semantics, constructor,
+# version_added) are CANONICAL metadata pulled from
+# element_catalog.ELEMENTS, not claims the per-physics catalog is
+# making. Walking them as catalog content turns canonical
+# documentation into drift noise.
+_RESOLVED_ELEMENT_CLAIM_FIELDS = ("name", "applicability")
+
+
 def _walk_catalog_strings(node, out_by_category: dict[str, list[str]],
                           global_pool: list[str],
                           current_category: str = "") -> None:
@@ -157,8 +168,30 @@ def _walk_catalog_strings(node, out_by_category: dict[str, list[str]],
         enclosing key; used to detect "the catalog mentions this
         somewhere but not under the right category" (uncategorised
         gap).
+
+    Resolved-element dicts are treated specially: only the
+    per-physics `name` + `applicability` fields contribute. The
+    canonical fields (header, semantics, constructor, ...) come
+    from `element_catalog.ELEMENTS` and are not catalog claims —
+    walking them caused 14+ false-positive drift entries
+    (DoFHandler, DoFRenumbering, fe_bernardi_raugel, ...) that
+    eroded diff trust.
     """
     if isinstance(node, dict):
+        # Detect a resolved-element dict (has a `name` and at least
+        # one canonical metadata field). For these we restrict the
+        # walk to the claim-surface fields only.
+        if ("name" in node and isinstance(node["name"], str)
+                and any(k in node for k in
+                        ("header", "semantics", "constructor",
+                         "math_space"))):
+            for k in _RESOLVED_ELEMENT_CLAIM_FIELDS:
+                v = node.get(k)
+                if isinstance(v, str):
+                    _walk_catalog_strings(
+                        v, out_by_category, global_pool,
+                        current_category)
+            return
         for k, v in node.items():
             cat = k if k in CATEGORY_TO_SCAN_FIELD else current_category
             _walk_catalog_strings(v, out_by_category, global_pool, cat)

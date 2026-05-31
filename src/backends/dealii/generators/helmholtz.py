@@ -174,20 +174,33 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-29 (complex-valued Helmholtz with absorbing BCs)"],
     "function_space": "FESystem<dim>(FE_Q<dim>(1), 2) — real and imaginary parts as components",
     "solver": "GMRES + SSOR (indefinite system due to -k^2 mass term)",
-    "elements": [
-        "FESystem<dim>(FE_Q<dim>(degree), 2) — real+imag pair on a real-valued solver; degree ≥ 2 strongly recommended at high k to mitigate the pollution effect",
-        "FE_Q<dim>(degree) on a complex-valued matrix (PETSc/Trilinos complex build) — single-component formulation",
-        "FE_Q_Hierarchical<dim>(degree) — required for hp-adaptive refinement to counteract pollution",
-        "FE_Nedelec<dim>(degree) — H(curl) for vector Helmholtz / time-harmonic Maxwell (E-field formulation), NOT for scalar acoustic Helmholtz",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, a, b)                 — closed-cavity acoustics with sound-hard (Neumann) BCs",
-        "GridGenerator::hyper_ball(tria, center, radius)       — radial acoustic radiation; pair with absorbing BC on the outer boundary",
-        "GridGenerator::hyper_shell(tria, center, inner, outer) — annular waveguide / acoustic resonator",
-        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — scattering off a cylinder; classic radiation test",
-        "GridGenerator::cheese(tria, ...)                      — scattering by array of holes (sonic-crystal demos)",
-        "GridGenerator::extrude_triangulation(t_in, n_slices, h, t_out) — extrude 2D acoustic mesh into 3D waveguide; ≥ 8 slices per wavelength",
-    ],
+    "elements": {
+        "FESystem":
+            "Real+imag pair on a real-valued solver. "
+            "FESystem<dim>(FE_Q<dim>(degree), 2) is the canonical "
+            "complex-as-real-2-component formulation for scalar "
+            "acoustic Helmholtz.",
+        "FE_Q":
+            "Single-component formulation on a complex-valued "
+            "matrix (PETSc / Trilinos complex build). degree ≥ 2 "
+            "strongly recommended at high wavenumber k to "
+            "mitigate the pollution effect.",
+        "FE_Q_Hierarchical":
+            "Required for hp-adaptive refinement to counteract "
+            "the pollution effect at high k.",
+        "FE_Nedelec":
+            "H(curl) element for VECTOR Helmholtz (time-harmonic "
+            "Maxwell E-field). Do NOT pick for scalar acoustic "
+            "Helmholtz — that uses FE_Q.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Closed-cavity acoustics with sound-hard (Neumann) BCs.",
+        "hyper_ball": "Radial acoustic radiation; pair with absorbing BC on outer boundary.",
+        "hyper_shell": "Annular waveguide / acoustic resonator.",
+        "hyper_cube_with_cylindrical_hole": "Scattering off a cylinder; classic radiation test.",
+        "cheese": "Scattering by array of holes (sonic-crystal demos).",
+        "extrude_triangulation": "2D acoustic mesh → 3D waveguide; ≥ 8 slices per wavelength.",
+    },
     "solvers": [
         "SolverGMRES<>                — default for indefinite Helmholtz",
         "SolverMinRes<>                — symmetric indefinite variant; only when the bilinear form stays symmetric",

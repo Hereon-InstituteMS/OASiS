@@ -1,0 +1,66 @@
+{
+  "_comment": "Canonical schema for data/postmortems/<id>.json. Open-FEM-Agent §3.2 / Table 1 + task #46 pitfall-DB-first discipline. The retrieval tool in src/tools/consolidated.py (_load_matching_postmortems) and tests/test_postmortem_retrieval.py both enforce this shape; the canonical schema lives here so future authors do not have to read code to know the contract.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Hereon-InstituteMS/Open-FEM-agent/blob/main/data/postmortems/_schema.json",
+  "type": "object",
+  "required": ["id", "date", "backend", "physics", "surface_symptom",
+               "root_cause", "categories", "pitfall_db_entries",
+               "agent_detection_after_fix", "source_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Short kebab-case slug used as the filename stem (without .json). Stable identifier the agent references in breadcrumbs."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO-8601 date the post-mortem was written (YYYY-MM-DD)."
+    },
+    "backend": {
+      "type": "string",
+      "enum": ["kratos", "fenics", "fourc", "ngsolve", "skfem",
+               "dealii", "dune", "febio"],
+      "description": "Exactly one of the seven canonical MCP backends; case-sensitive."
+    },
+    "physics": {
+      "type": "string",
+      "description": "Physics-catalog key, e.g. 'linear_elasticity'. Batch records covering multiple physics use a comma-separated list, e.g. 'poisson, heat, helmholtz, eigenvalue'."
+    },
+    "surface_symptom": {
+      "type": "string",
+      "description": "What the agent or the user observed first. Diagnostic field — for human review of why the post-mortem was written. NOT a pre-execution planning aid."
+    },
+    "root_cause": {
+      "type": "string",
+      "description": "The underlying invariant that was violated. Diagnostic; not retrieval-keyed."
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["Syntax", "Physics", "Numerical", "API", "Integration"]
+      },
+      "description": "Open-FEM-Agent Table 1 categories the failure belongs to. Multiple allowed when the bug spans categories."
+    },
+    "pitfall_db_entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^\\[(Syntax|Physics|Numerical|API|Integration)\\] "
+      },
+      "description": "The exact strings (with [Category] prefix) added to the relevant KNOWLEDGE['pitfalls'] list as part of this fix. Each entry SHOULD include a 'Signal:' clause stating the observable symptom — that is the string the post-execution critic matches against."
+    },
+    "agent_detection_after_fix": {
+      "type": "string",
+      "description": "How the agent now catches this earlier — which knowledge surface, which signal, which critic gate. The 'what changed' from the agent's perspective."
+    },
+    "source_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "PR numbers, commit hashes, paper sections, upstream issue links — the audit trail for this record."
+    }
+  },
+  "additionalProperties": true
+}

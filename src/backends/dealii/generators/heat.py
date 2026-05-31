@@ -363,21 +363,30 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(1)",
     "solver": "CG + SSOR for each time step. SUNDIALS for adaptive time stepping",
     "time_stepping": "Theta method (0=forward Euler, 0.5=Crank-Nicolson, 1=backward Euler)",
-    "elements": [
-        "FE_Q<dim>(degree)            — continuous Lagrange; degree=1 is default for transient heat",
-        "FE_Q_Hierarchical<dim>(degree) — for p-adaptive refinement with smooth coefficient transitions",
-        "FE_DGQ<dim>(degree)          — DG variant; useful for sharp-front problems (welding, phase change)",
-        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle/tet) meshes from Gmsh; available in deal.II ≥ 9.3",
-    ],
-    "mesh_generators": [
-        "GridGenerator::hyper_cube(tria, a, b)               — unit cube/square; default heat-equation test domain",
-        "GridGenerator::hyper_rectangle(tria, p1, p2)        — non-square; e.g. {0,0}-{L,H} for thin plates",
-        "GridGenerator::hyper_L(tria, a, b)                  — L-shaped with re-entrant corner; tests adaptive refinement near singularity",
-        "GridGenerator::cylinder(tria, radius, half_length)  — radial heat-equation problems (heat-pipe, cylindrical bar)",
-        "GridGenerator::hyper_shell(tria, center, in, out)   — annular heat conduction (pipe insulation)",
-        "GridGenerator::plate_with_a_hole(tria, ...)         — local thermal stress concentration via temperature gradient",
-        "GridGenerator::extrude_triangulation(t_in, n_slices, h, t_out) — extrude a 2D heat-eq mesh into 3D, layer count = n_slices",
-    ],
+    "elements": {
+        "FE_Q":
+            "Default for transient heat; degree=1 is the standard "
+            "choice and balances accuracy with mass-matrix cost.",
+        "FE_Q_Hierarchical":
+            "For p-adaptive refinement during transient runs with "
+            "smooth coefficient transitions.",
+        "FE_DGQ":
+            "DG variant; useful for sharp-front problems like "
+            "welding or phase-change where the solution gradient "
+            "is large across element interfaces.",
+        "FE_SimplexP":
+            "Use when the mesh comes from unstructured Gmsh / "
+            "Triangle / TetGen (deal.II ≥ 9.3).",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Default heat-equation test domain.",
+        "hyper_rectangle": "Thin plates / non-square aspect.",
+        "hyper_L": "L-shaped, tests AMR near re-entrant corner.",
+        "cylinder": "Heat-pipe / cylindrical-bar conduction.",
+        "hyper_shell": "Pipe-insulation, annular heat conduction.",
+        "plate_with_a_hole": "Local thermal-stress concentration via temperature gradient.",
+        "extrude_triangulation": "2D heat-eq mesh extruded into 3D layered slab.",
+    },
     "solvers": [
         "SolverCG<>                   — Heat-equation stiffness K and mass matrix M are SPD; CG works for all theta in (0,1]",
         "SolverGMRES<>                — needed only when the time-step matrix becomes non-symmetric (rare; happens with full-coupled nonlinear source terms)",
