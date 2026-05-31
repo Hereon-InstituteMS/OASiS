@@ -1184,11 +1184,11 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": "GMRES + AMS (auxiliary-space Maxwell solver from hypre) for curl-curl",
         "pitfalls": [
-            "MUST use H(curl) elements (Nedelec) — standard Lagrange violates physical constraints",
-            "Complex-valued: PETSc compiled with --with-scalar-type=complex",
-            "PML requires careful coordinate stretching formulation",
-            "Low-frequency breakdown: curl-curl formulation fails for k0 -> 0 (use mixed formulation)",
-            "Edge elements (N1curl) have different DOF ordering than nodal elements — check orientation",
+            "[Physics] MUST use H(curl) elements (Nedelec / N1curl) for Maxwell — standard Lagrange spaces lack the tangential continuity that the physical fields require. Signal: dolfinx.fem.form does NOT fail at form construction (ufl.curl is accepted on vector Lagrange and even on scalar Lagrange in 2D), so the bug is silent at compile/assemble time. The observable failure is numerical: the post-processed B = curl(A) field has spurious normal jumps at element interfaces, and convergence against an analytic test (e.g., uniform B in a cavity) plateaus at ~10% error regardless of refinement. (Verified empirically 2026-06-01 — prior catalog wording 'violates physical constraints' implied a syntactic/assembly-time rejection; in current dolfinx the form compiles fine and the bug surfaces in the field values.)",
+            "[Syntax] Complex-valued Maxwell: PETSc must be compiled with --with-scalar-type=complex. Signal: assembling a form with imaginary coefficient (e.g., 1j*k*u*v*ds) into a real-PETSc Function raises TypeError 'cannot convert complex to float' or ValueError 'imaginary part discarded' from dolfinx.fem.assemble_vector.",
+            "[Numerical] PML (Perfectly Matched Layer): requires coordinate stretching of the form x_i → x_i*(1 + i*sigma(x_i)/omega) inside the PML region. A real-only stretching (real sigma) gives a lossy real boundary, NOT a radiating PML. Signal: post-processed outgoing wave amplitude decays in the PML region by orders of magnitude only with COMPLEX coefficients; with real-only PML the outgoing wave reflects back into the domain (standing-wave pattern).",
+            "[Numerical] Low-frequency breakdown: curl-curl + omega^2-mass formulation becomes ill-conditioned as omega → 0 because the gradient kernel of curl is no longer regularised by the mass term. Use mixed (A, phi) formulation with a Lagrange multiplier on the divergence. Signal: KSP iteration count for GMRES + AMS preconditioner explodes as omega is reduced below ~10^-3 of the lowest cavity eigenvalue; condition number printed by PETSc grows as 1/omega^2.",
+            "[API] Edge elements (basix.ElementFamily.N1E / 'Nedelec 1st kind H(curl)') have DOF ordering by edge, not by node. Setting tangential BCs requires interpolating onto the edge basis, not the nodal basis. Signal: dirichletbc on an HCurl space defined with a vector-valued function silently sets only the first component on each edge, leaving the tangential trace 90 degrees off from intended; post-processed E field has non-zero normal component on the conductor boundary.",
         ],
     },
 
