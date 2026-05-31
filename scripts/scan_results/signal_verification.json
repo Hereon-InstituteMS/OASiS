@@ -1,18 +1,18 @@
 {
-  "backend": "kratos",
+  "backend": "fenics",
   "totals": {
-    "n_pitfalls": 123,
-    "with_category_prefix": 123,
-    "with_signal_clause": 123,
-    "tier0_passed": 35,
-    "tier0_code_symbol_only": 34,
-    "tier0_with_domain_decoration": 1,
+    "n_pitfalls": 113,
+    "with_category_prefix": 12,
+    "with_signal_clause": 12,
+    "tier0_passed": 9,
+    "tier0_code_symbol_only": 6,
+    "tier0_with_domain_decoration": 3,
     "tier0_domain_names_only": 0,
-    "tier1_passed": 122,
-    "tier0_and_1_passed": 35,
-    "tier2_passed": 3,
-    "tier2_attempted": 3,
-    "n_falsifiable": 123,
+    "tier1_passed": 12,
+    "tier0_and_1_passed": 9,
+    "tier2_passed": 2,
+    "tier2_attempted": 2,
+    "n_falsifiable": 113,
     "n_unfalsifiable": 0,
     "n_cheap_falsifiable": 0,
     "n_medium_falsifiable": 0,
@@ -23,225 +23,87 @@
   },
   "results": [
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
+      "pitfall_category": "API",
+      "signal_text": "in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns the correct dof indices without that step. (Verified empirically 2026-06-01 \u2014 locate_entities_boundary + locate_dofs_topological both succeed without an explicit create_connectivity call.)",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "RuntimeError",
+        "dolfinx",
+        "locate_dofs_topological"
+      ],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
+      "tier0_entities_matched": [
+        "RuntimeError",
+        "dolfinx",
+        "locate_dofs_topological"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
+        "error",
         "quoted-error-fragment",
-        "report"
+        "raise",
+        "returns"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
+      "pitfall_category": "API",
+      "signal_text": "passing a Python float into a complex-PETSc Function raises TypeError in fem.form / fem.assemble_matrix when the form expects complex coefficients; passing 0j into a real-PETSc Function raises ValueError 'cannot convert complex to float'.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "Function",
+        "PETSc",
+        "TypeError",
+        "ValueError",
+        "assemble_matrix",
+        "fem",
+        "form"
+      ],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
+      "tier0_entities_matched": [
+        "Function",
+        "PETSc",
+        "TypeError",
+        "ValueError",
+        "assemble_matrix",
+        "fem",
+        "form"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
+        "error",
         "quoted-error-fragment",
-        "report"
+        "raise",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 2,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+      "pitfall_category": "API",
+      "signal_text": "VTXWriter.write raises RuntimeError 'Cannot interpolate function ... to the VTX output basis' or 'ADIOS2 VTX only supports Lagrange elements'.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
         "RuntimeError"
       ],
-      "tier0_domain_names_matched": [],
+      "tier0_domain_names_matched": [
+        "Lagrange"
+      ],
       "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
+        "Lagrange",
         "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "poisson",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "poisson",
-      "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "poisson",
-      "pitfall_index": 5,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "linear_elasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "RuntimeError 'Element ... is not registered' or 'Trying to construct an element with a wrong name' when ModelPart.CreateNewElement is called with a name missing the NxN suffix.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "CreateNewElement",
-        "Element",
-        "ModelPart",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "CreateNewElement",
-        "Element",
-        "ModelPart",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment",
-        "wrong"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "linear_elasticity",
-      "pitfall_index": 1,
-      "pitfall_category": "Integration",
-      "signal_text": "Element.Initialize raises RuntimeError 'A constitutive law needs to be specified for the element with ID N' from applications/StructuralMechanicsApplication/custom_elements/solid_elements/base_solid_element.cpp when the Property has YOUNG_MODULUS / POISSON_RATIO set but no CONSTITUTIVE_LAW. (Verified empirically 2026-06-01 \u2014 prior catalog text said 'No constitutive law assigned to Property X' and pointed at AnalysisStage.Initialize; the real error message references the element ID, not the Property, and originates in base_solid_element.cpp:249.)",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Element",
-        "Initialize",
-        "POISSON_RATIO",
-        "Property",
-        "RuntimeError",
-        "StructuralMechanicsApplication",
-        "YOUNG_MODULUS"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Element",
-        "Initialize",
-        "POISSON_RATIO",
-        "Property",
-        "RuntimeError",
-        "StructuralMechanicsApplication",
-        "YOUNG_MODULUS"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
@@ -254,159 +116,209 @@
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "linear_elasticity",
-      "pitfall_index": 2,
+      "pitfall_index": 0,
       "pitfall_category": "Syntax",
-      "signal_text": "RuntimeError 'Error: There is no sub model part with name \"NAME\" in model part \"PARENT\"' from ModelPart::ErrorNonExistingSubModelPart in model_part.cpp, listed alongside the available SubModelPart names. (Verified empirically 2026-06-01 \u2014 prior wording 'SubModelPart ... does not exist' used CamelCase; the real error text is lowercase 'sub model part' with spaces.)",
+      "signal_text": "ufl.sym raises ValueError 'Symmetric part of tensor with rank != 2 is undefined.' inside the form definition, before dolfinx.fem.form / assemble is reached. (Verified empirically 2026-06-01 \u2014 the prior catalog wording 'Invalid ranks' / 'expected rank 1 trial function' does not match current dolfinx output.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "ErrorNonExistingSubModelPart",
-        "ModelPart",
-        "RuntimeError",
-        "model_part"
+        "ValueError",
+        "assemble",
+        "dolfinx",
+        "fem",
+        "form",
+        "sym",
+        "ufl"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "ErrorNonExistingSubModelPart",
-        "ModelPart",
-        "RuntimeError",
-        "model_part"
+        "ValueError",
+        "assemble",
+        "dolfinx",
+        "fem",
+        "form",
+        "sym",
+        "ufl"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment"
+        "quoted-error-fragment",
+        "raise",
+        "undefined",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "linear_elasticity",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' at max_iteration with residual not yet at tolerance; structural displacement stalls at an intermediate state.",
+      "pitfall_index": 1,
+      "pitfall_category": "Syntax",
+      "signal_text": "numpy raises ValueError 'could not broadcast input array from shape () into shape (gdim,)' when dirichletbc is constructed with a scalar value on a vector space.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "ValueError",
+        "dirichletbc"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "ValueError",
+        "dirichletbc"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "raise",
+        "value"
+      ],
+      "tier2_passed": true,
+      "tier2_status": "passed",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "tip deflection differs from analytic plane-stress reference by a factor (1-nu) at nu=0.3.",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "quoted-error-fragment",
-        "report",
-        "stall"
+        "differs",
+        "numerical-comparison"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "linear_elasticity",
-      "pitfall_index": 4,
+      "pitfall_index": 3,
       "pitfall_category": "API",
-      "signal_text": "RuntimeError 'Variable ROTATION not found in variables list of ModelPart ...' from beam-element InitializeSolutionStep.",
+      "signal_text": "XDMFFile.write_function raises RuntimeError 'Degree of output Function must be same as mesh degree. Maybe the Function needs to be interpolated?'. (Verified empirically 2026-06-01 \u2014 the prior catalog wording 'XDMF mesh must be P1' does not appear in current dolfinx output.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "InitializeSolutionStep",
-        "ModelPart",
-        "ROTATION",
+        "Function",
         "RuntimeError",
-        "Variable"
+        "dolfinx",
+        "mesh"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "InitializeSolutionStep",
-        "ModelPart",
-        "ROTATION",
+        "Function",
         "RuntimeError",
-        "Variable"
+        "dolfinx",
+        "mesh"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment"
+        "quoted-error-fragment",
+        "raise"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "Integration",
+      "signal_text": "dolfinx.io.gmshio reads the mesh but mesh.topology.dim returns 3 with no tagged facets; subsequent locate_dofs_topological on a facet tag returns an empty array.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "dolfinx",
+        "locate_dofs_topological",
+        "mesh"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "dolfinx",
+        "locate_dofs_topological",
+        "mesh"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "returns"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
       "physics": "linear_elasticity",
       "pitfall_index": 5,
       "pitfall_category": "Numerical",
-      "signal_text": "tip deflection on a cantilever beam meshed with 3D8N is 20-40% smaller than analytic; switching to 3D20N recovers it within 1-2%.",
+      "signal_text": "integrated reaction moment differs from applied M by 20-40% on a thick beam with torsion BC.",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "smaller"
+        "differs",
+        "numerical-comparison"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "linear_elasticity",
       "pitfall_index": 6,
-      "pitfall_category": "API",
-      "signal_text": "RuntimeError 'Trying to fix DOF of non-existing variable' or segfault when the directional-process is used with POINT_LOAD.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "POINT_LOAD",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "POINT_LOAD",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "linear_elasticity",
-      "pitfall_index": 7,
       "pitfall_category": "Syntax",
-      "signal_text": "Parameters::GetValue raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' from kratos/sources/kratos_parameters.cpp when problem_data omits the field. (Verified empirically 2026-06-01 \u2014 prior catalog text said KeyError from RunSolutionLoop; Kratos uses RuntimeError, not Python KeyError, and the message originates in C++ GetValue, not RunSolutionLoop.)",
+      "signal_text": "ufl.errornorm against a manufactured solution shows slope 1 across mesh refinements where slope 2 is expected, because dolfinx.fem.functionspace was called with ('Lagrange', 1) while the user thought ('Lagrange', 2) was active.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "GetValue",
-        "KeyError",
-        "Parameters",
-        "RunSolutionLoop",
-        "RuntimeError",
-        "kratos_parameters"
+        "dolfinx",
+        "fem",
+        "mesh",
+        "ufl"
       ],
-      "tier0_domain_names_matched": [],
+      "tier0_domain_names_matched": [
+        "Lagrange"
+      ],
       "tier0_entities_matched": [
-        "GetValue",
-        "KeyError",
-        "Parameters",
-        "RunSolutionLoop",
-        "RuntimeError",
-        "kratos_parameters"
+        "Lagrange",
+        "dolfinx",
+        "fem",
+        "mesh",
+        "ufl"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
         "quoted-error-fragment",
-        "raise",
+        "shows"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 7,
+      "pitfall_category": "Numerical",
+      "signal_text": "tip deflection at nu=0.4999 is 1e-3 of the true value; switching to mixed P2-P1 recovers the analytic deflection to within 1%.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
         "value"
       ],
       "tier2_passed": false,
@@ -414,202 +326,45 @@
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "linear_elasticity",
       "pitfall_index": 8,
       "pitfall_category": "API",
-      "signal_text": "TypeError with text 'incompatible function arguments' from the SetValue binding; the .pyi shows the second arg type is the law instance.",
+      "signal_text": "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises ValueError 'Unknown element family CG' \u2014 the basix-era name is 'Lagrange', not 'CG' or 'P1'.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "SetValue",
-        "TypeError"
+        "ValueError",
+        "dolfinx",
+        "fem",
+        "mesh"
       ],
-      "tier0_domain_names_matched": [],
+      "tier0_domain_names_matched": [
+        "Lagrange"
+      ],
       "tier0_entities_matched": [
-        "SetValue",
-        "TypeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "shows",
-        "value"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "linear_elasticity",
-      "pitfall_index": 9,
-      "pitfall_category": "API",
-      "signal_text": "Two distinct failure modes (both verified empirically 2026-06-01): (a) If the variable is added AFTER any Node is created, ModelPart.AddNodalSolutionStepVariable raises RuntimeError 'Attempting to add the variable \"X\" to the model part with name \"Y\" which is not empty' from kratos/includes/model_part.h:521 \u2014 Kratos refuses to extend the variables list once nodes exist. (b) If the variable was NEVER added, the first GetSolutionStepValue / SetSolutionStepValue on the Node raises RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: X' from variables_list_data_value_container. (Prior catalog text only described mode (b) as happening 'when a process tries to read the freshly-added variable' \u2014 that is wrong; the freshly-added case is mode (a) and fires at the add call.)",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AddNodalSolutionStepVariable",
-        "GetSolutionStepValue",
-        "ModelPart",
-        "Node",
-        "RuntimeError",
-        "SetSolutionStepValue",
-        "model_part",
-        "variables_list_data_value_container"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AddNodalSolutionStepVariable",
-        "GetSolutionStepValue",
-        "ModelPart",
-        "Node",
-        "RuntimeError",
-        "SetSolutionStepValue",
-        "model_part",
-        "variables_list_data_value_container"
+        "Lagrange",
+        "ValueError",
+        "dolfinx",
+        "fem",
+        "mesh"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
         "quoted-error-fragment",
         "raise",
-        "value",
-        "wrong"
+        "value"
       ],
       "tier2_passed": true,
       "tier2_status": "passed",
       "notes": []
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "heat",
       "pitfall_index": 0,
-      "pitfall_category": "API",
-      "signal_text": "RuntimeError 'variable TEMPERATURE not found in variables list of ModelPart' from the ConvectionDiffusion element InitializeSolutionStep.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "InitializeSolutionStep",
-        "ModelPart",
-        "RuntimeError",
-        "TEMPERATURE"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "InitializeSolutionStep",
-        "ModelPart",
-        "RuntimeError",
-        "TEMPERATURE"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "heat",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "boundary temperatures drift away from the prescribed values during the solve; T_boundary - T_imposed is O(1) instead of O(eps).",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drift",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "heat",
-      "pitfall_index": 2,
-      "pitfall_category": "Syntax",
-      "signal_text": "the steady-state interior temperature is wrong by a multiplicative factor; integrated flux on the boundary does not match the applied value.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "value",
-        "wrong"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "fluid",
-      "pitfall_index": 0,
-      "pitfall_category": "API",
-      "signal_text": "RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: VELOCITY' from kratos/containers/variables_list_data_value_container at the first GetSolutionStepValue / SetSolutionStepValue on the node. (Verified empirically 2026-06-01 \u2014 the prior wording 'not found in variables list of ModelPart' is rearranged; the real text says 'variables list doesn't have this variable' and originates in the container code, not the VMS InitializeSolutionStep.)",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "GetSolutionStepValue",
-        "InitializeSolutionStep",
-        "ModelPart",
-        "RuntimeError",
-        "SetSolutionStepValue",
-        "VELOCITY",
-        "VMS",
-        "variables_list_data_value_container"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "GetSolutionStepValue",
-        "InitializeSolutionStep",
-        "ModelPart",
-        "RuntimeError",
-        "SetSolutionStepValue",
-        "VELOCITY",
-        "VMS",
-        "variables_list_data_value_container"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "fluid",
-      "pitfall_index": 1,
-      "pitfall_category": "Integration",
-      "signal_text": "solver converges to a zero pressure field with uniform velocity equal to BC (no momentum balance enforced).",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "fluid",
-      "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "integrated wall shear stress disagrees with analytic Couette/Poiseuille by an order of magnitude.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
@@ -618,2318 +373,1809 @@
       "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "fluid",
+      "backend": "fenics",
+      "physics": "heat",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "navier_stokes",
       "pitfall_index": 3,
-      "pitfall_category": "Physics",
-      "signal_text": "integrated mass flow rate computed from VELOCITY on the outlet SubModelPart is 0 or oscillates around 0; navier_stokes_solver_vmsmonolithic ResidualBasedBlockBuilderAndSolver reports the pressure residual stalling near the inlet face.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ResidualBasedBlockBuilderAndSolver",
-        "VELOCITY"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ResidualBasedBlockBuilderAndSolver",
-        "VELOCITY"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "oscillat",
-        "report",
-        "stall"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "fluid",
+      "backend": "fenics",
+      "physics": "navier_stokes",
       "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "DISTANCE field develops spurious zero-crossings inside the bulk fluid; post-processed phase indicator shows artefacts.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DISTANCE"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DISTANCE"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "shows",
-        "zero"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "thermal_structural",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "hyperelasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "stokes",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "stokes",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "stokes",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "convection_diffusion",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "eigenvalue",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "eigenvalue",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "eigenvalue",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "eigenvalue",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "eigenvalue",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "biharmonic",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "mixed_poisson",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "reaction_diffusion",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "dg_methods",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
       "physics": "contact",
       "pitfall_index": 0,
-      "pitfall_category": "Integration",
-      "signal_text": "AnalysisStage.Initialize raises RuntimeError 'Condition type ... not registered' or 'invalid geometry' when the contact search builds the master-slave pairs.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Condition",
-        "Initialize",
-        "RuntimeError"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Condition",
-        "Initialize",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "raise"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "contact",
       "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "ResidualBasedNewtonRaphsonStrategy reports non-converged at max_iteration of convergence_criterion; integrated GAP on the slave Mortar SubModelPart stays O(1); swapping the master/slave designation lets ALMFrictionlessMortarContact reach ResidualCriteria tolerance.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ALMFrictionlessMortarContact",
-        "GAP",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ALMFrictionlessMortarContact",
-        "GAP",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "report"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
+      "backend": "fenics",
       "physics": "contact",
       "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "penetration > 1% of characteristic length OR solver reports stiffness condition number > 1e14 / 'matrix is numerically singular' from the linear solver.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "fsi",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "fsi",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "fsi",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "with gamma < 0.5 the displacement amplitude grows exponentially across time steps regardless of dt.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "amplitude",
-        "grows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "spurious high-frequency oscillation in the response remains even after enabling 'Bossak' in the time_integration block.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "oscillat",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "natural-frequency study with lumped quad8 shows frequency error 2-5% for f_2..f_5 vs <0.5% with consistent mass.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
+      "backend": "fenics",
+      "physics": "contact",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "per-step wall time scales as N^1.5 with mesh refinement instead of N.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "wall time"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
+      "backend": "fenics",
+      "physics": "contact",
       "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "ResidualBasedNewtonRaphsonStrategy iteration log shows the ResidualCriteria ratio decreasing by < 0.5 per iter (should be O(0.01) for full Newton); the strategy saturates at max_iteration without ResidualBasedBlockBuilderAndSolver reaching tolerance.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ResidualBasedBlockBuilderAndSolver",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "ResidualBasedBlockBuilderAndSolver",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "iteration",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "cantilever tip deflection with hex8 mesh is 20-40% smaller than analytic; switching to hex20 recovers it.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "smaller"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
+      "backend": "fenics",
+      "physics": "contact",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "contact",
       "pitfall_index": 6,
-      "pitfall_category": "API",
-      "signal_text": "RuntimeError 'Trying to fix DOF of non-existing variable' or segfault when the directional-process is used with POINT_LOAD.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "POINT_LOAD",
-        "RuntimeError"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "POINT_LOAD",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "structural_dynamics",
-      "pitfall_index": 7,
-      "pitfall_category": "Syntax",
-      "signal_text": "KeyError 'echo_level' from AnalysisStage.RunSolutionLoop when problem_data omits the field.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "KeyError",
-        "RunSolutionLoop"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "KeyError",
-        "RunSolutionLoop"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "heat_transient",
+      "backend": "fenics",
+      "physics": "multiphase",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "heat_transient",
+      "backend": "fenics",
+      "physics": "multiphase",
       "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "heat_transient",
+      "backend": "fenics",
+      "physics": "multiphase",
       "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "heat_transient",
+      "backend": "fenics",
+      "physics": "multiphase",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 2,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 3,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem",
+      "backend": "fenics",
+      "physics": "multiphase",
       "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "dem",
+      "backend": "fenics",
+      "physics": "multiphase",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "multiphase",
       "pitfall_index": 6,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 7,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "mpm",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "mpm",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "mpm",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "mpm",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "mpm",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "mpm",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 5,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "shape_optimization",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shape_optimization",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shape_optimization",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shape_optimization",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shape_optimization",
-      "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "cosimulation",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "cosimulation",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "cosimulation",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "cosimulation",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "cosimulation",
-      "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "geomechanics",
-      "pitfall_index": 0,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "geomechanics",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "geomechanics",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "geomechanics",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "geomechanics",
-      "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "compressible_potential",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "compressible_potential",
-      "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "compressible_potential",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "compressible_potential",
-      "pitfall_index": 3,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rans",
-      "pitfall_index": 0,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rans",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rans",
-      "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rans",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "pfem_fluid",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "pfem_fluid",
-      "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "pfem_fluid",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "pfem_fluid",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rom",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rom",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rom",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "rom",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "topology_optimization",
-      "pitfall_index": 0,
-      "pitfall_category": "Integration",
-      "signal_text": "RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AnalysisStage",
-        "Initialize",
-        "KeyError",
-        "Property",
-        "RuntimeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "topology_optimization",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "topology_optimization",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "topology_optimization",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "iga",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "iga",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "iga",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "iga",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "poromechanics",
-      "pitfall_index": 0,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shallow_water",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shallow_water",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "shallow_water",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "wind_engineering",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "ResidualBasedNewtonRaphsonStrategy reports 'Convergence is not achieved' with the global residual stuck; local return-mapping in the ConstitutiveLaw emits 'division by zero' / NaN in PK2_STRESS_VECTOR returned by CalculateOnIntegrationPoints.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "CalculateOnIntegrationPoints",
-        "ConstitutiveLaw",
-        "PK2_STRESS_VECTOR",
-        "ResidualBasedNewtonRaphsonStrategy"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "CalculateOnIntegrationPoints",
-        "ConstitutiveLaw",
-        "PK2_STRESS_VECTOR",
-        "ResidualBasedNewtonRaphsonStrategy"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "nan",
-        "quoted-error-fragment",
-        "report",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "ResidualCriteria reports the global residual ratio not decreasing across ResidualBasedNewtonRaphsonStrategy iterations; CalculateOnIntegrationPoints returns NaN entries in PK2_STRESS_VECTOR for stress states whose Lode angle is close to |30 deg|.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "CalculateOnIntegrationPoints",
-        "PK2_STRESS_VECTOR",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "CalculateOnIntegrationPoints",
-        "PK2_STRESS_VECTOR",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "iteration",
-        "iterations",
-        "nan",
-        "report",
-        "returns"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 2,
-      "pitfall_category": "Integration",
-      "signal_text": "yield surface intersects axes at wrong values \u2014 sigma_y in uniaxial compression disagrees with hand-calc by tan(phi)-related factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "value",
-        "wrong"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 3,
-      "pitfall_category": "Syntax",
-      "signal_text": "stress-strain past yield droops with negative slope despite HARDENING_MODULUS=0; integrated fracture energy < 0.5 of analytical perfect-plastic value.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "HARDENING_MODULUS"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "HARDENING_MODULUS"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 4,
-      "pitfall_category": "API",
-      "signal_text": "AttributeError 'module ... has no attribute FRICTION_ANGLE' from properties.SetValue.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AttributeError",
-        "FRICTION_ANGLE",
-        "SetValue"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AttributeError",
-        "FRICTION_ANGLE",
-        "SetValue"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 5,
-      "pitfall_category": "API",
-      "signal_text": "TypeError 'incompatible function arguments' from the factory binding.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "TypeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "TypeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
+      "backend": "fenics",
+      "physics": "time_dependent_heat",
       "pitfall_index": 6,
-      "pitfall_category": "Numerical",
-      "signal_text": "bending-plasticity tip rotation 20-40% smaller than analytic with hex8; switching to hex20 recovers it.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "smaller"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 7,
-      "pitfall_category": "Numerical",
-      "signal_text": "ResidualBasedNewtonRaphsonStrategy reports 1 iteration per CloneTimeStep for every step; ResidualCriteria initial-residual ratio is below tolerance from iteration 0 \u2014 the algorithmic tangent (CalculateOnIntegrationPoints DEFORMATION_GRADIENT path) is never tested.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "CalculateOnIntegrationPoints",
-        "CloneTimeStep",
-        "DEFORMATION_GRADIENT",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "CalculateOnIntegrationPoints",
-        "CloneTimeStep",
-        "DEFORMATION_GRADIENT",
-        "ResidualBasedNewtonRaphsonStrategy",
-        "ResidualCriteria"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "below",
-        "iteration",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 8,
-      "pitfall_category": "Physics",
-      "signal_text": "CalculateOnIntegrationPoints PK2_STRESS_VECTOR[2] at zero axial DISPLACEMENT_Z is non-zero and matches -sigma_3*(1-2*nu); the SmallDisplacementElement stress-strain curve starts on a parallel line offset from origin (the solver is correct).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "CalculateOnIntegrationPoints",
-        "PK2_STRESS_VECTOR",
-        "SmallDisplacementElement"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "CalculateOnIntegrationPoints",
-        "PK2_STRESS_VECTOR",
-        "SmallDisplacementElement"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "matches",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "constitutive_laws",
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "constitutive_laws",
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
       "pitfall_index": 1,
-      "pitfall_category": "API",
-      "signal_text": "RuntimeError or TypeError from the Kratos binding (e.g. 'not registered', 'incompatible function arguments') when the API call is made.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "RuntimeError",
-        "TypeError"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "RuntimeError",
-        "TypeError"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "thermal_dem",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "thermal_dem",
-      "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "swimming_dem",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "swimming_dem",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "dem_structures_coupling",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "fem_to_dem",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "chimera",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "chimera",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "kratos",
-      "physics": "chimera",
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
       "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "fluid_biomedical",
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "cahn_hilliard",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "fluid_biomedical",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
       "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "kratos",
-      "physics": "optimization",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "nonlinear_pde",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "fenics",
+      "physics": "magnetostatics",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     }
   ]
 }
