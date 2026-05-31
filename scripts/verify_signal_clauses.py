@@ -191,6 +191,11 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "SetHeapSize", "Inverse",
             # Exception class ─────────────────────────────────────
             "NgException", "Exception",
+            # CoefficientFunction internals that show up in
+            # actual NGSolve error text (verified by empirical
+            # probe 2026-06-01 — see maxwell#3 audit).
+            "ScaleCF", "ConstantCF", "CompoundCF",
+            "biform_from_py", "lform_from_py",
             # Common method/attribute names that appear in tracebacks
             "Assemble", "TnT", "FreeDofs", "ndof",
         })
@@ -216,7 +221,11 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # scipy interop names that appear in skfem stack traces
             "spsolve", "factorized", "scipy.sparse",
             "scipy.sparse.linalg", "splu", "csc_matrix",
-            "csr_matrix",
+            "csr_matrix", "SuperLU", "boundary_values",
+            "boundary_dofs",
+            # numpy attribute/array names that appear when
+            # skfem returns rank-deficient solutions
+            "np", "numpy", "abs", "ones",
             # skfem-namespaced helpers
             "skfem.models.poisson", "skfem.models",
             "skfem.condense", "skfem.solve", "skfem.asm",
