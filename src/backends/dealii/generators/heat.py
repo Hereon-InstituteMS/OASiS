@@ -367,7 +367,7 @@ KNOWLEDGE = {
         "FE_Q<dim>(degree)            — continuous Lagrange; degree=1 is default for transient heat",
         "FE_Q_Hierarchical<dim>(degree) — for p-adaptive refinement with smooth coefficient transitions",
         "FE_DGQ<dim>(degree)          — DG variant; useful for sharp-front problems (welding, phase change)",
-        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle/tet) meshes from Gmsh",
+        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle/tet) meshes from Gmsh; available in deal.II ≥ 9.3",
     ],
     "mesh_generators": [
         "GridGenerator::hyper_cube(tria, a, b)               — unit cube/square; default heat-equation test domain",

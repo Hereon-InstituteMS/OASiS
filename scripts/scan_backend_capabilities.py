@@ -740,11 +740,35 @@ def scan_dealii() -> BackendCapabilities:
                 text = header.read_text(errors="replace")
             except OSError:
                 continue
-            m = re.search(r"^class\s+(FE_[A-Za-z0-9_]+)", text, re.MULTILINE)
-            if m:
-                elements.append(m.group(1))
+            # Match either underscore form (FE_Q, FE_Nedelec) or
+            # the camel-case wrapper FESystem — both are real
+            # deal.II classes. The trailing `(?=[\s{:])` requires the
+            # match to be followed by whitespace + `{`, inheritance
+            # `:`, or end-of-line continuation — this filters out
+            # forward declarations like `class FE_Enriched;` which
+            # ARE NOT real declarations and which (in fe_system.h)
+            # used to win the search and hide the real FESystem
+            # declaration on the next line. We use findall so
+            # multiple declarations per header (FE_Enriched fwd-decl
+            # + FESystem real-decl, both in fe_system.h) are picked
+            # up correctly.
+            matches = re.findall(
+                r"^class\s+(FE_[A-Za-z0-9_]+|FE[A-Z][A-Za-z0-9_]*)"
+                r"(?=[\s:])",
+                text, re.MULTILINE,
+            )
+            if matches:
+                elements.extend(matches)
             else:
-                # Fallback: derive from filename.
+                # Fallback: derive from filename when the header
+                # has no parseable `class FE_*` declaration (e.g.
+                # template-only headers). Note: `for-else` (the
+                # previous form) was wrong here — it fires after
+                # EVERY iteration, polluting the list with the
+                # title-cased fallback even when matches existed,
+                # and the loop variable `name` was shadowed by the
+                # match so the fallback produced garbage names
+                # like `FE_Ystem` (from "FESystem"[3:].title()).
                 elements.append("FE_" + name[3:].title().replace("_", ""))
         # De-dup while preserving order.
         seen = set()

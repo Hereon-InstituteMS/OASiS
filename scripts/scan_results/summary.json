@@ -2,7 +2,7 @@
   "dealii": {
     "version": "9.1.1",
     "n_applications": 0,
-    "n_elements": 30,
+    "n_elements": 39,
     "n_element_families": 0,
     "n_conditions": 0,
     "n_constitutive_laws": 0,
@@ -18,116 +18,6 @@
       "constitutive_laws: deal.II ships no central material/law registry; user-written. Catalog diff should treat empty list as 'no information'.",
       "tutorials: 97 step-* tutorials live in the upstream source tree, not in this conda install. Tutorial harvest pending.",
       "install_root=~/miniconda3/envs/ofa-dealii"
-    ]
-  },
-  "dune": {
-    "version": "",
-    "n_applications": 0,
-    "n_elements": 0,
-    "n_element_families": 22,
-    "n_conditions": 0,
-    "n_constitutive_laws": 0,
-    "n_variables": 0,
-    "n_mesh_generators": 6,
-    "n_processes": 11,
-    "n_modelers": 0,
-    "other_counts": {},
-    "notes": [
-      "dune python import failed: ModuleNotFoundError: No module named 'dune'; falling back to source walk",
-      "source_root=~/Schreibtisch/dune-src/dune-fem/build-cmake/python/dune; introspection_ok=False"
-    ]
-  },
-  "fenics": {
-    "version": "0.10.0",
-    "n_applications": 0,
-    "n_elements": 0,
-    "n_element_families": 14,
-    "n_conditions": 0,
-    "n_constitutive_laws": 0,
-    "n_variables": 0,
-    "n_mesh_generators": 10,
-    "n_processes": 0,
-    "n_modelers": 0,
-    "other_counts": {
-      "cell_types": 8
-    },
-    "notes": []
-  },
-  "fourc": {
-    "version": "",
-    "n_applications": 0,
-    "n_elements": 0,
-    "n_element_families": 0,
-    "n_conditions": 281,
-    "n_constitutive_laws": 105,
-    "n_variables": 0,
-    "n_mesh_generators": 0,
-    "n_processes": 0,
-    "n_modelers": 0,
-    "other_counts": {
-      "modules": 66,
-      "material_enum_symbols": 121,
-      "condition_source_files": 28,
-      "element_modules": 6
-    },
-    "notes": [
-      "source_root=~/Schreibtisch/4C-src/4C",
-      "materials_source=src/global_legacy_module/4C_global_legacy_module_validmaterials.cpp"
-    ]
-  },
-  "kratos": {
-    "version": "10.4.2--0-Release-x86_64",
-    "n_applications": 3,
-    "n_elements": 0,
-    "n_element_families": 0,
-    "n_conditions": 0,
-    "n_constitutive_laws": 22,
-    "n_variables": 1527,
-    "n_mesh_generators": 0,
-    "n_processes": 0,
-    "n_modelers": 0,
-    "other_counts": {},
-    "notes": [
-      "Registry['Processes'] has 4 items (deep enumeration is a follow-up; the Python Registry binding does not expose child iteration)",
-      "Registry['Modelers'] has 4 items (deep enumeration is a follow-up; the Python Registry binding does not expose child iteration)",
-      "package_dir=<repo>/.venv/lib/python3.12/site-packages/KratosMultiphysics"
-    ]
-  },
-  "ngsolve": {
-    "version": "6.2.2604",
-    "n_applications": 0,
-    "n_elements": 7,
-    "n_element_families": 27,
-    "n_conditions": 0,
-    "n_constitutive_laws": 0,
-    "n_variables": 0,
-    "n_mesh_generators": 16,
-    "n_processes": 4,
-    "n_modelers": 0,
-    "other_counts": {
-      "preconditioners": 8,
-      "forms": 11,
-      "demo_groups": 5
-    },
-    "notes": [
-      "demos_dir=<repo>/.venv/lib/python3.12/site-packages/ngsolve/demos",
-      "package_dir=<repo>/.venv/lib/python3.12/site-packages/ngsolve"
-    ]
-  },
-  "skfem": {
-    "version": "12.0.1",
-    "n_applications": 0,
-    "n_elements": 78,
-    "n_element_families": 2,
-    "n_conditions": 0,
-    "n_constitutive_laws": 0,
-    "n_variables": 0,
-    "n_mesh_generators": 21,
-    "n_processes": 0,
-    "n_modelers": 0,
-    "other_counts": {},
-    "notes": [
-      "package_dir=<repo>/.venv/lib/python3.12/site-packages/skfem"
     ]
   }
 }

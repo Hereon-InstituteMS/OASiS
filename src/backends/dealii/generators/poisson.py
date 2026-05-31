@@ -632,7 +632,12 @@ KNOWLEDGE = {
         "FE_Q_iso_Q1<dim>(p)          — piecewise (multi-)linear on p^dim sub-cells of each macro-cell; same continuity as FE_Q(1) but more DoFs",
         "FE_DGQ<dim>(degree)          — discontinuous Galerkin Lagrange; for DG-Poisson formulations (interior-penalty)",
         "FE_DGP<dim>(degree)          — DG with monomial pressure-like basis on hyper-cube cells",
-        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle / tet) cells; use when the mesh is unstructured from Gmsh",
+        # deal.II ≥ 9.3 ships fe_simplex_p.h; the conda install used
+        # at the time of catalog encoding (9.1.1) does NOT have it,
+        # so claiming it without the version gate is a false promise.
+        # When upgrading deal.II, this entry becomes immediately
+        # usable.
+        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle / tet) cells; available in deal.II ≥ 9.3 — use when the mesh is unstructured from Gmsh",
     ],
     "mesh_generators": [
         "GridGenerator::hyper_cube(tria, a, b)                        — [a,b]^dim unit cube; classic Poisson on the square",

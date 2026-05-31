@@ -5,7 +5,6 @@
   "drift": {
     "elements": [
       "DoFs",
-      "FESystem",
       "FE_SimplexP",
       "PETSc"
     ],
@@ -26,10 +25,16 @@
     "elements": [
       "FE_ABF",
       "FE_Base",
+      "FE_DGBDM",
+      "FE_DGNedelec",
       "FE_DGPMonomial",
       "FE_DGPNonparametric",
+      "FE_DGQArbitraryNodes",
+      "FE_DGQLegendre",
+      "FE_DGRaviartThomas",
       "FE_DGVector",
       "FE_Enriched",
+      "FE_FaceP",
       "FE_FaceQ",
       "FE_NedelecSZ",
       "FE_P1NC",
@@ -38,6 +43,7 @@
       "FE_PolyTensor",
       "FE_Q_Base",
       "FE_RT_Bubbles",
+      "FE_RaviartThomasNodal",
       "FE_Series",
       "FE_TraceQ"
     ],
@@ -63,12 +69,15 @@
     ]
   },
   "uncategorised": {
+    "elements": [
+      "FE_DGQHermite"
+    ],
     "mesh_generators": [
       "simplex"
     ]
   },
   "shared_counts": {
-    "elements": 14,
+    "elements": 15,
     "mesh_generators": 16
   },
   "no_info_buckets": [],
