@@ -213,6 +213,12 @@ class TestDocumentationReachability(unittest.TestCase):
 
     def test_orphaned_knowledge_does_not_grow(self):
         import importlib
+        import sys
+        # Ensure src/ on sys.path (other tests get this via
+        # verify_signal_clauses import; do it explicitly here).
+        src_path = str(REPO_ROOT / "src")
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
         from core.registry import load_all_backends, get_backend
         load_all_backends()
         dk = importlib.import_module("tools.deep_knowledge")
