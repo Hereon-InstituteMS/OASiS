@@ -260,35 +260,25 @@ KNOWLEDGE = {
             ),
         },
         "pitfalls": [
-            "CRITICAL: Dilatancy angle psi=0 causes singular plastic denominator (dF:C:dG = 0) "
-            "at the MC compression meridian (Lode angle = -30 deg). Use psi >= 0.1 deg as workaround, "
-            "or implement a principal-stress-space return mapping (Sloan et al., 2001).",
-            "MC yield surface has 6 corners in the deviatoric plane. Standard backward Euler in "
-            "stress-invariant space needs Lode angle smoothing (switch to Drucker-Prager at |theta| >= 29 deg) "
-            "or explicit corner return mapping. Without this, Newton diverges at corners.",
-            "Modified MC (Kratos) and Classical MC (textbook) use DIFFERENT parameterizations. "
-            "Modified MC uses YIELD_STRESS_COMPRESSION/TENSION; Classical MC uses cohesion + friction angle. "
-            "The mapping is stress-state dependent — see parameter_translation above.",
-            "For perfect plasticity use HARDENING_CURVE=3 with a large FRACTURE_ENERGY (e.g., 1e10). "
-            "Using HARDENING_CURVE=0 (linear) still produces softening unless FRACTURE_ENERGY is very large.",
-            "In Python API: constitutive law variables are split across modules (CLA vs KM). "
-            "FRICTION_ANGLE, DILATANCY_ANGLE, YIELD_STRESS_COMPRESSION are in CLA; "
-            "FRACTURE_ENERGY, YOUNG_MODULUS are in KM. Using the wrong module causes AttributeError.",
-            "The factory class SmallStrainIsotropicPlasticityFactory() takes NO constructor arguments. "
-            "Passing KM.Parameters to its constructor raises TypeError. Use specific pre-combined classes instead.",
-            "SHEAR LOCKING: Linear hex8 (3D8N) elements lock in bending-dominated problems. "
-            "For plasticity benchmarks with uniform stress (uniaxial, triaxial), hex8 is fine. "
-            "For problems with stress gradients, use quadratic elements (3D20N, 3D27N).",
-            "TESTING PITFALL: Fully displacement-controlled single-element tests (all DOFs prescribed) "
-            "can appear to work but the material tangent is never exercised because the global Newton "
-            "converges in 1 iteration regardless. Always use at least one Neumann-loaded face "
-            "(e.g., confining pressure in triaxial) so the equilibrium iteration actually tests the "
-            "elastoplastic tangent. Without this, tangent bugs are hidden.",
-            "TRIAXIAL ELASTIC OFFSET: With confining pressure sigma_3, the deviatoric stress at zero "
-            "axial strain is q = -sigma_3*(1-2*nu), NOT zero. For sigma_3=100 kPa, nu=0.3: q_0 = -40 kPa. "
-            "If your stress-strain plot shows the curve starting below the expected elastic line, "
-            "this Poisson coupling offset is the reason — the solver is correct.",
-        ],
+                        '[Numerical] Mohr-Coulomb dilatancy angle psi=0 causes a singular plastic denominator (dF:C:dG = 0) at the MC compression meridian (Lode = -30 deg). Use psi >= 0.1 deg as workaround, or principal-stress-space return mapping (Sloan et al., 2001). '
+                        "Signal: Newton-Raphson stress-update divergence / 'division by zero' from the local return-mapping; global solver reports nonconvergence with no equilibrium progress.",
+                        '[Numerical] MC yield surface has 6 corners in the deviatoric plane; backward Euler needs Lode-angle smoothing (Drucker-Prager at |theta| >= 29 deg) or explicit corner return mapping. '
+                        'Signal: Newton diverges when stress path crosses a corner — local return-mapping iteration count saturates at max with residual not decreasing.',
+                        '[Integration] Modified MC (Kratos) and Classical MC (textbook) use DIFFERENT parameterisations. Modified MC uses YIELD_STRESS_COMPRESSION/TENSION; Classical MC uses cohesion + friction angle. '
+                        'Signal: yield surface intersects axes at wrong values — sigma_y in uniaxial compression disagrees with hand-calc by tan(phi)-related factor.',
+                        '[Syntax] For perfect plasticity use HARDENING_CURVE=3 with large FRACTURE_ENERGY (e.g., 1e10). HARDENING_CURVE=0 (linear) still softens unless FRACTURE_ENERGY is very large. '
+                        'Signal: stress-strain past yield droops with negative slope despite HARDENING_MODULUS=0; integrated fracture energy < 0.5 of analytical perfect-plastic value.',
+                        '[API] Python API: constitutive-law variables are split across modules. FRICTION_ANGLE, DILATANCY_ANGLE, YIELD_STRESS_COMPRESSION live in ConstitutiveLawsApplication (CLA); FRACTURE_ENERGY, YOUNG_MODULUS in KratosMultiphysics (KM). '
+                        "Signal: AttributeError 'module ... has no attribute FRICTION_ANGLE' from properties.SetValue.",
+                        '[API] SmallStrainIsotropicPlasticityFactory() takes NO constructor arguments. Passing KM.Parameters raises TypeError. Use the specific pre-combined class (e.g. SmallStrainIsotropicPlasticityMisesMises3D). '
+                        "Signal: TypeError 'incompatible function arguments' from the factory binding.",
+                        '[Numerical] SHEAR LOCKING: linear hex8 (3D8N) locks in bending-dominated plasticity. Uniform-stress benchmarks (uniaxial, triaxial) are fine; gradient-stress problems need quadratic elements (3D20N, 3D27N). '
+                        'Signal: bending-plasticity tip rotation 20-40% smaller than analytic with hex8; switching to hex20 recovers it.',
+                        '[Numerical] Fully displacement-controlled single-element tests can pass spuriously — Newton converges in 1 iteration without exercising the material tangent. Always include at least one Neumann-loaded face (e.g., confining pressure in triaxial). '
+                        'Signal: convergence count is 1 for every step even when the tangent has a bug; tangent error is invisible.',
+                        '[Physics] Triaxial elastic offset: with confining sigma_3, deviatoric q at zero axial strain is q = -sigma_3*(1-2*nu), NOT zero. For sigma_3=100 kPa, nu=0.3: q_0 = -40 kPa. '
+                        'Signal: stress-strain plot starts below the expected elastic line — Poisson coupling offset (solver is correct).',
+                    ],
         "elements": [
             "SmallDisplacementElement3D8N (linear hex, small strain)",
             "SmallDisplacementElement3D4N (linear tet)",

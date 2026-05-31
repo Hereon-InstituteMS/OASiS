@@ -37,10 +37,13 @@ KNOWLEDGE = {
             "solver_wrappers": ["kratos (internal)", "external (CoSimIO for coupling with other codes)"],
         },
         "pitfalls": [
-            "FSI needs: FluidDynamics + StructuralMechanics + MeshMoving + Mapping applications",
-            "CoSimIO enables coupling Kratos with any external solver (including our MCP agents)",
-            "Aitken relaxation recommended for initial runs; MVQN for production",
-        ],
+                        '[Numerical] FSI needs: FluidDynamics + StructuralMechanics + MeshMoving + Mapping applications '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] CoSimIO enables coupling Kratos with any external solver (including our MCP agents) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Aitken relaxation recommended for initial runs; MVQN for production '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

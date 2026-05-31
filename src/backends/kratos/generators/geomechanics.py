@@ -48,12 +48,17 @@ KNOWLEDGE = {
         "analysis_types": ["consolidation", "groundwater_flow", "slope_stability",
                            "excavation_staged", "dam_safety"],
         "pitfalls": [
-            "U-Pw elements require both DISPLACEMENT and WATER_PRESSURE DOFs",
-            "Gravity loading via body_force_per_unit_mass: [0, -9.81, 0]",
-            "Initial stress state often needed via K0 procedure",
-            "Time stepping critical for consolidation (geometric progression recommended)",
-            "Material parameters: use effective stress parameters, not total stress",
-        ],
+                        '[Physics] U-Pw elements require both DISPLACEMENT and WATER_PRESSURE DOFs '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        '[Numerical] Gravity loading via body_force_per_unit_mass: [0, -9.81, 0] '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Initial stress state often needed via K0 procedure '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Time stepping critical for consolidation (geometric progression recommended) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Integration] Material parameters: use effective stress parameters, not total stress '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                    ],
     },
 }
 

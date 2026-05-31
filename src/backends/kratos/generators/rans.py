@@ -38,11 +38,15 @@ KNOWLEDGE = {
                      "RansKOmegaSSTKElement2D3N", "RansKOmegaSSTOmegaElement2D3N"],
         "wall_treatment": ["wall_functions (log law)", "low_Re (resolve boundary layer)"],
         "pitfalls": [
-            "Requires FluidDynamicsApplication as dependency",
-            "Wall distance computation needed for SST model",
-            "Inlet turbulence: specify k and epsilon/omega from turbulence intensity",
-            "y+ must be appropriate for chosen wall treatment (30-300 for wall functions)",
-        ],
+                        '[Integration] Requires FluidDynamicsApplication as dependency '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] Wall distance computation needed for SST model '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] Inlet turbulence: specify k and epsilon/omega from turbulence intensity '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        '[Numerical] y+ must be appropriate for chosen wall treatment (30-300 for wall functions) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

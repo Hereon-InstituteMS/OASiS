@@ -39,11 +39,15 @@ KNOWLEDGE = {
                      "2. Collect snapshots", "3. Build reduced basis (SVD/POD)",
                      "4. Train ROM/HROM", "5. Evaluate at new parameters in real-time"],
         "pitfalls": [
-            "Training snapshots must cover the parameter space adequately",
-            "HROM requires empirical cubature method (ECM) for element selection",
-            "ROM accuracy degrades for strongly nonlinear problems",
-            "Works best with StructuralMechanics and FluidDynamics applications",
-        ],
+                        '[Numerical] Training snapshots must cover the parameter space adequately '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] HROM requires empirical cubature method (ECM) for element selection '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] ROM accuracy degrades for strongly nonlinear problems '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Works best with StructuralMechanics and FluidDynamics applications '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

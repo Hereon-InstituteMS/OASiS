@@ -133,20 +133,27 @@ KNOWLEDGE = {
         "solver_types": ["static (Newton-Raphson)", "dynamic (Newmark, Bossak, GenAlpha)",
                         "explicit (central differences)", "formfinding"],
         "pitfalls": [
-            "Element names MUST include node count: SmallDisplacementElement2D3N, not SmallDisplacement2D",
-            "Materials defined in StructuralMaterials.json, referenced by Properties ID",
-            "SubModelParts must match between .mdpa and ProjectParameters.json exactly",
-            "For nonlinear: increase max_iterations (default 10 may not suffice)",
-            "DISPLACEMENT variable for structural, ROTATION for beams/shells",
-            "SHEAR LOCKING: Linear hex8 (3D8N) and quad4 (2D4N) elements lock in "
-            "bending-dominated problems, producing overly stiff results and wrong "
-            "frequencies. Use quadratic elements (3D20N, 3D27N, 2D8N, 2D9N) for "
-            "any problem with significant bending.",
-            "For POINT_LOAD application: use assign_vector_variable_process with "
-            "constrained: [false, false, false]. Do NOT use "
-            "assign_vector_by_direction_process (crashes for load variables).",
-            "problem_data section MUST include 'echo_level' field.",
-        ],
+                        '[Syntax] Element names in the .mdpa MUST include the node-count suffix: SmallDisplacementElement2D3N, not SmallDisplacement2D. Kratos resolves element types via a registry keyed by the full name. '
+                        "Signal: RuntimeError 'Element ... is not registered' or 'Trying to construct an element with a wrong name' when ModelPart.CreateNewElement is called with a name missing the NxN suffix.",
+                        "[Integration] Materials are defined in StructuralMaterials.json, referenced from the .mdpa by Properties ID. Defining material parameters inline in the .mdpa via 'Begin Properties N' works for simple cases but breaks for laws that need Tables (temperature-dependent E, hardening curves). "
+                        "Signal: AnalysisStage.Initialize raises RuntimeError 'No constitutive law assigned to Property ...' even though the .mdpa has the right Property ID.",
+                        '[Syntax] SubModelPart names must match EXACTLY between .mdpa and ProjectParameters.json — Kratos is case-sensitive and does not strip whitespace. '
+                        "Signal: KeyError or RuntimeError 'SubModelPart ... does not exist' from Model[...].GetSubModelPart(name) when the process tries to apply a BC.",
+                        '[Numerical] For nonlinear analyses: increase max_iteration in the convergence_criterion section (default 10 may not suffice for material nonlinearity or large deformation). '
+                        "Signal: solver reports 'Convergence is not achieved' at max_iteration with residual not yet at tolerance; structural displacement stalls at an intermediate state.",
+                        '[API] DISPLACEMENT variable is the structural DOF; ROTATION is required additionally for beams and shells. Trying to AddNodalSolutionStepVariable with only DISPLACEMENT and then using a beam element raises an access error. '
+                        "Signal: RuntimeError 'Variable ROTATION not found in variables list of ModelPart ...' from beam-element InitializeSolutionStep.",
+                        '[Numerical] SHEAR LOCKING: linear hex8 (3D8N) and quad4 (2D4N) elements lock in bending-dominated problems, producing overly stiff results and wrong frequencies. Use quadratic elements (3D20N, 3D27N, 2D8N, 2D9N) for any problem with significant bending. '
+                        'Signal: tip deflection on a cantilever beam meshed with 3D8N is 20-40% smaller than analytic; switching to 3D20N recovers it within 1-2%.',
+                        '[API] For POINT_LOAD application: use AssignVectorVariableProcess with constrained: [false, false, false]. Do NOT use AssignVectorByDirectionProcess — it crashes for load variables. '
+                        "Signal: RuntimeError 'Trying to fix DOF of non-existing variable' or segfault when the directional-process is used with POINT_LOAD.",
+                        "[Syntax] problem_data section MUST include the 'echo_level' field. Kratos accesses it during stage initialisation without a default. "
+                        "Signal: KeyError 'echo_level' from AnalysisStage.RunSolutionLoop when problem_data omits the field.",
+                        '[API] ConstitutiveLaw assignment requires an INSTANCE, not the class — properties.SetValue(CONSTITUTIVE_LAW, LinearElastic3DLaw) fails because the class object is passed instead of LinearElastic3DLaw(). '
+                        "Signal: TypeError with text 'incompatible function arguments' from the SetValue binding; the .pyi shows the second arg type is the law instance.",
+                        "[API] Variables (DISPLACEMENT, REACTION, VELOCITY, POINT_LOAD, etc.) must be added to the ModelPart's nodal-variables list via ModelPart.AddNodalSolutionStepVariable BEFORE any Node, Element, or Condition is created. Adding the variable after CreateNewNode raises a runtime error and the existing nodes do not get the DOF. "
+                        "Signal: RuntimeError 'variable ... was not added to the variables list of ModelPart ...' from a process or element trying to read the freshly-added variable.",
+                    ],
     },
 }
 

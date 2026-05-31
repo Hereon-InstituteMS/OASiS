@@ -262,11 +262,11 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/finite_element.py\", line 986, in string_to_family\n    return families[family]\n           ~~~~~~~~^^^^^^^^\nKeyError: 'NotAFamily'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/unknown_element_family/source.py\", line 23, in main\n    functionspace(mesh, (\"NotAFamily\", 1))\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/function.py\", line 604, in functionspace\n    ufl_e = basix.ufl.element(\n            ^^^^^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/ufl.py\", line 1613, in element\n    famil"
     },
-    "kratos::linear_elasticity::89": {
-      "key": "kratos::linear_elasticity::89",
+    "kratos::linear_elasticity::8": {
+      "key": "kratos::linear_elasticity::8",
       "backend": "kratos",
       "physics": "linear_elasticity",
-      "pitfall_index": 89,
+      "pitfall_index": 8,
       "fixture_id": "constitutive_law_class_not_instance",
       "mode": "python",
       "status": "passed",
@@ -294,11 +294,11 @@
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
     },
-    "kratos::linear_elasticity::88": {
-      "key": "kratos::linear_elasticity::88",
+    "kratos::linear_elasticity::9": {
+      "key": "kratos::linear_elasticity::9",
       "backend": "kratos",
       "physics": "linear_elasticity",
-      "pitfall_index": 88,
+      "pitfall_index": 9,
       "fixture_id": "variable_not_added_before_access",
       "mode": "python",
       "status": "passed",

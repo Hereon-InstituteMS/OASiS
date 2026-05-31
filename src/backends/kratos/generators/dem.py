@@ -238,15 +238,23 @@ KNOWLEDGE = {
         },
         "solver_types": ["explicit (velocity Verlet, default)", "explicit (symplectic Euler)"],
         "pitfalls": [
-            "Time step must satisfy CFL: dt < min(2*sqrt(m/k)) — use DEM_timestep_safety_factor: 0.5",
-            "Bounding box must enclose all particles at all times (AutomaticBoundingBoxOption or manual)",
-            "MaterialsDEM.json constitutive_law name must match exactly (e.g. 'DEM_D_Hertz_viscous_Coulomb')",
-            "MDPA uses SphericParticle3D even for 2D problems (Kratos DEM is always 3D internally)",
-            "Wall geometry: use RigidFace3D3N elements or the walls_process_list in ProjectParameters",
-            "For >10k particles: enable MPI via parallel_type: MPI",
-            "RADIUS must be set per-particle in the MDPA or via a process",
-            "Output: VTK with sphere glyphs, or GiD .post.bin format",
-        ],
+                        '[Numerical] Time step must satisfy CFL: dt < min(2*sqrt(m/k)) — use DEM_timestep_safety_factor: 0.5 '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Bounding box must enclose all particles at all times (AutomaticBoundingBoxOption or manual) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        "[Integration] MaterialsDEM.json constitutive_law name must match exactly (e.g. 'DEM_D_Hertz_viscous_Coulomb') "
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Integration] MDPA uses SphericParticle3D even for 2D problems (Kratos DEM is always 3D internally) '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Integration] Wall geometry: use RigidFace3D3N elements or the walls_process_list in ProjectParameters '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] For >10k particles: enable MPI via parallel_type: MPI '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Integration] RADIUS must be set per-particle in the MDPA or via a process '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] Output: VTK with sphere glyphs, or GiD .post.bin format '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

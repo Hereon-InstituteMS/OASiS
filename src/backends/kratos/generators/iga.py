@@ -33,11 +33,15 @@ KNOWLEDGE = {
                          "penalty_coupling", "Nitsche_coupling"],
         "geometry_formats": ["NURBS from CAD (IGES/STEP)", "B-spline patches"],
         "pitfalls": [
-            "Requires NURBS geometry definition (control points, knot vectors, weights)",
-            "Trimmed surfaces need special integration rules",
-            "Multi-patch coupling via penalty or Nitsche method",
-            "Higher continuity (C^p-1) vs C^0 FEM — different error behavior",
-        ],
+                        '[Numerical] Requires NURBS geometry definition (control points, knot vectors, weights) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Trimmed surfaces need special integration rules '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Multi-patch coupling via penalty or Nitsche method '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Higher continuity (C^p-1) vs C^0 FEM — different error behavior '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

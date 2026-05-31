@@ -38,11 +38,15 @@ KNOWLEDGE = {
                          "fluid_structure_with_topology_changes"],
         "solver_types": ["two_step_v_p_solver (velocity-pressure split)"],
         "pitfalls": [
-            "Requires DelaunayMeshingApplication for remeshing",
-            "Alpha-shape parameter controls free-surface detection (default ~1.25)",
-            "Time step must be small enough for remeshing stability",
-            "Output: particles move, so mesh changes every step",
-        ],
+                        '[Numerical] Requires DelaunayMeshingApplication for remeshing '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] Alpha-shape parameter controls free-surface detection (default ~1.25) '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        '[Numerical] Time step must be small enough for remeshing stability '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Output: particles move, so mesh changes every step '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
     "pfem_solid": {
         "description": "PFEM for large-deformation solid mechanics with remeshing",

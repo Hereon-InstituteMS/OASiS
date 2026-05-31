@@ -35,11 +35,15 @@ KNOWLEDGE = {
         },
         "solver_types": ["potential_flow_solver (linear/nonlinear)"],
         "pitfalls": [
-            "Far-field BC: use PotentialWallCondition for solid walls",
-            "Freestream: set FREESTREAM_VELOCITY and MACH_INFINITY",
-            "Transonic: requires shock-capturing stabilization",
-            "Lift/drag computed from pressure integration on body surface",
-        ],
+                        '[Numerical] Far-field BC: use PotentialWallCondition for solid walls '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] Freestream: set FREESTREAM_VELOCITY and MACH_INFINITY '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        '[Numerical] Transonic: requires shock-capturing stabilization '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] Lift/drag computed from pressure integration on body surface '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                    ],
     },
 }
 

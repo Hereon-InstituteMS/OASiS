@@ -169,12 +169,17 @@ KNOWLEDGE = {
             "external": "CoSimIO for coupling with external codes (C/C++/Python/Fortran API)",
         },
         "pitfalls": [
-            "Weak coupling: one pass per time step (fast but may be inaccurate for strong interactions)",
-            "Strong coupling: iterate until interface convergence (required for added-mass instability)",
-            "Aitken relaxation: good default, but MVQN converges faster for large interface problems",
-            "Data mapping: non-matching meshes require interpolation (use RBF for smooth fields)",
-            "CoSimIO: standalone library for coupling Kratos with any external solver",
-        ],
+                        '[Numerical] Weak coupling: one pass per time step (fast but may be inaccurate for strong interactions) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Strong coupling: iterate until interface convergence (required for added-mass instability) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Aitken relaxation: good default, but MVQN converges faster for large interface problems '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Data mapping: non-matching meshes require interpolation (use RBF for smooth fields) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] CoSimIO: standalone library for coupling Kratos with any external solver '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

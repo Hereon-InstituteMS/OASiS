@@ -170,10 +170,13 @@ KNOWLEDGE = {
         "application": "ConvectionDiffusionApplication",
         "solver_types": ["stationary", "transient"],
         "pitfalls": [
-            "Same as Poisson but with TEMPERATURE as unknown",
-            "Non-homogeneous Dirichlet: use AssignScalarVariableProcess with constrained=True",
-            "Neumann (heat flux): use ApplyConstantScalarValueProcess on FACE_HEAT_FLUX",
-        ],
+                        '[API] Same field equation as Poisson but with TEMPERATURE as the unknown — TEMPERATURE must be added to ModelPart variables before any Node is created. '
+                        "Signal: RuntimeError 'variable TEMPERATURE not found in variables list of ModelPart' from the ConvectionDiffusion element InitializeSolutionStep.",
+                        '[Syntax] Non-homogeneous Dirichlet: use AssignScalarVariableProcess with constrained=True. Setting constrained=False applies the value but does NOT fix the DOF, so the solver overwrites it. '
+                        'Signal: boundary temperatures drift away from the prescribed values during the solve; T_boundary - T_imposed is O(1) instead of O(eps).',
+                        '[Syntax] Neumann (heat flux): use ApplyConstantScalarValueProcess on FACE_HEAT_FLUX (not TEMPERATURE). Targeting TEMPERATURE applies a Dirichlet pseudo-flux. '
+                        'Signal: the steady-state interior temperature is wrong by a multiplicative factor; integrated flux on the boundary does not match the applied value.',
+                    ],
     },
     "heat_transient": {
         "description": "Transient heat conduction via ConvectionDiffusionApplication",
@@ -185,11 +188,15 @@ KNOWLEDGE = {
             "forward_euler": "theta=0.0, conditionally stable (dt < h^2/(2*kappa))",
         },
         "pitfalls": [
-            "Backward Euler: factor (M + dt*K) once and reuse each step",
-            "Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old",
-            "For varying BCs in time: update Dirichlet values each step",
-            "Consistent mass matrix gives better accuracy than lumped",
-        ],
+                        '[Numerical] Backward Euler: factor (M + dt*K) once and reuse each step '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] For varying BCs in time: update Dirichlet values each step '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        '[Numerical] Consistent mass matrix gives better accuracy than lumped '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

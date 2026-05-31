@@ -98,13 +98,19 @@ KNOWLEDGE = {
         },
         "settings_object": "ConvectionDiffusionSettings — must be set on ProcessInfo, maps variable names",
         "pitfalls": [
-            "LaplacianElement does NOT assemble source terms (HEAT_FLUX) — only -div(k*grad(T))=0",
-            "For Poisson with source: use EulerianConvDiff elements AND set HEAT_FLUX as nodal data",
-            "ConvectionDiffusionSettings MUST be set on ProcessInfo before solve",
-            "Properties (CONDUCTIVITY, DENSITY, SPECIFIC_HEAT) go on Properties object, NOT on nodes",
-            "Material properties assigned via Begin Properties block in .mdpa OR via Materials.json",
-            "VTK output: add vtk_output_process to output_processes in ProjectParameters.json",
-        ],
+                        '[Numerical] LaplacianElement does NOT assemble source terms (HEAT_FLUX) — only -div(k*grad(T))=0 '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] For Poisson with source: use EulerianConvDiff elements AND set HEAT_FLUX as nodal data '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Integration] ConvectionDiffusionSettings MUST be set on ProcessInfo before solve '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] Properties (CONDUCTIVITY, DENSITY, SPECIFIC_HEAT) go on Properties object, NOT on nodes '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Integration] Material properties assigned via Begin Properties block in .mdpa OR via Materials.json '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Integration] VTK output: add vtk_output_process to output_processes in ProjectParameters.json '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                    ],
     },
 }
 

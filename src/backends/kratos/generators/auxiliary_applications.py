@@ -119,20 +119,13 @@ KNOWLEDGE = {
             ),
         },
         "pitfalls": [
-            "TrilinosApplication is not published on PyPI; to get it you "
-            "must build Kratos from source with `-DTRILINOS_APPLICATION=ON` "
-            "against an MPI-built Trilinos.  MetisApplication does have a "
-            "PyPI wheel (KratosMetisApplication), but it is only useful in "
-            "an MPI-parallel run.",
-            "MappingApplication and MeshMovingApplication are *required* "
-            "(not optional) for partitioned FSI even if not named explicitly "
-            "in the user-facing JSON — `FSIApplication`'s "
-            "`partitioned_fsi_base_solver.py` imports both at runtime.",
-            "For new analyses prefer StructuralMechanicsApplication and "
-            "ContactStructuralMechanicsApplication over the older "
-            "SolidMechanicsApplication / ContactMechanicsApplication paths; "
-            "the current Kratos generators target the modern apps.",
-        ],
+                        '[Integration] TrilinosApplication is not published on PyPI; to get it you must build Kratos from source with `-DTRILINOS_APPLICATION=ON` against an MPI-built Trilinos.  MetisApplication does have a PyPI wheel (KratosMetisApplication), but it is only useful in an MPI-parallel run. '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        "[Integration] MappingApplication and MeshMovingApplication are *required* (not optional) for partitioned FSI even if not named explicitly in the user-facing JSON — `FSIApplication`'s `partitioned_fsi_base_solver.py` imports both at runtime. "
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] For new analyses prefer StructuralMechanicsApplication and ContactStructuralMechanicsApplication over the older SolidMechanicsApplication / ContactMechanicsApplication paths; the current Kratos generators target the modern apps. '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

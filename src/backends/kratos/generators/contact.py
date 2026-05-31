@@ -30,10 +30,13 @@ KNOWLEDGE = {
         "conditions": ["ALMFrictionlessMortarContact", "ALMFrictionalMortarContact",
                       "PenaltyFrictionlessMortarContact", "PenaltyFrictionalMortarContact"],
         "pitfalls": [
-            "Contact surfaces defined as SubModelParts with Conditions",
-            "Master/slave designation matters for convergence",
-            "ALM penalty parameter needs tuning (too small -> penetration, too large -> ill-conditioning)",
-        ],
+                        '[Integration] Contact surfaces must be defined as SubModelParts containing Conditions of a Mortar contact type — not Elements. Mixing Element / Condition types on a contact SubModelPart triggers obscure assembly errors. '
+                        "Signal: AnalysisStage.Initialize raises RuntimeError 'Condition type ... not registered' or 'invalid geometry' when the contact search builds the master-slave pairs.",
+                        '[Numerical] Master / slave designation matters for convergence — the slave surface integrates the gap; swapping master and slave with very different mesh densities prevents convergence. '
+                        'Signal: contact Newton-Raphson reports non-converged after max_iteration with the gap function residual large; swapping master/slave (or remeshing to match density) fixes it.',
+                        '[Numerical] ALM penalty parameter needs tuning: too small permits inter-penetration; too large makes the tangent stiffness matrix ill-conditioned. Recommended start: penalty = 1e3 * Young modulus / characteristic length. '
+                        "Signal: penetration > 1% of characteristic length OR solver reports stiffness condition number > 1e14 / 'matrix is numerically singular' from the linear solver.",
+                    ],
     },
 }
 

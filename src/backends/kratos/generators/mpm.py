@@ -240,13 +240,19 @@ KNOWLEDGE = {
         ],
         "solver_types": ["USL (Update Stress Last)", "USF (Update Stress First)", "MUSL (Modified USL)"],
         "pitfalls": [
-            "Background grid must cover entire domain of particle motion",
-            "Cell crossing instability: use GIMP or CPDI shape functions for stability",
-            "Particles per cell: 4-16 typical (2x2 or 4x4 per cell in 2D)",
-            "Time step: dt < h/c where h=cell size, c=wave speed",
-            "Zero-energy modes possible with linear elements: use stabilization",
-            "For free surface: particles leaving grid are lost (expand grid or use remeshing)",
-        ],
+                        '[Numerical] Background grid must cover entire domain of particle motion '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Cell crossing instability: use GIMP or CPDI shape functions for stability '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Particles per cell: 4-16 typical (2x2 or 4x4 per cell in 2D) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Time step: dt < h/c where h=cell size, c=wave speed '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Zero-energy modes possible with linear elements: use stabilization '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] For free surface: particles leaving grid are lost (expand grid or use remeshing) '
+                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                    ],
     },
 }
 
