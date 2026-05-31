@@ -177,20 +177,29 @@ KNOWLEDGE = {
         "Pe = |b|*h/(2*eps). The h/(2|b|) form alone (without the "
         "Bergant-Mizukami doubly-asymptotic factor) becomes O(1) "
         "at low Pe and over-stabilises smooth diffusion-dominated "
-        "solutions. Signal: diffusion-dominated solutions show "
-        "small overshoots near the boundary that don't refine "
-        "away.",
+        "solutions. Signal: at Pe << 1 (diffusion-dominated), "
+        "DataOut shows over/undershoots of 5-15% near Dirichlet "
+        "boundaries that persist under refinement — "
+        "VectorTools::integrate_difference vs analytic reference "
+        "plateaus at ~0.05 L2-error instead of decreasing as h^p.",
         "[Syntax] DG formulations need FEInterfaceValues for "
         "jump/average operators on faces. Using FEValues alone "
         "gives the cell-interior gradient but not the jump term. "
-        "Signal: DG solution looks correct globally but has "
+        "Signal: DG solution with FE_DGQ in DataOut shows "
         "continuous-Galerkin-like behaviour at element interfaces "
-        "(no jumps where there should be).",
+        "— `solution.linfty_norm()` of jump-across-face values "
+        "drops below 1e-8 (effectively zero) where physical jumps "
+        "of O(1) are expected for an upwind discontinuous "
+        "Galerkin scheme.",
         "[Physics] Upwind flux: use the value from the cell where "
         "b·n > 0 (upstream). Switching the upwind direction inverts "
         "transport — solutions advect BACKWARDS from the inflow. "
-        "Signal: inflow BC appears on the downstream side of the "
-        "domain.",
+        "Signal: DataOut shows the prescribed inflow Dirichlet "
+        "value (e.g. u=1 on x=0 with advection in +x direction) "
+        "appearing as a localized hump at the DOWNSTREAM (x=L) "
+        "boundary instead of being carried with the flow; "
+        "VectorTools::point_value at the outflow returns the "
+        "inflow value with reversed sign.",
         "[Numerical] At high Peclet, SUPG can still oscillate. "
         "Either refine h or switch to DG. Signal: SUPG solution "
         "has O(1) oscillations at the interface between high and "
@@ -198,7 +207,11 @@ KNOWLEDGE = {
         "[Integration] Anisotropic refinement (step-30) is "
         "essential for boundary-layer resolution at high Pe — "
         "isotropic refinement wastes DoFs perpendicular to the "
-        "flow. Signal: boundary-layer thickness smeared across "
-        "multiple streamwise cells while resolved normal to flow.",
+        "flow. Signal: DataOut shows boundary-layer thickness "
+        "smeared across 3-5 cells in the streamwise direction "
+        "(where 1 should suffice) while resolved in 1 cell normal "
+        "to the flow; Triangulation::n_active_cells() climbs into "
+        "the 1e5+ range to achieve the same wall-normal resolution "
+        "anisotropic refinement reaches at 1e4 cells.",
     ],
 }

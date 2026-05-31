@@ -238,18 +238,30 @@ KNOWLEDGE = {
         "DoFRenumbering::component_wise + BlockSparseMatrix. Without "
         "the renumbering the velocity and pressure DoFs are "
         "interleaved and the BlockSparseMatrix indexing is wrong. "
-        "Signal: assembly succeeds but the saddle-point block "
-        "B^T does not have the expected zero-on-diagonal structure.",
+        "Signal: assembly succeeds but "
+        "`system_matrix.block(1, 1).frobenius_norm()` (the pressure "
+        "block) is NON-ZERO when it should be zero for a "
+        "saddle-point Stokes system; "
+        "`dof_handler.block_info().global().size()` returns blocks "
+        "in the wrong proportion (e.g. (n, n) instead of "
+        "(dim*n, n)).",
         "[Physics] Pressure is determined up to a constant for pure "
         "Neumann (closed-cavity) problems — pin one DoF or add a "
-        "zero-mean constraint. Signal: pressure field drifts to "
-        "huge magnitude (~1e15) while velocity converges normally.",
+        "zero-mean constraint via AffineConstraints. Signal: "
+        "`solution.block(1).linfty_norm()` (the pressure block) "
+        "drifts to >1e10 magnitude across iterations while "
+        "`solution.block(0).l2_norm()` (velocity) converges "
+        "normally; SolverGMRES iteration count grows each outer "
+        "step as the null space pollutes the Krylov basis.",
         "[Numerical] For geometric multigrid: Vanka-type smoothers "
         "needed (step-56), NOT point Jacobi. Point Jacobi diverges "
         "on saddle-point systems because the pressure block has "
-        "zero diagonal. Signal: GMG residual stagnates or diverges "
-        "at the first V-cycle, even though direct solver on the "
-        "same matrix converges.",
+        "zero diagonal. Signal: MGSmootherRelaxation with point "
+        "Jacobi — SolverGMRES residual norm stagnates at ~1e-2 "
+        "after the first V-cycle and refuses to drop further, even "
+        "though SparseDirectUMFPACK on the same matrix converges "
+        "to machine precision; SolverControl::last_step() reports "
+        "max_iterations reached.",
         "[Numerical] Inf-sup (Ladyzhenskaya-Babuška-Brezzi) stability "
         "is REQUIRED. Equal-order pairs (Q1/Q1, Q2/Q2) are NOT "
         "inf-sup stable — they look like they converge in 1D tests "
@@ -263,14 +275,19 @@ KNOWLEDGE = {
         "level — this is correct, not a bug. If the user is "
         "comparing against a Q2/Q1 result where div(u) ≈ 1e-3, the "
         "RT/DGQ result will report div(u) ≈ 1e-15. Signal: "
-        "post-processing 'is my solver more accurate?' — yes, "
-        "but only on mass conservation; other error metrics scale "
-        "as usual.",
+        "`VectorTools::integrate_difference` for div(u) returns "
+        "values at machine epsilon (1e-15 to 1e-14) with FE_"
+        "RaviartThomas — orders of magnitude smaller than the "
+        "1e-3 to 1e-5 typical of FE_Q Taylor-Hood at the same h. "
+        "This is the expected H(div) behaviour, not a bug.",
         "[Integration] channel_with_cylinder is the Schäfer-Turek "
         "benchmark — set the cylinder centre to (0.2, 0.2) and the "
         "channel size to (2.2 × 0.41) to match the published "
         "lift/drag values; off-by-one on these dimensions makes "
-        "the reference values not match. Signal: reported "
-        "C_D differs from the Schäfer-Turek table by 10+%.",
+        "the reference values not match. Signal: computed drag "
+        "coefficient C_D differs from the Schäfer-Turek 1996 "
+        "reference (Re=20: C_D ≈ 5.58, Re=100: C_D ≈ 3.22) by more "
+        "than 10%; the mismatch is systematic across mesh "
+        "refinement, not noise.",
     ],
 }

@@ -385,33 +385,100 @@ KNOWLEDGE = {
         "BlockPreconditioner — required for the three-field (u, p̃, J̃) saddle-point structure of step-44; analogous to the Stokes block preconditioner",
     ],
     "pitfalls": [
-        "Must use load stepping for large deformations (Newton diverges otherwise)",
-        "MUST implement line search checking J=det(F) > 0 — without it, elements invert and the simulation crashes for any significant compression",
-        "Neo-Hookean with J: S = mu*(I - C^{-1}) + lambda*ln(J)*C^{-1}",
-        "Tangent has geometric + material parts: K = K_geo + K_mat",
-        "For nearly incompressible: use mixed formulation (step-44) or F-bar",
-        "Saint-Venant-Kirchhoff unstable in compression: use Neo-Hookean instead",
-        "Use roller BCs (constrain only normal component) instead of fully clamped for compression tests — clamped BCs create stress concentrations that worsen element inversion",
-        "AD (step-72) avoids manual tangent derivation: Differentiation::AD::EnergyFunctional",
-        "MappingQEulerian can visualize deformed configuration",
-        # GridGenerator boundary ID pitfall
-        "GridGenerator::subdivided_hyper_rectangle defaults ALL faces to boundary_id=0 "
-        "(colorize=false). Pass colorize=true to get distinct IDs (0-5 for 3D: "
-        "left=0, right=1, bottom=2, top=3, front=4, back=5). Without this, "
-        "Dirichlet BCs on boundary_id=0 clamp ALL faces.",
-        # Displacement-controlled loading
-        "For displacement-controlled nonlinear problems: use INCREMENTAL CONSTRAINTS. "
-        "Set inhomogeneous Dirichlet value for the FIRST Newton iteration of each "
-        "load step, then switch to homogeneous (zero increment) for subsequent "
-        "iterations. Do NOT set boundary DOFs directly in the solution vector — "
-        "this concentrates strain in boundary elements and Newton diverges.",
-        # FESystem gradient extraction
-        "For FESystem (vector-valued), use fe_values[FEValuesExtractors::Vector(0)]"
-        ".get_function_gradients() — NOT fe_values.get_function_gradients() which "
-        "is the scalar-FE signature and will not compile.",
-        # Solver choice
-        "For < 50k DOFs, use SparseDirectUMFPACK instead of CG+SSOR. "
-        "Direct solvers are more robust for nonlinear problems and avoid "
-        "iterative solver tuning issues.",
+        "[Numerical] Must use load stepping for large deformations — "
+        "cold-start Newton diverges. Signal: SolverControl reports "
+        "Newton residual.l2_norm() > 1e3 on iteration 1, growing "
+        "to NaN by iteration 3; "
+        "ExcMessage('Newton step did not converge').",
+        "[Physics] MUST implement line search checking J=det(F) > 0. "
+        "Without it, elements invert and the simulation crashes for "
+        "any significant compression. Signal: assembly raises "
+        "ExcMessage('det(F) <= 0 at quadrature point') or the "
+        "constitutive evaluator returns NaN — DataOut last-saved "
+        "frame shows mesh self-intersecting.",
+        "[Physics] Neo-Hookean with J: S = mu*(I - C^{-1}) + "
+        "lambda*ln(J)*C^{-1}. The ln(J) form is the standard "
+        "compressible Neo-Hookean stress; using the squared-J "
+        "variant gives the wrong incompressibility limit. Signal: "
+        "VectorTools::integrate_difference vs reference shows "
+        "stress error that grows with deformation magnitude "
+        "(O(1) at large strain) instead of the expected O(h^p).",
+        "[Syntax] Tangent has geometric + material parts: "
+        "K = K_geo + K_mat. Assembling only K_mat gives a "
+        "non-symmetric system; assembling K_mat + K_geo restores "
+        "symmetry. Signal: SolverCG reports 'breakdown' on the "
+        "geometrically-nonlinear tangent because K_mat alone is "
+        "not symmetric — switching to SolverGMRES still converges "
+        "but at 2x the iteration count.",
+        "[Numerical] For nearly incompressible: use mixed "
+        "formulation (step-44) or F-bar. Single-field FE_Q(1) "
+        "displacement locks at the volumetric limit. Signal: tip "
+        "deflection on a Cook membrane differs from reference by "
+        "30-50% as nu approaches 0.5; switching to the three-field "
+        "FESystem(FE_Q(2), dim, FE_DGP(1), 1, FE_DGP(0), 1) "
+        "recovers convergence to within 5%.",
+        "[Physics] Saint-Venant-Kirchhoff unstable in compression. "
+        "Use Neo-Hookean instead for any compression > ~30%. "
+        "Signal: SolverControl reports Newton breakdown at the "
+        "second or third load step under compression, with "
+        "residual.l2_norm() oscillating wildly between iterations.",
+        "[Integration] Use roller BCs (constrain only normal "
+        "component via AffineConstraints) instead of fully clamped "
+        "for compression tests — clamped BCs create stress "
+        "concentrations that worsen element inversion. Signal: "
+        "DataOut shows stress concentrations of >10x material "
+        "yield at clamped corners; the affected cells fail the "
+        "det(F)>0 check first as load grows.",
+        "[API] AD (step-72) avoids manual tangent derivation: "
+        "Differentiation::AD::EnergyFunctional. Manual differentiation "
+        "is the most common source of K_geo / K_mat sign errors. "
+        "Signal: Newton converges with manual tangent but to a "
+        "WRONG solution (off by 2x from AD-tangent reference); "
+        "VectorTools::integrate_difference between manual and AD "
+        "solutions is O(1).",
+        "[API] MappingQEulerian visualises deformed configuration. "
+        "Without it, DataOut shows the reference configuration "
+        "with the displacement field overlaid as colour — "
+        "misleading for large-deformation problems. Signal: "
+        "ParaView shows the mesh in the reference config not the "
+        "deformed config; the user thinks the deformation is "
+        "small even when |u| is comparable to L.",
+        "[Syntax] GridGenerator::subdivided_hyper_rectangle "
+        "defaults ALL faces to boundary_id=0 (colorize=false). "
+        "Pass colorize=true to get distinct IDs (0-5 in 3D: "
+        "left=0, right=1, bottom=2, top=3, front=4, back=5). "
+        "Without this, AffineConstraints applied to boundary_id=0 "
+        "clamps ALL faces. Signal: GridTools::get_boundary_ids(tria) "
+        "returns `{0}` (single id) instead of the expected set; "
+        "DataOut shows displacement field zero everywhere because "
+        "the entire boundary is over-constrained.",
+        "[Numerical] For displacement-controlled nonlinear "
+        "problems: use INCREMENTAL CONSTRAINTS. Set inhomogeneous "
+        "Dirichlet value for the FIRST Newton iteration of each "
+        "load step, then switch to homogeneous (zero increment) "
+        "for subsequent iterations. Do NOT set boundary DOFs "
+        "directly in the solution vector — this concentrates "
+        "strain in boundary elements and Newton diverges. Signal: "
+        "Newton residual.l2_norm() drops normally on iteration 1 "
+        "of each load step then jumps back up by 10x on iteration "
+        "2 — caused by direct DOF-setting at the boundary on "
+        "subsequent iterations.",
+        "[Syntax] For FESystem (vector-valued), use "
+        "fe_values[FEValuesExtractors::Vector(0)]"
+        ".get_function_gradients() — NOT "
+        "fe_values.get_function_gradients() which is the scalar-FE "
+        "signature and will not compile. Signal: g++ reports "
+        "`error: no matching function for call to "
+        "'FEValuesBase<dim>::get_function_gradients'` because the "
+        "scalar overload doesn't accept a vector-valued solution "
+        "argument.",
+        "[Numerical] For < 50k DoFs, use SparseDirectUMFPACK "
+        "instead of SolverCG + PreconditionSSOR. Direct solvers "
+        "are more robust for nonlinear problems and avoid "
+        "iterative solver tuning issues at small problem size. "
+        "Signal: SolverCG reports 'breakdown' on the indefinite "
+        "tangent during line search; switching to UMFPACK gives "
+        "machine-precision residual and Newton converges in 3-5 "
+        "outer iterations.",
     ],
 }

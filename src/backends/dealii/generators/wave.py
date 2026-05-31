@@ -249,36 +249,58 @@ KNOWLEDGE = {
         "beta >= gamma/2 >= 1/4. The (beta=0.25, gamma=0.5) pair "
         "is the canonical 'average acceleration' choice. Setting "
         "beta=0 (explicit) trades stability for CFL-bound dt < h/c. "
-        "Signal: solution amplitudes grow exponentially when "
-        "beta < gamma/2.",
+        "Signal: when beta < gamma/2, "
+        "`solution.linfty_norm()` from DataOut grows exponentially "
+        "(doubles every 5-10 time steps) and reaches NaN within "
+        "~50 steps; the same problem with beta=0.25 stays bounded "
+        "at O(1) amplitude.",
         "[Syntax] Time-step system: "
         "(M + beta*dt^2*c^2*K)*u_(n+1) = M*u_tilde. Both M and K "
         "must be assembled ONCE before time stepping; only the "
         "RHS (u_tilde from u_n, v_n, a_n) varies per step. "
         "Re-assembling K each step is the most common transient-"
-        "wave performance bug. Signal: per-step wall time scales "
-        "with ndof^2 instead of with the linear-solve cost.",
+        "wave performance bug. Signal: TimerOutput.print_summary() "
+        "shows 'assemble_system' dominating wall time at 60-80% "
+        "per step, scaling as O(ndof^2) instead of "
+        "O(ndof * SolverCG::last_step()); SolverCG iteration "
+        "count itself is normal.",
         "[Numerical] CFL-like condition for explicit Newmark "
         "(beta=0): dt < h/c. Setting dt larger gives spurious "
-        "exponentially-growing modes. Signal: solution energy "
-        "grows exponentially even though the implicit Newmark "
-        "(beta=0.25) of the same problem stays bounded.",
+        "exponentially-growing modes. Signal: with beta=0 and "
+        "dt > h/c, `solution.linfty_norm()` grows exponentially "
+        "(doubles every ~5 steps) and reaches NaN within ~30 "
+        "steps; energy `0.5 * v^T M v + 0.5 c^2 u^T K u` from "
+        "MatrixVector multiplication grows by factor 10+ per step "
+        "instead of staying bounded; switching to implicit "
+        "Newmark (beta=0.25) at the same dt keeps amplitude "
+        "bounded at O(1).",
         "[Syntax] Initial acceleration must be computed by solving "
-        "M*a_0 = f_0 - c^2*K*u_0, not just zeroed out. Setting "
-        "a_0 = 0 produces a slowly-decaying transient from the "
-        "wrong initial condition. Signal: solution oscillates "
-        "with a low-frequency mode superimposed on the correct "
-        "wave pattern, especially visible at early times.",
+        "M*a_0 = f_0 - c^2*K*u_0 (via SolverCG), not just zeroed "
+        "out. Setting a_0 = 0 produces a slowly-decaying transient "
+        "from the wrong initial condition. Signal: DataOut at "
+        "early times (t < 5*period) shows a low-frequency mode "
+        "of magnitude 0.1-0.3 superimposed on the correct wave "
+        "pattern; VectorTools::integrate_difference vs analytic "
+        "reference shows O(1) error in the first 10 steps then "
+        "decays to O(h^p) on later steps.",
         "[Physics] Absorbing BCs: add a damping term on the "
         "boundary, c * du/dt on the outflow face. Forgetting this "
         "makes the boundary reflect waves back into the domain. "
-        "Signal: outgoing wave reflects from boundary instead of "
-        "leaving; solution shows growing standing-wave pattern.",
+        "Signal: DataOut shows the outgoing wave reflecting at "
+        "the outflow boundary; "
+        "`solution.linfty_norm()` rises periodically (period = "
+        "2*L/c) rather than decaying monotonically; energy "
+        "`0.5 * v^T M v + 0.5 c^2 u^T K u` stays constant or "
+        "grows instead of decaying to zero as the wave should "
+        "leave the domain.",
         "[Integration] VTU output at every time step is "
         "unnecessarily expensive — output every N steps and use "
         "DataOutInterface::write_pvd_record to assemble the .pvd "
-        "time-series file. Signal: simulation wall time dominated "
-        "by I/O rather than solve.",
+        "time-series file. Signal: TimerOutput.print_summary() "
+        "reports 'output_results' or 'DataOut::write_vtu' as the "
+        "top wall-time entry (>50% of total), exceeding the "
+        "SolverCG and assemble_system buckets; the per-step VTU "
+        "file count grows into the 10000s on disk.",
     ],
     "materials": {
         "wave_speed": {"range": [0.01, 10000.0], "unit": "m/s"},

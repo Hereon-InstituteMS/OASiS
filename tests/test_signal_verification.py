@@ -39,12 +39,21 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # When updating these numbers, do so ONLY upward — that means
     # the catalog has improved. A downward edit means a regression
     # snuck through and needs to be re-examined.
+    #
+    # 2026-05-31 floor raise: all 96 deal.II pitfalls now have
+    # [Category] prefix + Signal: clause + pass Tier 0 (Signal
+    # references a canonical entity in element_catalog or the
+    # cross-backend entity list) + Tier 1 (Signal uses
+    # observable-symptom vocabulary). This is the strongest
+    # falsifiability floor short of Tier 2 (compile + run
+    # regression fixtures per signal), which remains
+    # multi-week work.
     MIN_N_PITFALLS = 96
-    MIN_WITH_CATEGORY_PREFIX = 63
-    MIN_WITH_SIGNAL_CLAUSE = 61
-    MIN_TIER0_PASSED = 15
-    MIN_TIER1_PASSED = 44
-    MIN_TIER0_AND_1_PASSED = 12
+    MIN_WITH_CATEGORY_PREFIX = 96
+    MIN_WITH_SIGNAL_CLAUSE = 96
+    MIN_TIER0_PASSED = 96
+    MIN_TIER1_PASSED = 96
+    MIN_TIER0_AND_1_PASSED = 96
 
     def setUp(self):
         from verify_signal_clauses import verify_backend

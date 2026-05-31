@@ -401,8 +401,11 @@ KNOWLEDGE = {
         "[Syntax] Time-step system is (M + dt*theta*K). Assemble M "
         "and K once at startup, build the LHS each step. Re-assembling "
         "M and K every time step is the most common transient-heat "
-        "performance bug. Signal: per-step wall time scales with "
-        "ndof^2 instead of ndof*log(ndof) for AMG.",
+        "performance bug. Signal: profiler / TimerOutput.print_summary() "
+        "shows 'assemble_system' dominating wall time at ~60-80% per "
+        "step, scaling as O(ndof^2) instead of the expected "
+        "O(ndof * log(ndof)) when AMG is used; SolverCG iteration "
+        "count is normal.",
         "[Physics] RHS at each step is "
         "M*u_old - dt*(1-theta)*K*u_old + dt*theta*f_new + "
         "dt*(1-theta)*f_old. Forgetting the (1-theta) terms gives a "
@@ -416,22 +419,30 @@ KNOWLEDGE = {
         "distribute_dofs(). Skipping SolutionTransfer gives a "
         "zero solution on the new mesh and the next time step "
         "evolves from zero — looks like a sudden cool-down. "
-        "Signal: a sharp temperature drop coinciding with the "
-        "first AMR-step.",
+        "Signal: `solution.l2_norm()` from DataOut drops to near "
+        "zero across the AMR-step boundary, then slowly recovers; "
+        "the discontinuity coincides exactly with the time-step "
+        "at which Triangulation::execute_coarsening_and_refinement() "
+        "was called.",
         "[Numerical] Non-zero initial conditions must be set via "
-        "interpolate (for piecewise polynomial ICs) or project (for "
-        "general functions). Setting node values directly bypasses "
-        "the AffineConstraints and gives an IC inconsistent with "
-        "the boundary conditions. Signal: temperature jumps at "
-        "Dirichlet-boundary nodes between t=0 and the first "
-        "time-step solution.",
+        "VectorTools::interpolate (for piecewise polynomial ICs) or "
+        "VectorTools::project (for general functions). Setting node "
+        "values directly bypasses the AffineConstraints and gives "
+        "an IC inconsistent with the boundary conditions. Signal: "
+        "DataOut shows a discontinuous jump of O(1) at Dirichlet-"
+        "boundary nodes between the t=0 output frame and the first "
+        "time-step frame; the discontinuity disappears on the "
+        "second step as the implicit solver smooths it out.",
         "[Numerical] theta=0 (forward Euler) requires "
         "dt < ~h^2 / (2*alpha) where alpha is the thermal "
         "diffusivity — fine mesh + small alpha makes this dt tiny. "
         "Use theta=0.5 (Crank-Nicolson, 2nd-order, unconditionally "
         "stable) or theta=1 (backward Euler, 1st-order, "
         "unconditionally stable) for any production run. "
-        "Signal: forward Euler with too-large dt produces "
-        "oscillating solution that grows exponentially.",
+        "Signal: forward Euler with too-large dt — `solution."
+        "linfty_norm()` grows exponentially (doubles every 2-3 "
+        "steps) and overflows to NaN within ~20 steps; "
+        "VectorTools::integrate_difference vs analytic reference "
+        "exceeds 1e6 within the first few steps.",
     ],
 }

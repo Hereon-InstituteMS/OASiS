@@ -62,6 +62,10 @@ OBSERVABLE_VOCAB = (
     "abort", "missing", "undefined", "differs", "drop", "drift",
     "appears", "shows", "matches", "wrong", "zero", "nan",
     "checkerboard", "pattern", "amplitude", "value",
+    "grows", "shrinks", "exceeds", "below", "above",
+    "larger", "smaller", "slower", "faster",
+    "wall-time", "wall time", "iteration", "iterations",
+    "reaches", "returns",
 )
 
 
@@ -112,16 +116,62 @@ def _load_canonical_entities(backend: str) -> set[str]:
         except ImportError:
             pass
     # Common cross-backend error/observable names we treat as
-    # canonical for the Tier-0 entity check.
+    # canonical for the Tier-0 entity check. This set is the
+    # "namespace of grepable strings" — anything a
+    # post-execution critic can search for in actual deal.II
+    # output, plus the well-known method/algorithm names that
+    # identify which mathematical machinery the Signal is talking
+    # about.
     out.update({
-        "SolverCG", "SolverGMRES", "SolverMinRes", "SolverBiCGStab",
-        "SolverDirect", "SUNDIALS", "KINSOL", "SLEPc", "PETSc",
-        "MPI_Comm_size", "MPI_ERR_COMM",
-        "GridGenerator", "FEValuesExtractors", "AffineConstraints",
-        "DoFHandler", "DoFRenumbering",
-        "AMG", "BoomerAMG", "SSOR", "ILU", "Newton", "Jacobi",
-        "Crank-Nicolson", "Newmark", "BDF2", "Taylor-Hood", "MINI",
-        "SUPG", "PML",
+        # ── Krylov solvers ─────────────────────────────────────
+        "SolverCG", "SolverGMRES", "SolverFGMRES", "SolverMinRes",
+        "SolverBiCGStab", "SolverDirect", "SolverFIRE",
+        "SolverQMRS", "SolverRichardson", "SolverControl",
+        # ── External-package solvers / linear-algebra layers ─
+        "SUNDIALS", "KINSOL", "ARKode", "SLEPc", "PETSc",
+        "Trilinos", "TrilinosWrappers", "MUMPS", "UMFPACK",
+        "PETScWrappers", "EPS",
+        # ── MPI / runtime errors ───────────────────────────────
+        "MPI_Init", "MPI_Comm_size", "MPI_ERR_COMM",
+        "MPI_InitFinalize", "Utilities",
+        # ── Mesh / DoF infrastructure ──────────────────────────
+        "GridGenerator", "GridIn", "GridOut", "GridTools",
+        "Triangulation", "DoFHandler", "DoFRenumbering",
+        "AffineConstraints", "ConstraintMatrix", "MappingQ",
+        "MappingQEulerian", "SolutionTransfer", "MatrixFree",
+        "FEValuesExtractors", "FEValues", "FEValuesBase",
+        "FEInterfaceValues", "FEEvaluation",
+        "DataOut", "DataOutInterface", "ParaView",
+        "KellyErrorEstimator", "Quadrature",
+        "VectorTools", "TimerOutput", "VectorOperation",
+        "SparseMatrix", "BlockSparseMatrix",
+        "SparsityPattern", "BlockSparsityPattern",
+        "Turek", "Ghia",  # ASCII shortforms of Schäfer-Turek / Ghia
+        "Stokes", "Navier", "Maxwell", "Helmholtz",
+        "Laplace", "Poisson",  # method names users would grep for
+        # ── Common exception classes ──────────────────────────
+        "ExcMessage", "ExcDimensionMismatch", "ExcIndexRange",
+        "ExcNotImplemented", "ExcInternalError",
+        "ExcInitializeNotInitialized",
+        # ── Preconditioners / smoothers ────────────────────────
+        "AMG", "BoomerAMG", "SSOR", "SOR", "ILU", "ILUT",
+        "PreconditionAMG", "PreconditionSSOR",
+        "PreconditionJacobi", "PreconditionChebyshev",
+        "PreconditionILU", "PreconditionBlock",
+        "MGSmootherRelaxation",
+        # ── Numerical methods / discretisation names ──────────
+        "Newton", "Picard", "Oseen", "Jacobi", "Crank-Nicolson",
+        "Newmark", "BDF2", "Theta", "RungeKutta", "Heun",
+        # ── Stable element pairs / stabilisations ─────────────
+        "Taylor-Hood", "MINI", "Vanka", "SUPG", "GLS", "VMS",
+        "PML", "Sommerfeld", "Nitsche",
+        # ── Catalog-internal mathematical observables ─────────
+        "Hankel", "Bessel", "Schäfer-Turek", "Schaefer-Turek",
+        "Ghia", "Kirsch", "Euler-Bernoulli", "Boussinesq",
+        "LBB",  # Ladyzhenskaya-Babuška-Brezzi
+        "Lagrange",
+        # ── deal.II output-stream markers the critic can grep ─
+        "breakdown", "convergence", "checkerboard", "Mesh",
     })
     return out
 

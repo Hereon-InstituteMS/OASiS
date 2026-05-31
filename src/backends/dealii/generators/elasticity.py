@@ -410,23 +410,34 @@ KNOWLEDGE = {
         "[Syntax] Use FEValuesExtractors::Vector(0) for velocity-like "
         "access in assembly. Plain fe_values.shape_value(i,q) returns a "
         "scalar for each component — the elasticity strain tensor needs "
-        "the vector extractor. Signal: assembly compiles but stiffness "
-        "matrix is rank-deficient (det == 0 on every cell).",
+        "the vector extractor. Signal: assembly compiles but SolverCG "
+        "reports 'iterative method failed to converge' (ExcSolverFail) "
+        "because the stiffness matrix is rank-deficient; "
+        "system_matrix.frobenius_norm() / system_rhs.l2_norm() is "
+        "dominated by spurious diagonal entries.",
         "[Physics] Lame parameters: mu = E/(2(1+nu)), "
         "lambda = E*nu/((1+nu)(1-2nu)). Computing one and forgetting "
         "the other (or swapping their roles in the bilinear form) is "
-        "a common silent error. Signal: displacement field is off by a "
-        "constant factor independent of mesh refinement.",
+        "a common silent error. Signal: tip displacement from "
+        "DataOut differs from the Euler-Bernoulli reference "
+        "u_max = P*L^3 / (3*E*I) by a constant factor (typically "
+        "2-5x) that does NOT decrease with refinement; the ratio "
+        "u_computed / u_reference is mesh-independent.",
         "[Physics] For plane stress, modify lambda to "
         "lambda_star = 2*mu*lambda/(2*mu+lambda). Code: "
         "`double lam_star = 2*mu*lam / (2*mu + lam);`. Forgetting this "
         "is plane STRAIN, not plane STRESS — the response is too stiff "
-        "in 2D. Signal: tip deflection on a cantilever 2D beam is "
-        "smaller than the 1D Euler-Bernoulli prediction by ~30%.",
+        "in 2D. Signal: tip deflection from `DataOut` on a cantilever "
+        "2D beam is ~30% smaller than the Euler-Bernoulli reference "
+        "P*L^3 / (3*E*I); the discrepancy is bias not noise — it "
+        "persists under mesh refinement.",
         "[Syntax] Body force is added to cell_rhs via "
         "`fe_values[velocities].value(i,q)`. Using fe_values.shape_value "
-        "alone gives the wrong scalar component. Signal: only the first "
-        "vector component sees the body force.",
+        "alone gives the wrong scalar component. Signal: DataOut "
+        "writes a displacement field where only the first component "
+        "is non-zero (u_x has the expected gravity-driven profile, "
+        "u_y is identically zero); per-component norm "
+        "`solution.block(1).l2_norm() == 0` on a vector FESystem.",
         "[Integration] deal.II 2D ONLY reads QUADS from Gmsh — no "
         "triangles. Always set `gmsh.option.setNumber"
         "('Mesh.RecombineAll', 1)` to produce quads. Signal: "
@@ -444,16 +455,20 @@ KNOWLEDGE = {
         "nearly-incompressible elasticity (Poisson ratio nu close to "
         "0.5). Use FE_Q<dim>(2) (quadratic), FE_RannacherTurek<dim>() "
         "(P1-NC), or a mixed displacement-pressure formulation with "
-        "FE_Q+FE_DGQ for pressure. Signal: tip deflection on a "
-        "compressible beam converges with refinement, but converges to "
-        "the wrong value as nu → 0.5 (volumetric locking).",
+        "FE_Q+FE_DGQ for pressure. Signal: tip deflection differs "
+        "from the analytic value by a factor that GROWS as nu "
+        "increases — at nu=0.3 within 5%, at nu=0.499 off by 50%+; "
+        "switching to FE_Q(2) or FE_RannacherTurek recovers "
+        "agreement at the same h.",
         "[API] FE_Nothing<dim>() inside an FESystem on a subdomain "
         "where displacement should be inactive does NOT skip "
         "assembly on those cells — it just makes the DoF count zero "
         "there. You still need to mark the cells with a manifold ID "
         "or a hp::DoFHandler<dim> active_fe_index switch. Signal: "
-        "assembly enters cells you thought were 'off' and accumulates "
-        "garbage into the rhs.",
+        "DataOut shows non-zero residual values on cells that should "
+        "be 'off'; `system_rhs.l2_norm()` is larger than expected "
+        "even though `dof_handler.n_dofs_on_subdomain()` reports the "
+        "FE_Nothing region has 0 DoFs.",
         "[Numerical] Use SolverCG only when the stiffness matrix is "
         "symmetric positive-definite. Adding a Dirichlet penalty "
         "(rather than constraining the DoFs) keeps it SPD; using "

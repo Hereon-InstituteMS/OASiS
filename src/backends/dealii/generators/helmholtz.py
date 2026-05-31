@@ -216,15 +216,20 @@ KNOWLEDGE = {
         "bilinear form to assemble the 2x2 block carrying the "
         "imaginary coupling. Forgetting the off-diagonal coupling "
         "decouples real and imaginary parts and the absorbing BC "
-        "silently becomes a reflecting wall. Signal: the imaginary "
-        "part of the solution is zero everywhere despite the source "
-        "being complex.",
+        "silently becomes a reflecting wall. Signal: "
+        "`solution.block(1).linfty_norm()` (the imaginary "
+        "component) is exactly 0 despite the source f being "
+        "complex; DataOut shows a real-valued standing-wave "
+        "pattern instead of a complex outgoing wave.",
         "[Physics] For absorbing BCs (Sommerfeld radiation condition): "
         "add boundary integral -i*k*u*v*dS on the outer boundary. "
         "Missing the i (so adding -k*u*v*dS instead) gives a real "
-        "lossy boundary, not a radiating one. Signal: outgoing wave "
-        "amplitude decays to zero at the boundary instead of leaving "
-        "the domain with constant amplitude.",
+        "lossy boundary, not a radiating one. Signal: DataOut shows "
+        "wave amplitude DECAYING from the source toward the outer "
+        "boundary (drops to <0.1 of peak amplitude at the boundary) "
+        "instead of maintaining constant amplitude along a radial "
+        "ray; comparison against Hankel-function reference gives "
+        "L2-error of O(1).",
         "[Numerical] High frequency (large k) — need ~10 DOFs per "
         "wavelength minimum (h < lambda/10). For accurate amplitude "
         "at k > 50 use 20 DOFs/wavelength OR higher polynomial order. "
@@ -235,14 +240,21 @@ KNOWLEDGE = {
         "O(k^{p+1} h^{2p+1}) where p is the FE polynomial order. At "
         "k > 100 even 10 DOFs/wavelength gives visibly wrong phase. "
         "Mitigations: higher-order p, hp-FEM, or stabilised methods "
-        "(CIP, GLS). Signal: wave nodes are correctly spaced "
-        "(h < lambda/10) but appear shifted by a constant fraction "
-        "of a wavelength.",
+        "(CIP, GLS). Signal: VectorTools::integrate_difference vs a "
+        "Hankel-function reference shows amplitude error stays at "
+        "10-20% but phase error grows like k^{p+1} h^{2p+1}; "
+        "DataOut node positions are correctly spaced (h < lambda/10) "
+        "but appear shifted by a constant fraction of a wavelength "
+        "relative to the analytic solution.",
         "[Integration] PML (perfectly matched layer) modifies "
         "coefficients in a thin shell around the domain to absorb "
         "outgoing waves; the modification is COMPLEX-valued. A "
-        "real-coefficient 'PML' is not a PML. Signal: outgoing waves "
-        "reflect off the layer instead of being absorbed.",
+        "real-coefficient 'PML' is not a PML. Signal: DataOut shows "
+        "the outgoing wave reflecting back into the interior — "
+        "standing-wave pattern visible with `solution.linfty_norm()` "
+        "rising periodically rather than monotonically decaying; "
+        "reflection coefficient measured at the PML interface "
+        "exceeds 1% (a real PML achieves <1e-4).",
     ],
     "materials": {
         "omega": {"range": [0.1, 1000.0], "unit": "rad/s (angular frequency)"},

@@ -198,20 +198,29 @@ KNOWLEDGE = {
         "A = stiffness and M = mass. Using the standard eigenvalue "
         "form (no mass matrix) gives WRONG eigenvalues — Laplace "
         "eigenvalues come out scaled by element size, not lambda_mn "
-        "= pi^2*(m^2+n^2). Signal: computed lambda_11 on unit square "
-        "is far from 2*pi^2 ≈ 19.74 by orders of magnitude.",
+        "= pi^2*(m^2+n^2). Signal: SLEPc::SolverKrylovSchur reports "
+        "the smallest eigenvalue on the unit square as O(h) or "
+        "O(h^{-2}) — orders of magnitude off from the analytic "
+        "2*pi^2 ≈ 19.74; the EPS::get_eigenvalue result scales with "
+        "1/h instead of being mesh-independent.",
         "[API] Use AffineConstraints<double> for Dirichlet BCs and "
         "distribute the constraints to BOTH the stiffness and the "
         "mass matrix. Applying constraints to A only leaves M "
         "with non-zero rows on Dirichlet DoFs, producing spurious "
         "eigenmodes at lambda = 0 (one per Dirichlet DoF). Signal: "
-        "the spectrum has a cluster of n_dirichlet zero eigenvalues "
-        "above the physical ones.",
+        "the EPS::get_eigenvalue spectrum returned by SLEPc "
+        "contains exactly `boundary_dofs.size()` near-zero "
+        "eigenvalues (magnitude < 1e-10) preceding the physical "
+        "Laplace eigenvalues; AffineConstraints::distribute applied "
+        "to M as well removes them.",
         "[Syntax] PETSc matrices: PETScWrappers::SparseMatrix, NOT "
         "dealii::SparseMatrix — SLEPc operates on PETSc objects. "
         "Mixing the types compiles but the solver silently "
         "operates on a default-constructed empty matrix. Signal: "
-        "all eigenvalues come out exactly 0.",
+        "SLEPc::SolverKrylovSchur returns every requested "
+        "eigenvalue as exactly 0.0 (not just small — bit-exact 0); "
+        "EPS::get_eigenvalue(i) for i=0..n_requested all read 0.0 "
+        "with eigenvectors of zero norm.",
         "[Integration] MPI initialisation is REQUIRED via "
         "Utilities::MPI::MPI_InitFinalize, even for a serial run, "
         "because PETSc / SLEPc internally assume MPI_COMM_WORLD "
@@ -224,13 +233,20 @@ KNOWLEDGE = {
         "extreme eigenvalues by default. Without the transform, "
         "asking for eigenvalues near lambda = 100 on a problem "
         "whose smallest eigenvalue is 0.1 returns the smallest "
-        "ones. Signal: requested eigenvalue range is in [50, 150] "
-        "but returned eigenvalues are in [0.1, 5].",
+        "ones. Signal: SLEPc::SolverKrylovSchur returns "
+        "eigenvalues from EPS::get_eigenvalue all in the lower "
+        "spectrum (e.g. [0.1, 5]) even though "
+        "EPS::set_which_eigenpairs(EPS_TARGET_REAL) was set with "
+        "target=100; the get_target_value query confirms target=100 "
+        "was registered but ignored.",
         "[Physics] Exact eigenvalues on [0,1]^2 with zero Dirichlet "
         "BCs are lambda_mn = pi^2*(m^2 + n^2); the first few "
         "are 2 pi^2, 5 pi^2, 5 pi^2 (double), 8 pi^2. Use these "
-        "as the regression-test reference. Signal: if the computed "
-        "lambda_2 != lambda_3 to floating-point precision on a "
-        "fine mesh, the eigensolver is missing degenerate modes.",
+        "as the regression-test reference. Signal: SLEPc returns "
+        "|EPS::get_eigenvalue(1) - EPS::get_eigenvalue(2)| > 1e-6 "
+        "on a fine mesh (which should agree to machine epsilon for "
+        "the degenerate 5*pi^2 pair); the missing-degenerate-modes "
+        "diagnostic is the early-warning that the EPS is not "
+        "deflating correctly.",
     ],
 }

@@ -250,11 +250,53 @@ KNOWLEDGE = {
         "fixed_number": "Refine fraction of cells with largest error",
     },
     "pitfalls": [
-        "hp::FECollection must include all FE_Q degrees you want to use",
-        "QCollection must match: each FE_Q(p) needs QGauss(p+1)",
-        "Smoothness estimator needs FESeries::Fourier or Legendre object",
-        "Hanging node constraints more complex with different p on neighbors",
-        "For matrix-free hp: use step-75 pattern with MatrixFree",
-        "Transfer solution between p-levels: SolutionTransfer or interpolate",
+        "[Syntax] hp::FECollection must include all FE_Q degrees "
+        "you want to use, registered before distribute_dofs(). "
+        "Missing degrees give an active_fe_index that points at "
+        "nothing. Signal: `dof_handler.distribute_dofs(fe_"
+        "collection)` raises ExcMessage('Index in FECollection "
+        "out of range') or, worse, returns silently with "
+        "n_dofs() = 0 on cells with the missing degree.",
+        "[Syntax] hp::QCollection must match: each FE_Q(p) needs "
+        "QGauss(p+1). A single QGauss(2) used across all degrees "
+        "is the most common bug — under-integrates higher p and "
+        "the assembly produces a non-symmetric stiffness. Signal: "
+        "SolverCG reports 'breakdown' because the assembled K is "
+        "not SPD; FECollection::size() and QCollection::size() "
+        "differ.",
+        "[API] Smoothness estimator needs FESeries::Fourier or "
+        "FESeries::Legendre object — the smoothness decay rate "
+        "drives p- vs h-refinement choice. Without it, "
+        "p_adaptivity_from_smoothness silently falls back to "
+        "uniform refinement. Signal: dof_handler.n_dofs() grows "
+        "as O(N) instead of O(log N) on a smooth solution; "
+        "VectorTools::integrate_difference against analytic "
+        "reference shows pure h-convergence rate instead of "
+        "exponential-in-p.",
+        "[Numerical] Hanging-node constraints more complex with "
+        "different p on neighbours — AffineConstraints needs the "
+        "p-projection in addition to the h-projection. Forgetting "
+        "this produces solution jumps at p-transitions. Signal: "
+        "DataOut shows step discontinuities at cell boundaries "
+        "where the neighbours have different FE_Q degree; "
+        "VectorTools::integrate_difference reports O(1) error "
+        "along those interfaces and ~O(h^p) elsewhere.",
+        "[API] For matrix-free hp: use the step-75 pattern with "
+        "MatrixFree<dim,number,VectorizedArray>. The standard "
+        "MatrixFree pattern from step-37 assumes uniform p and "
+        "ExcMessage('all cells must have same active_fe_index') "
+        "fires on a mixed-p triangulation. Signal: MatrixFree::"
+        "reinit raises ExcMessage('hp-FEValues requires hp::"
+        "MappingCollection') or compiles but produces zero "
+        "stiffness contribution on cells with the non-default "
+        "active_fe_index.",
+        "[Numerical] Transfer solution between p-levels: use "
+        "SolutionTransfer or VectorTools::interpolate. Setting "
+        "solution values directly across a p-change discards "
+        "the high-frequency content and breaks Newton "
+        "continuation. Signal: DataOut frame at the p-refinement "
+        "step shows solution.linfty_norm() dropping by 10-50% "
+        "(the high-frequency content lost in the transfer); "
+        "next Newton step has to re-construct it from scratch.",
     ],
 }

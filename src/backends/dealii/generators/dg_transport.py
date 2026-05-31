@@ -323,12 +323,59 @@ KNOWLEDGE = {
         "central": "Average flux (not stable for advection-dominated)",
     },
     "pitfalls": [
-        "DG requires flux sparsity pattern: DoFTools::make_flux_sparsity_pattern",
-        "FEInterfaceValues needed for face integrals (jump/average operators)",
-        "MeshWorker::mesh_loop simplifies cell/face/boundary assembly",
-        "Block SSOR preconditioner: PreconditionBlockSSOR with block_size = dofs_per_cell",
-        "For higher order DG: use FE_DGQHermite for better matrix-free performance",
-        "No continuity constraints needed (no hanging node constraints for DG)",
-        "Inflow BCs: weakly enforced via numerical flux on boundary faces",
+        "[Syntax] DG requires flux sparsity pattern: "
+        "DoFTools::make_flux_sparsity_pattern. The standard "
+        "make_sparsity_pattern misses the off-cell face-coupling "
+        "entries. Signal: assembly raises ExcMessage('matrix entry "
+        "at i,j does not exist in sparsity pattern') when the "
+        "FEInterfaceValues face term writes into the off-cell "
+        "block; or, if the assembly succeeds via ExcInvalidIterator, "
+        "DataOut shows the DG solution with continuous-Galerkin-"
+        "like behaviour at faces because face coupling was dropped.",
+        "[Syntax] FEInterfaceValues needed for face integrals "
+        "(jump/average operators on cell interfaces). Using "
+        "FEValues alone produces only cell-interior contributions. "
+        "Signal: SolverGMRES converges but DataOut shows a smooth "
+        "(non-DG) solution; jump-across-face values from "
+        "VectorTools::interpolate_difference vs reference are "
+        "1e-8 (effectively zero) where they should be O(1) for "
+        "upwind DG.",
+        "[API] MeshWorker::mesh_loop simplifies cell / face / "
+        "boundary assembly — without it, the user re-implements "
+        "the dispatch logic and typically forgets the periodic-"
+        "face case. Signal: assembly compiles and runs but the "
+        "global system is non-symmetric AND inconsistent on "
+        "periodic boundaries (if any); DataOut shows the solution "
+        "with kinks at periodic-face nodes.",
+        "[Numerical] PreconditionBlockSSOR with block_size = "
+        "dofs_per_cell is the right DG preconditioner — point "
+        "Jacobi or scalar SSOR ignore the per-cell block "
+        "structure of the DG mass matrix. Signal: SolverGMRES "
+        "with PreconditionJacobi reports SolverControl::"
+        "last_step() growing linearly with n_cells; switching "
+        "to PreconditionBlockSSOR drops iteration count by 10x.",
+        "[Numerical] For higher-order DG: FE_DGQHermite gives "
+        "better matrix-free performance than FE_DGQ because the "
+        "Hermite-like basis preserves face-value continuity, "
+        "reducing the cross-face stencil weight. Signal: "
+        "MatrixFree::cell_loop wall-time per iteration with "
+        "FE_DGQ(6) is 2-3x larger than with FE_DGQHermite(6) at "
+        "the same n_dofs.",
+        "[Physics] No continuity constraints needed (DG has no "
+        "hanging-node constraints), but you DO need to track "
+        "non-conforming face DoFs explicitly when refining. "
+        "Signal: AffineConstraints::distribute on a DG solution "
+        "is a no-op (constraints.size() == 0); attempting to "
+        "apply hanging-node constraints raises ExcMessage('DG "
+        "discretisation has no hanging-node constraints').",
+        "[Physics] Inflow BCs: weakly enforced via numerical "
+        "flux on boundary faces (NOT via AffineConstraints — DG "
+        "has none). Setting Dirichlet values strongly is a "
+        "common bug for users coming from CG. Signal: "
+        "VectorTools::interpolate_boundary_values on a DG FE "
+        "raises ExcMessage('strong boundary conditions not "
+        "supported for DG'); or, if silently ignored, DataOut "
+        "shows the prescribed Dirichlet value NOT appearing at "
+        "the inflow boundary.",
     ],
 }

@@ -2,11 +2,11 @@
   "backend": "dealii",
   "totals": {
     "n_pitfalls": 96,
-    "with_category_prefix": 63,
-    "with_signal_clause": 61,
-    "tier0_passed": 15,
-    "tier1_passed": 44,
-    "tier0_and_1_passed": 12,
+    "with_category_prefix": 96,
+    "with_signal_clause": 96,
+    "tier0_passed": 96,
+    "tier1_passed": 96,
+    "tier0_and_1_passed": 96,
     "tier2_passed": 0
   },
   "results": [
@@ -15,14 +15,20 @@
       "physics": "poisson",
       "pitfall_index": 0,
       "pitfall_category": "Syntax",
-      "signal_text": "solver reports 'converged in 0 iterations' on a non-trivial problem because the system has only 1 DOF.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "SolverControl reports 'Convergence step 0 value X.XXe-16' (already converged), `dof_handler.n_dofs()` returns 4, and KellyErrorEstimator output is a single cell-wise scalar.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "KellyErrorEstimator",
+        "SolverControl"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge",
+        "error",
         "quoted-error-fragment",
-        "report"
+        "report",
+        "returns",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -33,11 +39,16 @@
       "physics": "poisson",
       "pitfall_index": 1,
       "pitfall_category": "Syntax",
-      "signal_text": "you apply different Dirichlet values on different faces but the result has the SAME value everywhere on the boundary.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "`GridTools::get_boundary_ids(tria)` returns `{0}` (a single id, not the 4-6 expected for a cube), and VectorTools::interpolate_boundary_values applied to different boundary_ids produces the same Dirichlet values across all faces of the cube.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "GridTools",
+        "VectorTools"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "returns",
         "value"
       ],
       "tier2_passed": false,
@@ -49,16 +60,22 @@
       "physics": "poisson",
       "pitfall_index": 2,
       "pitfall_category": "Syntax",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "GridTools::get_boundary_ids(tria) returns `{0, 1, 2, 3}` not the assumed `{0}` \u2014 if your Dirichlet code applies the BC only to boundary_id=0 you will see DataOut with that BC value only on the LEFT face and zero (homogeneous Neumann) on the other three.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "GridTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "returns",
+        "value",
+        "zero"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks `Signal:` clause \u2014 cannot match in post-execution critic; the entry is descriptive, not detection-actionable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
@@ -68,11 +85,13 @@
       "signal_text": "SolverCG reports 'breakdown' on iteration 2-3 on a refined mesh, but works on the globally-refined version of the same problem.",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "SolverCG"
+        "SolverCG",
+        "breakdown"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "break",
+        "iteration",
         "quoted-error-fragment",
         "report"
       ],
@@ -85,11 +104,18 @@
       "physics": "poisson",
       "pitfall_index": 4,
       "pitfall_category": "API",
-      "signal_text": "solution has step discontinuities at the interfaces between refinement levels.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "DataOut output shows step discontinuities of order 1e-2 to 1e-1 at refinement-level interfaces (hanging-node faces); SolverCG converges but the L2-error against an analytic reference plateaus instead of decreasing as h is refined.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "SolverCG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "error",
+        "shows"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -99,11 +125,20 @@
       "physics": "poisson",
       "pitfall_index": 5,
       "pitfall_category": "Numerical",
-      "signal_text": "CG iteration count grows linearly with the coefficient contrast.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "SolverCG iteration count from SolverControl::last_step() grows linearly with the max/min ratio of the coefficient (e.g. 50 iterations at contrast 1e2, 500 at contrast 1e3); switching to PreconditionAMG drops it back to O(log(ndof)).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "PreconditionAMG",
+        "SolverCG",
+        "SolverControl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "drop",
+        "grows",
+        "iteration",
+        "iterations"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -134,11 +169,17 @@
       "physics": "linear_elasticity",
       "pitfall_index": 0,
       "pitfall_category": "Syntax",
-      "signal_text": "assembly compiles but stiffness matrix is rank-deficient (det == 0 on every cell).",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "assembly compiles but SolverCG reports 'iterative method failed to converge' (ExcSolverFail) because the stiffness matrix is rank-deficient; system_matrix.frobenius_norm() / system_rhs.l2_norm() is dominated by spurious diagonal entries.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "quoted-error-fragment",
+        "report"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -148,11 +189,14 @@
       "physics": "linear_elasticity",
       "pitfall_index": 1,
       "pitfall_category": "Physics",
-      "signal_text": "displacement field is off by a constant factor independent of mesh refinement.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "tip displacement from DataOut differs from the Euler-Bernoulli reference u_max = P*L^3 / (3*E*I) by a constant factor (typically 2-5x) that does NOT decrease with refinement; the ratio u_computed / u_reference is mesh-independent.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "differs",
         "numerical-comparison"
       ],
       "tier2_passed": false,
@@ -164,11 +208,16 @@
       "physics": "linear_elasticity",
       "pitfall_index": 2,
       "pitfall_category": "Physics",
-      "signal_text": "tip deflection on a cantilever 2D beam is smaller than the 1D Euler-Bernoulli prediction by ~30%.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "tip deflection from `DataOut` on a cantilever 2D beam is ~30% smaller than the Euler-Bernoulli reference P*L^3 / (3*E*I); the discrepancy is bias not noise \u2014 it persists under mesh refinement.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "smaller"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -178,11 +227,17 @@
       "physics": "linear_elasticity",
       "pitfall_index": 3,
       "pitfall_category": "Syntax",
-      "signal_text": "only the first vector component sees the body force.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "DataOut writes a displacement field where only the first component is non-zero (u_x has the expected gravity-driven profile, u_y is identically zero); per-component norm `solution.block(1).l2_norm() == 0` on a vector FESystem.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "FESystem"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "zero"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -193,8 +248,10 @@
       "pitfall_index": 4,
       "pitfall_category": "Integration",
       "signal_text": "`ExcMessage` from grid_in.cc that the mesh contains unsupported cell type.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "ExcMessage"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "quoted-error-fragment"
@@ -209,8 +266,10 @@
       "pitfall_index": 5,
       "pitfall_category": "API",
       "signal_text": "GridIn reports 'unsupported cell type 25' (Tri6) or '28' (Quad9).",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "GridIn"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "quoted-error-fragment",
@@ -225,14 +284,18 @@
       "physics": "linear_elasticity",
       "pitfall_index": 6,
       "pitfall_category": "Numerical",
-      "signal_text": "tip deflection on a compressible beam converges with refinement, but converges to the wrong value as nu \u2192 0.5 (volumetric locking).",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "tip deflection differs from the analytic value by a factor that GROWS as nu increases \u2014 at nu=0.3 within 5%, at nu=0.499 off by 50%+; switching to FE_Q(2) or FE_RannacherTurek recovers agreement at the same h.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "FE_Q",
+        "FE_RannacherTurek"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "converge",
-        "value",
-        "wrong"
+        "differs",
+        "grows",
+        "numerical-comparison",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -243,12 +306,20 @@
       "physics": "linear_elasticity",
       "pitfall_index": 7,
       "pitfall_category": "API",
-      "signal_text": "assembly enters cells you thought were 'off' and accumulates garbage into the rhs.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "DataOut shows non-zero residual values on cells that should be 'off'; `system_rhs.l2_norm()` is larger than expected even though `dof_handler.n_dofs_on_subdomain()` reports the FE_Nothing region has 0 DoFs.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "FE_Nothing"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "quoted-error-fragment"
+        "larger",
+        "quoted-error-fragment",
+        "report",
+        "shows",
+        "value",
+        "zero"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -262,7 +333,8 @@
       "signal_text": "SolverCG reports 'breakdown' or stalls at 1e-2 residual reduction.",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "SolverCG"
+        "SolverCG",
+        "breakdown"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
@@ -280,13 +352,20 @@
       "physics": "heat",
       "pitfall_index": 0,
       "pitfall_category": "Syntax",
-      "signal_text": "per-step wall time scales with ndof^2 instead of ndof*log(ndof) for AMG.",
+      "signal_text": "profiler / TimerOutput.print_summary() shows 'assemble_system' dominating wall time at ~60-80% per step, scaling as O(ndof^2) instead of the expected O(ndof * log(ndof)) when AMG is used; SolverCG iteration count is normal.",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "AMG"
+        "AMG",
+        "SolverCG",
+        "TimerOutput"
       ],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "iteration",
+        "quoted-error-fragment",
+        "shows",
+        "wall time"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -297,8 +376,10 @@
       "pitfall_index": 1,
       "pitfall_category": "Physics",
       "signal_text": "temperature convergence on a manufactured solution is first-order in dt even though you set theta=0.5.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "convergence"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge"
@@ -312,12 +393,17 @@
       "physics": "heat",
       "pitfall_index": 2,
       "pitfall_category": "API",
-      "signal_text": "a sharp temperature drop coinciding with the first AMR-step.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "`solution.l2_norm()` from DataOut drops to near zero across the AMR-step boundary, then slowly recovers; the discontinuity coincides exactly with the time-step at which Triangulation::execute_coarsening_and_refinement() was called.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "Triangulation"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "drop"
+        "drop",
+        "quoted-error-fragment",
+        "zero"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -328,11 +414,16 @@
       "physics": "heat",
       "pitfall_index": 3,
       "pitfall_category": "Numerical",
-      "signal_text": "temperature jumps at Dirichlet-boundary nodes between t=0 and the first time-step solution.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "DataOut shows a discontinuous jump of O(1) at Dirichlet-boundary nodes between the t=0 output frame and the first time-step frame; the discontinuity disappears on the second step as the implicit solver smooths it out.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "appears",
+        "shows"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -342,12 +433,17 @@
       "physics": "heat",
       "pitfall_index": 4,
       "pitfall_category": "Numerical",
-      "signal_text": "forward Euler with too-large dt produces oscillating solution that grows exponentially.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "forward Euler with too-large dt \u2014 `solution.linfty_norm()` grows exponentially (doubles every 2-3 steps) and overflows to NaN within ~20 steps; VectorTools::integrate_difference vs analytic reference exceeds 1e6 within the first few steps.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "VectorTools"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "oscillat"
+        "exceeds",
+        "grows",
+        "nan",
+        "quoted-error-fragment"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -361,12 +457,14 @@
       "signal_text": "SolverCG reports 'breakdown' on iteration 2-3 with a negative inner product, before the iterative residual has dropped at all.",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "SolverCG"
+        "SolverCG",
+        "breakdown"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "break",
         "drop",
+        "iteration",
         "quoted-error-fragment",
         "report"
       ],
@@ -379,11 +477,16 @@
       "physics": "stokes",
       "pitfall_index": 1,
       "pitfall_category": "Syntax",
-      "signal_text": "assembly succeeds but the saddle-point block B^T does not have the expected zero-on-diagonal structure.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "assembly succeeds but `system_matrix.block(1, 1).frobenius_norm()` (the pressure block) is NON-ZERO when it should be zero for a saddle-point Stokes system; `dof_handler.block_info().global().size()` returns blocks in the wrong proportion (e.g. (n, n) instead of (dim*n, n)).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Stokes"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "returns",
+        "wrong",
         "zero"
       ],
       "tier2_passed": false,
@@ -395,13 +498,19 @@
       "physics": "stokes",
       "pitfall_index": 2,
       "pitfall_category": "Physics",
-      "signal_text": "pressure field drifts to huge magnitude (~1e15) while velocity converges normally.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "`solution.block(1).linfty_norm()` (the pressure block) drifts to >1e10 magnitude across iterations while `solution.block(0).l2_norm()` (velocity) converges normally; SolverGMRES iteration count grows each outer step as the null space pollutes the Krylov basis.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverGMRES"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge",
-        "drift"
+        "drift",
+        "grows",
+        "iteration",
+        "iterations",
+        "quoted-error-fragment"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -412,13 +521,21 @@
       "physics": "stokes",
       "pitfall_index": 3,
       "pitfall_category": "Numerical",
-      "signal_text": "GMG residual stagnates or diverges at the first V-cycle, even though direct solver on the same matrix converges.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "MGSmootherRelaxation with point Jacobi \u2014 SolverGMRES residual norm stagnates at ~1e-2 after the first V-cycle and refuses to drop further, even though SparseDirectUMFPACK on the same matrix converges to machine precision; SolverControl::last_step() reports max_iterations reached.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Jacobi",
+        "MGSmootherRelaxation",
+        "SolverControl",
+        "SolverGMRES"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge",
-        "diverge"
+        "drop",
+        "iteration",
+        "iterations",
+        "report"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -430,8 +547,10 @@
       "pitfall_index": 4,
       "pitfall_category": "Numerical",
       "signal_text": "pressure field has a regular high-frequency checkerboard pattern superimposed on the smooth solution.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "checkerboard"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "checkerboard",
@@ -446,13 +565,19 @@
       "physics": "stokes",
       "pitfall_index": 5,
       "pitfall_category": "Physics",
-      "signal_text": "post-processing 'is my solver more accurate?' \u2014 yes, but only on mass conservation; other error metrics scale as usual.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "`VectorTools::integrate_difference` for div(u) returns values at machine epsilon (1e-15 to 1e-14) with FE_RaviartThomas \u2014 orders of magnitude smaller than the 1e-3 to 1e-5 typical of FE_Q Taylor-Hood at the same h. This is the expected H(div) behaviour, not a bug.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "FE_Q",
+        "FE_RaviartThomas",
+        "VectorTools"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment"
+        "quoted-error-fragment",
+        "returns",
+        "smaller",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -463,14 +588,15 @@
       "physics": "stokes",
       "pitfall_index": 6,
       "pitfall_category": "Integration",
-      "signal_text": "reported C_D differs from the Sch\u00e4fer-Turek table by 10+%.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "computed drag coefficient C_D differs from the Sch\u00e4fer-Turek 1996 reference (Re=20: C_D \u2248 5.58, Re=100: C_D \u2248 3.22) by more than 10%; the mismatch is systematic across mesh refinement, not noise.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Turek"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "differs",
-        "numerical-comparison",
-        "report"
+        "numerical-comparison"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -481,11 +607,17 @@
       "physics": "convection_diffusion",
       "pitfall_index": 0,
       "pitfall_category": "Numerical",
-      "signal_text": "diffusion-dominated solutions show small overshoots near the boundary that don't refine away.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "at Pe << 1 (diffusion-dominated), DataOut shows over/undershoots of 5-15% near Dirichlet boundaries that persist under refinement \u2014 VectorTools::integrate_difference vs analytic reference plateaus at ~0.05 L2-error instead of decreasing as h^p.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "shows"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -495,11 +627,21 @@
       "physics": "convection_diffusion",
       "pitfall_index": 1,
       "pitfall_category": "Syntax",
-      "signal_text": "DG solution looks correct globally but has continuous-Galerkin-like behaviour at element interfaces (no jumps where there should be).",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "DG solution with FE_DGQ in DataOut shows continuous-Galerkin-like behaviour at element interfaces \u2014 `solution.linfty_norm()` of jump-across-face values drops below 1e-8 (effectively zero) where physical jumps of O(1) are expected for an upwind discontinuous Galerkin scheme.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "FE_DGQ"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "below",
+        "drop",
+        "quoted-error-fragment",
+        "shows",
+        "value",
+        "zero"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -509,12 +651,17 @@
       "physics": "convection_diffusion",
       "pitfall_index": 2,
       "pitfall_category": "Physics",
-      "signal_text": "inflow BC appears on the downstream side of the domain.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "DataOut shows the prescribed inflow Dirichlet value (e.g. u=1 on x=0 with advection in +x direction) appearing as a localized hump at the DOWNSTREAM (x=L) boundary instead of being carried with the flow; VectorTools::point_value at the outflow returns the inflow value with reversed sign.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "VectorTools"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "appears"
+        "returns",
+        "shows",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -544,11 +691,17 @@
       "physics": "convection_diffusion",
       "pitfall_index": 4,
       "pitfall_category": "Integration",
-      "signal_text": "boundary-layer thickness smeared across multiple streamwise cells while resolved normal to flow.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "DataOut shows boundary-layer thickness smeared across 3-5 cells in the streamwise direction (where 1 should suffice) while resolved in 1 cell normal to the flow; Triangulation::n_active_cells() climbs into the 1e5+ range to achieve the same wall-normal resolution anisotropic refinement reaches at 1e4 cells.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "Triangulation"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "reaches",
+        "shows"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -558,13 +711,25 @@
       "physics": "nonlinear",
       "pitfall_index": 0,
       "pitfall_category": "Numerical",
-      "signal_text": "Newton fails on iteration 1 with residual norm > 1e3 (diverging immediately).",
+      "signal_text": "SolverControl::last_step() reports Newton iteration 1 with `residual.l2_norm()` exceeding 1e3 (orders of magnitude above the 1e-6 convergence tolerance); the residual at iteration 2 is even larger \u2014 Newton diverges immediately rather than stalling, ExcMessage('Newton step did not converge').",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "Newton"
+        "ExcMessage",
+        "Newton",
+        "SolverControl",
+        "convergence"
       ],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "above",
+        "converge",
+        "diverge",
+        "iteration",
+        "larger",
+        "quoted-error-fragment",
+        "report",
+        "stall"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -595,11 +760,14 @@
       "signal_text": "Newton reports convergence in 3-5 iterations on a problem that should take 10+, and the solution doesn't match an analytic reference.",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "Newton"
+        "Newton",
+        "convergence"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge",
+        "iteration",
+        "iterations",
         "report"
       ],
       "tier2_passed": false,
@@ -611,16 +779,23 @@
       "physics": "nonlinear",
       "pitfall_index": 3,
       "pitfall_category": "API",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "SolverGMRES with the AD-built tangent diverges or stalls \u2014 VectorTools::integrate_difference between AD and a manually-derived reference tangent shows off-diagonals with opposite sign; Newton converges to a saddle point of the energy instead of the minimum.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton",
+        "SolverGMRES",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "diverge",
+        "shows",
+        "stall"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks `Signal:` clause \u2014 cannot match in post-execution critic; the entry is descriptive, not detection-actionable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
@@ -650,7 +825,8 @@
       "signal_text": "SolverCG reports 'breakdown' immediately.",
       "tier0_passed": true,
       "tier0_entities_matched": [
-        "SolverCG"
+        "SolverCG",
+        "breakdown"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
@@ -667,12 +843,17 @@
       "physics": "helmholtz",
       "pitfall_index": 1,
       "pitfall_category": "Syntax",
-      "signal_text": "the imaginary part of the solution is zero everywhere despite the source being complex.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "`solution.block(1).linfty_norm()` (the imaginary component) is exactly 0 despite the source f being complex; DataOut shows a real-valued standing-wave pattern instead of a complex outgoing wave.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "zero"
+        "pattern",
+        "quoted-error-fragment",
+        "shows",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -683,13 +864,18 @@
       "physics": "helmholtz",
       "pitfall_index": 2,
       "pitfall_category": "Physics",
-      "signal_text": "outgoing wave amplitude decays to zero at the boundary instead of leaving the domain with constant amplitude.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "DataOut shows wave amplitude DECAYING from the source toward the outer boundary (drops to <0.1 of peak amplitude at the boundary) instead of maintaining constant amplitude along a radial ray; comparison against Hankel-function reference gives L2-error of O(1).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "Hankel"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "amplitude",
-        "zero"
+        "drop",
+        "error",
+        "shows"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -701,8 +887,10 @@
       "pitfall_index": 3,
       "pitfall_category": "Numerical",
       "signal_text": "solution amplitude differs from the analytic reference (Hankel function for radial problems) by a factor of 2-5x.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Hankel"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "amplitude",
@@ -718,11 +906,20 @@
       "physics": "helmholtz",
       "pitfall_index": 4,
       "pitfall_category": "Numerical",
-      "signal_text": "wave nodes are correctly spaced (h < lambda/10) but appear shifted by a constant fraction of a wavelength.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "VectorTools::integrate_difference vs a Hankel-function reference shows amplitude error stays at 10-20% but phase error grows like k^{p+1} h^{2p+1}; DataOut node positions are correctly spaced (h < lambda/10) but appear shifted by a constant fraction of a wavelength relative to the analytic solution.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "Hankel",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "amplitude",
+        "error",
+        "grows",
+        "shows"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -732,11 +929,19 @@
       "physics": "helmholtz",
       "pitfall_index": 5,
       "pitfall_category": "Integration",
-      "signal_text": "outgoing waves reflect off the layer instead of being absorbed.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "DataOut shows the outgoing wave reflecting back into the interior \u2014 standing-wave pattern visible with `solution.linfty_norm()` rising periodically rather than monotonically decaying; reflection coefficient measured at the PML interface exceeds 1% (a real PML achieves <1e-4).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "PML"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "exceeds",
+        "pattern",
+        "quoted-error-fragment",
+        "shows"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -766,11 +971,17 @@
       "physics": "eigenvalue",
       "pitfall_index": 1,
       "pitfall_category": "Physics",
-      "signal_text": "computed lambda_11 on unit square is far from 2*pi^2 \u2248 19.74 by orders of magnitude.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "SLEPc::SolverKrylovSchur reports the smallest eigenvalue on the unit square as O(h) or O(h^{-2}) \u2014 orders of magnitude off from the analytic 2*pi^2 \u2248 19.74; the EPS::get_eigenvalue result scales with 1/h instead of being mesh-independent.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "EPS",
+        "SLEPc"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "report",
+        "value"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -780,11 +991,17 @@
       "physics": "eigenvalue",
       "pitfall_index": 2,
       "pitfall_category": "API",
-      "signal_text": "the spectrum has a cluster of n_dirichlet zero eigenvalues above the physical ones.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "the EPS::get_eigenvalue spectrum returned by SLEPc contains exactly `boundary_dofs.size()` near-zero eigenvalues (magnitude < 1e-10) preceding the physical Laplace eigenvalues; AffineConstraints::distribute applied to M as well removes them.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "AffineConstraints",
+        "EPS",
+        "Laplace",
+        "SLEPc"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "quoted-error-fragment",
         "value",
         "zero"
       ],
@@ -797,12 +1014,17 @@
       "physics": "eigenvalue",
       "pitfall_index": 3,
       "pitfall_category": "Syntax",
-      "signal_text": "all eigenvalues come out exactly 0.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "SLEPc::SolverKrylovSchur returns every requested eigenvalue as exactly 0.0 (not just small \u2014 bit-exact 0); EPS::get_eigenvalue(i) for i=0..n_requested all read 0.0 with eigenvectors of zero norm.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "EPS",
+        "SLEPc"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "value"
+        "returns",
+        "value",
+        "zero"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -816,6 +1038,7 @@
       "signal_text": "program crashes inside the EPS constructor with an MPI_ERR_COMM error.",
       "tier0_passed": true,
       "tier0_entities_matched": [
+        "EPS",
         "MPI_ERR_COMM"
       ],
       "tier1_passed": true,
@@ -832,11 +1055,15 @@
       "physics": "eigenvalue",
       "pitfall_index": 5,
       "pitfall_category": "Numerical",
-      "signal_text": "requested eigenvalue range is in [50, 150] but returned eigenvalues are in [0.1, 5].",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "SLEPc::SolverKrylovSchur returns eigenvalues from EPS::get_eigenvalue all in the lower spectrum (e.g. [0.1, 5]) even though EPS::set_which_eigenpairs(EPS_TARGET_REAL) was set with target=100; the get_target_value query confirms target=100 was registered but ignored.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "EPS",
+        "SLEPc"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "returns",
         "value"
       ],
       "tier2_passed": false,
@@ -848,12 +1075,18 @@
       "physics": "eigenvalue",
       "pitfall_index": 6,
       "pitfall_category": "Physics",
-      "signal_text": "if the computed lambda_2 != lambda_3 to floating-point precision on a fine mesh, the eigensolver is missing degenerate modes.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "SLEPc returns |EPS::get_eigenvalue(1) - EPS::get_eigenvalue(2)| > 1e-6 on a fine mesh (which should agree to machine epsilon for the degenerate 5*pi^2 pair); the missing-degenerate-modes diagnostic is the early-warning that the EPS is not deflating correctly.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "EPS",
+        "SLEPc"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "missing"
+        "missing",
+        "returns",
+        "value",
+        "warn"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -864,12 +1097,18 @@
       "physics": "wave",
       "pitfall_index": 0,
       "pitfall_category": "Numerical",
-      "signal_text": "solution amplitudes grow exponentially when beta < gamma/2.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "when beta < gamma/2, `solution.linfty_norm()` from DataOut grows exponentially (doubles every 5-10 time steps) and reaches NaN within ~50 steps; the same problem with beta=0.25 stays bounded at O(1) amplitude.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "amplitude"
+        "amplitude",
+        "grows",
+        "nan",
+        "quoted-error-fragment",
+        "reaches"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -880,11 +1119,19 @@
       "physics": "wave",
       "pitfall_index": 1,
       "pitfall_category": "Syntax",
-      "signal_text": "per-step wall time scales with ndof^2 instead of with the linear-solve cost.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "TimerOutput.print_summary() shows 'assemble_system' dominating wall time at 60-80% per step, scaling as O(ndof^2) instead of O(ndof * SolverCG::last_step()); SolverCG iteration count itself is normal.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG",
+        "TimerOutput"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "iteration",
+        "quoted-error-fragment",
+        "shows",
+        "wall time"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -894,13 +1141,19 @@
       "physics": "wave",
       "pitfall_index": 2,
       "pitfall_category": "Numerical",
-      "signal_text": "solution energy grows exponentially even though the implicit Newmark (beta=0.25) of the same problem stays bounded.",
+      "signal_text": "with beta=0 and dt > h/c, `solution.linfty_norm()` grows exponentially (doubles every ~5 steps) and reaches NaN within ~30 steps; energy `0.5 * v^T M v + 0.5 c^2 u^T K u` from MatrixVector multiplication grows by factor 10+ per step instead of staying bounded; switching to implicit Newmark (beta=0.25) at the same dt keeps amplitude bounded at O(1).",
       "tier0_passed": true,
       "tier0_entities_matched": [
         "Newmark"
       ],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "amplitude",
+        "grows",
+        "nan",
+        "quoted-error-fragment",
+        "reaches"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -910,28 +1163,15 @@
       "physics": "wave",
       "pitfall_index": 3,
       "pitfall_category": "Syntax",
-      "signal_text": "solution oscillates with a low-frequency mode superimposed on the correct wave pattern, especially visible at early times.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "oscillat",
-        "pattern"
+      "signal_text": "DataOut at early times (t < 5*period) shows a low-frequency mode of magnitude 0.1-0.3 superimposed on the correct wave pattern; VectorTools::integrate_difference vs analytic reference shows O(1) error in the first 10 steps then decays to O(h^p) on later steps.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "VectorTools"
       ],
-      "tier2_passed": false,
-      "tier2_status": "harness_pending",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "wave",
-      "pitfall_index": 4,
-      "pitfall_category": "Physics",
-      "signal_text": "outgoing wave reflects from boundary instead of leaving; solution shows growing standing-wave pattern.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
+        "error",
         "pattern",
         "shows"
       ],
@@ -942,13 +1182,43 @@
     {
       "backend": "dealii",
       "physics": "wave",
+      "pitfall_index": 4,
+      "pitfall_category": "Physics",
+      "signal_text": "DataOut shows the outgoing wave reflecting at the outflow boundary; `solution.linfty_norm()` rises periodically (period = 2*L/c) rather than decaying monotonically; energy `0.5 * v^T M v + 0.5 c^2 u^T K u` stays constant or grows instead of decaying to zero as the wave should leave the domain.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "grows",
+        "quoted-error-fragment",
+        "shows",
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "harness_pending",
+      "notes": []
+    },
+    {
+      "backend": "dealii",
+      "physics": "wave",
       "pitfall_index": 5,
       "pitfall_category": "Integration",
-      "signal_text": "simulation wall time dominated by I/O rather than solve.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "signal_text": "TimerOutput.print_summary() reports 'output_results' or 'DataOut::write_vtu' as the top wall-time entry (>50% of total), exceeding the SolverCG and assemble_system buckets; the per-step VTU file count grows into the 10000s on disk.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "SolverCG",
+        "TimerOutput"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "grows",
+        "quoted-error-fragment",
+        "report",
+        "wall-time"
+      ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
       "notes": []
@@ -957,541 +1227,733 @@
       "backend": "dealii",
       "physics": "hp_adaptive",
       "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "`dof_handler.distribute_dofs(fe_collection)` raises ExcMessage('Index in FECollection out of range') or, worse, returns silently with n_dofs() = 0 on cells with the missing degree.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "ExcMessage"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "missing",
+        "quoted-error-fragment",
+        "raise",
+        "returns"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hp_adaptive",
       "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "SolverCG reports 'breakdown' because the assembled K is not SPD; FECollection::size() and QCollection::size() differ.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG",
+        "breakdown"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "numerical-comparison",
+        "quoted-error-fragment",
+        "report"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hp_adaptive",
       "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "API",
+      "signal_text": "dof_handler.n_dofs() grows as O(N) instead of O(log N) on a smooth solution; VectorTools::integrate_difference against analytic reference shows pure h-convergence rate instead of exponential-in-p.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "VectorTools",
+        "convergence"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "grows",
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hp_adaptive",
       "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "DataOut shows step discontinuities at cell boundaries where the neighbours have different FE_Q degree; VectorTools::integrate_difference reports O(1) error along those interfaces and ~O(h^p) elsewhere.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "FE_Q",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "report",
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hp_adaptive",
       "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "API",
+      "signal_text": "MatrixFree::reinit raises ExcMessage('hp-FEValues requires hp::MappingCollection') or compiles but produces zero stiffness contribution on cells with the non-default active_fe_index.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "ExcMessage",
+        "FEValues",
+        "MatrixFree"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "raise",
+        "value",
+        "zero"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hp_adaptive",
       "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "DataOut frame at the p-refinement step shows solution.linfty_norm() dropping by 10-50% (the high-frequency content lost in the transfer); next Newton step has to re-construct it from scratch.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "Newton"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "drop",
+        "numerical-comparison",
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "assembly raises ExcMessage('matrix entry at i,j does not exist in sparsity pattern') when the FEInterfaceValues face term writes into the off-cell block; or, if the assembly succeeds via ExcInvalidIterator, DataOut shows the DG solution with continuous-Galerkin-like behaviour at faces because face coupling was dropped.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "ExcMessage",
+        "FEInterfaceValues"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "drop",
+        "pattern",
+        "quoted-error-fragment",
+        "raise",
+        "shows",
+        "value"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "SolverGMRES converges but DataOut shows a smooth (non-DG) solution; jump-across-face values from VectorTools::interpolate_difference vs reference are 1e-8 (effectively zero) where they should be O(1) for upwind DG.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "SolverGMRES",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "shows",
+        "value",
+        "zero"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "API",
+      "signal_text": "assembly compiles and runs but the global system is non-symmetric AND inconsistent on periodic boundaries (if any); DataOut shows the solution with kinks at periodic-face nodes.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverGMRES with PreconditionJacobi reports SolverControl::last_step() growing linearly with n_cells; switching to PreconditionBlockSSOR drops iteration count by 10x.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "PreconditionJacobi",
+        "SolverControl",
+        "SolverGMRES"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "drop",
+        "iteration",
+        "numerical-comparison",
+        "report"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "MatrixFree::cell_loop wall-time per iteration with FE_DGQ(6) is 2-3x larger than with FE_DGQHermite(6) at the same n_dofs.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "FE_DGQ",
+        "FE_DGQHermite",
+        "MatrixFree"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "iteration",
+        "larger",
+        "wall-time"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Physics",
+      "signal_text": "AffineConstraints::distribute on a DG solution is a no-op (constraints.size() == 0); attempting to apply hanging-node constraints raises ExcMessage('DG discretisation has no hanging-node constraints').",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "AffineConstraints",
+        "ExcMessage"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "raise"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "dg_transport",
       "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Physics",
+      "signal_text": "VectorTools::interpolate_boundary_values on a DG FE raises ExcMessage('strong boundary conditions not supported for DG'); or, if silently ignored, DataOut shows the prescribed Dirichlet value NOT appearing at the inflow boundary.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "ExcMessage",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "raise",
+        "shows",
+        "value"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverControl reports Newton residual.l2_norm() > 1e3 on iteration 1, growing to NaN by iteration 3; ExcMessage('Newton step did not converge').",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "ExcMessage",
+        "Newton",
+        "SolverControl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "iteration",
+        "nan",
+        "quoted-error-fragment",
+        "report"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Physics",
+      "signal_text": "assembly raises ExcMessage('det(F) <= 0 at quadrature point') or the constitutive evaluator returns NaN \u2014 DataOut last-saved frame shows mesh self-intersecting.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "ExcMessage"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "nan",
+        "quoted-error-fragment",
+        "raise",
+        "returns",
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Physics",
+      "signal_text": "VectorTools::integrate_difference vs reference shows stress error that grows with deformation magnitude (O(1) at large strain) instead of the expected O(h^p).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "grows",
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "SolverCG reports 'breakdown' on the geometrically-nonlinear tangent because K_mat alone is not symmetric \u2014 switching to SolverGMRES still converges but at 2x the iteration count.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SolverCG",
+        "SolverGMRES",
+        "breakdown"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "converge",
+        "iteration",
+        "quoted-error-fragment",
+        "report"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "tip deflection on a Cook membrane differs from reference by 30-50% as nu approaches 0.5; switching to the three-field FESystem(FE_Q(2), dim, FE_DGP(1), 1, FE_DGP(0), 1) recovers convergence to within 5%.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "FESystem",
+        "FE_DGP",
+        "FE_Q",
+        "convergence"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "differs",
+        "numerical-comparison"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Physics",
+      "signal_text": "SolverControl reports Newton breakdown at the second or third load step under compression, with residual.l2_norm() oscillating wildly between iterations.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton",
+        "SolverControl",
+        "breakdown"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "iteration",
+        "iterations",
+        "oscillat",
+        "report"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Integration",
+      "signal_text": "DataOut shows stress concentrations of >10x material yield at clamped corners; the affected cells fail the det(F)>0 check first as load grows.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "grows",
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 7,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "API",
+      "signal_text": "Newton converges with manual tangent but to a WRONG solution (off by 2x from AD-tangent reference); VectorTools::integrate_difference between manual and AD solutions is O(1).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "converge",
+        "numerical-comparison",
+        "wrong"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 8,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "API",
+      "signal_text": "ParaView shows the mesh in the reference config not the deformed config; the user thinks the deformation is small even when |u| is comparable to L.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "ParaView"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 9,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "GridTools::get_boundary_ids(tria) returns `{0}` (single id) instead of the expected set; DataOut shows displacement field zero everywhere because the entire boundary is over-constrained.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "GridTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "returns",
+        "shows",
+        "zero"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 10,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "Newton residual.l2_norm() drops normally on iteration 1 of each load step then jumps back up by 10x on iteration 2 \u2014 caused by direct DOF-setting at the boundary on subsequent iterations.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "drop",
+        "iteration",
+        "iterations",
+        "numerical-comparison"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 11,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "g++ reports `error: no matching function for call to 'FEValuesBase<dim>::get_function_gradients'` because the scalar overload doesn't accept a vector-valued solution argument.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "FEValuesBase"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "report",
+        "value"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 12,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverCG reports 'breakdown' on the indefinite tangent during line search; switching to UMFPACK gives machine-precision residual and Newton converges in 3-5 outer iterations.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton",
+        "SolverCG",
+        "UMFPACK",
+        "breakdown"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "break",
+        "converge",
+        "iteration",
+        "iterations",
+        "quoted-error-fragment",
+        "report"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Integration",
+      "signal_text": "link error 'undefined reference to parallel::distributed::Triangulation<dim>::Triangulation' or `ExcMessage('parallel::distributed::Triangulation needs deal.II compiled with p4est')`.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "ExcMessage",
+        "Triangulation"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment",
+        "undefined"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "assembly runs on every rank but `system_matrix.frobenius_norm()` is the SAME on rank 0 and rank 1 \u2014 each rank assembled the full mesh, leading to double-counted entries; Triangulation::n_locally_owned_active_cells() returns the full count instead of the per-rank partition.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Triangulation"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "returns"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "API",
+      "signal_text": "`AffineConstraints::distribute(solution)` raises ExcMessage('ghost entries not consistent') because the ghost layer is empty.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "AffineConstraints",
+        "ExcMessage"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "raise"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "rss / VmPeak from /proc/self/status grows linearly with n_dofs on each MPI rank instead of being O(n_dofs / n_ranks); SparseMatrix::memory_consumption() exceeds the expected per-rank slice.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "SparseMatrix"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "exceeds",
+        "grows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "DataOut shows the global solution split into per-rank regions with mismatched values at MPI subdomain interfaces; VectorTools::integrate_difference against the serial reference is O(1) at the interfaces and 0 elsewhere.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "VectorTools"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "shows",
+        "value"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Numerical",
+      "signal_text": "SolverCG iteration count from SolverControl::last_step() grows from O(20) on Laplace to >500 on the same mesh size for elasticity, with each iteration cost dominated by AMG-apply.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "AMG",
+        "Laplace",
+        "SolverCG",
+        "SolverControl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "grows",
+        "iteration"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "parallel_poisson",
       "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "pitfall_category": "Integration",
+      "signal_text": "ParaView shows fragmentary mesh (only one MPI subdomain), while reading the .pvtu yields the full distributed result; DataOut::write_vtu (no pvtu_record) produces the broken-into-pieces output.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "ParaView"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "shows"
+      ],
       "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier2_status": "harness_pending",
+      "notes": []
     },
     {
       "backend": "dealii",
       "physics": "navier_stokes",
       "pitfall_index": 0,
       "pitfall_category": "Numerical",
-      "signal_text": "solver converges in one iteration but the result has no advection-driven structure.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "SolverGMRES with no outer Newton/Picard loop converges in 1 iteration to a symmetric, advection-free velocity profile \u2014 DataOut shows no recirculation behind a cylinder at Re=100 (which should have a visible Karman vortex street); VectorTools::integrate_difference against a Stokes reference is ~0, against a NS reference is O(1).",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "Newton",
+        "Picard",
+        "SolverGMRES",
+        "Stokes",
+        "VectorTools",
+        "cylinder"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "converge"
+        "converge",
+        "iteration",
+        "shows"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -1503,8 +1965,10 @@
       "pitfall_index": 1,
       "pitfall_category": "Numerical",
       "signal_text": "pressure field has a regular high-frequency checkerboard pattern.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "checkerboard"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "checkerboard",
@@ -1537,12 +2001,20 @@
       "physics": "navier_stokes",
       "pitfall_index": 3,
       "pitfall_category": "Numerical",
-      "signal_text": "time-averaged Reynolds stress underpredicts a known reference by O(dt) \u2014 disappears with smaller dt.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "time-averaged Reynolds-stress magnitude from VectorTools::integrate_difference differs by 20-40% from a Sch\u00e4fer-Turek reference at Re=100 \u2014 halving dt drops the error proportionally (O(dt) scaling); switching to BDF2 / Crank-Nicolson at the same dt reduces the error below 5%.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "BDF2",
+        "Turek",
+        "VectorTools"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "appears"
+        "below",
+        "differs",
+        "drop",
+        "error",
+        "numerical-comparison"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -1553,13 +2025,20 @@
       "physics": "navier_stokes",
       "pitfall_index": 4,
       "pitfall_category": "Physics",
-      "signal_text": "pressure field drifts to ~1e15 while velocity converges normally.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "`solution.block(1).linfty_norm()` (pressure) drifts to >1e10 magnitude across Newton iterations while `solution.block(0).l2_norm()` (velocity) converges normally; SolverGMRES iteration count for the linearised tangent grows each outer step as the pressure null space pollutes the Krylov basis.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "Newton",
+        "SolverGMRES"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge",
-        "drift"
+        "drift",
+        "grows",
+        "iteration",
+        "iterations",
+        "quoted-error-fragment"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",
@@ -1570,13 +2049,17 @@
       "physics": "navier_stokes",
       "pitfall_index": 5,
       "pitfall_category": "Integration",
-      "signal_text": "spurious oscillations near boundary layers despite stabilisation being 'on'.",
-      "tier0_passed": false,
-      "tier0_entities_matched": [],
+      "signal_text": "DataOut shows visible spatial oscillations of magnitude 0.05-0.2 (relative to max velocity) within 2-3 cells of a no-slip wall despite the SUPG term being active; refining h eliminates them only locally; comparing tau values between 1D and 2D shows a sqrt(2) discrepancy at the wall.",
+      "tier0_passed": true,
+      "tier0_entities_matched": [
+        "DataOut",
+        "SUPG"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "oscillat",
-        "quoted-error-fragment"
+        "shows",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "harness_pending",

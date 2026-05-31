@@ -96,9 +96,13 @@ KNOWLEDGE = {
         "[Numerical] NS is NONLINEAR — requires Newton iteration "
         "or Picard/Oseen linearisation. A naive linear solve gives "
         "the Stokes solution at zero Reynolds, regardless of the "
-        "user's intended Re. Signal: solver converges in one "
-        "iteration but the result has no advection-driven "
-        "structure.",
+        "user's intended Re. Signal: SolverGMRES with no outer "
+        "Newton/Picard loop converges in 1 iteration to a "
+        "symmetric, advection-free velocity profile — DataOut "
+        "shows no recirculation behind a cylinder at Re=100 (which "
+        "should have a visible Karman vortex street); "
+        "VectorTools::integrate_difference against a Stokes "
+        "reference is ~0, against a NS reference is O(1).",
         "[Numerical] Taylor-Hood Q2/Q1 satisfies inf-sup — Q1/Q1 "
         "DOES NOT and produces checkerboard pressure unless "
         "stabilised (SUPG, GLS, VMS). Signal: pressure field has "
@@ -112,19 +116,31 @@ KNOWLEDGE = {
         "[Numerical] For time-dependent: BDF2 or Crank-Nicolson "
         "(2nd-order, A-stable). Backward Euler is robust but "
         "introduces O(dt) numerical viscosity that contaminates "
-        "high-Re results. Signal: time-averaged Reynolds stress "
-        "underpredicts a known reference by O(dt) — disappears "
-        "with smaller dt.",
+        "high-Re results. Signal: time-averaged Reynolds-stress "
+        "magnitude from VectorTools::integrate_difference differs "
+        "by 20-40% from a Schäfer-Turek reference at Re=100 — "
+        "halving dt drops the error proportionally (O(dt) "
+        "scaling); switching to BDF2 / Crank-Nicolson at the "
+        "same dt reduces the error below 5%.",
         "[Physics] Pressure is determined up to a constant for "
         "closed-cavity NS — pin at one point or use mean-free "
-        "constraint. Signal: pressure field drifts to ~1e15 while "
-        "velocity converges normally.",
+        "constraint via AffineConstraints. Signal: "
+        "`solution.block(1).linfty_norm()` (pressure) drifts to "
+        ">1e10 magnitude across Newton iterations while "
+        "`solution.block(0).l2_norm()` (velocity) converges "
+        "normally; SolverGMRES iteration count for the linearised "
+        "tangent grows each outer step as the pressure null space "
+        "pollutes the Krylov basis.",
         "[Integration] SUPG/GLS stabilisation parameter tau must "
         "be tuned to the local element size h and local advection "
         "speed |u|. The textbook tau = h / (2*|u|) is correct only "
         "in 1D; multi-dimensional NS needs tau = h / (2*|u|*sqrt(2)) "
-        "or a more elaborate formula. Signal: spurious oscillations "
-        "near boundary layers despite stabilisation being 'on'.",
+        "or a more elaborate formula. Signal: DataOut shows visible "
+        "spatial oscillations of magnitude 0.05-0.2 (relative to "
+        "max velocity) within 2-3 cells of a no-slip wall despite "
+        "the SUPG term being active; refining h eliminates them "
+        "only locally; comparing tau values between 1D and 2D "
+        "shows a sqrt(2) discrepancy at the wall.",
     ],
 }
 

@@ -183,8 +183,13 @@ KNOWLEDGE = {
         "from zero usually diverges for any non-trivial "
         "nonlinearity. Interpolate boundary values onto the "
         "initial guess, or use the previous load step's solution "
-        "during continuation. Signal: Newton fails on iteration 1 "
-        "with residual norm > 1e3 (diverging immediately).",
+        "during continuation. Signal: SolverControl::last_step() "
+        "reports Newton iteration 1 with `residual.l2_norm()` "
+        "exceeding 1e3 (orders of magnitude above the 1e-6 "
+        "convergence tolerance); the residual at iteration 2 "
+        "is even larger — Newton diverges immediately rather "
+        "than stalling, ExcMessage('Newton step did not "
+        "converge').",
         "[Numerical] Line search prevents divergence — backtrack "
         "until the residual norm decreases. Full Newton step "
         "(alpha=1) without line search overshoots in the early "
@@ -202,7 +207,12 @@ KNOWLEDGE = {
         "(step-72) for the energy-functional formulation, "
         "Differentiation::AD::CellLevelBase for the residual-vector "
         "formulation. Mixing them up produces a tangent with the "
-        "wrong sign on the off-diagonals.",
+        "wrong sign on the off-diagonals. Signal: SolverGMRES "
+        "with the AD-built tangent diverges or stalls — "
+        "VectorTools::integrate_difference between AD and a "
+        "manually-derived reference tangent shows off-diagonals "
+        "with opposite sign; Newton converges to a saddle "
+        "point of the energy instead of the minimum.",
         "[Integration] SUNDIALS KINSOL (step-77) requires deal.II "
         "compiled with SUNDIALS support. Without it the link fails "
         "with 'undefined reference to KINSOL::SUNDIALS::solve_with_"

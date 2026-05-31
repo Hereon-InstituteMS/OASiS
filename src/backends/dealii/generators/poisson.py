@@ -677,19 +677,27 @@ KNOWLEDGE = {
         "[Syntax] Must call triangulation.refine_global() before "
         "distributing DOFs. Calling distribute_dofs on a 1-cell "
         "triangulation runs but gives a useless 4-DoF system. "
-        "Signal: solver reports 'converged in 0 iterations' on a "
-        "non-trivial problem because the system has only 1 DOF.",
+        "Signal: SolverControl reports 'Convergence step 0 value "
+        "X.XXe-16' (already converged), `dof_handler.n_dofs()` "
+        "returns 4, and KellyErrorEstimator output is a single "
+        "cell-wise scalar.",
         "[Syntax] Boundary IDs on hyper_cube: ALL faces have "
         "boundary_id=0. To distinguish faces you must iterate "
         "the cells and re-tag faces after the mesh exists. Signal: "
-        "you apply different Dirichlet values on different faces "
-        "but the result has the SAME value everywhere on the "
-        "boundary.",
+        "`GridTools::get_boundary_ids(tria)` returns `{0}` "
+        "(a single id, not the 4-6 expected for a cube), and "
+        "VectorTools::interpolate_boundary_values applied to "
+        "different boundary_ids produces the same Dirichlet "
+        "values across all faces of the cube.",
         "[Syntax] For hyper_rectangle: left=0, right=1 "
         "(in 2D: bottom=2, top=3; in 3D: front=4, back=5). The "
         "rectangle has them auto-assigned. Always check via "
         "GridTools::get_boundary_ids(tria) after creating the "
-        "mesh.",
+        "mesh. Signal: GridTools::get_boundary_ids(tria) returns "
+        "`{0, 1, 2, 3}` not the assumed `{0}` — if your "
+        "Dirichlet code applies the BC only to boundary_id=0 you "
+        "will see DataOut with that BC value only on the LEFT "
+        "face and zero (homogeneous Neumann) on the other three.",
         "[Numerical] For AMR: MUST apply hanging-node constraints "
         "after assembly via constraints.condense(system_matrix, "
         "system_rhs). Forgetting this gives a non-symmetric matrix "
@@ -700,8 +708,11 @@ KNOWLEDGE = {
         "and hanging nodes — interpolate_boundary_values + the "
         "hanging-node closure on the SAME constraints object. Using "
         "two separate constraints objects produces inconsistent "
-        "assembly. Signal: solution has step discontinuities at "
-        "the interfaces between refinement levels.",
+        "assembly. Signal: DataOut output shows step "
+        "discontinuities of order 1e-2 to 1e-1 at refinement-level "
+        "interfaces (hanging-node faces); SolverCG converges but "
+        "the L2-error against an analytic reference plateaus "
+        "instead of decreasing as h is refined.",
         # New entries shipped with this encoding pass — common Poisson
         # failure modes the catalog should warn about.
         "[Numerical] For variable-coefficient problems (a(x) ∇u), if "
@@ -709,8 +720,11 @@ KNOWLEDGE = {
         "(layered media, heterogeneous), the stiffness matrix gets "
         "ill-conditioned and PreconditionSSOR loses effectiveness. "
         "Switch to PreconditionAMG / BoomerAMG, which respects the "
-        "coefficient structure. Signal: CG iteration count grows "
-        "linearly with the coefficient contrast.",
+        "coefficient structure. Signal: SolverCG iteration count "
+        "from SolverControl::last_step() grows linearly with the "
+        "max/min ratio of the coefficient (e.g. 50 iterations at "
+        "contrast 1e2, 500 at contrast 1e3); switching to "
+        "PreconditionAMG drops it back to O(log(ndof)).",
         "[Integration] Mixing the 2D and 3D template instantiations "
         "in the same translation unit at unrelated polynomial orders "
         "(FE_Q<2>(2) plus FE_Q<3>(1)) does NOT explicitly instantiate "
