@@ -183,6 +183,54 @@ class TestDealiiSignalFloor(unittest.TestCase):
             f"does — investigate before lowering the floor.")
 
 
+class TestCrossBackendGameableFloor(unittest.TestCase):
+    """Cross-backend regression test for the gameable Tier-0 mode.
+
+    Round-2 critic (2026-05-31) forced MAX_TIER0_DOMAIN_NAMES_ONLY=0
+    for deal.II — a pitfall whose Signal: text scores Tier-0 only
+    via domain words ("Stokes", "Newton", "convergence", "Poisson")
+    without referencing any real backend code symbol IS the gameable
+    failure mode (post-execution critic cannot grep for these in
+    real solver output).
+
+    After cross-backend Table-1 promotion the same floor must hold
+    for every backend whose catalog has been promoted. Locked in
+    2026-06-01 after auditing skfem (2 gameable) / fenics (1) /
+    kratos (7) and fixing each by rewriting the Signal to name
+    specific compound classes the backend actually emits.
+
+    If a future promotion regresses any of these to > 0, the
+    test names the violating entries — investigate and rewrite
+    Signal text rather than lowering the floor.
+    """
+
+    # Per-backend max gameable count. 0 across the board:
+    # the audit established this is achievable for any
+    # backend whose Signal: text references compound code
+    # symbols rather than textbook concepts.
+    BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos")
+
+    def test_no_backend_has_gameable_entries(self):
+        from verify_signal_clauses import verify_backend
+        for be in self.BACKENDS:
+            with self.subTest(backend=be):
+                gameable = [
+                    r for r in verify_backend(be)
+                    if r.tier0_domain_names_matched
+                    and not r.tier0_code_symbol_matched]
+                if gameable:
+                    names = ", ".join(
+                        f"{r.physics}#{r.pitfall_index}"
+                        for r in gameable)
+                    self.fail(
+                        f"{be}: {len(gameable)} gameable Tier-0 "
+                        f"entries ({names}). Each Signal: clause "
+                        f"matches a textbook domain word but no "
+                        f"backend code symbol — rewrite the Signal "
+                        f"to name a specific class / exception / "
+                        f"method the backend actually emits.")
+
+
 class TestHarnessSelfChecks(unittest.TestCase):
     """The harness itself must do what it claims."""
 

@@ -180,9 +180,11 @@ KNOWLEDGE = {
         "pitfalls": [
             "[Numerical] Backward Euler is unconditionally stable "
             "but only first-order accurate in time. Signal: "
-            "manufactured-solution convergence study in dt gives "
-            "slope ~1 (linear) on a log-log plot instead of 2 "
-            "(Crank-Nicolson).",
+            "manufactured-solution study iterating scipy.sparse."
+            "linalg.spsolve with halved dt shows the linfty_norm "
+            "(u_h - u_exact) interpolated onto an InteriorBasis "
+            "decreasing by a factor ~2 per halving instead of ~4 "
+            "(slope 1 vs 2 on a log-log plot).",
             "[Numerical] Factor the system matrix once with "
             "scipy.sparse.linalg.factorized() and reuse across "
             "time steps. Re-factoring every step costs O(N^1.5) "
@@ -192,9 +194,11 @@ KNOWLEDGE = {
             "[Numerical] Crank-Nicolson (theta=0.5): "
             "(M + 0.5*dt*K)*u_new = (M - 0.5*dt*K)*u_old + dt*f. "
             "Symmetric formula required for second-order accuracy. "
-            "Signal: convergence-in-dt slope is 2 with "
-            "Crank-Nicolson; mixing up the (1-theta) on RHS "
-            "degrades to 1.",
+            "Signal: linfty_norm(u_h - u_exact) on the InteriorBasis "
+            "after time-stepping with scipy.sparse.linalg.spsolve "
+            "decreases by ~4 per dt halving (slope 2); mixing up "
+            "the (1-theta) factor on RHS degrades to slope 1 even "
+            "though theta=0.5 was set.",
             "[API] Mass matrix M comes from "
             "skfem.models.poisson.mass — re-implementing "
             "u*v as a BilinearForm works but is slow. Signal: "
