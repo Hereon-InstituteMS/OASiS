@@ -261,9 +261,9 @@ KNOWLEDGE = {
         },
         "pitfalls": [
                         '[Numerical] Mohr-Coulomb dilatancy angle psi=0 causes a singular plastic denominator (dF:C:dG = 0) at the MC compression meridian (Lode = -30 deg). Use psi >= 0.1 deg as workaround, or principal-stress-space return mapping (Sloan et al., 2001). '
-                        "Signal: Newton-Raphson stress-update divergence / 'division by zero' from the local return-mapping; global solver reports nonconvergence with no equilibrium progress.",
+                        "Signal: ResidualBasedNewtonRaphsonStrategy reports 'Convergence is not achieved' with the global residual stuck; local return-mapping in the ConstitutiveLaw emits 'division by zero' / NaN in PK2_STRESS_VECTOR returned by CalculateOnIntegrationPoints.",
                         '[Numerical] MC yield surface has 6 corners in the deviatoric plane; backward Euler needs Lode-angle smoothing (Drucker-Prager at |theta| >= 29 deg) or explicit corner return mapping. '
-                        'Signal: Newton diverges when stress path crosses a corner — local return-mapping iteration count saturates at max with residual not decreasing.',
+                        "Signal: ResidualCriteria reports the global residual ratio not decreasing across ResidualBasedNewtonRaphsonStrategy iterations; CalculateOnIntegrationPoints returns NaN entries in PK2_STRESS_VECTOR for stress states whose Lode angle is close to |30 deg|.",
                         '[Integration] Modified MC (Kratos) and Classical MC (textbook) use DIFFERENT parameterisations. Modified MC uses YIELD_STRESS_COMPRESSION/TENSION; Classical MC uses cohesion + friction angle. '
                         'Signal: yield surface intersects axes at wrong values — sigma_y in uniaxial compression disagrees with hand-calc by tan(phi)-related factor.',
                         '[Syntax] For perfect plasticity use HARDENING_CURVE=3 with large FRACTURE_ENERGY (e.g., 1e10). HARDENING_CURVE=0 (linear) still softens unless FRACTURE_ENERGY is very large. '
@@ -275,9 +275,9 @@ KNOWLEDGE = {
                         '[Numerical] SHEAR LOCKING: linear hex8 (3D8N) locks in bending-dominated plasticity. Uniform-stress benchmarks (uniaxial, triaxial) are fine; gradient-stress problems need quadratic elements (3D20N, 3D27N). '
                         'Signal: bending-plasticity tip rotation 20-40% smaller than analytic with hex8; switching to hex20 recovers it.',
                         '[Numerical] Fully displacement-controlled single-element tests can pass spuriously — Newton converges in 1 iteration without exercising the material tangent. Always include at least one Neumann-loaded face (e.g., confining pressure in triaxial). '
-                        'Signal: convergence count is 1 for every step even when the tangent has a bug; tangent error is invisible.',
+                        "Signal: ResidualBasedNewtonRaphsonStrategy reports 1 iteration per CloneTimeStep for every step; ResidualCriteria initial-residual ratio is below tolerance from iteration 0 — the algorithmic tangent (CalculateOnIntegrationPoints DEFORMATION_GRADIENT path) is never tested.",
                         '[Physics] Triaxial elastic offset: with confining sigma_3, deviatoric q at zero axial strain is q = -sigma_3*(1-2*nu), NOT zero. For sigma_3=100 kPa, nu=0.3: q_0 = -40 kPa. '
-                        'Signal: stress-strain plot starts below the expected elastic line — Poisson coupling offset (solver is correct).',
+                        "Signal: CalculateOnIntegrationPoints PK2_STRESS_VECTOR[2] at zero axial DISPLACEMENT_Z is non-zero and matches -sigma_3*(1-2*nu); the SmallDisplacementElement stress-strain curve starts on a parallel line offset from origin (the solver is correct).",
                     ],
         "elements": [
             "SmallDisplacementElement3D8N (linear hex, small strain)",

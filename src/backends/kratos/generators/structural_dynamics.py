@@ -163,7 +163,7 @@ KNOWLEDGE = {
                         '[Numerical] Effective stiffness K_eff = K + 1/(beta*dt^2)*M — factor it ONCE for linear dynamics, reuse across steps. Re-factorising every step costs O(N^1.5) instead of O(N). '
                         'Signal: per-step wall time scales as N^1.5 with mesh refinement instead of N.',
                         '[Numerical] For nonlinear dynamics: tangent must be re-assembled at each Newton iteration (not just each time step). Caching the initial tangent gives modified-Newton with slow convergence. '
-                        'Signal: Newton residual ratio decreases by <0.5 per iter (should be O(0.01) for full Newton); iteration count saturates at max_iteration.',
+                        "Signal: ResidualBasedNewtonRaphsonStrategy iteration log shows the ResidualCriteria ratio decreasing by < 0.5 per iter (should be O(0.01) for full Newton); the strategy saturates at max_iteration without ResidualBasedBlockBuilderAndSolver reaching tolerance.",
                         '[Numerical] ELEMENT SELECTION: Linear hex8 (SmallDisplacementElement3D8N) shear-locks in bending-dominated problems — use quadratic hex20 or hex27. Same applies to linear quad4 in 2D — use quad8/quad9. '
                         'Signal: cantilever tip deflection with hex8 mesh is 20-40% smaller than analytic; switching to hex20 recovers it.',
                         '[API] For POINT_LOAD application: use AssignVectorVariableProcess with constrained: [false, false, false]. AssignVectorByDirectionProcess crashes for load variables because it tries to fix/free DOFs. '

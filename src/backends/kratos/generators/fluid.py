@@ -50,7 +50,7 @@ KNOWLEDGE = {
                         '[Physics] Wall BCs are mutually exclusive: no-slip (VELOCITY = 0), Navier slip (tangential traction), or wall-law (log-law for high Re). Mixing them on the same boundary applies the LAST one written in the JSON. '
                         'Signal: integrated wall shear stress disagrees with analytic Couette/Poiseuille by an order of magnitude.',
                         '[Physics] Inlet: impose VELOCITY vector; Outlet: impose PRESSURE = 0. Reversing them (pressure inlet, velocity outlet) over-determines pressure and gives the wrong mass flux. '
-                        'Signal: integrated outlet flow rate is 0 or oscillates; convergence stalls near the inlet face.',
+                        "Signal: integrated mass flow rate computed from VELOCITY on the outlet SubModelPart is 0 or oscillates around 0; navier_stokes_solver_vmsmonolithic ResidualBasedBlockBuilderAndSolver reports the pressure residual stalling near the inlet face.",
                         '[Numerical] For free-surface (TwoFluid solver): the DISTANCE variable (level-set signed distance) must be initialised before the first solve and re-distanced every step. Skipping the re-initialisation drifts the interface. '
                         'Signal: DISTANCE field develops spurious zero-crossings inside the bulk fluid; post-processed phase indicator shows artefacts.',
                     ],
