@@ -10,8 +10,8 @@
     "tier0_domain_names_only": 0,
     "tier1_passed": 96,
     "tier0_and_1_passed": 96,
-    "tier2_passed": 3,
-    "tier2_attempted": 3
+    "tier2_passed": 4,
+    "tier2_attempted": 4
   },
   "results": [
     {
@@ -65,8 +65,8 @@
         "returns",
         "value"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {

@@ -164,8 +164,13 @@ def _eval_fixture(fixture_dir: Path,
                 "add_executable(prog source.cpp)\n"
                 "deal_ii_setup_target(prog)\n"
             )
+        # Force Debug build so deal.II Assert(...) macros fire
+        # (the conda install was built Release, which compiles
+        # them out — that's why some ExcDimensionMismatch
+        # fixtures silently succeed when they should raise).
         cmake_configure = ["cmake",
                            f"-DCMAKE_CXX_COMPILER={cxx}",
+                           "-DCMAKE_BUILD_TYPE=Debug",
                            f"-S", str(fixture_dir),
                            f"-B", str(build_dir)]
         rc, out = _run(cmake_configure, cwd=fixture_dir,
