@@ -137,6 +137,19 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
     code_symbols: set[str] = set()
     domain_names: set[str] = set()
 
+    # Critical: ensure src/ is on sys.path BEFORE importing the
+    # element catalog. Otherwise the first call returns a
+    # partial code_symbols set (silently swallowed ImportError)
+    # and later calls return the full set after _harvest_pitfalls
+    # has inserted src/. The merge-gate tests were papered over
+    # by this — re-running setUp warmed the import via
+    # _harvest_pitfalls, so 11 of 12 test methods saw the
+    # "post-warmup" 165-symbol set, missing real Tier-0
+    # regressions. Fixed 2026-05-31 (round-4 critic finding).
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+
     if backend == "dealii":
         try:
             mod = importlib.import_module(

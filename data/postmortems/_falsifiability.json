@@ -37,7 +37,7 @@
   "dealii::stokes::4": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "checkerboard pressure on equal-order — needs Stokes solve + FFT"},
   "dealii::stokes::5": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "div(u) exactly zero with RT element — needs RT/DGQ Stokes solve"},
   "dealii::stokes::6": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "Schäfer-Turek C_D verification — needs full NS run"},
-  "dealii::helmholtz::0": {"falsifiable": true, "cost": "cheap", "method": "exception_class", "notes": "indefinite Helmholtz — SolverCG breakdown"},
+  "dealii::helmholtz::0": {"falsifiable": true, "cost": "cheap", "method": "exception_class", "notes": "indefinite Helmholtz — SolverCG NoConvergence at max_steps when k^2 hits an eigenvalue of K. Catalog Signal originally said 'breakdown immediately' — that is inaccurate (deal.II SolverCG emits no 'breakdown' string). Fixture matches NoConvergence; Signal text needs Audit rewrite."},
   "dealii::helmholtz::1": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "imag part zero — needs complex Helmholtz solve"},
   "dealii::helmholtz::2": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "wave amplitude decay vs Hankel reference"},
   "dealii::helmholtz::3": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "high-frequency Hankel reference comparison"},
@@ -103,6 +103,6 @@
   "dealii::dg_transport::2": {"falsifiable": true, "cost": "expensive", "method": "numerical_comparison", "notes": "MeshWorker dispatch — periodic-face kinks"},
   "dealii::dg_transport::3": {"falsifiable": true, "cost": "expensive", "method": "performance_profile", "notes": "PreconditionBlockSSOR vs Jacobi — iteration count"},
   "dealii::dg_transport::4": {"falsifiable": true, "cost": "expensive", "method": "performance_profile", "notes": "FE_DGQHermite vs FE_DGQ wall-time"},
-  "dealii::dg_transport::5": {"falsifiable": true, "cost": "cheap", "method": "exception_class", "notes": "AffineConstraints::distribute on DG — ExcMessage"},
-  "dealii::dg_transport::6": {"falsifiable": true, "cost": "cheap", "method": "exception_class", "notes": "interpolate_boundary_values on DG — ExcMessage"}
+  "dealii::dg_transport::5": {"falsifiable": true, "cost": "cheap", "method": "numerical_comparison", "notes": "AffineConstraints::distribute on DG — empirically a silent no-op in 9.1.1 (n_constraints==0), not an ExcMessage. Method reclassified after probe 2026-05-31."},
+  "dealii::dg_transport::6": {"falsifiable": true, "cost": "cheap", "method": "numerical_comparison", "notes": "interpolate_boundary_values on DG — empirically silent in 9.1.1 (boundary_values map empty), not an ExcMessage. Method reclassified after probe 2026-05-31."}
 }

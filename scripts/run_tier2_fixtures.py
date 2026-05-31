@@ -352,16 +352,32 @@ def _eval_fixture(fixture_dir: Path,
         # Signal text — e.g. deprecation warnings.)
         result.captured_head = out[:800]
     elif mode == "python":
-        # Python-side runtime check. Default to sys.executable;
-        # FEniCSx and DUNE-fem live in their own conda envs so
-        # route through the env-specific python when the backend
-        # tag tells us to.
+        # Python-side runtime check. Each backend lives in its
+        # own python env. FEniCSx and DUNE-fem are in their own
+        # conda envs; Kratos / NGSolve / scikit-fem all live in
+        # the repo's local .venv (per task #18 wiring). When
+        # invoked from a different python (e.g. `python3
+        # scripts/...` from the user shell), sys.executable
+        # cannot import any of these — must route per-backend.
         src = fixture_dir / "source.py"
         if not src.is_file():
             result.status = "harness_pending"
             result.notes.append("source.py not present")
             return result
         python = sys.executable
+        REPO_VENV = REPO_ROOT / ".venv" / "bin" / "python"
+
+        def _route_to_repo_venv(env_var: str, label: str) -> str | None:
+            cand = env.get(env_var) or (
+                str(REPO_VENV) if REPO_VENV.is_file() else None)
+            if cand and Path(cand).is_file():
+                return cand
+            result.status = "skipped"
+            result.notes.append(
+                f"{label} env python not found; set "
+                f"{env_var} or install repo .venv (task #18)")
+            return None
+
         if backend == "fenics":
             cand = (env.get("FENICS_PYTHON")
                     or str(Path.home() / "miniconda3" / "envs"
@@ -386,6 +402,21 @@ def _eval_fixture(fixture_dir: Path,
                     "DUNE-fem env python not found; set "
                     "DUNE_PYTHON or install ofa-dune conda env")
                 return result
+        elif backend == "kratos":
+            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos")
+            if cand is None:
+                return result
+            python = cand
+        elif backend == "ngsolve":
+            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve")
+            if cand is None:
+                return result
+            python = cand
+        elif backend == "skfem":
+            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem")
+            if cand is None:
+                return result
+            python = cand
         cmd = [python, str(src)]
         rc, out = _run(cmd, cwd=fixture_dir, env=env, timeout=120)
         result.captured_head = out[:800]

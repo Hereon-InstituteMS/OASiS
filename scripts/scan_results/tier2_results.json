@@ -1,12 +1,44 @@
 {
   "summary": {
-    "n_fixtures": 20,
-    "passed": 20,
+    "n_fixtures": 26,
+    "passed": 26,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
   },
   "results": {
+    "dealii::dg_transport::5": {
+      "key": "dealii::dg_transport::5",
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 5,
+      "fixture_id": "dg_affineconstraints_noop",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "make_hanging_node_constraints_on_DG",
+        "n_constraints=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "make_hanging_node_constraints_on_DG: n_constraints=0 (n_active_cells=7, n_dofs=28)\n"
+    },
+    "dealii::dg_transport::6": {
+      "key": "dealii::dg_transport::6",
+      "backend": "dealii",
+      "physics": "dg_transport",
+      "pitfall_index": 6,
+      "fixture_id": "dg_interpolate_boundary_silent",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "interpolate_boundary_values_on_DG",
+        "boundary_values_size=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "interpolate_boundary_values_on_DG: boundary_values_size=0 (n_dofs=64, n_active_cells=16)\n"
+    },
     "dealii::poisson::0": {
       "key": "dealii::poisson::0",
       "backend": "dealii",
@@ -22,6 +54,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "DoFHandler::n_dofs() = 4\n(expected 4 for un-refined FE_Q(1) on a single hyper_cube cell)\n"
+    },
+    "dealii::linear_elasticity::5": {
+      "key": "dealii::linear_elasticity::5",
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 5,
+      "fixture_id": "gmsh_second_order_rejected",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "Element Identifier",
+        "is not supported",
+        "GridIn"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "GridIn::read_msh threw as expected. Diagnostic:\n\n--------------------------------------------------------\nAn error occurred in line <1999> of file <~/Schreibtisch/dealii-src/source/grid/grid_in.cc> in function\n    void dealii::GridIn<dim, spacedim>::read_msh(std::istream&) [with int dim = 2; int spacedim = 2; std::istream = std::basic_istream<char>]\nThe violated condition was: \n    false\nAdditional information: \n    The Element Identifier <10> is not supported in the deal.II library when reading meshes in 2 dimensions.\nSupported elements are: \nELM-TYPE\n1 Line (2 nodes, 1 edge).\n3 Quadrilateral (4 nodes, 4 edges).\n5 Hexahedron (8 nodes, 12 edges, 6 faces) when in 3d.\n15 Point (1 node, ignored when read)\n--------------------------------------------------------\n\n"
     },
     "dealii::linear_elasticity::92": {
       "key": "dealii::linear_elasticity::92",
@@ -70,6 +119,22 @@
       "notes": [],
       "captured_head": "SolverControl: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/Schreibtisch/dealii-debug/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 20. The residual in the last step was 1.61538e-05.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase "
     },
+    "dealii::helmholtz::0": {
+      "key": "dealii::helmholtz::0",
+      "backend": "dealii",
+      "physics": "helmholtz",
+      "pitfall_index": 0,
+      "fixture_id": "helmholtz_cg_resonant_breakdown",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "SolverControl::NoConvergence",
+        "SolverCG"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "SolverCG indefinite Helmholtz: SolverControl::NoConvergence last_step=2000 last_residual=0.657624\n"
+    },
     "dealii::poisson::1": {
       "key": "dealii::poisson::1",
       "backend": "dealii",
@@ -102,6 +167,22 @@
       "notes": [],
       "captured_head": "SolverControl raised: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/miniconda3/envs/ofa-dealii/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 1. The residual in the last step was 0.5.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase t"
     },
+    "dealii::poisson::2": {
+      "key": "dealii::poisson::2",
+      "backend": "dealii",
+      "physics": "poisson",
+      "pitfall_index": 2,
+      "fixture_id": "poisson_hyper_rectangle_colorize",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "n_distinct_boundary_ids=4",
+        "hyper_rectangle"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "GridGenerator::hyper_rectangle(colorize=true): n_distinct_boundary_ids=4\n  boundary_id=0\n  boundary_id=1\n  boundary_id=2\n  boundary_id=3\n"
+    },
     "dealii::stokes::0": {
       "key": "dealii::stokes::0",
       "backend": "dealii",
@@ -116,6 +197,22 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "SolverCG raised: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/miniconda3/envs/ofa-dealii/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 2. The residual in the last step was nan.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase the si"
+    },
+    "dealii::hyperelasticity::9": {
+      "key": "dealii::hyperelasticity::9",
+      "backend": "dealii",
+      "physics": "hyperelasticity",
+      "pitfall_index": 9,
+      "fixture_id": "subdivided_rect_no_colorize",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "boundary_id",
+        "GridGenerator"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "GridGenerator::subdivided_hyper_rectangle (colorize=false): 1 unique boundary_id(s)\n  boundary_id = 0\n"
     },
     "fenics::linear_elasticity::93": {
       "key": "fenics::linear_elasticity::93",

@@ -62,16 +62,18 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # `passed` means one Signal: clause has been confirmed to
     # actually appear in real captured output. Floor grows as
     # more fixtures are written.
-    MIN_TIER2_PASSED = 5  # deal.II pitfalls with named (catalog-indexed)
-                          # Tier-2 fixtures.
-    MIN_TIER2_RUNNER_PASSED = 20  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
+                           # Tier-2 fixtures (cheap bucket closed
+                           # 2026-05-31 + 1 medium already done).
+    MIN_TIER2_RUNNER_PASSED = 26  # cross-cutting (incl. synthetic indices).
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
     # _falsifiability.json classifies each deal.II pitfall as
-    # cheap / medium / expensive. Realistic 3-month target is
-    # 100% of cheap; 12-month target is cheap + ~half of medium.
-    MIN_TIER2_PASSED_OF_CHEAP = 4    # 4/10 cheap deal.II so far
+    # cheap / medium / expensive. CHEAP BUCKET FULLY CLOSED
+    # 2026-05-31 — floor pinned at 10/10. Next push is medium
+    # bucket (42 fixtures, each ~PDE solve + analytic reference).
+    MIN_TIER2_PASSED_OF_CHEAP = 10   # 10/10 cheap deal.II = 100%
     MIN_TIER2_PASSED_OF_MEDIUM = 1   # 1/42 medium so far
 
     def setUp(self):
