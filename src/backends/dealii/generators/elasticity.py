@@ -337,18 +337,98 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-8 (basic)", "step-17 (MPI parallel)", "step-18 (incremental)"],
     "function_space": "FESystem<dim>(FE_Q<dim>(1), dim) — vector Lagrange",
     "solver": "CG + PreconditionSSOR (serial), SolverCG + BoomerAMG (parallel)",
+    # ── Structured catalog keys (encoded 2026-05-31 from Layer A
+    #    scan vs catalog diff — see data/postmortems/
+    #    dealii-elasticity-catalog-structure.json). Each entry pairs
+    #    the upstream class name with a short note on why a user
+    #    would choose it for elasticity specifically — generic
+    #    "FE_Q is a Lagrange element" notes go in the deal.II
+    #    documentation, this catalog is physics-keyed.
+    "elements": [
+        "FE_Q<dim>(degree)            — continuous Lagrange, the default; wrap in FESystem<dim>(FE_Q<dim>(degree), dim) for vector-valued u",
+        "FE_Q_Bubbles<dim>(degree)    — bubble-enriched Lagrange; useful when the linear elasticity is paired with an incompressible Stokes pressure (avoids LBB instability without dropping to mixed elements)",
+        "FE_Q_Hierarchical<dim>(degree) — hierarchical basis; preferred for p-adaptive refinement so coarse-level DoFs survive a polynomial-degree change",
+        "FE_Q_DG0<dim>(degree)        — continuous Lagrange enriched with one piecewise-constant DG mode per cell; mass-matrix lumping",
+        "FE_Bernstein<dim>(degree)    — Bernstein-Bezier basis; better-conditioned mass matrix at high p, used in IGA-adjacent workflows",
+        "FE_RannacherTurek<dim>()     — P1-non-conforming on quads/hexes; locking-free for nearly-incompressible elasticity (Poisson ratio approaching 0.5)",
+        "FE_Nothing<dim>()            — placeholder element with zero DoFs; used inside FESystem on subdomains where displacement is fully constrained",
+        "FESystem<dim>(...)           — the vector wrapper itself; do not forget it (a bare FE_Q gives scalar u, not the elasticity displacement field)",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, a, b)                    — unit-cube / square in [a,b]^dim; smallest reproducer for any elasticity problem",
+        "GridGenerator::hyper_rectangle(tria, p1, p2)             — axis-aligned box from p1 to p2; cantilever beams (typical {0,0}-{L,h})",
+        "GridGenerator::subdivided_hyper_rectangle(tria, repetitions, p1, p2) — same box but with per-direction element counts; aspect-ratio control",
+        "GridGenerator::plate_with_a_hole(tria, ...)              — Kirsch problem, classic stress-concentration-factor test",
+        "GridGenerator::hyper_L(tria, a, b)                       — L-shaped domain with re-entrant corner; standard benchmark for singularity-driven adaptive refinement",
+        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner_radius, outer_radius) — generalisation of plate_with_a_hole to 3D",
+        "GridGenerator::cylinder(tria, radius, half_length)       — circular cylinder; useful for axisymmetric beam tests",
+        "GridGenerator::hyper_shell(tria, center, inner, outer)   — spherical / cylindrical shell; pressure vessels",
+        "GridGenerator::merge_triangulations(t1, t2, result)      — combine two domains; needed for inclusion / dissimilar-material problems",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR<>          — serial default for symmetric positive-definite elasticity stiffness; cheap, works well up to ~10^5 DoFs",
+        "PreconditionAMG / BoomerAMG — parallel AMG for >10^5 DoFs; via TrilinosWrappers (BoomerAMG is HYPRE through Trilinos)",
+        "PreconditionJacobi          — diagonal scaling only; useful baseline when debugging convergence stall",
+        "PreconditionChebyshev       — for smoothing inside multigrid; not a top-level preconditioner for direct CG use",
+    ],
+    "solvers": [
+        "SolverCG<>                  — symmetric positive-definite stiffness; the canonical choice for linear elasticity",
+        "SolverGMRES<>               — non-symmetric (rare in pure elasticity but needed when coupling with advection terms)",
+        "SolverMinRes<>              — symmetric but indefinite; mixed displacement-pressure formulations",
+    ],
     "pitfalls": [
-        "Use FEValuesExtractors::Vector(0) for velocity-like access in assembly",
-        "Lame parameters: mu = E/(2(1+nu)), lambda = E*nu/((1+nu)(1-2nu))",
-        "For plane stress: modify lambda to lambda_star = 2*mu*lambda/(2*mu+lambda). "
-        "Code: double lam_star = 2*mu*lam / (2*mu + lam);",
-        "Body force: add to cell_rhs via fe_values[velocities].value(i,q)",
-        "deal.II 2D ONLY reads QUADS from Gmsh — no triangles. Always use "
-        "gmsh.option.setNumber('Mesh.RecombineAll', 1) to produce quads.",
-        "Gmsh element order != FE polynomial degree. ALWAYS use first-order "
-        "geometry elements in Gmsh (default). The FE degree (Q1, Q2) "
-        "is set in the C++ code via FE_Q<dim>(degree). Do NOT set "
-        "Mesh.ElementOrder=2 in Gmsh — deal.II cannot read second-order "
-        "geometry elements (Tri6, Quad9).",
+        "[Syntax] Use FEValuesExtractors::Vector(0) for velocity-like "
+        "access in assembly. Plain fe_values.shape_value(i,q) returns a "
+        "scalar for each component — the elasticity strain tensor needs "
+        "the vector extractor. Signal: assembly compiles but stiffness "
+        "matrix is rank-deficient (det == 0 on every cell).",
+        "[Physics] Lame parameters: mu = E/(2(1+nu)), "
+        "lambda = E*nu/((1+nu)(1-2nu)). Computing one and forgetting "
+        "the other (or swapping their roles in the bilinear form) is "
+        "a common silent error. Signal: displacement field is off by a "
+        "constant factor independent of mesh refinement.",
+        "[Physics] For plane stress, modify lambda to "
+        "lambda_star = 2*mu*lambda/(2*mu+lambda). Code: "
+        "`double lam_star = 2*mu*lam / (2*mu + lam);`. Forgetting this "
+        "is plane STRAIN, not plane STRESS — the response is too stiff "
+        "in 2D. Signal: tip deflection on a cantilever 2D beam is "
+        "smaller than the 1D Euler-Bernoulli prediction by ~30%.",
+        "[Syntax] Body force is added to cell_rhs via "
+        "`fe_values[velocities].value(i,q)`. Using fe_values.shape_value "
+        "alone gives the wrong scalar component. Signal: only the first "
+        "vector component sees the body force.",
+        "[Integration] deal.II 2D ONLY reads QUADS from Gmsh — no "
+        "triangles. Always set `gmsh.option.setNumber"
+        "('Mesh.RecombineAll', 1)` to produce quads. Signal: "
+        "`ExcMessage` from grid_in.cc that the mesh contains "
+        "unsupported cell type.",
+        "[API] Gmsh element order != FE polynomial degree. ALWAYS use "
+        "first-order geometry elements in Gmsh (default). The FE degree "
+        "(Q1, Q2) is set in the C++ code via `FE_Q<dim>(degree)`. Do "
+        "NOT set `Mesh.ElementOrder=2` in Gmsh — deal.II cannot read "
+        "second-order geometry elements (Tri6, Quad9). Signal: GridIn "
+        "reports 'unsupported cell type 25' (Tri6) or '28' (Quad9).",
+        # New entries shipped with this encoding pass — each lifted
+        # from concrete deal.II tutorials or upstream issues.
+        "[Numerical] FE_Q<dim>(1) (linear elements) locks in "
+        "nearly-incompressible elasticity (Poisson ratio nu close to "
+        "0.5). Use FE_Q<dim>(2) (quadratic), FE_RannacherTurek<dim>() "
+        "(P1-NC), or a mixed displacement-pressure formulation with "
+        "FE_Q+FE_DGQ for pressure. Signal: tip deflection on a "
+        "compressible beam converges with refinement, but converges to "
+        "the wrong value as nu → 0.5 (volumetric locking).",
+        "[API] FE_Nothing<dim>() inside an FESystem on a subdomain "
+        "where displacement should be inactive does NOT skip "
+        "assembly on those cells — it just makes the DoF count zero "
+        "there. You still need to mark the cells with a manifold ID "
+        "or a hp::DoFHandler<dim> active_fe_index switch. Signal: "
+        "assembly enters cells you thought were 'off' and accumulates "
+        "garbage into the rhs.",
+        "[Numerical] Use SolverCG only when the stiffness matrix is "
+        "symmetric positive-definite. Adding a Dirichlet penalty "
+        "(rather than constraining the DoFs) keeps it SPD; using "
+        "asymmetric face stabilisation or a Nitsche-style boundary "
+        "term breaks symmetry — switch to SolverGMRES. Signal: SolverCG "
+        "reports 'breakdown' or stalls at 1e-2 residual reduction.",
     ],
 }

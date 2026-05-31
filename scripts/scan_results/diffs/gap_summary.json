@@ -1,102 +1,11 @@
 {
-  "kratos": {
-    "drift": 23,
-    "truly_missing": 1513,
-    "uncategorised": 30,
-    "shared_buckets": {
-      "constitutive_laws": 0,
-      "variables": 6
-    },
-    "no_info_buckets": [
-      "elements",
-      "boundary_conditions"
-    ],
-    "catalog_loaded": true,
-    "scan_loaded": true,
-    "notes": []
-  },
-  "fourc": {
-    "drift": 5,
-    "truly_missing": 365,
-    "uncategorised": 21,
-    "shared_buckets": {
-      "constitutive_laws": 0,
-      "boundary_conditions": 0
-    },
-    "no_info_buckets": [
-      "elements"
-    ],
-    "catalog_loaded": true,
-    "scan_loaded": true,
-    "notes": []
-  },
-  "skfem": {
-    "drift": 1,
-    "truly_missing": 82,
-    "uncategorised": 9,
-    "shared_buckets": {
-      "elements": 14,
-      "mesh_generators": 0,
-      "element_families": 0,
-      "spaces": 0
-    },
-    "no_info_buckets": [],
-    "catalog_loaded": true,
-    "scan_loaded": true,
-    "notes": []
-  },
-  "fenics": {
-    "drift": 0,
-    "truly_missing": 39,
-    "uncategorised": 13,
-    "shared_buckets": {
-      "elements": 0,
-      "mesh_generators": 0,
-      "element_families": 0,
-      "spaces": 0
-    },
-    "no_info_buckets": [],
-    "catalog_loaded": true,
-    "scan_loaded": true,
-    "notes": []
-  },
-  "ngsolve": {
-    "drift": 2,
-    "truly_missing": 79,
-    "uncategorised": 16,
-    "shared_buckets": {
-      "elements": 0,
-      "mesh_generators": 0,
-      "element_families": 0,
-      "spaces": 4
-    },
-    "no_info_buckets": [],
-    "catalog_loaded": true,
-    "scan_loaded": true,
-    "notes": []
-  },
   "dealii": {
-    "drift": 0,
-    "truly_missing": 58,
-    "uncategorised": 7,
+    "drift": 6,
+    "truly_missing": 46,
+    "uncategorised": 3,
     "shared_buckets": {
-      "elements": 0,
-      "mesh_generators": 0
-    },
-    "no_info_buckets": [],
-    "catalog_loaded": true,
-    "scan_loaded": true,
-    "notes": []
-  },
-  "dune": {
-    "drift": 2,
-    "truly_missing": 51,
-    "uncategorised": 17,
-    "shared_buckets": {
-      "elements": 0,
-      "mesh_generators": 0,
-      "element_families": 0,
-      "spaces": 4
+      "elements": 7,
+      "mesh_generators": 9
     },
     "no_info_buckets": [],
     "catalog_loaded": true,
