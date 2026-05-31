@@ -3,17 +3,15 @@
   "catalog_loaded": true,
   "scan_loaded": true,
   "drift": {},
-  "coverage_gap": {
+  "truly_missing": {
     "elements": [
       "FE_ABF",
       "FE_BDM",
       "FE_Base",
       "FE_BernardiRaugel",
       "FE_Bernstein",
-      "FE_DGP",
       "FE_DGPMonomial",
       "FE_DGPNonparametric",
-      "FE_DGQ",
       "FE_DGVector",
       "FE_Enriched",
       "FE_FaceQ",
@@ -24,7 +22,6 @@
       "FE_Poly",
       "FE_PolyFace",
       "FE_PolyTensor",
-      "FE_Q",
       "FE_Q_Base",
       "FE_Q_Bubbles",
       "FE_Q_DG0",
@@ -32,7 +29,6 @@
       "FE_Q_iso_Q1",
       "FE_RT_Bubbles",
       "FE_RannacherTurek",
-      "FE_RaviartThomas",
       "FE_Series",
       "FE_TraceQ"
     ],
@@ -53,10 +49,8 @@
       "hyper_L",
       "hyper_ball",
       "hyper_cross",
-      "hyper_cube",
       "hyper_cube_slit",
       "hyper_cube_with_cylindrical_hole",
-      "hyper_rectangle",
       "hyper_shell",
       "hyper_sphere",
       "merge_triangulations",
@@ -68,10 +62,22 @@
       "quarter_hyper_shell",
       "simplex",
       "subdivided_hyper_cube",
-      "subdivided_hyper_rectangle",
       "subdivided_parallelepiped",
       "torus",
       "truncated_cone"
+    ]
+  },
+  "uncategorised": {
+    "elements": [
+      "FE_DGP",
+      "FE_DGQ",
+      "FE_Q",
+      "FE_RaviartThomas"
+    ],
+    "mesh_generators": [
+      "hyper_cube",
+      "hyper_rectangle",
+      "subdivided_hyper_rectangle"
     ]
   },
   "shared_counts": {

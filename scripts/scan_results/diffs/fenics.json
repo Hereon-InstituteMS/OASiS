@@ -3,20 +3,16 @@
   "catalog_loaded": true,
   "scan_loaded": true,
   "drift": {},
-  "coverage_gap": {
+  "truly_missing": {
     "elements": [
-      "BDM",
       "CR",
       "DPC",
       "HHJ",
-      "Hermite",
       "N1E",
       "N2E",
       "P",
       "RT",
       "Regge",
-      "bubble",
-      "custom",
       "iso",
       "serendipity"
     ],
@@ -29,40 +25,54 @@
       "create_rectangle",
       "create_submesh",
       "create_unit_cube",
-      "create_unit_interval",
-      "create_unit_square"
+      "create_unit_interval"
     ],
     "element_families": [
-      "BDM",
       "CR",
       "DPC",
       "HHJ",
-      "Hermite",
       "N1E",
       "N2E",
       "P",
       "RT",
       "Regge",
-      "bubble",
-      "custom",
       "iso",
       "serendipity"
     ],
     "spaces": [
-      "BDM",
       "CR",
       "DPC",
       "HHJ",
-      "Hermite",
       "N1E",
       "N2E",
       "P",
       "RT",
       "Regge",
-      "bubble",
-      "custom",
       "iso",
       "serendipity"
+    ]
+  },
+  "uncategorised": {
+    "elements": [
+      "BDM",
+      "Hermite",
+      "bubble",
+      "custom"
+    ],
+    "mesh_generators": [
+      "create_unit_square"
+    ],
+    "element_families": [
+      "BDM",
+      "Hermite",
+      "bubble",
+      "custom"
+    ],
+    "spaces": [
+      "BDM",
+      "Hermite",
+      "bubble",
+      "custom"
     ]
   },
   "shared_counts": {

@@ -8,7 +8,7 @@
       "product_space"
     ]
   },
-  "coverage_gap": {
+  "truly_missing": {
     "elements": [
       "bdfm",
       "bdm",
@@ -16,21 +16,14 @@
       "checkDeprecated_maxOrder",
       "clone",
       "combined",
-      "composite",
       "dganisotropic",
-      "dglagrange",
       "dglagrangelobatto",
-      "dglegendre",
       "dglegendrehp",
-      "dgonb",
       "dgonbhp",
       "finiteVolume",
-      "lagrange",
       "lagrangehp",
       "p1Bubble",
-      "product",
       "rannacherTurek",
-      "raviartThomas",
       "storageType"
     ],
     "mesh_generators": [
@@ -48,21 +41,14 @@
       "checkDeprecated_maxOrder",
       "clone",
       "combined",
-      "composite",
       "dganisotropic",
-      "dglagrange",
       "dglagrangelobatto",
-      "dglegendre",
       "dglegendrehp",
-      "dgonb",
       "dgonbhp",
       "finiteVolume",
-      "lagrange",
       "lagrangehp",
       "p1Bubble",
-      "product",
       "rannacherTurek",
-      "raviartThomas",
       "storageType"
     ],
     "spaces": [
@@ -74,9 +60,7 @@
       "combined",
       "dganisotropic",
       "dglagrangelobatto",
-      "dglegendre",
       "dglegendrehp",
-      "dgonb",
       "dgonbhp",
       "finiteVolume",
       "lagrangehp",
@@ -85,11 +69,36 @@
       "storageType"
     ]
   },
+  "uncategorised": {
+    "elements": [
+      "composite",
+      "dglagrange",
+      "dglegendre",
+      "dgonb",
+      "lagrange",
+      "product",
+      "raviartThomas"
+    ],
+    "element_families": [
+      "composite",
+      "dglagrange",
+      "dglegendre",
+      "dgonb",
+      "lagrange",
+      "product",
+      "raviartThomas"
+    ],
+    "spaces": [
+      "dglegendre",
+      "dgonb",
+      "product"
+    ]
+  },
   "shared_counts": {
     "elements": 0,
     "mesh_generators": 0,
     "element_families": 0,
-    "spaces": 5
+    "spaces": 4
   },
   "no_info_buckets": [],
   "notes": []

@@ -43,7 +43,6 @@ structural validity.
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import re
 import sys
@@ -83,7 +82,19 @@ class BackendDiff:
     catalog_loaded: bool = False
     scan_loaded: bool = False
     drift: dict[str, list[str]] = field(default_factory=dict)
-    coverage_gap: dict[str, list[str]] = field(default_factory=dict)
+    # Coverage gaps split into two tiers (Open-FEM-Agent §3.2 calls
+    # this category "missing capability"):
+    #   * truly_missing  — scan name appears NOWHERE in the catalog
+    #     across any string in any physics entry. Highest-priority
+    #     encoding work: the agent has no way to know this exists.
+    #   * uncategorised  — scan name is referenced somewhere in the
+    #     catalog (often in a pitfall string or a description) but
+    #     not under the matching categorical key. The agent CAN see
+    #     it but only in free-form prose, so retrieval is weaker.
+    #     Lower priority — fix is to lift the mention into a
+    #     structured key.
+    truly_missing: dict[str, list[str]] = field(default_factory=dict)
+    uncategorised: dict[str, list[str]] = field(default_factory=dict)
     shared_counts: dict[str, int] = field(default_factory=dict)
     no_info_buckets: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -134,43 +145,75 @@ def _normalise_set(names: list[str] | set[str]) -> set[str]:
 
 
 def _walk_catalog_strings(node, out_by_category: dict[str, list[str]],
+                          global_pool: list[str],
                           current_category: str = "") -> None:
     """Recursively collect string entries from a KNOWLEDGE dict.
 
-    For each ``(category, string)`` reached, append the string to
-    ``out_by_category[category]``. The ``category`` is the closest
-    enclosing dict key that matches one of CATEGORY_TO_SCAN_FIELD.
+    Populates two things in parallel:
+      * ``out_by_category[cat]`` — strings whose closest enclosing
+        dict key matches CATEGORY_TO_SCAN_FIELD; used for drift +
+        categorised-coverage analysis.
+      * ``global_pool`` — every string we visit, regardless of
+        enclosing key; used to detect "the catalog mentions this
+        somewhere but not under the right category" (uncategorised
+        gap).
     """
     if isinstance(node, dict):
         for k, v in node.items():
             cat = k if k in CATEGORY_TO_SCAN_FIELD else current_category
-            _walk_catalog_strings(v, out_by_category, cat)
+            _walk_catalog_strings(v, out_by_category, global_pool, cat)
     elif isinstance(node, (list, tuple)):
         for item in node:
-            _walk_catalog_strings(item, out_by_category, current_category)
-    elif isinstance(node, str) and current_category:
-        out_by_category.setdefault(current_category, []).append(node)
+            _walk_catalog_strings(item, out_by_category, global_pool,
+                                  current_category)
+    elif isinstance(node, str):
+        global_pool.append(node)
+        if current_category:
+            out_by_category.setdefault(current_category, []).append(node)
 
 
-def _load_catalog(backend: str) -> dict[str, list[str]]:
-    """Import the backend's KNOWLEDGE dict and harvest catalog strings
-    per category. Returns ``{category: [string, ...]}``.
+def _load_catalog(backend: str) -> tuple[dict[str, list[str]], list[str]]:
+    """Harvest catalog strings the AGENT sees, via the MCP backend API.
 
-    Catalog import failures (a backend whose generators package
-    has a broken upstream dep, e.g. dune today) are recorded as
-    notes by the caller — the diff for that backend is then
-    "scan only", not noise.
+    Earlier this function reached straight into each backend's
+    ``generators.KNOWLEDGE`` attribute — but the seven backends use
+    three different layouts (top-level dict / get_knowledge() /
+    none-at-package-level), so the comparison was apples-to-oranges
+    and gave deal.II / fenics / fourc empty catalogs (and therefore
+    fake "coverage_gap" entries). Going through ``Backend.get_knowledge
+    (physics)`` measures what the LLM actually retrieves and is
+    naturally backend-agnostic.
+
+    Returns ``{category: [string, ...]}`` aggregated across every
+    physics the backend says it supports. An import failure (a
+    backend whose runtime is broken — e.g. DUNE today) is caught
+    by the caller, which records it as a note.
     """
-    pkg_name = f"backends.{backend}.generators"
     if str(REPO_ROOT / "src") not in sys.path:
         sys.path.insert(0, str(REPO_ROOT / "src"))
-    pkg = importlib.import_module(pkg_name)
-    knowledge = getattr(pkg, "KNOWLEDGE", {})
-    if not isinstance(knowledge, dict):
-        return {}
+    from core.registry import get_backend, load_all_backends
+    # Ensure the registry has loaded everything; idempotent.
+    try:
+        load_all_backends()
+    except Exception:
+        pass
+    b = get_backend(backend)
+    if b is None:
+        raise RuntimeError(f"backend {backend!r} not registered")
     out: dict[str, list[str]] = {}
-    _walk_catalog_strings(knowledge, out)
-    return out
+    global_pool: list[str] = []
+    try:
+        physics_iter = list(b.supported_physics())
+    except Exception as e:
+        raise RuntimeError(f"supported_physics() raised: {e}") from e
+    for p in physics_iter:
+        try:
+            knowledge = b.get_knowledge(p.name)
+        except Exception:
+            continue
+        if isinstance(knowledge, dict) and knowledge:
+            _walk_catalog_strings(knowledge, out, global_pool)
+    return out, global_pool
 
 
 # ── diff ────────────────────────────────────────────────────────────────
@@ -189,12 +232,20 @@ def diff_one(backend: str) -> BackendDiff:
 
     # Load catalog
     try:
-        catalog_by_category = _load_catalog(backend)
+        catalog_by_category, catalog_global_pool = _load_catalog(backend)
         d.catalog_loaded = True
     except Exception as e:
         d.notes.append(
             f"catalog import failed: {type(e).__name__}: {str(e)[:200]}")
         return d
+
+    # Build the global-pool token set once — used to split
+    # coverage_gap into truly_missing vs uncategorised.
+    global_token_set: set[str] = set()
+    for s in catalog_global_pool:
+        for tok in _tokens_from_string(s):
+            if len(tok) >= 3:
+                global_token_set.add(_normalise(tok))
 
     for catalog_category, scan_fields in CATEGORY_TO_SCAN_FIELD.items():
         catalog_strings = catalog_by_category.get(catalog_category, [])
@@ -299,15 +350,26 @@ def diff_one(backend: str) -> BackendDiff:
                     drift_norms.add(norm)
 
         # Build the original-name reports (use the first catalog
-        # spelling we saw for drift; use the scan spelling for
-        # coverage_gap so the report is actionable).
+        # spelling we saw for drift; use the scan spelling for the
+        # gap reports so the entries are actionable).
         scan_orig_by_norm = {_normalise(n): n for n in scan_names}
         if drift_norms:
             d.drift[catalog_category] = sorted(
                 catalog_orig_by_norm[n] for n in drift_norms)
         if coverage_gap_norms:
-            d.coverage_gap[catalog_category] = sorted(
-                scan_orig_by_norm[n] for n in coverage_gap_norms)
+            # Split coverage gaps: truly_missing (not anywhere in
+            # the catalog) vs uncategorised (mentioned somewhere
+            # but not under the matching category).
+            truly = sorted(
+                scan_orig_by_norm[n] for n in coverage_gap_norms
+                if n not in global_token_set)
+            uncat = sorted(
+                scan_orig_by_norm[n] for n in coverage_gap_norms
+                if n in global_token_set)
+            if truly:
+                d.truly_missing[catalog_category] = truly
+            if uncat:
+                d.uncategorised[catalog_category] = uncat
         d.shared_counts[catalog_category] = len(shared)
 
     return d
@@ -328,15 +390,18 @@ def main():
         path = DIFFS_DIR / f"{backend}.json"
         path.write_text(json.dumps(asdict(d), indent=2))
         n_drift = sum(len(v) for v in d.drift.values())
-        n_cov = sum(len(v) for v in d.coverage_gap.values())
+        n_truly = sum(len(v) for v in d.truly_missing.values())
+        n_uncat = sum(len(v) for v in d.uncategorised.values())
         print(f"  {backend:8s}  drift={n_drift:>4d}  "
-              f"coverage_gap={n_cov:>4d}  "
+              f"truly_missing={n_truly:>4d}  "
+              f"uncategorised={n_uncat:>4d}  "
               f"shared_buckets={len(d.shared_counts):>2d}  "
               f"no_info={len(d.no_info_buckets):>2d}  "
               f"({'catalog ok' if d.catalog_loaded else 'CATALOG IMPORT FAILED'})")
         overall_summary[backend] = {
             "drift": n_drift,
-            "coverage_gap": n_cov,
+            "truly_missing": n_truly,
+            "uncategorised": n_uncat,
             "shared_buckets": d.shared_counts,
             "no_info_buckets": d.no_info_buckets,
             "catalog_loaded": d.catalog_loaded,

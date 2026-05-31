@@ -8,34 +8,26 @@
       "NGSolve"
     ]
   },
-  "coverage_gap": {
+  "truly_missing": {
     "elements": [
-      "FESpace",
-      "FacetFESpace",
       "FacetSurface",
       "FromArchiveFESpace",
       "H1",
       "H1LumpingFESpace",
       "HCT_FESpace",
-      "HCurl",
       "HCurlDiv",
-      "HDiv",
-      "HDivDiv",
       "HDivSurface",
       "JKM_FESpace",
       "L2",
-      "MixedFE",
       "NodalFESpace",
       "NormalFacetFESpace",
       "NormalFacetSurface",
       "PlateauFESpace",
-      "ScalarFE",
       "SurfaceL2",
       "TangentialFacetFESpace",
       "TangentialSurfaceL2",
       "TensorProductFESpace",
       "VectorFacetFESpace",
-      "VectorH1",
       "VectorL2",
       "VectorNodalFESpace",
       "VectorSurfaceL2"
@@ -59,17 +51,12 @@
       "netgen.occ.WorkPlane"
     ],
     "element_families": [
-      "FESpace",
-      "FacetFESpace",
       "FacetSurface",
       "FromArchiveFESpace",
       "H1",
       "H1LumpingFESpace",
       "HCT_FESpace",
-      "HCurl",
       "HCurlDiv",
-      "HDiv",
-      "HDivDiv",
       "HDivSurface",
       "JKM_FESpace",
       "L2",
@@ -82,14 +69,11 @@
       "TangentialSurfaceL2",
       "TensorProductFESpace",
       "VectorFacetFESpace",
-      "VectorH1",
       "VectorL2",
       "VectorNodalFESpace",
       "VectorSurfaceL2"
     ],
     "spaces": [
-      "FESpace",
-      "FacetFESpace",
       "FacetSurface",
       "FromArchiveFESpace",
       "H1",
@@ -111,6 +95,30 @@
       "VectorL2",
       "VectorNodalFESpace",
       "VectorSurfaceL2"
+    ]
+  },
+  "uncategorised": {
+    "elements": [
+      "FESpace",
+      "FacetFESpace",
+      "HCurl",
+      "HDiv",
+      "HDivDiv",
+      "MixedFE",
+      "ScalarFE",
+      "VectorH1"
+    ],
+    "element_families": [
+      "FESpace",
+      "FacetFESpace",
+      "HCurl",
+      "HDiv",
+      "HDivDiv",
+      "VectorH1"
+    ],
+    "spaces": [
+      "FESpace",
+      "FacetFESpace"
     ]
   },
   "shared_counts": {
