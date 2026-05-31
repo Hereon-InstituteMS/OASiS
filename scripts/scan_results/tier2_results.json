@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 6,
-    "passed": 6,
+    "n_fixtures": 10,
+    "passed": 10,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -86,6 +86,55 @@
       "notes": [],
       "captured_head": "SolverCG raised: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/miniconda3/envs/ofa-dealii/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 2. The residual in the last step was nan.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase the si"
     },
+    "fenics::linear_elasticity::96": {
+      "key": "fenics::linear_elasticity::96",
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 96,
+      "fixture_id": "unknown_element_family",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ValueError",
+        "Unknown element family"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/finite_element.py\", line 986, in string_to_family\n    return families[family]\n           ~~~~~~~~^^^^^^^^\nKeyError: 'NotAFamily'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/unknown_element_family/source.py\", line 23, in main\n    functionspace(mesh, (\"NotAFamily\", 1))\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/function.py\", line 604, in functionspace\n    ufl_e = basix.ufl.element(\n            ^^^^^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/ufl.py\", line 1613, in element\n    famil"
+    },
+    "kratos::linear_elasticity::0": {
+      "key": "kratos::linear_elasticity::0",
+      "backend": "kratos",
+      "physics": "linear_elasticity",
+      "pitfall_index": 0,
+      "fixture_id": "element_name_missing_node_count",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "not registered"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
+    },
+    "ngsolve::maxwell::95": {
+      "key": "ngsolve::maxwell::95",
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 95,
+      "fixture_id": "hcurl_grad_mismatch",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "NgException",
+        "SymbolicBFI",
+        "scalar-valued"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 45, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 32, in main\n    a += grad(u) * grad(v) * dx  # H1 form on HCurl basis: WRONG\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: SymbolicBFI needs scalar-valued CoefficientFunction\n"
+    },
     "skfem::linear_elasticity::0": {
       "key": "skfem::linear_elasticity::0",
       "backend": "skfem",
@@ -101,6 +150,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/skfem/boundary_not_tagged/source.py\", line 30, in main\n    _ = ib.get_dofs(\"left\").flatten()\n        ^^^^^^^^^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/basis/abstract_basis.py\", line 245, in get_dofs\n    facets = self.mesh.normalize_facets(facets)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/mesh/mesh.py\", line 1328, in normalize_facets\n    raise ValueError(\"Boundary '{}' not found.\".format(facets))\nValueError: Boundary 'left' not found.\n"
+    },
+    "skfem::linear_elasticity::97": {
+      "key": "skfem::linear_elasticity::97",
+      "backend": "skfem",
+      "physics": "linear_elasticity",
+      "pitfall_index": 97,
+      "fixture_id": "element_vector_dof_interleaving",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ElementVector",
+        "interleaved",
+        "do not match"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "ElementVector(ElementQuad1()) stores DoFs interleaved.\n  n_dofs = 50, n_nodes = 25\n  ux_correct (via nodal_dofs[0])[:4] = [0. 1. 2. 3.]\n  uy_correct (via nodal_dofs[1])[:4] = [  0. 100. 200. 300.]\n  ux_wrong   (u.reshape(2,-1)[0])[:4] = [  0.   0.   1. 100.]\n  uy_wrong   (u.reshape(2,-1)[1])[:4] = [1200.   13. 1300.   14.]\nComponents extracted via reshape(2,-1) and nodal_dofs do not match \u2014 the reshape path is wrong.\n"
     }
   }
 }

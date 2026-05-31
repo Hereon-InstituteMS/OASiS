@@ -318,13 +318,41 @@ def _eval_fixture(fixture_dir: Path,
         # Signal text — e.g. deprecation warnings.)
         result.captured_head = out[:800]
     elif mode == "python":
-        # Python-side runtime check (e.g. for ngsolve / skfem).
+        # Python-side runtime check. Default to sys.executable;
+        # FEniCSx and DUNE-fem live in their own conda envs so
+        # route through the env-specific python when the backend
+        # tag tells us to.
         src = fixture_dir / "source.py"
         if not src.is_file():
             result.status = "harness_pending"
             result.notes.append("source.py not present")
             return result
-        cmd = [sys.executable, str(src)]
+        python = sys.executable
+        if backend == "fenics":
+            cand = (env.get("FENICS_PYTHON")
+                    or str(Path.home() / "miniconda3" / "envs"
+                           / "ofa-fenicsx" / "bin" / "python"))
+            if Path(cand).is_file():
+                python = cand
+            else:
+                result.status = "skipped"
+                result.notes.append(
+                    "FEniCSx env python not found; set "
+                    "FENICS_PYTHON or install ofa-fenicsx conda env")
+                return result
+        elif backend == "dune":
+            cand = (env.get("DUNE_PYTHON")
+                    or str(Path.home() / "miniconda3" / "envs"
+                           / "ofa-dune" / "bin" / "python"))
+            if Path(cand).is_file():
+                python = cand
+            else:
+                result.status = "skipped"
+                result.notes.append(
+                    "DUNE-fem env python not found; set "
+                    "DUNE_PYTHON or install ofa-dune conda env")
+                return result
+        cmd = [python, str(src)]
         rc, out = _run(cmd, cwd=fixture_dir, env=env, timeout=120)
         result.captured_head = out[:800]
     elif mode == "cmd":

@@ -1,0 +1,13 @@
+{
+  "_comment": "Tier-2: NGSolve HCurl with grad() bilinear form raises NgException 'SymbolicBFI needs scalar-valued CoefficientFunction' — grad(HCurl_basis) is vector-tensor, not scalar, so SymbolicBFI rejects it. Verifies an NGSolve-specific failure mode for an electromagnetics user accidentally applying H1-style grad-grad form on HCurl basis.",
+  "backend": "ngsolve",
+  "physics": "maxwell",
+  "pitfall_index": 95,
+  "mode": "python",
+  "expect_in_output": [
+    "NgException",
+    "SymbolicBFI",
+    "scalar-valued"
+  ],
+  "forbid_in_output": []
+}

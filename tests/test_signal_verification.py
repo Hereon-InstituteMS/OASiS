@@ -62,7 +62,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # `passed` means one Signal: clause has been confirmed to
     # actually appear in real captured output. Floor grows as
     # more fixtures are written.
-    MIN_TIER2_PASSED = 4
+    MIN_TIER2_PASSED = 5  # deal.II only — cross-backend tracked separately
 
     def setUp(self):
         from verify_signal_clauses import verify_backend
