@@ -64,15 +64,15 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # more fixtures are written.
     MIN_TIER2_PASSED = 5  # deal.II pitfalls with named (catalog-indexed)
                           # Tier-2 fixtures.
-    MIN_TIER2_RUNNER_PASSED = 16  # cross-cutting (incl. synthetic indices).
-                                  # +3 over the post-dishonest-fixture
-                                  # baseline: forward-Euler CFL violation
-                                  # (first NUMERICAL-comparison Signal,
-                                  # not exception class), Kratos
-                                  # constitutive_law class-vs-instance
-                                  # pybind TypeError, NGSolve H1 curl()
-                                  # operator-not-found (dual to existing
-                                  # HCurl grad fixture).
+    MIN_TIER2_RUNNER_PASSED = 20  # cross-cutting (incl. synthetic indices).
+                                  # +4 over previous baseline: third
+                                  # Kratos (variable not added before
+                                  # access), third NGSolve (vector source
+                                  # on scalar LinearForm), and two
+                                  # FEniCSx (array size mismatch, curl
+                                  # on scalar space). All five accessible
+                                  # backends now above the round-3
+                                  # critic's 3-fixture "verified" floor.
 
     def setUp(self):
         from verify_signal_clauses import verify_backend

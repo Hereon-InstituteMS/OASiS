@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 16,
-    "passed": 16,
+    "n_fixtures": 20,
+    "passed": 20,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -117,6 +117,38 @@
       "notes": [],
       "captured_head": "SolverCG raised: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/miniconda3/envs/ofa-dealii/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 2. The residual in the last step was nan.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase the si"
     },
+    "fenics::linear_elasticity::93": {
+      "key": "fenics::linear_elasticity::93",
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 93,
+      "fixture_id": "array_size_mismatch",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ValueError",
+        "broadcast input array"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/array_size_mismatch/source.py\", line 21, in main\n    u.x.array[:] = np.zeros(2 * n)\n    ~~~~~~~~~^^^\nValueError: could not broadcast input array from shape (50,) into shape (25,)\n"
+    },
+    "fenics::maxwell::92": {
+      "key": "fenics::maxwell::92",
+      "backend": "fenics",
+      "physics": "maxwell",
+      "pitfall_index": 92,
+      "fixture_id": "curl_on_scalar_space",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ValueError",
+        "Invalid ranks"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/curl_on_scalar_space/source.py\", line 21, in main\n    form(ufl.curl(u) * ufl.curl(v) * ufl.dx)\n         ~~~~~~~~~~~~^~~~~~~~~~~~~\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/exproperators.py\", line 186, in _mul\n    return _mult(self, o)\n           ^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/exproperators.py\", line 159, in _mult\n    raise ValueError(f\"Invalid ranks {r1} and {r2} in product.\")\nValueError: Invalid ranks 1 and 1 in product.\n"
+    },
     "fenics::linear_elasticity::96": {
       "key": "fenics::linear_elasticity::96",
       "backend": "fenics",
@@ -165,6 +197,22 @@
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
     },
+    "kratos::linear_elasticity::88": {
+      "key": "kratos::linear_elasticity::88",
+      "backend": "kratos",
+      "physics": "linear_elasticity",
+      "pitfall_index": 88,
+      "fixture_id": "variable_not_added_before_access",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "variables list"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/variable_not_added_before_access/source.py\", line 23, in main\n    mp.Nodes[1].GetSolutionStepValue(KM.DISPLACEMENT)\nRuntimeError: Error: This container only can store the variables specified in its variables list. The variables list doesn't have this variable:DISPLACEMENT variable #5132508"
+    },
     "ngsolve::maxwell::93": {
       "key": "ngsolve::maxwell::93",
       "backend": "ngsolve",
@@ -198,6 +246,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 45, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 32, in main\n    a += grad(u) * grad(v) * dx  # H1 form on HCurl basis: WRONG\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: SymbolicBFI needs scalar-valued CoefficientFunction\n"
+    },
+    "ngsolve::poisson::92": {
+      "key": "ngsolve::poisson::92",
+      "backend": "ngsolve",
+      "physics": "poisson",
+      "pitfall_index": 92,
+      "fixture_id": "vector_source_on_scalar_form",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "NgException",
+        "SymbolicLFI",
+        "scalar-valued"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/vector_source_on_scalar_form/source.py\", line 47, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/vector_source_on_scalar_form/source.py\", line 35, in main\n    f += CoefficientFunction((1.0, 2.0)) * v * dx\nnetgen.libngpy._meshing.NgException: SymbolicLFI needs scalar-valued CoefficientFunction\n"
     },
     "skfem::linear_elasticity::0": {
       "key": "skfem::linear_elasticity::0",
