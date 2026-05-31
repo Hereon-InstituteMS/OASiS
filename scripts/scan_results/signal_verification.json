@@ -5,13 +5,13 @@
     "with_category_prefix": 96,
     "with_signal_clause": 96,
     "tier0_passed": 96,
-    "tier0_code_symbol_only": 56,
-    "tier0_with_domain_decoration": 40,
+    "tier0_code_symbol_only": 55,
+    "tier0_with_domain_decoration": 41,
     "tier0_domain_names_only": 0,
     "tier1_passed": 96,
     "tier0_and_1_passed": 96,
-    "tier2_passed": 0,
-    "tier2_attempted": 0
+    "tier2_passed": 3,
+    "tier2_attempted": 3
   },
   "results": [
     {
@@ -39,8 +39,8 @@
         "returns",
         "value"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
@@ -325,8 +325,8 @@
       "tier1_vocab_hits": [
         "quoted-error-fragment"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
@@ -591,8 +591,8 @@
         "quoted-error-fragment",
         "report"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
@@ -2264,21 +2264,25 @@
       "physics": "hyperelasticity",
       "pitfall_index": 11,
       "pitfall_category": "Syntax",
-      "signal_text": "g++ reports `error: no matching function for call to 'FEValuesBase<dim>::get_function_gradients'` because the scalar overload doesn't accept a vector-valued solution argument.",
+      "signal_text": "VectorTools::integrate_difference of DataOut output for a 2D vector elasticity problem shows the off-diagonal strain components (eps_xy, eps_yx) stuck at zero everywhere; cross-coupling Poisson contraction never appears.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "FEValuesBase"
+        "DataOut",
+        "VectorTools"
       ],
-      "tier0_domain_names_matched": [],
+      "tier0_domain_names_matched": [
+        "Poisson"
+      ],
       "tier0_entities_matched": [
-        "FEValuesBase"
+        "DataOut",
+        "Poisson",
+        "VectorTools"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "report",
-        "value"
+        "appears",
+        "shows",
+        "zero"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",

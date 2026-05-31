@@ -347,6 +347,10 @@ def _tier2_lookup(backend: str, physics: str, idx: int) -> str:
     Reads ``scripts/scan_results/tier2_results.json`` if present.
     Returns one of: ``passed`` / ``failed`` / ``harness_pending`` /
     ``not_attempted`` (when there is no fixture for this pitfall).
+
+    The runner writes the file as
+    ``{"summary": {...}, "results": {key: row}}`` — look up
+    inside the ``results`` sub-object.
     """
     path = OUTPUT.parent / "tier2_results.json"
     if not path.is_file():
@@ -355,8 +359,13 @@ def _tier2_lookup(backend: str, physics: str, idx: int) -> str:
         data = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return "harness_pending"
+    results = data.get("results") if isinstance(data, dict) else None
+    if not isinstance(results, dict):
+        # Older harness wrote results at top level — fall back so
+        # historic outputs still resolve.
+        results = data if isinstance(data, dict) else {}
     key = f"{backend}::{physics}::{idx}"
-    entry = data.get(key)
+    entry = results.get(key)
     if not isinstance(entry, dict):
         return "not_attempted"
     return str(entry.get("status", "harness_pending"))

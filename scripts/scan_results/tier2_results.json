@@ -1,26 +1,58 @@
 {
   "summary": {
-    "n_fixtures": 2,
-    "passed": 1,
+    "n_fixtures": 4,
+    "passed": 4,
     "failed": 0,
     "harness_pending": 0,
-    "skipped": 1
+    "skipped": 0
   },
   "results": {
-    "dealii::hyperelasticity::11": {
-      "key": "dealii::hyperelasticity::11",
+    "dealii::poisson::0": {
+      "key": "dealii::poisson::0",
       "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 11,
-      "fixture_id": "hyperelasticity_fevalues_scalar_on_vector",
-      "mode": "compile_only",
-      "status": "skipped",
-      "expect_matched": [],
-      "forbid_violated": [],
-      "notes": [
-        "environmental: deal.II install missing TBB headers (task #30). Fixture cannot be evaluated until the install is repaired; the Signal: clause itself may still be correct."
+      "physics": "poisson",
+      "pitfall_index": 0,
+      "fixture_id": "dof_handler_zero_cells",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "n_dofs",
+        "DoFHandler"
       ],
-      "captured_head": "[ 50%] Building CXX object CMakeFiles/prog.dir/source.cpp.o\nIn file included from ~/miniconda3/envs/ofa-dealii/include/deal.II/fe/fe_q_base.h:21,\n                 from ~/miniconda3/envs/ofa-dealii/include/deal.II/fe/fe_q.h:23,\n                 from ~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/dealii/hyperelasticity_fevalues_scalar_on_vector/source.cpp:16:\n~/miniconda3/envs/ofa-dealii/include/deal.II/base/thread_management.h:41:14: fatal error: tbb/task.h: No such file or directory\n   41 | #    include <tbb/task.h>\n      |              ^~~~~~~~~~~~\ncompilation terminated.\ngmake[2]: *** [CMakeFiles/prog.dir/build.make:76: CMakeFiles/prog.dir/source.cpp.o] Fehler 1\ngmake[1]: *** [CMakeFiles/Makefile2:83: CMakeFiles/prog.dir/all] Fehler 2\ngmake: *** [Makefile:91: all] Fehler 2\n"
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "DoFHandler::n_dofs() = 4\n(expected 4 for un-refined FE_Q(1) on a single hyper_cube cell)\n"
+    },
+    "dealii::linear_elasticity::4": {
+      "key": "dealii::linear_elasticity::4",
+      "backend": "dealii",
+      "physics": "linear_elasticity",
+      "pitfall_index": 4,
+      "fixture_id": "grid_in_unsupported_cell_type",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "ExcMessage",
+        "grid_in"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Caught exception of type: N6dealii18StandardExceptions10ExcMessageE\nwhat(): \n--------------------------------------------------------\nAn error occurred in line <1993> of file </home/conda/feedstock_root/build_artifacts/dealii_1582272985224/work/source/grid/grid_in.cc> in function\n    void dealii::GridIn<dim, spacedim>::read_msh(std::istream&) [with int dim = 2; int spacedim = 2; std::istream = std::basic_istream<char>]\nThe violated condition was: \n    cell_type != 2\nAdditional information: \n    Found triangles while reading a file in gmsh format. deal.II does not support triangles\n--------------------------------------------------------\n\n"
+    },
+    "dealii::stokes::0": {
+      "key": "dealii::stokes::0",
+      "backend": "dealii",
+      "physics": "stokes",
+      "pitfall_index": 0,
+      "fixture_id": "solvercg_on_indefinite",
+      "mode": "compile_and_run",
+      "status": "passed",
+      "expect_matched": [
+        "SolverCG"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "SolverCG raised: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/miniconda3/envs/ofa-dealii/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 2. The residual in the last step was nan.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase the si"
     },
     "skfem::linear_elasticity::0": {
       "key": "skfem::linear_elasticity::0",

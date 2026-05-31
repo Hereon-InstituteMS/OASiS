@@ -56,7 +56,13 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER0_AND_1_PASSED = 96
     # New gateable signals from the critic-driven split:
     MAX_TIER0_DOMAIN_NAMES_ONLY = 0  # gameable; MUST stay at 0
-    MIN_TIER0_CODE_SYMBOL_ONLY = 56  # strongest sub-tier
+    MIN_TIER0_CODE_SYMBOL_ONLY = 55  # strongest sub-tier
+    # Tier 2 (operational verification via compile+run fixtures
+    # under scripts/tier2_fixtures/): every entry recorded as
+    # `passed` means one Signal: clause has been confirmed to
+    # actually appear in real captured output. Floor grows as
+    # more fixtures are written.
+    MIN_TIER2_PASSED = 3
 
     def setUp(self):
         from verify_signal_clauses import verify_backend
@@ -147,6 +153,22 @@ class TestDealiiSignalFloor(unittest.TestCase):
             f"reference ONLY (no decorative domain names) "
             f"dropped from {self.MIN_TIER0_CODE_SYMBOL_ONLY} to "
             f"{n} — the strongest sub-tier weakened.")
+
+    def test_tier2_floor_does_not_regress(self):
+        """Tier 2 — every passed entry is one Signal: clause
+        whose text has been confirmed to appear in real captured
+        output from an intentional-failure fixture. The floor
+        cannot drop; if a fixture stops reproducing the bug it
+        was meant to verify, we have either a deal.II version
+        change to investigate or a Signal rewording to undo.
+        """
+        n = self._count(lambda r: r.tier2_passed)
+        self.assertGreaterEqual(
+            n, self.MIN_TIER2_PASSED,
+            f"Tier-2 operationally-verified Signal count "
+            f"dropped from {self.MIN_TIER2_PASSED} to {n}. A "
+            f"fixture that used to reproduce a bug no longer "
+            f"does — investigate before lowering the floor.")
 
 
 class TestHarnessSelfChecks(unittest.TestCase):

@@ -222,15 +222,96 @@ def _eval_fixture(fixture_dir: Path,
                 "reproduce is not present in this deal.II "
                 "version")
             return result
-    elif mode == "compile_and_run":
-        # TODO: CMake + link + execute path. Lands when at least
-        # one runtime fixture is written. Until then, mark
-        # pending so the test floor logic is still honest.
-        result.status = "harness_pending"
-        result.notes.append(
-            "compile_and_run mode not yet implemented in the "
-            "runner; runtime fixtures land in a later commit")
-        return result
+    elif mode == "compile_and_run" and backend == "dealii":
+        prefix = Path(env.get("DEAL_II_DIR",
+                              str(DEFAULT_DEALII_PREFIX)))
+        if not prefix.is_dir():
+            result.status = "skipped"
+            result.notes.append(
+                f"deal.II install root {prefix} not present; skip")
+            return result
+        src = fixture_dir / "source.cpp"
+        if not src.is_file():
+            result.status = "harness_pending"
+            result.notes.append("source.cpp not present")
+            return result
+        import shutil as _shutil
+        cxx = (env.get("CXX")
+               or _shutil.which("g++")
+               or _shutil.which("c++") or "g++")
+        build_dir = fixture_dir / "_build"
+        build_dir.mkdir(exist_ok=True)
+        for stale in ("CMakeCache.txt", "CMakeFiles"):
+            target = build_dir / stale
+            if target.exists():
+                if target.is_file():
+                    target.unlink()
+                else:
+                    import shutil as _sh
+                    _sh.rmtree(target, ignore_errors=True)
+        cmakelists = fixture_dir / "CMakeLists.txt"
+        if not cmakelists.is_file():
+            cmakelists.write_text(
+                "cmake_minimum_required(VERSION 3.13)\n"
+                "find_package(deal.II 9.0 REQUIRED HINTS "
+                f"{prefix})\n"
+                "deal_ii_initialize_cached_variables()\n"
+                "project(tier2_fixture CXX)\n"
+                "add_executable(prog source.cpp)\n"
+                "deal_ii_setup_target(prog)\n"
+            )
+        # Configure + build
+        rc, out = _run(
+            ["cmake", f"-DCMAKE_CXX_COMPILER={cxx}",
+             "-S", str(fixture_dir), "-B", str(build_dir)],
+            cwd=fixture_dir, env=env, timeout=120)
+        if rc != 0:
+            env_blockers = (
+                ("tbb/task.h: No such file or directory",
+                 "deal.II install missing TBB headers"),
+            )
+            for marker, reason in env_blockers:
+                if marker in out:
+                    result.status = "skipped"
+                    result.notes.append(f"environmental: {reason}")
+                    result.captured_head = out[:800]
+                    return result
+            result.status = "skipped"
+            result.notes.append(
+                "cmake configure failed (environmental)")
+            result.captured_head = out[:800]
+            return result
+        rc, out = _run(
+            ["cmake", "--build", str(build_dir)],
+            cwd=fixture_dir, env=env, timeout=180)
+        if rc != 0:
+            # Compilation failed for compile_and_run — that's
+            # NOT what we want; this mode expects the program
+            # to build successfully and then exhibit the bug
+            # at run time. Mark as failed with the captured
+            # build output.
+            result.status = "failed"
+            result.notes.append(
+                "compile_and_run: build failed; this mode "
+                "requires the program to compile and run, then "
+                "fail at run-time matching the Signal")
+            result.captured_head = out[:800]
+            return result
+        # Run the executable.
+        exe = build_dir / "prog"
+        if not exe.is_file():
+            result.status = "failed"
+            result.notes.append(
+                "compile_and_run: build produced no `prog` "
+                "executable")
+            result.captured_head = out[:800]
+            return result
+        rc, out = _run([str(exe)], cwd=fixture_dir,
+                       env=env, timeout=60)
+        # Combine build + run output; the Signal may appear in
+        # either. (Build-time warnings sometimes carry the
+        # Signal text — e.g. deprecation warnings.)
+        result.captured_head = out[:800]
     elif mode == "python":
         # Python-side runtime check (e.g. for ngsolve / skfem).
         src = fixture_dir / "source.py"

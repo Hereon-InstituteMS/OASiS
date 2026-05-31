@@ -30,32 +30,80 @@ logger = logging.getLogger("open-fem-agent.dealii")
 
 
 def _find_dealii() -> Optional[Path]:
-    """Locate deal.ii installation."""
-    # Check DEAL_II_DIR env var
-    env_dir = os.environ.get("DEAL_II_DIR")
-    if env_dir and Path(env_dir).is_dir():
-        return Path(env_dir)
+    """Locate a deal.II installation root.
 
-    # Check common locations
-    candidates = [
-        Path("/usr/share/doc/libdeal.ii-doc/examples"),
-        Path("/usr/lib/x86_64-linux-gnu/cmake/deal.II"),
-        Path("/usr/share/cmake/deal.II"),
-        Path("/opt/dealii"),
-        Path.home() / "dealii",
-    ]
-    for c in candidates:
-        if c.is_dir():
-            return c.parent if "cmake" in str(c) else c
+    Discovery order (first hit wins):
+      1. ``DEAL_II_DIR`` env variable (explicit override).
+      2. ``DEALII_ROOT`` env variable (alternate spelling).
+      3. Conda envs at ``~/miniconda3/envs/*`` and
+         ``~/anaconda3/envs/*`` that contain ``include/deal.II/``.
+      4. User-source dirs: ``~/dealii``, ``~/deal.II``,
+         ``~/Schreibtisch/dealii``, ``~/Schreibtisch/deal.II``,
+         ``~/src/dealii``, ``~/src/deal.II``.
+      5. System paths: ``/opt/dealii``,
+         ``/usr/lib/x86_64-linux-gnu/cmake/deal.II``,
+         ``/usr/share/cmake/deal.II``.
+      6. ``cmake --find-package`` for system-installed deal.II.
 
-    # Check if deal.II cmake config is findable
+    Returns the install ROOT (the path that contains
+    ``include/deal.II/`` or ``share/deal.II/cmake/``). Callers
+    pass this to ``find_package(deal.II HINTS ...)``.
+    """
+    # 1. Explicit env override
+    for env_var in ("DEAL_II_DIR", "DEALII_ROOT"):
+        env_dir = os.environ.get(env_var)
+        if env_dir and Path(env_dir).is_dir():
+            return Path(env_dir)
+
+    def _looks_like_dealii_root(p: Path) -> bool:
+        """A path is a deal.II install root if it has either
+        include/deal.II/ headers or share/deal.II/cmake/ macros
+        or lib/cmake/deal.II/ config."""
+        if not p.is_dir():
+            return False
+        return ((p / "include" / "deal.II").is_dir()
+                or (p / "share" / "deal.II" / "cmake").is_dir()
+                or (p / "lib" / "cmake" / "deal.II").is_dir())
+
+    # 2 + 3. Conda envs (deal.II often lives in a dedicated env).
+    for conda_base in (Path.home() / "miniconda3" / "envs",
+                       Path.home() / "anaconda3" / "envs",
+                       Path.home() / "miniforge3" / "envs"):
+        if not conda_base.is_dir():
+            continue
+        for env_dir in conda_base.iterdir():
+            if _looks_like_dealii_root(env_dir):
+                return env_dir
+
+    # 4. User-source dirs (in case the user built from source).
+    for sub in ("dealii", "deal.II", "src/dealii", "src/deal.II",
+                "Schreibtisch/dealii", "Schreibtisch/deal.II"):
+        candidate = Path.home() / sub
+        if _looks_like_dealii_root(candidate):
+            return candidate
+        # Also try common build-subdir layouts.
+        for build_sub in ("install", "build/install"):
+            inner = candidate / build_sub
+            if _looks_like_dealii_root(inner):
+                return inner
+
+    # 5. System paths.
+    for cand in (Path("/opt/dealii"), Path("/opt/deal.II"),
+                 Path("/usr/local/dealii"),
+                 Path("/usr/local/deal.II"),
+                 Path("/usr")):
+        if _looks_like_dealii_root(cand):
+            return cand
+
+    # 6. CMake fall-back.
     cmake = shutil.which("cmake")
     if cmake:
         import subprocess
         try:
             r = subprocess.run(
-                [cmake, "--find-package", "-DNAME=deal.II", "-DCOMPILER_ID=GNU",
-                 "-DLANGUAGE=CXX", "-DMODE=COMPILE"],
+                [cmake, "--find-package", "-DNAME=deal.II",
+                 "-DCOMPILER_ID=GNU", "-DLANGUAGE=CXX",
+                 "-DMODE=COMPILE"],
                 capture_output=True, text=True, timeout=10
             )
             if r.returncode == 0:
