@@ -155,10 +155,84 @@ KNOWLEDGE = {
     "function_space": "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1",
     "solver": "Block Schur complement: A*u = f - B^T*p, then S*p = B*A^{-1}*f - g",
     "block_system": "GMRES with Schur complement preconditioner, or direct UMFPACK for small",
+    # ── Structured catalog keys — encoded 2026-05-31 against Layer A
+    #    scan vs catalog diff. Stokes is the canonical place where
+    #    LBB-stable element-pair choice MATTERS, so each entry pairs
+    #    the element with whether it is inf-sup stable on its own
+    #    or requires a stabilisation term.
+    "elements": [
+        "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1, inf-sup stable, the default for low-Re Stokes",
+        "FESystem<dim>(FE_Q<dim>(p+1), dim, FE_Q<dim>(p), 1) — generalised Taylor-Hood at higher p; stable for p ≥ 1",
+        "FE_Q_Bubbles<dim>(degree) for velocity + FE_DGP<dim>(degree-1) for pressure — MINI element; inf-sup stable, cheaper than Taylor-Hood at p=1",
+        "FE_RaviartThomas<dim>(degree) for velocity + FE_DGQ<dim>(degree) for pressure — H(div) mixed; momentum-conservative, exactly divergence-free velocity",
+        "FE_BDM<dim>(degree) for velocity + FE_DGP<dim>(degree-1) for pressure — Brezzi-Douglas-Marini; H(div) alternative to RT, fewer DoFs per cell",
+        "FE_RannacherTurek<dim>() for velocity + FE_DGQ<dim>(0) for pressure — P1-NC / P0; inf-sup stable on quads, cheap, no Taylor-Hood h^2 bubble",
+        "FE_BernardiRaugel<dim>() — vector-valued element with edge bubbles, inf-sup stable when paired with piecewise-constant pressure",
+        "FE_Nothing<dim>() — useful inside FESystem on subdomains where flow is suppressed (solid inclusions, ALE-frozen regions)",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, 0, 1)                  — driven-cavity benchmark, the canonical Stokes / Navier-Stokes verification problem",
+        "GridGenerator::channel_with_cylinder(tria, ...)        — Schäfer-Turek benchmark (2D-1, 2D-2, 2D-3); paper-quality reference for Stokes/NS up to Re~100",
+        "GridGenerator::hyper_rectangle(tria, p1, p2)           — generic channel domain; pair with inflow on the left face, outflow on the right",
+        "GridGenerator::hyper_L(tria, a, b)                     — backward-facing step; classic recirculating-flow test",
+        "GridGenerator::subdivided_hyper_rectangle(tria, reps, p1, p2) — anisotropic refinement (taller in y than long in x), for boundary-layer resolution",
+        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — flow around a cylinder in a box; lift/drag benchmarks",
+        "GridGenerator::cheese(tria, ...)                       — domain with holes; multiscale / porous-flow demo",
+    ],
+    "solvers": [
+        "SolverGMRES<>                — the canonical choice; Stokes is indefinite so SolverCG WILL fail.",
+        "SolverMinRes<>               — symmetric indefinite; preferable to GMRES when a symmetric Schur preconditioner is used.",
+        "SolverFGMRES<>               — flexible GMRES; needed when the inner preconditioner is itself an iterative solver (e.g. Schur complement built from an AMG-preconditioned CG on the velocity block).",
+        "TrilinosWrappers::SolverDirect (UMFPACK / KLU) — direct for small problems; useful as a reference truth when iterative chains start producing wrong answers.",
+    ],
+    "preconditioners": [
+        "BlockSchurPreconditioner (step-22 §) — the textbook approach; A_inv via inner CG on the velocity block, S_inv via the pressure mass matrix scaled by 1/viscosity.",
+        "PreconditionAMG / BoomerAMG on the velocity block — TrilinosWrappers; needed to scale beyond ~10^5 DoFs.",
+        "Vanka smoother for the FULL block system in geometric multigrid (step-56) — point Jacobi DOES NOT work because the saddle-point structure has zero diagonal in the pressure block.",
+    ],
     "pitfalls": [
-        "System is INDEFINITE — cannot use CG, use GMRES/MinRes/direct",
-        "Block structure: use DoFRenumbering::component_wise + BlockSparseMatrix",
-        "Pressure is determined up to a constant (pure Neumann → pin one DOF)",
-        "For GMG: Vanka-type smoothers needed (step-56), not point Jacobi",
+        "[Numerical] System is INDEFINITE — cannot use SolverCG, use "
+        "SolverGMRES / SolverMinRes / a direct solver. Signal: "
+        "SolverCG reports 'breakdown' on iteration 2-3 with a "
+        "negative inner product, before the iterative residual has "
+        "dropped at all.",
+        "[Syntax] Block structure: use "
+        "DoFRenumbering::component_wise + BlockSparseMatrix. Without "
+        "the renumbering the velocity and pressure DoFs are "
+        "interleaved and the BlockSparseMatrix indexing is wrong. "
+        "Signal: assembly succeeds but the saddle-point block "
+        "B^T does not have the expected zero-on-diagonal structure.",
+        "[Physics] Pressure is determined up to a constant for pure "
+        "Neumann (closed-cavity) problems — pin one DoF or add a "
+        "zero-mean constraint. Signal: pressure field drifts to "
+        "huge magnitude (~1e15) while velocity converges normally.",
+        "[Numerical] For geometric multigrid: Vanka-type smoothers "
+        "needed (step-56), NOT point Jacobi. Point Jacobi diverges "
+        "on saddle-point systems because the pressure block has "
+        "zero diagonal. Signal: GMG residual stagnates or diverges "
+        "at the first V-cycle, even though direct solver on the "
+        "same matrix converges.",
+        "[Numerical] Inf-sup (Ladyzhenskaya-Babuška-Brezzi) stability "
+        "is REQUIRED. Equal-order pairs (Q1/Q1, Q2/Q2) are NOT "
+        "inf-sup stable — they look like they converge in 1D tests "
+        "but produce checkerboard pressure modes in 2D. Use "
+        "Taylor-Hood (Q_{p+1}/Q_p), MINI (Q1+bubble/Q1), "
+        "RT/DGQ or BDM/DGP. Signal: pressure field has a regular "
+        "high-frequency checkerboard pattern superimposed on the "
+        "smooth solution.",
+        "[Physics] FE_RaviartThomas-based H(div) velocity pairs "
+        "produce EXACTLY divergence-free velocity at the discrete "
+        "level — this is correct, not a bug. If the user is "
+        "comparing against a Q2/Q1 result where div(u) ≈ 1e-3, the "
+        "RT/DGQ result will report div(u) ≈ 1e-15. Signal: "
+        "post-processing 'is my solver more accurate?' — yes, "
+        "but only on mass conservation; other error metrics scale "
+        "as usual.",
+        "[Integration] channel_with_cylinder is the Schäfer-Turek "
+        "benchmark — set the cylinder centre to (0.2, 0.2) and the "
+        "channel size to (2.2 × 0.41) to match the published "
+        "lift/drag values; off-by-one on these dimensions makes "
+        "the reference values not match. Signal: reported "
+        "C_D differs from the Schäfer-Turek table by 10+%.",
     ],
 }

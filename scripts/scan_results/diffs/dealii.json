@@ -17,9 +17,7 @@
   "truly_missing": {
     "elements": [
       "FE_ABF",
-      "FE_BDM",
       "FE_Base",
-      "FE_BernardiRaugel",
       "FE_DGPMonomial",
       "FE_DGPNonparametric",
       "FE_DGVector",
@@ -38,8 +36,6 @@
       "FE_TraceQ"
     ],
     "mesh_generators": [
-      "channel_with_cylinder",
-      "cheese",
       "concentric_hyper_shells",
       "create_triangulation_with_removed_cells",
       "create_union_triangulation",
@@ -66,16 +62,10 @@
       "truncated_cone"
     ]
   },
-  "uncategorised": {
-    "elements": [
-      "FE_DGP",
-      "FE_DGQ",
-      "FE_RaviartThomas"
-    ]
-  },
+  "uncategorised": {},
   "shared_counts": {
-    "elements": 7,
-    "mesh_generators": 9
+    "elements": 12,
+    "mesh_generators": 11
   },
   "no_info_buckets": [],
   "notes": []
