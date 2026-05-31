@@ -280,8 +280,16 @@ class TestBackendImportSnapshot(unittest.TestCase):
     # Recorded 2026-06-01. Adjust DOWNWARD on unreachable (fewer
     # missing apps); adjust UPWARD on available (more apps
     # importable).
-    MIN_KRATOS_PHYSICS_AVAILABLE = 7
-    MAX_KRATOS_PHYSICS_UNREACHABLE = 26
+    #
+    # 2026-06-01 floor raise: user authorised installs of
+    # KratosConstitutiveLawsApplication, KratosMetisApplication,
+    # KratosMappingApplication, KratosMeshMovingApplication,
+    # KratosDEMApplication, KratosMPMApplication. Counts moved
+    # 7→14 available, 26→19 unreachable.
+    # KratosDelaunayMeshingApplication has no PyPI wheel —
+    # still unreachable (pfem stays in unreachable bucket).
+    MIN_KRATOS_PHYSICS_AVAILABLE = 14
+    MAX_KRATOS_PHYSICS_UNREACHABLE = 19
     REQUIRED_IMPORTABLE = ("skfem", "ngsolve", "fenics")
     REQUIRED_AVAILABLE = ("dealii", "fourc")
 

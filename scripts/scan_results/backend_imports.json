@@ -5,10 +5,22 @@
     "core_importable": true,
     "core_error": "",
     "available_apps": [
+      "ConstitutiveLawsApplication",
+      "DEMApplication",
       "FluidDynamicsApplication",
+      "MPMApplication",
+      "MappingApplication",
       "StructuralMechanicsApplication"
     ],
     "physics_available": [
+      {
+        "physics": "dem",
+        "app": "DEMApplication"
+      },
+      {
+        "physics": "dem_structures_coupling",
+        "app": "DEMApplication"
+      },
       {
         "physics": "fluid",
         "app": "FluidDynamicsApplication"
@@ -26,12 +38,32 @@
         "app": "FluidDynamicsApplication"
       },
       {
+        "physics": "fsi",
+        "app": "MappingApplication"
+      },
+      {
         "physics": "linear_elasticity",
         "app": "StructuralMechanicsApplication"
       },
       {
+        "physics": "mpm",
+        "app": "MPMApplication"
+      },
+      {
+        "physics": "plasticity",
+        "app": "ConstitutiveLawsApplication"
+      },
+      {
         "physics": "structural_dynamics",
         "app": "StructuralMechanicsApplication"
+      },
+      {
+        "physics": "swimming_dem",
+        "app": "DEMApplication"
+      },
+      {
+        "physics": "thermal_dem",
+        "app": "DEMApplication"
       },
       {
         "physics": "wind_engineering",
@@ -60,20 +92,8 @@
         "app": "CoSimulationApplication"
       },
       {
-        "physics": "dem",
-        "app": "DEMApplication"
-      },
-      {
-        "physics": "dem_structures_coupling",
-        "app": "DEMApplication"
-      },
-      {
         "physics": "fem_to_dem",
         "app": "FemToDemApplication"
-      },
-      {
-        "physics": "fsi",
-        "app": "MappingApplication"
       },
       {
         "physics": "geomechanics",
@@ -92,10 +112,6 @@
         "app": "IgaApplication"
       },
       {
-        "physics": "mpm",
-        "app": "MPMApplication"
-      },
-      {
         "physics": "optimization",
         "app": "OptimizationApplication"
       },
@@ -106,10 +122,6 @@
       {
         "physics": "pfem_fluid",
         "app": "PfemFluidDynamicsApplication"
-      },
-      {
-        "physics": "plasticity",
-        "app": "ConstitutiveLawsApplication"
       },
       {
         "physics": "poromechanics",
@@ -130,14 +142,6 @@
       {
         "physics": "shape_optimization",
         "app": "ShapeOptimizationApplication"
-      },
-      {
-        "physics": "swimming_dem",
-        "app": "DEMApplication"
-      },
-      {
-        "physics": "thermal_dem",
-        "app": "DEMApplication"
       },
       {
         "physics": "topology_optimization",
@@ -182,8 +186,8 @@
     "error": ""
   },
   "summary": {
-    "kratos_physics_available": 7,
-    "kratos_physics_unreachable": 26,
+    "kratos_physics_available": 14,
+    "kratos_physics_unreachable": 19,
     "skfem_importable": true,
     "ngsolve_importable": true,
     "fenics_importable": true,
