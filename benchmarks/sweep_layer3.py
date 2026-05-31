@@ -282,11 +282,13 @@ MATRIX: dict[str, list[Cell]] = {
         # skfem's `linear_elasticity/2d` template has two stacked
         # problems: (a) it constructs a tensor-product mesh with no
         # boundary tags and then calls `ib.get_dofs("left")`, which
-        # raises; and (b) even if (a) is fixed, the template writes a
-        # `results_summary.json` only, never a .vtu, so the sweep would
-        # then transition from `failed` to `no_output_file`.  Both are
-        # template bugs to address upstream.  The cell is kept so the
-        # matrix surfaces the gap on every run.
+        # raises; and (b) even if (a) is fixed, the template writes
+        # only a `results_summary.json` — no mesh output file in any
+        # of the formats this harness accepts (`_OUTPUT_SUFFIXES`:
+        # `.vtu` / `.vtk` / `.xdmf`) — so the sweep would then
+        # transition from `failed` to `no_output_file`.  Both are
+        # template bugs to address upstream.  The cell is kept so
+        # the matrix surfaces the gap on every run.
         Cell("skfem",   "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
              field="displacement", expected=None, rtol=0.5),
         # ngsolve and fenics write the displacement field as
@@ -366,9 +368,10 @@ MATRIX: dict[str, list[Cell]] = {
         # points` because the Taylor-Hood mixed basis is assembled
         # with mismatched quadrature orders between velocity P2 and
         # pressure P1; and (b) even with (a) fixed, the template
-        # writes only a `results_summary.json` and never a `.vtu`,
-        # so the cell would still report `no_vtu_output` until VTU
-        # export is added.  Both are template-side gaps.
+        # writes only a `results_summary.json` and no mesh output in
+        # any of the accepted `_OUTPUT_SUFFIXES`, so the cell would
+        # still report `no_output_file` until VTU export is added.
+        # Both are template-side gaps.
         Cell("skfem",   "stokes", "2d", {"nx": 32, "ny": 32},
              field="velocity", expected=None, rtol=0.5),
         # NGSolve's `stokes/2d` template runs to the solver step then
@@ -445,8 +448,9 @@ MATRIX: dict[str, list[Cell]] = {
 
         # skfem `hyperelasticity/2d` raises during the Newton loop.
         # Root cause is not investigated here — the cell records the
-        # observed failure mode (Newton-loop exception, no .vtu);
-        # template-side fix tracked separately.
+        # observed failure mode (Newton-loop exception, no mesh
+        # output file in any accepted format); template-side fix
+        # tracked separately.
         Cell("skfem",   "hyperelasticity", "2d", {"E": 1000, "nu": 0.3},
              field="displacement", expected=None, rtol=0.5),
         # NGSolve `hyperelasticity/2d` raises during the Newton loop
