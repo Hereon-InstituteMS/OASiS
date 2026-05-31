@@ -621,12 +621,85 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(p) — Lagrange, any order p",
     "solver": "CG + SSOR/AMG. Matrix-free: MatrixFree + FEEvaluation (step-37)",
     "adaptive_refinement": "KellyErrorEstimator + refine_and_coarsen_fixed_number (step-6)",
+    # ── Structured keys for Poisson — the canonical first physics.
+    #    GENERAL_KNOWLEDGE in this same module enumerates the full
+    #    H1/H1_enriched/nonconforming/H_div/H_curl menu; this list
+    #    is the Poisson-relevant subset only.
+    "elements": [
+        "FE_Q<dim>(degree)            — continuous Lagrange; degree=1 (default), degree=2 for smoother solutions, higher for spectral convergence on smooth problems",
+        "FE_Q_Hierarchical<dim>(degree) — hierarchical basis; required for p-adaptive refinement (coarse DoFs survive a degree change, regular Lagrange ones do not)",
+        "FE_Bernstein<dim>(degree)    — Bernstein-Bezier; better-conditioned mass matrix at high p",
+        "FE_Q_iso_Q1<dim>(p)          — piecewise (multi-)linear on p^dim sub-cells of each macro-cell; same continuity as FE_Q(1) but more DoFs",
+        "FE_DGQ<dim>(degree)          — discontinuous Galerkin Lagrange; for DG-Poisson formulations (interior-penalty)",
+        "FE_DGP<dim>(degree)          — DG with monomial pressure-like basis on hyper-cube cells",
+        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle / tet) cells; use when the mesh is unstructured from Gmsh",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, a, b)                        — [a,b]^dim unit cube; classic Poisson on the square",
+        "GridGenerator::hyper_rectangle(tria, p1, p2)                 — axis-aligned box; non-square aspect ratio",
+        "GridGenerator::subdivided_hyper_cube(tria, n_per_dir, a, b)  — pre-subdivided to avoid repeated refine_global() calls",
+        "GridGenerator::hyper_L(tria, a, b)                           — L-shaped, has corner singularity u ~ r^{2/3} sin(2θ/3) — canonical test for adaptive refinement",
+        "GridGenerator::hyper_ball(tria, center, radius)              — circular / spherical disk; curved boundary",
+        "GridGenerator::hyper_shell(tria, center, inner, outer)       — annulus; tests boundary-conforming refinement",
+        "GridGenerator::cheese(tria, ...)                             — domain with holes; multiscale / heterogeneous-coefficient demo",
+        "GridGenerator::torus(tria, R, r)                             — 3D toroidal domain; for periodic-boundary studies",
+    ],
+    "solvers": [
+        "SolverCG<>                   — Poisson is symmetric positive-definite; CG is the default",
+        "SolverGMRES<>                — only needed if coefficients break symmetry (e.g. when stabilisation is added)",
+        "MatrixFree + FEEvaluation    — step-37 matrix-free; needed for matrix-storage-bound problems past ~10^7 DoFs",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR             — serial default; cheap on SPD systems",
+        "PreconditionAMG / BoomerAMG  — parallel; via TrilinosWrappers, scales to 10^7 DoFs",
+        "PreconditionChebyshev        — used inside multigrid as smoother, also as a standalone for matrix-free",
+        "MGSmootherRelaxation         — geometric multigrid smoother (step-16, step-50)",
+    ],
     "pitfalls": [
-        "Must call triangulation.refine_global() before distributing DOFs",
-        "Boundary IDs on hyper_cube: all faces have boundary_id=0",
-        "For hyper_rectangle: left=0, right=1 (in 2D: bottom=2, top=3)",
-        "For AMR: must apply hanging node constraints after assembly",
-        "AffineConstraints handles both Dirichlet BCs and hanging nodes",
+        "[Syntax] Must call triangulation.refine_global() before "
+        "distributing DOFs. Calling distribute_dofs on a 1-cell "
+        "triangulation runs but gives a useless 4-DoF system. "
+        "Signal: solver reports 'converged in 0 iterations' on a "
+        "non-trivial problem because the system has only 1 DOF.",
+        "[Syntax] Boundary IDs on hyper_cube: ALL faces have "
+        "boundary_id=0. To distinguish faces you must iterate "
+        "the cells and re-tag faces after the mesh exists. Signal: "
+        "you apply different Dirichlet values on different faces "
+        "but the result has the SAME value everywhere on the "
+        "boundary.",
+        "[Syntax] For hyper_rectangle: left=0, right=1 "
+        "(in 2D: bottom=2, top=3; in 3D: front=4, back=5). The "
+        "rectangle has them auto-assigned. Always check via "
+        "GridTools::get_boundary_ids(tria) after creating the "
+        "mesh.",
+        "[Numerical] For AMR: MUST apply hanging-node constraints "
+        "after assembly via constraints.condense(system_matrix, "
+        "system_rhs). Forgetting this gives a non-symmetric matrix "
+        "and CG breaks down. Signal: SolverCG reports 'breakdown' "
+        "on iteration 2-3 on a refined mesh, but works on the "
+        "globally-refined version of the same problem.",
+        "[API] AffineConstraints<double> handles both Dirichlet BCs "
+        "and hanging nodes — interpolate_boundary_values + the "
+        "hanging-node closure on the SAME constraints object. Using "
+        "two separate constraints objects produces inconsistent "
+        "assembly. Signal: solution has step discontinuities at "
+        "the interfaces between refinement levels.",
+        # New entries shipped with this encoding pass — common Poisson
+        # failure modes the catalog should warn about.
+        "[Numerical] For variable-coefficient problems (a(x) ∇u), if "
+        "the coefficient varies over several orders of magnitude "
+        "(layered media, heterogeneous), the stiffness matrix gets "
+        "ill-conditioned and PreconditionSSOR loses effectiveness. "
+        "Switch to PreconditionAMG / BoomerAMG, which respects the "
+        "coefficient structure. Signal: CG iteration count grows "
+        "linearly with the coefficient contrast.",
+        "[Integration] Mixing the 2D and 3D template instantiations "
+        "in the same translation unit at unrelated polynomial orders "
+        "(FE_Q<2>(2) plus FE_Q<3>(1)) does NOT explicitly instantiate "
+        "the lower-degree 3D version unless it appears somewhere in "
+        "the program. Signal: link errors like "
+        "'undefined reference to FE_Q<3>::FE_Q(unsigned int)' even "
+        "though FE_Q<3> appears to be used elsewhere.",
     ],
 }
 

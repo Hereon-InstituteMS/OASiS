@@ -1,0 +1,36 @@
+{
+  "id": "dealii-batch-poisson-heat-helmholtz-eigenvalue",
+  "date": "2026-05-31",
+  "backend": "dealii",
+  "physics": "poisson, heat, helmholtz, eigenvalue (batch)",
+  "surface_symptom": "Four core deal.II physics — Poisson (the canonical first PDE), the transient heat equation, Helmholtz (acoustic / time-harmonic), and SLEPc eigenproblems — each had a KNOWLEDGE entry with a single function_space string and a handful of prose pitfalls, but no structured elements / mesh_generators / solvers / preconditioners menus. The agent calling prepare_simulation for any of these got back a one-liner FE recommendation (FE_Q(1)) and no awareness of higher-order p, hp-adaptive choices, DG variants, FE_Nedelec for vector Helmholtz, or shift-and-invert for interior eigenvalues. The Helmholtz pollution-effect rule, the AMR-in-time SolutionTransfer requirement, the SLEPc MPI-init requirement, and the dual-matrix Dirichlet-constraint requirement for generalised eigenproblems were either implicit or absent — these are precisely the silent-failure modes the Open-FEM-Agent paper (§3.2) describes.",
+  "root_cause": "Same pattern as the elasticity/stokes encoding: each physics entry was written from the corresponding step-* tutorial's narrative, so it captured only that tutorial's specific element + solver choice. The cross-physics catalog structure (elements menu, mesh_generators menu, solvers menu) was never applied uniformly. The Layer A→B diff is the first audit that surfaces this systematically.",
+  "categories": ["Numerical", "Physics", "Syntax", "API", "Integration"],
+  "pitfall_db_entries": [
+    "[Numerical] For variable-coefficient Poisson (a(x) ∇u), if the coefficient varies over orders of magnitude, the stiffness matrix gets ill-conditioned and PreconditionSSOR loses effectiveness. Switch to PreconditionAMG/BoomerAMG. Signal: CG iteration count grows linearly with the coefficient contrast.",
+    "[Integration] Mixing FE_Q<2>(p) and FE_Q<3>(q) at unrelated p,q does not explicitly instantiate the lower-degree 3D version. Signal: link errors like 'undefined reference to FE_Q<3>::FE_Q(unsigned int)'.",
+    "[Syntax] Heat equation time-step system is (M + dt*theta*K). Assemble M and K once at startup, build the LHS each step. Re-assembling M and K every time step is the most common transient-heat performance bug. Signal: per-step wall time scales with ndof^2 instead of ndof*log(ndof) for AMG.",
+    "[Physics] Heat RHS at each step is M*u_old - dt*(1-theta)*K*u_old + dt*theta*f_new + dt*(1-theta)*f_old. Forgetting the (1-theta) terms gives a fully-implicit scheme regardless of theta value — Crank-Nicolson degrades to backward Euler. Signal: convergence on a manufactured solution is first-order in dt even though theta=0.5 was set.",
+    "[API] For Heat AMR in time: interpolate solution to the new mesh via SolutionTransfer between refine_grid() and distribute_dofs(). Skipping SolutionTransfer gives a zero solution on the new mesh and the next time step evolves from zero. Signal: sharp temperature drop coinciding with the first AMR step.",
+    "[Numerical] Forward Euler (theta=0) requires dt < ~h^2/(2*alpha) — fine mesh + small alpha makes this dt tiny. Use Crank-Nicolson or backward Euler. Signal: forward Euler with too-large dt produces oscillating solution that grows exponentially.",
+    "[Physics] Helmholtz absorbing BC must be -i*k*u*v*dS (with the i). Real-only -k*u*v*dS is a lossy boundary, not a radiating one. Signal: outgoing wave amplitude decays to zero at the boundary instead of leaving the domain.",
+    "[Numerical] Helmholtz needs ~10 DOFs per wavelength minimum (h < lambda/10). For accurate amplitude at k > 50 use 20 DOFs/wavelength OR higher polynomial order. Signal: solution amplitude differs from analytic reference by factor of 2-5x.",
+    "[Numerical] Helmholtz pollution effect — phase error grows as O(k^{p+1} h^{2p+1}). At k > 100 even h<lambda/10 gives visibly wrong phase. Use higher-order p or hp-FEM. Signal: wave nodes correctly spaced but appear shifted by a constant fraction of a wavelength.",
+    "[Integration] PML modifies coefficients in a thin shell to absorb outgoing waves; modification is COMPLEX-valued. Real-coefficient 'PML' is not a PML. Signal: outgoing waves reflect off the layer instead of being absorbed.",
+    "[Integration] SLEPc eigenproblems require deal.II compiled with PETSc+SLEPc support. Signal: link error 'undefined reference to SLEPc::SolverBase::SolverBase'.",
+    "[Physics] Generalised eigenvalue is A*x = lambda*M*x. Using the standard form (no mass matrix) gives WRONG eigenvalues. Signal: computed lambda_11 on unit square is far from 2*pi^2 ≈ 19.74.",
+    "[API] Apply AffineConstraints to BOTH stiffness and mass matrix. A-only leaves M with non-zero rows on Dirichlet DoFs and produces spurious zero-eigenvalues — one per Dirichlet DoF. Signal: cluster of n_dirichlet zero eigenvalues above the physical ones.",
+    "[Syntax] PETSc matrices required for SLEPc — PETScWrappers::SparseMatrix, NOT dealii::SparseMatrix. Mixing types compiles but the solver operates on a default-constructed empty matrix. Signal: all eigenvalues come out exactly 0.",
+    "[Integration] MPI initialisation is required for SLEPc even in serial runs (Utilities::MPI::MPI_InitFinalize). Without it the EPS constructor calls MPI_Comm_size on an uninitialised communicator and aborts. Signal: program crashes inside the EPS constructor with MPI_ERR_COMM.",
+    "[Numerical] Interior eigenvalues need shift-and-invert (SLEPc::TransformationShiftInvert) — default Krylov-Schur targets extreme eigenvalues. Signal: requested range is [50,150] but returned eigenvalues are in [0.1, 5]."
+  ],
+  "agent_detection_after_fix": "prepare_simulation for each of the four physics now returns structured elements + mesh_generators + solvers + preconditioners menus, each entry annotated with physics-keyed selection rationale (e.g. 'FE_Nedelec is for vector Helmholtz / time-harmonic Maxwell, NOT scalar acoustic Helmholtz'). The pre-execution critic gate retrieves the relevant Table-1 pitfalls when the agent's plan references the matching physics. Each Signal: clause is matchable against actual deal.II error text or solution-statistics by the post-execution critic — the SLEPc MPI_ERR_COMM crash, the SolverCG breakdown on indefinite Helmholtz, the spurious zero-eigenvalue cluster, the Crank-Nicolson convergence regression, etc.",
+  "source_refs": [
+    "branch layer-a/kratos-source-scanner — commit adding deal.II poisson+heat+helmholtz+eigenvalue catalog structure",
+    "deal.II tutorials: step-3/4/5/6/7 (poisson), step-26/86 (heat), step-29 (helmholtz), step-36 (eigenvalue)",
+    "scripts/scan_results/diffs/dealii.json (gap progression: 58 → 42 → 34 truly_missing across the elasticity+stokes+this batch)",
+    "Open-FEM-Agent §3.2 / Table 1",
+    "task #33 — Encode discovered upstream capabilities into MCP catalog",
+    "task #46 — Pitfall-DB-first merge discipline"
+  ]
+}

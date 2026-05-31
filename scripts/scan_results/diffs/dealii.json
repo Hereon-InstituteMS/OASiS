@@ -5,13 +5,21 @@
   "drift": {
     "elements": [
       "DoFs",
-      "FESystem"
+      "FESystem",
+      "FE_SimplexP",
+      "PETSc"
     ],
     "mesh_generators": [
       "GridGenerator",
       "half_length",
       "inner_radius",
-      "outer_radius"
+      "lambda_mn",
+      "n_per_dir",
+      "n_slices",
+      "outer_radius",
+      "refine_global",
+      "t_in",
+      "t_out"
     ]
   },
   "truly_missing": {
@@ -23,14 +31,12 @@
       "FE_DGVector",
       "FE_Enriched",
       "FE_FaceQ",
-      "FE_Nedelec",
       "FE_NedelecSZ",
       "FE_P1NC",
       "FE_Poly",
       "FE_PolyFace",
       "FE_PolyTensor",
       "FE_Q_Base",
-      "FE_Q_iso_Q1",
       "FE_RT_Bubbles",
       "FE_Series",
       "FE_TraceQ"
@@ -41,31 +47,29 @@
       "create_union_triangulation",
       "cylinder_shell",
       "enclosed_hyper_cube",
-      "extrude_triangulation",
       "flatten_triangulation",
       "general_cell",
       "half_hyper_ball",
       "half_hyper_shell",
-      "hyper_ball",
       "hyper_cross",
       "hyper_cube_slit",
       "hyper_sphere",
-      "moebius",
       "parallelepiped",
       "parallelogram",
       "quarter_hyper_ball",
       "quarter_hyper_shell",
-      "simplex",
-      "subdivided_hyper_cube",
       "subdivided_parallelepiped",
-      "torus",
       "truncated_cone"
     ]
   },
-  "uncategorised": {},
+  "uncategorised": {
+    "mesh_generators": [
+      "simplex"
+    ]
+  },
   "shared_counts": {
-    "elements": 12,
-    "mesh_generators": 11
+    "elements": 14,
+    "mesh_generators": 16
   },
   "no_info_buckets": [],
   "notes": []

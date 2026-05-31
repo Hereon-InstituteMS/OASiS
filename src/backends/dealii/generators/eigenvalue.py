@@ -149,13 +149,75 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-36 (SLEPc eigenvalue problem)"],
     "function_space": "FE_Q<dim>(1)",
     "solver": "SLEPc Krylov-Schur (default), Arnoldi, Lanczos, LOBPCG",
+    "elements": [
+        "FE_Q<dim>(degree) — continuous Lagrange; degree=1 for Laplace eigenproblems, degree=2 for plate/biharmonic-like eigenproblems on H1",
+        "FE_Q_Hierarchical<dim>(degree) — for spectral methods at high p; eigenvalue convergence is exponential in p for smooth eigenfunctions",
+        "FE_Nedelec<dim>(degree) — H(curl) eigenproblems for Maxwell cavity resonators (E-field formulation)",
+        "FE_RaviartThomas<dim>(degree) — H(div) eigenproblems for acoustic modal analysis with mass-conservation",
+        "FESystem<dim>(FE_Q<dim>(degree), dim) — vector eigenproblems for elasticity (free vibration / modal analysis)",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, 0, 1)                — square / cube domain; exact Laplace eigenvalues are lambda_mn = pi^2*(m^2+n^2+...) for verification",
+        "GridGenerator::hyper_ball(tria, center, radius)      — circular drum problem; Bessel-function eigenvalues",
+        "GridGenerator::hyper_L(tria, a, b)                   — L-shaped drum; famous 'hear the shape of a drum' counterexample-domain class",
+        "GridGenerator::hyper_shell(tria, center, in, out)    — annular domain; for cavity-resonator eigenmodes",
+        "GridGenerator::moebius(tria, ...)                    — non-orientable surface; numerical curiosity but exercises the eigensolver",
+        "GridGenerator::cheese(tria, ...)                     — domain with holes; spectrum exhibits localised modes",
+    ],
+    "solvers": [
+        "SLEPc::SolverKrylovSchur     — default; robust for the largest or smallest few eigenpairs",
+        "SLEPc::SolverArnoldi         — fallback when Krylov-Schur stalls (rare; usually a sign of ill-conditioning)",
+        "SLEPc::SolverLanczos         — symmetric problems only; faster than Krylov-Schur for SPD A and M",
+        "SLEPc::SolverLOBPCG          — block locally-optimal CG; competitive for many eigenpairs of SPD problems",
+        "SLEPc::SolverGeneralizedDavidson — for interior eigenvalues without an explicit shift-and-invert factorisation",
+    ],
+    "preconditioners": [
+        "ST (spectral transform) shift-and-invert — required for interior eigenvalues; combine with direct solver inside the shift",
+        "PETScWrappers::PreconditionBoomerAMG — preconditions the (A - sigma*M) shift",
+        "PETScWrappers::PreconditionICC        — incomplete Cholesky for symmetric shift solves",
+    ],
     "pitfalls": [
-        "Requires deal.II compiled with PETSc + SLEPc support",
-        "Generalized eigenvalue: A*x = lambda*M*x where A=stiffness, M=mass",
-        "Use AffineConstraints for Dirichlet BCs (distribute to both matrices)",
-        "PETSc matrices: PETScWrappers::SparseMatrix, not dealii::SparseMatrix",
-        "MPI initialization required: Utilities::MPI::MPI_InitFinalize",
-        "For interior eigenvalues: use shift-and-invert spectral transform",
-        "Exact eigenvalues on [0,1]^2: lambda_mn = pi^2*(m^2+n^2)",
+        "[Integration] Requires deal.II compiled with PETSc + SLEPc "
+        "support. A vanilla conda install without SLEPc cannot link "
+        "the SLEPc::SolverKrylovSchur symbol. Signal: link error "
+        "'undefined reference to SLEPc::SolverBase::SolverBase'.",
+        "[Physics] Generalized eigenvalue is A*x = lambda*M*x where "
+        "A = stiffness and M = mass. Using the standard eigenvalue "
+        "form (no mass matrix) gives WRONG eigenvalues — Laplace "
+        "eigenvalues come out scaled by element size, not lambda_mn "
+        "= pi^2*(m^2+n^2). Signal: computed lambda_11 on unit square "
+        "is far from 2*pi^2 ≈ 19.74 by orders of magnitude.",
+        "[API] Use AffineConstraints<double> for Dirichlet BCs and "
+        "distribute the constraints to BOTH the stiffness and the "
+        "mass matrix. Applying constraints to A only leaves M "
+        "with non-zero rows on Dirichlet DoFs, producing spurious "
+        "eigenmodes at lambda = 0 (one per Dirichlet DoF). Signal: "
+        "the spectrum has a cluster of n_dirichlet zero eigenvalues "
+        "above the physical ones.",
+        "[Syntax] PETSc matrices: PETScWrappers::SparseMatrix, NOT "
+        "dealii::SparseMatrix — SLEPc operates on PETSc objects. "
+        "Mixing the types compiles but the solver silently "
+        "operates on a default-constructed empty matrix. Signal: "
+        "all eigenvalues come out exactly 0.",
+        "[Integration] MPI initialisation is REQUIRED via "
+        "Utilities::MPI::MPI_InitFinalize, even for a serial run, "
+        "because PETSc / SLEPc internally assume MPI_COMM_WORLD "
+        "is initialised. Without it, the SLEPc solver constructor "
+        "calls MPI_Comm_size on an uninitialised communicator and "
+        "the program aborts. Signal: program crashes inside the "
+        "EPS constructor with an MPI_ERR_COMM error.",
+        "[Numerical] For interior eigenvalues use shift-and-invert "
+        "(SLEPc::TransformationShiftInvert) — Krylov-Schur targets "
+        "extreme eigenvalues by default. Without the transform, "
+        "asking for eigenvalues near lambda = 100 on a problem "
+        "whose smallest eigenvalue is 0.1 returns the smallest "
+        "ones. Signal: requested eigenvalue range is in [50, 150] "
+        "but returned eigenvalues are in [0.1, 5].",
+        "[Physics] Exact eigenvalues on [0,1]^2 with zero Dirichlet "
+        "BCs are lambda_mn = pi^2*(m^2 + n^2); the first few "
+        "are 2 pi^2, 5 pi^2, 5 pi^2 (double), 8 pi^2. Use these "
+        "as the regression-test reference. Signal: if the computed "
+        "lambda_2 != lambda_3 to floating-point precision on a "
+        "fine mesh, the eigensolver is missing degenerate modes.",
     ],
 }

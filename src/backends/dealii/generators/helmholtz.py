@@ -174,13 +174,62 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-29 (complex-valued Helmholtz with absorbing BCs)"],
     "function_space": "FESystem<dim>(FE_Q<dim>(1), 2) — real and imaginary parts as components",
     "solver": "GMRES + SSOR (indefinite system due to -k^2 mass term)",
+    "elements": [
+        "FESystem<dim>(FE_Q<dim>(degree), 2) — real+imag pair on a real-valued solver; degree ≥ 2 strongly recommended at high k to mitigate the pollution effect",
+        "FE_Q<dim>(degree) on a complex-valued matrix (PETSc/Trilinos complex build) — single-component formulation",
+        "FE_Q_Hierarchical<dim>(degree) — required for hp-adaptive refinement to counteract pollution",
+        "FE_Nedelec<dim>(degree) — H(curl) for vector Helmholtz / time-harmonic Maxwell (E-field formulation), NOT for scalar acoustic Helmholtz",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, a, b)                 — closed-cavity acoustics with sound-hard (Neumann) BCs",
+        "GridGenerator::hyper_ball(tria, center, radius)       — radial acoustic radiation; pair with absorbing BC on the outer boundary",
+        "GridGenerator::hyper_shell(tria, center, inner, outer) — annular waveguide / acoustic resonator",
+        "GridGenerator::hyper_cube_with_cylindrical_hole(tria, inner, outer) — scattering off a cylinder; classic radiation test",
+        "GridGenerator::cheese(tria, ...)                      — scattering by array of holes (sonic-crystal demos)",
+        "GridGenerator::extrude_triangulation(t_in, n_slices, h, t_out) — extrude 2D acoustic mesh into 3D waveguide; ≥ 8 slices per wavelength",
+    ],
+    "solvers": [
+        "SolverGMRES<>                — default for indefinite Helmholtz",
+        "SolverMinRes<>                — symmetric indefinite variant; only when the bilinear form stays symmetric",
+        "TrilinosWrappers::SolverDirect (UMFPACK / MUMPS) — ground truth at high k where iterative methods struggle",
+        "Complex shifted-Laplacian preconditioner — preconditions (K - k^2 M) with (K - (k^2 + i*shift) M); shift damps oscillations enough for multigrid",
+    ],
     "pitfalls": [
-        "System is INDEFINITE for k^2 > 0: cannot use CG, use GMRES or direct",
-        "Complex splitting: 2-component system (u_re, u_im), doubles DOF count",
-        "For absorbing BCs (radiation condition): add boundary integral -ik*u*v*dS",
-        "High frequency (large k): need ~10 DOFs per wavelength (rule of thumb: h < lambda/10)",
-        "Pollution effect: phase error grows with k*h, use higher order or hp-FEM",
-        "For PML (perfectly matched layer): modify coefficients in absorbing layer",
+        "[Numerical] System is INDEFINITE for k^2 > 0 — cannot use "
+        "SolverCG, use SolverGMRES / SolverMinRes / a direct solver. "
+        "Signal: SolverCG reports 'breakdown' immediately.",
+        "[Syntax] Complex splitting: 2-component FESystem<dim>(FE_Q, 2) "
+        "with (u_re, u_im) doubles the DOF count and requires the "
+        "bilinear form to assemble the 2x2 block carrying the "
+        "imaginary coupling. Forgetting the off-diagonal coupling "
+        "decouples real and imaginary parts and the absorbing BC "
+        "silently becomes a reflecting wall. Signal: the imaginary "
+        "part of the solution is zero everywhere despite the source "
+        "being complex.",
+        "[Physics] For absorbing BCs (Sommerfeld radiation condition): "
+        "add boundary integral -i*k*u*v*dS on the outer boundary. "
+        "Missing the i (so adding -k*u*v*dS instead) gives a real "
+        "lossy boundary, not a radiating one. Signal: outgoing wave "
+        "amplitude decays to zero at the boundary instead of leaving "
+        "the domain with constant amplitude.",
+        "[Numerical] High frequency (large k) — need ~10 DOFs per "
+        "wavelength minimum (h < lambda/10). For accurate amplitude "
+        "at k > 50 use 20 DOFs/wavelength OR higher polynomial order. "
+        "Signal: solution amplitude differs from the analytic "
+        "reference (Hankel function for radial problems) by a "
+        "factor of 2-5x.",
+        "[Numerical] Pollution effect — phase error grows as "
+        "O(k^{p+1} h^{2p+1}) where p is the FE polynomial order. At "
+        "k > 100 even 10 DOFs/wavelength gives visibly wrong phase. "
+        "Mitigations: higher-order p, hp-FEM, or stabilised methods "
+        "(CIP, GLS). Signal: wave nodes are correctly spaced "
+        "(h < lambda/10) but appear shifted by a constant fraction "
+        "of a wavelength.",
+        "[Integration] PML (perfectly matched layer) modifies "
+        "coefficients in a thin shell around the domain to absorb "
+        "outgoing waves; the modification is COMPLEX-valued. A "
+        "real-coefficient 'PML' is not a PML. Signal: outgoing waves "
+        "reflect off the layer instead of being absorbed.",
     ],
     "materials": {
         "omega": {"range": [0.1, 1000.0], "unit": "rad/s (angular frequency)"},

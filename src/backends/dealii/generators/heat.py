@@ -363,10 +363,66 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(1)",
     "solver": "CG + SSOR for each time step. SUNDIALS for adaptive time stepping",
     "time_stepping": "Theta method (0=forward Euler, 0.5=Crank-Nicolson, 1=backward Euler)",
+    "elements": [
+        "FE_Q<dim>(degree)            — continuous Lagrange; degree=1 is default for transient heat",
+        "FE_Q_Hierarchical<dim>(degree) — for p-adaptive refinement with smooth coefficient transitions",
+        "FE_DGQ<dim>(degree)          — DG variant; useful for sharp-front problems (welding, phase change)",
+        "FE_SimplexP<dim>(degree)     — Lagrange on simplex (triangle/tet) meshes from Gmsh",
+    ],
+    "mesh_generators": [
+        "GridGenerator::hyper_cube(tria, a, b)               — unit cube/square; default heat-equation test domain",
+        "GridGenerator::hyper_rectangle(tria, p1, p2)        — non-square; e.g. {0,0}-{L,H} for thin plates",
+        "GridGenerator::hyper_L(tria, a, b)                  — L-shaped with re-entrant corner; tests adaptive refinement near singularity",
+        "GridGenerator::cylinder(tria, radius, half_length)  — radial heat-equation problems (heat-pipe, cylindrical bar)",
+        "GridGenerator::hyper_shell(tria, center, in, out)   — annular heat conduction (pipe insulation)",
+        "GridGenerator::plate_with_a_hole(tria, ...)         — local thermal stress concentration via temperature gradient",
+        "GridGenerator::extrude_triangulation(t_in, n_slices, h, t_out) — extrude a 2D heat-eq mesh into 3D, layer count = n_slices",
+    ],
+    "solvers": [
+        "SolverCG<>                   — Heat-equation stiffness K and mass matrix M are SPD; CG works for all theta in (0,1]",
+        "SolverGMRES<>                — needed only when the time-step matrix becomes non-symmetric (rare; happens with full-coupled nonlinear source terms)",
+        "SUNDIALS::ARKode             — adaptive multi-step time integrator; step-86. Use when wall-time / step-count matters and dt is hard to estimate a priori",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR             — works on (M + dt*theta*K) at each step for moderate dt",
+        "PreconditionAMG / BoomerAMG  — needed for stiff systems (small dt with large K eigenvalues, or wide dynamic range in thermal diffusivity)",
+        "Use a SINGLE preconditioner factorisation across multiple time steps when dt and the mesh are fixed — re-building per step is the most common performance pitfall in transient heat code",
+    ],
     "pitfalls": [
-        "Mass matrix M + dt*theta*K system at each step",
-        "RHS: M*u_old - dt*(1-theta)*K*u_old + dt*theta*f_new + dt*(1-theta)*f_old",
-        "For AMR in time: interpolate solution to new mesh via SolutionTransfer",
-        "Non-zero initial conditions: interpolate or project",
+        "[Syntax] Time-step system is (M + dt*theta*K). Assemble M "
+        "and K once at startup, build the LHS each step. Re-assembling "
+        "M and K every time step is the most common transient-heat "
+        "performance bug. Signal: per-step wall time scales with "
+        "ndof^2 instead of ndof*log(ndof) for AMG.",
+        "[Physics] RHS at each step is "
+        "M*u_old - dt*(1-theta)*K*u_old + dt*theta*f_new + "
+        "dt*(1-theta)*f_old. Forgetting the (1-theta) terms gives a "
+        "fully-implicit scheme regardless of the theta value; "
+        "Crank-Nicolson (theta=0.5) then degrades to backward Euler "
+        "and the time-discretisation error scales O(dt) not O(dt^2). "
+        "Signal: temperature convergence on a manufactured solution "
+        "is first-order in dt even though you set theta=0.5.",
+        "[API] For AMR in time: interpolate the solution to the new "
+        "mesh via SolutionTransfer between refine_grid() and "
+        "distribute_dofs(). Skipping SolutionTransfer gives a "
+        "zero solution on the new mesh and the next time step "
+        "evolves from zero — looks like a sudden cool-down. "
+        "Signal: a sharp temperature drop coinciding with the "
+        "first AMR-step.",
+        "[Numerical] Non-zero initial conditions must be set via "
+        "interpolate (for piecewise polynomial ICs) or project (for "
+        "general functions). Setting node values directly bypasses "
+        "the AffineConstraints and gives an IC inconsistent with "
+        "the boundary conditions. Signal: temperature jumps at "
+        "Dirichlet-boundary nodes between t=0 and the first "
+        "time-step solution.",
+        "[Numerical] theta=0 (forward Euler) requires "
+        "dt < ~h^2 / (2*alpha) where alpha is the thermal "
+        "diffusivity — fine mesh + small alpha makes this dt tiny. "
+        "Use theta=0.5 (Crank-Nicolson, 2nd-order, unconditionally "
+        "stable) or theta=1 (backward Euler, 1st-order, "
+        "unconditionally stable) for any production run. "
+        "Signal: forward Euler with too-large dt produces "
+        "oscillating solution that grows exponentially.",
     ],
 }
