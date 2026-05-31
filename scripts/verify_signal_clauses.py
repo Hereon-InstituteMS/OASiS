@@ -371,6 +371,27 @@ def _tier2_lookup(backend: str, physics: str, idx: int) -> str:
     return str(entry.get("status", "harness_pending"))
 
 
+def _load_falsifiability_map() -> dict:
+    """Load per-pitfall falsifiability + cost classification.
+
+    Senior-AI-scientist critic 2026-05-31 round 3: 'realistic
+    12-month target is ~60/78, not 96/96 — publish the
+    unfalsifiable count alongside the verified count.'
+    Walking the deal.II catalog showed 0 truly-unfalsifiable
+    Signals — the real axis is COST (cheap / medium /
+    expensive), not falsifiability. Classification lives at
+    ``data/postmortems/_falsifiability.json``.
+    """
+    path = (Path(__file__).resolve().parent.parent
+            / "data" / "postmortems" / "_falsifiability.json")
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--backend", default="dealii",
@@ -378,6 +399,30 @@ def main():
     args = ap.parse_args()
 
     results = verify_backend(args.backend)
+
+    falsifiability = _load_falsifiability_map()
+
+    def _entry(r):
+        key = f"{r.backend}::{r.physics}::{r.pitfall_index}"
+        return falsifiability.get(key, {}) if isinstance(
+            falsifiability, dict) else {}
+
+    falsifiable_pitfalls = [
+        r for r in results
+        if _entry(r).get("falsifiable", True)
+    ]
+    cheap_pitfalls = [
+        r for r in falsifiable_pitfalls
+        if _entry(r).get("cost") == "cheap"
+    ]
+    medium_pitfalls = [
+        r for r in falsifiable_pitfalls
+        if _entry(r).get("cost") == "medium"
+    ]
+    expensive_pitfalls = [
+        r for r in falsifiable_pitfalls
+        if _entry(r).get("cost") == "expensive"
+    ]
 
     totals = {
         "n_pitfalls": len(results),
@@ -407,6 +452,22 @@ def main():
         "tier2_attempted": sum(
             1 for r in results
             if r.tier2_status in ("passed", "failed")),
+        # Realistic-denominator metrics (round-3 critic):
+        # "near-perfect" target is tier2_passed / n_falsifiable,
+        # NOT tier2_passed / 96. And per-cost decomposition
+        # reveals the actual roadmap distance.
+        "n_falsifiable": len(falsifiable_pitfalls),
+        "n_unfalsifiable": (len(results)
+                            - len(falsifiable_pitfalls)),
+        "n_cheap_falsifiable": len(cheap_pitfalls),
+        "n_medium_falsifiable": len(medium_pitfalls),
+        "n_expensive_falsifiable": len(expensive_pitfalls),
+        "tier2_passed_of_cheap": sum(
+            1 for r in cheap_pitfalls if r.tier2_passed),
+        "tier2_passed_of_medium": sum(
+            1 for r in medium_pitfalls if r.tier2_passed),
+        "tier2_passed_of_expensive": sum(
+            1 for r in expensive_pitfalls if r.tier2_passed),
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
@@ -415,10 +476,22 @@ def main():
         "results": [asdict(r) for r in results],
     }, indent=2))
 
+    # Per-row denominator: per-cost fractions use the bucket
+    # count; other tier-* metrics use the full pitfall total.
+    PER_COST_DENOM = {
+        "tier2_passed_of_cheap": "n_cheap_falsifiable",
+        "tier2_passed_of_medium": "n_medium_falsifiable",
+        "tier2_passed_of_expensive": "n_expensive_falsifiable",
+    }
     print(f"\n{args.backend} signal verification:")
     for k, v in totals.items():
         if k == "n_pitfalls":
             print(f"  {k:30s} {v:>4d}")
+        elif k in PER_COST_DENOM:
+            denom = totals[PER_COST_DENOM[k]]
+            pct = (100.0 * v / denom) if denom else 0
+            print(f"  {k:30s} {v:>4d} / {denom} "
+                  f"({pct:.0f}% of bucket)")
         elif k.startswith("tier"):
             pct = (100.0 * v / totals["n_pitfalls"]
                    if totals["n_pitfalls"] else 0)

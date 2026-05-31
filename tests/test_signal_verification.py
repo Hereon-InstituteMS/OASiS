@@ -65,14 +65,14 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 5  # deal.II pitfalls with named (catalog-indexed)
                           # Tier-2 fixtures.
     MIN_TIER2_RUNNER_PASSED = 20  # cross-cutting (incl. synthetic indices).
-                                  # +4 over previous baseline: third
-                                  # Kratos (variable not added before
-                                  # access), third NGSolve (vector source
-                                  # on scalar LinearForm), and two
-                                  # FEniCSx (array size mismatch, curl
-                                  # on scalar space). All five accessible
-                                  # backends now above the round-3
-                                  # critic's 3-fixture "verified" floor.
+
+    # Cost-bucket floors (round-3 critic finding E: report per-cost
+    # coverage, not a fake /96 fraction). data/postmortems/
+    # _falsifiability.json classifies each deal.II pitfall as
+    # cheap / medium / expensive. Realistic 3-month target is
+    # 100% of cheap; 12-month target is cheap + ~half of medium.
+    MIN_TIER2_PASSED_OF_CHEAP = 4    # 4/10 cheap deal.II so far
+    MIN_TIER2_PASSED_OF_MEDIUM = 1   # 1/42 medium so far
 
     def setUp(self):
         from verify_signal_clauses import verify_backend

@@ -10,8 +10,16 @@
     "tier0_domain_names_only": 0,
     "tier1_passed": 96,
     "tier0_and_1_passed": 96,
-    "tier2_passed": 4,
-    "tier2_attempted": 4
+    "tier2_passed": 5,
+    "tier2_attempted": 5,
+    "n_falsifiable": 96,
+    "n_unfalsifiable": 0,
+    "n_cheap_falsifiable": 10,
+    "n_medium_falsifiable": 42,
+    "n_expensive_falsifiable": 44,
+    "tier2_passed_of_cheap": 4,
+    "tier2_passed_of_medium": 1,
+    "tier2_passed_of_expensive": 0
   },
   "results": [
     {
@@ -120,8 +128,8 @@
         "quoted-error-fragment",
         "report"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
