@@ -159,6 +159,125 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
         except ImportError:
             pass
 
+    # Per-backend code-symbol sets. Added 2026-05-31 (round-4
+    # critic verdict — Table-1 promotion of non-deal.II backends).
+    # These are names a programmer would `grep -r` for in the
+    # backend's source / a Python traceback would emit. Cheap
+    # to maintain; the alternative is Tier-0 = 0 forever for
+    # every non-deal.II backend.
+    if backend == "ngsolve":
+        code_symbols.update({
+            # FE spaces / function spaces ─────────────────────────
+            "HCurl", "HCurlHighOrderFESpace", "H1",
+            "H1HighOrderFESpace", "L2", "HDiv", "FESpace",
+            "FacetFESpace", "VectorH1", "Periodic",
+            "Compressed", "Discontinuous",
+            # Forms / operators ───────────────────────────────────
+            "BilinearForm", "LinearForm", "SymbolicBFI",
+            "SymbolicLFI", "GridFunction", "CoefficientFunction",
+            "Mesh", "MaterialCF", "FlatVector",
+            # Differential operators ──────────────────────────────
+            "curl", "grad", "div", "Trace", "Deriv", "Skew",
+            # Solvers / preconditioners ───────────────────────────
+            "ArnoldiSolver", "CGSolver", "MinRes", "GMRESSolver",
+            "BVP", "Preconditioner", "MultiGrid", "HCurlAMG",
+            "BramblePasciakCG", "krylovspace", "Newton",
+            # Mesh / geometry ─────────────────────────────────────
+            "CSGeometry", "OrthoBrick", "SplineGeometry",
+            "Cylinder", "Sphere", "OCCGeometry",
+            "GenerateMesh", "unit_square", "unit_cube",
+            # Output / runtime ────────────────────────────────────
+            "VTKOutput", "Draw", "Redraw", "TaskManager",
+            "SetHeapSize", "Inverse",
+            # Exception class ─────────────────────────────────────
+            "NgException", "Exception",
+            # Common method/attribute names that appear in tracebacks
+            "Assemble", "TnT", "FreeDofs", "ndof",
+        })
+    elif backend == "skfem":
+        code_symbols.update({
+            # Element types
+            "ElementTriP1", "ElementTriP2", "ElementTriRT0",
+            "ElementTriArgyris", "ElementTriDG", "ElementTriCR",
+            "ElementTriHermite", "ElementTriMini", "ElementQuad1",
+            "ElementQuadDG", "ElementQuadBFS", "ElementTetP1",
+            "ElementTetP2", "ElementTetN0", "ElementHexS2",
+            "ElementHex1", "ElementVector", "ElementCompositeFE",
+            # Mesh
+            "MeshTri", "MeshQuad", "MeshTet", "MeshHex",
+            "MeshLine", "init_refdom", "refined",
+            # Assembly
+            "Basis", "InteriorBasis", "FacetBasis",
+            "asm", "BilinearForm", "LinearForm", "Functional",
+            "block_diag", "bmat", "condense", "solve",
+            # Boundary tagging / projection
+            "subdomains", "boundaries", "facets",
+            "find_dofs", "get_dofs", "project",
+            # Common error classes / attribute names
+            "ValueError", "TypeError", "shape", "ndof", "interpolate",
+        })
+    elif backend == "kratos":
+        code_symbols.update({
+            "KratosMultiphysics", "Model", "ModelPart",
+            "Variable", "Property", "Properties", "Element",
+            "Condition", "Node", "Geometry", "DofWithMandatoryDof",
+            "Process", "Parameters", "AssignVectorVariableProcess",
+            "AssignScalarVariableProcess", "CalculateOnIntegrationPoints",
+            "AnalysisStage", "Solver", "ConstitutiveLaw",
+            "RuntimeError", "TypeError", "Logger",
+            "ReadModelPart", "WriteModelPart", "GidIO", "VtkOutput",
+            "DISPLACEMENT", "VELOCITY", "REACTION",
+            "DENSITY", "YOUNG_MODULUS", "POISSON_RATIO",
+            "BODY_FORCE", "VOLUME_ACCELERATION",
+        })
+    elif backend == "fenics":
+        code_symbols.update({
+            "dolfinx", "ufl", "petsc4py", "mpi4py",
+            "FunctionSpace", "VectorFunctionSpace",
+            "TensorFunctionSpace", "MixedElement", "VectorElement",
+            "FiniteElement", "Function", "Constant",
+            "TrialFunction", "TestFunction", "TrialFunctions",
+            "TestFunctions",
+            "fem", "form", "assemble", "assemble_matrix",
+            "assemble_vector", "apply_lifting",
+            "set_bc", "dirichletbc", "locate_dofs_topological",
+            "locate_dofs_geometrical",
+            "mesh", "create_box", "create_rectangle",
+            "create_unit_square", "create_unit_cube",
+            "Mesh", "CellType", "cell_dim",
+            "PETScKrylovSolver", "PETScLUSolver",
+            "NonlinearProblem", "NewtonSolver",
+            "PETSc", "MPI",
+            "grad", "div", "curl", "inner", "outer", "dot",
+            "tr", "sym", "skew", "det", "Identity",
+            "dx", "ds", "dS",
+            "RuntimeError", "ValueError", "TypeError",
+        })
+    elif backend == "dune":
+        code_symbols.update({
+            "dune", "dune.fem", "dune.grid", "dune.geometry",
+            "structuredGrid", "yaspGrid", "alugrid",
+            "FieldVector", "FieldMatrix",
+            "Space", "GridFunctionSpace", "DiscontinuousGalerkin",
+            "lagrange", "DGSpace", "FemSpace",
+            "uflSpace", "Scheme", "operator", "Source",
+            "DirichletBC", "Constraints",
+            "solve", "assembled", "galerkin",
+            "GridView", "Entity", "Intersection",
+            "RuntimeError", "ImportError",
+        })
+    elif backend == "fourc":
+        code_symbols.update({
+            "SOLID3", "BEAM3R", "WALL", "FLUID", "THERMO",
+            "DESIGN", "DBC", "NBC", "DIRICH", "NEUMANN",
+            "MAT", "STRUCT", "FLUID3", "TIMINT", "DYNAMIC",
+            "NLN_SOL", "Newton", "Picard", "BACI",
+            "ParameterList", "Teuchos", "Epetra", "Trilinos",
+            "ML", "MueLu", "AMG",
+            "ELEMENTS", "NODE_COORDS", "DESIGN_POINT",
+            "DESIGN_LINE", "DESIGN_SURF", "DESIGN_VOL",
+        })
+
     code_symbols.update({
         # ── Krylov solvers ─────────────────────────────────────
         "SolverCG", "SolverGMRES", "SolverFGMRES", "SolverMinRes",

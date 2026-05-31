@@ -1,1291 +1,511 @@
 {
-  "backend": "dealii",
+  "backend": "ngsolve",
   "totals": {
-    "n_pitfalls": 96,
-    "with_category_prefix": 96,
-    "with_signal_clause": 96,
-    "tier0_passed": 96,
-    "tier0_code_symbol_only": 55,
-    "tier0_with_domain_decoration": 41,
+    "n_pitfalls": 123,
+    "with_category_prefix": 10,
+    "with_signal_clause": 10,
+    "tier0_passed": 8,
+    "tier0_code_symbol_only": 4,
+    "tier0_with_domain_decoration": 4,
     "tier0_domain_names_only": 0,
-    "tier1_passed": 96,
-    "tier0_and_1_passed": 96,
-    "tier2_passed": 11,
-    "tier2_attempted": 11,
-    "n_falsifiable": 96,
+    "tier1_passed": 10,
+    "tier0_and_1_passed": 8,
+    "tier2_passed": 2,
+    "tier2_attempted": 2,
+    "n_falsifiable": 123,
     "n_unfalsifiable": 0,
-    "n_cheap_falsifiable": 10,
-    "n_medium_falsifiable": 42,
-    "n_expensive_falsifiable": 44,
-    "tier2_passed_of_cheap": 10,
-    "tier2_passed_of_medium": 1,
+    "n_cheap_falsifiable": 0,
+    "n_medium_falsifiable": 0,
+    "n_expensive_falsifiable": 0,
+    "tier2_passed_of_cheap": 0,
+    "tier2_passed_of_medium": 0,
     "tier2_passed_of_expensive": 0
   },
   "results": [
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "SolverControl reports 'Convergence step 0 value X.XXe-16' (already converged), `dof_handler.n_dofs()` returns 4, and KellyErrorEstimator output is a single cell-wise scalar.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "KellyErrorEstimator",
-        "SolverControl"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "KellyErrorEstimator",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "error",
-        "quoted-error-fragment",
-        "report",
-        "returns",
-        "value"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "`GridTools::get_boundary_ids(tria)` returns `{0}` (a single id, not the 4-6 expected for a cube), and VectorTools::interpolate_boundary_values applied to different boundary_ids produces the same Dirichlet values across all faces of the cube.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "GridTools",
-        "VectorTools"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "GridTools",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "returns",
-        "value"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 2,
-      "pitfall_category": "Syntax",
-      "signal_text": "GridTools::get_boundary_ids(tria) returns `{0, 1, 2, 3}` not the assumed `{0}` \u2014 if your Dirichlet code applies the BC only to boundary_id=0 you will see DataOut with that BC value only on the LEFT face and zero (homogeneous Neumann) on the other three.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "GridTools"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "GridTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "returns",
-        "value",
-        "zero"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG reports 'breakdown' on iteration 2-3 on a refined mesh, but works on the globally-refined version of the same problem.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG"
-      ],
-      "tier0_domain_names_matched": [
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "SolverCG",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "iteration",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 4,
-      "pitfall_category": "API",
-      "signal_text": "DataOut output shows step discontinuities of order 1e-2 to 1e-1 at refinement-level interfaces (hanging-node faces); SolverCG converges but the L2-error against an analytic reference plateaus instead of decreasing as h is refined.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "SolverCG"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "SolverCG"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "error",
-        "shows"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "poisson",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG iteration count from SolverControl::last_step() grows linearly with the max/min ratio of the coefficient (e.g. 50 iterations at contrast 1e2, 500 at contrast 1e3); switching to PreconditionAMG drops it back to O(log(ndof)).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "PreconditionAMG",
-        "SolverCG",
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "PreconditionAMG",
-        "SolverCG",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drop",
-        "grows",
-        "iteration",
-        "iterations"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "poisson",
-      "pitfall_index": 6,
-      "pitfall_category": "Integration",
-      "signal_text": "link errors like 'undefined reference to FE_Q<3>::FE_Q(unsigned int)' even though FE_Q<3> appears to be used elsewhere.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FE_Q"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "FE_Q"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "appears",
-        "error",
-        "quoted-error-fragment",
-        "undefined"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "assembly compiles but SolverCG reports 'iterative method failed to converge' (ExcSolverFail) because the stiffness matrix is rank-deficient; system_matrix.frobenius_norm() / system_rhs.l2_norm() is dominated by spurious diagonal entries.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcSolverFail",
-        "SolverCG"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ExcSolverFail",
-        "SolverCG"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "quoted-error-fragment",
-        "report"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "tip displacement from DataOut differs from the Euler-Bernoulli reference u_max = P*L^3 / (3*E*I) by a constant factor (typically 2-5x) that does NOT decrease with refinement; the ratio u_computed / u_reference is mesh-independent.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [
-        "Euler"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Euler"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "differs",
-        "numerical-comparison"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "tip deflection from `DataOut` on a cantilever 2D beam is ~30% smaller than the Euler-Bernoulli reference P*L^3 / (3*E*I); the discrepancy is bias not noise \u2014 it persists under mesh refinement.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [
-        "Euler"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Euler"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "smaller"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 3,
-      "pitfall_category": "Syntax",
-      "signal_text": "DataOut writes a displacement field where only the first component is non-zero (u_x has the expected gravity-driven profile, u_y is identically zero); per-component norm `solution.block(1).l2_norm() == 0` on a vector FESystem.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "FESystem"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "FESystem"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "zero"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "`ExcMessage` from grid_in.cc that the mesh contains unsupported cell type.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcMessage"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ExcMessage"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "linear_elasticity",
-      "pitfall_index": 5,
-      "pitfall_category": "API",
-      "signal_text": "GridIn reports 'unsupported cell type 25' (Tri6) or '28' (Quad9).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "GridIn"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "GridIn"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "linear_elasticity",
-      "pitfall_index": 6,
-      "pitfall_category": "Numerical",
-      "signal_text": "tip deflection differs from the analytic value by a factor that GROWS as nu increases \u2014 at nu=0.3 within 5%, at nu=0.499 off by 50%+; switching to FE_Q(2) or FE_RannacherTurek recovers agreement at the same h.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FE_Q",
-        "FE_RannacherTurek"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "FE_Q",
-        "FE_RannacherTurek"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "differs",
-        "grows",
-        "numerical-comparison",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "linear_elasticity",
-      "pitfall_index": 7,
-      "pitfall_category": "API",
-      "signal_text": "DataOut shows non-zero residual values on cells that should be 'off'; `system_rhs.l2_norm()` is larger than expected even though `dof_handler.n_dofs_on_subdomain()` reports the FE_Nothing region has 0 DoFs.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "FE_Nothing"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "FE_Nothing"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "larger",
-        "quoted-error-fragment",
-        "report",
-        "shows",
-        "value",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "linear_elasticity",
-      "pitfall_index": 8,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG reports 'breakdown' or stalls at 1e-2 residual reduction.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG"
-      ],
-      "tier0_domain_names_matched": [
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "SolverCG",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "quoted-error-fragment",
-        "report",
-        "stall"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "heat",
       "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "profiler / TimerOutput.print_summary() shows 'assemble_system' dominating wall time at ~60-80% per step, scaling as O(ndof^2) instead of the expected O(ndof * log(ndof)) when AMG is used; SolverCG iteration count is normal.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG",
-        "TimerOutput"
-      ],
-      "tier0_domain_names_matched": [
-        "AMG"
-      ],
-      "tier0_entities_matched": [
-        "AMG",
-        "SolverCG",
-        "TimerOutput"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "iteration",
-        "quoted-error-fragment",
-        "shows",
-        "wall time"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "heat",
       "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "VectorTools::integrate_difference vs a manufactured solution shows L2-error scaling as O(dt^1) instead of O(dt^2) even though theta=0.5 was set; log-log error-vs-dt slope is ~1.0, not ~2.0.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "VectorTools"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "shows"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "heat",
       "pitfall_index": 2,
-      "pitfall_category": "API",
-      "signal_text": "`solution.l2_norm()` from DataOut drops to near zero across the AMR-step boundary, then slowly recovers; the discontinuity coincides exactly with the time-step at which Triangulation::execute_coarsening_and_refinement() was called.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "Triangulation"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Triangulation"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drop",
-        "quoted-error-fragment",
-        "zero"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "heat",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "DataOut shows a discontinuous jump of O(1) at Dirichlet-boundary nodes between the t=0 output frame and the first time-step frame; the discontinuity disappears on the second step as the implicit solver smooths it out.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "appears",
-        "shows"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "heat",
-      "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "forward Euler with too-large dt \u2014 `solution.linfty_norm()` grows exponentially (doubles every 2-3 steps) and overflows to NaN within ~20 steps; VectorTools::integrate_difference vs analytic reference exceeds 1e6 within the first few steps.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "Euler"
-      ],
-      "tier0_entities_matched": [
-        "Euler",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "exceeds",
-        "grows",
-        "nan",
-        "quoted-error-fragment"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG reports 'breakdown' on iteration 2-3 with a negative inner product, before the iterative residual has dropped at all.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG"
-      ],
-      "tier0_domain_names_matched": [
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "SolverCG",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "drop",
-        "iteration",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "assembly succeeds but on the assembled BlockSparseMatrix system, block(1, 1).frobenius_norm() (the pressure block) is NON-ZERO when it should be zero for a saddle-point Stokes system; the DoFHandler's BlockInfo from get_block_info() reports block sizes in the wrong proportion (e.g. (n, n) instead of (dim*n, n)).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "BlockSparseMatrix",
-        "DoFHandler"
-      ],
-      "tier0_domain_names_matched": [
-        "Stokes"
-      ],
-      "tier0_entities_matched": [
-        "BlockSparseMatrix",
-        "DoFHandler",
-        "Stokes"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "report",
-        "wrong",
-        "zero"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "`solution.block(1).linfty_norm()` (the pressure block) drifts to >1e10 magnitude across iterations while `solution.block(0).l2_norm()` (velocity) converges normally; SolverGMRES iteration count grows each outer step as the null space pollutes the Krylov basis.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverGMRES"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "SolverGMRES"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "drift",
-        "grows",
-        "iteration",
-        "iterations",
-        "quoted-error-fragment"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "MGSmootherRelaxation with point Jacobi \u2014 SolverGMRES residual norm stagnates at ~1e-2 after the first V-cycle and refuses to drop further, even though SparseDirectUMFPACK on the same matrix converges to machine precision; SolverControl::last_step() reports max_iterations reached.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "MGSmootherRelaxation",
-        "SolverControl",
-        "SolverGMRES"
-      ],
-      "tier0_domain_names_matched": [
-        "Jacobi"
-      ],
-      "tier0_entities_matched": [
-        "Jacobi",
-        "MGSmootherRelaxation",
-        "SolverControl",
-        "SolverGMRES"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "drop",
-        "iteration",
-        "iterations",
-        "report"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "DataOut output for the BlockVector pressure component shows a regular high-frequency checkerboard pattern superimposed on the smooth solution; VectorTools::point_value evaluated at adjacent cell centroids alternates sign with O(1) magnitude.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "BlockVector",
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "checkerboard"
-      ],
-      "tier0_entities_matched": [
-        "BlockVector",
-        "DataOut",
-        "VectorTools",
-        "checkerboard"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "checkerboard",
-        "pattern",
-        "shows",
-        "value"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
+      "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 5,
-      "pitfall_category": "Physics",
-      "signal_text": "`VectorTools::integrate_difference` for div(u) returns values at machine epsilon (1e-15 to 1e-14) with FE_RaviartThomas \u2014 orders of magnitude smaller than the 1e-3 to 1e-5 typical of FE_Q Taylor-Hood at the same h. This is the expected H(div) behaviour, not a bug.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FE_Q",
-        "FE_RaviartThomas",
-        "VectorTools"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "FE_Q",
-        "FE_RaviartThomas",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "returns",
-        "smaller",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "stokes",
-      "pitfall_index": 6,
-      "pitfall_category": "Integration",
-      "signal_text": "computed drag coefficient C_D from VectorTools::compute_mean_value or user-side post-processing differs from the Sch\u00e4fer-Turek 1996 reference (Re=20: C_D \u2248 5.58, Re=100: C_D \u2248 3.22) by more than 10%; the mismatch is systematic across Triangulation::refine_global, not noise.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "Triangulation",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "Turek"
-      ],
-      "tier0_entities_matched": [
-        "Triangulation",
-        "Turek",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "differs",
-        "numerical-comparison",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "convection_diffusion",
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
       "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "at Pe << 1 (diffusion-dominated), DataOut shows over/undershoots of 5-15% near Dirichlet boundaries that persist under refinement \u2014 VectorTools::integrate_difference vs analytic reference plateaus at ~0.05 L2-error instead of decreasing as h^p.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "shows"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "convection_diffusion",
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
       "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "DG solution with FE_DGQ in DataOut shows continuous-Galerkin-like behaviour at element interfaces \u2014 `solution.linfty_norm()` of jump-across-face values drops below 1e-8 (effectively zero) where physical jumps of O(1) are expected for an upwind discontinuous Galerkin scheme.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "FE_DGQ"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "FE_DGQ"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "below",
-        "drop",
-        "quoted-error-fragment",
-        "shows",
-        "value",
-        "zero"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "convection_diffusion",
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
       "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "DataOut shows the prescribed inflow Dirichlet value (e.g. u=1 on x=0 with advection in +x direction) appearing as a localized hump at the DOWNSTREAM (x=L) boundary instead of being carried with the flow; VectorTools::point_value at the outflow returns the inflow value with reversed sign.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "returns",
-        "shows",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "convection_diffusion",
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
       "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "DataOut output shows O(1) oscillations in the FE_Q SUPG solution at the interface between high and low coefficient regions; VectorTools::integrate_difference vs the discontinuous reference is O(1) and does not decrease as h refines.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "FE_Q",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "SUPG"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "FE_Q",
-        "SUPG",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "oscillat",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "convection_diffusion",
-      "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "DataOut shows boundary-layer thickness smeared across 3-5 cells in the streamwise direction (where 1 should suffice) while resolved in 1 cell normal to the flow; Triangulation::n_active_cells() climbs into the 1e5+ range to achieve the same wall-normal resolution anisotropic refinement reaches at 1e4 cells.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "Triangulation"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Triangulation"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "reaches",
-        "shows"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "dealii",
-      "physics": "nonlinear",
+      "backend": "ngsolve",
+      "physics": "maxwell",
       "pitfall_index": 0,
       "pitfall_category": "Numerical",
-      "signal_text": "SolverControl::last_step() reports Newton iteration 1 with `residual.l2_norm()` exceeding 1e3 (orders of magnitude above the 1e-6 convergence tolerance); the residual at iteration 2 is even larger \u2014 Newton diverges immediately rather than stalling, ExcMessage('Newton step did not converge').",
+      "signal_text": "without nograds, BilinearForm.Assemble() succeeds but the direct factorisation reports a near-singular matrix (infinite condition number); ArnoldiSolver / Inverse raises a 'matrix is singular' or 'pivot too small' NgException because the gradient kernel of HCurl is in the null space of curl-curl.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "ExcMessage",
-        "SolverControl"
+        "ArnoldiSolver",
+        "Assemble",
+        "BilinearForm",
+        "HCurl",
+        "Inverse",
+        "NgException",
+        "curl"
       ],
-      "tier0_domain_names_matched": [
-        "Newton",
-        "convergence"
-      ],
+      "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "ExcMessage",
-        "Newton",
-        "SolverControl",
-        "convergence"
+        "ArnoldiSolver",
+        "Assemble",
+        "BilinearForm",
+        "HCurl",
+        "Inverse",
+        "NgException",
+        "curl"
       ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "raise",
+        "report"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 1,
+      "pitfall_category": "Numerical",
+      "signal_text": "eigenvalues computed with nograds=True differ from analytic cavity eigenvalues (k^2 = (m*pi/Lx)^2 + (n*pi/Ly)^2 + (p*pi/Lz)^2) by 1-3% AND the sequence approaches from below; without nograds the same eigenvalues converge from above and within 0.1%.",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "above",
-        "converge",
-        "diverge",
-        "iteration",
-        "larger",
-        "quoted-error-fragment",
-        "report",
-        "stall"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "nonlinear",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverControl::last_step() reports residual.l2_norm() oscillating between 1e-3 and 1e5 across consecutive Newton iterations without converging; ExcMessage('Newton did not converge in N iterations') eventually fires.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcMessage",
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "ExcMessage",
-        "Newton",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "iterations",
-        "oscillat",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "nonlinear",
-      "pitfall_index": 2,
-      "pitfall_category": "Syntax",
-      "signal_text": "SolverControl reports Newton convergence (residual.l2_norm() < tol) in 3-5 iterations on a problem that should take 10+; VectorTools::integrate_difference vs an analytic reference returns O(1) L2-error despite the reported residual being machine-precision-small.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverControl",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton",
-        "convergence"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "SolverControl",
-        "VectorTools",
-        "convergence"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "error",
-        "iteration",
-        "iterations",
-        "report",
-        "returns"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "nonlinear",
-      "pitfall_index": 3,
-      "pitfall_category": "API",
-      "signal_text": "SolverGMRES with the AD-built tangent diverges or stalls \u2014 VectorTools::integrate_difference between AD and a manually-derived reference tangent shows off-diagonals with opposite sign; Newton converges to a saddle point of the energy instead of the minimum.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverGMRES",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "SolverGMRES",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "diverge",
-        "shows",
-        "stall"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "nonlinear",
-      "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "identical to the SLEPc/PETSc link errors \u2014 same class of missing-third-party-dep failure.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "PETSc",
-        "SLEPc"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "PETSc",
-        "SLEPc"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "missing"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "helmholtz",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG reports 'breakdown' immediately.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG"
-      ],
-      "tier0_domain_names_matched": [
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "SolverCG",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "helmholtz",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "`solution.block(1).linfty_norm()` (the imaginary component) is exactly 0 despite the source f being complex; DataOut shows a real-valued standing-wave pattern instead of a complex outgoing wave.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "pattern",
-        "quoted-error-fragment",
-        "shows",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "helmholtz",
-      "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "DataOut shows wave amplitude DECAYING from the source toward the outer boundary (drops to <0.1 of peak amplitude at the boundary) instead of maintaining constant amplitude along a radial ray; comparison against Hankel-function reference gives L2-error of O(1).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [
-        "Hankel"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Hankel"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "amplitude",
-        "drop",
-        "error",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "helmholtz",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "VectorTools::integrate_difference for the FE_Q solution vs the analytic Hankel-function reference shows amplitude error of factor 2-5x at the scattering centre; refining h further (well below lambda/10) does NOT close the gap (the resolution is fine; the polynomial order is wrong for the wavenumber).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FE_Q",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "Hankel"
-      ],
-      "tier0_entities_matched": [
-        "FE_Q",
-        "Hankel",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "amplitude",
         "below",
-        "error",
-        "shows",
-        "wrong"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "helmholtz",
-      "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "VectorTools::integrate_difference vs a Hankel-function reference shows amplitude error stays at 10-20% but phase error grows like k^{p+1} h^{2p+1}; DataOut node positions are correctly spaced (h < lambda/10) but appear shifted by a constant fraction of a wavelength relative to the analytic solution.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "Hankel"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Hankel",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "amplitude",
-        "error",
-        "grows",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "helmholtz",
-      "pitfall_index": 5,
-      "pitfall_category": "Integration",
-      "signal_text": "DataOut shows the outgoing wave reflecting back into the interior \u2014 standing-wave pattern visible with `solution.linfty_norm()` rising periodically rather than monotonically decaying; reflection coefficient measured at the PML interface exceeds 1% (a real PML achieves <1e-4).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [
-        "PML"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "PML"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "exceeds",
-        "pattern",
-        "quoted-error-fragment",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "eigenvalue",
-      "pitfall_index": 0,
-      "pitfall_category": "Integration",
-      "signal_text": "link error 'undefined reference to SLEPc::SolverBase::SolverBase'.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SLEPc"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "SLEPc"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "undefined"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "eigenvalue",
-      "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "SLEPc::SolverKrylovSchur reports the smallest eigenvalue on the unit square as O(h) or O(h^{-2}) \u2014 orders of magnitude off from the analytic 2*pi^2 \u2248 19.74; the EPS::get_eigenvalue result scales with 1/h instead of being mesh-independent.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "EPS",
-        "SLEPc"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "EPS",
-        "SLEPc"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "report",
+        "converge",
+        "numerical-comparison",
         "value"
       ],
       "tier2_passed": false,
@@ -1293,135 +513,76 @@
       "notes": []
     },
     {
-      "backend": "dealii",
-      "physics": "eigenvalue",
+      "backend": "ngsolve",
+      "physics": "maxwell",
       "pitfall_index": 2,
-      "pitfall_category": "API",
-      "signal_text": "the EPS::get_eigenvalue spectrum returned by SLEPc contains exactly `boundary_dofs.size()` near-zero eigenvalues (magnitude < 1e-10) preceding the physical Laplace eigenvalues; AffineConstraints::distribute applied to M as well removes them.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AffineConstraints",
-        "EPS",
-        "SLEPc"
-      ],
-      "tier0_domain_names_matched": [
-        "Laplace"
-      ],
-      "tier0_entities_matched": [
-        "AffineConstraints",
-        "EPS",
-        "Laplace",
-        "SLEPc"
-      ],
+      "pitfall_category": "Physics",
+      "signal_text": "post-processed max(|B|) is on the order of the prescribed Dirichlet value of A directly (no spatial derivative taken).",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "value",
-        "zero"
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "dealii",
-      "physics": "eigenvalue",
+      "backend": "ngsolve",
+      "physics": "maxwell",
       "pitfall_index": 3,
       "pitfall_category": "Syntax",
-      "signal_text": "SLEPc::SolverKrylovSchur returns every requested eigenvalue as exactly 0.0 (not just small \u2014 bit-exact 0); EPS::get_eigenvalue(i) for i=0..n_requested all read 0.0 with eigenvectors of zero norm.",
+      "signal_text": "GridFunction.vec[i] is a real number even though the BFI carried a 1j coefficient; .imag attribute is missing on FlatVector. NgException: 'complex values cannot be assigned to a real FESpace' when the form's coefficients are explicit complex.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "EPS",
-        "SLEPc"
+        "FESpace",
+        "FlatVector",
+        "GridFunction",
+        "NgException"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "EPS",
-        "SLEPc"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "returns",
-        "value",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "eigenvalue",
-      "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "program crashes inside the EPS constructor with an MPI_ERR_COMM error.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "EPS",
-        "MPI_ERR_COMM"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "EPS",
-        "MPI_ERR_COMM"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "crash",
-        "error"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "eigenvalue",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "SLEPc::SolverKrylovSchur returns eigenvalues from EPS::get_eigenvalue all in the lower spectrum (e.g. [0.1, 5]) even though EPS::set_which_eigenpairs(EPS_TARGET_REAL) was set with target=100; the get_target_value query confirms target=100 was registered but ignored.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "EPS",
-        "EPS_TARGET_REAL",
-        "SLEPc"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "EPS",
-        "EPS_TARGET_REAL",
-        "SLEPc"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "returns",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "eigenvalue",
-      "pitfall_index": 6,
-      "pitfall_category": "Physics",
-      "signal_text": "SLEPc returns |EPS::get_eigenvalue(1) - EPS::get_eigenvalue(2)| > 1e-6 on a fine mesh (which should agree to machine epsilon for the degenerate 5*pi^2 pair); the missing-degenerate-modes diagnostic is the early-warning that the EPS is not deflating correctly.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "EPS",
-        "SLEPc"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "EPS",
-        "SLEPc"
+        "FESpace",
+        "FlatVector",
+        "GridFunction",
+        "NgException"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "missing",
-        "returns",
-        "value",
+        "quoted-error-fragment",
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 4,
+      "pitfall_category": "Physics",
+      "signal_text": "in 2D, fes.dim == 1 (scalar) instead of 2 (vector) on an HCurl space, and BilinearForm += curl(u)*curl(v)*dx assembles a scalar Helmholtz operator without warning.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "BilinearForm",
+        "HCurl",
+        "curl"
+      ],
+      "tier0_domain_names_matched": [
+        "Helmholtz"
+      ],
+      "tier0_entities_matched": [
+        "BilinearForm",
+        "HCurl",
+        "Helmholtz",
+        "curl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
         "warn"
       ],
       "tier2_passed": false,
@@ -1429,1277 +590,1753 @@
       "notes": []
     },
     {
-      "backend": "dealii",
-      "physics": "wave",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "when beta < gamma/2, `solution.linfty_norm()` from DataOut grows exponentially (doubles every 5-10 time steps) and reaches NaN within ~50 steps; the same problem with beta=0.25 stays bounded at O(1) amplitude.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "amplitude",
-        "grows",
-        "nan",
-        "quoted-error-fragment",
-        "reaches"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "wave",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "TimerOutput.print_summary() shows 'assemble_system' dominating wall time at 60-80% per step, scaling as O(ndof^2) instead of O(ndof * SolverCG::last_step()); SolverCG iteration count itself is normal.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG",
-        "TimerOutput"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "SolverCG",
-        "TimerOutput"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "iteration",
-        "quoted-error-fragment",
-        "shows",
-        "wall time"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "wave",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "with beta=0 and dt > h/c, BlockVector::linfty_norm() of the solution doubles every ~5 steps and reaches NaN within ~30 steps; energy 0.5 * v^T M v + 0.5 c^2 u^T K u (computed via SparseMatrix::vmult + dot product) grows by factor 10+ per step instead of staying bounded; switching to implicit Newmark (beta=0.25) at the same dt keeps amplitude bounded at O(1).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "BlockVector",
-        "SparseMatrix"
-      ],
-      "tier0_domain_names_matched": [
-        "Newmark"
-      ],
-      "tier0_entities_matched": [
-        "BlockVector",
-        "Newmark",
-        "SparseMatrix"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "amplitude",
-        "grows",
-        "nan",
-        "reaches"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "wave",
-      "pitfall_index": 3,
-      "pitfall_category": "Syntax",
-      "signal_text": "DataOut at early times (t < 5*period) shows a low-frequency mode of magnitude 0.1-0.3 superimposed on the correct wave pattern; VectorTools::integrate_difference vs analytic reference shows O(1) error in the first 10 steps then decays to O(h^p) on later steps.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "pattern",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "wave",
-      "pitfall_index": 4,
-      "pitfall_category": "Physics",
-      "signal_text": "DataOut shows the outgoing wave reflecting at the outflow boundary; `solution.linfty_norm()` rises periodically (period = 2*L/c) rather than decaying monotonically; energy `0.5 * v^T M v + 0.5 c^2 u^T K u` stays constant or grows instead of decaying to zero as the wave should leave the domain.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "grows",
-        "quoted-error-fragment",
-        "shows",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "wave",
+      "backend": "ngsolve",
+      "physics": "maxwell",
       "pitfall_index": 5,
-      "pitfall_category": "Integration",
-      "signal_text": "TimerOutput.print_summary() reports 'output_results' or 'DataOut::write_vtu' as the top wall-time entry (>50% of total), exceeding the SolverCG and assemble_system buckets; the per-step VTU file count grows into the 10000s on disk.",
+      "pitfall_category": "Numerical",
+      "signal_text": "ArnoldiSolver with shift=0.0 returns eigenvalues near 0 (gradient kernel) and misses the physical spectrum; eigenvalue residuals are O(1) instead of 1e-8 typical convergence.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "DataOut",
-        "SolverCG",
-        "TimerOutput",
-        "write_vtu"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "SolverCG",
-        "TimerOutput",
-        "write_vtu"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "grows",
-        "quoted-error-fragment",
-        "report",
-        "wall-time"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hp_adaptive",
-      "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "`dof_handler.distribute_dofs(fe_collection)` raises ExcMessage('Index in FECollection out of range') or, worse, returns silently with n_dofs() = 0 on cells with the missing degree.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcMessage",
-        "FECollection"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ExcMessage",
-        "FECollection"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "missing",
-        "quoted-error-fragment",
-        "raise",
-        "returns"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hp_adaptive",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "SolverCG reports 'breakdown' because the assembled K is not SPD; FECollection::size() and QCollection::size() differ.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FECollection",
-        "QCollection",
-        "SolverCG"
-      ],
-      "tier0_domain_names_matched": [
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "FECollection",
-        "QCollection",
-        "SolverCG",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "numerical-comparison",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hp_adaptive",
-      "pitfall_index": 2,
-      "pitfall_category": "API",
-      "signal_text": "dof_handler.n_dofs() grows as O(N) instead of O(log N) on a smooth solution; VectorTools::integrate_difference against analytic reference shows pure h-convergence rate instead of exponential-in-p.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "VectorTools"
+        "ArnoldiSolver"
       ],
       "tier0_domain_names_matched": [
         "convergence"
       ],
       "tier0_entities_matched": [
-        "VectorTools",
+        "ArnoldiSolver",
         "convergence"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "converge",
-        "grows",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hp_adaptive",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "DataOut shows step discontinuities at cell boundaries where the neighbours have different FE_Q degree; VectorTools::integrate_difference reports O(1) error along those interfaces and ~O(h^p) elsewhere.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "FE_Q",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "FE_Q",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "report",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hp_adaptive",
-      "pitfall_index": 4,
-      "pitfall_category": "API",
-      "signal_text": "MatrixFree::reinit raises ExcMessage('hp-FEValues requires hp::MappingCollection') or compiles but produces zero stiffness contribution on cells with the non-default active_fe_index.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcMessage",
-        "FEValues",
-        "MatrixFree"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ExcMessage",
-        "FEValues",
-        "MatrixFree"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "raise",
-        "value",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hp_adaptive",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "DataOut frame at the p-refinement step shows solution.linfty_norm() dropping by 10-50% (the high-frequency content lost in the transfer); next Newton step has to re-construct it from scratch.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Newton"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drop",
-        "numerical-comparison",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "assembly raises ExcMessage('matrix entry at i,j does not exist in sparsity pattern') when the FEInterfaceValues face term writes into the off-cell block; or, if the assembly succeeds via ExcInvalidIterator, DataOut shows the DG solution with continuous-Galerkin-like behaviour at faces because face coupling was dropped.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "ExcInvalidIterator",
-        "ExcMessage",
-        "FEInterfaceValues"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "ExcInvalidIterator",
-        "ExcMessage",
-        "FEInterfaceValues"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drop",
-        "pattern",
-        "quoted-error-fragment",
-        "raise",
-        "shows",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "SolverGMRES converges but DataOut shows a smooth (non-DG) solution; jump-across-face values from VectorTools::interpolate_difference vs reference are 1e-8 (effectively zero) where they should be O(1) for upwind DG.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "SolverGMRES",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "SolverGMRES",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "shows",
-        "value",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 2,
-      "pitfall_category": "API",
-      "signal_text": "assembly compiles and runs but the global system is non-symmetric AND inconsistent on periodic boundaries (if any); DataOut shows the solution with kinks at periodic-face nodes.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverGMRES with PreconditionJacobi reports SolverControl::last_step() growing linearly with n_cells; switching to PreconditionBlockSSOR drops iteration count by 10x.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "PreconditionBlockSSOR",
-        "PreconditionJacobi",
-        "SolverControl",
-        "SolverGMRES"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "PreconditionBlockSSOR",
-        "PreconditionJacobi",
-        "SolverControl",
-        "SolverGMRES"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drop",
-        "iteration",
-        "numerical-comparison",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "MatrixFree::cell_loop wall-time per iteration with FE_DGQ(6) is 2-3x larger than with FE_DGQHermite(6) at the same n_dofs.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FE_DGQ",
-        "FE_DGQHermite",
-        "MatrixFree"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "FE_DGQ",
-        "FE_DGQHermite",
-        "MatrixFree"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "iteration",
-        "larger",
-        "wall-time"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 5,
-      "pitfall_category": "Physics",
-      "signal_text": "AffineConstraints::distribute on a DG solution is a no-op (constraints.size() == 0); attempting to apply hanging-node constraints raises ExcMessage('DG discretisation has no hanging-node constraints').",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AffineConstraints",
-        "ExcMessage"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AffineConstraints",
-        "ExcMessage"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "raise"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 6,
-      "pitfall_category": "Physics",
-      "signal_text": "VectorTools::interpolate_boundary_values on a DG FE raises ExcMessage('strong boundary conditions not supported for DG'); or, if silently ignored, DataOut shows the prescribed Dirichlet value NOT appearing at the inflow boundary.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "ExcMessage",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "ExcMessage",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "raise",
-        "shows",
-        "value"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverControl reports Newton residual.l2_norm() > 1e3 on iteration 1, growing to NaN by iteration 3; ExcMessage('Newton step did not converge').",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcMessage",
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "ExcMessage",
-        "Newton",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "nan",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 1,
-      "pitfall_category": "Physics",
-      "signal_text": "assembly raises ExcMessage('det(F) <= 0 at quadrature point') or the constitutive evaluator returns NaN \u2014 DataOut last-saved frame shows mesh self-intersecting.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "ExcMessage"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "ExcMessage"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "nan",
-        "quoted-error-fragment",
-        "raise",
         "returns",
-        "shows"
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "VectorTools::integrate_difference vs reference shows stress error that grows with deformation magnitude (O(1) at large strain) instead of the expected O(h^p).",
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 6,
+      "pitfall_category": "API",
+      "signal_text": "numpy.array(ArnoldiSolver result) has dtype complex128; comparing to analytic real eigenvalues without .real raises TypeError or produces nan from complex>real.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "VectorTools"
+        "ArnoldiSolver"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "VectorTools"
+        "ArnoldiSolver"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "grows",
-        "shows"
+        "nan",
+        "raise",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 3,
-      "pitfall_category": "Syntax",
-      "signal_text": "SolverCG reports 'breakdown' on the geometrically-nonlinear tangent because K_mat alone is not symmetric \u2014 switching to SolverGMRES still converges but at 2x the iteration count.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG",
-        "SolverGMRES"
-      ],
-      "tier0_domain_names_matched": [
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "SolverCG",
-        "SolverGMRES",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "converge",
-        "iteration",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 4,
-      "pitfall_category": "Numerical",
-      "signal_text": "tip deflection on a Cook membrane differs from reference by 30-50% as nu approaches 0.5; switching to the three-field FESystem(FE_Q(2), dim, FE_DGP(1), 1, FE_DGP(0), 1) recovers convergence to within 5%.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "FESystem",
-        "FE_DGP",
-        "FE_Q"
-      ],
-      "tier0_domain_names_matched": [
-        "convergence"
-      ],
-      "tier0_entities_matched": [
-        "FESystem",
-        "FE_DGP",
-        "FE_Q",
-        "convergence"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "differs",
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 5,
-      "pitfall_category": "Physics",
-      "signal_text": "SolverControl reports Newton breakdown at the second or third load step under compression, with residual.l2_norm() oscillating wildly between iterations.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton",
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "SolverControl",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "iteration",
-        "iterations",
-        "oscillat",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 6,
-      "pitfall_category": "Integration",
-      "signal_text": "DataOut shows stress concentrations of >10x material yield at clamped corners; the affected cells fail the det(F)>0 check first as load grows.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "grows",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
+      "backend": "ngsolve",
+      "physics": "maxwell",
       "pitfall_index": 7,
-      "pitfall_category": "API",
-      "signal_text": "Newton converges with manual tangent but to a WRONG solution (off by 2x from AD-tangent reference); VectorTools::integrate_difference between manual and AD solutions is O(1).",
+      "pitfall_category": "Syntax",
+      "signal_text": "NgException with literal text 'curl' and 'H1HighOrderFESpace' is the BFI compile-time error a beginner hits when copying code between scalar (Poisson) and vector (Maxwell) formulations.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "VectorTools"
+        "H1HighOrderFESpace",
+        "NgException",
+        "curl"
       ],
       "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "numerical-comparison",
-        "wrong"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 8,
-      "pitfall_category": "API",
-      "signal_text": "DataOut.build_patches() called without DataOut::set_mapping(MappingQEulerian) writes a .vtu whose geometry is the undeformed reference triangulation; the displacement field appears only as colour overlay, not as actual node motion, even when solution.linfty_norm() is comparable to the domain size.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "MappingQEulerian"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "MappingQEulerian"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "appears"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 9,
-      "pitfall_category": "Syntax",
-      "signal_text": "GridTools::get_boundary_ids(tria) returns `{0}` (single id) instead of the expected set; DataOut shows displacement field zero everywhere because the entire boundary is over-constrained.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "GridTools"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "GridTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "returns",
-        "shows",
-        "zero"
-      ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 10,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverControl reports residual.l2_norm() dropping normally on iteration 1 of each load step then jumping back up by 10x on iteration 2 \u2014 caused by direct DOF-setting in the BlockVector bypassing the AffineConstraints object on subsequent iterations.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AffineConstraints",
-        "BlockVector",
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AffineConstraints",
-        "BlockVector",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "drop",
-        "iteration",
-        "iterations",
-        "numerical-comparison",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 11,
-      "pitfall_category": "Syntax",
-      "signal_text": "VectorTools::integrate_difference of DataOut output for a 2D vector elasticity problem shows the off-diagonal strain components (eps_xy, eps_yx) stuck at zero everywhere; cross-coupling Poisson contraction never appears.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
+        "Maxwell",
         "Poisson"
       ],
       "tier0_entities_matched": [
-        "DataOut",
+        "H1HighOrderFESpace",
+        "Maxwell",
+        "NgException",
         "Poisson",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "appears",
-        "shows",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "hyperelasticity",
-      "pitfall_index": 12,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG reports 'breakdown' on the indefinite tangent during line search; switching to UMFPACK gives machine-precision residual and Newton converges in 3-5 outer iterations.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG",
-        "UMFPACK"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton",
-        "breakdown"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "SolverCG",
-        "UMFPACK",
-        "breakdown"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "break",
-        "converge",
-        "iteration",
-        "iterations",
-        "quoted-error-fragment",
-        "report"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 0,
-      "pitfall_category": "Integration",
-      "signal_text": "link error 'undefined reference to parallel::distributed::Triangulation<dim>::Triangulation' or `ExcMessage('parallel::distributed::Triangulation needs deal.II compiled with p4est')`.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ExcMessage",
-        "Triangulation",
-        "p4est"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "ExcMessage",
-        "Triangulation",
-        "p4est"
+        "curl"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment",
-        "undefined"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 1,
-      "pitfall_category": "Syntax",
-      "signal_text": "assembly runs on every rank but `system_matrix.frobenius_norm()` is the SAME on rank 0 and rank 1 \u2014 each rank assembled the full mesh, leading to double-counted entries; Triangulation::n_locally_owned_active_cells() returns the full count instead of the per-rank partition.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "Triangulation"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "Triangulation"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "returns"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 2,
-      "pitfall_category": "API",
-      "signal_text": "`AffineConstraints::distribute(solution)` raises ExcMessage('ghost entries not consistent') because the ghost layer is empty.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "AffineConstraints",
-        "ExcMessage"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "AffineConstraints",
-        "ExcMessage"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "quoted-error-fragment",
-        "raise"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 3,
-      "pitfall_category": "Syntax",
-      "signal_text": "rss / VmPeak from /proc/self/status grows linearly with n_dofs on each MPI rank instead of being O(n_dofs / n_ranks); SparseMatrix::memory_consumption() exceeds the expected per-rank slice.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SparseMatrix"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "SparseMatrix"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "exceeds",
-        "grows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 4,
-      "pitfall_category": "Syntax",
-      "signal_text": "DataOut shows the global solution split into per-rank regions with mismatched values at MPI subdomain interfaces; VectorTools::integrate_difference against the serial reference is O(1) at the interfaces and 0 elsewhere.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "shows",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 5,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverCG iteration count from SolverControl::last_step() grows from O(20) on Laplace to >500 on the same mesh size for elasticity, with each iteration cost dominated by AMG-apply.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverCG",
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [
-        "AMG",
-        "Laplace"
-      ],
-      "tier0_entities_matched": [
-        "AMG",
-        "Laplace",
-        "SolverCG",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "grows",
-        "iteration"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "parallel_poisson",
-      "pitfall_index": 6,
-      "pitfall_category": "Integration",
-      "signal_text": "ParaView shows fragmentary mesh (only one MPI subdomain), while reading the .pvtu yields the full distributed result; DataOut::write_vtu (no pvtu_record) produces the broken-into-pieces output.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "write_vtu"
-      ],
-      "tier0_domain_names_matched": [
-        "ParaView"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "ParaView",
-        "write_vtu"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "navier_stokes",
-      "pitfall_index": 0,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverGMRES with no outer Newton/Picard loop converges in 1 iteration to a symmetric, advection-free velocity profile \u2014 DataOut shows no recirculation behind a cylinder at Re=100 (which should have a visible Karman vortex street); VectorTools::integrate_difference against a Stokes reference is ~0, against a NS reference is O(1).",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "DataOut",
-        "SolverGMRES",
-        "VectorTools",
-        "cylinder"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton",
-        "Picard",
-        "Stokes"
-      ],
-      "tier0_entities_matched": [
-        "DataOut",
-        "Newton",
-        "Picard",
-        "SolverGMRES",
-        "Stokes",
-        "VectorTools",
-        "cylinder"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "shows"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "navier_stokes",
-      "pitfall_index": 1,
-      "pitfall_category": "Numerical",
-      "signal_text": "DataOut output for the BlockVector pressure block shows a regular high-frequency checkerboard pattern; VectorTools::point_value at adjacent cell centroids alternates sign with O(1) magnitude.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "BlockVector",
-        "DataOut",
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "checkerboard"
-      ],
-      "tier0_entities_matched": [
-        "BlockVector",
-        "DataOut",
-        "VectorTools",
-        "checkerboard"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "checkerboard",
-        "pattern",
-        "shows",
-        "value"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "navier_stokes",
-      "pitfall_index": 2,
-      "pitfall_category": "Numerical",
-      "signal_text": "SolverControl reports residual.l2_norm() > 1e3 on Newton iteration 1 at Re=200 from a zero initial guess, ending in ExcMessage('iterative method failed to converge'); rerunning with the Re=100 solution stored in BlockVector as the initial guess converges in 4-6 Newton steps.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "BlockVector",
-        "ExcMessage",
-        "SolverControl"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "BlockVector",
-        "ExcMessage",
-        "Newton",
-        "SolverControl"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "iteration",
-        "quoted-error-fragment",
-        "report",
-        "zero"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "navier_stokes",
-      "pitfall_index": 3,
-      "pitfall_category": "Numerical",
-      "signal_text": "time-averaged Reynolds-stress magnitude from VectorTools::integrate_difference differs by 20-40% from a Sch\u00e4fer-Turek reference at Re=100 \u2014 halving dt drops the error proportionally (O(dt) scaling); switching to BDF2 / Crank-Nicolson at the same dt reduces the error below 5%.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "VectorTools"
-      ],
-      "tier0_domain_names_matched": [
-        "BDF2",
-        "Turek"
-      ],
-      "tier0_entities_matched": [
-        "BDF2",
-        "Turek",
-        "VectorTools"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "below",
-        "differs",
-        "drop",
-        "error",
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "dealii",
-      "physics": "navier_stokes",
-      "pitfall_index": 4,
-      "pitfall_category": "Physics",
-      "signal_text": "`solution.block(1).linfty_norm()` (pressure) drifts to >1e10 magnitude across Newton iterations while `solution.block(0).l2_norm()` (velocity) converges normally; SolverGMRES iteration count for the linearised tangent grows each outer step as the pressure null space pollutes the Krylov basis.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "SolverGMRES"
-      ],
-      "tier0_domain_names_matched": [
-        "Newton"
-      ],
-      "tier0_entities_matched": [
-        "Newton",
-        "SolverGMRES"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "converge",
-        "drift",
-        "grows",
-        "iteration",
-        "iterations",
         "quoted-error-fragment"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
-      "backend": "dealii",
-      "physics": "navier_stokes",
-      "pitfall_index": 5,
-      "pitfall_category": "Integration",
-      "signal_text": "DataOut shows visible spatial oscillations of magnitude 0.05-0.2 (relative to max velocity) within 2-3 cells of a no-slip wall despite the SUPG term being active; refining h eliminates them only locally; comparing tau values between 1D and 2D shows a sqrt(2) discrepancy at the wall.",
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 8,
+      "pitfall_category": "Syntax",
+      "signal_text": "NgException emitted by SymbolicBFI about 'grad' / 'HCurl' / 'scalar-valued'; the user gets an immediate compile-time error when trying to reuse the Poisson assembly on a Maxwell space.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "DataOut"
+        "HCurl",
+        "NgException",
+        "SymbolicBFI",
+        "grad"
       ],
       "tier0_domain_names_matched": [
-        "SUPG"
+        "Maxwell",
+        "Poisson"
       ],
       "tier0_entities_matched": [
-        "DataOut",
-        "SUPG"
+        "HCurl",
+        "Maxwell",
+        "NgException",
+        "Poisson",
+        "SymbolicBFI",
+        "grad"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "oscillat",
-        "shows",
+        "error",
+        "quoted-error-fragment",
+        "value"
+      ],
+      "tier2_passed": true,
+      "tier2_status": "passed",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 9,
+      "pitfall_category": "API",
+      "signal_text": "NgException about SymbolicLFI requiring 'scalar-valued' integrand; the same JJ vector that works on HCurl test functions raises immediately on H1 test functions.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "HCurl",
+        "NgException",
+        "SymbolicLFI"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "HCurl",
+        "NgException",
+        "SymbolicLFI"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "raise",
         "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hyperelasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hyperelasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hyperelasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hyperelasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hyperelasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "convection_diffusion",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "convection_diffusion",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "convection_diffusion",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "convection_diffusion",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "convection_diffusion",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mixed_poisson",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mixed_poisson",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mixed_poisson",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "thermal_structural",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "thermal_structural",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "thermal_structural",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "plasticity",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "contact",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "mhd",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "phase_field",
+      "pitfall_index": 7,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     }
   ]
 }

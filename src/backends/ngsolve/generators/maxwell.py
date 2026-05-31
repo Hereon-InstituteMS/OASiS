@@ -55,20 +55,82 @@ KNOWLEDGE = {
         "spaces": "HCurl(mesh, order=k, nograds=True) — tangential continuity",
         "solver": "Direct for small. HCurlAMG preconditioner for large systems",
         "pitfalls": [
-            "For SOURCE problems (magnetostatics): use nograds=True to remove "
-            "gradient kernel, plus 1e-8*u*v*dx regularization.",
-            "For EIGENVALUE problems: do NOT use nograds=True — it degrades accuracy "
-            "by 1-3% and causes eigenvalues to converge from below. Instead, use the "
-            "full HCurl space with ArnoldiSolver(shift=<near expected eigenvalue>). "
-            "Set shift near the center of the expected eigenvalue range.",
-            "B = curl(A) — magnetic field is the curl of the vector potential",
-            "Complex-valued for time-harmonic: HCurl(mesh, complex=True)",
-            "3D only — 2D Maxwell reduces to scalar Helmholtz",
-            "ArnoldiSolver shift: set near expected eigenvalue range, not near zero. "
-            "Estimate lowest eigenvalue analytically first (e.g., k^2 ~ (pi/L)^2 "
-            "for cavity). shift=0.5*k^2_expected works well.",
-            "Eigenvalue solvers return complex values even for real-symmetric problems — "
-            "take .real before comparison.",
+            "[Numerical] For SOURCE problems (magnetostatics): use "
+            "HCurl(..., nograds=True) to remove the gradient kernel, "
+            "plus a 1e-8*u*v*dx regularisation. Signal: without "
+            "nograds, BilinearForm.Assemble() succeeds but the "
+            "direct factorisation reports a near-singular matrix "
+            "(infinite condition number); ArnoldiSolver / Inverse "
+            "raises a 'matrix is singular' or 'pivot too small' "
+            "NgException because the gradient kernel of HCurl is "
+            "in the null space of curl-curl.",
+            "[Numerical] For EIGENVALUE problems: do NOT use "
+            "nograds=True — it degrades accuracy by 1-3% and "
+            "causes eigenvalues to converge from below. Use the "
+            "full HCurl space with ArnoldiSolver(shift=<near "
+            "expected eigenvalue>). Signal: eigenvalues computed "
+            "with nograds=True differ from analytic cavity "
+            "eigenvalues (k^2 = (m*pi/Lx)^2 + (n*pi/Ly)^2 + "
+            "(p*pi/Lz)^2) by 1-3% AND the sequence approaches "
+            "from below; without nograds the same eigenvalues "
+            "converge from above and within 0.1%.",
+            "[Physics] B = curl(A) — magnetic field is the curl of "
+            "the vector potential. Forgetting the curl gives B == A "
+            "(vector potential treated as field) and Tesla units "
+            "off by order(curl) ~ 1/L. Signal: post-processed "
+            "max(|B|) is on the order of the prescribed Dirichlet "
+            "value of A directly (no spatial derivative taken).",
+            "[Syntax] Complex-valued for time-harmonic: HCurl("
+            "mesh, complex=True). Real HCurl + complex Bilinear "
+            "form silently zeros the imaginary part. Signal: "
+            "GridFunction.vec[i] is a real number even though "
+            "the BFI carried a 1j coefficient; .imag attribute "
+            "is missing on FlatVector. NgException: 'complex "
+            "values cannot be assigned to a real FESpace' when "
+            "the form's coefficients are explicit complex.",
+            "[Physics] 3D only — 2D Maxwell reduces to scalar "
+            "Helmholtz, NOT to vector HCurl. Defining HCurl(mesh) "
+            "on a 2D mesh produces a 1-component space and "
+            "curl(u) is a scalar, not a vector. Signal: in 2D, "
+            "fes.dim == 1 (scalar) instead of 2 (vector) on an "
+            "HCurl space, and BilinearForm += curl(u)*curl(v)*dx "
+            "assembles a scalar Helmholtz operator without "
+            "warning.",
+            "[Numerical] ArnoldiSolver shift: set near expected "
+            "eigenvalue range, not near zero. Estimate the lowest "
+            "eigenvalue analytically first (k^2 ~ (pi/L)^2 for "
+            "cavity); shift=0.5*k^2_expected works well. Signal: "
+            "ArnoldiSolver with shift=0.0 returns eigenvalues "
+            "near 0 (gradient kernel) and misses the physical "
+            "spectrum; eigenvalue residuals are O(1) instead of "
+            "1e-8 typical convergence.",
+            "[API] Eigenvalue solvers return complex values even "
+            "for real-symmetric problems — take .real before "
+            "comparison. Signal: numpy.array(ArnoldiSolver result) "
+            "has dtype complex128; comparing to analytic real "
+            "eigenvalues without .real raises TypeError or "
+            "produces nan from complex>real.",
+            "[Syntax] HCurl is for vector fields with tangential "
+            "continuity. Calling curl(u) on an H1 scalar space "
+            "raises NgException('Operator \"curl\" does not exist "
+            "for H1HighOrderFESpace'). Signal: NgException with "
+            "literal text 'curl' and 'H1HighOrderFESpace' is the "
+            "BFI compile-time error a beginner hits when copying "
+            "code between scalar (Poisson) and vector (Maxwell) "
+            "formulations.",
+            "[Syntax] BilinearForm composing grad(u)*grad(v)*dx "
+            "(scalar Poisson form) on an HCurl space raises "
+            "NgException because grad() is not defined on HCurl. "
+            "Signal: NgException emitted by SymbolicBFI about "
+            "'grad' / 'HCurl' / 'scalar-valued'; the user gets "
+            "an immediate compile-time error when trying to "
+            "reuse the Poisson assembly on a Maxwell space.",
+            "[API] LinearForm += f*v*dx where f is a 3-vector "
+            "and v is a scalar (H1) test function is a vector-"
+            "source on a scalar form. Signal: NgException about "
+            "SymbolicLFI requiring 'scalar-valued' integrand; "
+            "the same JJ vector that works on HCurl test "
+            "functions raises immediately on H1 test functions.",
         ],
     },
 }

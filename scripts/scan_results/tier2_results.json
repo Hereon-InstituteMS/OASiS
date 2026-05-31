@@ -310,11 +310,11 @@
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/variable_not_added_before_access/source.py\", line 23, in main\n    mp.Nodes[1].GetSolutionStepValue(KM.DISPLACEMENT)\nRuntimeError: Error: This container only can store the variables specified in its variables list. The variables list doesn't have this variable:DISPLACEMENT variable #5132508"
     },
-    "ngsolve::maxwell::93": {
-      "key": "ngsolve::maxwell::93",
+    "ngsolve::maxwell::7": {
+      "key": "ngsolve::maxwell::7",
       "backend": "ngsolve",
       "physics": "maxwell",
-      "pitfall_index": 93,
+      "pitfall_index": 7,
       "fixture_id": "h1_curl_operator_unknown",
       "mode": "python",
       "status": "passed",
@@ -327,11 +327,11 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/h1_curl_operator_unknown/source.py\", line 43, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/h1_curl_operator_unknown/source.py\", line 31, in main\n    a += curl(u) * curl(v) * dx  # curl on scalar H1: WRONG\n         ^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/ngsolve/utils.py\", line 64, in curl\n    add = func.Operator(\"curl\")\n          ^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: Operator \"curl\" does not exist for H1HighOrderFESpace!\n"
     },
-    "ngsolve::maxwell::95": {
-      "key": "ngsolve::maxwell::95",
+    "ngsolve::maxwell::8": {
+      "key": "ngsolve::maxwell::8",
       "backend": "ngsolve",
       "physics": "maxwell",
-      "pitfall_index": 95,
+      "pitfall_index": 8,
       "fixture_id": "hcurl_grad_mismatch",
       "mode": "python",
       "status": "passed",
