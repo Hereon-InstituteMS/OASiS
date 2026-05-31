@@ -327,27 +327,37 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps(postmortems, indent=2)
 
         elif topic == "pitfalls" and solver:
-            # Try deep knowledge
+            # Backend is the source of truth for pitfalls (Table-1
+            # promoted, post-execution-critic-actionable). The
+            # deep_knowledge fallback was inverted historically —
+            # it returned prose entries even for backends whose
+            # generators had been Table-1 promoted, breaking the
+            # alignment between prepare_simulation and discover.
+            # Now backend is consulted FIRST; deep_knowledge is
+            # only used as a supplement for physics the backend
+            # does not enumerate (rare in practice).
+            backend = get_backend(solver)
+            all_pitfalls = {}
+            if backend:
+                for p in backend.supported_physics():
+                    k = backend.get_knowledge(p.name)
+                    if k and "pitfalls" in k:
+                        all_pitfalls[p.name] = k["pitfalls"]
             try:
                 from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE
                 dicts = {"fourc": _4C_KNOWLEDGE, "4c": _4C_KNOWLEDGE,
                          "fenics": _FENICS_KNOWLEDGE, "fenicsx": _FENICS_KNOWLEDGE}
                 d = dicts.get(solver.lower(), {})
-                pitfalls = {}
                 for k, v in d.items():
-                    if isinstance(v, dict) and "pitfalls" in v:
-                        pitfalls[k] = v["pitfalls"]
-                if pitfalls:
-                    return json.dumps(pitfalls, indent=2)
+                    if (isinstance(v, dict) and "pitfalls" in v
+                            and k not in all_pitfalls):
+                        all_pitfalls[k] = v["pitfalls"]
             except ImportError:
                 pass
-            backend = get_backend(solver)
+            if not backend:
+                if all_pitfalls:
+                    return json.dumps(all_pitfalls, indent=2)
             if backend:
-                all_pitfalls = {}
-                for p in backend.supported_physics():
-                    k = backend.get_knowledge(p.name)
-                    if k and "pitfalls" in k:
-                        all_pitfalls[p.name] = k["pitfalls"]
                 # Also include general input-format pitfalls (e.g., ExodusII
                 # block IDs, FUNCT syntax, shared-node NUMDOF conflict)
                 general_k = backend.get_knowledge("input_format")
