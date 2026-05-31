@@ -220,20 +220,28 @@
       "physics": "linear_elasticity",
       "pitfall_index": 1,
       "pitfall_category": "Integration",
-      "signal_text": "AnalysisStage.Initialize raises RuntimeError 'No constitutive law assigned to Property ...' even though the .mdpa has the right Property ID.",
+      "signal_text": "Element.Initialize raises RuntimeError 'A constitutive law needs to be specified for the element with ID N' from applications/StructuralMechanicsApplication/custom_elements/solid_elements/base_solid_element.cpp when the Property has YOUNG_MODULUS / POISSON_RATIO set but no CONSTITUTIVE_LAW. (Verified empirically 2026-06-01 \u2014 prior catalog text said 'No constitutive law assigned to Property X' and pointed at AnalysisStage.Initialize; the real error message references the element ID, not the Property, and originates in base_solid_element.cpp:249.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
         "AnalysisStage",
+        "Element",
         "Initialize",
+        "POISSON_RATIO",
         "Property",
-        "RuntimeError"
+        "RuntimeError",
+        "StructuralMechanicsApplication",
+        "YOUNG_MODULUS"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
         "AnalysisStage",
+        "Element",
         "Initialize",
+        "POISSON_RATIO",
         "Property",
-        "RuntimeError"
+        "RuntimeError",
+        "StructuralMechanicsApplication",
+        "YOUNG_MODULUS"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
@@ -437,21 +445,36 @@
       "physics": "linear_elasticity",
       "pitfall_index": 9,
       "pitfall_category": "API",
-      "signal_text": "RuntimeError 'variable ... was not added to the variables list of ModelPart ...' from a process or element trying to read the freshly-added variable.",
+      "signal_text": "Two distinct failure modes (both verified empirically 2026-06-01): (a) If the variable is added AFTER any Node is created, ModelPart.AddNodalSolutionStepVariable raises RuntimeError 'Attempting to add the variable \"X\" to the model part with name \"Y\" which is not empty' from kratos/includes/model_part.h:521 \u2014 Kratos refuses to extend the variables list once nodes exist. (b) If the variable was NEVER added, the first GetSolutionStepValue / SetSolutionStepValue on the Node raises RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: X' from variables_list_data_value_container. (Prior catalog text only described mode (b) as happening 'when a process tries to read the freshly-added variable' \u2014 that is wrong; the freshly-added case is mode (a) and fires at the add call.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
+        "AddNodalSolutionStepVariable",
+        "GetSolutionStepValue",
         "ModelPart",
-        "RuntimeError"
+        "Node",
+        "RuntimeError",
+        "SetSolutionStepValue",
+        "model_part",
+        "variables_list_data_value_container"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
+        "AddNodalSolutionStepVariable",
+        "GetSolutionStepValue",
         "ModelPart",
-        "RuntimeError"
+        "Node",
+        "RuntimeError",
+        "SetSolutionStepValue",
+        "model_part",
+        "variables_list_data_value_container"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment"
+        "quoted-error-fragment",
+        "raise",
+        "value",
+        "wrong"
       ],
       "tier2_passed": true,
       "tier2_status": "passed",
