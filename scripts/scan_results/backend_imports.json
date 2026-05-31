@@ -1,0 +1,194 @@
+{
+  "_comment": "Backend import-availability audit. Surfaces the gap between supported_physics() and what the underlying library can actually do. Use as data for follow-up registry-validation work.",
+  "kratos": {
+    "interpreter": "/home/hermann/Schreibtisch/Open-FEM-agent/.venv/bin/python",
+    "core_importable": true,
+    "core_error": "",
+    "available_apps": [
+      "FluidDynamicsApplication",
+      "StructuralMechanicsApplication"
+    ],
+    "physics_available": [
+      {
+        "physics": "fluid",
+        "app": "FluidDynamicsApplication"
+      },
+      {
+        "physics": "fluid_biomedical",
+        "app": "FluidDynamicsApplication"
+      },
+      {
+        "physics": "fluid_dynamics",
+        "app": "FluidDynamicsApplication"
+      },
+      {
+        "physics": "fluid_hydraulics",
+        "app": "FluidDynamicsApplication"
+      },
+      {
+        "physics": "linear_elasticity",
+        "app": "StructuralMechanicsApplication"
+      },
+      {
+        "physics": "structural_dynamics",
+        "app": "StructuralMechanicsApplication"
+      },
+      {
+        "physics": "wind_engineering",
+        "app": "FluidDynamicsApplication"
+      }
+    ],
+    "physics_unreachable": [
+      {
+        "physics": "chimera",
+        "app": "ChimeraApplication"
+      },
+      {
+        "physics": "compressible_flow",
+        "app": "CompressiblePotentialFlowApplication"
+      },
+      {
+        "physics": "compressible_potential",
+        "app": "CompressiblePotentialFlowApplication"
+      },
+      {
+        "physics": "contact",
+        "app": "ContactStructuralMechanicsApplication"
+      },
+      {
+        "physics": "cosimulation",
+        "app": "CoSimulationApplication"
+      },
+      {
+        "physics": "dem",
+        "app": "DEMApplication"
+      },
+      {
+        "physics": "dem_structures_coupling",
+        "app": "DEMApplication"
+      },
+      {
+        "physics": "fem_to_dem",
+        "app": "FemToDemApplication"
+      },
+      {
+        "physics": "fsi",
+        "app": "MappingApplication"
+      },
+      {
+        "physics": "geomechanics",
+        "app": "GeoMechanicsApplication"
+      },
+      {
+        "physics": "heat",
+        "app": "ConvectionDiffusionApplication"
+      },
+      {
+        "physics": "heat_transient",
+        "app": "ConvectionDiffusionApplication"
+      },
+      {
+        "physics": "iga",
+        "app": "IgaApplication"
+      },
+      {
+        "physics": "mpm",
+        "app": "MPMApplication"
+      },
+      {
+        "physics": "optimization",
+        "app": "OptimizationApplication"
+      },
+      {
+        "physics": "pfem",
+        "app": "PfemFluidDynamicsApplication"
+      },
+      {
+        "physics": "pfem_fluid",
+        "app": "PfemFluidDynamicsApplication"
+      },
+      {
+        "physics": "plasticity",
+        "app": "ConstitutiveLawsApplication"
+      },
+      {
+        "physics": "poromechanics",
+        "app": "GeoMechanicsApplication"
+      },
+      {
+        "physics": "rans",
+        "app": "RANSApplication"
+      },
+      {
+        "physics": "rom",
+        "app": "RomApplication"
+      },
+      {
+        "physics": "shallow_water",
+        "app": "ShallowWaterApplication"
+      },
+      {
+        "physics": "shape_optimization",
+        "app": "ShapeOptimizationApplication"
+      },
+      {
+        "physics": "swimming_dem",
+        "app": "DEMApplication"
+      },
+      {
+        "physics": "thermal_dem",
+        "app": "DEMApplication"
+      },
+      {
+        "physics": "topology_optimization",
+        "app": "TopologyOptimizationApplication"
+      }
+    ]
+  },
+  "skfem": {
+    "backend": "skfem",
+    "interpreter": "/home/hermann/Schreibtisch/Open-FEM-agent/.venv/bin/python",
+    "importable": true,
+    "error": ""
+  },
+  "ngsolve": {
+    "backend": "ngsolve",
+    "interpreter": "/home/hermann/Schreibtisch/Open-FEM-agent/.venv/bin/python",
+    "importable": true,
+    "error": ""
+  },
+  "fenics": {
+    "backend": "fenics",
+    "interpreter": "/home/hermann/miniconda3/envs/ofa-fenicsx/bin/python",
+    "importable": true,
+    "error": ""
+  },
+  "dune": {
+    "backend": "dune",
+    "interpreter": "/home/hermann/miniconda3/envs/ofa-dune/bin/python",
+    "importable": false,
+    "error": "interpreter not found at /home/hermann/miniconda3/envs/ofa-dune/bin/python"
+  },
+  "dealii": {
+    "backend": "dealii",
+    "target": "/home/hermann/Schreibtisch/dealii-debug/lib/libdeal_II.g.so",
+    "available": true,
+    "error": ""
+  },
+  "fourc": {
+    "backend": "fourc",
+    "target": "/home/hermann/Schreibtisch/4C-src/4C/build/4C",
+    "available": true,
+    "error": ""
+  },
+  "summary": {
+    "kratos_physics_available": 7,
+    "kratos_physics_unreachable": 26,
+    "skfem_importable": true,
+    "ngsolve_importable": true,
+    "fenics_importable": true,
+    "dune_importable": false,
+    "dealii_available": true,
+    "fourc_available": true
+  }
+}
