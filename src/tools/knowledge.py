@@ -210,6 +210,17 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     Returns a formatted block with file paths and content previews,
     or empty string when no local demos are available.
     """
+    # Empty / whitespace-only physics would match every filename
+    # via the substring-of-everything pattern that bit
+    # prepare_simulation, examples('search'), and discover(
+    # 'recommend'). Callers in this module already guard before
+    # reaching here, but the helper is publicly importable
+    # from src/tools/knowledge.py — guard it here too so a
+    # future caller can't reintroduce the bug. (Audit
+    # 2026-06-01.)
+    if not physics or not physics.strip():
+        return ""
+
     test_dirs = discover_test_dirs()
     solver_key = solver.lower()
     test_dir = test_dirs.get(solver_key)
@@ -221,6 +232,10 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
            else "*.py")
 
     keywords = resolve_search_keywords(solver, physics)
+    # Drop any empty / whitespace-only keyword the resolver
+    # produced (a defensive de-dup against the same class of
+    # bug in resolve_search_keywords' alias map).
+    keywords = [k for k in keywords if k and k.strip()]
     matches = []
     for kw in keywords:
         for f in sorted(test_dir.rglob(ext)):
