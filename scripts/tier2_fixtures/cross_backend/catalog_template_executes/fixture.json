@@ -92,7 +92,8 @@
     "ngsolve::nonlinear_elasticity::2d_rc=0",
     "ngsolve::mhd::2d_rc=0",
     "ngsolve::phase_field::fracture_2d_rc=0",
-    "total_executed=86",
+    "ngsolve::hdivdiv::2d_rc=0",
+    "total_executed=87",
     "failures=0"
   ],
   "forbid_in_output": [

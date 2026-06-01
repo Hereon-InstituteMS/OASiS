@@ -319,6 +319,15 @@ def main() -> int:
         # 50->5) so they complete in <10s.
         ("ngsolve", "mhd", "2d"),
         ("ngsolve", "phase_field", "fracture_2d"),
+        # Batch-15: ngsolve::hdivdiv — last deferred row.
+        # HDivDiv has no pointwise div(div) operator; the
+        # HHJ formulation uses tau:Hesse(w) + element-
+        # boundary normal-normal moment integrals instead.
+        # Numerical accuracy of the rewrite still needs
+        # tuning (the SS-plate reference comparison shows
+        # large error) — separate from the gate rc=0
+        # criterion this row tests.
+        ("ngsolve", "hdivdiv", "2d"),
     ]
     fail = []
     executed = 0

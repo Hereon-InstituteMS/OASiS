@@ -552,17 +552,23 @@ def Compliance(s):
     return (1.0/D) * (s - nu_val/(1 + nu_val) * Trace(s) * Id(2))
 
 # ── Bilinear form ─────────────────────────────────────────────────────────────
+# HHJ weak form: integrate the div(div(σ)) coupling
+# by parts TWICE so the operators land on the H1
+# deflection w as a Hessian. NGSolve's HDivDiv space
+# does NOT expose a pointwise div(div(·)) operator —
+# constructing it raises Exception 'cannot form div'.
+# Use w.Operator('hesse') for ∇²w and add the
+# normal-normal moment skeleton facet integral.
 a = BilinearForm(X, symmetric=True)
 # Compliance block
 a += InnerProduct(Compliance(sig), tau_) * dx
-# B(tau, w): coupling — div(div(tau)) * w integrated by parts
-a += div(div(tau_)) * ww * dx
-# B(sigma, v): symmetric
-a += div(div(sig)) * vv * dx
-# Boundary natural BC: tangential jump for clamped plate
-# (edge integrals over skeleton for normal-normal BC)
-a += -(tau_ * n) * n * (Grad(ww) * n) * ds(skeleton=True)
-a += -(sig  * n) * n * (Grad(vv) * n) * ds(skeleton=True)
+# Mixed coupling: ∫ τ : ∇²w dx
+a += InnerProduct(tau_, ww.Operator("hesse")) * dx
+a += InnerProduct(sig, vv.Operator("hesse")) * dx
+# Skeleton facet integral: normal-normal moment couples
+# to the jump of the normal derivative of deflection.
+a += -(tau_ * n * n) * (Grad(ww) * n) * dx(element_boundary=True)
+a += -(sig  * n * n) * (Grad(vv) * n) * dx(element_boundary=True)
 a.Assemble()
 
 # ── Load ─────────────────────────────────────────────────────────────────────
@@ -576,7 +582,9 @@ gf.vec.data = a.mat.Inverse(X.FreeDofs(), inverse="umfpack") * f.vec
 
 gf_sig, gf_w = gf.components
 
-max_deflection = abs(max(gf_w.vec))
+# abs() not defined on BaseVector — reduce via numpy view
+import numpy as _np
+max_deflection = float(_np.abs(gf_w.vec.FV().NumPy()).max())
 print(f"Max deflection: {{max_deflection:.8f}}")
 print(f"DOFs: {{X.ndof}} (moments {{Vhdd.ndof}}, deflection {{Vh1.ndof}})")
 
@@ -1206,6 +1214,18 @@ KNOWLEDGE = {
             "Regge elements (different from HHJ) use HDivDiv for 3D elasticity compatibility",
             "Mixed formulation avoids locking, unlike displacement-only C1 conforming methods",
             "Verify against analytical: w_max = qL^4/(64D) for simply-supported uniform load",
+            "[API] HDivDiv (normal-normal continuous moment "
+            "tensor space) does NOT expose a pointwise div(div("
+            "tau)) operator. Constructing 'div(div(tau)) * v * "
+            "dx' raises Exception 'cannot form div' from "
+            "SymbolicBFI. Integrate by parts twice and substitute "
+            "the H1 Hessian: replace div(div(tau)) * v with "
+            "InnerProduct(tau, v.Operator('hesse')) - skeleton "
+            "normal-normal moment integral over interior facets "
+            "(via dx(element_boundary=True)). Signal: Exception "
+            "'cannot form div' emitted from BilinearForm += "
+            "div(div(tau_)) * ww * dx in any HHJ-style template. "
+            "(Verified empirically 2026-06-01 — Layer F catch.)",
         ],
     },
     "nonlinear_elasticity": {
