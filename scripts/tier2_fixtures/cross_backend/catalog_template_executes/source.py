@@ -313,6 +313,12 @@ def main() -> int:
         # error otherwise).
         ("ngsolve", "hyperelasticity", "2d"),
         ("ngsolve", "nonlinear_elasticity", "2d"),
+        # Batch-14: mhd + phase_field_fracture were not
+        # broken code-wise but exceeded the 60s gate. Trim
+        # defaults (T_end 1.0->0.05, fracture load_steps
+        # 50->5) so they complete in <10s.
+        ("ngsolve", "mhd", "2d"),
+        ("ngsolve", "phase_field", "fracture_2d"),
     ]
     fail = []
     executed = 0

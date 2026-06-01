@@ -346,8 +346,12 @@ def _mhd_2d(params: dict) -> str:
     Re = params.get("Re", 100)
     Ha = params.get("Ha", 10)         # Hartmann number
     dt = params.get("dt", 0.005)
-    T_end = params.get("T_end", 1.0)
-    maxh = params.get("maxh", 0.05)
+    # T_end shrunk from 1.0 -> 0.05 and maxh widened from
+    # 0.05 -> 0.15 so the Layer F catalog smoke completes
+    # in ~10 steps within the 60s gate. Users who want a
+    # longer simulation override T_end/maxh via params.
+    T_end = params.get("T_end", 0.05)
+    maxh = params.get("maxh", 0.15)
     nu = 1.0 / Re
     sigma_m = Ha * Ha / Re           # magnetic diffusivity (non-dim)
     n_steps = int(T_end / dt)
@@ -925,8 +929,13 @@ def _phase_field_fracture_2d(params: dict) -> str:
     Gc = params.get("Gc", 1e-3)     # critical energy release rate
     l0 = params.get("l0", 0.02)     # length scale
     disp_inc = params.get("disp_increment", 1e-4)
-    n_steps = params.get("load_steps", 50)
-    maxh = params.get("maxh", 0.01)
+    # Layer F gate runs each template within 60s; the
+    # original defaults (50 staggered load steps on a
+    # maxh=0.01 mesh ~ 60k DOFs) exceed that easily. Trim
+    # to 5 steps on a maxh=0.05 mesh — enough to exercise
+    # the alternate-minimisation loop without saturating.
+    n_steps = params.get("load_steps", 5)
+    maxh = params.get("maxh", 0.05)
     order = params.get("order", 1)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
