@@ -7,12 +7,28 @@ Variants: 2d
 KNOWLEDGE = {
     "description": "Stokes flow with Taylor-Hood P2/P1 or MINI element",
     "weak_form": "nu*(grad(u),grad(v))*dx + div(v)*p*dx + div(u)*q*dx = (f,v)*dx",
-    "function_space": "Mixed: VectorElement('Lagrange',cell,2) + FiniteElement('Lagrange',cell,1)",
+    "function_space": (
+        "Mixed (basix.ufl 0.10+): "
+        "P2 = basix.ufl.element('Lagrange', domain.basix_cell(), 2, shape=(domain.geometry.dim,)); "
+        "P1 = basix.ufl.element('Lagrange', domain.basix_cell(), 1); "
+        "TH = basix.ufl.mixed_element([P2, P1]); W = fem.functionspace(domain, TH)"
+    ),
     "solver": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"},
     "pitfalls": [
         "System is INDEFINITE — use direct (MUMPS) or block preconditioner, NOT CG",
-        "Mixed element: P2 = ufl.VectorElement('Lagrange', cell, 2), P1 = ufl.FiniteElement('Lagrange', cell, 1)",
-        "TH = ufl.MixedElement([P2, P1]), W = fem.functionspace(domain, TH)",
+        "[API] Mixed-element construction in dolfinx 0.10+ uses "
+        "basix.ufl, NOT ufl: P2 = basix.ufl.element('Lagrange', "
+        "domain.basix_cell(), 2, shape=(domain.geometry.dim,)); "
+        "P1 = basix.ufl.element('Lagrange', domain.basix_cell(), 1); "
+        "TH = basix.ufl.mixed_element([P2, P1]). The pre-2024 "
+        "form 'ufl.VectorElement / ufl.FiniteElement / "
+        "ufl.MixedElement' was REMOVED — those names no longer "
+        "exist as attributes of the ufl module (verified against "
+        "ufl 2025.2.1 / dolfinx 0.10.0, 2026-06-01). Signal: "
+        "running a stokes script using ufl.VectorElement raises "
+        "AttributeError: module 'ufl' has no attribute "
+        "'VectorElement'.",
+        "TH = basix.ufl.mixed_element([P2, P1]), W = fem.functionspace(domain, TH)",
         "Non-homogeneous Dirichlet: collapse sub-space, create Function, interpolate, then dirichletbc",
         "Pressure determined up to constant — pin one DOF or ensure outflow BC",
         "MINI element: P1+bubble for velocity, P1 for pressure (simpler but less accurate)",
@@ -46,6 +62,7 @@ def _stokes_2d(params: dict) -> str:
 from mpi4py import MPI
 from dolfinx import mesh, fem, default_scalar_type
 from dolfinx.fem.petsc import LinearProblem
+import basix.ufl
 import ufl
 import numpy as np
 
@@ -55,10 +72,10 @@ tdim = domain.topology.dim
 fdim = tdim - 1
 domain.topology.create_connectivity(fdim, tdim)
 
-# Taylor-Hood: P2 velocity + P1 pressure
-P2 = ufl.VectorElement("Lagrange", domain.ufl_cell(), 2)
-P1 = ufl.FiniteElement("Lagrange", domain.ufl_cell(), 1)
-TH = ufl.MixedElement([P2, P1])
+# Taylor-Hood: P2 velocity + P1 pressure (basix.ufl, dolfinx 0.10+)
+P2 = basix.ufl.element("Lagrange", domain.basix_cell(), 2, shape=(gdim,))
+P1 = basix.ufl.element("Lagrange", domain.basix_cell(), 1)
+TH = basix.ufl.mixed_element([P2, P1])
 W = fem.functionspace(domain, TH)
 
 # BCs: set velocity on boundaries (adjust for your problem)
