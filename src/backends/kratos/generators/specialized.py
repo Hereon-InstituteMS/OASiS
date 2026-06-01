@@ -123,9 +123,35 @@ KNOWLEDGE = {
     "shallow_water": {
         "description": "Shallow water equations (Saint-Venant) for flood/dam-break/coastal simulation",
         "application": "ShallowWaterApplication",
-        "elements": ["ShallowWaterElement2D3N", "ShallowWaterElement2D4N"],
+        # Real registered names in KratosShallowWaterApplication
+        # are BoussinesqElement2D{3,4}N — NOT ShallowWaterElement.
+        # Catalog drift caught 2026-06-01 by kratos_eletype_
+        # scanner; corrected per the rans_shallowwater_element_
+        # naming Tier-2 fixture.
+        "elements": [
+            "BoussinesqElement2D3N",
+            "BoussinesqElement2D4N",
+        ],
         "solver_types": ["explicit", "semi-implicit"],
         "pitfalls": [
+                        '[API] The KratosShallowWaterApplication '
+                        'element name is BoussinesqElement2D3N / '
+                        'BoussinesqElement2D4N, NOT '
+                        'ShallowWaterElement2D3N. The Application '
+                        'class is named "ShallowWater" but the '
+                        'underlying element registration uses the '
+                        '"Boussinesq" stem (after the Boussinesq '
+                        'equations underlying the depth-averaged '
+                        'formulation). '
+                        "Signal: model_part.CreateNewElement("
+                        "\"ShallowWaterElement2D3N\", ...) raises "
+                        "'is not registered' from kratos/python/"
+                        "add_model_part_to_python.cpp:173; the same "
+                        "call with 'BoussinesqElement2D3N' succeeds. "
+                        "(Verified empirically 2026-06-01 — same "
+                        "Tier-2 fixture as the RANS naming entry, "
+                        "rans_shallowwater_element_naming in "
+                        "scripts/tier2_fixtures/kratos/.)",
                         '[Numerical] 2D only (depth-averaged) '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Numerical] Wetting/drying needs special treatment '

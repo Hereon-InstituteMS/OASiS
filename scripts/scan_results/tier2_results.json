@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 71,
-    "passed": 71,
+    "n_fixtures": 72,
+    "passed": 72,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -299,7 +299,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "positional_bcs_raises=True\nno_prefix_raises=True\nno_prefix_diag_has_prefix_name=True\ncorrect_form_ok=True\nlinear_problem_no_prefix_raises=True\nException ignored in: <function NonlinearProblem.__del__ at 0x745171207880>\nTraceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/petsc.py\", line 1361, in __del__\n    lambda obj: obj is not None, (self._snes, self._A, self._b, self._x, self._P_mat)\n                                  ^^^^^^^^^^\nAttributeError: 'NonlinearProblem' object has no attribute '_snes'\nException ignored in: <function NonlinearProblem.__del__ at 0x745171207880>\nTraceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/petsc.py\", line 1361, in __del__\n    lambda ob"
+      "captured_head": "positional_bcs_raises=True\nno_prefix_raises=True\nno_prefix_diag_has_prefix_name=True\ncorrect_form_ok=True\nlinear_problem_no_prefix_raises=True\nException ignored in: <function NonlinearProblem.__del__ at 0x74f18750f880>\nTraceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/petsc.py\", line 1361, in __del__\n    lambda obj: obj is not None, (self._snes, self._A, self._b, self._x, self._P_mat)\n                                  ^^^^^^^^^^\nAttributeError: 'NonlinearProblem' object has no attribute '_snes'\nException ignored in: <function NonlinearProblem.__del__ at 0x74f18750f880>\nTraceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/petsc.py\", line 1361, in __del__\n    lambda ob"
     },
     "fenics::linear_elasticity::0": {
       "key": "fenics::linear_elasticity::0",
@@ -417,7 +417,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.dHaC2lnVhj/probe.dat\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core/"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.9aRDF5bwhB/probe.dat\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core/"
     },
     "fourc::_input_format::1": {
       "key": "fourc::_input_format::1",
@@ -434,7 +434,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.IcW0hC0qFL/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.OoPwG6khxO/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
     },
     "fourc::scalar_transport::0": {
       "key": "fourc::scalar_transport::0",
@@ -450,7 +450,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.YORbUHhz3T/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.ZICKukR9iU/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
     },
     "fourc::structural_dynamics::7": {
       "key": "fourc::structural_dynamics::7",
@@ -467,7 +467,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.3EquoiVVhx/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.YFtlDp64NB/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
     },
     "fourc::thermo::0": {
       "key": "fourc::thermo::0",
@@ -484,7 +484,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.gvWOfmmwYm/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/glob"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.DB5LoPLx3E/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/glob"
     },
     "kratos::linear_elasticity::8": {
       "key": "kratos::linear_elasticity::8",
@@ -678,6 +678,22 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "rhs_zero_norm_inf=0.000000e+00\nrhs10_node0=1.666667\nrhs10_node1=1.666667\nrhs10_node2=1.666667\nexpected_per_node=1.666667\nper_node_matches_expected=True\nlaplacian_assembles_heat_flux=True\n |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosConvectionDiffusionApplication \n KRATOS ___ ___  _  ___   __   ___ ___ ___ ___ \n       / __/ _ || || | | / /__|   |_ _| __| __|\n      | (_| (_) | .` || V /___| |) | || _|| _| \n       |___|___/|_||_| |_/    |___/___|_| |_"
+    },
+    "kratos::rans::0": {
+      "key": "kratos::rans::0",
+      "backend": "kratos",
+      "physics": "rans",
+      "pitfall_index": 0,
+      "fixture_id": "rans_shallowwater_element_naming",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "all_catalog_wrong_names_rejected=True",
+        "all_corrected_names_ok=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "all_catalog_wrong_names_rejected=True\nall_corrected_names_ok=True\n |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosFluidDynamicsApplication \nInitializing KratosFluidDynamicsApplication...\nImporting    KratosRANSApplication \nInitializing KratosRANSApplication...\nImporting    KratosShallowWaterApplication \nDeregistering KratosMultiphysics\nDeregistering FluidDynamicsApplication\nDeregistering RANSApplication\nDeregistering ShallowWaterApplication\n"
     },
     "kratos::linear_elasticity::2": {
       "key": "kratos::linear_elasticity::2",
