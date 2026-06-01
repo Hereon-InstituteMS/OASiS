@@ -740,8 +740,20 @@ def register_consolidated_tools(mcp: FastMCP):
                                 suffix = (f"\n... [truncated {len(content) - EX_TEMPLATE_LIMIT} chars]"
                                           if truncated else "")
                                 results.append(f"### Template: `{p.name}/{v}`\n```\n{body}{suffix}\n```\n")
-                            except Exception:
-                                pass
+                            except Exception as exc:
+                                # Same rationale as the
+                                # prepare_simulation generator-
+                                # failure surfacing: a silent
+                                # except: pass made
+                                # examples('search') return a
+                                # "no template, no error" reply
+                                # for any catalog regression.
+                                # Now the failure is visible.
+                                # (Audit 2026-06-02.)
+                                results.append(
+                                    f"### Template: `{p.name}/{v}`\n"
+                                    f"⚠ Template generation FAILED: "
+                                    f"`{type(exc).__name__}: {exc}`\n")
                         break
 
             if not results:
@@ -1435,8 +1447,29 @@ def register_consolidated_tools(mcp: FastMCP):
                     suffix = (f"\n... [truncated {len(content) - TEMPLATE_LIMIT} chars]"
                               if truncated else "")
                     parts.append(f"## Template ({p.template_variants[0]})\n```{fmt}\n{body}{suffix}\n```\n")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # Surface the failure: the catalog claims a
+                    # template exists (p.template_variants is
+                    # non-empty) but the generator raised. The
+                    # old `except Exception: pass` silently
+                    # produced an LLM-visible "successful" reply
+                    # with no template and no hint that the
+                    # generator was broken — masking Layer-F
+                    # class regressions both from the LLM and
+                    # the developer running it. (Audit 2026-06-02.)
+                    parts.append(
+                        f"## Template ({p.template_variants[0]})\n"
+                        f"⚠ Template generation FAILED for "
+                        f"`{matched_physics}/{p.template_variants[0]}`: "
+                        f"`{type(exc).__name__}: {exc}`\n\n"
+                        f"This is a catalog generator bug — the "
+                        f"physics is advertised in "
+                        f"`{backend.display_name()}.supported_physics()` "
+                        f"but `generate_input` raised. The other "
+                        f"sections of this response (knowledge, "
+                        f"pitfalls, real-test references) are still "
+                        f"valid; only the auto-generated template "
+                        f"is missing.\n")
                 break
 
         if not parts:
