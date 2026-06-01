@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 48  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 49  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -89,6 +89,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #   +1 fourc::_input_format::0 (.dat extension rejection)
     #   +1 fourc::_input_format::1 (invalid PROBLEMTYPE value rejection)
     #   +1 fourc::scalar_transport::0 (SCATRA DYNAMIC vs SCALAR TRANSPORT DYNAMIC)
+    #   +1 skfem::linear_elasticity::0 (ElementVector Nbfun + lame_parameters analytic)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
