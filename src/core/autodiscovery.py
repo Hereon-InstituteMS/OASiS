@@ -257,7 +257,16 @@ def discover_backends() -> list[ProbeResult]:
             "~/4C-src/4C/build/4C",
         ],
     ))
-    results.append(_probe_binary(
+    # deal.II is often installed via conda-forge (env layout
+    # ~/miniconda3/envs/<env>/include/deal.II/), but the
+    # _probe_binary helper only walks hardcoded paths. Probe
+    # conda envs directly here so the rediscover_backends
+    # surface stays in sync with the dealii backend's own
+    # check_availability (which already finds conda envs).
+    # Audit 2026-06-01: discover('list') showed dealii
+    # available while rediscover_backends listed it as
+    # 'Not found' — the two LLM-facing tools disagreed.
+    dealii_result = _probe_binary(
         "dealii", "dealii",
         search_patterns=[
             "/usr/share/deal.II",
@@ -265,7 +274,27 @@ def discover_backends() -> list[ProbeResult]:
             "~/dealii/build",
             "~/deal.II/build",
         ],
-    ))
+    )
+    if not dealii_result.found:
+        for conda_base in (
+                Path.home() / "miniconda3" / "envs",
+                Path.home() / "anaconda3" / "envs",
+                Path.home() / "miniforge3" / "envs"):
+            if not conda_base.is_dir():
+                continue
+            for env_dir in conda_base.iterdir():
+                if ((env_dir / "include" / "deal.II").is_dir() or
+                        (env_dir / "share" / "deal.II" / "cmake").is_dir() or
+                        (env_dir / "lib" / "cmake" / "deal.II").is_dir()):
+                    dealii_result = ProbeResult(
+                        backend="dealii", found=True,
+                        confidence="definite",
+                        location=str(env_dir),
+                        details={"source": f"conda:{env_dir.name}"})
+                    break
+            if dealii_result.found:
+                break
+    results.append(dealii_result)
 
     # Check for source roots (developer mode)
     source_roots = {
