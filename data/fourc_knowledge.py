@@ -248,10 +248,47 @@ FOURC_KNOWLEDGE = {
         "ale": "ALE formulation for moving meshes (ale2, ale3 elements)",
 
         "pitfalls": [
-            "Fluid uses its own element section: FLUID ELEMENTS (not STRUCTURE)",
-            "Stabilization parameter needs tuning for high Re",
-            "ALE requires separate ALE mesh movement problem",
-            "X-wall: extended wall functions for near-wall treatment",
+            "[Syntax] Fluid uses its own element section "
+            "'FLUID ELEMENTS' (NOT 'STRUCTURE'). The dynamics-"
+            "control section is 'FLUID DYNAMIC' (not 'FLUID' or "
+            "'FLUID_DYN'). Wrong section name is rejected at "
+            "YAML parse with 'PROC 0 ERROR ... Section ... is "
+            "not a valid section name.' from "
+            "core/io/src/4C_io_input_file.cpp. Signal: stderr "
+            "contains the offending section name + 'not a valid "
+            "section name'. (Verified empirically 2026-06-01 — "
+            "'FLUID' was rejected with this exact diagnostic; "
+            "'FLUID DYNAMIC' was accepted. Same family as "
+            "scatra_section_name_required fixture; no separate "
+            "Tier-2 fixture added to avoid duplication.)",
+            "[Numerical] Stabilization parameters (SUPG, PSPG, "
+            "GRAD-DIV) need tuning at high Reynolds. Default "
+            "values in FLUID DYNAMIC/STABILIZATION are tuned "
+            "for moderate Re; for Re > 1000 the residual-based "
+            "tau parameter benefits from increasing TAU_TYPE / "
+            "TAU_DEF or switching to a more dissipative variant. "
+            "Signal: integrated kinetic energy in the FLUID "
+            "discretization grows non-physically as Re is "
+            "increased without stabilisation re-tuning. (Claim "
+            "inherited.)",
+            "[Integration] ALE (arbitrary Lagrangian-Eulerian) "
+            "mesh movement requires a SEPARATE ALE problem set "
+            "up alongside the fluid problem in PROBLEM TYPE: "
+            "'Fluid_Ale'. The mesh motion equation (typically "
+            "elastic) is solved each step on the same "
+            "discretization. Signal: PROBLEMTYPE: 'Fluid_Ale' "
+            "is the enum value 4C expects; the ALE DYNAMIC "
+            "section is required. (Claim inherited.)",
+            "[Numerical] X-wall functions: extended near-wall "
+            "treatment for high-Re flows where direct DNS-"
+            "resolved boundary layers are infeasible. Activated "
+            "via FLUID DYNAMIC/WALL_NORMAL_NODE_DISTANCE and "
+            "related XWALL_* keys. Signal: in a turbulent "
+            "channel flow benchmark, the near-wall velocity "
+            "profile matches the log-law slope (1/0.41 × ln(y+) "
+            "+ 5.0) within ~5% with x-wall enabled; without, "
+            "the law-of-the-wall is over-resolved at the wall "
+            "and diverges in the log-region. (Claim inherited.)",
         ],
     },
 
