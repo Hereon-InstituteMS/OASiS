@@ -68,8 +68,10 @@ fes = H1(mesh, order=3, dirichlet="bottom|right|top|left")
 u, v = fes.TnT()
 
 # Mass and stiffness matrices
-a = BilinearForm(grad(u)*grad(v)*dx, nonsym=True).Assemble()
-m = BilinearForm(u*v*dx, nonsym=True).Assemble()
+# (Previously had nonsym=True kwarg; current NGSolve flags that as
+# undocumented + has no observable effect. Drop it.)
+a = BilinearForm(grad(u)*grad(v)*dx).Assemble()
+m = BilinearForm(u*v*dx).Assemble()
 
 # Combined: M + dt*A
 dt = {dt}
@@ -109,10 +111,56 @@ KNOWLEDGE = {
         "spaces": "H1 (any order)",
         "solver": "Steady: direct. Transient: M+dt*A factored once, reused each step",
         "pitfalls": [
-            "Transient: need nonsym=True for mass matrix to get compatible sparsity pattern",
-            "mstar.AsVector().data = m.mat.AsVector() + dt * a.mat.AsVector() for matrix addition",
-            "After mesh refinement: fes.Update() and gfu.Update() required",
-            "Non-homogeneous Dirichlet: two-step solve (set BC, then solve residual)",
+            "[API] The prior catalog wording said 'Transient: "
+            "need nonsym=True for mass matrix to get compatible "
+            "sparsity pattern' — that is WRONG in current NGSolve. "
+            "Passing nonsym=True to the BilinearForm constructor "
+            "emits a warning: 'kwarg \"nonsym\" is an undocumented "
+            "flags option for class BilinearForm, maybe there is "
+            "a typo?', the kwarg is silently dropped, and the "
+            "resulting matrix sparsity is identical to the "
+            "default. The compatible-sparsity claim never had any "
+            "empirical basis. Signal: BilinearForm(..., "
+            "nonsym=True).Assemble() emits the warning text on "
+            "stderr; m.mat.AsVector().size equals the default "
+            "build. (Verified empirically 2026-06-01 — drift "
+            "correction; the generator template above also "
+            "dropped the kwarg.)",
+            "[API] Matrix addition for the implicit-Euler "
+            "operator uses BaseMatrix.AsVector() concatenation: "
+            "mstar.AsVector().data = m.mat.AsVector() + dt * "
+            "a.mat.AsVector(). The .data assignment is needed "
+            "because AsVector returns a view, not a copy. "
+            "Signal: omitting .data and writing mstar = "
+            "m.mat + dt*a.mat does not produce a usable matrix "
+            "(the result is a BaseMatrix expression that has "
+            "no .Inverse method); attempting mstar.Inverse "
+            "raises AttributeError. (Claim inherited — not "
+            "yet empirically separated.)",
+            "[API] After mesh.Refine(), call fes.Update() and "
+            "gfu.Update() on every dependent FESpace + "
+            "GridFunction. Current NGSolve also auto-updates "
+            "fes.ndof on access after a Refine, but explicit "
+            "Update is needed for the underlying DoF tables and "
+            "for GridFunction storage to grow. Signal: "
+            "fes.Update() and gfu.Update() are both available "
+            "as no-arg methods; gfu.vec length after a refine "
+            "matches the new ndof only after gfu.Update() is "
+            "called. (Verified empirically 2026-06-01 — "
+            "fes.ndof DOES auto-update on read but the "
+            "GridFunction storage and DoF table do not.)",
+            "[Syntax] Non-homogeneous Dirichlet on NGSolve: "
+            "two-step pattern. First gfu.Set(boundary_cf, "
+            "definedon=mesh.Boundaries(name)) to populate the "
+            "boundary DOFs; then solve the residual system on "
+            "FreeDofs: gfu.vec.data += a.mat.Inverse("
+            "fes.FreeDofs()) * (f.vec - a.mat * gfu.vec). "
+            "Skipping the residual step leaves the interior "
+            "uncorrected for the non-zero BC. Signal: gfu trace "
+            "on the boundary matches boundary_cf but the "
+            "interior solution shows discontinuity at the "
+            "boundary. (Claim inherited — pattern matches "
+            "NGSolve docs.)",
         ],
     },
 }
