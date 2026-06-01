@@ -7,12 +7,26 @@ from mcp.server.fastmcp import FastMCP
 from core.registry import get_backend, available_backends
 
 
-def _find_reference_test_files(solver: str, physics: str) -> str:
-    """Find real test files from a solver's test suite as reference.
+def discover_test_dirs() -> dict:
+    """Return a {solver_key: Path} mapping of locally-present test/
+    demo directories.
 
-    Returns a note with file paths and content previews so the agent
-    can see how validated simulations are actually configured.
-    Works for ALL solvers that have accessible test files.
+    The same lookup is needed by prepare_simulation (via
+    _find_reference_test_files) and the `examples` MCP tool. Before
+    2026-06-01 these were two separate hardcoded fourc+dealii-only
+    dicts — meaning the examples tool returned 0 results for fenics
+    / ngsolve / kratos / dune / febio even though demo trees existed
+    locally. Centralising here keeps the two surfaces in sync.
+
+    Probes (each gated on directory existence):
+      fourc / 4c   -> $FOURC_ROOT/tests/input_files
+      dealii       -> /usr/share/doc/libdeal.ii-doc/examples
+      fenics(x)    -> any *fenics* conda env's
+                      share/dolfinx/demo OR
+                      etc/conda/test-files/fenics-dolfinx/0/python/demo
+      ngsolve      -> .venv .../ngsolve/demos OR
+                      conda *fenics* envs ../ngsolve/demos
+      kratos       -> .venv .../KratosMultiphysics
     """
     import os
     from pathlib import Path
@@ -84,6 +98,20 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
         if kr_dir.is_dir():
             test_dirs["kratos"] = kr_dir
             break
+
+    return test_dirs
+
+
+def _find_reference_test_files(solver: str, physics: str) -> str:
+    """Find real test files from a solver's test suite as reference.
+
+    Returns a note with file paths and content previews so the agent
+    can see how validated simulations are actually configured. Empty
+    string when no local demos are available for the (solver, physics)
+    pair.
+    """
+    from pathlib import Path
+    test_dirs = discover_test_dirs()
 
     # Map physics to search keywords for ALL physics types
     search_terms = {

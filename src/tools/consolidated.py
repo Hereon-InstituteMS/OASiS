@@ -567,13 +567,16 @@ def register_consolidated_tools(mcp: FastMCP):
         """
         if action == "search":
             from tools.examples_search import register_example_tools
-            # Search real test files
+            # Search real test files. Shared discovery with
+            # prepare_simulation's _find_reference_test_files
+            # (audit 2026-06-01: the previously-inlined hardcoded
+            # {fourc, dealii} dict returned 0 matches for fenics /
+            # ngsolve / kratos even when local demos were present
+            # — the LLM-facing examples surface was effectively
+            # 4C/dealii-only).
+            from tools.knowledge import discover_test_dirs
             results = []
-            test_dirs = {
-                "fourc": FOURC_ROOT / "tests" / "input_files" if FOURC_ROOT else None,
-                "4c": FOURC_ROOT / "tests" / "input_files" if FOURC_ROOT else None,
-                "dealii": Path("/usr/share/doc/libdeal.ii-doc/examples"),
-            }
+            test_dirs = discover_test_dirs()
             solver_key = solver.lower()
             test_dir = test_dirs.get(solver_key)
             ext = "*.4C.yaml" if solver_key in ("fourc", "4c") else "*.cc" if solver_key == "dealii" else "*.py"
