@@ -110,7 +110,8 @@ class TestNoOrphanPhysics(unittest.TestCase):
         load_all_backends()
         offending: dict[str, list[str]] = {}
         for backend_name in ("fenics", "fourc", "dealii",
-                             "kratos", "ngsolve", "skfem"):
+                             "kratos", "ngsolve", "skfem",
+                             "dune", "febio"):
             backend = get_backend(backend_name)
             if backend is None:
                 continue

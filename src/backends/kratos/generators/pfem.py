@@ -19,7 +19,11 @@ try:
                                 "fluid_structure_topology_change"]}
 except ImportError:
     print("PfemFluidDynamicsApplication not installed")
-    print("Install: pip install KratosPfemFluidDynamicsApplication")
+    print("NOTE: PFEM apps are NOT published on PyPI as of "
+          "Kratos 10.4.2 — pip install does not work. "
+          "Build Kratos from source with "
+          "-DPFEM_FLUID_DYNAMICS_APPLICATION=ON "
+          "and -DDELAUNAY_MESHING_APPLICATION=ON.")
     summary = {"note": "not installed"}
 with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
 '''
@@ -28,7 +32,13 @@ with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
 KNOWLEDGE = {
     "pfem_fluid": {
         "description": "Particle FEM for free-surface flows (dam break, sloshing, wave impact)",
-        "application": "PfemFluidDynamicsApplication (pip install KratosPfemFluidDynamicsApplication)",
+        "application": (
+            "PfemFluidDynamicsApplication — NOT on PyPI as of "
+            "Kratos 10.4.2; pip install KratosPfemFluidDynamics"
+            "Application yields 'No matching distribution'. "
+            "Build from source with -DPFEM_FLUID_DYNAMICS_"
+            "APPLICATION=ON + -DDELAUNAY_MESHING_APPLICATION=ON."
+        ),
         "elements": {
             "2D": ["TwoStepUpdatedLagrangianVPImplicitNodallyIntegratedElement2D3N",
                    "TwoStepUpdatedLagrangianVPImplicitFluidElement2D3N"],
@@ -38,6 +48,22 @@ KNOWLEDGE = {
                          "fluid_structure_with_topology_changes"],
         "solver_types": ["two_step_v_p_solver (velocity-pressure split)"],
         "pitfalls": [
+                        '[Integration] PFEM applications '
+                        '(PfemFluidDynamicsApplication, '
+                        'DelaunayMeshingApplication, '
+                        'PfemSolidMechanicsApplication, '
+                        'PFEM2Application) are NOT published on '
+                        'PyPI as of Kratos 10.4.2. The pip-install '
+                        'hint in some legacy templates fails with '
+                        '"ERROR: No matching distribution found for '
+                        'KratosPfemFluidDynamicsApplication". Build '
+                        'Kratos from source with '
+                        '-DPFEM_FLUID_DYNAMICS_APPLICATION=ON + '
+                        '-DDELAUNAY_MESHING_APPLICATION=ON to enable. '
+                        "Signal: pip install of any KratosPfem*"
+                        "Application package returns 'No matching "
+                        "distribution found' from the index. "
+                        "(Verified empirically 2026-06-01.)",
                         '[Numerical] Requires DelaunayMeshingApplication for remeshing '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Physics] Alpha-shape parameter controls free-surface detection (default ~1.25) '

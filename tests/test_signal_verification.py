@@ -408,7 +408,15 @@ class TestSignalParseDiscipline(unittest.TestCase):
     re-broke linear_elasticity#0 / #3 Signal extraction.
     """
 
-    BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos")
+    # 2026-06-01: dune (68 pitfalls) and febio (7) were
+    # previously NOT in this tuple — critic-audit finding #8.
+    # All their pitfalls are currently 0 categorised / 0
+    # parseable Signals, so the empty-set on the parse-discipline
+    # side passes trivially. Including them prevents future
+    # pitfall promotion from silently re-introducing broken
+    # 'Signal (verified ...):' parens patterns.
+    BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos",
+                "dune", "febio")
 
     def test_every_categorised_pitfall_has_parseable_signal(self):
         from verify_signal_clauses import verify_backend
@@ -457,7 +465,16 @@ class TestCrossBackendGameableFloor(unittest.TestCase):
     # the audit established this is achievable for any
     # backend whose Signal: text references compound code
     # symbols rather than textbook concepts.
-    BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos")
+    # 2026-06-01: dune (68 pitfalls) and febio (7) added per
+    # critic-audit finding #8. Both currently report 0
+    # gameable because their pitfalls have NO [Category]
+    # prefix and the Signal: extraction returns empty — the
+    # cross-backend test is informational for them until
+    # promotion. Including them now prevents a future
+    # promotion that DOES add [Category] from re-broken
+    # gameable-Tier-0 entries.
+    BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos",
+                "dune", "febio")
 
     def test_no_backend_has_gameable_entries(self):
         from verify_signal_clauses import verify_backend
