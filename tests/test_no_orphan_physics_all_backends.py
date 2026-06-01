@@ -35,6 +35,14 @@ _REFERENCE_KEYS: set[str] = {
     "boundary_conditions", "io_catalog", "ufl_reference",
     # dolfinx-specific reference catalogs:
     "complex_valued", "parallel_computing", "api_changes",
+    # deal.II cross-cutting techniques (apply to many physics
+    # rather than being a discrete physics in their own right).
+    # adaptive_refinement is the AMR / error-estimator chapter
+    # that covers Kelly, Zienkiewicz-Zhu, residual estimators,
+    # h/p refinement strategies, and parallel-AMR pitfalls.
+    # Same shape as the io_catalog whitelist already — not a
+    # PhysicsCapability candidate.
+    "adaptive_refinement",
 }
 
 
