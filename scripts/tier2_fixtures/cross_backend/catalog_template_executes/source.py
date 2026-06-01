@@ -73,24 +73,51 @@ def run_template_in_subprocess(
             pass
 
 
-def main() -> int:
-    python_path = sys.executable
-    print(f"using_python={python_path}")
+def _resolve_python(backend_name: str) -> str | None:
+    """Return the absolute path to the Python interpreter
+    that has THIS backend's runtime available, OR None
+    when the env is missing (caller will skip this row)."""
+    repo_venv = sys.executable
+    fenicsx_env = (Path.home() / "miniconda3" / "envs"
+                    / "ofa-fenicsx" / "bin" / "python")
+    if backend_name in ("skfem", "kratos", "ngsolve"):
+        # Repo .venv has scikit-fem 12 + KratosMultiphysics
+        # + NGSolve installed.
+        return repo_venv
+    if backend_name == "fenics":
+        return (str(fenicsx_env) if fenicsx_env.is_file()
+                else None)
+    return None
 
-    fail = []
-    for backend, physics, variant in [
+
+def main() -> int:
+    print(f"repo_venv_python={sys.executable}")
+
+    rows = [
         ("skfem", "poisson", "2d"),
         ("kratos", "poisson", "2d"),
-    ]:
+        ("ngsolve", "poisson", "2d"),
+        ("fenics", "poisson", "2d"),
+    ]
+    fail = []
+    executed = 0
+    for backend, physics, variant in rows:
+        py = _resolve_python(backend)
+        if py is None:
+            print(
+                f"{backend}::{physics}::{variant} "
+                f"SKIPPED (no env)")
+            continue
         try:
             rc, out, err = run_template_in_subprocess(
-                backend, physics, variant, python_path,
-                timeout=60)
+                backend, physics, variant, py,
+                timeout=120)
         except Exception as e:
             fail.append(
                 f"{backend}::{physics}::{variant} "
                 f"setup_error {type(e).__name__}: {e}")
             continue
+        executed += 1
         print(f"{backend}::{physics}::{variant}_rc={rc}")
         if rc != 0:
             fail.append(
@@ -101,7 +128,7 @@ def main() -> int:
                 f"{backend}::{physics}::{variant} "
                 f"traceback")
 
-    print(f"total_executed=2")
+    print(f"total_executed={executed}")
     print(f"failures={len(fail)}")
     for r in fail:
         print(f"  fail: {r}")

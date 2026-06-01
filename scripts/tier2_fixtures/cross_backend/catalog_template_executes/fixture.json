@@ -1,14 +1,16 @@
 {
-  "_comment": "Tier-2 Layer-F: validates the catalog AS SHIPPED — the LLM-emit-and-run loop. Per backend, calls live-registry generate_input(backend, physics='poisson', variant='2d'), writes the emitted template to a tempfile, executes it through the repo .venv python, asserts exit_code==0 and no Traceback. This is the missing piece between Layer-B (generator doesn't raise) and Layer-C (re-implemented API converges): the actual template the catalog ships actually runs. Currently covers skfem + kratos (both run quickly in the repo .venv); fenics + ngsolve need their conda envs and would 5-10x the fixture runtime — left for separate iteration. Verified on 2026-06-01: both rc=0, no Traceback. Catches the regression class where a catalog template is well-formed Python (Layer B + Layer E pass) but raises at runtime due to a missing import, wrong PETSc option key, sign error in a manufactured-test source, etc.",
+  "_comment": "Tier-2 Layer-F: validates the catalog AS SHIPPED — the LLM-emit-and-run loop. Per backend, calls live-registry generate_input(backend, physics='poisson', variant='2d'), writes the emitted template to a tempfile, executes it through the backend-correct python (repo .venv for skfem/kratos/ngsolve; ofa-fenicsx conda env for fenics; skip when env missing), asserts exit_code==0 and no Traceback. This is the missing piece between Layer-B (generator doesn't raise) and Layer-C (re-implemented API converges): the actual template the catalog ships actually runs. Covers all 4 Python-introspectable backends (skfem, kratos, ngsolve, fenics). Verified on 2026-06-01: all 4 rc=0, no Traceback. Catches the regression class where a catalog template is well-formed Python (Layer B + Layer E pass) but raises at runtime due to a missing import, wrong PETSc option key, sign error in a manufactured-test source, etc.",
   "backend": "kratos",
   "physics": "auxiliary_overview",
   "pitfall_index": 102,
   "mode": "python",
   "expect_in_output": [
-    "using_python=",
+    "repo_venv_python=",
     "skfem::poisson::2d_rc=0",
     "kratos::poisson::2d_rc=0",
-    "total_executed=2",
+    "ngsolve::poisson::2d_rc=0",
+    "fenics::poisson::2d_rc=0",
+    "total_executed=4",
     "failures=0"
   ],
   "forbid_in_output": [
