@@ -262,23 +262,54 @@ class FourcBackend(SolverBackend):
 
     def get_knowledge(self, physics: str) -> dict:
         # Try deep knowledge from data file first
+        # Resolution: merge data/fourc_knowledge.py (rich
+        # course-level dict — description / methods / variants /
+        # constitutive_laws / etc.) with the generator's
+        # per-physics pitfalls list. Previously the data file
+        # SHADOWED the generator: if FOURC_KNOWLEDGE had an
+        # entry without a 'pitfalls' field, get_knowledge
+        # returned that entry and the generator's pitfalls
+        # were unreachable. Critic-audit 2026-06-01 finding #14
+        # (fourc::contact had 0 pitfalls reachable; the actual
+        # 8 contact.py pitfalls were silently shadowed).
+        data_entry: dict = {}
         try:
             import sys
             data_dir = str(Path(__file__).resolve().parents[3] / "data")
             if data_dir not in sys.path:
                 sys.path.insert(0, data_dir)
             from fourc_knowledge import FOURC_KNOWLEDGE
-            if physics in FOURC_KNOWLEDGE:
-                return FOURC_KNOWLEDGE[physics]
+            data_entry = FOURC_KNOWLEDGE.get(physics, {})
         except ImportError:
             pass
-        # Fall back to generator-based knowledge
+
+        gen_entry: dict = {}
         try:
             get_gen, _ = _get_generators()
             gen = get_gen(physics)
-            return gen.get_knowledge()
-        except Exception as e:
-            return {"error": str(e)}
+            gen_entry = gen.get_knowledge()
+        except Exception:  # noqa: BLE001
+            pass
+
+        if data_entry and gen_entry:
+            # Merge: data_entry wins for shared keys (its
+            # description / methods / variants are richer);
+            # gen_entry's pitfalls list is preserved unless
+            # data_entry has its own.
+            merged = dict(data_entry)
+            if not data_entry.get("pitfalls") and gen_entry.get(
+                    "pitfalls"):
+                merged["pitfalls"] = gen_entry["pitfalls"]
+            # Carry over any other gen-only keys.
+            for k, v in gen_entry.items():
+                if k not in merged:
+                    merged[k] = v
+            return merged
+        if data_entry:
+            return data_entry
+        if gen_entry:
+            return gen_entry
+        return {"error": f"no knowledge for {physics!r} in fourc"}
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
         # First try inline mesh generators (self-contained, no external files)
