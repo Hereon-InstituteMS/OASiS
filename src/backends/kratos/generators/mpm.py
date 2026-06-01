@@ -243,8 +243,6 @@ KNOWLEDGE = {
             ],
             "PQ_variant": [
                 "MPMUpdatedLagrangianPQ",
-                "MPMUpdatedLagrangianPQ2D4N",
-                "MPMUpdatedLagrangianPQ3D8N",
             ],
             "UP_variant": [
                 "MPMUpdatedLagrangianUP",
