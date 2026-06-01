@@ -800,6 +800,20 @@ TRANSPORT ELEMENTS:
             "(a) add IO/RUNTIME VTK OUTPUT sections (recommended), or "
             "(b) run post_vtu --file=output_prefix after the simulation.",
 
+            # 2026-06-01: .dat extension rejected
+            "[Syntax] 4C 2026.3.0-dev accepts ONLY .yaml / .yml / .json input "
+            "files. Passing a legacy .dat-format file (or any other extension) "
+            "is rejected at file-open time with 'Cannot infer format of input "
+            "file ... Only .yaml, .yml, and .json are supported.' from "
+            "core/io/src/4C_io_input_file.cpp. Note: the section-name "
+            "vocabulary (PROBLEM TYPE, STRUCTURAL DYNAMIC, DESIGN SURF NEUMANN, "
+            "MAT_scatra, etc.) is unchanged — those are still valid as YAML "
+            "keys; only the overall file format moved from dat-style "
+            "section-header text to YAML mapping syntax. Signal: 4C ERROR "
+            "from 4C_io_input_file.cpp with 'Cannot infer format' and "
+            "'Only .yaml, .yml, and .json' substrings when an unsupported "
+            "extension is passed on the CLI. (Verified empirically 2026-06-01.)",
+
             # THICK parameter for 2D plane strain
             "For 2D plane strain WALL elements, THICK is the out-of-plane depth "
             "(unit thickness), NOT the element width or column width. Almost always "

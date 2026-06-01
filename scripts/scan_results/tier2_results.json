@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 45,
-    "passed": 45,
+    "n_fixtures": 46,
+    "passed": 46,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -311,6 +311,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/xdmf_degree_mismatch/source.py\", line 33, in main\n    f.write_function(u)\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/io/utils.py\", line 177, in write_function\n    super().write_function(getattr(u, \"_cpp_object\", u), t, mesh_xpath)\nRuntimeError: Degree of output Function must be same as mesh degree. Maybe the Function needs to be interpolated?\n"
+    },
+    "fourc::_input_format::0": {
+      "key": "fourc::_input_format::0",
+      "backend": "fourc",
+      "physics": "_input_format",
+      "pitfall_index": 0,
+      "fixture_id": "dat_format_rejected",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "Cannot infer format of input file",
+        "Only .yaml, .yml, and .json are supported",
+        "4C_io_input_file"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.8MFeNhCjBu/probe.dat\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core/"
     },
     "kratos::linear_elasticity::8": {
       "key": "kratos::linear_elasticity::8",

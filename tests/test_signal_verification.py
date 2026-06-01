@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 45  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 46  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -86,6 +86,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #   +1 fenics::navier_stokes::3 (BC subspace needs collapsed Function)
     #   +1 skfem::biharmonic::0 (Morley/Argyris/BFS DOF counts)
     #   +1 ngsolve::eigenvalue::1 (GridFunction multidim via vecs not mdcomponents)
+    #   +1 fourc::_input_format::0 (.dat extension rejection)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
