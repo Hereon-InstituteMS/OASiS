@@ -61,11 +61,20 @@ FOURC_KNOWLEDGE = {
                 "SOLIDSCATRA HEX8": "8-node hex with scalar transport coupling (for TSI)",
             },
             "2D_wall": {
-                "WALL QUAD4": "4-node quadrilateral (plane strain/stress, EAS option)",
-                "WALL QUAD8": "8-node serendipity quad",
-                "WALL QUAD9": "9-node full biquadratic quad",
-                "WALL TRI3": "3-node triangle",
-                "WALL TRI6": "6-node quadratic triangle",
+                "SOLID QUAD4": "4-node quadrilateral (plane "
+                                "strain/stress, EAS option). NOTE: "
+                                "'WALL QUAD4' is the legacy name "
+                                "and is NOT registered in 4C "
+                                "2026.3 (eletype 'WALL' raises "
+                                "'Unknown type WALL' from "
+                                "parobjectfactory.cpp). Use "
+                                "SOLID QUAD4 + THICKNESS + "
+                                "PLANE_ASSUMPTION.",
+                "SOLID QUAD8": "8-node serendipity quad",
+                "SOLID QUAD9": "9-node full biquadratic quad",
+                "SOLID TRI3":  "3-node triangle (registered as "
+                                "SOLID, not WALL)",
+                "SOLID TRI6":  "6-node quadratic triangle",
             },
             "1D_beam": {
                 "BEAM3R": "Simo-Reissner beam (shear-deformable, geometrically exact)",
@@ -107,7 +116,13 @@ FOURC_KNOWLEDGE = {
         "wall_element_params": "KINEM linear/nonlinear, EAS none/full, THICK 1.0, STRESS_STRAIN plane_strain/plane_stress, GP 2 2",
 
         "pitfalls": [
-            "WALL QUAD4 needs: MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2",
+            "SOLID QUAD4 (2D structural) needs: 'MAT 1 KINEM "
+            "nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain'. "
+            "DO NOT write 'WALL QUAD4' / 'THICK' / 'STRESS_STRAIN' — "
+            "those are the legacy keywords; current 4C 2026.3 "
+            "rejects WALL as 'Unknown type', and uses THICKNESS / "
+            "PLANE_ASSUMPTION (verified empirically; see Tier-2 "
+            "fixture structural_2d_solid_quad4_not_wall).",
             "SOLID elements need: MAT 1 KINEM linear/nonlinearTotLag",
             "SOLIDSCATRA: REQUIRED for TSI coupling — plain SOLID cannot couple with thermal",
             "For statics: MAXITER 1 for linear problems, 10+ for nonlinear",
@@ -507,9 +522,24 @@ FOURC_KNOWLEDGE = {
             "structure and fluid must not share nodes. If using a single Gmsh "
             "mesh, post-process to duplicate interface nodes and remap fluid "
             "connectivity. Or use mortar coupling which handles non-matching meshes.",
-            "WALL TRI3 does NOT exist in 4C. The structural domain must use "
-            "all-QUAD elements (QUAD4, QUAD8, QUAD9). Use transfinite meshing "
-            "or recombination in Gmsh to avoid triangles in the structure.",
+            "[API] 4C 2026.3 2D structural element name is "
+            "'SOLID QUAD4' (NOT 'WALL QUAD4'). The eletype "
+            "string 'WALL' triggers 'PROC 0 ERROR ... Unknown "
+            "type WALL of finite element' from "
+            "core/comm/src/4C_comm_parobjectfactory.cpp:153. "
+            "The legacy WALL eletype was replaced by the "
+            "unified SOLID eletype + cell-type variants. "
+            "Real syntax in tests/input_files/contact2D_*.4C.yaml: "
+            "'1 SOLID QUAD4 ... MAT 1 KINEM nonlinear "
+            "THICKNESS 1.0 PLANE_ASSUMPTION plane_strain' — "
+            "note THICKNESS (not THICK) and PLANE_ASSUMPTION "
+            "(not STRESS_STRAIN). Signal: stderr contains "
+            "'Unknown type \\'WALL\\' of finite element'; "
+            "swapping to 'SOLID QUAD4' + THICKNESS + "
+            "PLANE_ASSUMPTION lets the discretization reach "
+            "fill_complete. (Verified empirically 2026-06-01 "
+            "— Tier-2 fixture structural_2d_solid_quad4_not_wall "
+            "in scripts/tier2_fixtures/fourc/.)",
             "IO/RUNTIME VTK OUTPUT/STRUCTURE may conflict with FSI (INT_STRATEGY "
             "override). If it causes errors, remove it and use post_vtu instead.",
             "2D fluid VTK output may show NaN pressure and garbage vz — this is "
