@@ -589,7 +589,7 @@ Manufactured solution: u = sin(pi*x)*sin(pi*y)  =>
     sigma = -grad(u),  f = 2*pi^2*sin(pi*x)*sin(pi*y)
 """
 from dune.grid import structuredGrid
-from dune.fem.space import raviartthomas, dglagrange
+from dune.fem.space import raviartThomas, dglagrange
 from dune.fem.scheme import galerkin
 from dune.ufl import DirichletBC
 from ufl import (
@@ -605,7 +605,7 @@ order = {order}   # RT order (0 = RT0, 1 = RT1, ...)
 gridView = structuredGrid([0, 0], [1, 1], [{nx}, {nx}])
 
 # Flux space H(div) and scalar space L²
-Sigma = raviartthomas(gridView, order=order)
+Sigma = raviartThomas(gridView, order=order)
 V     = dglagrange(gridView,   order=order)
 
 # Mixed function: (sigma, u)
@@ -778,7 +778,7 @@ KNOWLEDGE = {
         ),
         "solver": "galerkin with GMRES for indefinite saddle-point system",
         "spaces": {
-            "flux": "raviartthomas(gridView, order=0) — H(div) conforming",
+            "flux": "raviartThomas(gridView, order=0) — H(div) conforming",
             "pressure": "dglagrange(gridView, order=0) — piecewise constant L²",
             "product": "product_space(Sigma, V) — composite space for (sigma, u)",
         },
