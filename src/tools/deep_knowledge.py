@@ -1140,12 +1140,12 @@ _FENICS_KNOWLEDGE = {
             "load_stepping": "For large deformations: apply load in increments, solving at each step",
         },
         "pitfalls": [
-            "Large load steps cause Newton divergence — use incremental load stepping",
-            "Locking for nu > 0.49: use mixed formulation (u,p) or F-bar method",
-            "Neo-Hookean: check J>0 everywhere (negative = inverted element = solver failure)",
-            "Use ufl.variable() and ufl.diff() for automatic tangent computation — avoid hand-coding",
-            "For nearly incompressible: Ogden-type split into volumetric + isochoric parts",
-            "Convergence: snes_monitor to watch residual; if stalled, reduce load increment",
+            "[Numerical] Large load steps cause Newton (NewtonSolver) divergence in hyperelasticity. Use incremental load stepping: ramp the dirichletbc value or body-force fem.Constant across N steps, calling NewtonSolver.solve at each level. Signal: dolfinx.nls.petsc.NewtonSolver.solve raises 'Failed to converge' with the residual at the last iter still O(1); reducing the per-step load increment by 2-4× recovers convergence. (Claim inherited.)",
+            "[Numerical] Near-incompressible regime (nu > 0.49) makes the pure displacement formulation lock — use a mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) formulation or the F-bar method (uniform-pressure projection). Signal: Cook-membrane tip deflection at nu = 0.4999 with pure P2 displacement is O(1e-3) of the analytic value; switching to the (u, p) mixed formulation recovers it within ~1%. (Claim inherited.)",
+            "[Physics] Neo-Hookean / any compressible hyperelastic model requires J = det(F) > 0 everywhere. A locally inverted element gives J <= 0 and the log(J) term blows up. Signal: NewtonSolver.solve raises RuntimeError / FloatingPointError, or the residual jumps to nan, when det(F) at any quadrature point hits 0 or goes negative. Defensive check: ufl.conditional(J > 0, ..., raise_an_error). (Claim inherited.)",
+            "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.classes.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01.)",
+            "[Numerical] Near-incompressibility split: decompose F = F_iso * F_vol where F_vol = (J^(1/3))*I; then W = W_iso(F_iso) + U(J) with a quadratic-in-(J-1) volumetric penalty U(J) = kappa/2 * (J - 1)^2. Avoids volumetric locking in pure-displacement settings AND retains a well-conditioned tangent. Signal: post-processed pressure (= dU/dJ) is bounded; without the split, the discrete pressure at Gauss points oscillates wildly element-to-element. (Claim inherited.)",
+            "[API] PETSc SNES newtonls residual monitor: pass 'snes_monitor': '' (or 'snes_monitor_short') in dolfinx.nls.petsc.NewtonSolver options. The monitor prints the residual norm per iter to stderr; if it stalls, halve the load increment and re-run. Signal: stderr shows '0 SNES Function norm ...' lines from PETSc; a stalled iteration shows the norm plateauing at a fixed O(1) value over many iterations rather than dropping by 10x per step. (Claim inherited.)",
         ],
         "materials": {
             "E": {"range": [1e2, 1e12], "unit": "Pa"},
