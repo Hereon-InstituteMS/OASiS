@@ -176,12 +176,20 @@ def _list_alternative_solvers(current_solver: str, physics: str) -> str:
     runs into issues, without being prescriptive about which to use.
     """
     alternatives = []
-    for b in available_backends():
+    for b in all_backends():
         if b.name() == current_solver:
             continue
+        status, _ = b.check_availability()
         for p in b.supported_physics():
             if p.name == physics or physics in p.name or p.name in physics:
-                alternatives.append(f"- **{b.display_name()}**: {p.description}")
+                # Tag unavailable backends so the LLM knows
+                # they would need to be installed first. Hiding
+                # them silently (the old available_backends()
+                # behaviour) made dune-fem and febio
+                # alternatives invisible. (Audit 2026-06-02.)
+                tag = "" if status.value == "available" else f" *[{status.value}]*"
+                alternatives.append(
+                    f"- **{b.display_name()}**{tag}: {p.description}")
                 break
     if not alternatives:
         return ""
@@ -472,11 +480,21 @@ def register_consolidated_tools(mcp: FastMCP):
             return guides.get(solver.lower(), f"No input guide for {solver}")
 
         elif topic == "solver_guidance" and physics:
+            # Show ALL registered backends so the LLM can learn
+            # which solvers offer the physics in principle —
+            # even when not installed yet — and decide whether
+            # to install one. Tag unavailable backends so the
+            # LLM does not try to run_simulation on them.
+            # (Audit 2026-06-02; same hide-unavailable bug as
+            # discover('list').)
             results = {}
-            for b in available_backends():
+            for b in all_backends():
                 for p in b.supported_physics():
                     if p.name == physics:
-                        results[b.display_name()] = {
+                        status, _ = b.check_availability()
+                        key = (b.display_name() if status.value == "available"
+                               else f"{b.display_name()} [{status.value}]")
+                        results[key] = {
                             "variants": p.template_variants,
                             "elements": p.element_types,
                             "dims": p.spatial_dims,
@@ -650,14 +668,24 @@ def register_consolidated_tools(mcp: FastMCP):
             # eigenvalue in fenics; 'pd' to nonlinear_pde in
             # fenics. (Audit 2026-06-02; same drift class as
             # the prepare_simulation fix.)
+            #
+            # Iterate ALL registered backends, not just the
+            # installed ones, so the recommendation includes
+            # backends the user has not installed yet. Tag
+            # unavailable backends inline so the LLM knows
+            # they need an install step. (Audit 2026-06-02;
+            # same hide-unavailable bug as discover('list').)
             results = []
-            for b in available_backends():
+            for b in all_backends():
                 matched = _fuzzy_match_physics(b, physics)
                 if not matched:
                     continue
                 for p in b.supported_physics():
                     if p.name == matched:
-                        results.append(f"- **{b.display_name()}**: {p.description}")
+                        status, _ = b.check_availability()
+                        tag = "" if status.value == "available" else f" *[{status.value}]*"
+                        results.append(
+                            f"- **{b.display_name()}**{tag}: {p.description}")
                         break
             return "\n".join(results) if results else f"No solver found for '{physics}'"
 
@@ -1321,10 +1349,16 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps(info, indent=2)
 
         elif action == "capabilities":
+            # All registered backends so the developer-side
+            # capabilities listing matches discover('capabilities'):
+            # consistent visibility across both surfaces.
+            # (Audit 2026-06-02.)
             lines = []
-            for b in available_backends():
+            for b in all_backends():
+                status, _ = b.check_availability()
+                tag = "" if status.value == "available" else f" *[{status.value}]*"
                 physics = [p.name for p in b.supported_physics()]
-                lines.append(f"**{b.display_name()}**: {', '.join(physics)}")
+                lines.append(f"**{b.display_name()}**{tag}: {', '.join(physics)}")
             return "\n".join(lines)
 
         elif action == "files" and solver:
@@ -1925,10 +1959,18 @@ def _collect_existing_pitfalls() -> list[str]:
     """Gather all existing pitfall strings for novelty checking.
 
     Includes both built-in knowledge AND community contributions.
+
+    Uses all_backends() (not available_backends): the pitfall
+    library is a static catalog and the novelty check should
+    compare against EVERY known pitfall, including those of
+    backends the user has not installed locally. Filtering by
+    availability would let a candidate that duplicates a
+    dune-fem pitfall slip through as "novel" on any host
+    without dune-fem. (Audit 2026-06-02.)
     """
     pitfalls = []
     try:
-        for b in available_backends():
+        for b in all_backends():
             for p in b.supported_physics():
                 k = b.get_knowledge(p.name)
                 if k and isinstance(k, dict) and "pitfalls" in k:
