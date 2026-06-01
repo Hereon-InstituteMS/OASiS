@@ -1140,13 +1140,55 @@ KNOWLEDGE = {
         "spaces": "VectorH1 for elasticity displacement",
         "solver": "Fixed-point / Newton iteration on the penalty-augmented system",
         "pitfalls": [
-            "Penalty parameter gamma: too small -> contact not enforced; too large -> ill-conditioning",
+            (
+                "[Numerical] Penalty parameter gamma: too small "
+                "-> contact not enforced; too large -> ill-"
+                "conditioning. Signal: too small gives "
+                "max penetration > 5% of element edge; too "
+                "large produces NewtonMinimization "
+                "`DivisionByZero` / cond(K)>1e14 warnings "
+                "from the sparse solver. (Audit 2026-06-02.)"
+            ),
             "Active set method (Lagrange multiplier or semismooth Newton) is more accurate than pure penalty",
-            "IfPos(-gap, 1, 0) identifies active contact nodes — evaluates at integration points",
-            "Contact normal must be consistent with mesh boundary orientation",
+            (
+                "[API] IfPos(-gap, 1, 0) identifies active "
+                "contact nodes — evaluates at integration "
+                "points. Signal: using a boolean Python "
+                "comparison `gap < 0` instead of IfPos raises "
+                "`TypeError: CoefficientFunction comparison` at "
+                "form assembly; the active-set indicator never "
+                "fires and gap stays open. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Contact normal must be consistent "
+                "with mesh boundary orientation. Signal: a flipped "
+                "normal causes penalty to PUSH bodies INTO each "
+                "other instead of separating them — gap goes "
+                "negative without bound; check the sign by "
+                "evaluating specialcf.normal(2 or 3).dot(n_expected)"
+                " on the contact boundary. (Audit 2026-06-02.)"
+            ),
             "For frictional contact: add tangential penalty with Coulomb condition",
-            "NGSolve has no built-in contact formulation — must implement penalty or Lagrange multiplier manually",
-            "Convergence criterion: check both displacement residual and contact gap violation",
+            (
+                "[API] NGSolve has no built-in contact formulation "
+                "— must implement penalty or Lagrange multiplier "
+                "manually. Signal: searching `ngsolve.comp` for "
+                "ContactBoundaryCondition or similar returns no "
+                "match; the catalog ships penalty / Lagrange code "
+                "snippets that the user copies — there is no "
+                "single-call contact API. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convergence criterion: check both "
+                "displacement residual AND contact gap violation. "
+                "Signal: a Newton solver that stops when "
+                "||du||/||u|| < 1e-6 alone can return with a "
+                "still-active gap of 1-5% element-edge size, "
+                "because the gap residual scales differently from "
+                "the displacement residual. Add an explicit "
+                "max(min(gap, 0)) check below tol_gap. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "time_dependent_ns": {

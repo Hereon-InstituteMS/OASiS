@@ -57,13 +57,20 @@ SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
     "dealii":  68.0,   # measured  69.6
     "skfem":   48.0,   # measured  49.5
-    "ngsolve": 54.0,   # measured  55.6 (raised 2026-06-02 from
-                       #                  46.0 after pass 1 on
-                       #                  ngsolve: 6 phase_field +
-                       #                  6 time_dependent_ns
-                       #                  pitfalls Signal-tagged in
-                       #                  backends/ngsolve/generators/
-                       #                  advanced.py.)
+    "ngsolve": 60.0,   # measured  61.5 — CROSSED 60% (raised
+                       #                  2026-06-02 from 54.0
+                       #                  after pass 2 on ngsolve:
+                       #                  5 contact pitfalls
+                       #                  (gamma tuning, IfPos
+                       #                  bool, normal flip, no
+                       #                  builtin contact API,
+                       #                  dual residual criterion)
+                       #                  + 3 surface_pde pitfalls
+                       #                  (ds vs dx, LB nullspace,
+                       #                  mesh.Curve order).
+                       #                  ngsolve 47.4% -> 55.6%
+                       #                  -> 61.5% over two
+                       #                  commits.)
     "febio":   45.0,   # measured  46.2
     "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
                        #                 2026-06-02 from 44.0 after

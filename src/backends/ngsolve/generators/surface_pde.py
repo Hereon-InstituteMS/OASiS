@@ -73,10 +73,34 @@ KNOWLEDGE = {
         "solver": "Direct or iterative — standard solvers work on surface meshes",
         "mesh": "OCC surfaces (Sphere, Cylinder, STEP import), mesh.Curve(order) for geometry approximation",
         "pitfalls": [
-            "Use ds (surface measure) instead of dx (volume) for surface integrals",
+            (
+                "[API] Use ds (surface measure) instead of dx "
+                "(volume) for surface integrals. Signal: using "
+                "dx on a surface mesh gives zero integral or "
+                "raises `mesh dim mismatch in BilinearForm` — "
+                "the volume measure has no support on a "
+                "(d-1)-manifold. (Audit 2026-06-02.)"
+            ),
             "grad on surface mesh automatically gives tangential (surface) gradient",
-            "Laplace-Beltrami has kernel = constants; pin one DOF or add regularization",
-            "mesh.Curve(order) improves geometry approximation for curved surfaces",
+            (
+                "[Numerical] Laplace-Beltrami has kernel = "
+                "constants; pin one DOF or add regularization. "
+                "Signal: solver returns `KSPSolve: "
+                "DIVERGED_BREAKDOWN` or near-zero pivot; the "
+                "computed solution u contains an arbitrary "
+                "additive constant. Pin u(p0) = 0 at one DOF or "
+                "add eps*u to the operator with eps ~ 1e-8. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] mesh.Curve(order) improves geometry "
+                "approximation for curved surfaces. Signal: on a "
+                "Sphere mesh without Curve(3), the area integral "
+                "of 1*ds differs from 4*pi*R^2 by ~2-5% (linear "
+                "facet approximation); with mesh.Curve(3) the "
+                "area converges to within ~1e-4 of the exact "
+                "value. (Audit 2026-06-02.)"
+            ),
             "For evolving surfaces: use deformation mapping + ALE approach",
             "Surface meshes from OCC: Sphere, Cylinder, or any STEP/BREP surface",
         ],
