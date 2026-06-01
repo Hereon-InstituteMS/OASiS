@@ -546,13 +546,47 @@ def register_consolidated_tools(mcp: FastMCP):
                     "threading": "Limited",
                     "typical_scale": "Moderate (research scale)",
                 },
+                "FEBio": {
+                    "parallelism": (
+                        "Shared-memory only (OpenMP). No MPI domain "
+                        "decomposition: a single FEBio process drives "
+                        "the whole simulation. Multi-physics coupling "
+                        "(biphasic, multiphasic, fluid-solid mixture) "
+                        "is monolithic in the solver, not via "
+                        "subdomain decomposition."),
+                    "gpu": (
+                        "No GPU support. FEBio's linear-algebra "
+                        "back-end is CPU only (PARDISO / MUMPS / "
+                        "Skyline). GPU acceleration is on the wishlist "
+                        "but not implemented as of FEBio 4.x."),
+                    "threading": (
+                        "OpenMP across element assembly + PARDISO's "
+                        "internal threading. Set OMP_NUM_THREADS for "
+                        "assembly; the linear solver uses its own "
+                        "OMP_NUM_THREADS or MKL_NUM_THREADS pool."),
+                    "typical_scale": (
+                        "Hundreds of thousands of DOFs on a workstation; "
+                        "millions are routinely run but FEBio targets "
+                        "biomechanical models (single bones, soft "
+                        "tissue, biphasic cartilage) rather than HPC "
+                        "scale."),
+                    "note": (
+                        "FEBio's strength is biomechanics-specific "
+                        "physics (biphasic / multiphasic mixtures, "
+                        "active contraction, fiber materials, "
+                        "growth-remodeling). It is NOT a general-"
+                        "purpose FEM code; do not pick it for "
+                        "Navier-Stokes / electromagnetics / "
+                        "geomechanics."),
+                },
             }
             if solver:
                 key_map = {"fourc": "4C Multiphysics", "4c": "4C Multiphysics",
                            "fenics": "FEniCSx (dolfinx)", "fenicsx": "FEniCSx (dolfinx)",
                            "dealii": "deal.II", "deal.ii": "deal.II",
                            "ngsolve": "NGSolve", "skfem": "scikit-fem", "scikit-fem": "scikit-fem",
-                           "kratos": "Kratos Multiphysics", "dune": "DUNE-fem", "dune-fem": "DUNE-fem"}
+                           "kratos": "Kratos Multiphysics", "dune": "DUNE-fem", "dune-fem": "DUNE-fem",
+                           "febio": "FEBio"}
                 name = key_map.get(solver.lower(), solver)
                 if name in hw:
                     return json.dumps({name: hw[name]}, indent=2)

@@ -2,7 +2,10 @@
 Open FEM Agent — MCP Server
 
 Connects any LLM to multiple open-source FEM codes via the Model Context Protocol.
-Supported backends: 4C, FEniCSx (dolfinx), deal.II, (FEBio planned).
+Supported backends (catalog ships 8, runtime depends on local installs):
+4C Multiphysics, FEniCSx (dolfinx), deal.II, NGSolve, scikit-fem, Kratos
+Multiphysics, DUNE-fem, FEBio. Call `discover(query='list')` after start-up
+for the current availability and per-backend install hints.
 """
 
 import sys
@@ -34,8 +37,8 @@ mcp = FastMCP(
         "- **NGSolve**: Python. Maxwell, Helmholtz, DG/HDG, high-order, eigenvalues, symbolic PDE.\n"
         "- **scikit-fem**: Pure Python. Assembly-level control, 50+ element types, Stokes, biharmonic.\n"
         "- **Kratos Multiphysics**: Python/JSON. Structural, fluid, FSI, DEM, MPM, CoSimulation (39 catalog physics rows on this install).\n"
-        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, VEM, h/p-adaptivity (requires `pip install dune-fem`).\n"
-        "- **FEBio**: XML. Biomechanics (not currently installed).\n\n"
+        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, VEM, h/p-adaptivity (install: `conda create -n ofa-dune -c conda-forge dune-fem` — the conda-forge channel is the supported path, not PyPI).\n"
+        "- **FEBio**: XML. Biomechanics (biphasic / multiphasic tissue, active contraction). Install the binary from https://febio.org/downloads/ or set the FEBIO_BINARY env var.\n\n"
         "## Workflow\n"
         "1. Understand the physics the user wants to solve\n"
         "2. `prepare_simulation(solver, physics)` — get knowledge + real test files + template "
