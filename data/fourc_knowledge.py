@@ -495,8 +495,14 @@ FOURC_KNOWLEDGE = {
 
         "valid_2d_elements": {
             "FLUID": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
-            "WALL (structure)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
-            "notes": "QUAD4 most validated. TRI3 less accurate for pressure.",
+            "SOLID (structure)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
+            "notes": (
+                "QUAD4 most validated. TRI3 less accurate for "
+                "pressure. NOTE: legacy 'WALL' eletype was "
+                "renamed to 'SOLID' in 4C 2026.3 — see the [API] "
+                "pitfall in SOL_MECH for the parobjectfactory.cpp "
+                "error you get if you write 'WALL QUAD4'."
+            ),
         },
 
         "pitfalls": [
@@ -936,10 +942,14 @@ TRANSPORT ELEMENTS:
             "'input_spec_builders' all appear in 4C stderr when the value is "
             "not in the allowed enum set. (Verified empirically 2026-06-01.)",
 
-            # THICK parameter for 2D plane strain
-            "For 2D plane strain WALL elements, THICK is the out-of-plane depth "
-            "(unit thickness), NOT the element width or column width. Almost always "
-            "THICK: 1.0. Getting this wrong silently scales all forces/stresses.",
+            # THICKNESS parameter for 2D plane strain
+            "For 2D plane strain SOLID elements, THICKNESS is "
+            "the out-of-plane depth (unit thickness), NOT the "
+            "element width. Almost always THICKNESS: 1.0. "
+            "Getting this wrong silently scales all forces and "
+            "stresses by the THICKNESS value. NOTE: the legacy "
+            "keyword 'THICK' was renamed to 'THICKNESS' along "
+            "with the WALL → SOLID eletype change in 4C 2026.3.",
 
             # 2D VTK output artifacts — applies to fluid AND porofluid
             "In 2D simulations, fluid AND porofluid VTK output may show NaN for "
@@ -953,11 +963,15 @@ TRANSPORT ELEMENTS:
             "elastic waves. For 1D consolidation, ramp time >> H/sqrt(E/rho).",
 
 
-            # WALL element types
-            "WALL TRI3 and WALL TRI6 do NOT exist in 4C.  For 2D structural "
-            "elements, only QUAD variants are available (QUAD4, QUAD8, QUAD9).  "
-            "If your mesh generator produces triangles in the structural domain, "
-            "use transfinite meshing or recombination to get all-QUAD elements.",
+            # 2D structural element types (post-WALL→SOLID
+            # rename in 4C 2026.3).
+            "2D structural elements are 'SOLID QUAD4 / QUAD8 / "
+            "QUAD9' and 'SOLID TRI3 / TRI6'. The legacy 'WALL' "
+            "eletype was renamed to 'SOLID' — the new naming "
+            "covers BOTH 2D (with PLANE_ASSUMPTION) and 3D (no "
+            "PLANE_ASSUMPTION) under one factory string. Writing "
+            "'WALL QUAD4' / 'WALL TRI3' raises 'Unknown type "
+            "WALL of finite element' from parobjectfactory.cpp.",
 
             # FSI mesh requirements
             "For monolithic FSI: the structure and fluid meshes must have SEPARATE "

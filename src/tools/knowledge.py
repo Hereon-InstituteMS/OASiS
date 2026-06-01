@@ -357,7 +357,9 @@ Key changes needed for new physics:
 
 ### Required Components
 
-1. **Element type:** `SOLIDSCATRA HEX8` (3D) — NOT `WALL QUAD4` or `SOLID HEX8`
+1. **Element type:** `SOLIDSCATRA HEX8` (3D) — TSI needs the
+   combined eletype, NOT plain `SOLID HEX8` (structure-only) or
+   the legacy `WALL` 2D eletype.
    - SOLIDSCATRA combines structural + scalar transport capabilities
    - Must be 3D (no 2D TSI elements in 4C)
 

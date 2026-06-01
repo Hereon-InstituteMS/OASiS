@@ -377,7 +377,7 @@ RESULT DESCRIPTION:
                 "name": "genalpha_2d",
                 "description": (
                     "2D structural dynamics with GenAlpha time integration, "
-                    "Rayleigh damping, WALL QUAD4 plane-strain elements, "
+                    "Rayleigh damping, SOLID QUAD4 plane-strain elements, "
                     "St. Venant-Kirchhoff material.  Suitable as starting "
                     "point for impact and vibration problems."
                 ),

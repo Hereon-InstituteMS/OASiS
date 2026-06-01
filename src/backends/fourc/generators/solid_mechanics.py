@@ -35,9 +35,15 @@ class SolidMechanicsGenerator(BaseGenerator):
                 "(KINEM: nonlinear, Newton-Raphson iteration).  "
                 "The PROBLEM TYPE is 'Structure', the dynamics section is "
                 "'STRUCTURAL DYNAMIC', and geometry goes into "
-                "'STRUCTURE GEOMETRY'.  2D problems use the WALL element "
-                "category with STRESS_STRAIN plane_strain or plane_stress; "
-                "3D problems use the SOLID category."
+                "'STRUCTURE GEOMETRY'.  In 4C 2026.3 BOTH 2D "
+                "and 3D problems use the SOLID eletype "
+                "(e.g. 'SOLID QUAD4' in 2D with "
+                "'PLANE_ASSUMPTION plane_strain' / 'plane_stress'; "
+                "'SOLID HEX8' in 3D, no PLANE_ASSUMPTION). The "
+                "legacy 'WALL' / 'THICK' / 'STRESS_STRAIN' "
+                "keywords were renamed to 'SOLID' / 'THICKNESS' "
+                "/ 'PLANE_ASSUMPTION' — writing the legacy form "
+                "raises 'Unknown type WALL of finite element'."
             ),
             "required_sections": [
                 "PROBLEM TYPE",
@@ -354,11 +360,18 @@ class SolidMechanicsGenerator(BaseGenerator):
                     "use higher-order elements (HEX27, TET10)."
                 ),
                 (
-                    "2D structural elements use the WALL element category (not "
-                    "SOLID).  They require THICK and STRESS_STRAIN parameters: "
-                    "'THICK 1.0 STRESS_STRAIN plane_strain' or 'plane_stress'.  "
-                    "In ELEMENT_BLOCKS with Exodus meshes, use the WALL: sub-key "
-                    "instead of SOLID: for 2D."
+                    "[API] In 4C 2026.3 BOTH 2D and 3D structural "
+                    "elements use the SOLID eletype factory. 2D "
+                    "elements (SOLID QUAD4 / TRI3 etc.) require "
+                    "THICKNESS and PLANE_ASSUMPTION parameters: "
+                    "'THICKNESS 1.0 PLANE_ASSUMPTION plane_strain' "
+                    "or 'plane_stress'. The legacy 'WALL' category "
+                    "+ 'THICK' / 'STRESS_STRAIN' keywords were all "
+                    "renamed; writing the legacy form raises "
+                    "'Unknown type WALL of finite element' from "
+                    "parobjectfactory.cpp:153. In ELEMENT_BLOCKS "
+                    "with Exodus meshes, use the SOLID: sub-key "
+                    "for both 2D and 3D."
                 ),
                 (
                     "Neumann conditions for structures have NUMDOF: 6 (3 forces "
@@ -375,7 +388,7 @@ class SolidMechanicsGenerator(BaseGenerator):
                     "name": "cantilever_2d",
                     "description": (
                         "2D cantilever beam under tip load.  Fixed left edge, "
-                        "point or line load on right edge.  Uses WALL QUAD4 "
+                        "point or line load on right edge.  Uses SOLID QUAD4 "
                         "elements with plane_strain, MAT_Struct_StVenantKirchhoff, "
                         "KINEM: linear, MAXITER: 1."
                     ),
@@ -542,7 +555,7 @@ STRUCTURE GEOMETRY:
             {
                 "name": "linear_2d",
                 "description": (
-                    "Linear elastic 2D cantilever with plane strain, WALL QUAD4 "
+                    "Linear elastic 2D cantilever with plane strain, SOLID QUAD4 "
                     "elements, St. Venant-Kirchhoff material, tip load."
                 ),
             },

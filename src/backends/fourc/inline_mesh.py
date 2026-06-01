@@ -9,8 +9,8 @@ This makes 4C fully self-contained for standard benchmark problems.
 
 def generate_quad4_rectangle(nx: int, ny: int, lx: float = 1.0, ly: float = 1.0,
                               element_section: str = "STRUCTURE",
-                              element_type: str = "WALL QUAD4",
-                              element_suffix: str = "MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"):
+                              element_type: str = "SOLID QUAD4",
+                              element_suffix: str = "MAT 1 KINEM nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain"):
     """Generate inline QUAD4 mesh on [0,lx]×[0,ly].
 
     Returns dict with:
@@ -766,8 +766,8 @@ def matched_elasticity_input(nx: int = 40, ny: int = 4, E: float = 1000.0, nu: f
     """Cantilever beam lx×ly, fixed left, body force (0,-1). Matches FEniCS/deal.II."""
     mesh = generate_quad4_rectangle(nx, ny, lx=lx, ly=ly,
                                      element_section="STRUCTURE",
-                                     element_type="WALL QUAD4",
-                                     element_suffix=f"MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2")
+                                     element_type="SOLID QUAD4",
+                                     element_suffix="MAT 1 KINEM nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
 
     yaml = f'''TITLE:
   - "Cantilever {lx}x{ly} — cross-solver benchmark"

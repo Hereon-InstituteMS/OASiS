@@ -241,7 +241,7 @@ class FourcBackend(SolverBackend):
                 "structural_dynamics, beams, contact). For "
                 "specific physics use linear_elasticity / "
                 "plasticity / structural_dynamics directly.",
-                [2, 3], ["SOLID HEX8", "WALL QUAD4"],
+                [2, 3], ["SOLID HEX8", "SOLID QUAD4"],
                 ["umbrella"]),
             PhysicsCapability(
                 "thermal",
