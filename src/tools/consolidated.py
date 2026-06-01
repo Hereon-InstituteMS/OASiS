@@ -1285,12 +1285,25 @@ def register_consolidated_tools(mcp: FastMCP):
             parts.append(ref)
 
         # 3. Generated template
+        # Templates can exceed 3000 chars on the harder physics
+        # (ngsolve hdivdiv 3.2KB, nonlinear_elasticity 3.4KB,
+        # fenics navier_stokes 3.8KB ...) — truncating at 3000
+        # cuts off the trailing solver / output / summary
+        # blocks the LLM needs to actually run the template.
+        # Raise to 12000 chars so the standard Layer F-class
+        # templates (typically 2-5KB) render in full. Audit
+        # 2026-06-01.
+        TEMPLATE_LIMIT = 12000
         for p in backend.supported_physics():
             if p.name == matched_physics and p.template_variants:
                 try:
                     content = backend.generate_input(matched_physics, p.template_variants[0], {})
                     fmt = backend.input_format().value
-                    parts.append(f"## Template ({p.template_variants[0]})\n```{fmt}\n{content[:3000]}\n```\n")
+                    truncated = len(content) > TEMPLATE_LIMIT
+                    body = content[:TEMPLATE_LIMIT]
+                    suffix = (f"\n... [truncated {len(content) - TEMPLATE_LIMIT} chars]"
+                              if truncated else "")
+                    parts.append(f"## Template ({p.template_variants[0]})\n```{fmt}\n{body}{suffix}\n```\n")
                 except Exception:
                     pass
                 break
