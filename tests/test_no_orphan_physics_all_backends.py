@@ -40,31 +40,67 @@ _REFERENCE_KEYS: set[str] = {
 
 def _backend_dk_keys(backend_name: str) -> set[str]:
     """Return the set of (physics) keys carrying a 'pitfalls'
-    list in the backend's deep-knowledge dict (or {} if there
-    is no such dict)."""
+    list anywhere reachable from the backend — both the
+    deep-knowledge dicts and the per-physics generator
+    KNOWLEDGE dicts."""
     import importlib
 
-    candidates = [
-        # data/*_knowledge.py shape (e.g. fourc_knowledge,
-        # kratos_knowledge).
-        (f"{backend_name}_knowledge",
-         f"{backend_name.upper()}_KNOWLEDGE"),
-        # tools/deep_knowledge.py shape (FENICS, DEALII, FEBIO).
-        ("tools.deep_knowledge",
-         f"_{backend_name.upper()}_KNOWLEDGE"),
-    ]
-    for module_name, attr in candidates:
-        try:
-            mod = importlib.import_module(module_name)
-        except ImportError:
-            continue
-        d = getattr(mod, attr, None)
+    keys: set[str] = set()
+
+    # 1. data/*_knowledge.py shape (fourc_knowledge,
+    #    kratos_knowledge).
+    try:
+        mod = importlib.import_module(f"{backend_name}_knowledge")
+    except ImportError:
+        mod = None
+    if mod is not None:
+        d = getattr(mod, f"{backend_name.upper()}_KNOWLEDGE", None)
         if isinstance(d, dict):
-            return {
+            keys.update(
                 k for k, v in d.items()
                 if isinstance(v, dict) and "pitfalls" in v
-            }
-    return set()
+            )
+
+    # 2. tools/deep_knowledge.py shape (FENICS, DEALII, FEBIO).
+    try:
+        dk_mod = importlib.import_module("tools.deep_knowledge")
+        d = getattr(
+            dk_mod, f"_{backend_name.upper()}_KNOWLEDGE", None)
+        if isinstance(d, dict):
+            keys.update(
+                k for k, v in d.items()
+                if isinstance(v, dict) and "pitfalls" in v
+            )
+    except ImportError:
+        pass
+
+    # 3. Per-physics generator KNOWLEDGE dicts (one .py per
+    #    physics under backends.<be>.generators). Some keys
+    #    (e.g. kratos _auxiliary_overview) only live here.
+    try:
+        gen_pkg = importlib.import_module(
+            f"backends.{backend_name}.generators")
+        gen_dir = Path(gen_pkg.__file__).parent
+        for fname in sorted(gen_dir.iterdir()):
+            if (fname.suffix == ".py"
+                    and not fname.name.startswith("_")
+                    and "base" not in fname.name):
+                modname = (f"backends.{backend_name}."
+                           f"generators.{fname.stem}")
+                try:
+                    m = importlib.import_module(modname)
+                except Exception:  # noqa: BLE001
+                    continue
+                K = getattr(m, "KNOWLEDGE", None)
+                if isinstance(K, dict):
+                    keys.update(
+                        k for k, v in K.items()
+                        if isinstance(v, dict) and "pitfalls" in v
+                    )
+    except ImportError:
+        pass
+
+    return keys
 
 
 class TestNoOrphanPhysics(unittest.TestCase):
@@ -79,21 +115,22 @@ class TestNoOrphanPhysics(unittest.TestCase):
             if backend is None:
                 continue
             exposed = {c.name for c in backend.supported_physics()}
+            # Recognise the convention where a backend exposes
+            # a leading-underscore key (e.g. kratos
+            # _auxiliary_overview) as the public name with the
+            # underscore stripped (auxiliary_overview).
+            exposed |= {f"_{n}" for n in exposed}
             dk_keys = _backend_dk_keys(backend_name)
             orphans = (dk_keys - exposed) - _REFERENCE_KEYS
             if orphans:
                 offending[backend_name] = sorted(orphans)
 
-        # Per-backend exemptions for known-tracked work:
-        #   * kratos has _auxiliary_overview in generators —
-        #     tracked as a separate Layer-A scanner issue.
-        # dealii orphans closed 2026-06-01: advection_dg /
-        # contact / nonlinear_elasticity now exposed via
-        # PhysicsCapability AND reachable via the
-        # tools.deep_knowledge fallback in
-        # backends.dealii.backend.get_knowledge.
-        for be in ("kratos",):
-            offending.pop(be, None)
+        # All orphans tracked in this campaign now closed
+        # (fenics 2026-06-01 commit 3f75b23, fourc f19e6ae,
+        # dealii 45b9d3f, kratos auxiliary_overview this commit).
+        # Exemptions list is intentionally empty — any new
+        # orphan must be wired up or whitelisted before this
+        # test goes green again.
 
         self.assertEqual(
             offending, {},

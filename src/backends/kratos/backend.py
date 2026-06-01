@@ -202,9 +202,41 @@ class KratosBackend(SolverBackend):
                               ["VMS2D3N"], ["2d"]),
             PhysicsCapability("optimization", "General optimization: gradient-based, adjoint, multi-objective", [2, 3],
                               ["Generic"], ["2d"]),
+            # ── 2026-06-01 (task #70): _auxiliary_overview in
+            #    src/backends/kratos/generators/auxiliary_applications.py
+            #    holds 6 substantive integration / API / numerical
+            #    pitfalls about Kratos infrastructure apps
+            #    (TrilinosApplication PyPI gap, MappingApplication
+            #    FSI requirement, MapperFactory deprecation, DEM
+            #    3D-only, contact apps PyPI absence). The leading
+            #    underscore in the key historically kept this out
+            #    of supported_physics; expose it now as
+            #    'auxiliary_overview' so users browsing
+            #    discover(physics, kratos) see the meta-catalog.
+            PhysicsCapability(
+                "auxiliary_overview",
+                "[Reference] Kratos auxiliary applications "
+                "(TrilinosApplication, MetisApplication, "
+                "MappingApplication, MeshMovingApplication, "
+                "HDF5Application, ...) — infrastructure that "
+                "other Kratos analyses depend on. Catalog "
+                "contains PyPI-publication status, deprecation "
+                "notes, and FSI hidden-dependency warnings. "
+                "Not a PDE physics — this is a meta-reference "
+                "entry; the underlying KNOWLEDGE key is "
+                "'_auxiliary_overview' (with the leading "
+                "underscore preserved for backward "
+                "compatibility).",
+                [2, 3], ["N/A — meta-reference"], ["N/A"]),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
+        # Alias: PhysicsCapability surfaces 'auxiliary_overview'
+        # (no leading underscore) but the on-disk KNOWLEDGE key
+        # is '_auxiliary_overview'. Map back here so the public
+        # name resolves.
+        if physics == "auxiliary_overview":
+            physics = "_auxiliary_overview"
         # Try deep knowledge first
         try:
             import sys
