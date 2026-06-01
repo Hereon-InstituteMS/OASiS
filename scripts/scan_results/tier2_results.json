@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 30,
-    "passed": 30,
+    "n_fixtures": 33,
+    "passed": 33,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -246,6 +246,22 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/curl_on_scalar_space/source.py\", line 21, in main\n    form(ufl.curl(u) * ufl.curl(v) * ufl.dx)\n         ~~~~~~~~~~~~^~~~~~~~~~~~~\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/exproperators.py\", line 186, in _mul\n    return _mult(self, o)\n           ^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/exproperators.py\", line 159, in _mult\n    raise ValueError(f\"Invalid ranks {r1} and {r2} in product.\")\nValueError: Invalid ranks 1 and 1 in product.\n"
     },
+    "fenics::linear_elasticity::0": {
+      "key": "fenics::linear_elasticity::0",
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 0,
+      "fixture_id": "scalar_space_for_elasticity",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ValueError",
+        "Symmetric part of tensor with rank != 2"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/scalar_space_for_elasticity/source.py\", line 31, in main\n    ufl.sym(ufl.grad(u))\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/operators.py\", line 337, in sym\n    return Sym(A)\n           ^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/ufl/tensoralgebra.py\", line 539, in __new__\n    raise ValueError(\"Symmetric part of tensor with rank != 2 is undefined.\")\nValueError: Symmetric part of tensor with rank != 2 is undefined.\n"
+    },
     "fenics::linear_elasticity::8": {
       "key": "fenics::linear_elasticity::8",
       "backend": "fenics",
@@ -329,6 +345,23 @@
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
     },
+    "kratos::plasticity::5": {
+      "key": "kratos::plasticity::5",
+      "backend": "kratos",
+      "physics": "plasticity",
+      "pitfall_index": 5,
+      "fixture_id": "plasticity_factory_takes_no_args",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "TypeError",
+        "incompatible constructor arguments",
+        "SmallStrainIsotropicPlasticityFactory"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosStructuralMechanicsApplication \n    KRATOS   ___|  |                   |                   |\n           \\___ \\  __|  __| |   |  __| __| |   |  __| _` | |\n                 | |   |    |   | (    |   |   | |   (   | |\n           _____/ \\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\__,_|_| MECHANICS\nInitializing KratosStructuralMechanicsApplication...\nImporting    KratosConstitutiveLawsApplication \nInitializing KratosC"
+    },
     "kratos::linear_elasticity::2": {
       "key": "kratos::linear_elasticity::2",
       "backend": "kratos",
@@ -361,6 +394,24 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/variable_not_added_before_access/source.py\", line 23, in main\n    mp.Nodes[1].GetSolutionStepValue(KM.DISPLACEMENT)\nRuntimeError: Error: This container only can store the variables specified in its variables list. The variables list doesn't have this variable:DISPLACEMENT variable #5132508"
+    },
+    "kratos::fluid::0": {
+      "key": "kratos::fluid::0",
+      "backend": "kratos",
+      "physics": "fluid",
+      "pitfall_index": 0,
+      "fixture_id": "velocity_variable_not_added",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "variables list",
+        "doesn't have this variable",
+        "VELOCITY"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/velocity_variable_not_added/source.py\", line 31, in main\n    mp.Nodes[1].GetSolutionStepValue(KM.VELOCITY)\nRuntimeError: Error: This container only can store the variables specified in its variables list. The variables list doesn't have this variable:VELOCITY variable #4042633728VELOCITY v"
     },
     "ngsolve::maxwell::7": {
       "key": "ngsolve::maxwell::7",
