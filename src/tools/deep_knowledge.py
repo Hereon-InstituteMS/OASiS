@@ -971,13 +971,76 @@ _FENICS_KNOWLEDGE = {
             "ipcs": "Three sequential LinearProblem solves per time step",
         },
         "pitfalls": [
-            "Must use inf-sup stable pair (Taylor-Hood P2/P1) — equal-order needs stabilization",
-            "Pressure needs pinning for enclosed flows (Dirichlet at one point or nullspace)",
-            "High Re (>500) requires finer mesh or continuation in Re for Newton convergence",
-            "BCs on sub-spaces: need Function on collapsed sub-space, not raw constant",
-            "P2 velocity can't write to XDMF directly — interpolate to P1 or use VTX",
-            "Newton may not converge: check snes_monitor, reduce Re, refine mesh, or use IPCS",
-            "IPCS time step must be small enough for splitting error to be acceptable",
+            "[Numerical] Must use an inf-sup stable element pair "
+            "(Taylor-Hood P2/P1 is the canonical choice in "
+            "dolfinx; basix.ufl.mixed_element([P2, P1])). "
+            "Equal-order P1/P1 fails the LBB condition. Signal: "
+            "PETScKrylovSolver reports residual stalling far "
+            "from tolerance OR the pressure field shows visible "
+            "checkerboard mode patterns on the assembled "
+            "Function. (Claim inherited — not yet empirically "
+            "separated.)",
+            "[Physics] Enclosed-flow incompressible Stokes / "
+            "Navier-Stokes admits the constant pressure null "
+            "space — pin one DoF (dirichletbc on a single point) "
+            "or attach a null space via "
+            "PETScKrylovSolver.setNullSpace. Signal: "
+            "LinearProblem.solve / SNES Newton returns "
+            "successfully but the post-processed pressure "
+            "Function has a large additive offset (max ≈ min "
+            "≈ O(1e6), tiny std) — same family as poisson "
+            "pure-Neumann (fenics poisson#3). (Claim inherited — "
+            "not yet empirically separated for navier_stokes "
+            "specifically.)",
+            "[Numerical] High Re (>500) requires finer mesh or "
+            "continuation in Re for Newton convergence. Naively "
+            "running Re=1000 from a zero initial guess often "
+            "fails to converge. Signal: dolfinx.nls.petsc."
+            "NewtonSolver.solve reports 'Failed to converge' / "
+            "iteration count = max_it; switching to a "
+            "continuation loop in Re recovers convergence. "
+            "(Claim inherited — not yet empirically verified.)",
+            "[API] Dirichlet BCs on sub-spaces of a mixed "
+            "FunctionSpace require a Function on the COLLAPSED "
+            "sub-space, NOT a raw numpy constant. Passing a "
+            "constant array to dolfinx.fem.dirichletbc with "
+            "(V_sub_dofs, V_sub_full) raises TypeError "
+            "'incompatible function arguments'. Correct: "
+            "u_bc = dolfinx.fem.Function(V_sub.collapse()[0]); "
+            "u_bc.x.array[:] = 0.0; dolfinx.fem.dirichletbc("
+            "u_bc, boundary_dofs, V_sub). Signal: TypeError "
+            "'incompatible function arguments' from "
+            "dirichletbc.__init__ at the moment the BC is "
+            "constructed with a raw constant on a sub-space. "
+            "(Verified empirically 2026-06-01.)",
+            "[API] P2 velocity Function cannot be written "
+            "directly via XDMFFile.write_function — same degree-"
+            "mismatch as fenics linear_elasticity#3. Interpolate "
+            "to a P1 space first, or use VTKFile / VTXWriter. "
+            "Signal: XDMFFile.write_function raises RuntimeError "
+            "'Degree of output Function must be same as mesh "
+            "degree. Maybe the Function needs to be "
+            "interpolated?'. (Cross-referenced from the fenics "
+            "linear_elasticity#3 fixture — same failure mode.)",
+            "[Numerical] Newton may not converge for hard NS "
+            "cases — inspect snes_monitor (set "
+            "'snes_monitor_short' in petsc_options), reduce Re, "
+            "refine the mesh, or switch to an IPCS time-split "
+            "scheme. Signal: NewtonSolver.solve raises "
+            "'Failed to converge' with snes_monitor showing "
+            "non-monotonic residual; IPCS does not require "
+            "Newton at all (three sequential LinearProblem "
+            "solves per step). (Claim inherited.)",
+            "[Numerical] IPCS time step dt must respect the "
+            "splitting accuracy: the splitting error is O(dt) "
+            "per step, so dt > (target_l2_error) / Re is "
+            "necessary for first-order splitting and tighter "
+            "for higher-order projections. Signal: integrated "
+            "L2 error of u_h vs an analytic reference saturates "
+            "as dt is reduced because the splitting error "
+            "dominates the spatial error; switching back to "
+            "monolithic Newton recovers the spatial-error "
+            "regime. (Claim inherited.)",
         ],
         "materials": {
             "Re": {"range": [1, 10000], "unit": "dimensionless", "description": "Reynolds number"},

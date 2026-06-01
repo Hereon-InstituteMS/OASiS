@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 42,
-    "passed": 42,
+    "n_fixtures": 43,
+    "passed": 43,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -229,6 +229,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/array_size_mismatch/source.py\", line 21, in main\n    u.x.array[:] = np.zeros(2 * n)\n    ~~~~~~~~~^^^\nValueError: could not broadcast input array from shape (50,) into shape (25,)\n"
+    },
+    "fenics::navier_stokes::3": {
+      "key": "fenics::navier_stokes::3",
+      "backend": "fenics",
+      "physics": "navier_stokes",
+      "pitfall_index": 3,
+      "fixture_id": "bc_subspace_needs_collapsed_function",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "TypeError",
+        "incompatible function arguments",
+        "dirichletbc"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/bcs.py\", line 229, in dirichletbc\n    bc = bctype(_value, dofs, V)\n         ^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: __init__(): incompatible function arguments. The following argument types are supported:\n    1. __init__(self, g: ndarray[dtype=float64, order='C', writable=False], dofs: ndarray[dtype=int32, shape=(*), order='C', writable=False], V: dolfinx.cpp.fem.FunctionSpace_float64) -> None\n    2. __init__(self, g: dolfinx.cpp.fem.Constant_float64, dofs: ndarray[dtype=int32, shape=(*), order='C', writable=False], V: dolfinx.cpp.fem.FunctionSpace_float64) -> None\n    3. __init__(self, g: dolfinx.cpp.fem.Function_float64, dofs: ndarray[dtype=int32, shape=(*), order='C', writable=Fa"
     },
     "fenics::maxwell::92": {
       "key": "fenics::maxwell::92",
