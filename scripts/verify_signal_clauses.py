@@ -370,6 +370,32 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "ML", "MueLu", "AMG",
             "ELEMENTS", "NODE_COORDS", "DESIGN_POINT",
             "DESIGN_LINE", "DESIGN_SURF", "DESIGN_VOL",
+            # ── 4C YAML section / parameter names (verified
+            #    against 4C source) ──────────────────────────────
+            "PROBLEMTYPE", "MATERIALS", "STRUCTURE",
+            "SCATRA", "TRANSP", "TIMEINTEGR", "DYNAMICTYPE",
+            "INITIALFIELD", "INITFUNCNO", "FUNCT",
+            "STRUCTURAL", "THERMAL", "FLUID_DYNAMIC",
+            "TSI_DYNAMIC",
+            # ── 4C material classes (real registered types) ─────
+            "MAT_Fourier", "MAT_ElastHyper", "MAT_Struct_StVenantKirchhoff",
+            "MAT_Newtonian", "MAT_Carreau",
+            "MAT_LinElast1D",
+            "CAPA", "CONDUCT",
+            # ── 4C input-spec builder classes (the ones that
+            #    emit the empirical diagnostics) ─────────────────
+            "InputSpec", "InputFile", "InputParameterContainer",
+            "MatchTree", "deprecated_selection",
+            # ── 4C source filenames that appear verbatim in
+            #    PROC 0 ERROR diagnostics ────────────────────────
+            "4C_io_input_file", "4C_io_input_spec_builders",
+            "4C_global_data_read", "4C_thermo_element",
+            "4C_fem_discretization", "lib4C",
+            # ── 4C output markers / runtime functions ───────────
+            "fill_complete", "PROBLEMTYPE",
+            "Thermo_Structure_Interaction",
+            "Scalar_Transport", "Statics", "Stationary",
+            "GenAlpha", "OneStepTheta",
         })
 
     code_symbols.update({
