@@ -763,11 +763,20 @@ DESIGN SURF DIRICH CONDITIONS:
 
 def matched_elasticity_input(nx: int = 40, ny: int = 4, E: float = 1000.0, nu: float = 0.3,
                                lx: float = 10.0, ly: float = 1.0) -> str:
-    """Cantilever beam lx×ly, fixed left, body force (0,-1). Matches FEniCS/deal.II."""
+    """Cantilever beam lx×ly, fixed left, body force (0,-1). Matches FEniCS/deal.II.
+
+    Uses KINEM linear (small-strain St. Venant-Kirchhoff) so that
+    the 4C result matches the linear-elasticity formulations the
+    FEniCS / deal.II / NGSolve / scikit-fem cantilever tests use.
+    With KINEM nonlinear (finite-strain) the slender 10x1 beam
+    deflection diverged from the linear answer by 40%+ (audit
+    2026-06-01: u_y_max fourc=7.50 vs fenics=12.96 / dealii=13.23
+    on a 10x1 cantilever under the same body force).
+    """
     mesh = generate_quad4_rectangle(nx, ny, lx=lx, ly=ly,
                                      element_section="STRUCTURE",
                                      element_type="SOLID QUAD4",
-                                     element_suffix="MAT 1 KINEM nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
+                                     element_suffix="MAT 1 KINEM linear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
 
     yaml = f'''TITLE:
   - "Cantilever {lx}x{ly} — cross-solver benchmark"
@@ -783,7 +792,13 @@ STRUCTURAL DYNAMIC:
   MAXTIME: 1.0
   TOLDISP: 1e-8
   TOLRES: 1e-8
-  MAXITER: 2
+  # KINEM nonlinear (St. Venant-Kirchhoff finite strain) needs
+  # > 2 Newton iters for moderate body loads. With MAXITER=2
+  # NOX hits the StatusTest::MaxIters threshold and 4C aborts
+  # with MPI_Abort(1). Audit 2026-06-01: the cantilever_10x1
+  # e2e test failed in FourC::Solid::Nln::SOLVER::Nox::solve()
+  # because the previous default was 2.
+  MAXITER: 20
   LINEAR_SOLVER: 1
   PREDICT: TangDis
 SOLVER 1:
