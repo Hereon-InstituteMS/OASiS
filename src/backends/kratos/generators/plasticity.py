@@ -142,17 +142,28 @@ GENERATORS = {
 
 KNOWLEDGE = {
     "plasticity": {
-        "description": "Elasto-plasticity via ConstitutiveLawsApplication: 7 yield surfaces, 5 plastic potentials, 6 hardening curves",
+        "description": (
+            "Elasto-plasticity via ConstitutiveLawsApplication: "
+            "5 yield surfaces (plasticity), 5 plastic potentials, "
+            "6 hardening curves. Rankine + SimoJu yield surfaces "
+            "exist only in the *damage* family of constitutive "
+            "laws, NOT in plasticity — see pitfall #0."
+        ),
         "application": "ConstitutiveLawsApplication (pip install KratosConstitutiveLawsApplication)",
         "requires": "StructuralMechanicsApplication (for elements)",
         "yield_surfaces": [
+            # PLASTICITY-COMPATIBLE (combine with
+            # SmallStrainIsotropicPlasticity3D / Kinematic etc.):
             "VonMises — J2 metal plasticity",
             "Tresca — maximum shear stress",
             "DruckerPrager — smooth cone (soil/concrete)",
             "MohrCoulomb — hexagonal pyramid (classical soil plasticity)",
             "ModifiedMohrCoulomb — regularized MC with tension/compression asymmetry",
-            "Rankine — maximum tensile stress (brittle)",
-            "SimoJu — damage-type yield for quasi-brittle materials",
+            # DAMAGE-ONLY (combine with SmallStrainDplus
+            # DminusDamage* or SmallStrainIsotropicDamage*,
+            # NOT SmallStrainIsotropicPlasticity*):
+            "Rankine — DAMAGE only (maximum tensile stress, brittle)",
+            "SimoJu — DAMAGE only (damage-type yield for quasi-brittle materials)",
         ],
         "plastic_potentials": [
             "VonMises, Tresca, DruckerPrager, MohrCoulomb, ModifiedMohrCoulomb",
@@ -260,6 +271,33 @@ KNOWLEDGE = {
             ),
         },
         "pitfalls": [
+                        '[API] Rankine and SimoJu yield surfaces '
+                        'are DAMAGE-only — they do NOT combine into '
+                        'the SmallStrainIsotropicPlasticity factory. '
+                        'The catalog yield_surfaces list previously '
+                        'implied SmallStrainIsotropicPlasticity3D'
+                        'RankineRankine / ...SimoJuSimoJu exist via '
+                        'the documented <StrainSize><HardeningType>'
+                        '<Dimension><YieldSurface><PlasticPotential>'
+                        ' pattern — they do not. The only Rankine / '
+                        'SimoJu instantiations registered in '
+                        'KratosConstitutiveLawsApplication 10.4.2 '
+                        'are damage models: '
+                        'SmallStrainDplusDminusDamageRankineRankine3D, '
+                        'SmallStrainDplusDminusDamageSimoJuSimoJu3D, '
+                        'SmallStrainIsotropicDamage3DRankine, '
+                        'SmallStrainIsotropicDamage3DSimoJu. The 5 '
+                        'plasticity-compatible yield surfaces are '
+                        'VonMises, Tresca, DruckerPrager, MohrCoulomb, '
+                        'ModifiedMohrCoulomb. '
+                        "Signal: hasattr(CLA, 'SmallStrainIsotropic"
+                        "Plasticity3DRankineRankine') is False; "
+                        "trying to construct it raises "
+                        "AttributeError on the CLA module. "
+                        "(Verified empirically 2026-06-01 — "
+                        "Tier-2 fixture plasticity_rankine_simoju_"
+                        "are_damage_only in scripts/tier2_fixtures/"
+                        "kratos/.)",
                         '[Numerical] Mohr-Coulomb dilatancy angle psi=0 causes a singular plastic denominator (dF:C:dG = 0) at the MC compression meridian (Lode = -30 deg). Use psi >= 0.1 deg as workaround, or principal-stress-space return mapping (Sloan et al., 2001). '
                         "Signal: ResidualBasedNewtonRaphsonStrategy reports 'Convergence is not achieved' with the global residual stuck; local return-mapping in the ConstitutiveLaw emits 'division by zero' / NaN in PK2_STRESS_VECTOR returned by CalculateOnIntegrationPoints.",
                         '[Numerical] MC yield surface has 6 corners in the deviatoric plane; backward Euler needs Lode-angle smoothing (Drucker-Prager at |theta| >= 29 deg) or explicit corner return mapping. '
