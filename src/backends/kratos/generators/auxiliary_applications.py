@@ -125,6 +125,10 @@ KNOWLEDGE = {
                         "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
                         '[Numerical] For new analyses prefer StructuralMechanicsApplication and ContactStructuralMechanicsApplication over the older SolidMechanicsApplication / ContactMechanicsApplication paths; the current Kratos generators target the modern apps. '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[API] MappingApplication.MapperFactory is DEPRECATED (moved to KratosMultiphysics core in Kratos 10.x). Calling MAP.MapperFactory.CreateMapper still works in 10.4 but prints a deprecation warning: "[WARNING] DEPRECATION-Warning; MappingApplication: The \\"MapperFactory\\" was moved to the Core! (used for \\"CreateMapper\\")". New code should use `KratosMultiphysics.MapperFactory.CreateMapper(origin, destination, params)` directly. '
+                        "Signal: KratosMultiphysics emits the literal string 'DEPRECATION-Warning' + 'MapperFactory' + 'moved to the Core' on stderr at the call site. (Verified empirically 2026-06-01.)",
+                        '[API] DEM is always 3D internally: the MDPA must reference SphericParticle3D even for problems posed in a 2D plane. There is NO SphericParticle2D element registered; attempting ModelPart.CreateNewElement("SphericParticle2D", ...) raises RuntimeError "Element \\"SphericParticle2D\\" is not registered!" listing the available DEM element types. '
+                        "Signal: RuntimeError 'Element \"SphericParticle2D\" is not registered!' or 'Maybe you need to import the application where it is defined?' when an agent generates a 2D DEM template with the literal 2D element name. (Verified empirically 2026-06-01.)",
                     ],
     },
 }
