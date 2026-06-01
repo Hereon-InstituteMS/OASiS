@@ -651,8 +651,8 @@ for step in range(1, n_load_steps + 1):
     gfu.Set(CoefficientFunction((0.0, disp_now)), definedon=mesh.Boundaries("top"))
 
     try:
-        (iters, conv) = solvers.Newton(a, gfu, maxits=25, dampfactor=1.0,
-                                       printing=False, tol=1e-10)
+        (iters, conv) = solvers.Newton(a, gfu, maxit=25, dampfactor=1.0,
+                                       printing=False, maxerr=1e-10)
         print(f"  Step {{step}}/{n_load_steps}: disp={{disp_now:.4f}}, "
               f"Newton iters={{iters}}, conv={{conv:.3e}}")
     except Exception as e:
@@ -735,8 +735,8 @@ for step in range(1, n_load_steps + 1):
     alpha = step / n_load_steps
     disp_now = alpha * disp_total
     gfu.Set(CoefficientFunction((0.0, 0.0, disp_now)), definedon=mesh.Boundaries("top"))
-    (iters, conv) = solvers.Newton(a, gfu, maxits=25, dampfactor=1.0,
-                                   printing=False, tol=1e-10)
+    (iters, conv) = solvers.Newton(a, gfu, maxit=25, dampfactor=1.0,
+                                   printing=False, maxerr=1e-10)
     print(f"  Step {{step}}/{n_load_steps}: disp={{disp_now:.4f}}, iters={{iters}}")
 
 vtk = VTKOutput(mesh, coefs=[gfu], names=["displacement"], filename="result", subdivision=1)

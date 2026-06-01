@@ -35,7 +35,7 @@ a += Variation(energy * dx)
 gfu = GridFunction(fes)
 gfu.Set(CoefficientFunction((0.3*x, -0.1)), definedon=mesh.Boundaries("top"))
 
-solvers.Newton(a, gfu, maxits=20, printing=True)
+solvers.Newton(a, gfu, maxit=20, printing=True)
 
 vtk = VTKOutput(mesh, coefs=[gfu], names=["displacement"], filename="result", subdivision=1)
 vtk.Do()
@@ -85,7 +85,7 @@ gfu = GridFunction(fes)
 # Apply load incrementally — set for your problem
 for load in [0.2, 0.5, 0.8, 1.0]:
     gfu.Set(CoefficientFunction((0, 0, -0.01*load)), definedon=mesh.Boundaries(".*"))
-    solvers.Newton(a, gfu, maxits=20, printing=False)
+    solvers.Newton(a, gfu, maxit=20, printing=False)
 
 vtk = VTKOutput(mesh, coefs=[gfu], names=["displacement"], filename="result", subdivision=1)
 vtk.Do()
@@ -97,15 +97,75 @@ with open("results_summary.json", "w") as _f:
 
 KNOWLEDGE = {
     "hyperelasticity": {
-        "description": "Nonlinear hyperelasticity via SymbolicEnergy + Newton solver",
+        "description": (
+            "Nonlinear hyperelasticity via Variation(energy*dx) + "
+            "ngsolve.solvers.Newton."
+        ),
         "spaces": "VectorH1(mesh, order=2+)",
-        "solver": "solvers.Newton(a, gfu, maxits=20) — built-in Newton with damping",
+        "solver": (
+            "ngsolve.solvers.Newton(a, gfu, maxit=20, dampfactor=1.0, "
+            "maxerr=1e-11, printing=False) — built-in damped Newton."
+        ),
         "pitfalls": [
-            "Use Variation(energy*dx) — NGSolve auto-derives residual and tangent",
-            "Neo-Hookean energy: 0.5*mu*(Tr(C)-d) - mu*ln(J) + 0.5*lam*ln(J)^2",
-            "For large deformations: use load stepping (incremental loading)",
-            "dampfactor in Newton controls step size (default 1.0, reduce if diverging)",
-            "Unique NGSolve feature: a.Apply() for residual, a.AssembleLinearization() for tangent",
+            "[API] solvers.Newton uses kwarg names maxit (singular, "
+            "default 100) and maxerr (default 1e-11), NOT maxits "
+            "and tol. The real signature is "
+            "Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, "
+            "inverse='', dirichletvalues=None, dampfactor=1, "
+            "printing=True, callback=None). Passing maxits=20 or "
+            "tol=1e-10 raises TypeError: Newton() got an "
+            "unexpected keyword argument. Signal: "
+            "solvers.Newton(a, gfu, maxits=20) raises TypeError "
+            "with the literal kwarg name in the message; "
+            "solvers.Newton(a, gfu, maxit=20) returns the "
+            "(iterations, convergence) tuple. (Verified empirically "
+            "2026-06-01 — Tier-2 fixture "
+            "hyperelasticity_newton_maxit_kwarg in scripts/"
+            "tier2_fixtures/ngsolve/. Five prior generator "
+            "occurrences using the wrong kwargs corrected in same "
+            "commit.)",
+            "[API] Use Variation(energy*dx) on the BilinearForm — "
+            "NGSolve auto-derives the residual a.Apply(gfu.vec, res) "
+            "and the tangent a.AssembleLinearization(gfu.vec). "
+            "Both methods take the current solution vector and "
+            "either populate a residual block or assemble the "
+            "tangent. Signal: hasattr(BilinearForm(fes), 'Apply') "
+            "and hasattr(BilinearForm(fes), 'AssembleLinearization') "
+            "both True; calling solvers.Newton on a BilinearForm "
+            "without Variation() leaves the residual at zero "
+            "(Newton converges in 0 iterations on the initial "
+            "guess). (Catalog claim inherited; not separately "
+            "Tier-2 falsified this iteration.)",
+            "[Physics] Neo-Hookean strain energy density is "
+            "psi(C) = 0.5*mu*(Tr(C)-d) - mu*ln(J) + 0.5*lam*ln(J)^2 "
+            "where d is the spatial dimension, F = Id + Grad(u), "
+            "C = F.trans * F, J = Det(F). The ln(J) terms are "
+            "well-defined only for J>0 — Newton can lose this "
+            "invariant during a too-large load step and produce "
+            "ln(negative) → NaN. Signal: gfu.vec norm becomes nan "
+            "after Newton step; check J = Det(Id + Grad(gfu)) "
+            "evaluates positive on a quadrature point sample "
+            "before each load increment. (Catalog claim inherited; "
+            "not separately Tier-2 falsified this iteration.)",
+            "[Numerical] For large deformations: use load stepping "
+            "(incremental Dirichlet BC scaled by alpha = step/"
+            "n_steps) and restart Newton from the previous "
+            "converged gfu. Applying the full prescribed "
+            "displacement in one Newton call almost always "
+            "diverges because the first linearization is too far "
+            "from the solution manifold. Signal: solvers.Newton "
+            "returns (iters, conv) with iters == maxit and conv "
+            "still > maxerr — that is the divergence signal. "
+            "Reduce the step size or reduce dampfactor below 1.0.",
+            "[API] solvers.Newton's dampfactor kwarg (default 1.0) "
+            "scales every update by alpha in [0,1] — gfu += "
+            "dampfactor * du. Reducing it to 0.5-0.7 trades "
+            "iteration count for robustness when the initial "
+            "guess is far from the converged solution. Signal: "
+            "with dampfactor=1.0 Newton diverges (conv stays at "
+            "1e+something); with dampfactor=0.5 it converges in "
+            "more iterations but the conv value drops below "
+            "maxerr.",
         ],
     },
 }
