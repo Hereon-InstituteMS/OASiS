@@ -54,6 +54,37 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
             test_dirs["fenicsx"] = fenics_demo
             break
 
+    # NGSolve ships demos inside the installed wheel:
+    # site-packages/ngsolve/demos/{intro,howto,mpi,
+    # TensorProduct,...}. Probe the active .venv plus
+    # any conda env that includes ngsolve.
+    ngsolve_candidates = [
+        Path(__file__).resolve().parents[2] / ".venv" / "lib"
+        / "python3.12" / "site-packages" / "ngsolve" / "demos",
+    ]
+    for envname in ("ofa-fenicsx",):  # other envs may ship ngsolve too
+        ngsolve_candidates.append(
+            Path.home() / "miniconda3" / "envs" / envname / "lib"
+            / "python3.12" / "site-packages" / "ngsolve" / "demos")
+    for ng_demo in ngsolve_candidates:
+        if ng_demo.is_dir():
+            test_dirs["ngsolve"] = ng_demo
+            break
+
+    # Kratos ships Python tests inside each Application:
+    # site-packages/KratosMultiphysics/<App>/tests/*.py. The
+    # tree is broad (many Applications) so we point at the
+    # top KratosMultiphysics dir and let the rglob walk find
+    # *.py matching the keyword.
+    kratos_candidates = [
+        Path(__file__).resolve().parents[2] / ".venv" / "lib"
+        / "python3.12" / "site-packages" / "KratosMultiphysics",
+    ]
+    for kr_dir in kratos_candidates:
+        if kr_dir.is_dir():
+            test_dirs["kratos"] = kr_dir
+            break
+
     # Map physics to search keywords for ALL physics types
     search_terms = {
         "particle_pd": "pdbody",
@@ -121,9 +152,33 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     # also try with hyphens (dolfinx demos use hyphens for
     # compound names: demo_navier-stokes.py, demo_mixed-
     # poisson.py, demo_cahn-hilliard.py).
+    # NGSolve demo filenames don't match the catalog or 4C /
+    # deal.II keys. Demos: poisson.py / navierstokes.py /
+    # elasticity.py / cmagnet.py (magnetostatics) / pml.py
+    # (helmholtz / PML) / hhj.py (Hellan-Herrmann-Johnson
+    # biharmonic) / hybrid_dg.py (DG methods) / nonlin.py
+    # (nonlinear elasticity) / mixed.py (mixed_poisson) /
+    # timeDG.py (time-dependent DG) / tdnns.py.
+    ngsolve_aliases = {
+        "navier_stokes": "navierstokes",
+        "maxwell": "cmagnet",
+        "magnetostatics": "cmagnet",
+        "helmholtz": "pml",
+        "biharmonic": "hhj",
+        "hdivdiv": "hhj",
+        "dg_methods": "hybrid_dg",
+        "hyperelasticity": "nonlin",
+        "nonlinear_elasticity": "nonlin",
+        "mixed_poisson": "mixed",
+        "time_dependent_heat": "timeDG",
+        "time_dependent_ns": "timeDG",
+    }
+
     keywords = [physics]
     if physics in search_terms:
         keywords.insert(0, search_terms[physics])
+    if solver_key == "ngsolve" and physics in ngsolve_aliases:
+        keywords.insert(0, ngsolve_aliases[physics])
     if "_" in physics:
         keywords.append(physics.replace("_", "-"))
     # Common substring trims so the FEniCS demo naming
