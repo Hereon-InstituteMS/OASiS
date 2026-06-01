@@ -36,7 +36,41 @@ class ReducedLungGenerator(BaseGenerator):
         return [{"name": "lung_1d", "description": "Reduced lung ventilation model"}]
 
     def get_template(self, variant: str = "lung_1d") -> str:
-        return "# Reduced lung template"
+        return (
+            "# =====================================================\n"
+            "# 4C reduced-lung-tree (variant: lung_1d)\n"
+            "# =====================================================\n"
+            "# Not a self-contained runnable input. 4C reduced-lung\n"
+            "# problems couple a 1-D airway tree (typically derived\n"
+            "# from a patient CT) with 0-D alveolar acini and an\n"
+            "# optional 3-D parenchyma. The required mesh +\n"
+            "# topology depends on:\n"
+            "#\n"
+            "#   * airway-tree topology (NODE COORDS + ARTERY\n"
+            "#     ELEMENTS sections)\n"
+            "#   * alveolar compliance distribution per acinus\n"
+            "#   * coupling type (1D-0D pressure-flow or 3D-0D\n"
+            "#     surface-to-acinus mortar)\n"
+            "#\n"
+            "# Pitfalls (see knowledge() for the full set):\n"
+            "#   * Airway-tree topology must be physiologically\n"
+            "#     reasonable (Horsfield / Strahler order)\n"
+            "#   * Alveolar compliance varies with disease state\n"
+            "#     (emphysema, fibrosis, ARDS)\n"
+            "#   * Coupling between 1-D airways and 0-D acini\n"
+            "#     happens via flow/pressure matching at outlets\n"
+            "# =====================================================\n"
+            "TITLE:\n"
+            "  - \"4C reduced-lung-tree reference stub\"\n"
+            "PROBLEM TYPE:\n"
+            "  PROBLEMTYPE: \"ReducedLung\"\n"
+            "REDUCED DIMENSIONAL AIRWAYS DYNAMIC:\n"
+            "  DYNAMICTYPE: \"OneStepTheta\"\n"
+            "  TIMESTEP: 0.01\n"
+            "  NUMSTEP: 100\n"
+            "# Concrete airway-tree NODE COORDS / ARTERY ELEMENTS\n"
+            "# / boundary BCs must be supplied per patient case.\n"
+        )
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

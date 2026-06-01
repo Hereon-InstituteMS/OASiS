@@ -324,6 +324,19 @@ class FourcBackend(SolverBackend):
         return {"error": f"no knowledge for {physics!r} in fourc"}
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
+        # Umbrella / meta-reference physics: catalog declares
+        # these so they appear in discover() and knowledge()
+        # surfaces (e.g. scalar_transport groups poisson + heat +
+        # electrochemistry + level-set + low-mach scalars). They
+        # are documentation-only — generate_input returns a YAML
+        # commentary block pointing to the concrete physics names
+        # in the same family. Without this early-return, calling
+        # generate_input('scalar_transport', 'umbrella', {}) would
+        # cascade through the inline / tutorial / generator chain
+        # and raise ValueError.
+        if variant in ("umbrella", "N/A"):
+            return self._umbrella_template(physics, variant)
+
         # First try inline mesh generators (self-contained, no external files)
         try:
             return self._generate_inline(physics, variant, params)
@@ -345,6 +358,55 @@ class FourcBackend(SolverBackend):
             return content
         except Exception as e:
             raise ValueError(f"No 4C template for {physics}/{variant}: {e}")
+
+    def _umbrella_template(self, physics: str, variant: str) -> str:
+        """Return a YAML-commentary template for umbrella /
+        meta-reference physics (scalar_transport,
+        structural_mechanics, thermal, particles, input_format).
+        These aren't runnable physics inputs — they're a
+        catalog cross-reference. The returned YAML is parseable
+        and validates against 4C 2026.3 (no PROBLEM TYPE means
+        4C reports a 'PROBLEMTYPE missing' diagnostic, but the
+        file itself is valid YAML)."""
+        family_redirects = {
+            "scalar_transport": ("poisson, heat, "
+                                 "electrochemistry, level_set, "
+                                 "low_mach"),
+            "structural_mechanics": ("linear_elasticity, "
+                                     "plasticity, "
+                                     "structural_dynamics, "
+                                     "beams, contact"),
+            "thermal": "heat, thermo, tsi",
+            "particles": ("particle_pd, particle_sph, pasi, "
+                          "dem (use kratos for dem instead)"),
+            "input_format": ("meta-reference only — see "
+                             "data/fourc_knowledge.py['input_format']"),
+        }
+        family = family_redirects.get(physics,
+                                       "<unknown umbrella>")
+        return (
+            f"# =====================================================\n"
+            f"# 4C umbrella / meta-reference physics: '{physics}'\n"
+            f"# variant: '{variant}'\n"
+            f"# =====================================================\n"
+            f"# This is NOT a runnable 4C input. The catalog\n"
+            f"# advertises '{physics}' so it appears in discover()\n"
+            f"# and knowledge() results, where it groups related\n"
+            f"# physics under a shared documentation umbrella.\n"
+            f"#\n"
+            f"# For a RUNNABLE input pick one of the concrete\n"
+            f"# physics names in the same family:\n"
+            f"#\n"
+            f"#   {family}\n"
+            f"#\n"
+            f"# Example: prepare_simulation(fourc, "
+            f"{family.split(',')[0].strip()})\n"
+            f"# returns a real template, knowledge dict, and\n"
+            f"# pitfall list for the first concrete child.\n"
+            f"# =====================================================\n"
+            f"TITLE:\n"
+            f"  - \"4C umbrella reference for {physics}\"\n"
+        )
 
     def _generate_inline(self, physics: str, variant: str, params: dict) -> str:
         """Generate self-contained input with inline mesh (no external files)."""

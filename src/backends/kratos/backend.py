@@ -251,6 +251,41 @@ class KratosBackend(SolverBackend):
         return KNOWLEDGE.get(physics, {})
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
+        # Meta-reference physics: catalog declares
+        # 'auxiliary_overview' so it appears in discover() and
+        # knowledge() surfaces, but it has no PDE template —
+        # it's a documentation entry for Kratos infrastructure
+        # apps (TrilinosApplication, MetisApplication, etc.).
+        # Return a commentary script that points to the
+        # underlying KNOWLEDGE key. Without this early-return,
+        # calling generate_input('auxiliary_overview', 'N/A',
+        # {}) would raise ValueError.
+        if physics == "auxiliary_overview" or variant == "N/A":
+            return (
+                '"""Kratos auxiliary_overview — meta-reference"""\n'
+                '# This is NOT a runnable Kratos analysis script.\n'
+                '# The catalog advertises auxiliary_overview so '
+                'it appears in\n'
+                '# discover() and knowledge() results — it '
+                'documents Kratos\n'
+                '# infrastructure applications (TrilinosApplication,\n'
+                '# MetisApplication, MappingApplication, '
+                'MeshMovingApplication,\n'
+                '# HDF5Application, ...) and their hidden FSI '
+                'dependencies.\n'
+                '#\n'
+                '# Use knowledge(kratos, auxiliary_overview) for the\n'
+                '# full reference. For a runnable Kratos analysis '
+                'pick a\n'
+                '# concrete physics: poisson, linear_elasticity, '
+                'heat, fluid,\n'
+                '# fsi, contact, mpm, dem, geomechanics, '
+                'cosimulation, ...\n'
+                'import KratosMultiphysics  # placeholder — see '
+                'comment above\n'
+                'print("auxiliary_overview is a meta-reference; '
+                'see knowledge() output")\n'
+            )
         key = f"{physics}_{variant}"
         gen = GENERATORS.get(key)
         if not gen:
