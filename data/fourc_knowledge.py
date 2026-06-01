@@ -252,10 +252,16 @@ FOURC_KNOWLEDGE = {
         "problemtype": "Fluid",
         "yaml_section": "FLUID DYNAMIC",
 
+        # FLUID DYNAMIC/TIMEINTEGR enum (4C 2026.3 schema —
+        # 4C_schema.json). NOTE: different from STRUCTURAL
+        # DYNAMIC/DYNAMICTYPE — the fluid enum has Af_/Np_
+        # prefixes on Gen_Alpha and underscores on
+        # One_Step_Theta. Verified 2026-06-01.
         "time_integration": {
-            "GenAlpha": "Generalized-alpha (default for incompressible NS)",
+            "Af_Gen_Alpha": "Alpha-form generalized-alpha (alpha-f weighting on the residual)",
+            "Np_Gen_Alpha": "N+1 generalized-alpha (default for incompressible NS)",
             "BDF2": "2nd order backward difference formula",
-            "OneStepTheta": "One-step-theta",
+            "One_Step_Theta": "One-step-theta (note underscores — NOT 'OneStepTheta')",
             "Stationary": "Steady-state RANS or Stokes",
         },
 
@@ -316,6 +322,27 @@ FOURC_KNOWLEDGE = {
             "+ 5.0) within ~5% with x-wall enabled; without, "
             "the law-of-the-wall is over-resolved at the wall "
             "and diverges in the log-region. (Claim inherited.)",
+            "[API] 4C time-integration enum naming is "
+            "SECTION-DEPENDENT — the same conceptual scheme "
+            "has different spellings in different YAML sections. "
+            "FLUID DYNAMIC/TIMEINTEGR accepts {Af_Gen_Alpha, "
+            "Np_Gen_Alpha, BDF2, One_Step_Theta, Stationary} "
+            "(underscored, with Af_/Np_ prefixes on Gen-Alpha). "
+            "SCALAR TRANSPORT DYNAMIC/TIMEINTEGR accepts "
+            "{Gen_Alpha, BDF2, One_Step_Theta, Stationary} "
+            "(underscored, no prefix). STRUCTURAL DYNAMIC/"
+            "DYNAMICTYPE accepts {GenAlpha, GenAlphaLieGroup, "
+            "OneStepTheta, Statics, CentrDiff, AdamsBashforth2, "
+            "AdamsBashforth4, ExplicitEuler} (CamelCase, no "
+            "underscores). THERMAL DYNAMIC/DYNAMICTYPE accepts "
+            "{GenAlpha, OneStepTheta, Statics, Undefined} "
+            "(CamelCase). The earlier catalog used bare "
+            "'GenAlpha' / 'OneStepTheta' uniformly across "
+            "physics — wrong for fluid + scatra. Signal: wrong "
+            "enum value fails at YAML parse with "
+            "input_spec_builders.cpp 'Could not match this "
+            "input'. Verified empirically against 4C 2026.3 "
+            "schema 2026-06-01.",
         ],
     },
 
@@ -327,7 +354,11 @@ FOURC_KNOWLEDGE = {
         "problemtype": "Scalar_Transport",
         "yaml_section": "SCALAR TRANSPORT DYNAMIC",
 
-        "time_integration": ["GenAlpha", "BDF2", "OneStepTheta", "Stationary"],
+        # SCALAR TRANSPORT DYNAMIC/TIMEINTEGR enum
+        # (4C 2026.3 schema). Different from STRUCTURAL/THERMAL
+        # DYNAMIC/DYNAMICTYPE (which uses CamelCase). The
+        # scatra TIMEINTEGR has underscores.
+        "time_integration": ["Gen_Alpha", "BDF2", "One_Step_Theta", "Stationary"],
 
         "physics_variants": {
             "standard": "Pure convection-diffusion-reaction",
