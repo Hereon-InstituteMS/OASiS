@@ -235,48 +235,78 @@ class PorousMediaGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "CRITICAL: Section names are LOWERCASE in porous media.  "
-                    "Use 'porofluid_dynamic' NOT 'POROFLUID DYNAMIC'.  "
-                    "Using uppercase will silently fall back to defaults."
+                    "[Input] CRITICAL: Section names are LOWERCASE in "
+                    "porous media.  Use 'porofluid_dynamic' NOT "
+                    "'POROFLUID DYNAMIC'.  Using uppercase will "
+                    "silently fall back to defaults. Signal: input "
+                    "parser banner shows `unknown section: POROFLUID "
+                    "DYNAMIC`, or simulation completes with result "
+                    "fields uniformly equal to the (default) initial "
+                    "state. (Audit 2026-06-02.)"
                 ),
                 (
-                    "The material hierarchy is deeply nested: "
-                    "MAT_FluidPoroMultiPhase -> MAT_FluidPoroSinglePhase -> "
-                    "density law + viscosity law + relative permeability law + "
-                    "DoF type.  Each level is a separate MATERIALS entry with "
-                    "its own MAT ID.  Missing any sub-material causes a crash."
+                    "[Input] The material hierarchy is deeply nested: "
+                    "MAT_FluidPoroMultiPhase -> MAT_FluidPoroSinglePhase "
+                    "-> density law + viscosity law + relative "
+                    "permeability law + DoF type.  Each level is a "
+                    "separate MATERIALS entry with its own MAT ID.  "
+                    "Missing any sub-material causes a crash. Signal: "
+                    "4C aborts with `referenced material ID X not "
+                    "found in MATERIALS` during material-list "
+                    "construction; the missing ID matches one of the "
+                    "sub-materials. (Audit 2026-06-02.)"
                 ),
                 (
-                    "PERMEABILITY in MAT_FluidPoroMultiPhase must be > 0.  "
-                    "Zero permeability means no flow is possible and the "
-                    "system becomes singular."
+                    "[Numerical] PERMEABILITY in MAT_FluidPoroMultiPhase "
+                    "must be > 0.  Zero permeability means no flow is "
+                    "possible and the system becomes singular. Signal: "
+                    "linear solver fails immediately with "
+                    "`zero pivot detected` or "
+                    "`solver returned status: -3` (Belos converged but "
+                    "true residual is NaN); a Darcy benchmark shows "
+                    "zero pressure gradient. (Audit 2026-06-02.)"
                 ),
                 (
                     "For single-phase flow, set "
-                    "NUMFLUIDPHASES_IN_MULTIPHASEPORESPACE: 1 and NUMMAT: 1.  "
-                    "Even single-phase flow requires the full material hierarchy."
+                    "NUMFLUIDPHASES_IN_MULTIPHASEPORESPACE: 1 and "
+                    "NUMMAT: 1.  Even single-phase flow requires the "
+                    "full material hierarchy."
                 ),
                 (
-                    "The initial condition must be set via 'initial_condition: "
-                    "type: by_function' in porofluid_dynamic.  Without an "
-                    "initial condition for pressure, the solver starts from "
-                    "zero which may be unphysical."
+                    "[Numerical] The initial condition must be set via "
+                    "'initial_condition: type: by_function' in "
+                    "porofluid_dynamic.  Without an initial condition "
+                    "for pressure, the solver starts from zero which "
+                    "may be unphysical. Signal: pressure field at "
+                    "step 1 jumps from 0 to the BC values in a thin "
+                    "boundary layer; for a consolidation benchmark "
+                    "the early-time pressure dissipates as if t=0 was "
+                    "an instant Dirichlet shock. (Audit 2026-06-02.)"
                 ),
                 (
-                    "For coupled poroelasticity problems, a CLONING MATERIAL MAP "
-                    "section is required to map the porofluid material to the "
-                    "structural material."
+                    "[Input] For coupled poroelasticity problems, a "
+                    "CLONING MATERIAL MAP section is required to map "
+                    "the porofluid material to the structural "
+                    "material. Signal: 4C aborts with "
+                    "`CloningMaterialMap missing for porofluid -> "
+                    "solid` during preprocessing; or the coupled run "
+                    "decouples silently with the structure response "
+                    "matching a dry-block reference. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "The PROBLEM TYPE string is 'porofluid_pressure_based' "
-                    "(lowercase, with underscores), not 'Porofluid' or "
-                    "'POROFLUID_PRESSURE_BASED'."
+                    "[Input] The PROBLEM TYPE string is "
+                    "'porofluid_pressure_based' (lowercase, with "
+                    "underscores), not 'Porofluid' or "
+                    "'POROFLUID_PRESSURE_BASED'. Signal: parser abort "
+                    "`unknown PROBLEMTYPE` listing the legal "
+                    "lower-case strings. (Audit 2026-06-02.)"
                 ),
                 (
-                    "BULKMODULUS in MAT_PoroDensityLawExp controls fluid "
-                    "compressibility.  Very large values (> 1e6) may cause "
-                    "numerical issues; very small values produce unphysical "
-                    "compressibility."
+                    "BULKMODULUS in MAT_PoroDensityLawExp controls "
+                    "fluid compressibility.  Very large values (> 1e6) "
+                    "may cause numerical issues; very small values "
+                    "produce unphysical compressibility."
                 ),
             ],
             "typical_experiments": [

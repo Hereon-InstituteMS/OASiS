@@ -145,30 +145,50 @@ class MultiscaleGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "FE^2 is extremely expensive: each macro Gauss "
-                    "point requires solving a full micro FE problem.  "
-                    "For a macro mesh with N elements and G Gauss "
-                    "points per element, N*G micro problems are solved "
-                    "per macro Newton iteration.  Use coarse macro "
-                    "meshes and efficient micro solvers."
+                    "[Performance] FE^2 is extremely expensive: each "
+                    "macro Gauss point requires solving a full micro "
+                    "FE problem.  For a macro mesh with N elements "
+                    "and G Gauss points per element, N*G micro "
+                    "problems are solved per macro Newton iteration. "
+                    " Use coarse macro meshes and efficient micro "
+                    "solvers. Signal: wall-clock per macro Newton "
+                    "iteration grows linearly with N*G; profile log "
+                    "shows >95% of time in MicroSolver::Solve; for a "
+                    "10x10x10 macro mesh expect minutes per "
+                    "iteration even with a trivial micro RVE. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "The micro input file must be a complete, valid 4C "
-                    "input file with its own geometry, materials, and "
-                    "boundary conditions.  It is NOT merged with the "
-                    "macro input file."
+                    "[Input] The micro input file must be a complete, "
+                    "valid 4C input file with its own geometry, "
+                    "materials, and boundary conditions.  It is NOT "
+                    "merged with the macro input file. Signal: 4C "
+                    "aborts during multiscale-init with `failed to "
+                    "load micro input file X` or `micro input file "
+                    "missing MATERIALS section`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "MICRO_SOLVER_ID in MAT_Struct_Multiscale must "
-                    "reference a SOLVER N section defined in the MACRO "
-                    "input file (not the micro file).  This solver is "
-                    "used for all micro RVE solves."
+                    "[Input] MICRO_SOLVER_ID in MAT_Struct_Multiscale "
+                    "must reference a SOLVER N section defined in "
+                    "the MACRO input file (not the micro file).  "
+                    "This solver is used for all micro RVE solves. "
+                    "Signal: parser warns `MICRO_SOLVER_ID X not "
+                    "found among macro SOLVER definitions` or runtime "
+                    "abort `null pointer to micro Belos solver`. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "The RVE boundary conditions must be periodic for "
-                    "standard computational homogenisation.  Non-periodic "
-                    "BCs (Dirichlet or Neumann) lead to over-stiff or "
-                    "over-compliant homogenised response."
+                    "[Numerical] The RVE boundary conditions must be "
+                    "periodic for standard computational "
+                    "homogenisation.  Non-periodic BCs (Dirichlet or "
+                    "Neumann) lead to over-stiff or over-compliant "
+                    "homogenised response. Signal: homogenised "
+                    "tangent C* differs from a reference simulation "
+                    "with periodic BCs by ~10-20% in the off-"
+                    "diagonal entries; uniaxial-tension homogenised "
+                    "stress/strain curve sits ~10-30% above a "
+                    "periodic reference (Dirichlet RVE over-"
+                    "constrains). (Audit 2026-06-02.)"
                 ),
                 (
                     "The macro PROBLEM TYPE is 'Structure' (not a "
@@ -178,24 +198,30 @@ class MultiscaleGenerator(BaseGenerator):
                 ),
                 (
                     "MPI parallelism interacts with multiscale: the "
-                    "macro problem can be distributed across processors, "
-                    "and each processor's Gauss points solve their RVEs "
-                    "independently.  Load balancing requires attention "
-                    "since RVE solve times can vary."
+                    "macro problem can be distributed across "
+                    "processors, and each processor's Gauss points "
+                    "solve their RVEs independently.  Load balancing "
+                    "requires attention since RVE solve times can "
+                    "vary."
                 ),
                 (
-                    "Convergence at the macro level depends on the "
-                    "quality of the micro tangent.  Numerical "
-                    "differentiation of the micro response can produce "
-                    "inaccurate tangents; algorithmic tangent from the "
-                    "micro solver is preferred."
+                    "[Numerical] Convergence at the macro level "
+                    "depends on the quality of the micro tangent.  "
+                    "Numerical differentiation of the micro response "
+                    "can produce inaccurate tangents; algorithmic "
+                    "tangent from the micro solver is preferred. "
+                    "Signal: macro NOX residual halves slowly "
+                    "(linear-rate, not quadratic Newton) and "
+                    "MAXITER is hit on every macro step; switching "
+                    "MICRO_TANGENT to ALGORITHMIC restores quadratic "
+                    "convergence. (Audit 2026-06-02.)"
                 ),
                 (
                     "Output: macro-scale results show homogenised "
                     "stress/strain.  Micro-scale fields (damage, "
-                    "plasticity) are NOT automatically output.  Special "
-                    "post-processing is needed to visualise micro "
-                    "fields."
+                    "plasticity) are NOT automatically output.  "
+                    "Special post-processing is needed to visualise "
+                    "micro fields."
                 ),
             ],
             "typical_experiments": [
