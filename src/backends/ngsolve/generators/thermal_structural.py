@@ -23,13 +23,20 @@ mesh = Mesh(unit_square.GenerateMesh(maxh=0.03))
 V_T = H1(mesh, order=2, dirichlet="left|right")
 uT, vT = V_T.TnT()
 aT = BilinearForm(grad(uT)*grad(vT)*dx).Assemble()
-fT = LinearForm(0*vT*dx).Assemble()
+# LinearForm(0*vT*dx) collapses symbolically before
+# construction, so the resulting form has no TestFunction
+# and Assemble() raises NgException 'Linearform must have
+# TestFunction'. Build with no integrand and Assemble()
+# directly — matches the fix shipped for ngsolve::heat.
+fT = LinearForm(V_T); fT.Assemble()
 gfT = GridFunction(V_T)
 gfT.Set(CoefficientFunction({T_hot}), definedon=mesh.Boundaries("left"))
 gfT.Set(CoefficientFunction({T_cold}), definedon=mesh.Boundaries("right"))
 fT.vec.data -= aT.mat * gfT.vec
 gfT.vec.data += aT.mat.Inverse(V_T.FreeDofs()) * fT.vec
-gfT.name = "temperature"
+# gfT.name is read-only in this NGSolve build (property
+# has no setter). Pass the name string to VTKOutput or
+# similar consumers instead of attempting to assign.
 print(f"Temperature: [{{min(gfT.vec):.2f}}, {{max(gfT.vec):.2f}}]")
 
 # Step 2: Elasticity with thermal strain
@@ -44,7 +51,9 @@ f_u = LinearForm(InnerProduct((3*lam+2*mu)*alpha*gfT*Id(2), Strain(v))*dx).Assem
 
 gfu = GridFunction(V_u)
 gfu.vec.data = a_u.mat.Inverse(V_u.FreeDofs()) * f_u.vec
-gfu.name = "displacement"
+# gfu.name property has no setter — see pitfall in the
+# heat template; supply the name via the consumer (e.g.
+# VTKOutput(names=[...])) instead.
 
 disp_arr = [gfu.components[0](mesh(1,0.5)), gfu.components[1](mesh(1,0.5))]
 print(f"Displacement at (1,0.5): u_x={{disp_arr[0]:.6e}}, u_y={{disp_arr[1]:.6e}}")
@@ -72,6 +81,26 @@ KNOWLEDGE = {
             "Thermal strain: eps_th = alpha * T * Id(dim)",
             "RHS for elasticity: (3*lam+2*mu)*alpha*T*Id(dim) contracted with Strain(v)",
             "For two-way coupling: iterate until temperature/displacement converge",
+            "[Syntax] Symbolic-zero RHS: LinearForm(0*v*dx) "
+            "collapses before construction, leaving a form with "
+            "no TestFunction. Assemble() then raises NgException "
+            "'Linearform must have TestFunction'. Use the no-"
+            "integrand constructor LinearForm(V); f.Assemble() "
+            "to build an empty RHS — matches the fix shipped for "
+            "ngsolve::heat. Signal: NgException text 'Linearform "
+            "must have TestFunction' emitted from LinearForm."
+            "Assemble. (Verified empirically 2026-06-01 — "
+            "Layer F catch.)",
+            "[API] GridFunction.name is a read-only property in "
+            "current NGSolve builds — there is no name setter. "
+            "Code like gfu.name = 'displacement' raises "
+            "AttributeError 'property of GridFunction object "
+            "has no setter'. Pass the name string to the "
+            "consumer instead (e.g. VTKOutput(names=['u'])). "
+            "Signal: AttributeError with the literal text "
+            "'property of \\'GridFunction\\' object has no "
+            "setter' from a direct gfu.name = '...' assignment. "
+            "(Verified empirically 2026-06-01 — Layer F catch.)",
         ],
     },
 }

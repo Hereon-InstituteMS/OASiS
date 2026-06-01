@@ -233,6 +233,48 @@ def main() -> int:
         # defaulting to variant='2d'.
         ("kratos", "fluid", "2d_cavity"),
         ("kratos", "plasticity", "3d"),
+        # Layer F batch-10: large untested-catalog sweep
+        # using each backend's actual template_variants
+        # (39 rows smoked, 29 ran as shipped — promoted
+        # here). Surfaced 10 new catalog bugs to track in
+        # follow-up iterations (fenics dg_methods ufl.Abs,
+        # skfem poisson::3d meshio shape, six ngsolve rows
+        # with abs/tanh/symbolicLFI/UmfpackInverse).
+        ("fenics", "poisson", "3d"),
+        ("fenics", "linear_elasticity", "3d"),
+        ("fenics", "heat", "2d_transient"),
+        ("fenics", "navier_stokes", "3d"),
+        ("fenics", "thermal_structural", "2d"),
+        ("fenics", "contact", "2d"),
+        ("fenics", "multiphase", "2d"),
+        ("fenics", "time_dependent_heat", "2d"),
+        ("fenics", "cahn_hilliard", "2d"),
+        ("fenics", "nonlinear_pde", "2d"),
+        ("fenics", "magnetostatics", "2d"),
+        ("ngsolve", "poisson", "3d"),
+        ("ngsolve", "linear_elasticity", "3d"),
+        ("ngsolve", "heat", "2d_steady"),
+        ("ngsolve", "heat", "2d_transient"),
+        ("ngsolve", "stokes", "2d_hdg"),
+        ("ngsolve", "hyperelasticity", "3d"),
+        ("ngsolve", "mixed_poisson", "2d"),
+        ("ngsolve", "contact", "2d"),
+        ("ngsolve", "time_dependent_ns", "2d"),
+        ("skfem", "heat", "2d_steady"),
+        ("skfem", "nonlinear", "2d"),
+        ("skfem", "heat_transient", "2d"),
+        ("skfem", "dg_methods", "2d"),
+        ("skfem", "time_dependent", "2d"),
+        ("skfem", "reaction_diffusion", "2d"),
+        ("kratos", "linear_elasticity", "2d_nonlinear"),
+        ("kratos", "heat_transient", "2d"),
+        ("kratos", "shape_optimization", "2d"),
+        # ngsolve thermal_structural fixed this iteration:
+        # same LinearForm-without-TestFunction collapse as
+        # heat, plus two gfu/gfT.name = "..." assignments
+        # that target a property with no setter in this
+        # build.
+        ("ngsolve", "thermal_structural", "2d"),
     ]
     fail = []
     executed = 0
