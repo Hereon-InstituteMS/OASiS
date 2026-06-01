@@ -337,9 +337,11 @@ KNOWLEDGE = {
         "FEValues alone produces only cell-interior contributions. "
         "Signal: SolverGMRES converges but DataOut shows a smooth "
         "(non-DG) solution; jump-across-face values from "
-        "VectorTools::interpolate_difference vs reference are "
+        "VectorTools::integrate_difference vs reference are "
         "1e-8 (effectively zero) where they should be O(1) for "
-        "upwind DG.",
+        "upwind DG. (Note: the real dealii function is "
+        "integrate_difference, NOT interpolate_difference; "
+        "the latter does not exist in numerics/vector_tools.h.)",
         "[API] MeshWorker::mesh_loop simplifies cell / face / "
         "boundary assembly — without it, the user re-implements "
         "the dispatch logic and typically forgets the periodic-"
