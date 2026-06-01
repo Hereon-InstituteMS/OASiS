@@ -8,9 +8,16 @@ def _mixed_poisson_2d(params: dict) -> str:
     nx = params.get("nx", 16)
     refine_level = params.get("refine_level", 4)
     return f'''\
-"""Mixed Poisson: RT1 + P0 — scikit-fem"""
+"""Mixed Poisson: RT0 + P0 — scikit-fem"""
 from skfem import *
-from skfem.models.poisson import laplace
+# skfem ships the standard differential helpers (grad, div,
+# d/dn, etc.) under skfem.helpers — importing div() from
+# this module is the supported way to take the divergence
+# of a vector field inside a BilinearForm. The legacy
+# attribute-access pattern sigma[0].grad[0] does NOT exist
+# on the underlying numpy array (raises AttributeError
+# 'numpy.ndarray' object has no attribute 'grad').
+from skfem.helpers import div
 import numpy as np
 import json
 
@@ -27,7 +34,7 @@ def mass_rt(sigma, tau, w):
 
 @BilinearForm
 def div_form(sigma, v, w):
-    return (sigma[0].grad[0] + sigma[1].grad[1]) * v
+    return div(sigma) * v
 
 A = asm(mass_rt, ib_rt)
 B = asm(div_form, ib_rt, ib_dg)
@@ -35,8 +42,14 @@ B = asm(div_form, ib_rt, ib_dg)
 from scipy.sparse import bmat
 K = bmat([[A, B.T], [B, None]], format='csr')
 f = np.zeros(K.shape[0])
-# Source in scalar part
-f[A.shape[0]:] = -1.0 * asm(LinearForm(lambda v, w: 1.0 * v), ib_dg)
+# Source in scalar part — LinearForm decorator wraps a
+# callable that returns the integrand. The 'w' argument
+# carries quadrature-point metadata (w.x, w.h, ...).
+@LinearForm
+def source(v, w):
+    return 1.0 * v
+
+f[A.shape[0]:] = -1.0 * asm(source, ib_dg)
 
 u = np.linalg.lstsq(K.toarray(), f, rcond=None)[0]
 print(f"Mixed Poisson: {{K.shape[0]}} DOFs")
@@ -75,6 +88,26 @@ KNOWLEDGE = {
             "(matches the 3-edge count of a triangle); "
             "hasattr(skfem, 'ElementTriRaviartThomas') is False. "
             "(Verified empirically 2026-06-01.)",
+            "[API] Use skfem.helpers.div(sigma) inside a "
+            "BilinearForm to take the divergence of an RT vector "
+            "field. The legacy element-wise pattern "
+            "sigma[0].grad[0] + sigma[1].grad[1] does NOT work on "
+            "the underlying numpy array — sigma[0] is just a "
+            "scalar ndarray with no .grad attribute (raises "
+            "AttributeError: 'numpy.ndarray' object has no "
+            "attribute 'grad'). div(sigma) is the supported helper "
+            "and operates correctly on RT0/RT1/RT2 fields. "
+            "(Verified empirically 2026-06-01 — Layer F catch.)",
+            "[API] Wrap source/RHS callables via the @LinearForm "
+            "decorator on a plain Python function, not via "
+            "LinearForm(lambda v, w: ...). The lambda form mostly "
+            "works but mis-resolves the kwargs adapter inside asm; "
+            "the decorator form is the canonical skfem pattern. "
+            "Signal: asm(LinearForm(lambda v, w: 1.0 * v), basis) "
+            "may raise opaque shape errors deep inside "
+            "skfem.assembly.form.linear_form; switching to a "
+            "decorator-wrapped function resolves them. (Inherited "
+            "claim — confirmed during Layer F mixed_poisson fix.)",
             "[Numerical] Neumann BC for the mixed (flux-pressure) "
             "formulation requires adding a boundary integral to "
             "the RHS — the flux trace is the natural BC and is "

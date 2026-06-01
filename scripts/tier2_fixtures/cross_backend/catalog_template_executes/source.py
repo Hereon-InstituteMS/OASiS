@@ -198,6 +198,26 @@ def main() -> int:
         # (ADIOS2) supports arbitrary degree — same fix
         # as fenics::stokes Taylor-Hood velocity.
         ("fenics", "biharmonic", "2d"),
+        # skfem batch-8 fixes:
+        #  - helmholtz: MeshQuad.init_tensor does not
+        #    auto-attach named boundaries; ib.get_dofs()
+        #    returns a DofsView (NOT subscriptable, so
+        #    dofs['left'] is a TypeError); use
+        #    .with_boundaries({...}) on the mesh and call
+        #    ib.get_dofs('left') with the tag as an arg.
+        #  - mixed_poisson: sigma[0].grad[0] on a RT0
+        #    vector field is an AttributeError ('ndarray'
+        #    has no attribute 'grad'); use the official
+        #    skfem.helpers.div(sigma) helper. Also the
+        #    LinearForm(lambda...) wrap pattern errored
+        #    on asm; use the @LinearForm decorator on a
+        #    plain Python function.
+        # hyperelasticity (to_simplex→to_meshtri +
+        # boundaries fix) and navier_stokes (interpolate
+        # kwargs shape) need full Newton-rewrites — left
+        # deferred to a follow-up batch.
+        ("skfem", "helmholtz", "2d"),
+        ("skfem", "mixed_poisson", "2d"),
     ]
     fail = []
     executed = 0

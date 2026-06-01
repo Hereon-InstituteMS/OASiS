@@ -207,10 +207,19 @@ lam = {lam:.6f}
 mu  = {mu:.6f}
 
 # --- Mesh ---
-m = MeshQuad.init_tensor(
-    np.linspace(0, {lx}, {nx + 1}),
-    np.linspace(0, {ly}, {ny + 1}),
-).to_simplex()   # convert to triangles for better integration
+# MeshQuad.init_tensor + to_meshtri does NOT auto-attach
+# named boundaries — attach them via with_boundaries so
+# ib.get_dofs('left') succeeds.
+m = (MeshQuad.init_tensor(
+        np.linspace(0, {lx}, {nx + 1}),
+        np.linspace(0, {ly}, {ny + 1}),
+     ).to_meshtri()  # skfem 12: to_simplex was renamed to to_meshtri
+      .with_boundaries({{
+          "left":   lambda x: x[0] < 1e-10,
+          "right":  lambda x: x[0] > {lx} - 1e-10,
+          "bottom": lambda x: x[1] < 1e-10,
+          "top":    lambda x: x[1] > {ly} - 1e-10,
+      }}))
 e = ElementVector(ElementTriP1())
 ib = Basis(m, e)
 
@@ -218,8 +227,9 @@ N = ib.N          # total DOFs
 ndim = 2
 
 # --- Boundary DOFs ---
-dofs = ib.get_dofs()
-fix_dofs = dofs["left"].flatten()   # clamped left edge
+# ib.get_dofs() returns a DofsView (not subscriptable);
+# pass the boundary tag in directly.
+fix_dofs = ib.get_dofs("left").flatten()   # clamped left edge
 
 I = np.setdiff1d(np.arange(N), fix_dofs)
 
@@ -448,7 +458,7 @@ eps = {eps}    # diffusion coefficient (0 = pure advection)
 m = MeshQuad.init_tensor(
     np.linspace(0, 1, {nx + 1}),
     np.linspace(0, 1, {nx + 1}),
-).to_simplex()   # triangles
+).to_meshtri()   # skfem 12: to_simplex was renamed to to_meshtri
 
 # DG element: discontinuous P1 on triangles
 e = ElementDG(ElementTriP1())
@@ -678,12 +688,26 @@ import json
 k = {k}     # wavenumber
 
 # --- Mesh ---
-m  = MeshQuad.init_tensor(np.linspace(0, 1, {nx + 1}), np.linspace(0, 1, {nx + 1}))
+# MeshQuad.init_tensor does NOT attach named boundaries.
+# Without with_boundaries(...) calls, ib.get_dofs('left')
+# raises ValueError("Boundary 'left' not found.") and the
+# subscript form ib.get_dofs()['left'] raises TypeError:
+# 'DofsView' object is not subscriptable. Attach the four
+# canonical boundaries here so the Dirichlet block below
+# can resolve 'left'/'top'/'bottom' tags.
+m  = (MeshQuad.init_tensor(np.linspace(0, 1, {nx + 1}),
+                           np.linspace(0, 1, {nx + 1}))
+      .with_boundaries({{
+          "left":   lambda x: x[0] < 1e-10,
+          "right":  lambda x: x[0] > 1.0 - 1e-10,
+          "bottom": lambda x: x[1] < 1e-10,
+          "top":    lambda x: x[1] > 1.0 - 1e-10,
+      }}))
 e  = ElementQuad1()
 ib = Basis(m, e)
 
 # --- Boundary basis for absorbing BC (right face) ---
-fb_right = FacetBasis(m, e, facets=m.facets_satisfying(lambda x: x[0] > 1.0 - 1e-10))
+fb_right = FacetBasis(m, e, facets="right")
 
 # --- Assembly ---
 # Stiffness: (grad u, grad v)
@@ -714,11 +738,16 @@ def gaussian_source(v, w):
 f = asm(gaussian_source, ib).astype(complex)
 
 # --- Dirichlet BC: u=0 on left, top, bottom ---
-dofs = ib.get_dofs()
+# ib.get_dofs() returns a DofsView, which is NOT subscriptable
+# (the legacy ib.get_dofs()['left'] pattern raises TypeError:
+# 'DofsView' object is not subscriptable in scikit-fem 12).
+# In modern skfem the canonical pattern is to pass the
+# boundary name directly: ib.get_dofs('left') returns a
+# DofsView whose .flatten() yields the boundary DOF indices.
 D_bnd = np.concatenate([
-    dofs["left"].flatten(),
-    dofs["top"].flatten(),
-    dofs["bottom"].flatten(),
+    ib.get_dofs("left").flatten(),
+    ib.get_dofs("top").flatten(),
+    ib.get_dofs("bottom").flatten(),
 ])
 I = np.setdiff1d(np.arange(A.shape[0]), D_bnd)
 
@@ -953,7 +982,15 @@ KNOWLEDGE = {
             "Material tangent: C4 = lam*Cinv⊗Cinv + 2*(mu-lam*lnJ)*I4_sym_Cinv",
             "Geometric stiffness: S : (grad delta_u)^T * grad v  (essential for convergence)",
             "Use ib.interpolate(u) to get displacement gradient at quadrature points",
-            "MeshQuad.to_simplex() converts to triangles for simpler integration",
+            "[API] skfem 12 renamed MeshQuad.to_simplex() → "
+            "MeshQuad.to_meshtri() (returns a MeshTri with each "
+            "quad split into two triangles). Legacy templates that "
+            "call .to_simplex() on a MeshQuad raise AttributeError: "
+            "'MeshQuad1' object has no attribute 'to_simplex'. The "
+            "modern call is .to_meshtri(). Signal: hasattr("
+            "skfem.MeshQuad.init_tensor([0,1],[0,1]), 'to_meshtri') "
+            "is True; hasattr(..., 'to_simplex') is False. "
+            "(Verified empirically 2026-06-01 — Layer F catch.)",
             "Load stepping: ramp load for large deformations to keep Newton in convergence basin",
         ],
     },
@@ -1001,6 +1038,20 @@ KNOWLEDGE = {
             "System is non-Hermitian with ABC — cannot use eigsh; use spsolve or GMRES",
             "Output real part (physical wave) and magnitude |u| for visualization",
             "Pollution effect: for large k, standard P1 has O(k^3 h^2) phase error — use p-refinement",
+            "[API] MeshQuad.init_tensor (and most other init_*) "
+            "does NOT attach named boundaries. ib.get_dofs('left') "
+            "then raises ValueError(\"Boundary 'left' not found.\") "
+            "AND the legacy subscript form ib.get_dofs()['left'] "
+            "raises TypeError: 'DofsView' object is not "
+            "subscriptable in scikit-fem 12. The canonical "
+            "incantation is m = MeshQuad.init_tensor(...)"
+            ".with_boundaries({'left': lambda x: x[0] < 1e-10, "
+            "'right': ..., 'bottom': ..., 'top': ...}); then "
+            "ib.get_dofs('left').flatten() yields the boundary "
+            "DOF indices. Same constraint applies after "
+            ".to_meshtri() — boundaries must be reattached on "
+            "the triangulated mesh. (Verified empirically "
+            "2026-06-01 — Layer F catch.)",
         ],
     },
     "reaction_diffusion": {
