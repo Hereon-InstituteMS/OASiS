@@ -74,5 +74,43 @@ class TestEmptyPhysicsQuerySurfacesAvailableList(unittest.TestCase):
                 self.assertIn("poisson", r)
 
 
+def _examples_fn():
+    from core.registry import load_all_backends
+    load_all_backends()
+    from tools.consolidated import register_consolidated_tools
+    mcp = _StubMCP()
+    register_consolidated_tools(mcp)
+    return mcp.tools["examples"]
+
+
+class TestEmptyKeywordExamplesGuarded(unittest.TestCase):
+    """examples tool must NOT silently return arbitrary files
+    when the keyword is empty (substring-of-everything bug)."""
+
+    EMPTY_INPUTS = ("", "   ", "\t", "\n")
+
+    def test_search_empty(self) -> None:
+        ex = _examples_fn()
+        for q in self.EMPTY_INPUTS:
+            with self.subTest(query=repr(q), action="search"):
+                r = ex(keyword=q, solver="fenics", action="search")
+                self.assertIn(
+                    "Empty keyword", r,
+                    f"examples(keyword={q!r}, action='search') "
+                    "should reject empty keyword, got: "
+                    f"{r[:200]!r}")
+
+    def test_template_empty(self) -> None:
+        ex = _examples_fn()
+        for q in self.EMPTY_INPUTS:
+            with self.subTest(query=repr(q), action="template"):
+                r = ex(keyword=q, solver="fenics", action="template")
+                self.assertIn(
+                    "Empty keyword", r,
+                    f"examples(keyword={q!r}, action='template') "
+                    "should reject empty keyword, got: "
+                    f"{r[:200]!r}")
+
+
 if __name__ == "__main__":
     unittest.main()

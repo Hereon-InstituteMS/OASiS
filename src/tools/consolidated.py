@@ -577,6 +577,16 @@ def register_consolidated_tools(mcp: FastMCP):
             max_results: Maximum results (default 3)
         """
         if action == "search":
+            # Empty / whitespace-only keyword matches every
+            # filename (substring-of-everything) and silently
+            # returns the first few random files in the test
+            # tree. Surface a usage hint instead. Audit
+            # 2026-06-01 (mirror of the empty-physics fix in
+            # prepare_simulation).
+            if not keyword or not keyword.strip():
+                return ("Empty keyword. Provide a substring "
+                        "to match, e.g. 'poisson', 'fluid', "
+                        "'contact'.")
             from tools.examples_search import register_example_tools
             # Shared discovery with prepare_simulation —
             # discover_test_dirs returns local demo paths for all
@@ -638,6 +648,10 @@ def register_consolidated_tools(mcp: FastMCP):
             return f"## {len(results)} example(s) for '{keyword}' from {solver}\n\n" + "\n---\n".join(results)
 
         elif action == "template":
+            if not keyword or not keyword.strip():
+                return ("Empty keyword. Provide a physics name "
+                        "(or substring), e.g. 'poisson', 'fluid', "
+                        "'contact'.")
             backend = get_backend(solver)
             if not backend:
                 return f"Unknown solver: {solver}"
