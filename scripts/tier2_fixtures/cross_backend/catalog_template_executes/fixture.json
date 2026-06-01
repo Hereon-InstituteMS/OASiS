@@ -18,7 +18,8 @@
     "kratos::heat::2d_rc=0",
     "ngsolve::stokes::2d_rc=0",
     "skfem::stokes::2d_rc=0",
-    "total_executed=12",
+    "fenics::stokes::2d_rc=0",
+    "total_executed=13",
     "failures=0"
   ],
   "forbid_in_output": [

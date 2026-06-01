@@ -97,14 +97,10 @@ def main() -> int:
     # row is run as a subprocess in the backend-correct
     # interpreter. Total runtime budget is ~120 s.
     #
-    # ONLY include rows that the catalog ships in a
-    # currently-runnable state. Stokes templates for
-    # skfem / ngsolve / fenics are known-broken (caught
-    # by Layer F on 2026-06-01 — homogeneous BC + missing
-    # pressure pin + wrong xdmf write call), tracked
-    # under tasks #26/#27/#28 and exercised by a
-    # separate 'stokes_templates_currently_broken'
-    # fixture that asserts they STAY broken until fixed.
+    # All known-broken stokes templates have been fixed
+    # (commits 6ffff60 ngsolve, e11d9c6 skfem, and this
+    # iteration's fenics). The inverted-gate companion
+    # fixture is retired in the same commit.
     rows = [
         # poisson coverage (all 4 backends)
         ("skfem", "poisson", "2d"),
@@ -120,14 +116,17 @@ def main() -> int:
         # test; skfem ships a heat::2d that runs)
         ("skfem", "heat", "2d"),
         ("kratos", "heat", "2d"),
-        # stokes: ngsolve runs after free.Clear(V.ndof)
-        # pressure pin fix (commit 6ffff60). skfem runs
-        # after MeshTri/intorder=4/pressure-pin/driven-
-        # cavity-BC rewrite (this commit). fenics stokes
-        # still ships a broken XDMF write path — tracked
-        # in stokes_templates_currently_broken fixture.
+        # stokes: all 3 catalog templates runnable after:
+        #   ngsolve → free.Clear(V.ndof) pressure pin
+        #   skfem   → MeshTri + intorder=4 + pin + driven
+        #             cavity BC rewrite
+        #   fenics  → XDMFFile → VTXWriter (P2 velocity
+        #             can't be written via XDMF in dolfinx
+        #             0.10 because output degree must
+        #             match mesh degree of 1)
         ("ngsolve", "stokes", "2d"),
         ("skfem", "stokes", "2d"),
+        ("fenics", "stokes", "2d"),
     ]
     fail = []
     executed = 0

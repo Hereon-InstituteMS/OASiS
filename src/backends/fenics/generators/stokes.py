@@ -110,13 +110,20 @@ p_h = wh.sub(1).collapse()
 u_h.name = "velocity"
 p_h.name = "pressure"
 
-from dolfinx.io import XDMFFile
-with XDMFFile(domain.comm, "velocity.xdmf", "w") as xdmf:
-    xdmf.write_mesh(domain)
-    xdmf.write_function(u_h)
-with XDMFFile(domain.comm, "pressure.xdmf", "w") as xdmf:
-    xdmf.write_mesh(domain)
-    xdmf.write_function(p_h)
+# IMPORTANT: in dolfinx 0.10 XDMFFile.write_function REQUIRES
+# the output Function's element degree to match the mesh
+# degree (which is 1 for the default triangle mesh). Writing
+# a P2 velocity directly raises:
+#   RuntimeError: Degree of output Function must be same as
+#   mesh degree. Maybe the Function needs to be interpolated?
+# VTXWriter (ADIOS2 backend) supports arbitrary-degree
+# Functions natively. Use it for the Taylor-Hood mixed
+# solution.
+from dolfinx.io import VTXWriter
+with VTXWriter(domain.comm, "velocity.bp", [u_h]) as vtx:
+    vtx.write(0.0)
+with VTXWriter(domain.comm, "pressure.bp", [p_h]) as vtx:
+    vtx.write(0.0)
 
 print(f"Stokes: DOFs={{W.dofmap.index_map.size_global}}")
 print("Stokes solve complete.")
