@@ -200,6 +200,9 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # operations (verified 2026-06-01, maxwell#0 audit).
             "UmfpackInverse", "PardisoInverse", "SparseCholesky",
             "UMFPACK",
+            # PML helpers (helmholtz promotion 2026-06-01).
+            "SetPML", "Radial", "pml", "Integrate",
+            "L2Norm", "ComputeRadialMode",
             # Common method/attribute names that appear in tracebacks
             "Assemble", "TnT", "FreeDofs", "ndof",
         })
