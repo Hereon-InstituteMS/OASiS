@@ -495,10 +495,18 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps(hw, indent=2)
 
         else:
+            # Topics list must match the docstring + dispatch
+            # branches. Audit 2026-06-01: 'postmortems' was
+            # documented in the docstring and implemented at
+            # line 326 but missing from this usage hint, so
+            # LLMs hitting an invalid topic never learned that
+            # postmortems exists. (Same drift class as
+            # session_insights' missing 'ingest'.)
             return (
-                "Usage: knowledge(topic, solver, physics)\n"
-                "Topics: physics, pitfalls, materials, coupling, tsi, precice, "
-                "input_guide, solver_guidance, hardware"
+                "Usage: knowledge(topic, solver, physics, signal='')\n"
+                "Topics: physics, pitfalls, postmortems, materials, "
+                "coupling, tsi, precice, input_guide, "
+                "solver_guidance, hardware"
             )
 
     # ═══════════════════════════════════════════════════════════
