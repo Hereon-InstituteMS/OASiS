@@ -412,7 +412,7 @@ class SolidMechanicsGenerator(BaseGenerator):
         "linear_2d": """\
 # FORMAT TEMPLATE — 2D linear elasticity (plane strain)
 # All numerical values are placeholders — determine from your specific problem.
-# Check 4C test files (browse_solver_tests) for reference setups.
+# Check 4C test files via examples(keyword, solver='fourc', action='search') for reference setups.
 TITLE:
   - "Linear elastic 2D — plane strain"
 PROBLEM SIZE:

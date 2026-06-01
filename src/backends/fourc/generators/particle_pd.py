@@ -537,7 +537,8 @@ class ParticlePDGenerator(BaseGenerator):
             # ALL numerical values below are PLACEHOLDERS — they must be determined
             # by the user based on the specific problem geometry, material, and
             # required resolution. Consult the literature and 4C test files
-            # (browse_solver_tests tool) for appropriate values.
+            # via examples(keyword, solver='fourc', action='search') for
+            # appropriate values.
             #
             # Units: choose a consistent system (e.g., mm-ms-g or SI)
 
