@@ -28,17 +28,14 @@ class TestNoOrphanPitfalls(unittest.TestCase):
     expose at least one pitfall in its KNOWLEDGE dict."""
 
     # Every backend whose supported_physics() returns a
-    # PhysicsCapability list. dealii is included after the
-    # 2026-06-01 fix to dealii/generators/__init__.py:
-    # get_knowledge that unwraps umbrella KNOWLEDGE dicts —
-    # before that fix this assertion would have shown 14
-    # orphans because get_knowledge('mixed_laplacian')
-    # returned the .advanced umbrella dict (keys = other
-    # physics names) instead of KNOWLEDGE['mixed_laplacian'].
-    # dune / febio backends are NOT in supported_physics()
-    # at install time on this machine so they are audited
-    # via their own KNOWLEDGE inspection where available.
-    BACKENDS = ("fenics", "ngsolve", "skfem", "kratos", "dealii")
+    # PhysicsCapability list. dealii + fourc were added on
+    # 2026-06-01 alongside the relevant resolver fixes
+    # (dealii: umbrella-KNOWLEDGE unwrap; fourc: plasticity
+    # alias to solid_mechanics — fourc.get_knowledge(
+    # 'plasticity') previously returned {'error': "no
+    # knowledge for 'plasticity'"}).
+    BACKENDS = ("fenics", "ngsolve", "skfem", "kratos",
+                "dealii", "fourc", "dune", "febio")
 
     def test_every_physics_has_a_pitfall(self) -> None:
         from core.registry import load_all_backends, get_backend

@@ -87,6 +87,14 @@ _ALIASES: dict[str, str] = {
     "solid":            "solid_mechanics",
     "statics":          "solid_mechanics",
     "nonlinear_solid":  "solid_mechanics",
+    # Plasticity is folded into solid_mechanics in 4C — the
+    # plasticity_models / plasticity_pitfalls keys are on
+    # the solid_mechanics generator's get_knowledge() output.
+    # Without this alias, fourc.get_knowledge('plasticity')
+    # returns {'error': "no knowledge for 'plasticity' in
+    # fourc"} (the catalog advertises the physics in
+    # supported_physics() so the orphan-audit test catches it).
+    "plasticity":       "solid_mechanics",
     # Structural dynamics aliases
     "dynamics":         "structural_dynamics",
     "structural":       "structural_dynamics",
