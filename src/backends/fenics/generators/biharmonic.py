@@ -10,12 +10,79 @@ KNOWLEDGE = {
     "function_space": "Lagrange order 2+ (C0-IP method), or DG order 2+ (full DG)",
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
-        "4th order PDE: standard C0 Lagrange cannot represent it directly",
-        "C0-interior penalty (C0-IP): uses P2 continuous elements with jump penalties",
-        "Full DG: uses DG elements with all interface terms (more DOFs)",
-        "Penalty parameter alpha must be large enough for coercivity (typ. 4-16)",
-        "Clamped BC: u=0 AND grad(u).n=0; simply supported: u=0 AND laplacian(u)=0",
-        "For Kirchhoff plates: biharmonic in displacement w, load q",
+        "[API] In dolfinx 0.10 the function-space constructor is "
+        "fem.functionspace (lowercase factory function), NOT "
+        "fem.FunctionSpace (capital-F class). Both names exist: "
+        "fem.functionspace(mesh, ('Lagrange', 2)) returns a "
+        "FunctionSpace object, while a direct call to "
+        "fem.FunctionSpace(mesh, ('Lagrange', 2)) raises "
+        "TypeError: FunctionSpace.__init__() missing 1 required "
+        "positional argument: 'cppV'. LLM agents trained on "
+        "legacy dolfin tutorials that show FunctionSpace(...) as "
+        "the canonical name routinely paste the capital form into "
+        "dolfinx scripts. Signal: TypeError with literal 'cppV' "
+        "in the message uniquely identifies a "
+        "fem.FunctionSpace(...) call vs a fem.functionspace(...) "
+        "call. (Verified empirically 2026-06-01 — Tier-2 fixture "
+        "functionspace_factory_vs_class in scripts/tier2_fixtures/"
+        "fenics/.)",
+        "[Numerical] 4th-order PDE: standard C0 Lagrange cannot "
+        "represent the biharmonic operator directly — Laplace of "
+        "a C0 function is a distribution, not a function in "
+        "L^2(domain). Use either C0-Interior Penalty (P2 Lagrange "
+        "+ jump penalty terms on interior facets) or full DG (Pk "
+        "Discontinuous Galerkin with all interface terms). Signal: "
+        "ufl.div(ufl.grad(u)) on a P1 Lagrange space silently "
+        "compiles but produces an assembled matrix whose null "
+        "space dimension differs from the expected biharmonic "
+        "kernel — convergence against a manufactured solution "
+        "plateaus regardless of mesh refinement.",
+        "[Numerical] C0-interior penalty (C0-IP): uses P2 (or "
+        "higher) continuous Lagrange elements with normal-jump "
+        "penalty terms on interior facets, integrated against "
+        "ufl.dS (uppercase — interior facet measure). Required "
+        "jump operators are ufl.jump(ufl.grad(u), n) and "
+        "ufl.avg(ufl.div(ufl.grad(u))). Signal: the assembled "
+        "fem.form matrix on the C0-IP P2 space has ndof equal to "
+        "V.dofmap.index_map.size_global which differs from the "
+        "full-DG count by a factor of (d+1) (d = spatial dim) "
+        "for the same polynomial order — because C0-IP shares "
+        "P2 nodal DOFs across element facets.",
+        "[Numerical] Penalty parameter alpha must satisfy "
+        "alpha > C * (polynomial_order)^2 (C is mesh-dependent, "
+        "typically ~4 for triangles, ~8 for quads). Below this "
+        "the C0-IP form loses coercivity and the discrete system "
+        "is indefinite — KSPSolve with PCLU still returns a "
+        "vector but it does NOT satisfy the original variational "
+        "problem. Signal: residual norm of the assembled "
+        "saddle-point system computed AFTER solve drops to "
+        "machine precision (LU on indefinite matrix is exact), "
+        "but |grad^2 u - f|_L^2 measured against an analytic "
+        "reference is O(1).",
+        "[Physics] Clamped boundary conditions for the biharmonic "
+        "fix BOTH u=0 AND grad(u).n=0 on the boundary (the "
+        "moment-free vertical-displacement-fixed configuration). "
+        "Simply supported is u=0 AND div(grad(u))=0 (laplacian = "
+        "0). Mixing these gives wrong plate-bending results. "
+        "Signal: with two separate fem.dirichletbc applications "
+        "of the two BC sets on the same fem.Function, the "
+        "resulting uh.x.array.max() values differ by a factor of "
+        "~5 for a uniformly loaded Kirchhoff plate — observable "
+        "via numpy.linalg.norm(uh.x.array, ord=np.inf) under the "
+        "two BC sets.",
+        "[Physics] For Kirchhoff plates: the biharmonic in "
+        "displacement w is D * laplacian^2(w) = q where "
+        "D = E*h^3/(12*(1-nu^2)) is the flexural rigidity, h is "
+        "the plate thickness, and q is the transverse load. "
+        "Stresses come from sigma = -E*z/(1-nu^2) * (d^2w/dx^2 + "
+        "nu*d^2w/dy^2) on the through-thickness coordinate z. "
+        "Signal: max deflection w_max computed by "
+        "uh.x.array.max() on a fem.Function for a clamped "
+        "circular plate of radius R under uniform load q "
+        "matches the analytic Kirchhoff formula "
+        "qR^4/(64*D) within ~1% on a refined mesh — divergence "
+        "from this number by an order of magnitude indicates a "
+        "BC or D-formula error.",
     ],
 }
 
