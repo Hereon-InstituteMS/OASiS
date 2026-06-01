@@ -277,12 +277,57 @@ FOURC_KNOWLEDGE = {
         "elements": "TRANSP QUAD4/8/9 (2D), TRANSP HEX8/20/27 (3D), TRANSP TRI3/6, TRANSP TET4/10",
 
         "pitfalls": [
-            "Element section: TRANSPORT ELEMENTS (not STRUCTURE or FLUID)",
-            "Material: MAT_scatra with DIFFUSIVITY parameter",
-            "For Poisson: TIMEINTEGR Stationary, VELOCITYFIELD zero, source via DESIGN SURF NEUMANN",
-            "For heat: same as Poisson but T_left/T_right via DESIGN LINE DIRICH",
-            "IO/RUNTIME VTK OUTPUT/SCATRA may crash 4C — use post_vtu conversion instead",
-            "Field name in VTU output: phi_1 (not temperature or u)",
+            "[Syntax] Top-level section name must be the full "
+            "spelling 'SCALAR TRANSPORT DYNAMIC' (matches "
+            "scalar_transport.yaml_section above), NOT the "
+            "abbreviation 'SCATRA DYNAMIC' that internal Kratos / "
+            "4C application names suggest. 4C rejects 'SCATRA "
+            "DYNAMIC' at YAML parse time with 'PROC 0 ERROR ... "
+            "Section \"SCATRA DYNAMIC\" is not a valid section "
+            "name.' from core/io/src/4C_io_input_file.cpp. "
+            "Signal: \"SCATRA DYNAMIC\" + \"not a valid section "
+            "name\" + \"4C_io_input_file\" all appear in 4C "
+            "stderr. Element section is similarly TRANSPORT "
+            "ELEMENTS (not STRUCTURE or FLUID). (Verified "
+            "empirically 2026-06-01.)",
+            "[Integration] Material: MAT_scatra with DIFFUSIVITY "
+            "parameter (and CAPACITY for transient). Without a "
+            "MAT_scatra entry for the elements' MAT id, the "
+            "solver setup fails when the constitutive law is "
+            "looked up. Signal: 4C ERROR mentioning 'Material' / "
+            "'MAT_scatra' and the missing MAT id. (Claim "
+            "inherited — not yet empirically verified.)",
+            "[Syntax] For Poisson via scatra: TIMEINTEGR "
+            "Stationary, VELOCITYFIELD zero (the field must be "
+            "set, not omitted), source applied via DESIGN SURF "
+            "NEUMANN. Signal: omitting VELOCITYFIELD may surface "
+            "later as an undefined-field error during element "
+            "initialisation, not at parse time. (Claim "
+            "inherited — not yet fully verified; partial probe "
+            "saw a TRANSPORT-ELEMENTS-empty error before "
+            "VELOCITYFIELD was checked.)",
+            "[Syntax] For scatra heat: same skeleton as Poisson "
+            "but T_left/T_right via DESIGN LINE DIRICH (linewise "
+            "Dirichlet) rather than NEUMANN. Signal: temperature "
+            "field shows the prescribed BC at the boundaries; "
+            "swapping DIRICH ↔ NEUMANN produces a constant flux "
+            "but no enforced temperature. (Claim inherited.)",
+            "[API] IO/RUNTIME VTK OUTPUT/SCATRA may crash 4C — "
+            "the scatra-specific RUNTIME VTK path has known "
+            "issues for some element types; safer to omit the "
+            "RUNTIME VTK SCATRA subsection and convert results "
+            "to .vtu via the post_vtu post-processor after the "
+            "run completes. Signal: crash inside 4C's "
+            "RUNTIME_VTK output code rather than diverged "
+            "physics; switching to post_vtu sidesteps it. "
+            "(Claim inherited.)",
+            "[Syntax] Field name in scatra VTU output is "
+            "phi_1, phi_2, ... (not 'temperature' or 'u' as "
+            "users sometimes assume). When loading the result "
+            "in ParaView, the array name must match. Signal: "
+            "ParaView (or paraview-python) reports 'no array "
+            "named temperature' when the user expects 'phi_1'. "
+            "(Claim inherited.)",
         ],
     },
 
