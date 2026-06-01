@@ -12,7 +12,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 from core.backend import detect_template_language
-from core.registry import get_backend, available_backends
+from core.registry import get_backend, available_backends, all_backends
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
@@ -573,27 +573,56 @@ def register_consolidated_tools(mcp: FastMCP):
             solver: Filter by solver name, or physics name for "recommend"
         """
         if query == "list":
+            # Show ALL registered backends, not only the
+            # installed ones. The MCP server instructions
+            # advertise 8 backends; if discover('list') hides
+            # the ones the user has not installed yet, an LLM
+            # asking for (say) DUNE-fem or FEBio gets no entry,
+            # no status, and no install hint — total dead end.
+            # Surface every backend with its actual availability
+            # status and the install hint that
+            # check_availability() returns. (Audit 2026-06-02.)
             lines = []
-            for b in available_backends():
+            for b in all_backends():
                 status, msg = b.check_availability()
-                lines.append(f"- **{b.display_name()}** ({b.name()}): {status.value} — {b.input_format().value} input")
-            return "\n".join(lines) if lines else "No backends available."
+                core = (f"- **{b.display_name()}** ({b.name()}): "
+                        f"{status.value} — "
+                        f"{b.input_format().value} input")
+                if status.value != "available" and msg:
+                    # Inline the install/troubleshoot hint so the
+                    # LLM does not have to call a second tool.
+                    core += f"\n  *{msg.strip()}*"
+                lines.append(core)
+            return "\n".join(lines) if lines else "No backends registered."
 
         elif query == "physics":
+            # Show physics for ALL registered backends (same
+            # rationale as discover('list')) so an LLM can
+            # learn what dune-fem or febio offer even before
+            # installing them. Tag unavailable backends with
+            # their status so the LLM does not call
+            # run_simulation against a backend that will
+            # error out on availability. (Audit 2026-06-02.)
             lines = []
-            backends = [get_backend(solver)] if solver else available_backends()
+            backends = [get_backend(solver)] if solver else all_backends()
             backends = [b for b in backends if b]
             for b in backends:
-                lines.append(f"## {b.display_name()}")
+                status, _ = b.check_availability()
+                tag = "" if status.value == "available" else f" *[{status.value}]*"
+                lines.append(f"## {b.display_name()}{tag}")
                 for p in b.supported_physics():
                     lines.append(f"- **{p.name}**: {p.description} (variants: {', '.join(p.template_variants)})")
                 lines.append("")
             return "\n".join(lines)
 
         elif query == "capabilities":
+            # Show ALL registered backends (see discover('list')
+            # rationale above) so an LLM sees the full
+            # capabilities matrix including not-yet-installed
+            # backends. (Audit 2026-06-02.)
             lines = ["| Solver | Physics Count | Input | Status |",
                      "|--------|--------------|-------|--------|"]
-            for b in available_backends():
+            for b in all_backends():
                 status, _ = b.check_availability()
                 lines.append(f"| {b.display_name()} | {len(b.supported_physics())} | {b.input_format().value} | {status.value} |")
             return "\n".join(lines)
