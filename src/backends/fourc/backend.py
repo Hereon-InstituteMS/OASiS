@@ -251,6 +251,18 @@ class FourcBackend(SolverBackend):
                 [2, 3], ["THERMO QUAD4", "THERMO HEX8"],
                 ["umbrella"]),
             PhysicsCapability(
+                "input_format",
+                "[Reference] Cross-physics general 4C input "
+                "pitfalls (ExodusII 1-indexed block IDs, "
+                "SYMBOLIC_FUNCTION_OF_SPACE_TIME COMPONENT "
+                "requirement, NUMDOF conflicts on shared "
+                "FSI/TSI nodes, .yaml-only extension, "
+                "post_vtu vs IO/RUNTIME VTK OUTPUT, WALL→SOLID "
+                "rename, etc.). Not a PDE physics — meta-"
+                "reference entry. Underlying KNOWLEDGE key in "
+                "data/fourc_knowledge.py is 'input_format'.",
+                [2, 3], ["N/A — meta-reference"], ["N/A"]),
+            PhysicsCapability(
                 "particles",
                 "[Umbrella] Particle-methods family pitfalls "
                 "(applies to particle_pd, particle_sph, "

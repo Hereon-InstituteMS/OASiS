@@ -878,7 +878,15 @@ TRANSPORT ELEMENTS:
   - "1 TRANSP QUAD4 1 2 3 4 MAT 1 TYPE Std"
 """,
 
-        "general_pitfalls": [
+        # 2026-06-01 (critic-audit #5): renamed from
+        # 'general_pitfalls' so the verify_signal_clauses /
+        # orphan / parse-discipline harnesses (which key off
+        # the literal 'pitfalls' field) can see these entries.
+        # Combined with the fourc backend exposing
+        # 'input_format' as a [Reference] PhysicsCapability,
+        # users now reach them via discover + knowledge +
+        # prepare_simulation.
+        "pitfalls": [
             # ExodusII block IDs
             "CRITICAL: meshio (Python) writes ExodusII element block IDs starting "
             "at 0 (0-indexed), but 4C YAML ELEMENT_BLOCKS use 1-indexed IDs.  "
