@@ -59,6 +59,20 @@ KNOWLEDGE = {
         "machine precision (LU on indefinite matrix is exact), "
         "but |grad^2 u - f|_L^2 measured against an analytic "
         "reference is O(1).",
+        "[API] dolfinx 0.10 XDMFFile.write_function requires the "
+        "polynomial degree of the output Function to equal the mesh "
+        "degree (typically 1 for create_unit_square). A P2 Lagrange "
+        "C0-IP solution cannot be emitted via XDMFFile.write_function "
+        "— the call raises RuntimeError 'Degree of output Function "
+        "must be same as mesh degree. Maybe the Function needs to "
+        "be interpolated?'. Use VTXWriter (ADIOS2 backend, output "
+        "extension .bp) which supports arbitrary Lagrange degree, "
+        "or interpolate uh into a P1 space before writing XDMF. "
+        "Signal: the literal substring 'Degree of output Function "
+        "must be same as mesh degree' uniquely identifies this "
+        "constraint. Same failure mode as fenics::stokes Taylor-"
+        "Hood velocity output. (Verified empirically 2026-06-01 "
+        "— Layer F catch.)",
         "[Physics] Clamped boundary conditions for the biharmonic "
         "fix BOTH u=0 AND grad(u).n=0 on the boundary (the "
         "moment-free vertical-displacement-fixed configuration). "
@@ -172,11 +186,18 @@ uh = fem.Function(V)
 uh.name = "u"
 solver.solve(b, uh.x.petsc_vec)
 
-# Output
-from dolfinx.io import XDMFFile
-with XDMFFile(domain.comm, "result.xdmf", "w") as xdmf:
-    xdmf.write_mesh(domain)
-    xdmf.write_function(uh)
+# Output — VTXWriter, not XDMFFile.
+# Biharmonic C0-IP uses P2 Lagrange (mandatory for the
+# C0-IP method — see pitfall on 4th-order PDEs above).
+# XDMFFile.write_function refuses to write a P>1 Function
+# on a P1 mesh with RuntimeError 'Degree of output
+# Function must be same as mesh degree' — same failure
+# mode as fenics::stokes Taylor-Hood velocity output.
+# VTXWriter (ADIOS2 backend) supports arbitrary polynomial
+# degree; standardise on it for any P>=2 output here.
+from dolfinx.io import VTXWriter
+with VTXWriter(domain.comm, "result.bp", [uh]) as vtx:
+    vtx.write(0.0)
 
 u_array = uh.x.array
 print(f"Biharmonic solved: min(u)={{u_array.min():.6e}}, max(u)={{u_array.max():.6e}}")

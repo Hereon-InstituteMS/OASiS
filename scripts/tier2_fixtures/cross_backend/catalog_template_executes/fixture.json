@@ -38,7 +38,17 @@
     "kratos::dem::2d_rc=0",
     "kratos::mpm::2d_rc=0",
     "kratos::geomechanics::2d_rc=0",
-    "total_executed=32",
+    "skfem::convection_diffusion::2d_rc=0",
+    "ngsolve::helmholtz::2d_rc=0",
+    "ngsolve::navier_stokes::2d_rc=0",
+    "ngsolve::plasticity::2d_rc=0",
+    "fenics::mixed_poisson::2d_rc=0",
+    "fenics::convection_diffusion::2d_rc=0",
+    "fenics::reaction_diffusion::2d_rc=0",
+    "kratos::rans::2d_rc=0",
+    "kratos::shallow_water::2d_rc=0",
+    "fenics::biharmonic::2d_rc=0",
+    "total_executed=42",
     "failures=0"
   ],
   "forbid_in_output": [

@@ -171,6 +171,33 @@ def main() -> int:
         ("kratos", "dem", "2d"),
         ("kratos", "mpm", "2d"),
         ("kratos", "geomechanics", "2d"),
+        # Layer F batch-7 expansion — smoke pass identified
+        # 9 more catalog rows that already run as-shipped.
+        # Promoting them locks in the as-is behaviour so any
+        # future regression in these generators trips the
+        # gate. Counterparts that DO NOT run yet are tracked
+        # in inverted gates / deferred (skfem helmholtz +
+        # navier_stokes + hyperelasticity + mixed_poisson,
+        # fenics biharmonic, and four catalog-drift rows
+        # where supported_physics advertises a name with no
+        # matching _2d template).
+        ("skfem", "convection_diffusion", "2d"),
+        ("ngsolve", "helmholtz", "2d"),
+        ("ngsolve", "navier_stokes", "2d"),
+        ("ngsolve", "plasticity", "2d"),
+        ("fenics", "mixed_poisson", "2d"),
+        ("fenics", "convection_diffusion", "2d"),
+        ("fenics", "reaction_diffusion", "2d"),
+        ("kratos", "rans", "2d"),
+        ("kratos", "shallow_water", "2d"),
+        # fenics biharmonic XDMF degree-mismatch fixed
+        # this iteration: P2 C0-IP Function cannot be
+        # written via XDMFFile.write_function on a P1
+        # mesh (RuntimeError 'Degree of output Function
+        # must be same as mesh degree'). VTXWriter
+        # (ADIOS2) supports arbitrary degree — same fix
+        # as fenics::stokes Taylor-Hood velocity.
+        ("fenics", "biharmonic", "2d"),
     ]
     fail = []
     executed = 0
