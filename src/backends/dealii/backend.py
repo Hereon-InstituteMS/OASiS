@@ -522,6 +522,26 @@ def _generate_cmakelists(target_name: str) -> str:
         if not extra_hints and Path(dealii_root).is_dir():
             extra_hints = f" {dealii_root}"
 
+    # Fall back to whatever _find_dealii() returns (conda env,
+    # /usr, /opt, etc.). Without this, cmake aborts with
+    # "Could not find a package configuration file provided by
+    # 'deal.II' (requested version 9.0)" on conda-forge installs
+    # where the binary isn't on PATH and DEALII_ROOT isn't set
+    # — discover('list') correctly reports deal.II AVAILABLE
+    # (the dealii backend's check_availability walks conda envs)
+    # but the cmake configure step doesn't see the env's
+    # lib/cmake/deal.II dir. Audit 2026-06-01.
+    if not extra_hints:
+        discovered = _find_dealii()
+        if discovered is not None:
+            # Prefer the lib/cmake/deal.II sub-path if present —
+            # find_package picks up the Config file from there.
+            cmake_cfg = discovered / "lib" / "cmake" / "deal.II"
+            if (cmake_cfg / "deal.IIConfig.cmake").exists():
+                extra_hints = f" {cmake_cfg}"
+            else:
+                extra_hints = f" {discovered}"
+
     # Honour CC/CXX from the environment so that conda-forge deal.II
     # packages (whose deal.IIConfig.cmake bakes in a feedstock-only
     # compiler path like
