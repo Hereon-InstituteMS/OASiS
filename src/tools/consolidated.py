@@ -1271,8 +1271,22 @@ def register_consolidated_tools(mcp: FastMCP):
             if isinstance(k, dict) and isinstance(k.get("pitfalls"), list):
                 pitfalls_separate = k["pitfalls"]
                 json_payload = {kk: vv for kk, vv in k.items() if kk != "pitfalls"}
+            # After the pitfalls carve-out the remaining JSON
+            # is description / spaces / solver / elements /
+            # materials / time_integration / typical_experiments.
+            # Most backends sit < 1.5 KB but fourc::solid_mechanics
+            # is ~12 KB (rich plasticity_models + materials dict).
+            # The old 3000-char cap silently dropped most of that.
+            # Match the TEMPLATE_LIMIT of 12000 set above so the
+            # LLM gets the full materials table. Audit 2026-06-01.
+            KNOWLEDGE_LIMIT = 12000
+            payload_text = json.dumps(json_payload, indent=2, default=str)
+            payload_truncated = len(payload_text) > KNOWLEDGE_LIMIT
+            payload_body = payload_text[:KNOWLEDGE_LIMIT]
+            payload_suffix = (f"\n... [truncated {len(payload_text) - KNOWLEDGE_LIMIT} chars]"
+                              if payload_truncated else "")
             parts.append("## Knowledge\n```json\n"
-                         + json.dumps(json_payload, indent=2, default=str)[:3000]
+                         + payload_body + payload_suffix
                          + "\n```\n")
             if pitfalls_separate:
                 bullets = "\n".join(f"- {p}" for p in pitfalls_separate)
