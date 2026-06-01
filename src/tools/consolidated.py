@@ -630,15 +630,25 @@ def register_consolidated_tools(mcp: FastMCP):
                     if len(results) >= max_results:
                         break
 
-            # Also search templates
+            # Also search templates. Same 12000-char limit as
+            # prepare_simulation — the harder Layer F templates
+            # (ngsolve hdivdiv / nonlinear_elasticity, fenics
+            # navier_stokes) exceed 3000 chars and lose their
+            # solver/output blocks if truncated lower. Audit
+            # 2026-06-01.
             backend = get_backend(solver)
             if backend:
+                EX_TEMPLATE_LIMIT = 12000
                 for p in backend.supported_physics():
                     if keyword.lower() in p.name.lower() or keyword.lower() in p.description.lower():
                         for v in p.template_variants[:1]:
                             try:
                                 content = backend.generate_input(p.name, v, {})
-                                results.append(f"### Template: `{p.name}/{v}`\n```\n{content[:3000]}\n```\n")
+                                truncated = len(content) > EX_TEMPLATE_LIMIT
+                                body = content[:EX_TEMPLATE_LIMIT]
+                                suffix = (f"\n... [truncated {len(content) - EX_TEMPLATE_LIMIT} chars]"
+                                          if truncated else "")
+                                results.append(f"### Template: `{p.name}/{v}`\n```\n{body}{suffix}\n```\n")
                             except Exception:
                                 pass
                         break
