@@ -87,11 +87,12 @@ class TestNoOrphanPhysics(unittest.TestCase):
         # Per-backend exemptions for known-tracked work:
         #   * kratos has _auxiliary_overview in generators —
         #     tracked as a separate Layer-A scanner issue.
-        #   * dealii has advection_dg / contact /
-        #     nonlinear_elasticity orphans tracked under
-        #     task #52 (expose _general / GENERAL_KNOWLEDGE) —
-        #     not closed in this round.
-        for be in ("dealii", "kratos"):
+        # dealii orphans closed 2026-06-01: advection_dg /
+        # contact / nonlinear_elasticity now exposed via
+        # PhysicsCapability AND reachable via the
+        # tools.deep_knowledge fallback in
+        # backends.dealii.backend.get_knowledge.
+        for be in ("kratos",):
             offending.pop(be, None)
 
         self.assertEqual(
