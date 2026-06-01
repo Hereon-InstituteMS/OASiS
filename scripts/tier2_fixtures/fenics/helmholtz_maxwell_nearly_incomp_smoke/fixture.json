@@ -21,6 +21,12 @@
     "fracture_has_damage_irreversibility=True",
     "fracture_has_phase_field_length_scale=True",
     "fracture_has_alt_min_two_linearproblems=True",
+    "stokes_darcy_chars=",
+    "stokes_darcy_uses_subdomain_measure=True",
+    "stokes_darcy_uses_meshtags=True",
+    "stokes_darcy_has_brinkman_penalty=True",
+    "stokes_darcy_uses_taylor_hood=True",
+    "stokes_darcy_has_two_subdomain_dxs=True",
     "forbidden_ufl_FiniteElement=False",
     "forbidden_ufl_VectorElement=False",
     "forbidden_ufl_MixedElement=False"

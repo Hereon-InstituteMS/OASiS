@@ -47,7 +47,7 @@ def main() -> int:
     results = {}
     for phys in ("helmholtz", "maxwell",
                  "nearly_incompressible_elasticity",
-                 "fracture"):
+                 "fracture", "stokes_darcy"):
         try:
             txt = b.generate_input(phys, "2d", {"nx": 8})
         except Exception as e:
@@ -103,6 +103,19 @@ def main() -> int:
         "fracture_has_alt_min_two_linearproblems":
             has("fracture", "prob_u")
             and has("fracture", "prob_d"),
+        "stokes_darcy_uses_subdomain_measure":
+            has("stokes_darcy",
+                "subdomain_data=cell_tags"),
+        "stokes_darcy_uses_meshtags":
+            has("stokes_darcy", "mesh.meshtags"),
+        "stokes_darcy_has_brinkman_penalty":
+            has("stokes_darcy", "mu_val / K_darcy_val"),
+        "stokes_darcy_uses_taylor_hood":
+            has("stokes_darcy", "mixed_element")
+            and has("stokes_darcy", "shape=(gdim,)"),
+        "stokes_darcy_has_two_subdomain_dxs":
+            has("stokes_darcy", "dx_subdomain(1)")
+            and has("stokes_darcy", "dx_subdomain(2)"),
     }
     for k, v in checks.items():
         print(f"{k}={v}")
