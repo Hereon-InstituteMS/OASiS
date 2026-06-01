@@ -60,17 +60,17 @@ SIGNAL_COVERAGE_MIN = {
     "ngsolve": 46.0,   # measured  47.4
     "febio":   45.0,   # measured  46.2
     "fenics":  30.0,   # measured  31.8
-    "fourc":   27.0,   # measured  28.1 (raised 2026-06-02 from
-                       #                 24.0 after a fifth pass:
-                       #                 added Signal: lines to
-                       #                 low_mach pitfalls
-                       #                 1, 2, 3, 4, 7 and
-                       #                 reduced_airways pitfalls
-                       #                 1, 2, 3, 7. fourc has
-                       #                 gone 8.7% -> 14.0% ->
-                       #                 18.2% -> 22.1% -> 25.4%
-                       #                 -> 28.1% across six
-                       #                 commits.)
+    "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
+                       #                 2026-06-02 from 27.0 after
+                       #                 a sixth pass: all 7
+                       #                 xfem_fluid pitfalls
+                       #                 received Signal: lines.
+                       #                 fourc has gone 8.7% ->
+                       #                 14.0% -> 18.2% -> 22.1%
+                       #                 -> 25.4% -> 28.1% ->
+                       #                 30.1% across seven
+                       #                 commits — a 3.5x
+                       #                 improvement.)
     "dune":     0.0,   # measured   0.0 — known total gap
 }
 
