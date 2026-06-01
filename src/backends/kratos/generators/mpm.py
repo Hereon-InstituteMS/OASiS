@@ -229,9 +229,27 @@ KNOWLEDGE = {
         "description": "Material Point Method via Kratos MPMApplication",
         "application": "MPMApplication (pip install KratosMPMApplication)",
         "elements": {
-            "2D": ["UpdatedLagrangianPQ2D (quadrilateral background)", "UpdatedLagrangianPQ2D4N"],
-            "3D": ["UpdatedLagrangianPQ3D8N (hexahedral background)"],
-            "axisymmetric": ["UpdatedLagrangianAxisym"],
+            "2D": [
+                "MPMUpdatedLagrangian2D3N",
+                "MPMUpdatedLagrangian2D4N",
+            ],
+            "3D": [
+                "MPMUpdatedLagrangian3D4N",
+                "MPMUpdatedLagrangian3D8N",
+            ],
+            "axisymmetric": [
+                "MPMUpdatedLagrangianAxisymmetry2D3N",
+                "MPMUpdatedLagrangianAxisymmetry2D4N",
+            ],
+            "PQ_variant": [
+                "MPMUpdatedLagrangianPQ",
+                "MPMUpdatedLagrangianPQ2D4N",
+                "MPMUpdatedLagrangianPQ3D8N",
+            ],
+            "UP_variant": [
+                "MPMUpdatedLagrangianUP",
+                "MPMUpdatedLagrangianUP2D3N",
+            ],
         },
         "constitutive_laws": [
             "LinearElastic (small strain)", "NeoHookean (finite strain)",
@@ -240,6 +258,24 @@ KNOWLEDGE = {
         ],
         "solver_types": ["USL (Update Stress Last)", "USF (Update Stress First)", "MUSL (Modified USL)"],
         "pitfalls": [
+                        '[API] Kratos MPM element names ALL start '
+                        'with the literal prefix "MPM": '
+                        'MPMUpdatedLagrangian2D4N, '
+                        'MPMUpdatedLagrangian3D8N, '
+                        'MPMUpdatedLagrangianAxisymmetry2D4N, '
+                        'MPMUpdatedLagrangianPQ, '
+                        'MPMUpdatedLagrangianUP, etc. The prior '
+                        'catalog listed UpdatedLagrangianPQ2D / '
+                        'UpdatedLagrangianAxisym (without the MPM '
+                        'prefix) — none of those are registered. '
+                        "Signal: model_part.CreateNewElement(\"UpdatedLagrangianPQ2D\", ...) "
+                        "raises 'Error: The Element X is not "
+                        "registered!' from "
+                        "kratos/python/add_model_part_to_python.cpp; "
+                        "prepending MPM makes the call succeed. "
+                        "(Verified empirically 2026-06-01 — Tier-2 "
+                        "fixture mpm_element_naming_mpm_prefix in "
+                        "scripts/tier2_fixtures/kratos/.)",
                         '[Numerical] Background grid must cover entire domain of particle motion '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Numerical] Cell crossing instability: use GIMP or CPDI shape functions for stability '
