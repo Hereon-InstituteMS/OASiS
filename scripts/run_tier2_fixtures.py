@@ -480,6 +480,26 @@ def run() -> dict:
                 print(f"  {fixture_dir.name}: meta parse failed: {e}")
                 continue
             r = _eval_fixture(fixture_dir, meta)
+            # Detect silent key collisions — two fixtures with
+            # the same (backend, physics, pitfall_index) tuple
+            # would otherwise be invisible because the second
+            # overwrites the first in the per-key dict.
+            # Found 2026-06-01: interpolation_points_is_property
+            # collided with nonlinear_problem_signature_kwargs
+            # on fenics::nonlinear_pde::0; only caught because
+            # the post-add total stayed flat instead of +1.
+            if r.key in out_map:
+                prior = out_map[r.key]
+                prior_fixture = prior.get("fixture_id", "?")
+                r.notes.append(
+                    f"KEY COLLISION: this fixture's key "
+                    f"{r.key!r} is already used by fixture "
+                    f"{prior_fixture!r}. Pick a distinct "
+                    f"pitfall_index in fixture.json — the "
+                    f"first-written result will otherwise be "
+                    f"silently overwritten."
+                )
+                r.status = "failed"
             out_map[r.key] = asdict(r)
             status_glyph = {
                 "passed": "✓", "failed": "✗",
