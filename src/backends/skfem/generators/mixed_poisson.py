@@ -54,9 +54,38 @@ KNOWLEDGE = {
         "solver": "Direct (saddle-point system) or iterative with Schur complement",
         "elements": "ElementTriRT0 (flux) + ElementTriP0 (scalar)",
         "pitfalls": [
-            "Block system: [[A, B^T], [B, 0]] where A = mass(sigma,tau), B = div(sigma)*v",
-            "RT elements: normal component continuous, divergence well-defined",
-            "For Neumann BC: add boundary integral to RHS",
+            "[Numerical] Mixed Poisson assembles a SADDLE-POINT "
+            "block system [[A, B^T], [B, 0]] where A = mass("
+            "sigma, tau) (mass form on the flux space) and B = "
+            "div(sigma) * v (divergence coupling against the "
+            "scalar space). The full block matrix is INDEFINITE — "
+            "direct solve via scipy.sparse.linalg.spsolve works "
+            "for moderate sizes; iterative solvers need Schur "
+            "complement preconditioning. Signal: scipy.sparse."
+            "linalg.cg on the block matrix diverges immediately "
+            "(indefinite system); spsolve succeeds. (Claim "
+            "inherited — not yet empirically separated.)",
+            "[API] skfem ships Raviart-Thomas elements as "
+            "ElementTriRT0 (3 DOFs per triangle, one normal-flux "
+            "DOF per edge), ElementTriRT1, ElementTetRT0. "
+            "Catalog name 'ElementTriRaviartThomas' (full spelling) "
+            "does NOT exist in skfem; use the RT0/RT1 abbreviated "
+            "names. Signal: hasattr(skfem, 'ElementTriRT0') is "
+            "True; Basis(MeshTri(), ElementTriRT0()).Nbfun == 3 "
+            "(matches the 3-edge count of a triangle); "
+            "hasattr(skfem, 'ElementTriRaviartThomas') is False. "
+            "(Verified empirically 2026-06-01.)",
+            "[Numerical] Neumann BC for the mixed (flux-pressure) "
+            "formulation requires adding a boundary integral to "
+            "the RHS — the flux trace is the natural BC and is "
+            "imposed by integrating g * normal_v over the "
+            "Neumann boundary on the test side. Forgetting this "
+            "leaves the boundary flux unconstrained. Signal: "
+            "post-processed sigma at the Neumann boundary "
+            "deviates from the prescribed value by O(1); adding "
+            "the boundary integral via skfem.FacetBasis + asm() "
+            "recovers it. (Claim inherited — not yet empirically "
+            "separated.)",
         ],
     },
 }
