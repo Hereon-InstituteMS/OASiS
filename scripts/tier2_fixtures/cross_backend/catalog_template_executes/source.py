@@ -121,10 +121,13 @@ def main() -> int:
         ("skfem", "heat", "2d"),
         ("kratos", "heat", "2d"),
         # stokes: ngsolve runs after free.Clear(V.ndof)
-        # pressure pin fix (this commit). skfem + fenics
-        # stokes still ship broken templates — tracked in
-        # stokes_templates_currently_broken fixture.
+        # pressure pin fix (commit 6ffff60). skfem runs
+        # after MeshTri/intorder=4/pressure-pin/driven-
+        # cavity-BC rewrite (this commit). fenics stokes
+        # still ships a broken XDMF write path — tracked
+        # in stokes_templates_currently_broken fixture.
         ("ngsolve", "stokes", "2d"),
+        ("skfem", "stokes", "2d"),
     ]
     fail = []
     executed = 0

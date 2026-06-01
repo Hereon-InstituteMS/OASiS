@@ -1,13 +1,12 @@
 {
-  "_comment": "Tier-2 Layer-F companion: inverted-gate fixture. Initially caught 3 known-broken stokes templates (skfem/ngsolve/fenics) on 2026-06-01. ngsolve was fixed in a follow-up commit (free.Clear(V.ndof) pressure pin) and moved to the main Layer F gate. The 2 remaining rows: skfem stokes::2d ships homogeneous BC + missing pressure pin → ValueError from condense (task #26); fenics stokes XDMFFile.write_function fails on sol.sub(0).collapse() (task #28). The fixture also asserts the FAILURE MODE matches the documented token — a partial fix that changes the error class but doesn't fully repair the template trips wrong_failure_mode_count.",
+  "_comment": "Tier-2 Layer-F companion: inverted-gate fixture. Initially caught 3 known-broken stokes templates (skfem/ngsolve/fenics) on 2026-06-01. ngsolve was fixed in commit 6ffff60 (free.Clear(V.ndof) pressure pin) and moved to main Layer F. skfem was fixed in this iteration (MeshTri + intorder=4 + pressure pin + driven-cavity BC) and also moved to main Layer F. fenics stokes still ships a broken XDMFFile.write_function path on sol.sub(0).collapse() (task #28). The fixture also asserts the FAILURE MODE matches the documented token — a partial fix that changes the error class but doesn't fully repair the template trips wrong_failure_mode_count.",
   "backend": "kratos",
   "physics": "auxiliary_overview",
   "pitfall_index": 103,
   "mode": "python",
   "expect_in_output": [
-    "skfem::stokes::2d rc=1",
     "fenics::stokes::2d rc=1",
-    "correct_failures=2",
+    "correct_failures=1",
     "unexpected_pass_count=0",
     "wrong_failure_mode_count=0"
   ],

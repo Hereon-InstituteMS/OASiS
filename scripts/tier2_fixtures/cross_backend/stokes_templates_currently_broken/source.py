@@ -56,12 +56,12 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 KNOWN_BROKEN = [
     # (backend, physics, variant, expected_failure_token,
     #  task_id)
-    ("skfem", "stokes", "2d",
-     "ValueError",
-     "task #26 — skfem stokes template ships broken BC"),
-    # ngsolve stokes was fixed in commit (this iteration)
-    # via free.Clear(V.ndof) pressure pin — moved to the
-    # main Layer F gate.
+    # ngsolve stokes — fixed in commit 6ffff60
+    # (free.Clear(V.ndof) pressure pin).
+    # skfem stokes — fixed in commit (this iteration)
+    # via MeshTri + intorder=4 + pressure pin + driven-
+    # cavity BC rewrite.
+    # fenics stokes — STILL BROKEN.
     ("fenics", "stokes", "2d",
      "write_function",
      "task #28 — fenics stokes XDMF write path"),
