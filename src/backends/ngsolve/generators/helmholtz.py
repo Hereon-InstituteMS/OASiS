@@ -21,7 +21,7 @@ geo.SetMaterial(1, "pml")
 geo.SetMaterial(2, "inner")
 mesh = Mesh(geo.GenerateMesh(maxh={maxh}))
 
-mesh.SetPML(pml.Radial(rad=0.7, alpha=2j), definedon="pml")
+mesh.SetPML(pml.Radial(origin=(0, 0), rad=0.7, alpha=2j), definedon="pml")
 
 fes = H1(mesh, order={order}, complex=True, dirichlet="outer")
 u, v = fes.TnT()
@@ -61,8 +61,19 @@ KNOWLEDGE = {
             "BilinearForm.Assemble. (Verified empirically "
             "2026-06-01 — identical wording to the maxwell#3 case; "
             "the catch site is the BFI assembler.)",
+            "[API] pml.Radial REQUIRES an 'origin' positional "
+            "argument (the center of the PML region). Real "
+            "signature: pml.Radial(origin, rad=1, alpha=1j). The "
+            "earlier catalog template called pml.Radial(rad=0.7, "
+            "alpha=2j) without origin. Use origin=(0, 0) for 2-D "
+            "centered PML or origin=(0, 0, 0) for 3-D. "
+            "Signal: pml.Radial(rad=..., alpha=...) without "
+            "origin raises 'TypeError: Radial(): incompatible "
+            "function arguments' at the call site, BEFORE "
+            "mesh.SetPML is reached. (Verified empirically "
+            "against NGSolve 6.2.2604 2026-06-01.)",
             "[Numerical] PML setup uses mesh.SetPML(pml.Radial("
-            "rad=r, alpha=a_j)) where alpha is IMAGINARY "
+            "origin=(0,0), rad=r, alpha=a_j)) where alpha is IMAGINARY "
             "(complex-valued). A real-only alpha passed to "
             "pml.Radial becomes a lossy real boundary that "
             "reflects the outgoing wave. Signal: Integrate of "
