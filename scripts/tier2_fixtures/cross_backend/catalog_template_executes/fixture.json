@@ -88,7 +88,9 @@
     "ngsolve::dg_methods::2d_rc=0",
     "ngsolve::phase_field::2d_rc=0",
     "skfem::poisson::3d_rc=0",
-    "total_executed=82",
+    "ngsolve::hyperelasticity::2d_rc=0",
+    "ngsolve::nonlinear_elasticity::2d_rc=0",
+    "total_executed=84",
     "failures=0"
   ],
   "forbid_in_output": [

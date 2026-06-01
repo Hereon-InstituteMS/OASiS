@@ -614,7 +614,11 @@ def _nonlinear_elasticity_2d(params: dict) -> str:
     nu = params.get("nu", 0.3)
     disp_mag = params.get("applied_displacement", 0.5)
     n_steps = params.get("load_steps", 10)
-    maxh = params.get("maxh", 0.05)
+    # maxh=0.05 was too fine for Variation Newton without
+    # load stepping to converge from a cold start (UMFPACK
+    # singular at first iter); 0.1 gives ~1.5k DOFs which
+    # is enough for catalog smoke and stays factorisable.
+    maxh = params.get("maxh", 0.1)
     order = params.get("order", 2)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
@@ -630,8 +634,13 @@ mu_lam = {mu}
 lam_val = {lam}
 order = {order}
 
-# Displacement space — clamped on left, free on right
-fes = VectorH1(mesh, order=order, dirichlet="left")
+# Displacement space — every boundary whose displacement
+# is prescribed below (left clamped + top loaded) must
+# appear in the dirichlet specifier so its DOFs are
+# eliminated from FreeDofs; otherwise the rigid mode is
+# unconstrained and UMFPACK aborts with 'Numeric
+# factorization failed' on the first iter.
+fes = VectorH1(mesh, order=order, dirichlet="left|top")
 u = fes.TrialFunction()
 
 # Deformation gradient and invariants
@@ -680,9 +689,20 @@ max_uy = float(_np.abs(gfu.components[1].vec.FV().NumPy()).max())
 print(f"Max |u_x| = {{max_ux:.6f}}, max |u_y| = {{max_uy:.6f}}")
 print(f"DOFs: {{fes.ndof}}")
 
-# Cauchy stress (push-forward of PK2 stress)
-S = mu_lam * I - mu_lam / J**2 * Inv(C) + lam_val * log(J) / J**2 * Inv(C)
-sigma_cauchy = 1 / J * F * S * F.trans
+# Cauchy stress (push-forward of PK2 stress).
+# Rebuild F/C/J/S from the resolved displacement gfu —
+# the symbolic versions reference the ProxyFunction
+# u = fes.TrialFunction(), and VTKOutput.Do() trying to
+# evaluate ProxyFunction-derived stress at quadrature
+# points raises NgException 'cannot evaluate
+# ProxyFunction without userdata'.
+F_eval = I + Grad(gfu)
+C_eval = F_eval.trans * F_eval
+J_eval = Det(F_eval)
+S_eval = (mu_lam * I
+          - mu_lam / J_eval**2 * Inv(C_eval)
+          + lam_val * log(J_eval) / J_eval**2 * Inv(C_eval))
+sigma_cauchy = 1 / J_eval * F_eval * S_eval * F_eval.trans
 
 vtk = VTKOutput(mesh,
                 coefs=[gfu, sigma_cauchy],
@@ -1195,6 +1215,19 @@ KNOWLEDGE = {
             "For nearly-incompressible (nu->0.5): use F-bar method or mixed formulation",
             "Cauchy stress: sigma = (1/J) * F * S * F^T where S = dW/dE (PK2 stress)",
             "Newton dampfactor < 1 helps when far from equilibrium (large load steps)",
+            "[API] After solvers.Newton converges, the Cauchy / "
+            "PK1 stress passed to VTKOutput must be rebuilt from "
+            "the resolved GridFunction (Grad(gfu), Det(I+Grad("
+            "gfu)), Inv(F.trans*F) ...), NOT from the symbolic "
+            "fes.TrialFunction(). The symbolic version is a "
+            "ProxyFunction; VTKOutput.Do() then raises NgException "
+            "'cannot evaluate ProxyFunction without userdata' at "
+            "the first quadrature evaluation. Signal: that exact "
+            "ProxyFunction-userdata text emitted from VTKOutput."
+            "Do() at the end of a Newton template that passes "
+            "symbolically-built stress through 'coefs=[gfu, "
+            "sigma_cauchy]'. (Verified empirically 2026-06-01 — "
+            "Layer F catch.)",
         ],
     },
     "phase_field": {

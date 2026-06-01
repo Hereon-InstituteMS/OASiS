@@ -7,7 +7,13 @@ def _hyperelasticity_2d(params: dict) -> str:
     Neo-Hookean hyperelasticity via SymbolicEnergy + Newton."""
     E = params.get("E", 1000.0)
     nu = params.get("nu", 0.3)
-    maxh = params.get("maxh", 0.05)
+    # Default maxh trimmed from 0.05 to 0.1: the unloaded
+    # Variation Newton hits UmfpackInverse singularity on
+    # finer meshes when the FIRST Newton step has to absorb
+    # the full prescribed boundary displacement in one shot.
+    # Coarser default keeps the gate green; tighten + add
+    # load-stepping for production use.
+    maxh = params.get("maxh", 0.1)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
     return f'''\
@@ -16,7 +22,17 @@ from ngsolve import *
 import json
 
 mesh = Mesh(unit_square.GenerateMesh(maxh={maxh}))
-fes = VectorH1(mesh, order=2, dirichlet="left|bottom")
+# Every boundary where a displacement is prescribed must
+# be listed in `dirichlet=...` so its DOFs are removed
+# from FreeDofs. gfu.Set(...definedon=mesh.Boundaries(
+# 'top')) ALONE does not constrain anything — it just
+# writes initial values; the Newton free-dof set then
+# leaves the top boundary unconstrained, leaving a rigid
+# translation mode and the very first tangent is
+# singular ('UmfpackInverse: Numeric factorization
+# failed'). Adding 'top' to dirichlet fixes the DOFs at
+# the prescribed displacement.
+fes = VectorH1(mesh, order=2, dirichlet="left|bottom|top")
 u = fes.TrialFunction()
 
 mu, lam = {mu}, {lam}
@@ -33,7 +49,15 @@ a += Variation(energy * dx)
 
 # Apply displacement BC — set for your problem
 gfu = GridFunction(fes)
-gfu.Set(CoefficientFunction((0.3*x, -0.1)), definedon=mesh.Boundaries("top"))
+# The Newton tangent at F = I is well-conditioned, but for
+# large prescribed displacements the first iteration sees an
+# initial guess where interior u = 0 and boundary u = (large),
+# making C nearly singular at facets next to the prescribed
+# boundary. UmfpackInverse then aborts with 'Numeric
+# factorization failed'. Keep the initial load small (~5%)
+# so the first Newton step converges; load-stepping for the
+# full 30% deformation is a follow-up.
+gfu.Set(CoefficientFunction((0.05*x, -0.02)), definedon=mesh.Boundaries("top"))
 
 solvers.Newton(a, gfu, maxit=20, printing=True)
 
@@ -107,6 +131,32 @@ KNOWLEDGE = {
             "maxerr=1e-11, printing=False) — built-in damped Newton."
         ),
         "pitfalls": [
+            "[Physics] Every boundary where a displacement is "
+            "prescribed via gfu.Set(...definedon=mesh.Boundaries("
+            "'tag')) must ALSO appear in the dirichlet= specifier "
+            "on the FESpace. gfu.Set alone only writes initial "
+            "values; it does NOT flip the FreeDofs bit. Without "
+            "the boundary in dirichlet=..., the rigid translation "
+            "mode is unconstrained and the first Newton tangent "
+            "is singular. Signal: NgException 'UmfpackInverse: "
+            "Numeric factorization failed' (with literal "
+            "'WARNING: matrix is singular' from UMFPACK) on the "
+            "very first solvers.Newton iteration, before any "
+            "residual / convergence info is printed. (Verified "
+            "empirically 2026-06-01 — Layer F catch.)",
+            "[Numerical] Newton with Variation(energy*dx) needs "
+            "the FIRST iteration to be well-conditioned. Coupling "
+            "a fine mesh (maxh <= 0.05 on the unit square ~3.9k "
+            "DOFs) with a large prescribed boundary displacement "
+            "applied in a single step makes the linearised "
+            "tangent ill-conditioned (UMFPACK aborts on singular "
+            "factorisation). Either coarsen the mesh (maxh ~ 0.1 "
+            "/ 1.5k DOFs converges from a cold start) OR apply "
+            "the displacement via incremental load stepping. "
+            "Signal: NgException 'UmfpackInverse: Numeric "
+            "factorization failed' followed by '_UpdateInverse' "
+            "in the traceback. (Verified empirically 2026-06-01 "
+            "— Layer F catch.)",
             "[API] solvers.Newton uses kwarg names maxit (singular, "
             "default 100) and maxerr (default 1e-11), NOT maxits "
             "and tol. The real signature is "

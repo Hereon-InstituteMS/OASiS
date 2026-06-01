@@ -302,6 +302,17 @@ def main() -> int:
         # Also fixed ngsolve mhd Lorentz-force scalar/vector
         # mismatch (deferred: mhd time-loop runtime).
         ("skfem", "poisson", "3d"),
+        # Batch-13: ngsolve hyperelasticity + nonlinear_elasticity
+        # — both UMFPACK-singular at first Newton iter because
+        # the prescribed-disp boundary wasn't in dirichlet=...
+        # (leaving the rigid-translation mode unconstrained)
+        # AND maxh=0.05 + full-load first-step was too
+        # aggressive. Fix: add the loaded boundary to dirichlet
+        # spec, coarsen maxh to 0.1, fix VTK output to use
+        # gfu-substituted F/C/J/S (ProxyFunction-no-userdata
+        # error otherwise).
+        ("ngsolve", "hyperelasticity", "2d"),
+        ("ngsolve", "nonlinear_elasticity", "2d"),
     ]
     fail = []
     executed = 0
