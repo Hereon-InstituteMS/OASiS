@@ -1036,11 +1036,13 @@ _FENICS_KNOWLEDGE = {
             "per step, so dt > (target_l2_error) / Re is "
             "necessary for first-order splitting and tighter "
             "for higher-order projections. Signal: integrated "
-            "L2 error of u_h vs an analytic reference saturates "
-            "as dt is reduced because the splitting error "
-            "dominates the spatial error; switching back to "
-            "monolithic Newton recovers the spatial-error "
-            "regime. (Claim inherited.)",
+            "L2 error from ufl.errornorm of u_h (the Function "
+            "from LinearProblem.solve) vs an analytic reference "
+            "saturates as dt is reduced because the splitting "
+            "error dominates the spatial error; switching back "
+            "to monolithic dolfinx.nls.petsc.NonlinearProblem + "
+            "NewtonSolver recovers the spatial-error regime. "
+            "(Claim inherited.)",
         ],
         "materials": {
             "Re": {"range": [1, 10000], "unit": "dimensionless", "description": "Reynolds number"},
