@@ -1,18 +1,18 @@
 {
-  "backend": "fenics",
+  "backend": "ngsolve",
   "totals": {
-    "n_pitfalls": 113,
-    "with_category_prefix": 12,
-    "with_signal_clause": 12,
-    "tier0_passed": 9,
-    "tier0_code_symbol_only": 6,
+    "n_pitfalls": 123,
+    "with_category_prefix": 15,
+    "with_signal_clause": 15,
+    "tier0_passed": 11,
+    "tier0_code_symbol_only": 8,
     "tier0_with_domain_decoration": 3,
-    "tier0_domain_names_only": 0,
-    "tier1_passed": 12,
-    "tier0_and_1_passed": 9,
+    "tier0_domain_names_only": 2,
+    "tier1_passed": 15,
+    "tier0_and_1_passed": 11,
     "tier2_passed": 2,
     "tier2_attempted": 2,
-    "n_falsifiable": 113,
+    "n_falsifiable": 123,
     "n_unfalsifiable": 0,
     "n_cheap_falsifiable": 0,
     "n_medium_falsifiable": 0,
@@ -23,130 +23,496 @@
   },
   "results": [
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 0,
-      "pitfall_category": "API",
-      "signal_text": "in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns the correct dof indices without that step. (Verified empirically 2026-06-01 \u2014 locate_entities_boundary + locate_dofs_topological both succeed without an explicit create_connectivity call.)",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "RuntimeError",
-        "dolfinx",
-        "locate_dofs_topological"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "RuntimeError",
-        "dolfinx",
-        "locate_dofs_topological"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "raise",
-        "returns"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 1,
-      "pitfall_category": "API",
-      "signal_text": "passing a Python float into a complex-PETSc Function raises TypeError in fem.form / fem.assemble_matrix when the form expects complex coefficients; passing 0j into a real-PETSc Function raises ValueError 'cannot convert complex to float'.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "Function",
-        "PETSc",
-        "TypeError",
-        "ValueError",
-        "assemble_matrix",
-        "fem",
-        "form"
-      ],
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [
-        "Function",
-        "PETSc",
-        "TypeError",
-        "ValueError",
-        "assemble_matrix",
-        "fem",
-        "form"
-      ],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
-        "raise",
-        "value"
-      ],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": []
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 2,
-      "pitfall_category": "API",
-      "signal_text": "VTXWriter.write raises RuntimeError 'Cannot interpolate function ... to the VTX output basis' or 'ADIOS2 VTX only supports Lagrange elements'.",
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "poisson",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "poisson",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "linear_elasticity",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "linear_elasticity",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "linear_elasticity",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "linear_elasticity",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "linear_elasticity",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "heat",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "heat",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "heat",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "heat",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "stokes",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "stokes",
+      "pitfall_index": 4,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "stokes",
+      "pitfall_index": 5,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "navier_stokes",
+      "pitfall_index": 3,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 0,
+      "pitfall_category": "Numerical",
+      "signal_text": "without nograds (and without regularisation), BilinearForm.Assemble succeeds but BilinearForm.mat.Inverse raises NgException 'UmfpackInverse: Numeric factorization failed. UMFPACK ... WARNING: matrix is singular' because the gradient kernel of HCurl is in the null space of curl-curl. (Verified empirically 2026-06-01 \u2014 the singular-matrix text is real but it is wrapped by UmfpackInverse, not emitted as a bare 'matrix is singular' / 'pivot too small' message as prior catalog text suggested.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "RuntimeError"
+        "Assemble",
+        "BilinearForm",
+        "HCurl",
+        "Inverse",
+        "NgException",
+        "UMFPACK",
+        "UmfpackInverse",
+        "curl"
       ],
-      "tier0_domain_names_matched": [
-        "Lagrange"
-      ],
+      "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "Lagrange",
-        "RuntimeError"
+        "Assemble",
+        "BilinearForm",
+        "HCurl",
+        "Inverse",
+        "NgException",
+        "UMFPACK",
+        "UmfpackInverse",
+        "curl"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
         "quoted-error-fragment",
-        "raise"
+        "raise",
+        "warn"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 0,
-      "pitfall_category": "Syntax",
-      "signal_text": "ufl.sym raises ValueError 'Symmetric part of tensor with rank != 2 is undefined.' inside the form definition, before dolfinx.fem.form / assemble is reached. (Verified empirically 2026-06-01 \u2014 the prior catalog wording 'Invalid ranks' / 'expected rank 1 trial function' does not match current dolfinx output.)",
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 1,
+      "pitfall_category": "Numerical",
+      "signal_text": "ArnoldiSolver eigenvalues computed with nograds=True are systematically smaller than analytic cavity eigenvalues (k^2 = (m*pi/Lx)^2 + (n*pi/Ly)^2) by several percent (empirically ~7% at order=2, maxh=0.3); without nograds the same eigenvalues converge from above and agree with analytic within ~0.5%. (Verified empirically 2026-06-01 \u2014 the from-below direction is correct; the magnitude in prior catalog text '1-3%' was understated for typical coarse meshes.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "ValueError",
-        "assemble",
-        "dolfinx",
-        "fem",
-        "form",
-        "sym",
-        "ufl"
+        "ArnoldiSolver"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "ValueError",
-        "assemble",
-        "dolfinx",
-        "fem",
-        "form",
-        "sym",
-        "ufl"
+        "ArnoldiSolver"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
+        "above",
+        "below",
+        "converge",
         "quoted-error-fragment",
-        "raise",
-        "undefined",
+        "smaller",
         "value"
       ],
       "tier2_passed": false,
@@ -154,26 +520,208 @@
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 1,
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 2,
+      "pitfall_category": "Physics",
+      "signal_text": "post-processed max(|B|) is on the order of the prescribed Dirichlet value of A directly (no spatial derivative taken).",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 3,
       "pitfall_category": "Syntax",
-      "signal_text": "numpy raises ValueError 'could not broadcast input array from shape () into shape (gdim,)' when dirichletbc is constructed with a scalar value on a vector space.",
+      "signal_text": "NgException with text 'real Evaluate called for complex ScaleCF' from 'Assemble BilinearForm'. (Verified empirically 2026-06-01 \u2014 prior catalog wording 'complex values cannot be assigned to a real FESpace' does not appear in NGSolve 6.2; the actual emitted string is the ScaleCF one above.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "ValueError",
-        "dirichletbc"
+        "Assemble",
+        "BilinearForm",
+        "FESpace",
+        "NgException",
+        "ScaleCF"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "ValueError",
-        "dirichletbc"
+        "Assemble",
+        "BilinearForm",
+        "FESpace",
+        "NgException",
+        "ScaleCF"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "above",
+        "quoted-error-fragment",
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 4,
+      "pitfall_category": "Physics",
+      "signal_text": "in 2D, fes.dim == 1 (scalar) instead of 2 (vector) on an HCurl space, and BilinearForm += curl(u)*curl(v)*dx assembles a scalar Helmholtz operator without warning.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "BilinearForm",
+        "HCurl",
+        "curl"
+      ],
+      "tier0_domain_names_matched": [
+        "Helmholtz"
+      ],
+      "tier0_entities_matched": [
+        "BilinearForm",
+        "HCurl",
+        "Helmholtz",
+        "curl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "warn"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 5,
+      "pitfall_category": "Numerical",
+      "signal_text": "ArnoldiSolver with shift=0.0 on a curl-curl matrix raises NgException 'UmfpackInverse: Numeric factorization failed. UMFPACK ... WARNING: matrix is singular' BEFORE returning any eigenvalues \u2014 the shifted operator A - 0*M = A has the gradient kernel in its null space, so the direct factorisation of the shift-and-invert system fails. With a small non-zero shift away from physical spectrum, the solver runs but returns eigenvalues clustered near the shift, missing the physical modes. (Verified empirically 2026-06-01 \u2014 the prior catalog wording 'returns eigenvalues near 0' was wrong; the real failure is the factorisation error before any eigenvalue is returned.)",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "ArnoldiSolver",
+        "NgException",
+        "UMFPACK",
+        "UmfpackInverse",
+        "curl"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "ArnoldiSolver",
+        "NgException",
+        "UMFPACK",
+        "UmfpackInverse",
+        "curl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "missing",
+        "quoted-error-fragment",
+        "raise",
+        "returns",
+        "value",
+        "warn",
+        "wrong",
+        "zero"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 6,
+      "pitfall_category": "API",
+      "signal_text": "numpy.array(ArnoldiSolver result) has dtype complex128; comparing to analytic real eigenvalues without .real raises TypeError or produces nan from complex>real.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "ArnoldiSolver"
+      ],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [
+        "ArnoldiSolver"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "nan",
+        "raise",
+        "value"
+      ],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 7,
+      "pitfall_category": "Syntax",
+      "signal_text": "NgException with literal text 'curl' and 'H1HighOrderFESpace' is the BFI compile-time error a beginner hits when copying code between scalar (Poisson) and vector (Maxwell) formulations.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "H1HighOrderFESpace",
+        "NgException",
+        "curl"
+      ],
+      "tier0_domain_names_matched": [
+        "Maxwell",
+        "Poisson"
+      ],
+      "tier0_entities_matched": [
+        "H1HighOrderFESpace",
+        "Maxwell",
+        "NgException",
+        "Poisson",
+        "curl"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "error",
+        "quoted-error-fragment"
+      ],
+      "tier2_passed": true,
+      "tier2_status": "passed",
+      "notes": []
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 8,
+      "pitfall_category": "Syntax",
+      "signal_text": "NgException emitted by SymbolicBFI about 'grad' / 'HCurl' / 'scalar-valued'; the user gets an immediate compile-time error when trying to reuse the Poisson assembly on a Maxwell space.",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "HCurl",
+        "NgException",
+        "SymbolicBFI",
+        "grad"
+      ],
+      "tier0_domain_names_matched": [
+        "Maxwell",
+        "Poisson"
+      ],
+      "tier0_entities_matched": [
+        "HCurl",
+        "Maxwell",
+        "NgException",
+        "Poisson",
+        "SymbolicBFI",
+        "grad"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
         "quoted-error-fragment",
-        "raise",
         "value"
       ],
       "tier2_passed": true,
@@ -181,126 +729,80 @@
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 2,
-      "pitfall_category": "Physics",
-      "signal_text": "tip deflection differs from analytic plane-stress reference by a factor (1-nu) at nu=0.3.",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "differs",
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 3,
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 9,
       "pitfall_category": "API",
-      "signal_text": "XDMFFile.write_function raises RuntimeError 'Degree of output Function must be same as mesh degree. Maybe the Function needs to be interpolated?'. (Verified empirically 2026-06-01 \u2014 the prior catalog wording 'XDMF mesh must be P1' does not appear in current dolfinx output.)",
+      "signal_text": "NgException about SymbolicLFI requiring 'scalar-valued' integrand; the same JJ vector that works on HCurl test functions raises immediately on H1 test functions.",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "Function",
-        "RuntimeError",
-        "dolfinx",
-        "mesh"
+        "HCurl",
+        "NgException",
+        "SymbolicLFI"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "Function",
-        "RuntimeError",
-        "dolfinx",
-        "mesh"
+        "HCurl",
+        "NgException",
+        "SymbolicLFI"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
         "quoted-error-fragment",
-        "raise"
+        "raise",
+        "value"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 4,
-      "pitfall_category": "Integration",
-      "signal_text": "dolfinx.io.gmshio reads the mesh but mesh.topology.dim returns 3 with no tagged facets; subsequent locate_dofs_topological on a facet tag returns an empty array.",
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 0,
+      "pitfall_category": "Syntax",
+      "signal_text": "NgException 'real Evaluate called for complex ScaleCF in Assemble BilinearForm \"biform_from_py\"' from BilinearForm.Assemble. (Verified empirically 2026-06-01 \u2014 identical wording to the maxwell#3 case; the catch site is the BFI assembler.)",
       "tier0_passed": true,
       "tier0_code_symbol_matched": [
-        "dolfinx",
-        "locate_dofs_topological",
-        "mesh"
+        "Assemble",
+        "BilinearForm",
+        "NgException",
+        "ScaleCF",
+        "biform_from_py"
       ],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [
-        "dolfinx",
-        "locate_dofs_topological",
-        "mesh"
+        "Assemble",
+        "BilinearForm",
+        "NgException",
+        "ScaleCF",
+        "biform_from_py"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "returns"
+        "quoted-error-fragment"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 5,
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 1,
       "pitfall_category": "Numerical",
-      "signal_text": "integrated reaction moment differs from applied M by 20-40% on a thick beam with torsion BC.",
+      "signal_text": "post-processed outgoing wave amplitude in the bulk shows standing-wave fringes (reflections) rather than monotonic decay into the PML region; the L2 norm in the bulk does NOT decrease as PML thickness is increased. (Catalog claim inherited \u2014 not yet empirically verified on a running PML simulation.)",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": true,
-      "tier1_vocab_hits": [
-        "differs",
-        "numerical-comparison"
-      ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": []
-    },
-    {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 6,
-      "pitfall_category": "Syntax",
-      "signal_text": "ufl.errornorm against a manufactured solution shows slope 1 across mesh refinements where slope 2 is expected, because dolfinx.fem.functionspace was called with ('Lagrange', 1) while the user thought ('Lagrange', 2) was active.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "dolfinx",
-        "fem",
-        "mesh",
-        "ufl"
-      ],
       "tier0_domain_names_matched": [
-        "Lagrange"
+        "PML"
       ],
       "tier0_entities_matched": [
-        "Lagrange",
-        "dolfinx",
-        "fem",
-        "mesh",
-        "ufl"
+        "PML"
       ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "error",
-        "quoted-error-fragment",
+        "amplitude",
         "shows"
       ],
       "tier2_passed": false,
@@ -308,257 +810,77 @@
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 7,
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 2,
       "pitfall_category": "Numerical",
-      "signal_text": "tip deflection at nu=0.4999 is 1e-3 of the true value; switching to mixed P2-P1 recovers the analytic deflection to within 1%.",
+      "signal_text": "reflection amplitude vs alpha forms a U-curve with the minimum in the 1.0..5.0 range; below or above that the post-processed |u_outgoing| at the inner PML boundary is O(0.1)|u_source|. (Catalog claim inherited \u2014 not yet empirically verified.)",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
+      "tier0_domain_names_matched": [
+        "PML"
+      ],
+      "tier0_entities_matched": [
+        "PML"
+      ],
       "tier1_passed": true,
       "tier1_vocab_hits": [
-        "value"
+        "above",
+        "amplitude",
+        "below"
       ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 8,
-      "pitfall_category": "API",
-      "signal_text": "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises ValueError 'Unknown element family CG' \u2014 the basix-era name is 'Lagrange', not 'CG' or 'P1'.",
-      "tier0_passed": true,
-      "tier0_code_symbol_matched": [
-        "ValueError",
-        "dolfinx",
-        "fem",
-        "mesh"
-      ],
-      "tier0_domain_names_matched": [
-        "Lagrange"
-      ],
-      "tier0_entities_matched": [
-        "Lagrange",
-        "ValueError",
-        "dolfinx",
-        "fem",
-        "mesh"
-      ],
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 3,
+      "pitfall_category": "Numerical",
+      "signal_text": "phase error of the post-processed solution grows as O(k^(p+1) h^(2p+1)); for k > 100, h < lambda/10 is not enough at p=1, and the L2 error against an analytic plane wave plateaus around 10% regardless of further refinement. (Catalog claim inherited \u2014 not yet empirically verified at this magnitude.)",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
       "tier1_passed": true,
       "tier1_vocab_hits": [
         "error",
-        "quoted-error-fragment",
-        "raise",
-        "value"
+        "grows"
       ],
-      "tier2_passed": true,
-      "tier2_status": "passed",
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
       "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "heat",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "heat",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "navier_stokes",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "navier_stokes",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "navier_stokes",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "navier_stokes",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "navier_stokes",
+      "backend": "ngsolve",
+      "physics": "helmholtz",
       "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
+      "pitfall_category": "API",
+      "signal_text": "NgException with 'UmfpackInverse' + 'matrix is singular' from ArnoldiSolver when shift=0. (Verified empirically 2026-06-01 \u2014 same pattern as maxwell#5.)",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "ArnoldiSolver",
+        "NgException",
+        "UmfpackInverse"
+      ],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "tier0_entities_matched": [
+        "ArnoldiSolver",
+        "NgException",
+        "UmfpackInverse"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "pattern",
+        "quoted-error-fragment"
+      ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "notes": []
     },
     {
-      "backend": "fenics",
-      "physics": "thermal_structural",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "thermal_structural",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "thermal_structural",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "thermal_structural",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "hyperelasticity",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -576,7 +898,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "hyperelasticity",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -594,7 +916,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "hyperelasticity",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -612,7 +934,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "hyperelasticity",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -630,7 +952,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "hyperelasticity",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -648,8 +970,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "stokes",
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -666,8 +988,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "stokes",
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -684,8 +1006,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "stokes",
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -702,8 +1024,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "stokes",
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -720,8 +1042,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "stokes",
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -738,25 +1060,7 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "stokes",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "convection_diffusion",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -774,7 +1078,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "convection_diffusion",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -792,7 +1096,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "convection_diffusion",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -810,7 +1114,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "convection_diffusion",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -828,80 +1132,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "eigenvalue",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "eigenvalue",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "eigenvalue",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "eigenvalue",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "eigenvalue",
+      "backend": "ngsolve",
+      "physics": "convection_diffusion",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -918,8 +1150,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "biharmonic",
+      "backend": "ngsolve",
+      "physics": "mixed_poisson",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -936,8 +1168,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "biharmonic",
+      "backend": "ngsolve",
+      "physics": "mixed_poisson",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -954,8 +1186,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "biharmonic",
+      "backend": "ngsolve",
+      "physics": "mixed_poisson",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -972,8 +1204,116 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "biharmonic",
+      "backend": "ngsolve",
+      "physics": "thermal_structural",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "thermal_structural",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "thermal_structural",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 0,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 1,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
+      "pitfall_index": 2,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
+      "physics": "surface_pde",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -990,8 +1330,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "biharmonic",
+      "backend": "ngsolve",
+      "physics": "surface_pde",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1008,8 +1348,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "biharmonic",
+      "backend": "ngsolve",
+      "physics": "surface_pde",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1026,8 +1366,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1044,8 +1384,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1062,8 +1402,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1080,8 +1420,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1098,8 +1438,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1116,8 +1456,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1134,8 +1474,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "mixed_poisson",
+      "backend": "ngsolve",
+      "physics": "plasticity",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1152,133 +1492,7 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 5,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "reaction_diffusion",
-      "pitfall_index": 6,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "dg_methods",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -1296,7 +1510,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "dg_methods",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -1314,7 +1528,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "dg_methods",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -1332,7 +1546,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "dg_methods",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -1350,7 +1564,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "dg_methods",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -1368,7 +1582,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "dg_methods",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
@@ -1386,7 +1600,25 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
+      "physics": "dg_methods",
+      "pitfall_index": 6,
+      "pitfall_category": "(no-prefix)",
+      "signal_text": "",
+      "tier0_passed": false,
+      "tier0_code_symbol_matched": [],
+      "tier0_domain_names_matched": [],
+      "tier0_entities_matched": [],
+      "tier1_passed": false,
+      "tier1_vocab_hits": [],
+      "tier2_passed": false,
+      "tier2_status": "not_attempted",
+      "notes": [
+        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
+      ]
+    },
+    {
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
@@ -1404,7 +1636,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
@@ -1422,7 +1654,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
@@ -1440,7 +1672,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
@@ -1458,7 +1690,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
@@ -1476,7 +1708,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
@@ -1494,7 +1726,7 @@
       ]
     },
     {
-      "backend": "fenics",
+      "backend": "ngsolve",
       "physics": "contact",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
@@ -1512,8 +1744,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1530,8 +1762,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1548,8 +1780,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1566,8 +1798,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1584,8 +1816,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1602,8 +1834,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1620,8 +1852,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "multiphase",
+      "backend": "ngsolve",
+      "physics": "time_dependent_ns",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1638,8 +1870,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1656,8 +1888,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1674,8 +1906,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1692,8 +1924,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1710,8 +1942,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1728,8 +1960,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1746,8 +1978,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "time_dependent_heat",
+      "backend": "ngsolve",
+      "physics": "mhd",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1764,8 +1996,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1782,8 +2014,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1800,8 +2032,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1818,8 +2050,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1836,8 +2068,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1854,8 +2086,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1872,8 +2104,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
+      "backend": "ngsolve",
+      "physics": "hdivdiv",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1890,26 +2122,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "cahn_hilliard",
-      "pitfall_index": 7,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
-      "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
-    },
-    {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1926,8 +2140,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1944,8 +2158,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1962,8 +2176,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1980,8 +2194,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -1998,8 +2212,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2016,8 +2230,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "nonlinear_pde",
+      "backend": "ngsolve",
+      "physics": "nonlinear_elasticity",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2034,8 +2248,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 0,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2052,8 +2266,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 1,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2070,8 +2284,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 2,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2088,8 +2302,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 3,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2106,8 +2320,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 4,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2124,8 +2338,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 5,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2142,8 +2356,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 6,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
@@ -2160,8 +2374,8 @@
       ]
     },
     {
-      "backend": "fenics",
-      "physics": "magnetostatics",
+      "backend": "ngsolve",
+      "physics": "phase_field",
       "pitfall_index": 7,
       "pitfall_category": "(no-prefix)",
       "signal_text": "",
