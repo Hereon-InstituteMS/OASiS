@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 27,
-    "passed": 27,
+    "n_fixtures": 28,
+    "passed": 28,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -293,6 +293,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
+    },
+    "kratos::linear_elasticity::2": {
+      "key": "kratos::linear_elasticity::2",
+      "backend": "kratos",
+      "physics": "linear_elasticity",
+      "pitfall_index": 2,
+      "fixture_id": "submodelpart_case_sensitive",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "no sub model part with name",
+        "model_part"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/submodelpart_case_sensitive/source.py\", line 28, in main\n    mp.GetSubModelPart(\"inlet\")\nRuntimeError: Error: There is no sub model part with name \"inlet\" in model part \"Structure\"\nThe following sub model parts are available:\n\t\"Inlet\"\n\nin kratos/sources/model_part.cpp:2406: void ModelPart:"
     },
     "kratos::linear_elasticity::9": {
       "key": "kratos::linear_elasticity::9",
