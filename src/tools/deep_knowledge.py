@@ -1308,11 +1308,11 @@ _FENICS_KNOWLEDGE = {
             "jd": "Jacobi-Davidson (interior eigenvalues)",
         },
         "pitfalls": [
-            "SLEPc must be installed and PETSc configured with --download-slepc",
-            "Shift-and-invert (SINVERT) essential for finding interior eigenvalues",
-            "Must request enough eigenvalues: eps.setDimensions(nev, ncv)",
-            "For generalized EVP: B must be assembled without BC rows zeroed (use separate assembly)",
-            "Complex eigenvalues require complex PETSc build",
+            "[Integration] Eigenvalue problems in dolfinx use SLEPc (the eigenvalue counterpart of PETSc). SLEPc must be installed; PETSc must be configured with --download-slepc (or built against an external SLEPc). The Python binding is slepc4py.SLEPc.EPS. Signal: 'from slepc4py import SLEPc; SLEPc.EPS' resolves successfully when properly installed; ImportError 'No module named slepc4py' (or similar) when missing. (Verified empirically 2026-06-01 in the ofa-fenicsx conda env — slepc4py is present with EPS.)",
+            "[Numerical] Shift-and-invert spectral transformation (SINVERT) is essential for interior eigenvalues. eps.setST(...) with a SLEPc.ST configured to SINVERT centers the spectrum on the target value. Signal: searching for eigenvalues near k^2_estimate without SINVERT returns extreme eigenvalues (highest or lowest) instead; with SINVERT and target = k^2_estimate the returned eigenvalues cluster near the target. (Claim inherited — not yet empirically separated.)",
+            "[API] eps.setDimensions(nev, ncv) requests nev eigenvalues with ncv search-space size (ncv >= 2*nev is the SLEPc default heuristic). Too-small ncv slows convergence or fails. Signal: eps.solve() reports 'converged' with fewer than requested eigenvalues, or returns an error code != 0 from eps.getConvergedReason(); doubling ncv typically fixes it. (Claim inherited.)",
+            "[Numerical] For a generalised eigenvalue problem A*x = lambda*B*x with Dirichlet BC, the mass matrix B must be assembled WITHOUT zeroing the boundary rows the way Dirichlet rows are typically handled — otherwise B becomes singular at Dirichlet DOFs and spurious zero eigenvalues appear. Standard pattern: assemble both A and B with bcs=[], then use dirichletbc-aware row/column reduction only on A. Signal: SLEPc returns n_dirichlet_dof spurious zero eigenvalues at the bottom of the spectrum; the next eigenvalues (skipping those zeros) match the analytic Dirichlet eigenvalues. (Claim inherited.)",
+            "[Integration] Complex-valued eigenvalues require dolfinx + PETSc + SLEPc all compiled with --with-scalar-type=complex. The default conda-forge fenics-dolfinx build is REAL: dolfinx.default_scalar_type is numpy.float64 (verified empirically 2026-06-01). For complex Helmholtz / Maxwell eigenproblems either rebuild with complex scalar OR split into (re, im) real-pair formulation. Signal: dolfinx.default_scalar_type evaluates to numpy.float64 in a real build; numpy.issubdtype(dolfinx.default_scalar_type, np.complexfloating) is False. (Verified empirically in the ofa-fenicsx env.)",
         ],
     },
 
