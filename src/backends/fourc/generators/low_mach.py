@@ -161,42 +161,68 @@ class LowMachGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "PHYSICAL_TYPE must be 'Loma' in FLUID DYNAMIC.  Without "
-                    "this, the solver treats the problem as constant-density "
-                    "incompressible flow and ignores buoyancy effects."
+                    "[Input] PHYSICAL_TYPE must be 'Loma' in FLUID "
+                    "DYNAMIC.  Without this, the solver treats the "
+                    "problem as constant-density incompressible flow "
+                    "and ignores buoyancy effects. Signal: a natural-"
+                    "convection benchmark (heated cavity) shows a "
+                    "uniformly stagnant velocity field; or buoyancy-"
+                    "driven flow rate is ~0 even at large Ra. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "VELOCITYFIELD in SCALAR TRANSPORT DYNAMIC must be "
-                    "'Navier_Stokes' to couple the temperature field with "
-                    "the fluid velocity."
+                    "[Input] VELOCITYFIELD in SCALAR TRANSPORT DYNAMIC "
+                    "must be 'Navier_Stokes' to couple the temperature "
+                    "field with the fluid velocity. Signal: temperature "
+                    "field evolves as if in a stagnant medium (pure "
+                    "diffusion) — no advection signature; or "
+                    "scalar-transport solver warns "
+                    "`VELOCITYFIELD=zero with PHYSICAL_TYPE=Loma is "
+                    "inconsistent`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "The Sutherland material (MAT_sutherland) provides "
-                    "temperature-dependent viscosity AND density via the "
-                    "ideal gas law.  Do not use MAT_fluid for LOMA problems."
+                    "[Input] The Sutherland material (MAT_sutherland) "
+                    "provides temperature-dependent viscosity AND "
+                    "density via the ideal gas law.  Do not use "
+                    "MAT_fluid for LOMA problems. Signal: 4C aborts "
+                    "with `material MAT_fluid incompatible with "
+                    "PHYSICAL_TYPE Loma` OR results show constant "
+                    "density / no temperature-induced viscosity "
+                    "change at large delta-T. (Audit 2026-06-02.)"
                 ),
                 (
-                    "INITIALFIELD should be set to 'field_by_function' with "
-                    "a STARTFUNCNO for the fluid and INITFUNCNO for the "
-                    "scalar transport to provide consistent initial "
-                    "conditions for velocity, pressure, and temperature."
+                    "[Numerical] INITIALFIELD should be set to "
+                    "'field_by_function' with a STARTFUNCNO for the "
+                    "fluid and INITFUNCNO for the scalar transport "
+                    "to provide consistent initial conditions for "
+                    "velocity, pressure, and temperature. Signal: "
+                    "first-step residual norm is very large "
+                    "(~|delta-T|*max_density) because the temperature "
+                    "starts at 0 but BCs prescribe non-zero T_wall; "
+                    "Newton may converge slowly or diverge. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "The residual-based stabilisation parameters should be "
-                    "consistent between fluid and scalar transport.  Use "
-                    "'Taylor_Hughes_Zarins_Whiting_Jansen' for the fluid "
-                    "tau definition."
+                    "The residual-based stabilisation parameters "
+                    "should be consistent between fluid and scalar "
+                    "transport.  Use 'Taylor_Hughes_Zarins_Whiting_"
+                    "Jansen' for the fluid tau definition."
                 ),
                 (
-                    "Gravity (buoyancy) is applied through Neumann boundary "
-                    "conditions or body-force terms, not through a separate "
-                    "gravity section."
+                    "Gravity (buoyancy) is applied through Neumann "
+                    "boundary conditions or body-force terms, not "
+                    "through a separate gravity section."
                 ),
                 (
-                    "For natural convection problems, the Rayleigh number "
-                    "Ra = g * beta * Delta_T * L^3 / (nu * alpha) controls "
-                    "the flow regime.  Ensure mesh resolution is adequate "
-                    "for the expected Ra."
+                    "[Numerical] For natural convection problems, the "
+                    "Rayleigh number Ra = g * beta * Delta_T * L^3 / "
+                    "(nu * alpha) controls the flow regime.  Ensure "
+                    "mesh resolution is adequate for the expected Ra. "
+                    "Signal: Nusselt number from the benchmark "
+                    "differs from the literature value (e.g. de Vahl "
+                    "Davis cavity) by more than 5% — typically a "
+                    "sign of under-resolved boundary layers when "
+                    "h_boundary > L * Ra^(-1/4). (Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [

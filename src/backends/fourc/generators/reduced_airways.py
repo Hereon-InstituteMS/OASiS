@@ -140,26 +140,39 @@ class ReducedAirwaysGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "The airway tree network must be topologically "
-                    "consistent: each parent branch bifurcates into "
-                    "exactly two daughter branches.  Dangling nodes or "
-                    "loops are not supported."
+                    "[Input] The airway tree network must be "
+                    "topologically consistent: each parent branch "
+                    "bifurcates into exactly two daughter branches. "
+                    " Dangling nodes or loops are not supported. "
+                    "Signal: 4C aborts during topology check with "
+                    "`node X has degree 1 (dangling)` or "
+                    "`cycle detected in airway tree`. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "Boundary conditions at the trachea define the "
-                    "driving force: typically a pressure or flow "
-                    "waveform representing breathing effort.  Without "
-                    "it, no flow occurs."
+                    "[Input] Boundary conditions at the trachea "
+                    "define the driving force: typically a pressure "
+                    "or flow waveform representing breathing effort. "
+                    " Without it, no flow occurs. Signal: simulation "
+                    "completes but the flow / volume result fields "
+                    "are uniformly zero; OR runtime warning "
+                    "`no DESIGN POINT 1D DBC defined at trachea "
+                    "node`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Terminal acinar elements must be specified with "
-                    "appropriate compliance.  Missing acinar conditions "
-                    "give open-ended branches with unphysical behaviour."
+                    "[Numerical] Terminal acinar elements must be "
+                    "specified with appropriate compliance.  Missing "
+                    "acinar conditions give open-ended branches with "
+                    "unphysical behaviour. Signal: terminal-branch "
+                    "pressure equals the upstream pressure at all "
+                    "times (no impedance), and flow into the "
+                    "terminal segment grows unbounded; tidal volume "
+                    "diverges with cycle count. (Audit 2026-06-02.)"
                 ),
                 (
                     "Airway wall compliance strongly affects pressure "
-                    "wave propagation.  Rigid airways (compliance = 0) "
-                    "give a simpler problem but miss physiological "
+                    "wave propagation.  Rigid airways (compliance = "
+                    "0) give a simpler problem but miss physiological "
                     "airway collapse and reopening."
                 ),
                 (
@@ -172,12 +185,17 @@ class ReducedAirwaysGenerator(BaseGenerator):
                     "Material properties vary by airway generation.  "
                     "Proximal airways (trachea, bronchi) have stiffer "
                     "walls and larger radii than distal airways "
-                    "(bronchioles).  Use generation-specific materials."
+                    "(bronchioles).  Use generation-specific "
+                    "materials."
                 ),
                 (
-                    "The element type is REDAIRWAY, not standard "
-                    "beam or fluid elements.  Using incorrect element "
-                    "types will cause failure."
+                    "[Input] The element type is REDAIRWAY, not "
+                    "standard beam or fluid elements.  Using "
+                    "incorrect element types will cause failure. "
+                    "Signal: input parser abort `unknown element "
+                    "type for ELEMENT_BLOCK X` or runtime "
+                    "`elementType BEAM3R has no RedAirway "
+                    "implementation`. (Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [
