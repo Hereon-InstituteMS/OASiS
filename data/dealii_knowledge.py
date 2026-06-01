@@ -216,7 +216,34 @@ DEALII_KNOWLEDGE = {
         },
         "refinement_types": ["isotropic h", "anisotropic h (step-30)", "hp (step-27, 75)"],
         "strategies": "refine_and_coarsen_fixed_number/fraction, SolutionTransfer for interpolation",
-        "parallel": "Automatic with p4est distributed triangulation",
+        "parallel": "p4est-based distributed triangulation (REQUIRES "
+                    "DEAL_II_WITH_MPI=ON + DEAL_II_WITH_P4EST=ON at build "
+                    "time; if either is OFF, parallel::distributed::"
+                    "Triangulation construction raises 'needs deal.II "
+                    "compiled with p4est' at runtime — serial-only fallback "
+                    "uses Triangulation<dim, spacedim>)",
+        "pitfalls": [
+            "[Integration] Default conda-forge deal.II package "
+            "(dealii-9.1.1-h9661c2c_3 from 2019) ships with "
+            "DEAL_II_WITH_MPI / WITH_P4EST / WITH_PETSC / "
+            "WITH_TRILINOS all UNDEFINED — a serial-only, "
+            "dependency-bare build. Any catalog claim mentioning "
+            "p4est / MPI / PETSc / Trilinos (incl. 'Automatic "
+            "with p4est' here, 'MPI-parallel Poisson with p4est' "
+            "in generators/parallel.py, 'PETSc MUMPS' in solvers, "
+            "'Trilinos Amesos' in preconditioners) requires a "
+            "feature-richer build than conda-forge's default. "
+            "Signal: scan $CONDA_PREFIX/include/deal.II/base/"
+            "config.h for '/* #undef DEAL_II_WITH_P4EST */' — "
+            "the literal '/* #undef DEAL_II_WITH_*' lines flag "
+            "which features are OFF. Verified empirically "
+            "against /home/hermann/miniconda3/envs/ofa-dealii/"
+            "include/deal.II/base/config.h 2026-06-01. "
+            "Rebuild plan: task #30 (deal.II rebuild — unlock "
+            "36/36 templates) is the long-term fix; until then, "
+            "limit example selection to serial-only physics "
+            "(step-3, step-6, step-22 sans MPI, etc.).",
+        ],
     },
 
     # ═══════════════════════════════════════════════════════════════════════
