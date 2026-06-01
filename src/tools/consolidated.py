@@ -1396,13 +1396,23 @@ def register_consolidated_tools(mcp: FastMCP):
             output_dir: Where to save (auto if empty)
         """
         from tools.mesh_generation import register_mesh_tools
-        # Delegate to original
+        # Delegate to original. Importer names must match the
+        # functions in tools.mesh_generation EXACTLY — the prior
+        # _generate_channel_cylinder_2d (without 'with') did not
+        # exist there (actual name is _generate_channel_with_
+        # cylinder_2d) and the ImportError short-circuited the
+        # dispatch dict for ALL three geometries, including
+        # l_domain and plate_with_hole. (Audit 2026-06-01.)
         try:
-            from tools.mesh_generation import _generate_l_domain_2d, _generate_plate_with_hole_2d, _generate_channel_cylinder_2d
+            from tools.mesh_generation import (
+                _generate_l_domain_2d,
+                _generate_plate_with_hole_2d,
+                _generate_channel_with_cylinder_2d,
+            )
             generators = {
                 "l_domain": _generate_l_domain_2d,
                 "plate_with_hole": _generate_plate_with_hole_2d,
-                "channel_cylinder": _generate_channel_cylinder_2d,
+                "channel_cylinder": _generate_channel_with_cylinder_2d,
             }
             gen = generators.get(geometry)
             if gen:
