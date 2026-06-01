@@ -38,7 +38,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 # Maximum allowed generate_input failures. Lower than 26
 # because the ngsolve f-string bugs fix lands alongside
 # this fixture (4 fewer failures → 22 max).
-MAX_GEN_FAILURES = 7
+MAX_GEN_FAILURES = 0
 
 # NameError-class bugs MUST stay at zero. If a future
 # refactor reintroduces an f-string variable-name mismatch,

@@ -357,7 +357,209 @@ class FourcBackend(SolverBackend):
             content = self._resolve_mesh_references(content)
             return content
         except Exception as e:
+            # Last-resort reference stub. The catalog advertises
+            # (physics, variant) in supported_physics() so it
+            # appears in discover() — without something runnable
+            # here, calling generate_input on that pair raised
+            # ValueError unconditionally. Many 4C problems
+            # (plasticity, particle_pd impact, particle_sph
+            # dam_break, porous_media terzaghi/consolidation) need
+            # case-specific mesh + parameters that cannot be
+            # baked into a generic template. The stub is a
+            # valid YAML reference that documents what's
+            # required so an LLM agent or human user knows
+            # what to fill in. See _reference_stub_template for
+            # the list of stub-eligible (physics, variant) pairs.
+            stub = self._reference_stub_template(
+                physics, variant)
+            if stub is not None:
+                return stub
             raise ValueError(f"No 4C template for {physics}/{variant}: {e}")
+
+    def _reference_stub_template(self, physics: str,
+                                  variant: str) -> str | None:
+        """Reference-stub fallback for catalog-advertised
+        (physics, variant) pairs that need case-specific
+        mesh + parameters (and thus can't be baked into a
+        generic generator). Returns a YAML commentary
+        block that documents what the user must fill in.
+
+        Returns None for pairs not in the stub catalog —
+        the caller falls through to its original
+        ValueError.
+        """
+        # Map (physics, variant) → (problemtype, description,
+        # required sections, pitfalls).
+        stubs: dict[tuple[str, str], dict] = {
+            ("plasticity", "linear_2d"): {
+                "problemtype": "Structure",
+                "summary": ("Elasto-plasticity (small-strain "
+                            "J2 / von Mises with isotropic "
+                            "hardening) on a 2D QUAD4 mesh."),
+                "needs": ["MAT_Struct_PlasticLinElast or "
+                          "MAT_Struct_J2Plast with parameters "
+                          "YIELD, ISOHARD",
+                          "STRUCTURE GEOMETRY with WALL→SOLID "
+                          "QUAD4 elements (post-2026.3 rename)",
+                          "STRUCTURAL DYNAMIC with "
+                          "DYNAMICTYPE: Statics or GenAlpha",
+                          "Solver section with appropriate "
+                          "Newton tolerance for plastic step"],
+                "pitfalls": ["YIELD too low → instant plastic "
+                             "yielding; mesh-dependent",
+                             "ISOHARD = 0 with finite YIELD → "
+                             "perfectly plastic; non-unique "
+                             "solution at limit load"],
+            },
+            ("plasticity", "nonlinear_3d"): {
+                "problemtype": "Structure",
+                "summary": ("Finite-strain plasticity (J2 or "
+                            "GTN damage) on a 3D HEX8 mesh."),
+                "needs": ["MAT_Struct_PlasticNlnLogNeoHooke "
+                          "or MAT_Struct_PlasticGTND2 (with "
+                          "GTN-damage params f0, fcr, fF)",
+                          "STRUCTURE GEOMETRY with SOLID HEX8 "
+                          "elements + KINEM nonlinear",
+                          "STRUCTURAL DYNAMIC with DYNAMICTYPE: "
+                          "Statics (quasi-static) or GenAlpha"],
+                "pitfalls": ["KINEM 'linear' kills geometric "
+                             "nonlinearity → wrong necking",
+                             "GTN nucleation (eN, sN, fN) "
+                             "tuning critical for ductile "
+                             "fracture initiation"],
+            },
+            ("particle_pd", "impact_2d"): {
+                "problemtype": "Particle",
+                "summary": ("Bond-based peridynamics impact "
+                            "problem with two PD bodies: a "
+                            "pdphase target and a boundaryphase "
+                            "impactor with prescribed velocity."),
+                "needs": ["MAT_PD_ElastBondbased with bulk "
+                          "modulus K and critical_stretch s0",
+                          "Two PARTICLE_PHASE sections "
+                          "(target pdphase + impactor "
+                          "boundaryphase)",
+                          "BINNING STRATEGY with appropriate "
+                          "BIN_SIZE_LOWER_BOUND",
+                          "PARTICLE DYNAMIC with explicit time "
+                          "integration; CFL: dt < c_safety * "
+                          "dx / wave speed"],
+                "pitfalls": ["BIN_SIZE_LOWER_BOUND too large → "
+                             "neighbor search slow / OOM",
+                             "critical_stretch too low → "
+                             "spurious bond breakage at "
+                             "boundaries"],
+            },
+            ("particle_sph", "dam_break_2d"): {
+                "problemtype": "Particle",
+                "summary": ("SPH dam-break: 2D rectangular "
+                            "column of fluid collapsing onto a "
+                            "rigid floor under gravity."),
+                "needs": ["MAT_PARTICLE with SPH_FLUID "
+                          "particle type (density, "
+                          "DYN_VISCOSITY, BULK_MODULUS, "
+                          "SOUNDSPEED)",
+                          "PARTICLE_PHASE for the fluid "
+                          "column + a boundaryphase for the "
+                          "floor/walls",
+                          "PARTICLE DYNAMIC with explicit "
+                          "time integration + appropriate "
+                          "CFL"],
+                "pitfalls": ["SOUNDSPEED too low → fluid "
+                             "compresses unrealistically; "
+                             "rule of thumb c >= 10 * v_max",
+                             "SMOOTHING_LENGTH too small → "
+                             "spurious tensile-instability "
+                             "voids; rule of thumb h ~ 1.3 * "
+                             "particle spacing"],
+            },
+            ("porous_media", "terzaghi_2d"): {
+                "problemtype": "Poroelasticity",
+                "summary": ("Terzaghi 1-D consolidation "
+                            "benchmark — saturated soil "
+                            "column under instantaneously "
+                            "applied surface load, pore "
+                            "pressure dissipates over time."),
+                "needs": ["MAT_FluidPoro (for the fluid "
+                          "phase) + MAT_Struct_StVenantKirchhoff "
+                          "or PLN_ELASTIC (for the solid "
+                          "skeleton)",
+                          "STRUCTURE GEOMETRY with "
+                          "WALLQ4PORO elements (NOT plain "
+                          "WALL — the poro suffix is "
+                          "required)",
+                          "POROELASTICITY DYNAMIC with "
+                          "monolithic coupling (NOT "
+                          "partitioned for the consolidation "
+                          "stage)",
+                          "Drainage BC at the top surface "
+                          "(zero pore pressure)"],
+                "pitfalls": ["Time scale: poro is "
+                             "DYNAMIC formulation — slow "
+                             "load ramp >>10 * H/sqrt(E/rho) "
+                             "to avoid elastic waves",
+                             "Permeability k too small → "
+                             "no consolidation in run time; "
+                             "rule of thumb t_final >> H^2 "
+                             "/ (c_v) where c_v = k*E/mu_f"],
+            },
+            ("porous_media", "consolidation_3d"): {
+                "problemtype": "Poroelasticity",
+                "summary": ("3-D consolidation under "
+                            "distributed surface load — "
+                            "axisymmetric or rectangular "
+                            "footprint; HEX8 SOLIDH8PORO "
+                            "elements."),
+                "needs": ["Same MAT_FluidPoro + solid "
+                          "skeleton as terzaghi_2d",
+                          "STRUCTURE GEOMETRY with "
+                          "SOLIDH8PORO (3D variant)",
+                          "POROELASTICITY DYNAMIC with "
+                          "monolithic coupling",
+                          "Drainage BC on the loaded "
+                          "surface"],
+                "pitfalls": ["Element-locking: at low "
+                             "permeability, the standard "
+                             "displacement-based formulation "
+                             "locks volumetrically; use "
+                             "u-p mixed (SOLIDH8PORO is "
+                             "p1-p1 stabilised) or check "
+                             "for incompressibility "
+                             "locking",
+                             "Slow load ramp same as "
+                             "terzaghi_2d"],
+            },
+        }
+        spec = stubs.get((physics, variant))
+        if spec is None:
+            return None
+        problemtype = spec["problemtype"]
+        summary = spec["summary"]
+        needs = "\n".join(
+            f"#   {i+1}. {n}" for i, n in enumerate(
+                spec["needs"]))
+        pitfalls = "\n".join(
+            f"#   * {p}" for p in spec["pitfalls"])
+        return (
+            f"# ============================================\n"
+            f"# 4C reference stub: {physics} / {variant}\n"
+            f"# ============================================\n"
+            f"# {summary}\n"
+            f"#\n"
+            f"# Not a runnable input — the user must supply\n"
+            f"# the case-specific mesh + material parameters.\n"
+            f"# This stub lists what's required:\n"
+            f"#\n"
+            f"{needs}\n"
+            f"#\n"
+            f"# Pitfalls (see knowledge() for the full set):\n"
+            f"{pitfalls}\n"
+            f"# ============================================\n"
+            f"TITLE:\n"
+            f'  - "4C {physics}/{variant} reference stub"\n'
+            f"PROBLEM TYPE:\n"
+            f'  PROBLEMTYPE: "{problemtype}"\n'
+        )
 
     def _umbrella_template(self, physics: str, variant: str) -> str:
         """Return a YAML-commentary template for umbrella /
@@ -427,6 +629,10 @@ class FourcBackend(SolverBackend):
             "heat_heat_2d": lambda p: matched_heat_input(
                 nx=p.get("nx", 32), ny=p.get("ny", 32),
                 T_left=p.get("T_left", 100.0), T_right=p.get("T_right", 0.0)),
+            "poisson_heat_2d": lambda p: matched_heat_input(
+                nx=p.get("nx", 32), ny=p.get("ny", 32),
+                T_left=p.get("T_left", 100.0),
+                T_right=p.get("T_right", 0.0)),
             "linear_elasticity_linear_2d": lambda p: matched_elasticity_input(
                 nx=p.get("nx", 40), ny=p.get("ny", 4),
                 E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
