@@ -69,9 +69,33 @@ KNOWLEDGE = {
         "spaces": "VectorH1(order=2) * H1(order=1)",
         "solver": "IMEX: factor Stokes operator once, explicit convection each step",
         "pitfalls": [
-            "CFL condition for explicit convection: dt < h / max(velocity)",
-            "Convection term: Grad(velocity)*velocity for standard, or skew-symmetric form",
-            "Re > ~500 needs finer mesh or stabilization (SUPG)",
+            (
+                "[Numerical] CFL condition for explicit "
+                "convection: dt < h / max(velocity). Signal: "
+                "velocity field reaches NaN within the first "
+                "10 steps when dt*max|u|/h > ~0.5; per-step "
+                "max(|u|) diverges geometrically. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convection term: Grad(velocity)*"
+                "velocity for standard, or skew-symmetric "
+                "form. Signal: in a closed periodic box the "
+                "non-conservative form drifts the total "
+                "kinetic energy by ~1% over 1000 steps; the "
+                "skew-symmetric variant preserves it to "
+                "machine precision. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Re > ~500 needs finer mesh or "
+                "stabilization (SUPG). Signal: spurious "
+                "wiggles upstream of obstacles; energy "
+                "spectrum has high-frequency content not "
+                "present in a reference DNS; on Schafer-Turek "
+                "drag coefficient differs > 10% from the "
+                "5.57 (Re=20) / 3.22 (Re=100) reference. "
+                "(Audit 2026-06-02.)"
+            ),
             "Benchmark: Schafer-Turek DFG channel with cylinder (Re=20, 100)",
         ],
     },
