@@ -57,7 +57,13 @@ SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
     "dealii":  68.0,   # measured  69.6
     "skfem":   48.0,   # measured  49.5
-    "ngsolve": 46.0,   # measured  47.4
+    "ngsolve": 54.0,   # measured  55.6 (raised 2026-06-02 from
+                       #                  46.0 after pass 1 on
+                       #                  ngsolve: 6 phase_field +
+                       #                  6 time_dependent_ns
+                       #                  pitfalls Signal-tagged in
+                       #                  backends/ngsolve/generators/
+                       #                  advanced.py.)
     "febio":   45.0,   # measured  46.2
     "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
                        #                 2026-06-02 from 44.0 after

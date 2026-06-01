@@ -1158,12 +1158,68 @@ KNOWLEDGE = {
         "spaces": "VectorH1(order=2) * H1(order=1) — Taylor-Hood (inf-sup stable)",
         "solver": "IMEX: factor Stokes+mass operator once with umfpack, explicit convection each step",
         "pitfalls": [
-            "CFL for explicit convection: dt < C * h / max|u| — may need small dt for high Re",
-            "Convection form: Grad(u)*u (non-conservative) vs 0.5*(Grad(u)*u - Grad(u)^T*u) (skew-sym)",
-            "Re-impose Dirichlet BCs after each solve to fix boundary nodes",
-            "For Re > 1000: use stabilization (SUPG, VMS) or finer mesh near boundary layers",
-            "Pressure uniqueness: fix pressure at one point or use mean-zero constraint (NumberSpace)",
-            "Taylor-Hood P2/P1 satisfies inf-sup; P1/P1 does not (needs stabilization like MINI)",
+            (
+                "[Numerical] CFL for explicit convection: dt < "
+                "C * h / max|u| — may need small dt for high Re. "
+                "Signal: velocity field blows up to NaN within "
+                "the first few time steps; per-step max(|u|) "
+                "diverges geometrically; the violation ratio "
+                "dt * max(|u|) / h is greater than ~0.5. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convection form: Grad(u)*u "
+                "(non-conservative) vs 0.5*(Grad(u)*u - "
+                "Grad(u)^T*u) (skew-sym). Signal: long-time "
+                "energy in a closed periodic box drifts "
+                "(grows or decays) with the non-conservative "
+                "form by O(1%) over 1000 steps; the skew-"
+                "symmetric form preserves it to machine "
+                "precision because it makes the convective "
+                "operator anti-symmetric. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Re-impose Dirichlet BCs after each "
+                "solve to fix boundary nodes. Signal: "
+                "boundary velocity drifts away from the "
+                "prescribed value across time steps; for a "
+                "lid-driven cavity benchmark the top-wall "
+                "velocity slowly diverges from u_lid (the "
+                "factor-of-2 norm of the BC step is added "
+                "back each step instead of overwriting). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For Re > 1000: use stabilization "
+                "(SUPG, VMS) or finer mesh near boundary "
+                "layers. Signal: without stabilisation, "
+                "velocity field shows visible wiggles upstream "
+                "of obstacles or in boundary layers; energy "
+                "spectrum has spurious high-frequency content; "
+                "drag coefficient on a cylinder differs >10% "
+                "from the Schafer-Turek reference. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Pressure uniqueness: fix pressure "
+                "at one point or use mean-zero constraint "
+                "(NumberSpace). Signal: PETSc reports "
+                "`KSPSolve: DIVERGED_BREAKDOWN` or near-zero "
+                "pivot; the pressure field shows a uniform "
+                "drift unrelated to the source. Pin a single "
+                "DOF or attach a NumberSpace mean-zero "
+                "constraint. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Taylor-Hood P2/P1 satisfies "
+                "inf-sup; P1/P1 does not (needs stabilization "
+                "like MINI). Signal: P1/P1 without "
+                "stabilisation produces checkerboard pressure "
+                "pattern with magnitude that does not converge "
+                "under refinement; switching to P2/P1 or "
+                "adding the cubic bubble (MINI) removes the "
+                "checkerboard. (Audit 2026-06-02.)"
+            ),
             "Benchmark: DFG Schafer-Turek (Re=20 steady, Re=100 periodic) and lid-driven cavity",
         ],
     },
@@ -1268,14 +1324,59 @@ KNOWLEDGE = {
         "spaces": "H1(mesh, order=k) for scalar phase; VectorH1 + H1 for fracture",
         "solver": "Allen-Cahn: implicit Euler (linear system per step). Fracture: staggered alternating minimization",
         "pitfalls": [
-            "Allen-Cahn mass is NOT conserved — use Cahn-Hilliard (4th order) for mass conservation",
-            "Interface width epsilon must be resolved: at least 3-4 elements across interface (h << eps)",
+            (
+                "[Numerical] Allen-Cahn mass is NOT conserved — use "
+                "Cahn-Hilliard (4th order) for mass conservation. "
+                "Signal: Integrate(c, mesh) drifts monotonically "
+                "(~1-5% per characteristic interface time) in "
+                "Allen-Cahn; the same geometry under Cahn-Hilliard "
+                "preserves the integral to machine precision. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Interface width epsilon must be "
+                "resolved: at least 3-4 elements across interface "
+                "(h << eps). Signal: phase field c develops "
+                "checkerboard pattern near the interface with "
+                "10-30% over/undershoot; or NewtonMinimization "
+                "diverges with `Newton did not converge after N "
+                "iterations` because W'(c) ~ c^3 amplifies "
+                "spurious oscillations. (Audit 2026-06-02.)"
+            ),
             "Semi-implicit treatment of W'(c): evaluate at c^n, solve linearly — avoids nonlinear solve",
-            "Phase-field fracture: irreversibility d >= d_prev (crack cannot heal) — enforce pointwise",
+            (
+                "[Numerical] Phase-field fracture: irreversibility "
+                "d >= d_prev (crack cannot heal) — enforce "
+                "pointwise. Signal: visualization shows the "
+                "damage field d decreasing in some elements "
+                "between time steps (unphysical 'healing'); the "
+                "fracture surface is not monotonic in time. "
+                "Enforce via max(d, d_prev) projection after each "
+                "solve. (Audit 2026-06-02.)"
+            ),
             "Staggered scheme converges to same solution as monolithic but takes more iterations",
-            "Miehe energy split (tension/compression) prevents crack growth under compression",
+            (
+                "[Numerical] Miehe energy split (tension/"
+                "compression) prevents crack growth under "
+                "compression. Signal: without the split, a "
+                "compressive boundary load nucleates spurious "
+                "damage d>0 in the loaded region; with the split, "
+                "compression yields d~0 throughout. A "
+                "uniaxial-compression sanity test should show "
+                "max(d) < 1e-3. (Audit 2026-06-02.)"
+            ),
             "Length scale l0 must be small enough relative to specimen size; convergence as l0->0",
-            "For Cahn-Hilliard: use H1 x H1 mixed formulation (chemical potential + phase field)",
+            (
+                "[API] For Cahn-Hilliard: use H1 x H1 mixed "
+                "formulation (chemical potential + phase field). "
+                "Signal: a single-H1 (4th-order) discretization "
+                "with standard Lagrange elements fails at assembly "
+                "with `NotImplementedError: H2 conformity required "
+                "for biharmonic operator` or the SymbolicBFI "
+                "raises `coefficient not in BilinearForm space`. "
+                "Mixed (c, mu) splits the biharmonic into two "
+                "Laplacians. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }
