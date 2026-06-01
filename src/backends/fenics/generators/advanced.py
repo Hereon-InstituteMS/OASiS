@@ -441,11 +441,31 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {
     "solver": "Linear system per time step; matrix assembled once if coefficients constant",
     "pitfalls": [
         "Backward Euler: unconditionally stable, 1st order accurate in time",
-        "Crank-Nicolson: 2nd order but can oscillate for step-function sources",
+        (
+            "[Numerical] Crank-Nicolson: 2nd order but can oscillate "
+            "for step-function sources. Signal: temperature field at "
+            "the source location shows visible oscillation in time "
+            "(over/undershoot ~10-30%) that does not damp with mesh "
+            "refinement; switching to Backward Euler removes the "
+            "oscillation but degrades temporal accuracy. The "
+            "Courant-like criterion for CN stability with sharp "
+            "transients is k*dt/(rho*cp*h^2) < ~1/6. (Audit "
+            "2026-06-02.)"
+        ),
         "Convective BC: add h*(T - T_inf)*v*ds to bilinear form (Robin BC)",
         "Heat flux BC: add -q_n*v*ds to linear form (Neumann BC)",
         "Material properties rho, cp, k can be spatially varying Functions",
-        "For PCM: enthalpy method with effective capacity for phase change",
+        (
+            "[Numerical] For PCM: enthalpy method with effective "
+            "capacity for phase change. Signal: a uniform-temperature "
+            "method (constant cp) produces a sharp melting front "
+            "with overshoot >5K above T_melt; using c_eff(T) with a "
+            "smoothed delta around T_melt (width ~2K) preserves "
+            "energy and tracks the melting front correctly. Energy "
+            "conservation check: integral of rho*c_eff(T)*dT over "
+            "the domain matches the prescribed boundary heat flux "
+            "integral. (Audit 2026-06-02.)"
+        ),
         "CFL restriction irrelevant (implicit method); choose dt for accuracy",
     ],
     "materials": {
@@ -773,11 +793,44 @@ _NONLINEAR_PDE_KNOWLEDGE = {
     "solver": "PETSc SNES (newtonls) with automatic UFL Jacobian",
     "pitfalls": [
         "Jacobian computed via ufl.derivative(F, u, du) — automatic, no hand differentiation needed",
-        "Newton convergence: start from a good initial guess (e.g., linear solution or continuation)",
+        (
+            "[Numerical] Newton convergence: start from a good "
+            "initial guess (e.g., linear solution or continuation). "
+            "Signal: SNES reports `reason DIVERGED_LINE_SEARCH` "
+            "with very large alpha_0, or `DIVERGED_MAX_IT` at the "
+            "first step; residual ratio stays > 0.5 for many "
+            "iterations instead of decreasing geometrically. "
+            "(Audit 2026-06-02.)"
+        ),
         "For strongly nonlinear D(u): line search in SNES helps (snes_linesearch_type=l2)",
-        "Singularity: D(u)=0 can cause indefinite Jacobian; add regularization D_reg = max(D,eps)",
-        "p-Laplacian: D(u) = |grad(u)|^(p-2) — singular at grad(u)=0 for p<2",
-        "Semilinear: R(u)=u^3 (subcritical) is easy; R(u)=exp(u) can blow up",
+        (
+            "[Numerical] Singularity: D(u)=0 can cause indefinite "
+            "Jacobian; add regularization D_reg = max(D,eps). "
+            "Signal: PETSc reports `KSPSolve: divergence reason "
+            "DIVERGED_INDEFINITE_PC` or LU pivoting warning "
+            "`small pivot, possible singularity`; Newton residual "
+            "oscillates rather than decreases. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] p-Laplacian: D(u) = |grad(u)|^(p-2) — "
+            "singular at grad(u)=0 for p<2. Signal: assembling J "
+            "on a uniform initial guess (grad u = 0) yields NaN "
+            "entries; `dolfinx_assemble_matrix raised "
+            "ZeroDivisionError`; or `nan` in the convergence-rate "
+            "table. Regularize the diffusivity D = (|grad(u)|^2 + "
+            "eps^2)^((p-2)/2) with eps ~ 1e-6 to step away from "
+            "the singular initial point. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Semilinear: R(u)=u^3 (subcritical) is "
+            "easy; R(u)=exp(u) can blow up. Signal: u_max grows "
+            "geometrically across SNES iterations (factor ~2-10x "
+            "per step) before SNES aborts with `DIVERGED_FNORM_NAN`"
+            " or `DIVERGED_INF`; the steady solution does not "
+            "exist for sufficiently large source / Dirichlet "
+            "amplitudes — use continuation in the load. (Audit "
+            "2026-06-02.)"
+        ),
         "Monitor convergence with snes_monitor and ksp_monitor PETSc options",
     ],
     "materials": {
@@ -901,13 +954,40 @@ _MAGNETOSTATICS_KNOWLEDGE = {
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
         "In 2D: scalar Az formulation — standard Lagrange works perfectly",
-        "In 3D: MUST use H(curl) Nedelec elements (not Lagrange!) for correct curl",
-        "Gauge fixing: add Coulomb gauge div(A)=0 or use tree-cotree gauging in 3D",
+        (
+            "[Numerical] In 3D: MUST use H(curl) Nedelec elements "
+            "(not Lagrange!) for correct curl. Signal: assembling "
+            "curl(A_lagrange) gives near-zero off-diagonal entries; "
+            "computed flux density B = curl(A) is uniformly ~0 even "
+            "with a strong source J; or PETSc reports "
+            "`KSPSolve: divergence reason DIVERGED_INDEFINITE_PC`. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Gauge fixing: add Coulomb gauge div(A)=0 "
+            "or use tree-cotree gauging in 3D. Signal: in 3D "
+            "WITHOUT a gauge constraint the linear system is "
+            "singular — PETSc returns `KSP_DIVERGED_BREAKDOWN` or "
+            "the iterative solver diverges immediately; even with "
+            "a direct LU solver the magnetic-vector-potential "
+            "field shows a uniform drift unrelated to the source. "
+            "(Audit 2026-06-02.)"
+        ),
         "2D scalar formulation automatically satisfies gauge condition",
         "Flux density: B = curl(A); in 2D: Bx = dAz/dy, By = -dAz/dx",
         "For magnets: J=0 in iron, J=J_coil in coil regions (use markers)",
         "Permeability mu = mu0 * mu_r; air: mu_r=1; iron: mu_r=1000-10000",
-        "Nonlinear iron (B-H curve): requires Newton iteration with mu(|B|)",
+        (
+            "[Numerical] Nonlinear iron (B-H curve): requires "
+            "Newton iteration with mu(|B|). Signal: a single linear "
+            "solve with constant mu_r=1000 under-predicts the "
+            "field magnitude in iron by 20-50% relative to a "
+            "B-H-curve solve at the same J_coil — typical of "
+            "saturation that the linear model misses; or the "
+            "computed B field shows |B| > B_saturation everywhere "
+            "(2 T for typical steel) without the saturation knee. "
+            "(Audit 2026-06-02.)"
+        ),
     ],
     "materials": {
         "mu_r": {"range": [1.0, 10000.0], "unit": "dimensionless (relative permeability)"},
