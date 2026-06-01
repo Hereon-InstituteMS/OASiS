@@ -991,6 +991,28 @@ def register_consolidated_tools(mcp: FastMCP):
                 import numpy as np
                 import re
 
+                # Layer F catalog templates (fenics / ngsolve /
+                # skfem / kratos) write a per-run summary at
+                # results_summary.json: max field values, dof
+                # counts, convergence metrics. Without surfacing
+                # this, visualize('summary') returns '[]' when
+                # only the JSON summary exists — even though the
+                # template printed exactly the info the LLM wants.
+                # Audit 2026-06-01.
+                summary_artifacts = []
+                for js in sorted(wd.rglob("results_summary.json")):
+                    try:
+                        with open(js) as _f:
+                            summary_artifacts.append({
+                                "file": str(js.relative_to(wd)),
+                                "summary": json.load(_f),
+                            })
+                    except Exception as e:
+                        summary_artifacts.append({
+                            "file": str(js.relative_to(wd)),
+                            "error": f"unreadable: {e}",
+                        })
+
                 # Group VTU files by field type (structure, fluid, ale, etc.)
                 # 4C multi-physics outputs separate files per field
                 field_groups: dict[str, list] = {}
@@ -1061,7 +1083,17 @@ def register_consolidated_tools(mcp: FastMCP):
                             "timesteps": len(files),
                             "error": str(e),
                         })
-                return json.dumps(results, indent=2)
+                # Prepend the JSON-summary artifacts (if any)
+                # so the LLM sees them first.
+                output = {
+                    "results_summary_json": summary_artifacts,
+                    "vtu_field_groups": results,
+                }
+                # If neither populated, drop the wrapper to keep
+                # the legacy '[]' empty signal for "nothing here".
+                if not summary_artifacts and not results:
+                    return "[]"
+                return json.dumps(output, indent=2)
             except Exception as e:
                 return f"Error reading results: {e}"
 
