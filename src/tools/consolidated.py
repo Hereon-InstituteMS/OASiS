@@ -1688,9 +1688,16 @@ def register_consolidated_tools(mcp: FastMCP):
             _pending_candidates.clear()
             return f"Rejected {count} candidate(s)."
 
+        # The Actions list must match the docstring + the
+        # actual dispatch branches in this function. Audit
+        # 2026-06-01: 'ingest' was documented but missing
+        # from this usage hint, so LLMs that hit an invalid
+        # action never learned that ingest exists.
         return (
-            "Usage: session_insights(action)\n"
-            "Actions: review, approve_all, reject_all, stats"
+            "Usage: session_insights(action, path='')\n"
+            "Actions: review, ingest, approve_all, reject_all, stats\n"
+            "Use ingest with path=<session.json|dir> to "
+            "analyse saved session journals."
         )
 
     # Storage for pending candidates between review and approve
