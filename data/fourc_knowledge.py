@@ -814,6 +814,16 @@ TRANSPORT ELEMENTS:
             "'Only .yaml, .yml, and .json' substrings when an unsupported "
             "extension is passed on the CLI. (Verified empirically 2026-06-01.)",
 
+            "[Syntax] 4C validates enum-like keys against an allowed set at "
+            "input-parse time. Mis-spelling a PROBLEMTYPE value (e.g. "
+            "'Hyperelasticity' instead of 'Structure', or a typo like "
+            "'Scalar_Tranzport') triggers 'PROC 0 ERROR ... Could not match "
+            "this input' from core/io/src/4C_io_input_spec_builders.cpp, "
+            "with the offending YAML block echoed in the message. Signal: "
+            "the substrings 'Could not match this input', 'PROBLEMTYPE', and "
+            "'input_spec_builders' all appear in 4C stderr when the value is "
+            "not in the allowed enum set. (Verified empirically 2026-06-01.)",
+
             # THICK parameter for 2D plane strain
             "For 2D plane strain WALL elements, THICK is the out-of-plane depth "
             "(unit thickness), NOT the element width or column width. Almost always "
