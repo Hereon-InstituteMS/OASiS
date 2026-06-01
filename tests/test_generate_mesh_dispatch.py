@@ -96,5 +96,41 @@ class TestGenerateMeshDispatch(unittest.TestCase):
                               f"available list missing {name!r}")
 
 
+class TestGenerateMeshEndToEnd(unittest.TestCase):
+    """When gmsh is installed, generate_mesh must actually
+    produce a non-empty .msh file for each advertised geometry."""
+
+    def test_actual_mesh_files_written(self) -> None:
+        try:
+            import gmsh  # noqa: F401
+        except ImportError:
+            self.skipTest("gmsh not installed in this env — "
+                          "the dispatch-only test still covers "
+                          "the regression. Install with "
+                          "`pip install gmsh` to exercise the "
+                          "end-to-end path.")
+        gm = _generate_mesh_fn()
+        with tempfile.TemporaryDirectory() as td:
+            for geom in ("l_domain", "plate_with_hole",
+                         "channel_cylinder"):
+                with self.subTest(geometry=geom):
+                    r = gm(geometry=geom, mesh_size=0.3,
+                           output_dir=td)
+                    self.assertIn(
+                        "mesh:", r,
+                        f"generate_mesh({geom!r}) did not "
+                        "return a 'mesh: ...' confirmation: "
+                        f"{r[:200]!r}")
+                    msh = Path(td) / f"{geom}.msh"
+                    self.assertTrue(
+                        msh.is_file(),
+                        f"No .msh file at {msh}")
+                    self.assertGreater(
+                        msh.stat().st_size, 1000,
+                        f"{msh} is suspiciously small "
+                        f"({msh.stat().st_size} bytes) — "
+                        "gmsh may have written an empty file.")
+
+
 if __name__ == "__main__":
     unittest.main()

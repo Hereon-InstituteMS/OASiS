@@ -1416,8 +1416,26 @@ def register_consolidated_tools(mcp: FastMCP):
             }
             gen = generators.get(geometry)
             if gen:
-                result = gen(mesh_size, output_dir or str(_OUTPUT_DIR / "meshes"))
-                return result
+                # The three generators have DIFFERENT positional
+                # signatures (l_domain: (mesh_size, output_path);
+                # plate_with_hole: (mesh_size, radius, width,
+                # height, output_path); channel_with_cylinder:
+                # (mesh_size, cyl_radius, center, length, height,
+                # output_path)). Always pass output_path via
+                # keyword. The functions expect a FULL FILE path
+                # (gmsh.write needs an extension to pick the
+                # output format) — append "<geom>.msh" to the
+                # directory the user passed in. (Audit 2026-06-01.)
+                out_dir = Path(output_dir or str(_OUTPUT_DIR / "meshes"))
+                out_dir.mkdir(parents=True, exist_ok=True)
+                out_file = out_dir / f"{geometry}.msh"
+                result = gen(mesh_size, output_path=out_file)
+                # generators return either Path or (Path, n_nodes,
+                # n_elements). Surface a friendly summary.
+                if isinstance(result, tuple):
+                    path, *meta = result
+                    return f"mesh: {path} (nodes={meta[0]}, elements={meta[1]})"
+                return str(result) if result is not None else "ok"
             return f"Unknown geometry: {geometry}. Available: {list(generators.keys())}"
         except Exception as e:
             return f"Error: {e}"
