@@ -20,7 +20,15 @@ fes = H1(mesh, order=1, dirichlet="left|right")
 u, v = fes.TnT()
 
 a = BilinearForm(grad(u)*grad(v)*dx).Assemble()
-f = LinearForm(0*v*dx).Assemble()
+# Zero RHS for pure Dirichlet heat: any explicit
+# 'zero*v*dx' integrand (including CoefficientFunction(0))
+# collapses symbolically before LinearForm sees it and
+# triggers NGSolve's NgException 'Linearform must have
+# TestFunction'. Construct the LinearForm on the FESpace
+# with NO integrand instead — Assemble() then gives a
+# zero RHS vector.
+f = LinearForm(fes)
+f.Assemble()
 
 gfu = GridFunction(fes)
 

@@ -127,6 +127,21 @@ def main() -> int:
         ("ngsolve", "stokes", "2d"),
         ("skfem", "stokes", "2d"),
         ("fenics", "stokes", "2d"),
+        # Heat for ngsolve + fenics (already proven in
+        # the catalog; extending the coverage matrix).
+        ("ngsolve", "heat", "2d"),
+        ("fenics", "heat", "2d_steady"),
+        # The 5 fenics phantom-closures from commits
+        # c5d184a, 1a4ba74, c7f5cc9, ae0296b: helmholtz,
+        # maxwell, nearly_incompressible_elasticity,
+        # fracture, stokes_darcy. Each ships a generator
+        # that smoke-ran during its commit. Layer F now
+        # binds them as regression gates.
+        ("fenics", "helmholtz", "2d"),
+        ("fenics", "maxwell", "2d"),
+        ("fenics", "nearly_incompressible_elasticity", "2d"),
+        ("fenics", "fracture", "2d"),
+        ("fenics", "stokes_darcy", "2d"),
     ]
     fail = []
     executed = 0

@@ -19,7 +19,14 @@
     "ngsolve::stokes::2d_rc=0",
     "skfem::stokes::2d_rc=0",
     "fenics::stokes::2d_rc=0",
-    "total_executed=13",
+    "ngsolve::heat::2d_rc=0",
+    "fenics::heat::2d_steady_rc=0",
+    "fenics::helmholtz::2d_rc=0",
+    "fenics::maxwell::2d_rc=0",
+    "fenics::nearly_incompressible_elasticity::2d_rc=0",
+    "fenics::fracture::2d_rc=0",
+    "fenics::stokes_darcy::2d_rc=0",
+    "total_executed=20",
     "failures=0"
   ],
   "forbid_in_output": [
