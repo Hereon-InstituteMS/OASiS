@@ -553,6 +553,18 @@ def register_consolidated_tools(mcp: FastMCP):
 
         elif query == "recommend":
             physics = solver  # in this case solver param holds the physics name
+            # Empty / whitespace-only physics matches every
+            # backend's first physics (substring-of-everything).
+            # Same class of bug as the empty-physics
+            # prepare_simulation match — reject it explicitly so
+            # the LLM gets a clear usage hint instead of a fake
+            # "all backends recommend this" result. Audit
+            # 2026-06-01.
+            if not physics or not physics.strip():
+                return ("Empty physics name. Pass the physics "
+                        "as the 'solver' parameter, e.g. "
+                        "discover(query='recommend', "
+                        "solver='poisson').")
             results = []
             for b in available_backends():
                 for p in b.supported_physics():

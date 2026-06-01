@@ -83,6 +83,33 @@ def _examples_fn():
     return mcp.tools["examples"]
 
 
+def _discover_fn():
+    from core.registry import load_all_backends
+    load_all_backends()
+    from tools.consolidated import register_consolidated_tools
+    mcp = _StubMCP()
+    register_consolidated_tools(mcp)
+    return mcp.tools["discover"]
+
+
+class TestEmptyRecommendGuarded(unittest.TestCase):
+    """discover(query='recommend', solver='') must NOT match the
+    first physics of every backend via substring-of-everything."""
+
+    EMPTY_INPUTS = ("", "   ", "\t", "\n")
+
+    def test_recommend_empty(self) -> None:
+        disc = _discover_fn()
+        for q in self.EMPTY_INPUTS:
+            with self.subTest(query=repr(q)):
+                r = disc(query="recommend", solver=q)
+                self.assertIn(
+                    "Empty physics", r,
+                    f"discover('recommend', solver={q!r}) "
+                    "should reject empty physics, got: "
+                    f"{r[:200]!r}")
+
+
 class TestEmptyKeywordExamplesGuarded(unittest.TestCase):
     """examples tool must NOT silently return arbitrary files
     when the keyword is empty (substring-of-everything bug)."""
