@@ -98,7 +98,7 @@ for step in range(1, n_steps + 1):
 
     # Simplified radial return: if sigma_vm > sigma_y + H*alpha, update plastic strain
     # (Full implementation requires integration point level return mapping)
-    print(f"Step {{step}}/{n_steps}: load={{traction:.1f}}, avg von Mises={{vm_max:.2f}}")
+    print(f"Step {{step}}/{n_load_steps}: load={{traction:.1f}}, avg von Mises={{vm_max:.2f}}")
 
 # Final output
 vtk = VTKOutput(mesh, coefs=[gfu], names=["displacement"],

@@ -653,7 +653,7 @@ for step in range(1, n_load_steps + 1):
     try:
         (iters, conv) = solvers.Newton(a, gfu, maxit=25, dampfactor=1.0,
                                        printing=False, maxerr=1e-10)
-        print(f"  Step {{step}}/{n_load_steps}: disp={{disp_now:.4f}}, "
+        print(f"  Step {{step}}/{n_steps}: disp={{disp_now:.4f}}, "
               f"Newton iters={{iters}}, conv={{conv:.3e}}")
     except Exception as e:
         print(f"  Step {{step}} FAILED: {{e}}")
@@ -737,7 +737,7 @@ for step in range(1, n_load_steps + 1):
     gfu.Set(CoefficientFunction((0.0, 0.0, disp_now)), definedon=mesh.Boundaries("top"))
     (iters, conv) = solvers.Newton(a, gfu, maxit=25, dampfactor=1.0,
                                    printing=False, maxerr=1e-10)
-    print(f"  Step {{step}}/{n_load_steps}: disp={{disp_now:.4f}}, iters={{iters}}")
+    print(f"  Step {{step}}/{n_steps}: disp={{disp_now:.4f}}, iters={{iters}}")
 
 vtk = VTKOutput(mesh, coefs=[gfu], names=["displacement"], filename="result", subdivision=1)
 vtk.Do()
@@ -989,7 +989,7 @@ for step in range(1, n_load_steps + 1):
     gfd_prev.vec.data = gfd.vec
 
     d_max = max(gfd.vec)
-    print(f"  Load step {{step}}/{n_load_steps}: disp={{disp_now:.4e}}, d_max={{d_max:.4f}}")
+    print(f"  Load step {{step}}/{n_steps}: disp={{disp_now:.4e}}, d_max={{d_max:.4f}}")
     if d_max > 0.99:
         print("  Full fracture reached — stopping")
         break
