@@ -37,6 +37,22 @@ def _find_fourc_binary() -> Optional[Path]:
             p = FOURC_ROOT / d / "4C"
             if p.is_file():
                 return p
+    # Fall back to the same search paths used by the
+    # autodiscovery scanner (src/core/autodiscovery.py). Without
+    # this, the discover MCP tool reports 4C as installed via the
+    # scanner, but get_backend('fourc').check_availability() still
+    # returns NOT_INSTALLED — the two surfaces drift out of sync.
+    for cand in (
+        "~/4C/build/4C",
+        "~/4c/build/4C",
+        "/opt/4c/build/4C",
+        "/opt/4C/build/4C",
+        "~/Schreibtisch/4C-src/4C/build/4C",
+        "~/4C-src/4C/build/4C",
+    ):
+        p = Path(cand).expanduser()
+        if p.is_file():
+            return p
     p = shutil.which("4C")
     return Path(p) if p else None
 

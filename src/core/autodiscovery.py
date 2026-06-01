@@ -249,6 +249,12 @@ def discover_backends() -> list[ProbeResult]:
             "~/4c/build/4C",
             "/opt/4c/build/4C",
             "/opt/4C/build/4C",
+            # ── Non-standard source-tree builds (verified
+            #    empirically 2026-06-01 on the development
+            #    machine — keep these last so canonical
+            #    locations win). ──
+            "~/Schreibtisch/4C-src/4C/build/4C",
+            "~/4C-src/4C/build/4C",
         ],
     ))
     results.append(_probe_binary(
@@ -263,7 +269,9 @@ def discover_backends() -> list[ProbeResult]:
 
     # Check for source roots (developer mode)
     source_roots = {
-        "fourc": ("FOURC_ROOT", ["~/4C", "/opt/4C"]),
+        "fourc": ("FOURC_ROOT", ["~/4C", "/opt/4C",
+                                 "~/Schreibtisch/4C-src/4C",
+                                 "~/4C-src/4C"]),
         "fenics": ("FENICS_ROOT", ["~/dolfinx", "~/fenics"]),
         "dealii": ("DEALII_ROOT", ["~/dealii", "/opt/dealii"]),
         "ngsolve": ("NGSOLVE_ROOT", ["~/ngsolve"]),
