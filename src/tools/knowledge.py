@@ -102,17 +102,18 @@ def discover_test_dirs() -> dict:
     return test_dirs
 
 
-def _find_reference_test_files(solver: str, physics: str) -> str:
-    """Find real test files from a solver's test suite as reference.
+def resolve_search_keywords(solver: str, physics: str) -> list[str]:
+    """Return a prioritised list of filename-substring keywords to
+    probe when looking for upstream test/demo files for the given
+    (solver, physics) pair.
 
-    Returns a note with file paths and content previews so the agent
-    can see how validated simulations are actually configured. Empty
-    string when no local demos are available for the (solver, physics)
-    pair.
+    Audit 2026-06-01: this logic was previously baked into
+    _find_reference_test_files, so the MCP `examples` tool (which
+    has its own file walk) couldn't reach NGSolve demos via aliases
+    — examples('hyperelasticity', solver='ngsolve') walked for the
+    literal substring 'hyperelasticity' and missed nonlin.py.
+    Factoring this out keeps the two LLM-facing surfaces in sync.
     """
-    from pathlib import Path
-    test_dirs = discover_test_dirs()
-
     # Map physics to search keywords for ALL physics types
     search_terms = {
         "particle_pd": "pdbody",
@@ -162,24 +163,7 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     }
 
     solver_key = solver.lower()
-    test_dir = test_dirs.get(solver_key)
 
-    if not test_dir or not test_dir.is_dir():
-        return ""
-
-    ext = "*.4C.yaml" if solver_key in ("fourc", "4c") else "*.cc" if solver_key == "dealii" else "*.py"
-
-    # The search_terms map is biased toward 4C / deal.II
-    # filename conventions (e.g. poisson -> scatra,
-    # heat -> thermo). Those keys do NOT match the FEniCS
-    # demo names (demo_poisson.py, demo_helmholtz.py, ...).
-    # Audit 2026-06-01: prepare_simulation('fenics','poisson')
-    # surfaced zero reference test files because the keyword
-    # was 'scatra' which doesn't appear in any dolfinx demo.
-    # Try BOTH the mapped keyword AND the raw physics name —
-    # also try with hyphens (dolfinx demos use hyphens for
-    # compound names: demo_navier-stokes.py, demo_mixed-
-    # poisson.py, demo_cahn-hilliard.py).
     # NGSolve demo filenames don't match the catalog or 4C /
     # deal.II keys. Demos: poisson.py / navierstokes.py /
     # elasticity.py / cmagnet.py (magnetostatics) / pml.py
@@ -217,6 +201,26 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
         if physics.startswith(prefix):
             keywords.append(physics[len(prefix):])
 
+    return keywords
+
+
+def _find_reference_test_files(solver: str, physics: str) -> str:
+    """Find real test files from a solver's test suite as reference.
+
+    Returns a formatted block with file paths and content previews,
+    or empty string when no local demos are available.
+    """
+    test_dirs = discover_test_dirs()
+    solver_key = solver.lower()
+    test_dir = test_dirs.get(solver_key)
+    if not test_dir or not test_dir.is_dir():
+        return ""
+
+    ext = ("*.4C.yaml" if solver_key in ("fourc", "4c")
+           else "*.cc" if solver_key == "dealii"
+           else "*.py")
+
+    keywords = resolve_search_keywords(solver, physics)
     matches = []
     for kw in keywords:
         for f in sorted(test_dir.rglob(ext)):

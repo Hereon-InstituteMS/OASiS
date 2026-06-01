@@ -567,14 +567,15 @@ def register_consolidated_tools(mcp: FastMCP):
         """
         if action == "search":
             from tools.examples_search import register_example_tools
-            # Search real test files. Shared discovery with
-            # prepare_simulation's _find_reference_test_files
-            # (audit 2026-06-01: the previously-inlined hardcoded
-            # {fourc, dealii} dict returned 0 matches for fenics /
-            # ngsolve / kratos even when local demos were present
-            # — the LLM-facing examples surface was effectively
-            # 4C/dealii-only).
-            from tools.knowledge import discover_test_dirs
+            # Shared discovery with prepare_simulation —
+            # discover_test_dirs returns local demo paths for all
+            # backends; resolve_search_keywords applies the same
+            # alias map (ngsolve hyperelasticity -> nonlin,
+            # fenics navier_stokes -> navier-stokes, ...) so the
+            # two LLM-facing tools surface the same content for
+            # the same (solver, keyword) pair. Audit 2026-06-01.
+            from tools.knowledge import (discover_test_dirs,
+                                         resolve_search_keywords)
             results = []
             test_dirs = discover_test_dirs()
             solver_key = solver.lower()
@@ -582,8 +583,21 @@ def register_consolidated_tools(mcp: FastMCP):
             ext = "*.4C.yaml" if solver_key in ("fourc", "4c") else "*.cc" if solver_key == "dealii" else "*.py"
 
             if test_dir and test_dir.is_dir():
-                for f in sorted(test_dir.rglob(ext)):
-                    if keyword.lower() in f.name.lower():
+                # Apply solver-aware aliases on top of the raw
+                # keyword (the LLM may have used the catalog
+                # physics name verbatim, e.g. 'hyperelasticity'
+                # — which doesn't match NGSolve's nonlin.py
+                # demo without aliasing).
+                kw_candidates = list(dict.fromkeys(
+                    [keyword] + resolve_search_keywords(solver, keyword)))
+                seen: set = set()
+                for kw in kw_candidates:
+                    for f in sorted(test_dir.rglob(ext)):
+                        if kw.lower() not in f.name.lower():
+                            continue
+                        if f in seen:
+                            continue
+                        seen.add(f)
                         try:
                             content = f.read_text()[:5000]
                             rel = f.relative_to(test_dir)
@@ -592,6 +606,8 @@ def register_consolidated_tools(mcp: FastMCP):
                             pass
                         if len(results) >= max_results:
                             break
+                    if len(results) >= max_results:
+                        break
 
             # Also search templates
             backend = get_backend(solver)
