@@ -219,6 +219,45 @@ class FourcBackend(SolverBackend):
                               ["REDAIRWAY LINE2 + 0D acini"], ["lung_1d"]),
             PhysicsCapability("fluid_turbulence", "Fluid turbulence: LES (Smagorinsky, dynamic, WALE) and DNS", [2, 3],
                               ["FLUID QUAD4", "FLUID HEX8"], ["les_channel_3d"]),
+            # ── 2026-06-01: umbrella catalogs from data/fourc_knowledge.py
+            #    that aggregate pitfalls across families of specific
+            #    physics. Previously orphaned (catalog reachable via
+            #    knowledge(physics=...) but not listed in
+            #    discover(physics, fourc)). Exposed here so users see
+            #    the umbrella name alongside the specific ones.
+            PhysicsCapability(
+                "scalar_transport",
+                "[Umbrella] Scalar-transport family pitfalls "
+                "(applies to poisson, heat, electrochemistry, "
+                "level-set, low-mach scalars). For specific "
+                "physics use poisson/heat/electrochemistry "
+                "directly.",
+                [2, 3], ["TRANSP QUAD4", "TRANSP HEX8"],
+                ["umbrella"]),
+            PhysicsCapability(
+                "structural_mechanics",
+                "[Umbrella] Structural-mechanics family pitfalls "
+                "(applies to linear_elasticity, plasticity, "
+                "structural_dynamics, beams, contact). For "
+                "specific physics use linear_elasticity / "
+                "plasticity / structural_dynamics directly.",
+                [2, 3], ["SOLID HEX8", "WALL QUAD4"],
+                ["umbrella"]),
+            PhysicsCapability(
+                "thermal",
+                "[Umbrella] Thermal-analysis family pitfalls "
+                "(applies to heat, thermo, tsi). For specific "
+                "physics use heat / thermo / tsi directly.",
+                [2, 3], ["THERMO QUAD4", "THERMO HEX8"],
+                ["umbrella"]),
+            PhysicsCapability(
+                "particles",
+                "[Umbrella] Particle-methods family pitfalls "
+                "(applies to particle_pd, particle_sph, "
+                "pasi, dem). For specific physics use "
+                "particle_pd / particle_sph / pasi directly.",
+                [2, 3], ["particle"],
+                ["umbrella"]),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
