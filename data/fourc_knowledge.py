@@ -412,18 +412,28 @@ FOURC_KNOWLEDGE = {
         "problemtype": "Thermo_Structure_Interaction",
         "yaml_sections": ["STRUCTURAL DYNAMIC", "THERMAL DYNAMIC", "TSI DYNAMIC"],
 
+        # COUPALGO enum values from 4C 2026.3 schema
+        # (TSI DYNAMIC/COUPALGO). Verified via 4C_schema.json
+        # 2026-06-01. Names that LOOK obvious are NOT — the
+        # underscore between 'iterstagg' and the variant is
+        # load-bearing, 'fixedrel' is actually 'fixedrelax',
+        # and the monolithic variant is 'tsi_monolithic'
+        # (NOT bare 'monolithic'). Wrong values fail at
+        # YAML parse with input_spec_builders.cpp
+        # 'Could not match this input'.
         "coupling_algorithms": {
             "tsi_oneway": "One-way: thermal → structural (no feedback)",
             "tsi_sequstagg": "Sequential staggered (solve thermal, then structural, once per step)",
             "tsi_iterstagg": "Iterative staggered (iterate until convergence)",
-            "tsi_iterstaggaitken": "Iterative staggered with Aitken acceleration",
-            "tsi_iterstaggaitkenirons": "Aitken-Irons variant",
-            "tsi_iterstaggfixedrel": "Fixed relaxation iterative staggered",
-            "monolithic": "Simultaneous solve of all fields (TSI DYNAMIC/MONOLITHIC section)",
+            "tsi_iterstagg_aitken": "Iterative staggered with Aitken acceleration",
+            "tsi_iterstagg_aitkenirons": "Aitken-Irons variant",
+            "tsi_iterstagg_fixedrelax": "Fixed relaxation iterative staggered",
+            "tsi_monolithic": "Simultaneous solve of all fields (TSI DYNAMIC/MONOLITHIC section)",
         },
 
         "requirements": [
-            "SOLIDSCATRA HEX8 elements (NOT plain SOLID — the SCATRA coupling is needed)",
+            "SOLIDSCATRA elements (NOT plain SOLID — the SCATRA coupling is needed). "
+            "Accepts HEX8, HEX27, TET4, TET10, NURBS27, QUAD4, QUAD9, TRI3, TRI6.",
             "MAT_Struct_ThermoStVenantK (structural material with thermal expansion)",
             "MAT_Fourier (thermal material linked via THERMOMAT parameter)",
             "CLONING MATERIAL MAP: SRC_FIELD structure → TAR_FIELD thermo",
@@ -448,6 +458,37 @@ FOURC_KNOWLEDGE = {
             "instead — it works with UMFPACK and is simpler to set up.",
             "Volume-level thermal Dirichlet: use DESIGN VOL THERMO DIRICH CONDITIONS "
             "with DVOL-NODE TOPOLOGY to prescribe temperature on all nodes.",
+            "[API] TSI DYNAMIC/COUPALGO is an enum of exactly 7 "
+            "values: tsi_oneway, tsi_sequstagg, tsi_iterstagg, "
+            "tsi_iterstagg_aitken, tsi_iterstagg_aitkenirons, "
+            "tsi_iterstagg_fixedrelax, tsi_monolithic. The "
+            "earlier catalog had FOUR wrong names: "
+            "'tsi_iterstaggaitken' (missing underscore — real: "
+            "'tsi_iterstagg_aitken'), 'tsi_iterstaggaitkenirons' "
+            "(missing underscore — real: 'tsi_iterstagg_"
+            "aitkenirons'), 'tsi_iterstaggfixedrel' (wrong stem "
+            "— real: 'tsi_iterstagg_fixedrelax'), and "
+            "'monolithic' (missing 'tsi_' prefix — real: "
+            "'tsi_monolithic'). Signal: invalid COUPALGO value "
+            "in YAML produces 'PROC 0 ERROR' from "
+            "input_spec_builders.cpp with 'Could not match this "
+            "input' and the offending YAML block echoed. "
+            "Verified empirically against 4C 2026.3 schema "
+            "2026-06-01.",
+            "[API] SOLIDSCATRA elements accept exactly 11 TYPE "
+            "values: Undefined, AdvReac, CardMono, GR, NLS, "
+            "Chemo, ChemoReac, ElchDiffCond, ElchElectrode, "
+            "Loma, Std (4C_solid_scatra_ele_lib.cpp). For "
+            "TSI specifically, use 'TYPE Undefined' — the "
+            "SCATRA half is cloned into a thermal "
+            "discretization, the SCATRA impl in the structure "
+            "is therefore unused. The schema's TYPE field is a "
+            "free-form string, so invalid TYPE values fail at "
+            "RUNTIME (FOUR_C_THROW 'not valid for SOLIDSCATRA "
+            "elements') rather than at YAML parse time. "
+            "SOLIDSCATRA also supports QUAD4, QUAD9, TRI3, "
+            "TRI6, HEX27, TET4, TET10, NURBS27 — not just HEX8. "
+            "Verified 2026-06-01.",
         ],
     },
 
