@@ -1377,37 +1377,80 @@ def register_consolidated_tools(mcp: FastMCP):
         interface_coord: float, interface_axis: int = 0,
         target_format: str = "json", output_path: str = "",
     ) -> str:
-        """Extract field values at an interface from a VTU file for cross-solver transfer.
+        """Extract field values at an interface from a VTU file and format for transfer.
+
+        Universal data connector for cross-solver coupling. Reads VTU output
+        from any solver, extracts values at the interface plane, and formats
+        them for the target solver's expected input shape.
 
         Args:
-            source_vtu: Path to VTU file
-            field_name: Field to extract (e.g. 'temperature')
-            interface_coord: Coordinate of the interface plane
-            interface_axis: Axis perpendicular to interface (0=x, 1=y, 2=z)
-            target_format: 'json', 'fenics', '4c_neumann'
-            output_path: Where to save (auto if empty)
+            source_vtu: Path to VTU result file from the source solver.
+            field_name: Field to extract (e.g. 'temperature', 'displacement').
+            interface_coord: Coordinate value defining the interface plane.
+            interface_axis: Axis perpendicular to interface (0=x, 1=y, 2=z).
+            target_format: Output format. Options:
+                - "json"        — interface coordinates + values (default)
+                - "fenics"      — Python BoundaryCondition snippet (Dirichlet
+                                  at this interface), saved as .py
+                - "4c_neumann"  — 4C-format YAML snippet for a Neumann
+                                  boundary condition, saved as .yaml
+            output_path: Where to save the formatted output. If empty,
+                auto-generated next to the source VTU as
+                'interface_<field_name>.<ext>'.
+
+        Returns:
+            A summary string with the interface min/max/mean and the path
+            of the saved file.
         """
-        from tools.coupling import register_coupling_tools
-        # Delegate to original implementation
         from core.field_transfer import extract_interface_from_vtu
-        import numpy as np
 
         vtu_path = Path(source_vtu)
         if not vtu_path.exists():
             return f"VTU file not found: {source_vtu}"
 
         try:
-            iface = extract_interface_from_vtu(vtu_path, field_name, interface_coord, interface_axis)
+            iface = extract_interface_from_vtu(
+                vtu_path, field_name, interface_coord, interface_axis)
         except Exception as e:
-            return f"Error: {e}"
+            return f"Error extracting interface: {e}"
+
+        if not output_path:
+            output_path = str(
+                vtu_path.parent / f"interface_{field_name}.json")
+        out = Path(output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+
+        if target_format == "json":
+            iface.to_json(out)
+        elif target_format == "fenics":
+            from core.field_transfer import format_for_fenics
+            code = format_for_fenics(
+                iface, "dirichlet", interface_axis, interface_coord)
+            out = out.with_suffix(".py")
+            out.write_text(code)
+        elif target_format == "4c_neumann":
+            from core.field_transfer import format_for_4c_neumann
+            yaml_snippet = format_for_4c_neumann(iface)
+            out = out.with_suffix(".yaml")
+            out.write_text(yaml_snippet)
+        else:
+            return (f"Unknown format: {target_format}. Use 'json', "
+                    "'fenics', or '4c_neumann'.")
 
         vals = iface.values
-        return (
-            f"## Field Transfer: {field_name}\n"
+        summary = (
+            f"## Field Transfer: {field_name}\n\n"
+            f"- Source: {vtu_path.name}\n"
             f"- Interface: {'xyz'[interface_axis]}={interface_coord}\n"
             f"- Nodes: {len(iface.coordinates)}\n"
-            f"- Values: [{vals.min():.6e}, {vals.max():.6e}], mean={vals.mean():.6e}\n"
+            f"- Values: [{vals.min():.6e}, {vals.max():.6e}], "
+            f"mean={vals.mean():.6e}\n"
+            f"- Output: {out}\n"
         )
+        if iface.normal_fluxes is not None:
+            fl = iface.normal_fluxes
+            summary += f"- Fluxes: [{fl.min():.6e}, {fl.max():.6e}]\n"
+        return summary
 
     # ═══════════════════════════════════════════════════════════
     # 10. MESH (keep — needed for Gmsh)
@@ -1419,7 +1462,12 @@ def register_consolidated_tools(mcp: FastMCP):
         """Generate a mesh using Gmsh for non-trivial geometries.
 
         Args:
-            geometry: 'l_domain', 'plate_with_hole', 'channel_cylinder', or custom
+            geometry: One of the built-in geometries:
+                - "l_domain"          — 2D L-shaped domain
+                - "plate_with_hole"   — 2D plate with circular hole
+                - "channel_cylinder"  — 2D channel with cylindrical obstacle
+                (No "custom" passthrough yet — passing any other name
+                returns a 'Unknown geometry' message with this list.)
             mesh_size: Target element size
             output_dir: Where to save (auto if empty)
         """
