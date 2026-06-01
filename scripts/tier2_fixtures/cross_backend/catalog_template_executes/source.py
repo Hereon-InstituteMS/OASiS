@@ -295,6 +295,13 @@ def main() -> int:
         # loop then runs for >60s without converging —
         # tracked separately; the catalog template needs a
         # smaller default n_steps + load-stepping rewrite.
+        # Batch-12: skfem poisson 3d emitted meshio cells as
+        # 'quad' even though MeshHex.t has shape (n,8) — the
+        # meshio writer rejected the array; fixed to
+        # 'hexahedron' + drop the 2d-flat z-coord branch.
+        # Also fixed ngsolve mhd Lorentz-force scalar/vector
+        # mismatch (deferred: mhd time-loop runtime).
+        ("skfem", "poisson", "3d"),
     ]
     fail = []
     executed = 0

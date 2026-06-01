@@ -405,7 +405,14 @@ def assemble_rhs_fluid(u_prev, bz_prev, a):
     f += -InnerProduct(Grad(u_prev) * u_prev, v) * dx
     # Lorentz force (low-Rm: J = curl(B0 e_z + bz) ≈ curl(bz e_z))
     # f_L = sigma*(u x B) x B — in low-Rm: f_L = -Ha^2 * nu * u_y (for Hartmann in y)
-    f += -Ha * Ha * nu * CoefficientFunction((0, 1)) * u_prev[1] * v[1] * dx
+    # Note: the integrand on the y-component of the velocity test
+    # function is a scalar — multiplying by the unit vector
+    # CoefficientFunction((0, 1)) makes the whole expression
+    # vector-valued and SymbolicLFI rejects it with NgException
+    # 'SymbolicLFI needs scalar-valued CoefficientFunction'.
+    # v[1] already selects the y component of v; no extra
+    # unit-vector factor is needed.
+    f += -Ha * Ha * nu * u_prev[1] * v[1] * dx
     f.Assemble()
     return f
 
@@ -1139,6 +1146,19 @@ KNOWLEDGE = {
             "Operator splitting introduces splitting error O(dt) — monolithic is more accurate",
             "Divergence-free B constraint: ∇·B = 0 must be enforced (grad-div penalty or HDiv elements)",
             "For incompressible MHD: add grad-div stabilization on velocity",
+            "[Syntax] LinearForm integrand must be SCALAR-VALUED. "
+            "Multiplying a vector-valued CoefficientFunction (e.g. "
+            "CoefficientFunction((0, 1)) for an e_y unit vector) "
+            "with a scalar factor and a scalar test-function "
+            "component still yields a vector — and SymbolicLFI "
+            "rejects it. Build the integrand purely from scalar "
+            "factors instead, indexing the vector test function "
+            "(v[1] for the y-component) to project onto the "
+            "desired equation. Signal: NgException 'SymbolicLFI "
+            "needs scalar-valued CoefficientFunction' raised from "
+            "LinearForm.__iadd__ when the integrand passes a "
+            "VectorialCF through *=. (Verified empirically "
+            "2026-06-01 — Layer F mhd catch.)",
         ],
     },
     "hdivdiv": {

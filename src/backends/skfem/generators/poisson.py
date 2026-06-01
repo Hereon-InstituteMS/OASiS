@@ -119,8 +119,13 @@ u = solve(*condense(K, f, D=D))
 print(f"3D Poisson max(u) = {{u.max():.10f}}")
 
 import meshio
-cells = [("quad", m.t.T)]
-points = np.column_stack([m.p.T, np.zeros(m.p.shape[1])]) if m.p.shape[0] == 2 else m.p.T
+# MeshHex has 8-node hexahedra (m.t.T shape (n_cells, 8)).
+# Declaring 'quad' here would make meshio reject the array
+# with WriteError 'Unexpected cells array shape (n, 8) for
+# quad cells. Expected shape [:, 4]'. The correct meshio
+# cell type for a 3D Hex1 mesh is 'hexahedron'.
+cells = [("hexahedron", m.t.T)]
+points = m.p.T
 mio = meshio.Mesh(points, cells, point_data={{"phi": u}})
 mio.write("result.vtu")
 
@@ -146,6 +151,17 @@ KNOWLEDGE = {
             "laplace, unit_load (from skfem.models.poisson)"
         ),
         "pitfalls": [
+            "[Syntax] When exporting a MeshHex (8-node hexahedron) "
+            "solution via meshio, the cells tuple MUST declare "
+            "'hexahedron' as the cell type, NOT 'quad'. Each row of "
+            "m.t.T has 8 vertex indices for a Hex1 mesh; declaring "
+            "'quad' makes meshio reject the array because quads "
+            "expect 4 vertices. Signal: meshio._exceptions."
+            "WriteError 'Unexpected cells array shape (n, 8) for "
+            "quad cells. Expected shape [:, 4].' emitted from "
+            "mio.write(...). Same pattern: MeshTet -> 'tetra', "
+            "MeshLine -> 'line'. (Verified empirically 2026-06-01 "
+            "— Layer F poisson_3d catch.)",
             "[API] scikit-fem is an ASSEMBLY library — laplace/"
             "unit_load build the K matrix and load vector, then "
             "you call solve(*condense(K, f, D=D)) yourself. "
