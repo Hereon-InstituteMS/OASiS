@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 59  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 60  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -101,6 +101,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #   +1 fourc::thermo::0 (MAT_Fourier.CONDUCT needs constant:[k] wrapper)
     #   +1 ngsolve::linear_elasticity::0 (VectorH1 vs H1(dim=2) equivalence —
     #      catalog falsification)
+    #   +1 fenics::stokes::0 (basix.ufl Taylor-Hood + MINI + P1/P1 construction)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/

@@ -935,10 +935,62 @@ _FENICS_KNOWLEDGE = {
             "block_precon": "AMG for velocity block, pressure mass matrix for Schur complement approximation",
         },
         "pitfalls": [
-            "MUST use inf-sup stable pair — equal-order P1/P1 is UNSTABLE (oscillatory pressure)",
-            "Pressure determined up to constant for enclosed flows — pin one DOF or set nullspace",
-            "Taylor-Hood Q2/Q1 on quads also works but requires careful construction",
-            "Block preconditioner essential for efficiency beyond ~100k DOFs",
+            "[Numerical] MUST use an inf-sup stable velocity-"
+            "pressure pair. Taylor-Hood (P2v + P1) and MINI "
+            "(P1v + Bubble enriched + P1) are stable; equal-"
+            "order P1/P1 constructs a valid mixed FunctionSpace "
+            "but the discrete LBB condition is violated, so the "
+            "pressure field develops checkerboard oscillations "
+            "in the kernel direction. Signal: with the same "
+            "4x4 unit-square triangulation in dolfinx 0.10, "
+            "basix.ufl.mixed_element returns FunctionSpaces with "
+            "dim 187 (TH), 139 (MINI), 75 (P1/P1); the P1/P1 "
+            "system assembles but the pressure null space has "
+            "more vectors than just the constant pressure. "
+            "(Verified empirically 2026-06-01 — Tier-2 fixture "
+            "stokes_basix_element_construction in scripts/"
+            "tier2_fixtures/fenics/. Constructability of all "
+            "three confirmed; instability of P1/P1 is the "
+            "advisory part — well-known LBB theory.)",
+            "[Numerical] Pressure for enclosed (all-Dirichlet on "
+            "velocity) flows is determined only up to an "
+            "additive constant. Pin one pressure DOF with a "
+            "DirichletBC at a chosen vertex, or attach a "
+            "nullspace via dolfinx.la.create_petsc_nullspace_"
+            "constants and call A.setNullSpace(ns) on the "
+            "PETSc matrix. Skipping this leaves PETSc to handle "
+            "a singular system — MUMPS will either complain or "
+            "return a solution with arbitrary global pressure "
+            "shift. Signal: PETSc KSP iteration converges "
+            "trivially with zero pressure correction, or MUMPS "
+            "emits 'INFOG(1)=-9' (singular matrix) from the "
+            "factorisation. (Catalog claim inherited; not "
+            "separately Tier-2 falsified this iteration.)",
+            "[API] basix.ufl.element supports quadrilateral cells "
+            "(CellType.quadrilateral) for Taylor-Hood-style "
+            "Q2/Q1: pass cell=msh.basix_cell() from a "
+            "create_unit_square(..., cell_type=CellType."
+            "quadrilateral) mesh and the same 'Lagrange' family "
+            "string + degree=2/1. Triangle-mesh helpers like "
+            "the default cell from create_unit_square use "
+            "CellType.triangle; the cell type must match. "
+            "Signal: msh.basix_cell() returns "
+            "'CellType.triangle' or 'CellType.quadrilateral' "
+            "consistent with the mesh constructor. (Catalog "
+            "claim inherited; not separately Tier-2 falsified "
+            "this iteration.)",
+            "[Numerical] Block preconditioner is essential for "
+            "iterative MinRes / GMRES solves beyond ~100k dofs. "
+            "Use fieldsplit with PETSc PCFIELDSPLIT: type="
+            "Schur, with A^-1 on the velocity block (AMG via "
+            "PCHYPRE / GAMG) and a pressure mass matrix M_p as "
+            "the Schur-complement approximation. Without "
+            "fieldsplit the saddle-point spectrum forces MinRes "
+            "iteration counts to scale with mesh refinement. "
+            "Signal: PETSc KSPSolve iteration count grows like "
+            "O(h^-2) without fieldsplit and stays O(1) with the "
+            "block preconditioner. (Catalog claim inherited; "
+            "not separately Tier-2 falsified this iteration.)",
         ],
     },
 
