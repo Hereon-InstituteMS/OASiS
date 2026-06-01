@@ -1905,7 +1905,21 @@ GLOBAL_PITFALLS = [
     "VTK output: set output_interval > 1 to avoid I/O bottleneck",
 
     # ── ConvectionDiffusion Specific ──
-    "CRITICAL: LaplacianElement does NOT assemble source terms (HEAT_FLUX)!",
-    "Always use EulerianConvDiff elements for Poisson/heat with source terms",
+    # NOTE 2026-06-01: prior text said "LaplacianElement does NOT
+    # assemble HEAT_FLUX" — that was WRONG. Empirically verified
+    # (Kratos 10.4.2 + KratosConvectionDiffusionApplication 10.4.2,
+    # Tier-2 fixture
+    # scripts/tier2_fixtures/kratos/poisson_laplacian_element_assembles_heat_flux/)
+    # that LaplacianElement2D3N.CalculateRightHandSide returns the
+    # consistent P1 load 10 * area / 3 = 1.66667 per node when
+    # HEAT_FLUX=10 is set on all 3 nodes of a unit-right triangle.
+    "LaplacianElement2D3N / LaplacianElement3D4N DO assemble the "
+    "HEAT_FLUX volumetric source term — the prior catalog text was "
+    "wrong; see Tier-2 fixture poisson_laplacian_element_assembles_"
+    "heat_flux.",
+    "Choose between LaplacianElement and EulerianConvDiff based "
+    "on whether the problem has CONVECTION_VELOCITY or transient "
+    "mass, NOT based on whether HEAT_FLUX source is supported "
+    "(both support it).",
     "ConvectionDiffusion assigns material properties NODALLY, not element-wise",
 ]

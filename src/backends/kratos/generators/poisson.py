@@ -125,10 +125,39 @@ KNOWLEDGE = {
                         '2026-06-01 — Tier-2 fixture '
                         'poisson_cda_element_string_factory in scripts/'
                         'tier2_fixtures/kratos/.)',
-                        '[Numerical] LaplacianElement does NOT assemble source terms (HEAT_FLUX) — only -div(k*grad(T))=0 '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] For Poisson with source: use EulerianConvDiff elements AND set HEAT_FLUX as nodal data '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] LaplacianElement2D3N / LaplacianElement3D4N '
+                        'DO assemble the HEAT_FLUX volumetric source term when '
+                        'the ConvectionDiffusionSettings on ProcessInfo declares '
+                        'HEAT_FLUX as the VolumeSourceVariable. On a P1 unit-'
+                        'right triangle, '
+                        'LaplacianElement2D3N.CalculateRightHandSide with '
+                        'HEAT_FLUX=10 set on all 3 nodes returns the consistent '
+                        'load RHS_i = 10 * area / 3 = 1.66667 on every node — '
+                        'classic linear-shape-function integration of a constant '
+                        'source. (Catalog falsification verified empirically '
+                        '2026-06-01 — Tier-2 fixture '
+                        'poisson_laplacian_element_assembles_heat_flux. The '
+                        'prior catalog claim that this element "does NOT '
+                        'assemble HEAT_FLUX" was WRONG and has been corrected.) '
+                        "Signal: with ConvectionDiffusionSettings.SetVolumeSource"
+                        "Variable(HEAT_FLUX) and HEAT_FLUX set on nodes, RHS "
+                        "node values equal source * triangle_area / 3 for "
+                        "LaplacianElement2D3N; with HEAT_FLUX=0 the RHS is "
+                        "exactly zero.",
+                        '[API] Both LaplacianElement and EulerianConvDiff '
+                        'elements assemble HEAT_FLUX as a volume source — '
+                        'choose between them based on whether the problem has '
+                        'a convection term, NOT based on whether the source '
+                        'term is supported. LaplacianElement = pure diffusion '
+                        '(no advection, no transient mass). EulerianConvDiff = '
+                        'advection-diffusion (reads CONVECTION_VELOCITY) and is '
+                        'also the right choice for transient problems with '
+                        'mass. Signal: with CONVECTION_VELOCITY=0 and a '
+                        'stationary solver, LaplacianElement2D3N and '
+                        "EulerianConvDiff2D3N produce solutions that differ "
+                        "by less than 1e-12 relative norm — when they differ "
+                        "by more than that, the user has a non-zero "
+                        "CONVECTION_VELOCITY they did not intend.",
                         '[Integration] ConvectionDiffusionSettings MUST be set on ProcessInfo before solve '
                         "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
                         '[Numerical] Properties (CONDUCTIVITY, DENSITY, SPECIFIC_HEAT) go on Properties object, NOT on nodes '
