@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 64  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 65  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -110,6 +110,8 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #      catalog falsification of contradictory prior claim)
     #   +1 ngsolve::hyperelasticity::0 (Newton uses maxit/maxerr — five wrong
     #      'maxits' / 'tol' generator template occurrences corrected)
+    #   +1 ngsolve::plasticity::0 (NewtonCF/MinimizationCF in ngsolve.fem
+    #      submodule, NOT top-level ngsolve — catalog drift)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/

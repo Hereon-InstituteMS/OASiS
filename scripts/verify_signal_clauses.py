@@ -207,6 +207,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "ProxyFunction", "CompoundFESpace", "FreeDofs",
             "Grad", "InnerProduct", "Id", "Stress", "Strain",
             "TnT", "Assemble",
+            # ── Hyperelasticity / nonlinear material API (verified
+            #    2026-06-01 by fixtures hyperelasticity_newton_
+            #    maxit_kwarg and plasticity_newtoncf_in_fem_
+            #    submodule) ───────────────────────────────────────
+            "Newton", "Apply", "AssembleLinearization",
+            "Variation", "maxit", "maxerr", "dampfactor",
+            "NewtonCF", "MinimizationCF",
+            "IntegrationRule", "IntegrationPoint",
+            "ngsolve",
             # PML helpers (helmholtz promotion 2026-06-01).
             "SetPML", "Radial", "pml", "Integrate",
             "L2Norm", "ComputeRadialMode",
