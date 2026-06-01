@@ -35,6 +35,8 @@ _PHYSICS_MODULES: dict[str, str] = {
     "biharmonic":           ".biharmonic",
     "mixed_poisson":        ".mixed_poisson",
     "reaction_diffusion":   ".reaction_diffusion",
+    "helmholtz":            ".helmholtz",
+    "maxwell":              ".maxwell",
     # Advanced physics — all served by .advanced (multi-physics module)
     "dg_methods":           ".advanced",
     "contact":              ".advanced",
