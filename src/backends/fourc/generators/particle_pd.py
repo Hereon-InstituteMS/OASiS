@@ -566,7 +566,7 @@ class ParticlePDGenerator(BaseGenerator):
               INTERACTION: "SPH"
               RESULTSEVERY: <OUTPUT_FREQUENCY>
               RESTARTEVERY: <RESTART_FREQUENCY>
-              TIMESTEP: <dt from CFL: dt < 0.5 * dx / sqrt(E/rho)>
+              TIMESTEP: "<dt-from-CFL: dt < 0.5 * dx / sqrt(E/rho)>"
               NUMSTEP: <total steps>
               MAXTIME: <end time>
               GRAVITY_ACCELERATION: "0.0 0.0 0.0"

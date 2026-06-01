@@ -50,6 +50,41 @@ async def _run_with_progress(ctx: Context, coro, message_prefix: str = "Running"
     return task.result()
 
 
+def _stub_template_tag(content: str, fmt: str) -> str:
+    """Return a `" — ⚠ STUB"` marker if `content` looks like a
+    placeholder template (a single comment line, or fewer than
+    ~150 chars of non-comment body), otherwise empty.
+
+    The catalog ships 9 fourc physics rows whose generators
+    return only a one-line comment (`# Foo template — use ...`)
+    because no full template has been written yet. Surfacing
+    those as plain `## Template` sections in prepare_simulation
+    output misleads the LLM: the heading promises a runnable
+    template, but the body is a 50-80 char placeholder.
+
+    Detection rule: strip every line that begins with `#`
+    (YAML / Python comment) or is whitespace-only; if what
+    remains is shorter than 150 chars, treat as a stub. The
+    `fmt` argument tells us which comment character to honour
+    — for the (rare) non-comment-character formats (`json`,
+    `cpp`), we still apply the size heuristic but skip the
+    comment-stripping step. (Audit 2026-06-02.)
+    """
+    if not isinstance(content, str):
+        return ""
+    if fmt in ("yaml", "yml", "python", "py"):
+        non_comment_lines = [
+            ln for ln in content.splitlines()
+            if ln.strip() and not ln.lstrip().startswith("#")
+        ]
+        body = "\n".join(non_comment_lines)
+    else:
+        body = content
+    if len(body.strip()) < 150:
+        return " — ⚠ STUB (catalog placeholder — no full template yet)"
+    return ""
+
+
 _PHYSICS_SYNONYMS = {
     "magnetostatics": "maxwell", "electromagnetics": "maxwell", "em": "maxwell",
     "magnetic": "maxwell", "eddy_current": "maxwell", "nedelec": "maxwell",
@@ -1543,7 +1578,8 @@ def register_consolidated_tools(mcp: FastMCP):
                     body = content[:TEMPLATE_LIMIT]
                     suffix = (f"\n... [truncated {len(content) - TEMPLATE_LIMIT} chars]"
                               if truncated else "")
-                    parts.append(f"## Template ({p.template_variants[0]})\n```{fmt}\n{body}{suffix}\n```\n")
+                    stub_tag = _stub_template_tag(content, fmt)
+                    parts.append(f"## Template ({p.template_variants[0]}){stub_tag}\n```{fmt}\n{body}{suffix}\n```\n")
                 except Exception as exc:
                     # Surface the failure: the catalog claims a
                     # template exists (p.template_variants is
