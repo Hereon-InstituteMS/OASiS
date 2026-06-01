@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 44,
-    "passed": 44,
+    "n_fixtures": 45,
+    "passed": 45,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -600,6 +600,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "catch in AssembleBilinearform 2: real Evaluate called for complex ScaleCF\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/helmholtz_complex_on_real_fespace/source.py\", line 31, in main\n    a.Assemble()\nnetgen.libngpy._meshing.NgException: real Evaluate called for complex ScaleCFin Assemble BilinearForm 'biform_from_py'\n\n"
+    },
+    "ngsolve::eigenvalue::1": {
+      "key": "ngsolve::eigenvalue::1",
+      "backend": "ngsolve",
+      "physics": "eigenvalue",
+      "pitfall_index": 1,
+      "fixture_id": "multidim_gridfunction_vecs",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "vecs_present=True",
+        "n_vecs=4",
+        "mdcomponents_present=False"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "vecs_present=True\nn_vecs=4\nmdcomponents_present=False\n"
     },
     "ngsolve::poisson::92": {
       "key": "ngsolve::poisson::92",
