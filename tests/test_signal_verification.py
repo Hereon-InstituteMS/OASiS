@@ -505,6 +505,38 @@ class TestHarnessSelfChecks(unittest.TestCase):
         self.assertEqual(cat, "Syntax")
         self.assertIsNone(sig)
 
+    def test_tier2_runner_passed_count_meets_floor(self):
+        """Critic-audit (2026-06-01) found that
+        MIN_TIER2_RUNNER_PASSED on TestDealiiSignalFloor was
+        dead code — every commit bumped the constant but no
+        test asserted against it. This is that assertion.
+
+        Reads scripts/scan_results/tier2_results.json (written
+        by scripts/run_tier2_fixtures.py) and fails if the
+        passed count drops below TestDealiiSignalFloor.
+        MIN_TIER2_RUNNER_PASSED.
+        """
+        import json
+        from pathlib import Path
+        repo = Path(__file__).resolve().parent.parent
+        path = repo / "scripts" / "scan_results" / "tier2_results.json"
+        if not path.is_file():
+            self.skipTest(
+                "scripts/scan_results/tier2_results.json not "
+                "present — run scripts/run_tier2_fixtures.py "
+                "first")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        passed = data.get("summary", {}).get("passed", 0)
+        self.assertGreaterEqual(
+            passed,
+            TestDealiiSignalFloor.MIN_TIER2_RUNNER_PASSED,
+            f"Tier-2 runner passed count {passed} dropped below "
+            f"floor "
+            f"{TestDealiiSignalFloor.MIN_TIER2_RUNNER_PASSED}. "
+            f"Either a fixture got deleted or one started "
+            f"failing — investigate scripts/scan_results/"
+            f"tier2_results.json for the offending entry.")
+
 
 if __name__ == "__main__":
     unittest.main()

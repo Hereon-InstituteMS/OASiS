@@ -1016,9 +1016,12 @@ TRANSPORT ELEMENTS:
         "element_type_per_physics": {
             "FLUID (2D)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
             "FLUID (3D)": ["HEX8", "HEX20", "HEX27", "TET4", "TET10", "NURBS27"],
-            "WALL (2D structure)": ["QUAD4", "QUAD8", "QUAD9"],
-            # NOTE: WALL TRI3 and WALL TRI6 do NOT exist in 4C.
-            # For 2D structural elements, only QUAD variants are supported.
+            "SOLID (2D structure)": ["QUAD4", "QUAD8", "QUAD9",
+                                     "TRI3", "TRI6"],
+            # NOTE: 4C 2026.3 unified the legacy WALL 2D eletype
+            # into the SOLID eletype factory. Writing 'WALL QUAD4'
+            # raises 'Unknown type WALL of finite element' from
+            # parobjectfactory.cpp:153 — see SOL_MECH [API] pitfall.
             "SOLID (3D structure)": ["HEX8", "HEX20", "HEX27", "TET4", "TET10",
                                      "WEDGE6", "PYRAMID5"],
             "TRANSP (scalar transport)": ["QUAD4", "QUAD9", "HEX8", "HEX27",

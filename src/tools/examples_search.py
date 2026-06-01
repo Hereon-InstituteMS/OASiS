@@ -563,7 +563,7 @@ a = ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
 L = fem.Constant(domain, default_scalar_type(1.0)) * v * ufl.dx
 
 # 5. Solve
-problem = LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+problem = LinearProblem(a, L, bcs=[bc], petsc_options_prefix="poisson_", petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
 uh = problem.solve()
 
 # 6. Output (XDMF for dolfinx, convert to VTU for visualization)
