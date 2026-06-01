@@ -453,7 +453,7 @@ err_arr = np.array(uh.as_numpy) - np.array(u_ex.as_numpy)
 l2_err = float(np.sqrt(err_arr @ err_arr) / len(err_arr))
 
 vals = np.array(uh.as_numpy)
-print(f"Helmholtz: k={k_val}, max(u) = {{vals.max():.8f}}")
+print(f"Helmholtz: k={{k_val}}, max(u) = {{vals.max():.8f}}")
 print(f"L2 nodal error vs MMS: {{l2_err:.4e}}")
 print(f"DOFs: {{len(vals)}}")
 
