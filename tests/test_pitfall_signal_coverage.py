@@ -59,19 +59,20 @@ SIGNAL_COVERAGE_MIN = {
     "skfem":   48.0,   # measured  49.5
     "ngsolve": 46.0,   # measured  47.4
     "febio":   45.0,   # measured  46.2
-    "fenics":  37.0,   # measured  38.8 (raised 2026-06-02 from
-                       #                 30.0 after pass 1 on
+    "fenics":  44.0,   # measured  45.7 (raised 2026-06-02 from
+                       #                 37.0 after pass 2 on
                        #                 fenics: Signal: lines on
-                       #                 magnetostatics #2, #3, #8
-                       #                 (Nedelec, gauge fixing,
-                       #                 B-H curve), nonlinear_pde
-                       #                 #2, #4, #5, #6 (SNES
-                       #                 divergence, indefinite J,
-                       #                 p-Laplacian singular at 0,
-                       #                 blow-up of exp(u)), and
-                       #                 time_dependent_heat #2, #6
-                       #                 (CN oscillation, PCM
-                       #                 enthalpy method).)
+                       #                 mixed_poisson #1, #2, #4,
+                       #                 #5, #7 (indefinite PC,
+                       #                 RT+DG inf-sup, BC on
+                       #                 sigma.n vs pressure,
+                       #                 pressure null-space,
+                       #                 basix.ufl.element API) and
+                       #                 deep_knowledge::heat #2,
+                       #                 #3, #4, #5 (BC update in
+                       #                 loop, mass-matrix sign,
+                       #                 unit consistency, BE/CN
+                       #                 trade-off).)
     "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
                        #                 2026-06-02 from 27.0 after
                        #                 a sixth pass: all 7

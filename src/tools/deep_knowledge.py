@@ -1151,10 +1151,43 @@ _FENICS_KNOWLEDGE = {
         "solver": {"direct": "LU (small)", "iterative": "CG + hypre per time step"},
         "pitfalls": [
             "Insulated boundary = natural BC (do nothing, zero flux)",
-            "For transient: update BCs and source term at each time step",
-            "Mass matrix assembly for time derivative: (T/dt)*v*dx on LHS, (T_n/dt)*v*dx on RHS",
-            "Temperature units must be consistent with material properties",
-            "Backward Euler is diffusive but stable; Crank-Nicolson is more accurate but may oscillate",
+            (
+                "[Numerical] For transient: update BCs and source "
+                "term at each time step. Signal: result at step N "
+                "matches the steady solution of the FIRST step's BCs "
+                "instead of evolving — typical bug when a time-"
+                "dependent fem.Constant(T0) is created once outside "
+                "the loop and the Dirichlet value never gets "
+                "rewritten via Constant.value. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Mass matrix assembly for time derivative: "
+                "(T/dt)*v*dx on LHS, (T_n/dt)*v*dx on RHS. Signal: "
+                "wrong sign / placement gives wildly oscillating "
+                "temperature with magnitude growing geometrically; "
+                "energy is not conserved in an insulated cell test "
+                "(temperature should be constant). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] Temperature units must be consistent with "
+                "material properties. Signal: an SI material "
+                "(k=W/(m*K), rho*cp=J/(m^3*K)) fed degrees-Celsius "
+                "+ degrees-Celsius/s data gives wildly wrong "
+                "diffusion timescales — characteristic time L^2 * "
+                "rho*cp / k is off by orders of magnitude when "
+                "K vs C are mixed. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Backward Euler is diffusive but stable; "
+                "Crank-Nicolson is more accurate but may oscillate. "
+                "Signal: CN with sharp transients (e.g. step source "
+                "or step BC) shows 10-30% over/undershoot at the "
+                "transient location that does not damp with mesh "
+                "refinement; switching to Backward Euler removes "
+                "the oscillation at the cost of phase error. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
         "materials": {"conductivity": {"range": [0.01, 1000], "unit": "W/(m*K)"}, "rho_cp": {"description": "Volumetric heat capacity"}},
     },

@@ -10,13 +10,52 @@ KNOWLEDGE = {
     "function_space": "RT(k) for flux + DG(k-1) for pressure (inf-sup stable pair)",
     "solver": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"},
     "pitfalls": [
-        "System is INDEFINITE (saddle point): use direct solver or block preconditioner",
-        "RT(k) + DG(k-1): inf-sup stable, locally conservative (exact div)",
+        (
+            "[Numerical] System is INDEFINITE (saddle point): use "
+            "direct solver or block preconditioner. Signal: "
+            "PETSc CG/GMRES reports `DIVERGED_INDEFINITE_PC` or "
+            "stagnates with residual ~1.0 (no decrease); LU "
+            "succeeds where iterative fails — switch to a "
+            "fieldsplit / Schur-complement preconditioner for "
+            "scale. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] RT(k) + DG(k-1): inf-sup stable, locally "
+            "conservative (exact div). Signal: when mixing "
+            "non-inf-sup-stable pairs (e.g. RT(k) + DG(k)), "
+            "the discrete LBB constant collapses with mesh "
+            "refinement — pressure norm grows like O(h^-1) "
+            "instead of converging, and the divergence error "
+            "fails to reach machine precision. (Audit "
+            "2026-06-02.)"
+        ),
         "BDM(k) + DG(k-1): alternative H(div) pair with full polynomial",
-        "Essential BC is on sigma.n (normal flux), NOT on pressure",
-        "Pressure determined up to a constant if only normal flux BCs",
+        (
+            "[API] Essential BC is on sigma.n (normal flux), NOT "
+            "on pressure. Signal: applying a dolfinx DirichletBC "
+            "on the pressure DOFs at an inflow surface (instead "
+            "of on the flux) gives wildly wrong pressure profile "
+            "and ZERO normal flux at that surface; mass balance "
+            "is violated by an O(1) factor. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Pressure determined up to a constant if "
+            "only normal flux BCs. Signal: solver reports a "
+            "near-zero pivot or singular system "
+            "(`KSPSolve: DIVERGED_BREAKDOWN`); add a pressure "
+            "pinning DOF or use a nullspace removal to restore "
+            "uniqueness. (Audit 2026-06-02.)"
+        ),
         "For heterogeneous permeability: weight the (sigma, tau) term by K^{-1}",
-        "Use basix.ufl.element('RT', cell, k) for Raviart-Thomas in dolfinx",
+        (
+            "[API] Use basix.ufl.element('RT', cell, k) for "
+            "Raviart-Thomas in dolfinx. Signal: passing a "
+            "legacy fenics-style string like 'RT' to "
+            "FunctionSpace gives `AttributeError: module "
+            "'dolfinx.fem' has no attribute 'FiniteElement'` or "
+            "an obscure cpp-side `unknown element family` "
+            "error from basix. (Audit 2026-06-02.)"
+        ),
     ],
     "materials": {
         "permeability": {"range": [1e-15, 1.0], "unit": "m^2 (Darcy permeability)"},
