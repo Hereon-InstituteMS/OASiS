@@ -228,6 +228,73 @@ _PHYSICS_CAPABILITIES = [
         element_types=["triangle"],
         template_variants=["2d"],
     ),
+    # ── 2026-06-01: helmholtz + maxwell have detailed
+    #    deep_knowledge entries but were not in the
+    #    capabilities list, so users browsing discover(physics
+    #    fenics) couldn't see them. Knowledge-tool fetch
+    #    worked (deep_knowledge fallback), but discover did
+    #    not list them. Exposing them here closes the gap.
+    PhysicsCapability(
+        name="helmholtz",
+        description=(
+            "Helmholtz equation: -laplacian(u) - k^2*u = f. "
+            "Acoustic / optical wave propagation. Indefinite "
+            "system — GMRES or direct, NOT CG. May be complex-"
+            "valued; needs PETSc compiled with "
+            "--with-scalar-type=complex."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="maxwell",
+        description=(
+            "Maxwell's equations (curl-curl). Requires H(curl) "
+            "(Nedelec / N1curl, basix.ElementFamily.N1E) "
+            "elements for tangential continuity. Complex-valued "
+            "forms need a complex-PETSc build."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="nearly_incompressible_elasticity",
+        description=(
+            "Nearly-incompressible elasticity (Poisson ratio "
+            "approaching 0.5). Standard primal P1/P2 locks; "
+            "needs mixed (u, p) Taylor-Hood / MINI or a "
+            "displacement-pressure split with stable element "
+            "pair (otherwise volumetric locking)."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="fracture",
+        description=(
+            "Phase-field fracture mechanics. Coupled "
+            "displacement / damage formulation with a diffuse "
+            "crack representation (no remeshing). Extensions: "
+            "PhaseFieldX library."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="stokes_darcy",
+        description=(
+            "Coupled Stokes-Darcy for free fluid / porous "
+            "medium interaction. Beavers-Joseph-Saffman "
+            "interface conditions."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
 ]
 
 
