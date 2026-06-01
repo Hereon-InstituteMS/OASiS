@@ -1160,9 +1160,28 @@ def register_consolidated_tools(mcp: FastMCP):
             parts.append("## Also available on\n" + alternatives + "\n")
 
         # 1. Knowledge
+        # Render pitfalls OUTSIDE the JSON dump so the 3000-char
+        # truncation does not silently hide them. Audited
+        # 2026-06-01: large KNOWLEDGE blocks like ngsolve::
+        # hyperelasticity (7 pitfalls / ~4.4 KB) and skfem::
+        # poisson (6 / ~4 KB) showed 0/N pitfalls fully visible
+        # to the LLM client; every Layer F fix landed but never
+        # reached the prepare_simulation surface that's meant to
+        # teach the agent.
         k = backend.get_knowledge(matched_physics)
         if k:
-            parts.append("## Knowledge\n```json\n" + json.dumps(k, indent=2, default=str)[:3000] + "\n```\n")
+            pitfalls_separate = None
+            json_payload = k
+            if isinstance(k, dict) and isinstance(k.get("pitfalls"), list):
+                pitfalls_separate = k["pitfalls"]
+                json_payload = {kk: vv for kk, vv in k.items() if kk != "pitfalls"}
+            parts.append("## Knowledge\n```json\n"
+                         + json.dumps(json_payload, indent=2, default=str)[:3000]
+                         + "\n```\n")
+            if pitfalls_separate:
+                bullets = "\n".join(f"- {p}" for p in pitfalls_separate)
+                parts.append(
+                    f"### Pitfalls ({len(pitfalls_separate)})\n{bullets}\n")
 
         # 1b. General input-format pitfalls (ExodusII IDs, FUNCT syntax, etc.)
         # These apply to ALL physics in this solver, not just the current one
