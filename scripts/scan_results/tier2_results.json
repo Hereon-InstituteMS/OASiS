@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 33,
-    "passed": 33,
+    "n_fixtures": 35,
+    "passed": 35,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -345,6 +345,23 @@
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/element_name_missing_node_count/source.py\", line 30, in main\n    mp.CreateNewElement(\"SmallDisplacement2D\", 1, [1, 2, 3, 4], prop)\nRuntimeError: Error: The Element \"SmallDisplacement2D\" is not registered!\nMaybe you need to import the application where it is defined?\nThe following Elements "
     },
+    "kratos::linear_elasticity::1": {
+      "key": "kratos::linear_elasticity::1",
+      "backend": "kratos",
+      "physics": "linear_elasticity",
+      "pitfall_index": 1,
+      "fixture_id": "element_no_constitutive_law",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "constitutive law needs to be specified",
+        "base_solid_element"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosStructuralMechanicsApplication \n    KRATOS   ___|  |                   |                   |\n           \\___ \\  __|  __| |   |  __| __| |   |  __| _` | |\n                 | |   |    |   | (    |   |   | |   (   | |\n           _____/ \\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\__,_|_| MECHANICS\nInitializing KratosStructuralMechanicsApplication...\nImporting    KratosConstitutiveLawsApplication \nInitializing KratosC"
+    },
     "kratos::plasticity::5": {
       "key": "kratos::plasticity::5",
       "backend": "kratos",
@@ -446,6 +463,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 45, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 32, in main\n    a += grad(u) * grad(v) * dx  # H1 form on HCurl basis: WRONG\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: SymbolicBFI needs scalar-valued CoefficientFunction\n"
+    },
+    "ngsolve::maxwell::0": {
+      "key": "ngsolve::maxwell::0",
+      "backend": "ngsolve",
+      "physics": "maxwell",
+      "pitfall_index": 0,
+      "fixture_id": "hcurl_singular_without_nograds",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "NgException",
+        "UmfpackInverse",
+        "matrix is singular"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "\nUMFPACK V5.7.4 (Feb 1, 2016): WARNING: matrix is singular\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_singular_without_nograds/source.py\", line 35, in main\n    a.mat.Inverse(fes.FreeDofs())\nnetgen.libngpy._meshing.NgException: UmfpackInverse: Numeric factorization failed.\n"
     },
     "ngsolve::helmholtz::0": {
       "key": "ngsolve::helmholtz::0",
