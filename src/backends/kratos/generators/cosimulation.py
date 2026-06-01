@@ -155,20 +155,72 @@ KNOWLEDGE = {
             "weak": ["Gauss-Seidel (sequential)", "Jacobi (parallel)"],
             "strong": ["Gauss-Seidel with convergence check", "Jacobi with convergence check"],
         },
+        # Real names (file stems in
+        # KratosMultiphysics/CoSimulationApplication/
+        # convergence_accelerators/). Verified empirically
+        # 2026-06-01.
         "convergence_accelerators": [
             "constant_relaxation (omega=0.5-0.8 typical)",
             "aitken (adaptive relaxation, good starting point)",
             "mvqn (Multi-Vector Quasi-Newton, fastest convergence)",
-            "ibqn (Interface Block Quasi-Newton)",
+            "block_mvqn (block-MVQN, partitioned variant)",
+            # 'ibqn' alone is NOT a registered key — see pitfall #0.
+            "block_ibqnls (block Interface Block Quasi-Newton Least Squares)",
+            "iqnils (Interface Quasi-Newton Inverse Least Squares)",
             "anderson (Anderson acceleration)",
         ],
-        "data_transfer": ["nearest_neighbor", "barycentric", "kratos_mapping",
-                         "empire_mapping", "radial_basis_function"],
+        # Real mapper type names from libKratosMappingCore.so
+        # binary scan.
+        "data_transfer": [
+            "nearest_neighbor",
+            "nearest_element",
+            "barycentric",
+            "coupling_geometry",
+            "radial_basis_function",
+            # 'kratos_mapping' is the *python wrapper module* name
+            # under CoSim/data_transfer_operators/, not a mapper
+            # *type*. 'empire_mapping' is NOT registered anywhere
+            # in KratosMappingApplication 10.4.2.
+        ],
         "solver_wrappers": {
             "internal": "KratosMultiphysics solvers (fluid, structural, thermal, etc.)",
             "external": "CoSimIO for coupling with external codes (C/C++/Python/Fortran API)",
         },
         "pitfalls": [
+                        '[API] Catalog had two systematic naming '
+                        'errors corrected 2026-06-01:\n'
+                        '  (a) Convergence accelerator "ibqn" — '
+                        'NOT a registered name. The real file '
+                        'under KratosMultiphysics/'
+                        'CoSimulationApplication/convergence_'
+                        'accelerators/ is block_ibqnls.py (or '
+                        'iqnils.py for the inverse-least-squares '
+                        'variant). Other registered names: '
+                        'aitken, anderson, constant_relaxation, '
+                        'mvqn, block_mvqn.\n'
+                        '  (b) Mapper type "empire_mapping" does '
+                        'NOT exist in libKratosMappingCore.so '
+                        '(empire substring 0 hits). Real mapper '
+                        'types include nearest_neighbor, '
+                        'nearest_element, barycentric, '
+                        'coupling_geometry, radial_basis_function. '
+                        'Also: "kratos_mapping" in the prior '
+                        'catalog refers to the python wrapper '
+                        'module name, not a mapper *type*. '
+                        'Signal: convergence_accelerator type '
+                        '"ibqn" in a CoSim parameters JSON raises '
+                        'a Kratos factory ImportError finding '
+                        '"ibqn.py" in convergence_accelerators/; '
+                        'similarly mapping with "empire_mapping" '
+                        'raises a MapperFactory unknown-mapper '
+                        'error. (Verified empirically 2026-06-01 '
+                        '— Tier-2 fixture cosimulation_accelerator_'
+                        'mapper_names in scripts/tier2_fixtures/'
+                        'kratos/. KratosCoSimulationApplication '
+                        'was also missing from the .venv — '
+                        'install via '
+                        '"pip install KratosCoSimulationApplication" '
+                        'before any CoSim catalog usage.)',
                         '[Numerical] Weak coupling: one pass per time step (fast but may be inaccurate for strong interactions) '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Numerical] Strong coupling: iterate until interface convergence (required for added-mass instability) '
