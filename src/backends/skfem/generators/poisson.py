@@ -133,15 +133,88 @@ with open("results_summary.json", "w") as _f:
 KNOWLEDGE = {
     "poisson": {
         "description": "Poisson with scikit-fem (pure Python assembly)",
-        "solver": "scipy.sparse.linalg.spsolve (direct) or eigsh (eigenvalue)",
-        "elements": "ElementTriP1/P2/P3, ElementQuad1/2, ElementTetP1/P2, ElementHex1/2",
-        "built_in_forms": "laplace, unit_load (from skfem.models.poisson)",
+        "solver": (
+            "scipy.sparse.linalg.spsolve (direct) or eigsh "
+            "(eigenvalue). scikit-fem assembles; you choose "
+            "the solver."
+        ),
+        "elements": (
+            "ElementTriP1/P2/P3, ElementQuad1/2, ElementTetP1/P2, "
+            "ElementHex1/2"
+        ),
+        "built_in_forms": (
+            "laplace, unit_load (from skfem.models.poisson)"
+        ),
         "pitfalls": [
-            "scikit-fem is an ASSEMBLY library — you control the solve",
-            "Boundary DOFs: ib.get_dofs().flatten() for all, ib.get_dofs('left') for named",
-            "VTU output: meshio.Mesh(points, cells, point_data).write('result.vtu')",
-            "solve() and condense() handle Dirichlet elimination",
-            "For v12+: to_meshio removed — use meshio.Mesh() directly",
+            "[API] scikit-fem is an ASSEMBLY library — laplace/"
+            "unit_load build the K matrix and load vector, then "
+            "you call solve(*condense(K, f, D=D)) yourself. "
+            "There is no SolverInterface, no LinearProblem, no "
+            "internal KSP wrapper. K is a scipy.sparse.csr_"
+            "matrix; spsolve/factorized/scipy.sparse.linalg.cg "
+            "are the canonical ways to handle it. Signal: "
+            "K.shape and type(K).__name__ are visible "
+            "scipy.sparse types; switching solver is "
+            "single-line replacement at the user level. "
+            "(Catalog claim inherited; not separately Tier-2 "
+            "falsified this iteration.)",
+            "[API] basis.get_dofs(name) only works on a mesh "
+            "where m.boundaries contains the name — and "
+            "m.boundaries is None on a freshly constructed "
+            "MeshTri / MeshQuad / MeshHex etc. Names must be "
+            "registered up-front via "
+            "m = m.with_boundaries({'left': lambda x: "
+            "np.abs(x[0])<1e-10, ...}). Without that, "
+            "basis.get_dofs('left') raises "
+            "ValueError(\"Boundary 'left' not found.\"). "
+            "Signal: m.boundaries is None on a fresh mesh; "
+            "basis.get_dofs('left') raises the named "
+            "ValueError; after with_boundaries({'left': f}) "
+            "the call returns a DofsView whose flatten() length "
+            "matches the number of edge nodes (5 for a 5x5 "
+            "ElementQuad1 mesh's left edge). (Verified "
+            "empirically 2026-06-01 — Tier-2 fixture "
+            "poisson_get_dofs_named_boundary in scripts/"
+            "tier2_fixtures/skfem/.)",
+            "[API] VTU output in scikit-fem 12.x is via "
+            "skfem.io.meshio.to_meshio(mesh, point_data=...) — "
+            "the function is NOT removed in v12+, it has only "
+            "been removed from the TOP-LEVEL skfem namespace. "
+            "(hasattr(skfem, 'to_meshio') is False; "
+            "hasattr(skfem.io.meshio, 'to_meshio') is True.) "
+            "skfem.io.meshio.to_meshio handles cell-type "
+            "translation correctly (quad -> 'quad', etc.) and "
+            "the resulting meshio.Mesh writes via "
+            ".write('result.vtu'). Signal: import path "
+            "skfem.io.meshio.to_meshio resolves; "
+            "to_meshio(mesh).cells[0].type matches the source "
+            "mesh element ('quad' for MeshQuad). (Catalog-drift "
+            "correction verified empirically 2026-06-01 — same "
+            "Tier-2 fixture as #1.)",
+            "[API] Dirichlet elimination is handled by passing "
+            "the constrained DOFs to condense(K, f, D=D); "
+            "solve(*condense(K, f, D=D)) returns the full "
+            "solution vector (with the eliminated DOFs already "
+            "filled). The D argument expects a flat int array of "
+            "DOF indices (basis.get_dofs(...).flatten()). For "
+            "non-homogeneous BCs use condense(K, f, D=D, x=g) "
+            "where g is the full-length BC vector. Signal: "
+            "condense's call signature accepts D as positional or "
+            "keyword; passing a DofsView object (instead of "
+            ".flatten()) silently produces wrong results because "
+            "DofsView is iterable but not array-like. (Catalog "
+            "claim inherited; not separately Tier-2 falsified "
+            "this iteration.)",
+            "[API] Element catalog by cell type: ElementTriP1/P2/"
+            "P3 for triangles, ElementQuad1/Quad2 for quads, "
+            "ElementTetP1/P2 for tetrahedra, ElementHex1/Hex2 "
+            "for hexahedra. Plus ElementTriRT0 / ElementTriMini "
+            "/ ElementTetMini / etc. for mixed methods. Signal: "
+            "skfem.ElementTriP1, skfem.ElementQuad1, "
+            "skfem.ElementHex1 are all attributes; "
+            "type(ElementTriP1()).__bases__ shows the Element "
+            "ABC. (Catalog claim inherited; not separately "
+            "Tier-2 falsified this iteration.)",
         ],
     },
 }
