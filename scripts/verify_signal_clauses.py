@@ -200,6 +200,13 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # operations (verified 2026-06-01, maxwell#0 audit).
             "UmfpackInverse", "PardisoInverse", "SparseCholesky",
             "UMFPACK",
+            # ── Linear-elasticity API surface (verified 2026-06-01
+            #    by Tier-2 fixture vector_h1_vs_h1_dim2_equivalence
+            #    in scripts/tier2_fixtures/ngsolve/) ──────────────
+            "MatrixValued", "ComponentGridFunction",
+            "ProxyFunction", "CompoundFESpace", "FreeDofs",
+            "Grad", "InnerProduct", "Id", "Stress", "Strain",
+            "TnT", "Assemble",
             # PML helpers (helmholtz promotion 2026-06-01).
             "SetPML", "Radial", "pml", "Integrate",
             "L2Norm", "ComputeRadialMode",
