@@ -93,11 +93,33 @@ def _resolve_python(backend_name: str) -> str | None:
 def main() -> int:
     print(f"repo_venv_python={sys.executable}")
 
+    # Matrix of (backend, physics, variant) tuples. Each
+    # row is run as a subprocess in the backend-correct
+    # interpreter. Total runtime budget is ~120 s.
+    #
+    # ONLY include rows that the catalog ships in a
+    # currently-runnable state. Stokes templates for
+    # skfem / ngsolve / fenics are known-broken (caught
+    # by Layer F on 2026-06-01 — homogeneous BC + missing
+    # pressure pin + wrong xdmf write call), tracked
+    # under tasks #26/#27/#28 and exercised by a
+    # separate 'stokes_templates_currently_broken'
+    # fixture that asserts they STAY broken until fixed.
     rows = [
+        # poisson coverage (all 4 backends)
         ("skfem", "poisson", "2d"),
         ("kratos", "poisson", "2d"),
         ("ngsolve", "poisson", "2d"),
         ("fenics", "poisson", "2d"),
+        # linear_elasticity coverage (all 4 backends)
+        ("skfem", "linear_elasticity", "2d"),
+        ("kratos", "linear_elasticity", "2d"),
+        ("ngsolve", "linear_elasticity", "2d"),
+        ("fenics", "linear_elasticity", "2d"),
+        # heat coverage (kratos has the simplest dispatch
+        # test; skfem ships a heat::2d that runs)
+        ("skfem", "heat", "2d"),
+        ("kratos", "heat", "2d"),
     ]
     fail = []
     executed = 0

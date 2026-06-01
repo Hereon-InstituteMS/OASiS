@@ -10,7 +10,13 @@
     "kratos::poisson::2d_rc=0",
     "ngsolve::poisson::2d_rc=0",
     "fenics::poisson::2d_rc=0",
-    "total_executed=4",
+    "skfem::linear_elasticity::2d_rc=0",
+    "kratos::linear_elasticity::2d_rc=0",
+    "ngsolve::linear_elasticity::2d_rc=0",
+    "fenics::linear_elasticity::2d_rc=0",
+    "skfem::heat::2d_rc=0",
+    "kratos::heat::2d_rc=0",
+    "total_executed=10",
     "failures=0"
   ],
   "forbid_in_output": [
