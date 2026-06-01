@@ -40,6 +40,16 @@ _DG_KNOWLEDGE = {
         "Inflow BC imposed weakly via boundary integral, NOT Dirichlet",
         "For pure advection (eps=0): drop diffusion terms entirely",
         "DG mass matrix is block-diagonal — efficient for explicit time stepping",
+        "[API] Modern UFL has no ufl.Abs symbol — use Python's "
+        "builtin abs() (which UFL overloads for Expr operands) "
+        "or ufl.algebra.Abs as the explicit fallback. Calling "
+        "ufl.Abs(z) raises AttributeError: module 'ufl' has no "
+        "attribute 'Abs'. The idiomatic pattern in DG upwind-flux "
+        "construction is e.g. (b_n + abs(b_n))/2 for the outflow "
+        "side. Signal: AttributeError with the literal text "
+        "\"module 'ufl' has no attribute 'Abs'\" emitted at script "
+        "import time before any assembly is attempted. (Verified "
+        "empirically 2026-06-01 — Layer F catch.)",
     ],
     "materials": {
         "diffusion": {"range": [1e-8, 1.0], "unit": "m^2/s"},
@@ -97,8 +107,8 @@ u_D = fem.Constant(domain, default_scalar_type(0.0))  # inflow value
 
 # Upwind flux for advection
 bn = ufl.dot(b, n)
-bn_plus  = (bn("+") + ufl.Abs(bn("+")) ) / 2.0   # outflow side
-bn_minus = (bn("+") - ufl.Abs(bn("+")) ) / 2.0   # inflow  side
+bn_plus  = (bn("+") + abs(bn("+")) ) / 2.0   # outflow side
+bn_minus = (bn("+") - abs(bn("+")) ) / 2.0   # inflow  side
 adv_flux = bn_plus * u("+") + bn_minus * u("-")   # upwind
 
 # Interior-penalty diffusion bilinear form
@@ -117,7 +127,7 @@ a_adv = (
 )
 
 # Weakly imposed inflow boundary condition (negative bn face)
-bn_ds = (ufl.dot(b, n) - ufl.Abs(ufl.dot(b, n))) / 2.0  # only inflow faces
+bn_ds = (ufl.dot(b, n) - abs(ufl.dot(b, n))) / 2.0  # only inflow faces
 L_inflow = - bn_ds * u_D * v * ufl.ds
 
 # Full system

@@ -275,6 +275,26 @@ def main() -> int:
         # that target a property with no setter in this
         # build.
         ("ngsolve", "thermal_structural", "2d"),
+        # Batch-11 fixes:
+        #  - fenics::dg_methods: ufl.Abs → builtin abs()
+        #  - ngsolve dg_methods/nonlinear_elasticity:
+        #    abs() not defined on BaseVector; use
+        #    numpy on gfu.vec.FV().NumPy()
+        #  - ngsolve::phase_field::2d: tanh not in
+        #    namespace; build via exp(2z)±1
+        #  - ngsolve::phase_field::fracture_2d:
+        #    abs(CoefficientFunction) not defined; use
+        #    IfPos(z, z, -z)
+        # nonlinear_elasticity::2d hit a deeper ProxyFn
+        # error after the abs fix; deferred to next batch.
+        ("fenics", "dg_methods", "2d"),
+        ("ngsolve", "dg_methods", "2d"),
+        ("ngsolve", "phase_field", "2d"),
+        # phase_field::fracture_2d's abs(CoefficientFunction)
+        # bug is fixed (IfPos), but the underlying Newton
+        # loop then runs for >60s without converging —
+        # tracked separately; the catalog template needs a
+        # smaller default n_steps + load-stepping rewrite.
     ]
     fail = []
     executed = 0

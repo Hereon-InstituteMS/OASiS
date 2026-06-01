@@ -84,7 +84,10 @@
     "kratos::heat_transient::2d_rc=0",
     "kratos::shape_optimization::2d_rc=0",
     "ngsolve::thermal_structural::2d_rc=0",
-    "total_executed=78",
+    "fenics::dg_methods::2d_rc=0",
+    "ngsolve::dg_methods::2d_rc=0",
+    "ngsolve::phase_field::2d_rc=0",
+    "total_executed=81",
     "failures=0"
   ],
   "forbid_in_output": [

@@ -77,7 +77,12 @@ f.Assemble()
 gfu = GridFunction(fes)
 gfu.vec.data = a.mat.Inverse() * f.vec
 
-max_val = max(abs(gfu.vec))
+# abs() is not defined on ngsolve.la.BaseVector — extract
+# the underlying numpy view via gfu.vec.FV().NumPy() and
+# reduce with numpy. The legacy max(abs(gfu.vec)) pattern
+# raises TypeError 'bad operand type for abs()'.
+import numpy as _np
+max_val = float(_np.abs(gfu.vec.FV().NumPy()).max())
 print(f"max|u| = {{max_val:.8f}}")
 print(f"DOFs: {{fes.ndof}}, elements: {{mesh.ne}}")
 
@@ -659,9 +664,12 @@ for step in range(1, n_load_steps + 1):
         print(f"  Step {{step}} FAILED: {{e}}")
         break
 
-# Evaluate results
-max_ux = max(abs(gfu.components[0].vec))
-max_uy = max(abs(gfu.components[1].vec))
+# Evaluate results — abs() is not defined on
+# ngsolve.la.BaseVector. Reduce via the underlying
+# numpy view (gfu.components[i].vec.FV().NumPy()).
+import numpy as _np
+max_ux = float(_np.abs(gfu.components[0].vec.FV().NumPy()).max())
+max_uy = float(_np.abs(gfu.components[1].vec.FV().NumPy()).max())
 print(f"Max |u_x| = {{max_ux:.6f}}, max |u_y| = {{max_uy:.6f}}")
 print(f"DOFs: {{fes.ndof}}")
 
@@ -805,9 +813,18 @@ stiff.Assemble()
 lhs = mass.mat.CreateMatrix()
 lhs.AsVector().data = mass.mat.AsVector() + stiff.mat.AsVector()
 
-# ── Initial condition: tanh profile around x=0.5 (vertical interface) ─────────
+# ── Initial condition: tanh profile around x=0.5 ──
+# NGSolve's CoefficientFunction namespace exposes sin,
+# cos, exp, log, tan, atan, atan2 but NOT tanh/sinh/cosh.
+# Build the hyperbolic tangent manually via:
+#   tanh(z) = (exp(2z) - 1) / (exp(2z) + 1)
+# Using the bare 'tanh' name raises NameError at module
+# import time.
 gfc = GridFunction(fes)
-gfc.Set(0.5 + 0.5 * tanh((x - 0.5) / (2 * eps)))
+_arg = (x - 0.5) / (2 * eps)
+_e   = exp(2 * _arg)
+_tanh = (_e - 1) / (_e + 1)
+gfc.Set(0.5 + 0.5 * _tanh)
 
 print(f"Phase-field setup: eps={{eps}}, dt={{dt}}, DOFs={{fes.ndof}}")
 
@@ -923,7 +940,11 @@ def psi_plus(w):
     """Tensile (positive) elastic energy density — Miehe split."""
     eps = Strain(w)
     tr_eps = Trace(eps)
-    psi_vol  = 0.5 * lam_val * 0.5 * (tr_eps + abs(tr_eps))**2
+    # Python's abs() is NOT defined on a NGSolve
+    # CoefficientFunction; use IfPos(z, z, -z) (or
+    # sqrt(z*z)) to express |z| symbolically.
+    abs_tr = IfPos(tr_eps, tr_eps, -tr_eps)
+    psi_vol  = 0.5 * lam_val * 0.5 * (tr_eps + abs_tr)**2
     psi_dev  = mu_val * InnerProduct(eps, eps) - mu_val / 3 * tr_eps**2
     return psi_vol + psi_dev
 
@@ -1035,6 +1056,36 @@ KNOWLEDGE = {
             "IfPos(b*n, u, u.Other()) selects the upwind side for convection",
             "For convection-dominated (Pe >> 1): DG is naturally stable; SIP diffusion still needs penalty",
             "Bilinear form is not symmetric when advection is present — use GMRES, not CG",
+            "[API] Python's builtin abs() is NOT defined on "
+            "ngsolve.la.BaseVector. max(abs(gfu.vec)) raises "
+            "TypeError 'bad operand type for abs(): "
+            "ngsolve.la.BaseVector'. Convert to numpy via "
+            "gfu.vec.FV().NumPy() then reduce: float(numpy.abs("
+            "gfu.vec.FV().NumPy()).max()). Same pattern applies "
+            "to compound spaces — gfu.components[i].vec.FV()"
+            ".NumPy(). Signal: the literal TypeError text 'bad "
+            "operand type for abs(): \\'ngsolve.la.BaseVector\\'' "
+            "uniquely identifies the bad-call site. (Verified "
+            "empirically 2026-06-01 — Layer F catch.)",
+            "[Syntax] NGSolve's CoefficientFunction namespace "
+            "exposes exp/log/sin/cos/tan/atan/atan2 but NOT the "
+            "hyperbolic functions (no tanh/sinh/cosh). Calling "
+            "tanh(z) in a CF expression raises NameError 'name "
+            "tanh is not defined'. Build manually via the "
+            "identity tanh(z) = (exp(2z)-1)/(exp(2z)+1). Signal: "
+            "NameError at script import / gfu.Set time naming "
+            "'tanh' (Did you mean: 'tan'?). (Verified empirically "
+            "2026-06-01 — Layer F catch.)",
+            "[Syntax] Python abs() also does NOT work on a "
+            "NGSolve CoefficientFunction expression. Use "
+            "IfPos(z, z, -z) (or sqrt(z*z)) for symbolic "
+            "absolute value. Signal: TypeError with the literal "
+            "text 'bad operand type for abs(): "
+            "\\'ngsolve.fem.CoefficientFunction\\'' raised from a "
+            "Python-level abs() applied to a Trace, "
+            "InnerProduct, or other CF-valued expression. "
+            "(Verified empirically 2026-06-01 — Layer F "
+            "phase_field_fracture catch.)",
         ],
     },
     "contact": {
