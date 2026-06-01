@@ -160,16 +160,25 @@ class BeamInteractionGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "BINNING STRATEGY is required for spatial search.  "
-                    "BIN_SIZE_LOWER_BOUND must be at least as large as "
-                    "the element sizes to ensure all interaction pairs "
-                    "are detected."
+                    "[Input] BINNING STRATEGY is required for spatial "
+                    "search.  BIN_SIZE_LOWER_BOUND must be at least as "
+                    "large as the element sizes to ensure all "
+                    "interaction pairs are detected. Signal: "
+                    "BeamInteraction diagnostic prints "
+                    "`zero pairs found` for a geometry where "
+                    "intersections clearly exist; OR runtime warning "
+                    "`bin size smaller than max element size, search "
+                    "may miss pairs`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "The penalty parameter for beam contact must be "
-                    "carefully chosen.  Too large causes ill-conditioning "
-                    "and convergence failure; too small permits "
-                    "excessive penetration."
+                    "[Numerical] The penalty parameter for beam "
+                    "contact must be carefully chosen.  Too large "
+                    "causes ill-conditioning and convergence failure; "
+                    "too small permits excessive penetration. Signal: "
+                    "NOX condition-number printout exceeds ~1e14 "
+                    "(too high), or post-processed beam-beam distance "
+                    "at a contact point goes negative by more than "
+                    "5% of beam radius (too low). (Audit 2026-06-02.)"
                 ),
                 (
                     "Beam-to-beam contact uses a point-to-point or "
@@ -178,28 +187,47 @@ class BeamInteractionGenerator(BaseGenerator):
                     "efficiently (SEARCH_RADIUS)."
                 ),
                 (
-                    "For beam-to-solid volume meshtying, the beam "
-                    "elements must lie within the solid mesh volume.  "
-                    "Beams outside the solid domain are not coupled."
+                    "[Numerical] For beam-to-solid volume meshtying, "
+                    "the beam elements must lie within the solid "
+                    "mesh volume.  Beams outside the solid domain "
+                    "are not coupled. Signal: BeamToSolidMeshtying "
+                    "diagnostic prints `0 of N beam segments "
+                    "coupled`; the beam displaces freely as if no "
+                    "solid mesh existed. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Beam-to-solid surface contact requires the beam "
-                    "to approach a solid surface.  The contact "
-                    "detection uses the beam centerline distance to "
-                    "the surface, not the beam radius.  The gap offset "
-                    "must account for the beam cross-section."
+                    "[Numerical] Beam-to-solid surface contact "
+                    "requires the beam to approach a solid surface. "
+                    " The contact detection uses the beam centerline "
+                    "distance to the surface, not the beam radius. "
+                    " The gap offset must account for the beam "
+                    "cross-section. Signal: visualize shows the beam "
+                    "centerline at the solid surface (gap = 0) "
+                    "instead of one beam-radius offset; or contact "
+                    "force first activates one element-edge later "
+                    "than expected geometrically. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Beam materials use dedicated types "
-                    "(MAT_BeamReissnerElastHyper) with cross-sectional "
-                    "properties (CROSSAREA, MOMINPOL, MOMIN2, MOMIN3).  "
-                    "These must be geometrically consistent with the "
-                    "beam cross-section."
+                    "[Input] Beam materials use dedicated types "
+                    "(MAT_BeamReissnerElastHyper) with cross-"
+                    "sectional properties (CROSSAREA, MOMINPOL, "
+                    "MOMIN2, MOMIN3).  These must be geometrically "
+                    "consistent with the beam cross-section. Signal: "
+                    "input parser aborts with `MAT_BeamReissnerElast"
+                    "Hyper requires CROSSAREA` / `MOMINPOL not "
+                    "specified`; or beam bends differently from "
+                    "Euler-Bernoulli prediction (the eigen-frequency "
+                    "of a cantilever differs from sqrt(EI/(rho*A*L^4))"
+                    " by more than 10%). (Audit 2026-06-02.)"
                 ),
                 (
-                    "Use IO/RUNTIME VTK OUTPUT/BEAMS for beam "
-                    "visualisation.  Standard STRUCTURE output only "
-                    "shows solid elements."
+                    "[Output] Use IO/RUNTIME VTK OUTPUT/BEAMS for "
+                    "beam visualisation.  Standard STRUCTURE output "
+                    "only shows solid elements. Signal: visualize"
+                    "('list') under work_dir shows structure-*.vtu "
+                    "files but no beams-*.vtu; the LLM-visible "
+                    "summary reports an empty beam-field group "
+                    "though the run completed. (Audit 2026-06-02.)"
                 ),
                 (
                     "The PROBLEM TYPE is 'Structure' (not a dedicated "

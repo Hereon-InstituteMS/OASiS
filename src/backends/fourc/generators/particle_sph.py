@@ -226,42 +226,79 @@ class ParticleSPHGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "KERNEL_SPACE_DIM must match the physical problem dimension.  "
-                    "A 2D problem with Kernel3D gives wrong kernel normalization "
-                    "and incorrect pressure/density fields."
+                    "[Input] KERNEL_SPACE_DIM must match the physical "
+                    "problem dimension.  A 2D problem with Kernel3D "
+                    "gives wrong kernel normalization and incorrect "
+                    "pressure/density fields. Signal: hydrostatic "
+                    "pressure at the bottom of a still column equals "
+                    "(2D-expected) / (3D-normalization) instead of "
+                    "rho*g*h; density field deviates ~30% from "
+                    "INITDENSITY at the first step. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "INITRADIUS for MAT_ParticleSPHFluid is the kernel support "
-                    "radius, NOT half the particle spacing.  For QuinticSpline, "
-                    "use INITRADIUS = 3 * dx."
+                    "[Numerical] INITRADIUS for MAT_ParticleSPHFluid "
+                    "is the kernel support radius, NOT half the "
+                    "particle spacing.  For QuinticSpline, use "
+                    "INITRADIUS = 3 * dx. Signal: density field is "
+                    "uniformly low (~0.5 * INITDENSITY) because most "
+                    "particles are outside each others' kernels; "
+                    "neighbor-count diagnostic prints ~5-10 instead "
+                    "of the expected ~50-80 in 2D. (Audit 2026-06-02.)"
                 ),
                 (
-                    "DOMAINBOUNDINGBOX must be large enough to contain all "
-                    "particles throughout the simulation, including splashing "
-                    "and fluid expansion."
+                    "[Numerical] DOMAINBOUNDINGBOX must be large "
+                    "enough to contain all particles throughout the "
+                    "simulation, including splashing and fluid "
+                    "expansion. Signal: same as PD case — abort "
+                    "`particle outside DOMAINBOUNDINGBOX at step N`; "
+                    "in SPH this typically triggers when a splash "
+                    "particle exits the bounding y-extent on a "
+                    "dam-break case. (Audit 2026-06-02.)"
                 ),
                 (
-                    "BULK_MODULUS must be large enough that density variations "
-                    "stay below ~1%.  Rule of thumb: BULK_MODULUS >= 100 * rho * "
-                    "v_max^2 where v_max is the maximum expected velocity."
+                    "[Numerical] BULK_MODULUS must be large enough "
+                    "that density variations stay below ~1%.  Rule "
+                    "of thumb: BULK_MODULUS >= 100 * rho * v_max^2 "
+                    "where v_max is the maximum expected velocity. "
+                    "Signal: density field at peak compression "
+                    "exceeds 1.01 * INITDENSITY; pressure spikes "
+                    "noisy, post-impact oscillation does not damp; "
+                    "Mach number = v_max/sqrt(BULK/rho) > 0.1. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "Boundary particles (boundaryphase) should use the same "
-                    "INITDENSITY as the fluid for the Adami boundary formulation "
-                    "to work correctly."
+                    "Boundary particles (boundaryphase) should use "
+                    "the same INITDENSITY as the fluid for the Adami "
+                    "boundary formulation to work correctly."
                 ),
                 (
-                    "Particle spacing must be uniform at initialization.  "
-                    "Non-uniform spacing causes zeroth-order kernel approximation "
-                    "errors."
+                    "[Numerical] Particle spacing must be uniform at "
+                    "initialization.  Non-uniform spacing causes "
+                    "zeroth-order kernel approximation errors. "
+                    "Signal: pressure field has visible block-stripe "
+                    "artifacts aligned with the spacing transitions; "
+                    "the hydrostatic test (column under gravity) "
+                    "shows pressure deviating from rho*g*h by more "
+                    "than 5% even at t=0. (Audit 2026-06-02.)"
                 ),
                 (
-                    "For free-surface problems, set BACKGROUNDPRESSURE > 0 to "
-                    "prevent tensile instability at the free surface."
+                    "[Numerical] For free-surface problems, set "
+                    "BACKGROUNDPRESSURE > 0 to prevent tensile "
+                    "instability at the free surface. Signal: "
+                    "particles at the free surface cluster together "
+                    "or 'snap' into chains; visualize shows "
+                    "non-physical voids beneath the free surface and "
+                    "pressure goes negative there. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "GRAVITY_ACCELERATION must be set explicitly for hydrostatic "
-                    "and dam-break problems.  The default is zero."
+                    "[Input] GRAVITY_ACCELERATION must be set "
+                    "explicitly for hydrostatic and dam-break "
+                    "problems.  The default is zero. Signal: a "
+                    "dam-break column stays static — no collapse, "
+                    "no flow; visualize shows particle velocities "
+                    "remain ~0 throughout. (Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [
