@@ -1039,18 +1039,19 @@ KNOWLEDGE = {
             "Output real part (physical wave) and magnitude |u| for visualization",
             "Pollution effect: for large k, standard P1 has O(k^3 h^2) phase error — use p-refinement",
             "[API] MeshQuad.init_tensor (and most other init_*) "
-            "does NOT attach named boundaries. ib.get_dofs('left') "
-            "then raises ValueError(\"Boundary 'left' not found.\") "
-            "AND the legacy subscript form ib.get_dofs()['left'] "
-            "raises TypeError: 'DofsView' object is not "
-            "subscriptable in scikit-fem 12. The canonical "
+            "does NOT attach named boundaries. The canonical "
             "incantation is m = MeshQuad.init_tensor(...)"
             ".with_boundaries({'left': lambda x: x[0] < 1e-10, "
             "'right': ..., 'bottom': ..., 'top': ...}); then "
             "ib.get_dofs('left').flatten() yields the boundary "
             "DOF indices. Same constraint applies after "
             ".to_meshtri() — boundaries must be reattached on "
-            "the triangulated mesh. (Verified empirically "
+            "the triangulated mesh. Signal: TWO distinct errors "
+            "depending on the call pattern — ib.get_dofs('left') "
+            "raises ValueError(\"Boundary 'left' not found.\") "
+            "while the legacy subscript form ib.get_dofs()['left'] "
+            "raises TypeError: 'DofsView' object is not "
+            "subscriptable in scikit-fem 12. (Verified empirically "
             "2026-06-01 — Layer F catch.)",
         ],
     },

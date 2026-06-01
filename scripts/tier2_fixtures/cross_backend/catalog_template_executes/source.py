@@ -218,6 +218,21 @@ def main() -> int:
         # deferred to a follow-up batch.
         ("skfem", "helmholtz", "2d"),
         ("skfem", "mixed_poisson", "2d"),
+        # Layer F batch-9 — non-'2d' variants that the
+        # catalog correctly advertises but Layer F had
+        # never probed because the smoke pass defaulted to
+        # variant='2d'. cd_dg runs as-shipped, while the
+        # magnetostatics row needed a Netgen CSG fix:
+        # geo.Add does NOT take 'mat=' kwarg — use
+        # solid.mat('name') chain before Add.
+        ("ngsolve", "convection_diffusion", "2d_dg"),
+        ("ngsolve", "maxwell", "3d_magnetostatics"),
+        # Kratos non-'2d' variants — supported_physics
+        # correctly declares fluid->2d_cavity and
+        # plasticity->3d; earlier probe stalled by
+        # defaulting to variant='2d'.
+        ("kratos", "fluid", "2d_cavity"),
+        ("kratos", "plasticity", "3d"),
     ]
     fail = []
     executed = 0

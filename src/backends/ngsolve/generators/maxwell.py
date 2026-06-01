@@ -13,12 +13,17 @@ from ngsolve import *
 from netgen.csg import *
 import json, math
 
-# Geometry with material region — set for your problem
+# Geometry with material region — set for your problem.
+# netgen.csg.CSGeometry.Add does NOT accept a 'mat=' kwarg
+# (signature: Add(solid, bcmod=[], maxh=..., col=(), ...)).
+# Attach material names by calling .mat('name') on the
+# Solid itself BEFORE passing it to Add — see pitfall on
+# CSG material tagging below.
 geo = CSGeometry()
 outer = OrthoBrick(Pnt(-1,-1,-1), Pnt(1,1,1)).bc("outer")
 inner = OrthoBrick(Pnt(-0.3,-0.3,-0.3), Pnt(0.3,0.3,0.3))
-geo.Add(outer - inner)
-geo.Add(inner, mat="source")
+geo.Add((outer - inner).mat("air"))
+geo.Add(inner.mat("source"))
 mesh = Mesh(geo.GenerateMesh(maxh={maxh}))
 
 fes = HCurl(mesh, order={order}, dirichlet="outer", nograds=True)
@@ -55,6 +60,18 @@ KNOWLEDGE = {
         "spaces": "HCurl(mesh, order=k, nograds=True) — tangential continuity",
         "solver": "Direct for small. HCurlAMG preconditioner for large systems",
         "pitfalls": [
+            "[API] netgen.csg.CSGeometry.Add does NOT accept a "
+            "'mat=' keyword argument — its signature is Add(solid, "
+            "bcmod=[], maxh=..., col=(), transparent=False, "
+            "layer=1). Calling geo.Add(solid, mat='source') raises "
+            "TypeError 'Invoked with: <CSGeometry>, <Solid>; "
+            "kwargs: mat=...'. Attach material names by chaining "
+            ".mat('name') on the Solid BEFORE passing it to Add: "
+            "geo.Add(inner.mat('source')); geo.Add((outer - "
+            "inner).mat('air')). Signal: TypeError from "
+            "netgen.libngpy._csg.CSGeometry.Add showing the "
+            "'mat=' kwarg in the message. (Verified empirically "
+            "2026-06-01 — Layer F catch.)",
             "[Numerical] For SOURCE problems (magnetostatics): use "
             "HCurl(..., nograds=True) to remove the gradient kernel, "
             "plus a 1e-8*u*v*dx regularisation. Signal: without "
