@@ -50,11 +50,63 @@ async def _run_with_progress(ctx: Context, coro, message_prefix: str = "Running"
     return task.result()
 
 
+_PHYSICS_SYNONYMS = {
+    "magnetostatics": "maxwell", "electromagnetics": "maxwell", "em": "maxwell",
+    "magnetic": "maxwell", "eddy_current": "maxwell", "nedelec": "maxwell",
+    "thermal": "heat", "conduction": "heat", "temperature": "heat",
+    "elasticity": "linear_elasticity", "structural": "linear_elasticity",
+    "solid": "linear_elasticity", "mechanics": "linear_elasticity",
+    "cfd": "navier_stokes", "flow": "navier_stokes", "fluid_dynamics": "navier_stokes",
+    "ns": "navier_stokes", "incompressible": "navier_stokes",
+    "diffusion": "poisson", "laplace": "poisson", "scalar": "poisson",
+    "wave": "helmholtz", "acoustics": "helmholtz",
+    "nonlinear_elasticity": "hyperelasticity", "large_deformation": "hyperelasticity",
+    "neo_hookean": "hyperelasticity", "finite_strain": "hyperelasticity",
+    "vibration": "eigenvalue", "modal": "eigenvalue", "frequencies": "eigenvalue",
+    "transport": "convection_diffusion", "advection": "convection_diffusion",
+    "plate": "biharmonic", "kirchhoff": "biharmonic",
+    "peridynamics": "particle_pd", "pd": "particle_pd", "fracture": "particle_pd",
+    "sph": "particle_sph", "smoothed_particle": "particle_sph",
+    "thermo_structural": "thermal_structural", "thermomechanical": "thermal_structural",
+    "poroelasticity": "porous_media", "poro": "porous_media",
+    "consolidation": "porous_media", "terzaghi": "porous_media",
+    "biot": "porous_media", "geomechanics": "porous_media",
+    "plasticity": "plasticity", "elasto_plasticity": "plasticity",
+    "elastoplasticity": "plasticity", "yield": "plasticity",
+    "mohr_coulomb": "plasticity", "drucker_prager": "plasticity",
+    "von_mises": "plasticity", "j2_plasticity": "plasticity",
+    "soil_plasticity": "plasticity", "metal_plasticity": "plasticity",
+}
+
+
+# Queries shorter than this never participate in loose substring
+# matches — short tokens collide with too many physics names /
+# descriptions ('ns' is a substring of 'transient', 'em' of
+# 'eigenvalue', 'pd' of 'pde'). For short tokens we trust ONLY
+# exact-name and synonym-map matches. (Audit 2026-06-02.)
+_MIN_LOOSE_MATCH_LEN = 4
+
+
 def _fuzzy_match_physics(backend, query: str) -> str:
     """Fuzzy-match a physics query to an actual physics name in a backend.
 
-    Handles synonyms like 'magnetostatics'→'maxwell', 'thermal'→'heat',
-    'elasticity'→'linear_elasticity', 'cfd'→'navier_stokes', etc.
+    Resolution order (audit 2026-06-02):
+      1. Empty -> return empty so caller can surface availables list.
+      2. Exact physics-name match.
+      3. Synonym map (e.g. 'ns' -> 'navier_stokes', 'em' -> 'maxwell',
+         'thermal' -> 'heat'). Synonyms run BEFORE substring matching
+         because short-token substrings collide constantly:
+         'ns' is a substring of 'transient', 'em' of 'eigenvalue',
+         'pd' of 'nonlinear_pde'. Without this ordering, LLMs that
+         type the canonical shorthand silently got the wrong physics.
+      4. Query is substring of a physics name (only if len >= 4).
+      5. Physics name is substring of the query (only if the
+         physics name is itself >= 4 chars — otherwise tiny names
+         like 'pd' match every query containing those letters).
+      6. Query is substring of a physics description (last resort,
+         len >= 4).
+      7. Fallthrough: return original so caller can produce a
+         "no information found" message.
     """
     query_lower = query.lower().strip()
 
@@ -69,56 +121,51 @@ def _fuzzy_match_physics(backend, query: str) -> str:
     if not query_lower:
         return query_lower
 
-    # Direct match first
+    # 1. Direct match.
     for p in backend.supported_physics():
         if p.name == query_lower:
             return p.name
 
-    # Check if query is substring of any physics name or description
+    # 2. Synonym map — BEFORE the substring scan so short
+    # canonical shorthands ('ns', 'em', 'pd') route to the
+    # right physics. Only return the synonym if it actually
+    # exists in this backend's catalog; otherwise fall through
+    # to the loose matchers (a backend that has 'maxwell' but
+    # not the synonym should still match via substring).
+    mapped = _PHYSICS_SYNONYMS.get(query_lower)
+    if mapped:
+        for p in backend.supported_physics():
+            if p.name == mapped:
+                return p.name
+
+    # 3. Loose substring of physics name (only for non-short
+    # queries — see _MIN_LOOSE_MATCH_LEN rationale above).
+    if len(query_lower) >= _MIN_LOOSE_MATCH_LEN:
+        for p in backend.supported_physics():
+            if query_lower in p.name.lower():
+                return p.name
+
+    # 4. Physics name is substring of query (only when the
+    # physics name itself is non-trivial). Without the length
+    # guard, a 2-char catalog entry like 'pd' matches every
+    # query containing those letters, which is the same
+    # collision class we just guarded the other direction
+    # against.
     for p in backend.supported_physics():
-        if query_lower in p.name.lower() or query_lower in p.description.lower():
+        if (len(p.name) >= _MIN_LOOSE_MATCH_LEN
+                and p.name.lower() in query_lower):
             return p.name
 
-    # Check if any physics name is substring of query
-    for p in backend.supported_physics():
-        if p.name.lower() in query_lower:
-            return p.name
+    # 5. Loose substring of physics description (last resort,
+    # same length guard).
+    if len(query_lower) >= _MIN_LOOSE_MATCH_LEN:
+        for p in backend.supported_physics():
+            if query_lower in p.description.lower():
+                return p.name
 
-    # Common synonyms
-    synonyms = {
-        "magnetostatics": "maxwell", "electromagnetics": "maxwell", "em": "maxwell",
-        "magnetic": "maxwell", "eddy_current": "maxwell", "nedelec": "maxwell",
-        "thermal": "heat", "conduction": "heat", "temperature": "heat",
-        "elasticity": "linear_elasticity", "structural": "linear_elasticity",
-        "solid": "linear_elasticity", "mechanics": "linear_elasticity",
-        "cfd": "navier_stokes", "flow": "navier_stokes", "fluid_dynamics": "navier_stokes",
-        "ns": "navier_stokes", "incompressible": "navier_stokes",
-        "diffusion": "poisson", "laplace": "poisson", "scalar": "poisson",
-        "wave": "helmholtz", "acoustics": "helmholtz",
-        "nonlinear_elasticity": "hyperelasticity", "large_deformation": "hyperelasticity",
-        "neo_hookean": "hyperelasticity", "finite_strain": "hyperelasticity",
-        "vibration": "eigenvalue", "modal": "eigenvalue", "frequencies": "eigenvalue",
-        "transport": "convection_diffusion", "advection": "convection_diffusion",
-        "plate": "biharmonic", "kirchhoff": "biharmonic",
-        "peridynamics": "particle_pd", "pd": "particle_pd", "fracture": "particle_pd",
-        "sph": "particle_sph", "smoothed_particle": "particle_sph",
-        "thermo_structural": "thermal_structural", "thermomechanical": "thermal_structural",
-        "poroelasticity": "porous_media", "poro": "porous_media",
-        "consolidation": "porous_media", "terzaghi": "porous_media",
-        "biot": "porous_media", "geomechanics": "porous_media",
-        "plasticity": "plasticity", "elasto_plasticity": "plasticity",
-        "elastoplasticity": "plasticity", "yield": "plasticity",
-        "mohr_coulomb": "plasticity", "drucker_prager": "plasticity",
-        "von_mises": "plasticity", "j2_plasticity": "plasticity",
-        "soil_plasticity": "plasticity", "metal_plasticity": "plasticity",
-    }
-
-    mapped = synonyms.get(query_lower, query_lower)
-    for p in backend.supported_physics():
-        if p.name == mapped:
-            return p.name
-
-    # Nothing found — return original
+    # Nothing matched — return original so the caller can
+    # surface the "no information found" message with the
+    # available-physics list.
     return query_lower
 
 
