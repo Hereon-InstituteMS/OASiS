@@ -55,13 +55,24 @@ sys.path.insert(0, str(_REPO / "src"))
 # pulling the average down) WILL.
 SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
-    "dealii":  68.0,   # measured 69.6
-    "skfem":   48.0,   # measured 49.5
-    "ngsolve": 46.0,   # measured 47.4
-    "febio":   45.0,   # measured 46.2
-    "fenics":  30.0,   # measured 31.8
-    "fourc":    8.0,   # measured  8.7 — large gap, real debt
-    "dune":     0.0,   # measured  0.0 — known total gap
+    "dealii":  68.0,   # measured  69.6
+    "skfem":   48.0,   # measured  49.5
+    "ngsolve": 46.0,   # measured  47.4
+    "febio":   45.0,   # measured  46.2
+    "fenics":  30.0,   # measured  31.8
+    "fourc":   13.0,   # measured  14.0 (raised 2026-06-02 from
+                       #                 8.0 after Signal: lines
+                       #                 added to fourc/scalar_
+                       #                 transport pitfalls 1-5
+                       #                 [propagates to poisson +
+                       #                 heat + electrochemistry +
+                       #                 level_set + ssi] and
+                       #                 fourc/solid_mechanics
+                       #                 pitfalls 1-4 [propagates
+                       #                 to linear_elasticity +
+                       #                 structural_mechanics +
+                       #                 ...])
+    "dune":     0.0,   # measured   0.0 — known total gap
 }
 
 

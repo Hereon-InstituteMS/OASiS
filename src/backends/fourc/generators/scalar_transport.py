@@ -122,30 +122,49 @@ class ScalarTransportGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "The dynamics section name is 'SCALAR TRANSPORT DYNAMIC', "
-                    "NOT 'SCATRA DYNAMIC'.  Using the wrong name silently falls "
-                    "back to defaults and produces wrong results."
+                    "[Input] The dynamics section name is 'SCALAR TRANSPORT "
+                    "DYNAMIC', NOT 'SCATRA DYNAMIC'.  Using the wrong name "
+                    "silently falls back to defaults and produces wrong "
+                    "results. Signal: simulation completes but result fields "
+                    "are uniformly zero / equal to the initial condition, "
+                    "or 4C reports `unknown section: SCATRA DYNAMIC` in the "
+                    "input-parser banner. (Audit 2026-06-02.)"
                 ),
                 (
-                    "VELOCITYFIELD must be 'zero' (not omitted) for pure diffusion.  "
-                    "If omitted, 4C may assume a velocity field from a coupled "
-                    "problem that does not exist, leading to errors."
+                    "[Input] VELOCITYFIELD must be 'zero' (not omitted) "
+                    "for pure diffusion.  If omitted, 4C may assume a "
+                    "velocity field from a coupled problem that does not "
+                    "exist, leading to errors. Signal: runtime error "
+                    "`requested velocity field not found` or "
+                    "`Vector velnp uninitialized`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "VTK output for scalar transport uses "
+                    "[Output] VTK output for scalar transport uses "
                     "'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' with "
                     "'OUTPUT_SCATRA: true' and 'PHI: true'.  Do NOT use "
-                    "'IO/RUNTIME VTK OUTPUT/SCATRA' -- that path is invalid."
+                    "'IO/RUNTIME VTK OUTPUT/SCATRA' -- that path is "
+                    "invalid. Signal: simulation completes successfully "
+                    "but no scatra-*.vtu files appear under the output "
+                    "directory; visualize('list') shows only structure "
+                    "fields. (Audit 2026-06-02.)"
                 ),
                 (
-                    "For Exodus-based meshes the geometry section is "
-                    "'TRANSPORT GEOMETRY' with ELEMENT_BLOCKS using the TRANSP "
-                    "element category.  Do not use STRUCTURE GEOMETRY."
+                    "[Input] For Exodus-based meshes the geometry section "
+                    "is 'TRANSPORT GEOMETRY' with ELEMENT_BLOCKS using "
+                    "the TRANSP element category.  Do not use STRUCTURE "
+                    "GEOMETRY. Signal: 4C aborts with `expected element "
+                    "category TRANSP but got SOLID` or similar mismatch "
+                    "during the geometry-parsing phase. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "NUMDOF for scalar transport boundary conditions is 1 "
-                    "(single scalar field).  ONOFF, VAL, and FUNCT arrays "
-                    "must each have exactly one entry."
+                    "[Input] NUMDOF for scalar transport boundary "
+                    "conditions is 1 (single scalar field).  ONOFF, VAL, "
+                    "and FUNCT arrays must each have exactly one entry. "
+                    "Signal: input parser aborts with `array size "
+                    "mismatch` or `expected NUMDOF entries`, citing the "
+                    "DESIGN ... DIRICH CONDITIONS block. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
                     "When using BDF2 time integration the first step is "

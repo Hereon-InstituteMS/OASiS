@@ -339,25 +339,42 @@ class SolidMechanicsGenerator(BaseGenerator):
             ],
             "pitfalls": [
                 (
-                    "KINEM must match the physical assumption.  Using "
-                    "'KINEM: linear' with a hyperelastic material (Neo-Hookean, "
-                    "Mooney-Rivlin) is WRONG and produces meaningless results."
+                    "[Numerical] KINEM must match the physical assumption.  "
+                    "Using 'KINEM: linear' with a hyperelastic material "
+                    "(Neo-Hookean, Mooney-Rivlin) is WRONG and produces "
+                    "meaningless results. Signal: deflection / strain "
+                    "results stay linear with load and disagree sharply "
+                    "with the equivalent KINEM: nonlinear run for the same "
+                    "geometry — typical divergence ~40% at large strain. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "For truly linear problems set MAXITER: 1.  4C will waste "
-                    "time iterating if MAXITER > 1 because the solution is "
-                    "already converged after one step."
+                    "[Performance] For truly linear problems set MAXITER: 1. "
+                    " 4C will waste time iterating if MAXITER > 1 because "
+                    "the solution is already converged after one step. "
+                    "Signal: NOX convergence log shows residual already "
+                    "below TOLRES at iteration 1 yet a second Newton step "
+                    "is taken on every time step. (Audit 2026-06-02.)"
                 ),
                 (
-                    "DENS (density) is only needed for dynamics or body-force "
-                    "loads (gravity).  For quasi-static problems without gravity "
-                    "it can be omitted, but it is MANDATORY for structural dynamics."
+                    "[Input] DENS (density) is only needed for dynamics or "
+                    "body-force loads (gravity).  For quasi-static problems "
+                    "without gravity it can be omitted, but it is MANDATORY "
+                    "for structural dynamics. Signal: a transient run with "
+                    "DYNAMICTYPE: GenAlpha aborts with `mass matrix needs "
+                    "DENS in material X` or produces all-zero displacements "
+                    "with no inertia effect. (Audit 2026-06-02.)"
                 ),
                 (
-                    "HEX8 elements suffer from volumetric and shear locking in "
-                    "bending-dominated or nearly-incompressible problems.  "
-                    "Use TECH: eas_full or TECH: fbar to mitigate locking, or "
-                    "use higher-order elements (HEX27, TET10)."
+                    "[Numerical] HEX8 elements suffer from volumetric and "
+                    "shear locking in bending-dominated or nearly-"
+                    "incompressible problems.  Use TECH: eas_full or "
+                    "TECH: fbar to mitigate locking, or use higher-order "
+                    "elements (HEX27, TET10). Signal: deflection in a "
+                    "cantilever / plate-bending benchmark is much smaller "
+                    "than analytical (often 10-100x too stiff), or Poisson "
+                    "ratio nu approaching 0.5 makes the response "
+                    "approach rigid. (Audit 2026-06-02.)"
                 ),
                 (
                     "[API] In 4C 2026.3 BOTH 2D and 3D structural "
