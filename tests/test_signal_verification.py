@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 38  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 39  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -79,6 +79,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #   +1 kratos::heat::0 (TEMPERATURE not added)
     #   +1 kratos::plasticity::4 (FRICTION_ANGLE wrong module)
     #   +1 ngsolve::maxwell::5 (ArnoldiSolver shift=0 singular)
+    #   +1 kratos::dem::3 (SphericParticle2D not registered)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
