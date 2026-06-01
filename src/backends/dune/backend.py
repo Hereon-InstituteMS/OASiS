@@ -40,9 +40,21 @@ class DuneBackend(SolverBackend):
         # into a dedicated conda env (ofa-dune is the convention
         # mirroring ofa-fenicsx / ofa-dealii). The MCP server runs
         # in the open-fem-agent .venv which usually does NOT have
-        # dune.fem. Check the active interpreter first, then
-        # probe known conda env layouts so discover/rediscover
-        # stay aligned. (Audit 2026-06-01.)
+        # dune.fem.
+        #
+        # Search order (priority lowest-first):
+        #   0 — any conda env with "dune" in its name (ofa-dune,
+        #       dune, dune-fem, etc.) — the most likely place.
+        #   1 — any other conda env (covers the case where dune.fem
+        #       was installed alongside fenicsx in a single shared
+        #       env).
+        #   99 — the active interpreter (.venv) — checked last
+        #       because dune.fem in the harness's own .venv is rare
+        #       and probing it first would slow down the common
+        #       case. Still checked so an unusual install layout
+        #       gets picked up.
+        # (Audit 2026-06-01; comment corrected 2026-06-02 — the
+        # earlier "Check the active interpreter first" was wrong.)
         import subprocess
         candidates = []
         active = get_python_executable()

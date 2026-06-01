@@ -2063,69 +2063,73 @@ def _save_candidates(candidates: list, session_id: str) -> str:
 # Helper functions for knowledge (copied from original tools)
 # ═══════════════════════════════════════════════════════════════
 
-def _get_coupling_knowledge():
-    """Return coupling knowledge string."""
+def _capture_knowledge_fn(fn_name: str) -> str:
+    """Reach into tools.knowledge.register_knowledge_tools to pull
+    out one of the inline get_*_knowledge closure bodies.
+
+    The three knowledge providers (coupling / TSI / preCICE) live
+    inside register_knowledge_tools as nested @mcp.tool() closures,
+    not as module-level functions. The consolidated tool surface
+    needs to call them outside FastMCP's tool-dispatch path, so
+    this helper builds a throwaway FastMCP instance, monkey-
+    patches its `tool` decorator to capture every registered
+    function by name, runs register_knowledge_tools, then calls
+    the requested one.
+
+    Failures here used to be wrapped in `except Exception: pass`
+    and produced a bare "...knowledge not available" string to
+    the LLM — silent degradation that hid genuine breakage of the
+    capture trick (FastMCP API change, register_knowledge_tools
+    refactor, missing tools.knowledge module, ...). The wrapper
+    now surfaces the exception so the LLM and the developer can
+    diagnose. (Audit 2026-06-02.)
+    """
     try:
         from tools.knowledge import register_knowledge_tools
         from mcp.server.fastmcp import FastMCP
-        mcp = FastMCP("tmp")
-        captured = {}
-        orig = mcp.tool
-        def cap(*a, **kw):
-            d = orig(*a, **kw)
-            def w(fn):
-                r = d(fn)
-                captured[fn.__name__] = fn
-                return r
-            return w
-        mcp.tool = cap
+    except ImportError as exc:
+        return (f"⚠ Cannot load knowledge subsystem: "
+                f"`{type(exc).__name__}: {exc}`")
+    mcp = FastMCP("tmp")
+    captured: dict = {}
+    orig = mcp.tool
+
+    def cap(*a, **kw):
+        d = orig(*a, **kw)
+
+        def w(fn):
+            r = d(fn)
+            captured[fn.__name__] = fn
+            return r
+        return w
+
+    mcp.tool = cap
+    try:
         register_knowledge_tools(mcp)
-        if "get_coupling_knowledge" in captured:
-            return captured["get_coupling_knowledge"]()
-    except Exception:
-        pass
-    return "Coupling knowledge not available"
+    except Exception as exc:
+        return (f"⚠ register_knowledge_tools failed while capturing "
+                f"`{fn_name}`: `{type(exc).__name__}: {exc}`")
+    if fn_name not in captured:
+        return (f"⚠ `{fn_name}` was not registered by "
+                f"register_knowledge_tools. Captured: "
+                f"{sorted(captured.keys())}")
+    try:
+        return captured[fn_name]()
+    except Exception as exc:
+        return (f"⚠ `{fn_name}()` raised: "
+                f"`{type(exc).__name__}: {exc}`")
+
+
+def _get_coupling_knowledge():
+    """Return coupling knowledge string (or a visible error block)."""
+    return _capture_knowledge_fn("get_coupling_knowledge")
+
 
 def _get_tsi_knowledge():
-    try:
-        from tools.knowledge import register_knowledge_tools
-        from mcp.server.fastmcp import FastMCP
-        mcp = FastMCP("tmp")
-        captured = {}
-        orig = mcp.tool
-        def cap(*a, **kw):
-            d = orig(*a, **kw)
-            def w(fn):
-                r = d(fn)
-                captured[fn.__name__] = fn
-                return r
-            return w
-        mcp.tool = cap
-        register_knowledge_tools(mcp)
-        if "get_tsi_knowledge" in captured:
-            return captured["get_tsi_knowledge"]()
-    except Exception:
-        pass
-    return "TSI knowledge not available"
+    return _capture_knowledge_fn("get_tsi_knowledge")
+
 
 def _get_precice_knowledge():
-    try:
-        from tools.knowledge import register_knowledge_tools
-        from mcp.server.fastmcp import FastMCP
-        mcp = FastMCP("tmp")
-        captured = {}
-        orig = mcp.tool
-        def cap(*a, **kw):
-            d = orig(*a, **kw)
-            def w(fn):
-                r = d(fn)
-                captured[fn.__name__] = fn
-                return r
-            return w
-        mcp.tool = cap
-        register_knowledge_tools(mcp)
-        if "get_precice_knowledge" in captured:
-            return captured["get_precice_knowledge"]()
-    except Exception:
-        pass
-    return "preCICE knowledge not available"
+    return _capture_knowledge_fn("get_precice_knowledge")
+
+
