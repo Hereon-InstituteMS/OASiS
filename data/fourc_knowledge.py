@@ -225,10 +225,22 @@ FOURC_KNOWLEDGE = {
             "MAT_Particle_PD": "Peridynamic particle (bond-based)",
         },
 
+        # Beam material names from 4C 2026.3 schema (MATERIALS
+        # section enum). Catalog previously had wrong delimiter:
+        # 'MAT_Beam_Reissner_ElastHyper' (underscore-separated)
+        # is NOT a valid 4C material name — real format is
+        # 'MAT_BeamReissnerElastHyper' (CamelCase, only one
+        # underscore between MAT and the beam family). Wrong
+        # names fail at YAML parse with input_spec_builders.cpp
+        # 'Could not match this input'. Verified 2026-06-01.
         "beam": {
-            "MAT_Beam_Reissner_ElastHyper": "Simo-Reissner beam hyperelastic",
-            "MAT_Beam_Kirchhoff_ElastHyper": "Kirchhoff beam hyperelastic",
-            "MAT_Beam_Reissner_ElastPlastic": "Beam with plasticity",
+            "MAT_BeamReissnerElastHyper": "Simo-Reissner beam hyperelastic (default for BEAM3R)",
+            "MAT_BeamReissnerElastHyper_ByModes": "Reissner beam, parametrized by deformation modes",
+            "MAT_BeamReissnerElastPlastic": "Reissner beam with plasticity",
+            "MAT_BeamKirchhoffElastHyper": "Kirchhoff beam hyperelastic (default for BEAM3K)",
+            "MAT_BeamKirchhoffElastHyper_ByModes": "Kirchhoff beam, parametrized by deformation modes",
+            "MAT_BeamKirchhoffTorsionFreeElastHyper": "Kirchhoff torsion-free hyperelastic (default for BEAM3EB)",
+            "MAT_BeamKirchhoffTorsionFreeElastHyper_ByModes": "Torsion-free Kirchhoff, parametrized by modes",
         },
     },
 

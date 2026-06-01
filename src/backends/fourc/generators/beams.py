@@ -123,7 +123,7 @@ class BeamsGenerator(BaseGenerator):
             "beam_types": {
                 "BEAM3R": {
                     "name": "Reissner beam (shear-deformable)",
-                    "topologies": ["LINE2", "LINE3", "LINE4"],
+                    "topologies": ["LINE2", "LINE3", "LINE4", "LINE5"],
                     "dofs_per_node": "6 (standard) or 9 (with HERMITE_CENTERLINE)",
                     "features": [
                         "Full shear deformation",
@@ -152,7 +152,7 @@ class BeamsGenerator(BaseGenerator):
                 },
                 "BEAM3K": {
                     "name": "Kirchhoff beam (with torsion)",
-                    "topologies": ["LINE2", "LINE3"],
+                    "topologies": ["LINE2", "LINE3", "LINE4"],
                     "dofs_per_node": "6 or 7 (with twist DOF)",
                     "features": [
                         "No shear deformation",
@@ -295,6 +295,20 @@ class BeamsGenerator(BaseGenerator):
                 "DNODE-NODE TOPOLOGY entries are needed for point Dirichlet and "
                 "Neumann conditions.  DLINE-NODE TOPOLOGY entries are needed for "
                 "distributed line loads.",
+                "[API] Beam material names use CamelCase WITHOUT inner "
+                "underscores: MAT_BeamReissnerElastHyper (NOT "
+                "MAT_Beam_Reissner_ElastHyper), MAT_BeamKirchhoffElastHyper, "
+                "MAT_BeamKirchhoffTorsionFreeElastHyper, MAT_BeamReissnerElastPlastic, "
+                "and four '_ByModes' parameterization variants. The catalog "
+                "previously had wrong underscore-separated forms. Signal: "
+                "invalid material name fails at YAML parse with "
+                "input_spec_builders.cpp 'Could not match this input'. "
+                "Verified against 4C 2026.3 MATERIALS schema 2026-06-01.",
+                "[API] BEAM3R supports LINE2/LINE3/LINE4/LINE5 (catalog "
+                "previously missed LINE5). BEAM3K supports LINE2/LINE3/LINE4 "
+                "(catalog previously missed LINE4). BEAM3EB supports LINE2 "
+                "only — correct in catalog. Verified against 4C 2026.3 "
+                "STRUCTURE GEOMETRY/ELEMENT_BLOCKS schema 2026-06-01.",
             ],
             "typical_experiments": [
                 {
