@@ -16,6 +16,11 @@
     "nearly_incomp_uses_mixed_element=True",
     "nearly_incomp_has_stabilization=True",
     "nearly_incomp_has_taylor_hood_p2_p1=True",
+    "fracture_chars=",
+    "fracture_has_two_fields_u_and_d=True",
+    "fracture_has_damage_irreversibility=True",
+    "fracture_has_phase_field_length_scale=True",
+    "fracture_has_alt_min_two_linearproblems=True",
     "forbidden_ufl_FiniteElement=False",
     "forbidden_ufl_VectorElement=False",
     "forbidden_ufl_MixedElement=False"

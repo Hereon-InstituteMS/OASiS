@@ -38,6 +38,7 @@ _PHYSICS_MODULES: dict[str, str] = {
     "helmholtz":            ".helmholtz",
     "maxwell":              ".maxwell",
     "nearly_incompressible_elasticity": ".nearly_incompressible_elasticity",
+    "fracture":             ".fracture",
     # Advanced physics — all served by .advanced (multi-physics module)
     "dg_methods":           ".advanced",
     "contact":              ".advanced",

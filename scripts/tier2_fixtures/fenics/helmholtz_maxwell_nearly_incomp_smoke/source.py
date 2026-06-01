@@ -46,7 +46,8 @@ def main() -> int:
 
     results = {}
     for phys in ("helmholtz", "maxwell",
-                 "nearly_incompressible_elasticity"):
+                 "nearly_incompressible_elasticity",
+                 "fracture"):
         try:
             txt = b.generate_input(phys, "2d", {"nx": 8})
         except Exception as e:
@@ -93,6 +94,15 @@ def main() -> int:
         "nearly_incomp_has_taylor_hood_p2_p1":
             has("nearly_incompressible_elasticity",
                 'shape=(gdim,)'),
+        "fracture_has_two_fields_u_and_d":
+            has("fracture", "V_u") and has("fracture", "V_d"),
+        "fracture_has_damage_irreversibility":
+            has("fracture", "np.clip(d_h.x.array"),
+        "fracture_has_phase_field_length_scale":
+            has("fracture", "l0_val"),
+        "fracture_has_alt_min_two_linearproblems":
+            has("fracture", "prob_u")
+            and has("fracture", "prob_d"),
     }
     for k, v in checks.items():
         print(f"{k}={v}")
