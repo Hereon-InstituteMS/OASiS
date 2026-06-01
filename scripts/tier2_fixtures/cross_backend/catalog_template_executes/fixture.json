@@ -26,7 +26,12 @@
     "fenics::nearly_incompressible_elasticity::2d_rc=0",
     "fenics::fracture::2d_rc=0",
     "fenics::stokes_darcy::2d_rc=0",
-    "total_executed=20",
+    "fenics::navier_stokes::2d_rc=0",
+    "fenics::hyperelasticity::3d_rc=0",
+    "ngsolve::eigenvalue::2d_rc=0",
+    "skfem::eigenvalue::2d_rc=0",
+    "skfem::biharmonic::2d_rc=0",
+    "total_executed=25",
     "failures=0"
   ],
   "forbid_in_output": [

@@ -67,7 +67,10 @@ m = fem.form(u * v * ufl.dx)
 from dolfinx.fem.petsc import assemble_matrix
 A = assemble_matrix(a, bcs=[bc])
 A.assemble()
-M = assemble_matrix(m, bcs=[bc], diagonal=0.0)
+# dolfinx 0.10 renamed the kwarg from 'diagonal' to 'diag'
+# in dolfinx.fem.petsc.assemble_matrix. Passing 'diagonal'
+# raises TypeError: unexpected keyword argument.
+M = assemble_matrix(m, bcs=[bc], diag=0.0)
 M.assemble()
 
 try:

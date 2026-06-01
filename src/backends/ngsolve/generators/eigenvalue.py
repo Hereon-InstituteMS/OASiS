@@ -27,13 +27,28 @@ print(f"First {n_eigs} eigenvalues:")
 exact = [math.pi**2*(i**2+j**2) for i in range(1,6) for j in range(1,6)]
 exact.sort()
 for i, (computed, ref) in enumerate(zip(lam, exact[:{n_eigs}])):
-    err = abs(computed - ref) / ref
-    print(f"  lambda_{{i+1}} = {{computed:.6f}} (exact: {{ref:.6f}}, error: {{err:.2e}})")
+    # ArnoldiSolver returns complex eigenvalues even for
+    # self-adjoint problems; .real strips the O(1e-16)
+    # imaginary part. ':.6f' format specifier on a complex
+    # value raises TypeError so this conversion is mandatory.
+    c = float(complex(computed).real)
+    err = abs(c - ref) / ref
+    print(f"  lambda_{{i+1}} = {{c:.6f}} (exact: {{ref:.6f}}, error: {{err:.2e}})")
 
-vtk = VTKOutput(mesh, coefs=[gfu.components[0]], names=["eigenmode_1"],
+# GridFunction(fes, multidim=N) stores N modes in
+# gfu.vecs[0..N-1].  gfu.components is for COMPOUND
+# FESpaces (e.g. VectorH1*H1), not multidim — using it
+# here raises IndexError 'tuple index out of range'.
+# To plot the first mode, copy it into gfu.vec and pass
+# gfu itself to VTKOutput.
+gfu.vec.data = gfu.vecs[0]
+vtk = VTKOutput(mesh, coefs=[gfu], names=["eigenmode_1"],
                 filename="result", subdivision=1)
 vtk.Do()
-summary = {{"eigenvalues": [float(l) for l in lam], "n_dofs": fes.ndof}}
+# ArnoldiSolver returns complex eigenvalues even for the
+# self-adjoint Laplacian (imaginary parts are O(1e-16)).
+# float() on a complex raises TypeError — take .real first.
+summary = {{"eigenvalues": [float(complex(l).real) for l in lam], "n_dofs": fes.ndof}}
 with open("results_summary.json", "w") as _f:
     json.dump(summary, _f, indent=2)
 print("Eigenvalue solve complete.")
