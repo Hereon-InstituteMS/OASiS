@@ -189,45 +189,82 @@ class ContactGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "Both MORTAR COUPLING and CONTACT DYNAMIC sections are "
-                    "REQUIRED.  Missing either one causes 4C to crash or "
-                    "silently ignore the contact conditions."
+                    "[Input] Both MORTAR COUPLING and CONTACT DYNAMIC "
+                    "sections are REQUIRED.  Missing either one causes "
+                    "4C to crash or silently ignore the contact "
+                    "conditions. Signal: input parser aborts with "
+                    "`MORTAR COUPLING section required for contact` / "
+                    "`CONTACT DYNAMIC section missing`, OR the run "
+                    "completes but two bodies pass through each other "
+                    "(zero contact pressure, identical displacement to "
+                    "no-contact reference). (Audit 2026-06-02.)"
                 ),
                 (
-                    "Each contact interface needs BOTH a Slave and a Master "
-                    "surface with the same InterfaceID.  A missing partner "
-                    "surface causes the contact search to fail."
+                    "[Input] Each contact interface needs BOTH a Slave "
+                    "and a Master surface with the same InterfaceID.  "
+                    "A missing partner surface causes the contact "
+                    "search to fail. Signal: log line `no master "
+                    "partner found for interface X` / `MortarInterface: "
+                    "InterfaceID X has 0 master elements`. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "PENALTYPARAM tuning is critical.  Too low: excessive "
-                    "penetration (inaccurate results).  Too high: "
-                    "ill-conditioned system matrix (Newton divergence).  "
-                    "Start with 1e3 and adjust based on penetration depth."
+                    "[Numerical] PENALTYPARAM tuning is critical.  Too "
+                    "low: excessive penetration (inaccurate results).  "
+                    "Too high: ill-conditioned system matrix (Newton "
+                    "divergence).  Start with 1e3 and adjust based on "
+                    "penetration depth. Signal: NOX log shows "
+                    "non-monotonic residual or condition-number warning "
+                    "above ~1e14; OR max contact penetration in "
+                    "post-processing exceeds ~5% of the contact-pair "
+                    "element edge length. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Quasi-static contact MUST use load stepping.  Applying "
-                    "the full load in one step almost always causes Newton "
-                    "divergence because the contact zone changes drastically."
+                    "[Numerical] Quasi-static contact MUST use load "
+                    "stepping.  Applying the full load in one step "
+                    "almost always causes Newton divergence because "
+                    "the contact zone changes drastically. Signal: "
+                    "NOX hits StatusTest::MaxIters at the first step; "
+                    "the residual oscillates between two values "
+                    "associated with the contact set toggling each "
+                    "iteration. (Audit 2026-06-02.)"
                 ),
                 (
-                    "The slave surface should be the finer mesh or the softer "
-                    "body.  Swapping slave and master can cause convergence "
-                    "issues or inaccurate contact pressure distributions."
+                    "The slave surface should be the finer mesh or "
+                    "the softer body.  Swapping slave and master can "
+                    "cause convergence issues or inaccurate contact "
+                    "pressure distributions."
                 ),
                 (
-                    "KINEM must be 'nonlinear' for contact problems to "
-                    "correctly handle the geometric nonlinearity of contact "
-                    "gap computation.  Linear kinematics produce wrong results."
+                    "[Numerical] KINEM must be 'nonlinear' for contact "
+                    "problems to correctly handle the geometric "
+                    "nonlinearity of contact gap computation.  Linear "
+                    "kinematics produce wrong results. Signal: contact "
+                    "pressure distribution is symmetric about the "
+                    "initial geometry instead of following the "
+                    "deformed configuration; for a Hertz benchmark "
+                    "the contact radius is off by ~20% from the "
+                    "analytical (3*F*R/(4*E*))^(1/3). (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "Use node_set_id or NODE_SET_NAME (not element set) for "
-                    "contact surface definitions.  The mortar integration is "
-                    "surface-based and requires node sets."
+                    "[Input] Use node_set_id or NODE_SET_NAME (not "
+                    "element set) for contact surface definitions.  "
+                    "The mortar integration is surface-based and "
+                    "requires node sets. Signal: parser error "
+                    "`expected node set for contact surface, got "
+                    "element set` / `MortarInterface needs DNODE not "
+                    "DELE`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Contact surfaces must not overlap or intersect initially.  "
-                    "An initial penetration can cause the Newton iteration to "
-                    "diverge at the first step."
+                    "[Numerical] Contact surfaces must not overlap or "
+                    "intersect initially.  An initial penetration can "
+                    "cause the Newton iteration to diverge at the "
+                    "first step. Signal: NOX residual at iteration 0 "
+                    "is already large (~|PENALTYPARAM * penetration|) "
+                    "and the first Newton update overshoots; "
+                    "MortarInterface diagnostic prints `initial "
+                    "penetration X.X > tolerance`. (Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [

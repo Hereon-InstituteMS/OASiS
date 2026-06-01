@@ -60,18 +60,18 @@ SIGNAL_COVERAGE_MIN = {
     "ngsolve": 46.0,   # measured  47.4
     "febio":   45.0,   # measured  46.2
     "fenics":  30.0,   # measured  31.8
-    "fourc":   13.0,   # measured  14.0 (raised 2026-06-02 from
-                       #                 8.0 after Signal: lines
-                       #                 added to fourc/scalar_
-                       #                 transport pitfalls 1-5
-                       #                 [propagates to poisson +
-                       #                 heat + electrochemistry +
-                       #                 level_set + ssi] and
-                       #                 fourc/solid_mechanics
-                       #                 pitfalls 1-4 [propagates
-                       #                 to linear_elasticity +
-                       #                 structural_mechanics +
-                       #                 ...])
+    "fourc":   17.0,   # measured  18.2 (raised 2026-06-02 from
+                       #                 13.0 after a second pass:
+                       #                 added Signal: lines to
+                       #                 particle_pd pitfalls
+                       #                 1, 2, 3, 5, 7, 8, 13
+                       #                 and contact pitfalls
+                       #                 1, 2, 3, 4, 6, 7, 8.
+                       #                 fourc has gone 8.7% ->
+                       #                 14.0% -> 18.2% across
+                       #                 three commits while
+                       #                 every other backend
+                       #                 stayed flat.)
     "dune":     0.0,   # measured   0.0 — known total gap
 }
 
