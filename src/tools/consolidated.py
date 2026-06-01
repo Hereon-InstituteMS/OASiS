@@ -56,7 +56,18 @@ def _fuzzy_match_physics(backend, query: str) -> str:
     Handles synonyms like 'magnetostatics'→'maxwell', 'thermal'→'heat',
     'elasticity'→'linear_elasticity', 'cfd'→'navier_stokes', etc.
     """
-    query_lower = query.lower()
+    query_lower = query.lower().strip()
+
+    # Empty / whitespace-only query — return verbatim so the
+    # caller's "no information found" path can surface the
+    # full available-physics list. Without this guard, the
+    # next substring check matches "" to the FIRST physics
+    # in the catalog (because "" is a substring of every
+    # string) and the LLM silently sees prepare_simulation
+    # output for a physics it never asked for. (Audit
+    # 2026-06-01.)
+    if not query_lower:
+        return query_lower
 
     # Direct match first
     for p in backend.supported_physics():
@@ -1170,6 +1181,16 @@ def register_consolidated_tools(mcp: FastMCP):
 
         # Fuzzy match: find the best matching physics name
         matched_physics = _fuzzy_match_physics(backend, physics)
+        if not matched_physics:
+            # Empty / whitespace-only query — surface the
+            # available-physics list so the LLM can pick a real
+            # name. Without this guard prepare_simulation silently
+            # builds a half-empty response for a physics it never
+            # had. Audit 2026-06-01.
+            available = ", ".join(
+                p.name for p in backend.supported_physics())
+            return (f"Empty physics query. Available physics in "
+                    f"{backend.display_name()}: {available}")
         if matched_physics != physics:
             parts.append(f"*Note: '{physics}' matched to '{matched_physics}'*\n")
 
