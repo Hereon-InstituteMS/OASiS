@@ -175,6 +175,35 @@ KNOWLEDGE = {
             "diverges to ±inf within ~10 steps. Switch to "
             "backward Euler or Crank-Nicolson for unconditional "
             "stability.",
+            "[API] basis.get_dofs() returns a skfem.DofsView "
+            "object that is NOT subscriptable by string. Code "
+            "like `ib.get_dofs()['left']` raises "
+            "TypeError: 'DofsView' object is not subscriptable. "
+            "The correct API is to pass the boundary tag name "
+            "positionally on construction: "
+            "ib.get_dofs('left'). This trap matters because a "
+            "natural reading of 'get_dofs then index into the "
+            "result' mirrors dict access patterns elsewhere in "
+            "scipy/numpy. Signal: TypeError with the literal "
+            "string 'DofsView' + 'not subscriptable' in the "
+            "message. (Verified empirically 2026-06-01 — "
+            "Tier-2 fixture heat_dofsview_and_condense_x_shape "
+            "in scripts/tier2_fixtures/skfem/.)",
+            "[API] skfem.condense(K, f, x=..., D=D)'s x "
+            "argument must be a FULL-SIZE vector of length "
+            "basis.N (the total number of DOFs in the system), "
+            "NOT just the constrained values concatenated. "
+            "Passing a short array of length len(D) raises "
+            "IndexError 'index <N> is out of bounds for axis 0 "
+            "with size <constrained count>' from condense's "
+            "internal x[D] indexing. Build x via "
+            "x_full = basis.zeros(); x_full[D_left] = ...; "
+            "x_full[D_right] = ... — never assemble a short "
+            "array of just the BC values. Signal: IndexError "
+            "with literal 'out of bounds' substring at the "
+            "condense call site, before any solve attempt. "
+            "(Verified empirically 2026-06-01 — same Tier-2 "
+            "fixture as #4.)",
         ],
     },
     "heat_transient": {
