@@ -48,10 +48,34 @@ KNOWLEDGE = {
         "solver": "Direct (4th order system needs fine mesh)",
         "elements": "ElementTriMorley (nonconforming), ElementTriArgyris (C1), ElementQuadBFS (C1 quad)",
         "pitfalls": [
-            "Morley: nonconforming plate element, only DOFs at vertices and edge midpoints",
-            "Argyris: C1 continuous, 21 DOFs per triangle, 5th degree polynomials",
-            "BFS (Bogner-Fox-Schmit): C1 on quads, 16 DOFs per element",
-            "Euler-Bernoulli beam (example 34): 1D with ElementLineHermite",
+            "[API] ElementTriMorley is the nonconforming plate "
+            "element — 6 DOFs per triangle (3 vertex values + "
+            "3 edge-midpoint normal-derivative values). The "
+            "normal-derivative DOF is on the EDGE, not a "
+            "vertex, so adjacency-based queries that assume "
+            "vertex-only DOFs miss it. Signal: skfem.Basis("
+            "mesh, ElementTriMorley()).Nbfun == 6 regardless of "
+            "mesh refinement (per-element count). (Verified "
+            "empirically 2026-06-01.)",
+            "[API] ElementTriArgyris is C^1 continuous with 21 "
+            "DOFs per triangle (5th-degree polynomial). The DOFs "
+            "include function values, first derivatives, and "
+            "second derivatives at each vertex (6 per vertex × "
+            "3 vertices = 18) plus 3 edge-midpoint normal "
+            "derivatives → 21. Signal: skfem.Basis(mesh, "
+            "ElementTriArgyris()).Nbfun == 21. (Verified "
+            "empirically 2026-06-01.)",
+            "[API] ElementQuadBFS (Bogner-Fox-Schmit) is C^1 on "
+            "quads with 16 DOFs per element (function, du/dx, "
+            "du/dy, and d^2u/dxdy at each of 4 vertices). "
+            "Signal: skfem.Basis(mesh, ElementQuadBFS()).Nbfun "
+            "== 16. (Verified empirically 2026-06-01.)",
+            "[API] Euler-Bernoulli beam (skfem example 34): use "
+            "ElementLineHermite on a MeshLine. 4 DOFs per "
+            "element (deflection + slope at each endpoint), "
+            "C^1 continuous. Signal: skfem.Basis(MeshLine(), "
+            "ElementLineHermite()).Nbfun == 4. (Claim inherited "
+            "— not yet empirically verified.)",
         ],
     },
 }

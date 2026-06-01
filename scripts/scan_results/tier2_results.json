@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 43,
-    "passed": 43,
+    "n_fixtures": 44,
+    "passed": 44,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -634,6 +634,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/skfem/asm_quadrature_mismatch/source.py\", line 33, in main\n    skfem.asm(b_form, p2, p1)\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/__init__.py\", line 93, in asm\n    retval = to(map(lambda a: form.coo_data(*a[1], idx=a[0], **kwargs),\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/__init__.py\", line 64, in _sum\n    out = sum(blocks)\n          ^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/__init__.py\", line 93, in <lambda>\n    retval = to(map(lambda a: form.coo_data(*a[1], idx=a[0], **kwar"
+    },
+    "skfem::biharmonic::0": {
+      "key": "skfem::biharmonic::0",
+      "backend": "skfem",
+      "physics": "biharmonic",
+      "pitfall_index": 0,
+      "fixture_id": "biharmonic_element_dof_counts",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "Morley_Nbfun=6",
+        "Argyris_Nbfun=21",
+        "BFS_Nbfun=16"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Morley_Nbfun=6\nArgyris_Nbfun=21\nBFS_Nbfun=16\n"
     },
     "skfem::linear_elasticity::0": {
       "key": "skfem::linear_elasticity::0",
