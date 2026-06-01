@@ -94,6 +94,73 @@ class TestMcpToolUsageAlignment(unittest.TestCase):
             f"{sorted(phantom)} but no dispatch branch handles "
             "them.")
 
+    def test_visualize(self) -> None:
+        """visualize dispatcher branches must be advertised in
+        the docstring AND the usage hint. Caught 2026-06-02:
+        the dispatcher implemented action='validate' (NaN/Inf/
+        constant-field/giant-magnitude sanity checks) and the
+        usage hint listed it, but the docstring only mentioned
+        'summary'/'plot'/'list' — so an LLM reading the tool's
+        introspection signature never discovered validate
+        existed.
+        """
+        src = _read_consolidated()
+        # Carve out the visualize function body. The next
+        # section marker is the developer comment.
+        body = src.split("async def visualize")[1].split(
+            "# 7. DEVELOPER")[0]
+        branches = _branches(body, "action")
+        # Pull the docstring out: it is the first triple-
+        # quoted block in the function body.
+        ds_match = re.search(r'"""([\s\S]+?)"""', body)
+        self.assertIsNotNone(
+            ds_match,
+            "visualize has no docstring.")
+        docstring = ds_match.group(1)
+        # Pull the usage hint line (return "Usage: ..."). The
+        # action= alternatives are written as a pipe-separated
+        # chain of single-quoted strings:
+        #   action='summary'|'plot'|'list'|'validate'
+        # Find the full "Usage:" line and pull every quoted
+        # token from the action= chain.
+        usage_line_match = re.search(
+            r'Usage:\s*visualize\([^)]*\)',
+            body)
+        self.assertIsNotNone(
+            usage_line_match,
+            "visualize has no Usage: hint with action= "
+            "alternatives.")
+        usage_line = usage_line_match.group(0)
+        # Pull the action= chain (single-quoted words separated
+        # by | and possibly other chars).
+        action_chain_match = re.search(
+            r"action=((?:'[^']+'\|?)+)",
+            usage_line)
+        self.assertIsNotNone(
+            action_chain_match,
+            "visualize Usage: line has no action='...' chain.")
+        action_chain = action_chain_match.group(1)
+        usage_actions = set(re.findall(r"'([^']+)'", action_chain))
+        missing_from_usage = branches - usage_actions
+        self.assertFalse(
+            missing_from_usage,
+            f"visualize dispatch branches "
+            f"{sorted(branches)} include "
+            f"{sorted(missing_from_usage)} not in usage hint "
+            f"{sorted(usage_actions)}.")
+        # Now: every branch must also be quoted in the
+        # docstring (literal 'summary', 'plot', etc.).
+        missing_from_docstring = {
+            b for b in branches
+            if f'"{b}"' not in docstring}
+        self.assertFalse(
+            missing_from_docstring,
+            f"visualize docstring does not mention dispatch "
+            f"branches {sorted(missing_from_docstring)}. LLMs "
+            f"reading the introspected tool signature will "
+            f"not learn these actions exist. Add quoted "
+            f"references in the Args:/Options block.")
+
     def test_knowledge(self) -> None:
         src = _read_consolidated()
         body = src.split("def knowledge")[1].split("# 2. DISCOVER")[0]

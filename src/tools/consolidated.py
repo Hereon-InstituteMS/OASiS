@@ -989,7 +989,15 @@ def register_consolidated_tools(mcp: FastMCP):
         Args:
             job_id: Job ID from run_simulation (or leave empty and set work_dir)
             work_dir: Direct path to results directory
-            action: 'summary' (field stats), 'plot' (generate PNG), 'list' (show files)
+            action: What to do. Options:
+                - "summary" — field statistics + results_summary.json content
+                  (default; the fastest pulse-check on a finished run)
+                - "list" — list every result file under the work dir
+                - "plot" — generate a PNG of the named field (needs field=)
+                - "validate" — automated sanity checks across the first
+                  3 result files: NaN/Inf detection, constant-field
+                  detection, suspiciously-large-magnitude detection
+                  (>1e15). Use after summary when a field looks wrong.
             field: Specific field name to plot (e.g. 'temperature', 'displacement')
         """
         from core.backend import JobHandle
