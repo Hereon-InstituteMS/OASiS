@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 52  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 53  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -93,6 +93,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #   +1 ngsolve::stokes::1 (compound TnT returns tuple of lists)
     #   +1 ngsolve::heat::0 (nonsym kwarg undocumented warning)
     #   +1 skfem::mixed_poisson::1 (ElementTriRT0 / no full-name spelling)
+    #   +1 skfem::eigenvalue::0 (Dirichlet Laplace eigvals + complement_dofs)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/

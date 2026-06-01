@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 52,
-    "passed": 52,
+    "n_fixtures": 53,
+    "passed": 53,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -327,7 +327,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.OG7egADg5a/probe.dat\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core/"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.8rBDvt3Gms/probe.dat\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core/"
     },
     "fourc::_input_format::1": {
       "key": "fourc::_input_format::1",
@@ -344,7 +344,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.4UfmS4ZRBZ/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.Vhps514FXz/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
     },
     "fourc::scalar_transport::0": {
       "key": "fourc::scalar_transport::0",
@@ -360,7 +360,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.7sPdYWWTPE/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.AQl2XcuLR5/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
     },
     "kratos::linear_elasticity::8": {
       "key": "kratos::linear_elasticity::8",
@@ -820,6 +820,22 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "forward-Euler heat eq, 20 steps, h = 0.0204\n  dt = 0.4 * CFL  \u2192 |u|_max = 9.832e-01\n  dt = 5.0 * CFL  \u2192 |u|_max = 4.296e+02\n  unstable / stable ratio = 4.4e+02\nCFL violated: dt=1.0412e-03 exceeds bound 2.0825e-04; forward-Euler is unstable here, linfty_norm grows by factor 4.4e+02.\n"
+    },
+    "skfem::eigenvalue::0": {
+      "key": "skfem::eigenvalue::0",
+      "backend": "skfem",
+      "physics": "eigenvalue",
+      "pitfall_index": 0,
+      "fixture_id": "laplace_eigenvalue_basics",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "D_plus_I_equals_N=True",
+        "eig0_rel_err_lt_0.05=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "D_plus_I_equals_N=True\neig0=19.9298, analytic=19.7392, rel_err=0.0097\neig0_rel_err_lt_0.05=True\n"
     },
     "skfem::poisson::94": {
       "key": "skfem::poisson::94",

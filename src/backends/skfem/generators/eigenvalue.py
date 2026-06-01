@@ -49,10 +49,43 @@ KNOWLEDGE = {
         "description": "Eigenvalue problems — Laplace, elasticity vibration (examples 02, 03, 16, 21)",
         "solver": "scipy.sparse.linalg.eigsh (Lanczos for symmetric generalized eigenvalue)",
         "pitfalls": [
-            "Restrict to interior DOFs: K[I][:,I], M[I][:,I] where I = complement_dofs(D)",
-            "sigma=0 for shift-invert (finds smallest eigenvalues)",
-            "Exact Laplace eigenvalues on [0,1]^2: pi^2(m^2+n^2)",
-            "For structural vibration: K*x = omega^2*M*x",
+            "[API] For Dirichlet eigenvalue problems, restrict "
+            "matrices to INTERIOR DOFs: I = basis.complement_dofs("
+            "D) where D = basis.get_dofs() (boundary). Then "
+            "K_I = K[I][:, I]; M_I = M[I][:, I]; eigsh(K_I, M=M_I, "
+            "...). Skipping this leaves the boundary DOFs in "
+            "the matrices and the Dirichlet eigenvalues come "
+            "back wrong. Signal: len(I) + len(D.nodal['u']) == "
+            "basis.N (verified empirically — N=25 on MeshTri."
+            "refined(2) splits as 16 boundary + 9 interior). "
+            "(Verified empirically 2026-06-01.)",
+            "[Numerical] scipy.sparse.linalg.eigsh with sigma=0 "
+            "uses shift-and-invert targeting the SMALLEST "
+            "eigenvalues. For a Dirichlet-restricted Laplacian "
+            "(SPD), sigma=0 is safe (no null space). Signal: "
+            "eigsh(K_I, M=M_I, k=5, sigma=0, which='LM') returns "
+            "the 5 smallest eigenvalues; switching to "
+            "which='SM' (no sigma) is much slower per iteration. "
+            "(Verified empirically — see laplace_eigenvalue_basics "
+            "fixture.)",
+            "[Physics] Analytic eigenvalues of the Dirichlet "
+            "Laplacian on [0,1]^2 are pi^2*(m^2+n^2) for m,n>=1. "
+            "First few: 19.74, 49.35, 49.35 (degenerate), 78.96, "
+            "98.70. A MeshTri refined(4) P1 mesh recovers them "
+            "with ~1-4% relative error (expected for P1; "
+            "refinement decreases the error). Signal: computed "
+            "eigenvalues from eigsh match the analytic sequence "
+            "within ~5% relative on MeshTri.refined(4) P1. "
+            "(Verified empirically 2026-06-01.)",
+            "[Numerical] Structural vibration eigenproblem "
+            "K*x = omega^2*M*x — eigenvalues are squared "
+            "angular frequencies. Take omega = sqrt(eig) to get "
+            "physical natural frequencies in rad/s. Signal: "
+            "passing both K and M to eigsh as eigsh(K, M=M, ...) "
+            "solves the generalised problem; passing only K "
+            "solves the standard problem (against identity), "
+            "giving wrong frequency values. (Claim inherited — "
+            "not yet empirically separated.)",
         ],
     },
 }
