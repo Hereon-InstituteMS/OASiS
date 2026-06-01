@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 26,
-    "passed": 26,
+    "n_fixtures": 27,
+    "passed": 27,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -343,6 +343,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 45, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/hcurl_grad_mismatch/source.py\", line 32, in main\n    a += grad(u) * grad(v) * dx  # H1 form on HCurl basis: WRONG\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnetgen.libngpy._meshing.NgException: SymbolicBFI needs scalar-valued CoefficientFunction\n"
+    },
+    "ngsolve::helmholtz::0": {
+      "key": "ngsolve::helmholtz::0",
+      "backend": "ngsolve",
+      "physics": "helmholtz",
+      "pitfall_index": 0,
+      "fixture_id": "helmholtz_complex_on_real_fespace",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "NgException",
+        "real Evaluate called for complex",
+        "ScaleCF"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "catch in AssembleBilinearform 2: real Evaluate called for complex ScaleCF\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/helmholtz_complex_on_real_fespace/source.py\", line 31, in main\n    a.Assemble()\nnetgen.libngpy._meshing.NgException: real Evaluate called for complex ScaleCFin Assemble BilinearForm 'biform_from_py'\n\n"
     },
     "ngsolve::poisson::92": {
       "key": "ngsolve::poisson::92",
