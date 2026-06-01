@@ -56,7 +56,23 @@ sys.path.insert(0, str(_REPO / "src"))
 SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
     "dealii":  68.0,   # measured  69.6
-    "skfem":   48.0,   # measured  49.5
+    "skfem":   58.0,   # measured  60.2 (raised 2026-06-02 from
+                       #                  48.0 after pass 1 on
+                       #                  skfem: 7 dg_methods
+                       #                  (ElementDG wrapper,
+                       #                  InteriorFacetBasis,
+                       #                  upwind direction,
+                       #                  IP-DG penalty,
+                       #                  post-processing
+                       #                  projection, non-
+                       #                  symmetric DG matrix) +
+                       #                  4 time_dependent (CN
+                       #                  oscillation, factorized
+                       #                  reuse, time-varying BC
+                       #                  re-condense, BE/BDF2
+                       #                  for stiff, explicit
+                       #                  CFL).
+                       #                  skfem 49.5% -> 60.2%.)
     "ngsolve": 68.0,   # measured  69.6 — ties dealii (raised
                        #                  2026-06-02 from 60.0
                        #                  after pass 3: 5

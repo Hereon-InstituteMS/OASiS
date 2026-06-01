@@ -999,14 +999,66 @@ KNOWLEDGE = {
         "solver": "Direct sparse (non-symmetric system from upwind flux); GMRES for large problems",
         "elements": "ElementDG(ElementTriP1()), ElementDG(ElementTriP2())",
         "pitfalls": [
-            "ElementDG wraps any element to make it fully discontinuous",
-            "InteriorFacetBasis: assembles over interior mesh facets — needed for DG flux terms",
+            (
+                "[API] ElementDG wraps any element to make it "
+                "fully discontinuous. Signal: forgetting the "
+                "wrapper and using a bare ElementTriP1 in a "
+                "DG context produces a continuous-Galerkin "
+                "global solution — no jumps at element edges, "
+                "and the upwind/penalty terms in the form "
+                "evaluate to zero. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] InteriorFacetBasis: assembles over "
+                "interior mesh facets — needed for DG flux "
+                "terms. Signal: using a plain Basis with an "
+                "InteriorFacetBasis-style form (involving u "
+                "and u.other or jump terms) raises "
+                "`AttributeError: 'Basis' object has no "
+                "attribute 'normals'` or yields a matrix with "
+                "no facet-coupling entries. (Audit 2026-06-02.)"
+            ),
             "FacetBasis: assembles over boundary facets — for inflow/outflow BC",
-            "Upwind flux: bn * u_upwind * [v]; must identify upwind side from sign of b.n",
+            (
+                "[Numerical] Upwind flux: bn * u_upwind * [v]; "
+                "must identify upwind side from sign of b.n. "
+                "Signal: a wrong upwind/downwind choice gives "
+                "centered flux that is unconditionally "
+                "unstable for pure advection — solution "
+                "develops oscillations growing geometrically "
+                "in the advection direction. (Audit "
+                "2026-06-02.)"
+            ),
             "scikit-fem uses a single-sided InteriorFacetBasis — '+' and '-' sides implicit",
-            "For IP (interior penalty) diffusion DG: penalty = sigma/h on each interior facet",
-            "project(u, basis_from=ib_dg, basis_to=ib_p1) for nodal post-processing",
-            "DG system is non-symmetric even for symmetric problems (upwind asymmetry)",
+            (
+                "[Numerical] For IP (interior penalty) "
+                "diffusion DG: penalty = sigma/h on each "
+                "interior facet. Signal: sigma too small -> "
+                "coercivity loss + solution norm diverges "
+                "under refinement; sigma too large -> "
+                "cond(K) > 1e14 and iterative solver "
+                "stagnates. Rule of thumb: sigma = "
+                "4 * order^2 for symmetric IP. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] project(u, basis_from=ib_dg, "
+                "basis_to=ib_p1) for nodal post-processing. "
+                "Signal: visualizing the DG solution directly "
+                "in ParaView with the wrong VTK writer "
+                "produces an all-zero or step-pattern field "
+                "because DG DOFs are not nodal; projecting "
+                "to P1 first restores a smooth visualization. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] DG system is non-symmetric even "
+                "for symmetric problems (upwind asymmetry). "
+                "Signal: scipy.sparse.linalg.cg fails with "
+                "`RuntimeError: matrix not positive definite` "
+                "or stalls; switch to gmres / direct LU. "
+                "(Audit 2026-06-02.)"
+            ),
             "SUPG (continuous Galerkin with stabilization) is often more stable than pure DG for advection",
         ],
     },
@@ -1016,13 +1068,61 @@ KNOWLEDGE = {
         "elements": "ElementQuad1, ElementTriP1 (any H1-conforming element)",
         "pitfalls": [
             "Backward Euler (theta=1): unconditionally stable, 1st order in time",
-            "Crank-Nicolson (theta=0.5): 2nd order in time but can have oscillations",
-            "Factor system matrix ONCE and reuse — factorized() from scipy.sparse.linalg",
-            "Non-homogeneous time-varying BCs: update rhs and re-condense each step",
+            (
+                "[Numerical] Crank-Nicolson (theta=0.5): "
+                "2nd order in time but can have oscillations. "
+                "Signal: temperature/concentration shows "
+                "10-30% over/undershoot at sharp transients "
+                "that does not damp with mesh refinement; "
+                "switching to theta=1 (BE) removes the "
+                "oscillation at the cost of 1st-order phase "
+                "error. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] Factor system matrix ONCE and "
+                "reuse — factorized() from scipy.sparse.linalg. "
+                "Signal: profile shows >90% time in "
+                "scipy.sparse.linalg.spsolve per step; using "
+                "factorized() reduces per-step cost from full "
+                "LU to forward+back-substitution (~10-100x "
+                "speedup for a fixed matrix). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Non-homogeneous time-varying BCs: "
+                "update rhs and re-condense each step. Signal: "
+                "if rhs is condensed once and reused, the "
+                "boundary DOFs stay at their initial values "
+                "across the time loop — solution at boundary "
+                "diverges from the prescribed time-varying "
+                "BC. (Audit 2026-06-02.)"
+            ),
             "CFL condition: not needed for BE (implicit), but affects accuracy",
-            "For stiff systems (reaction-dominated): backward Euler or BDF2 preferred",
+            (
+                "[Numerical] For stiff systems (reaction-"
+                "dominated): backward Euler or BDF2 preferred. "
+                "Signal: explicit (theta=0) or near-explicit "
+                "(theta<0.5) on stiff problems requires "
+                "dt < 2/lambda_max, where lambda_max is the "
+                "largest eigenvalue of M^{-1}K; for "
+                "reaction-diffusion with Da > 100, "
+                "characteristic dt is so small the simulation "
+                "is infeasible. Switch to BE/BDF2. (Audit "
+                "2026-06-02.)"
+            ),
             "doflocs property: ib.doflocs gives (ndim, N) coordinate array for initial conditions",
-            "For explicit time stepping: M*du/dt = -K*u + f  (avoid for stiff problems)",
+            (
+                "[Numerical] For explicit time stepping: "
+                "M*du/dt = -K*u + f (avoid for stiff "
+                "problems). Signal: explicit Euler with "
+                "dt > 2/lambda_max blows up to NaN within a "
+                "few steps; energy grows geometrically; "
+                "warning: the standard FEM mass matrix M is "
+                "NOT diagonal — applying explicit Euler "
+                "naively requires inverting M at each step "
+                "(lumped mass is one workaround). (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "helmholtz": {
