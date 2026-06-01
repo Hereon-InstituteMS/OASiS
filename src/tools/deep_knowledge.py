@@ -818,7 +818,7 @@ _FENICS_KNOWLEDGE = {
             "space": "V = fem.functionspace(domain, ('Lagrange', 1))",
             "bc": "fdim = domain.topology.dim - 1; boundary_facets = mesh.locate_entities_boundary(domain, fdim, lambda x: np.full(x.shape[1], True)); bc = fem.dirichletbc(0.0, fem.locate_dofs_topological(V, fdim, boundary_facets), V)",
             "forms": "u, v = ufl.TrialFunction(V), ufl.TestFunction(V); a = inner(grad(u), grad(v)) * ufl.dx; L = f * v * ufl.dx",
-            "solve": "problem = LinearProblem(a, L, bcs=[bc], petsc_options={'ksp_type': 'cg', 'pc_type': 'hypre'}); uh = problem.solve()",
+            "solve": "problem = LinearProblem(a, L, bcs=[bc], petsc_options_prefix='solve', petsc_options={'ksp_type': 'cg', 'pc_type': 'hypre'}); uh = problem.solve()",
         },
         "solver": {"direct": "ksp_type: preonly, pc_type: lu, pc_factor_mat_solver_type: mumps", "iterative": "ksp_type: cg, pc_type: hypre (BoomerAMG)"},
         "mixed_formulation": {
