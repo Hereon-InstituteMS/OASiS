@@ -378,10 +378,23 @@ class TestDealiiFiniteElementClasses(unittest.TestCase):
 
     def test_no_unknown_fe_class_in_catalog(self):
         unknown = self.mentions - self.source
-        # Tolerate a small denylist of "marker" or "abstract" base
+        # Tolerate a small denylist of "marker" / "abstract" / "alias"
         # references that show up in prose but never get instantiated
-        # in template code.
-        unknown -= {"FE_Base", "FE_Data"}
+        # in template code. The catalog cites them for the LLM's
+        # taxonomic understanding of deal.II's FE hierarchy:
+        #   FE_Base, FE_Data     — abstract base classes
+        #   FE_System            — alias / typo guidance for FESystem
+        #                           (catalog warns LLMs against the
+        #                           underscored form; the warning text
+        #                           necessarily contains the bad name)
+        #   FE_Series            — namespace FESeries (legendre / fourier
+        #                           helpers), not a class
+        #   FE_DG                — template base name covering
+        #                           FE_DGRaviartThomas / FE_DGBDM /
+        #                           FE_DGNedelec etc.; never instantiated
+        #                           directly. (Audit 2026-06-01.)
+        unknown -= {"FE_Base", "FE_Data",
+                    "FE_System", "FE_Series", "FE_DG"}
         self.assertFalse(
             unknown,
             f"\ndeal.II catalog references FE_* classes that do not "

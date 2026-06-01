@@ -21,21 +21,40 @@ from typing import Set
 
 
 def _classes_with_prefix(prefix: str) -> Set[str] | None:
-    """Return the names of public classes whose name starts with ``prefix``
-    on the ``skfem`` module, or ``None`` if scikit-fem is not installed."""
+    """Return the names of public classes or class-like callables (factory
+    constructors) whose name starts with ``prefix`` on the ``skfem``
+    module, or ``None`` if scikit-fem is not installed.
+
+    scikit-fem ships some mesh names (notably ``MeshLine``) as factory
+    instances (``MeshLineConstructor``) rather than the class itself —
+    ``skfem.MeshLine()`` works, but ``inspect.isclass(skfem.MeshLine)``
+    is False. The catalog correctly refers to ``MeshLine`` because that
+    is the public API surface; this groundtruth filter accepts both
+    classes AND callable instances so the catalog-consistency test
+    does not flag legitimate factory references. (Audit 2026-06-01.)
+    """
     try:
         import inspect
 
         import skfem  # type: ignore
     except ImportError:
         return None
-    return {
-        name
-        for name in dir(skfem)
-        if name.startswith(prefix)
-        and not name.startswith("_")
-        and inspect.isclass(getattr(skfem, name))
-    }
+    result: Set[str] = set()
+    for name in dir(skfem):
+        if not name.startswith(prefix):
+            continue
+        if name.startswith("_"):
+            continue
+        obj = getattr(skfem, name)
+        if inspect.isclass(obj):
+            result.add(name)
+        elif callable(obj):
+            # Accept factory-style constructors that produce a
+            # mesh / element when called with no args. Avoids the
+            # need for the catalog to switch between e.g. MeshLine
+            # (the public alias) and MeshLine1 (the concrete class).
+            result.add(name)
+    return result
 
 
 def element_classes() -> Set[str] | None:
