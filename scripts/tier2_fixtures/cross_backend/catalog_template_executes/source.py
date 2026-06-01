@@ -328,6 +328,19 @@ def main() -> int:
         # large error) — separate from the gate rc=0
         # criterion this row tests.
         ("ngsolve", "hdivdiv", "2d"),
+        # Batch-16: 7 kratos availability-probe stubs that
+        # had NO pitfalls in their KNOWLEDGE dicts. Each got
+        # a "[Integration] catalog template is an availability-
+        # probe STUB, not a solver" pitfall so the LLM is
+        # warned. All 7 run rc=0 (the script just imports the
+        # Application module and prints availability).
+        ("kratos", "pfem_solid", "2d"),
+        ("kratos", "pfem2", "2d"),
+        ("kratos", "dam", "2d"),
+        ("kratos", "cable_net", "2d"),
+        ("kratos", "droplet_dynamics", "2d"),
+        ("kratos", "free_surface", "2d"),
+        ("kratos", "fluid_hydraulics", "2d"),
     ]
     fail = []
     executed = 0

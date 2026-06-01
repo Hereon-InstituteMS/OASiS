@@ -78,11 +78,39 @@ KNOWLEDGE = {
         "description": "PFEM for large-deformation solid mechanics with remeshing",
         "application": "PfemSolidMechanicsApplication",
         "capabilities": ["large_deformation_solids", "cutting", "forming", "erosion"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB, not a solver. It imports "
+            "KratosMultiphysics + the relevant Application "
+            "module, prints whether the import succeeded, and "
+            "writes a 1-line results_summary.json. No "
+            "ModelPart / AnalysisStage / SolverWrapper is "
+            "scaffolded — run_simulation on this template "
+            "reports 'Available' or 'not installed' but does "
+            "NOT solve anything. Signal: the emitted script is "
+            "< 30 lines, contains no Model.CreateModelPart() "
+            "and no AnalysisStage subclass; results_summary.json "
+            "has a single 'note' key set to 'Available' or 'not "
+            "installed'. For an actual solve, scaffold a full "
+            "ProjectParameters.json + MDPA mesh + AnalysisStage. "
+            "(Verified empirically 2026-06-01 — catalog audit.)",
+        ],
     },
     "pfem2": {
         "description": "PFEM2 (streamline integration) for two-phase flows",
         "application": "PFEM2Application",
         "capabilities": ["two_phase_flow", "interface_tracking", "bubble_dynamics"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB, not a solver — same pattern as "
+            "pfem_solid: imports Kratos + the Application "
+            "module, prints availability, writes a 1-line "
+            "summary. No actual PFEM2 streamline integration "
+            "or two-phase interface tracking is set up. "
+            "Signal: emitted script < 30 lines, "
+            "results_summary.json has only a 'note' key. "
+            "(Verified empirically 2026-06-01.)",
+        ],
     },
 }
 

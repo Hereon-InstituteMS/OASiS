@@ -174,6 +174,20 @@ KNOWLEDGE = {
         "application": "DamApplication",
         "capabilities": ["thermal_analysis", "mechanical_analysis", "thermo_mechanical_coupled",
                          "seepage_analysis", "joint_elements"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB, not a solver: it imports "
+            "KratosMultiphysics.DamApplication, prints "
+            "availability, writes a 1-line summary. No "
+            "ProjectParameters / MDPA / AnalysisStage is "
+            "scaffolded — the run reports 'Available' or 'not "
+            "installed' but does NOT perform a thermo-"
+            "mechanical or seepage solve. Signal: emitted "
+            "script < 30 lines, results_summary.json has only "
+            "a single 'note' key. For a real run, scaffold "
+            "the full DamAnalysis pipeline. (Verified "
+            "empirically 2026-06-01.)",
+        ],
     },
     "constitutive_laws": {
         "description": "Extended constitutive law library: hyperelastic, plasticity, damage, viscoplastic",
@@ -237,6 +251,15 @@ KNOWLEDGE = {
         "application": "CableNetApplication",
         "elements": ["CableElement3D2N", "MembraneElement3D3N", "MembraneElement3D4N"],
         "capabilities": ["form_finding", "prestress", "wind_loading_on_cables"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB: imports KratosMultiphysics + the "
+            "CableNetApplication module, prints availability. "
+            "No CableElement/MembraneElement instantiation, no "
+            "prestress / form-finding solve. Signal: emitted "
+            "script < 30 lines, results_summary.json has only "
+            "a 'note' key. (Verified empirically 2026-06-01.)",
+        ],
     },
     "chimera": {
         "description": "Chimera/overset grid method for moving bodies in flow",
@@ -255,11 +278,29 @@ KNOWLEDGE = {
         "description": "Droplet dynamics: impact, spreading, contact angles",
         "application": "DropletDynamicsApplication",
         "capabilities": ["droplet_impact", "contact_angle", "surface_tension", "two_phase"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB: imports the DropletDynamicsApplication "
+            "module, prints availability. No contact-angle / "
+            "surface-tension model is configured. Signal: "
+            "emitted script < 30 lines, results_summary.json "
+            "has only a 'note' key. (Verified empirically "
+            "2026-06-01.)",
+        ],
     },
     "free_surface": {
         "description": "Free-surface flow (Eulerian approach)",
         "application": "FreeSurfaceApplication",
         "capabilities": ["free_surface_tracking", "wave_propagation", "sloshing"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB: imports KratosMultiphysics + the "
+            "FreeSurfaceApplication module, prints "
+            "availability. No level-set / VOF tracking is "
+            "scaffolded. Signal: emitted script < 30 lines, "
+            "results_summary.json has only a 'note' key. "
+            "(Verified empirically 2026-06-01.)",
+        ],
     },
     "fluid_biomedical": {
         "description": "Biomedical fluid dynamics: blood flow, hemodynamics",
@@ -276,6 +317,15 @@ KNOWLEDGE = {
         "description": "Hydraulic fluid dynamics: open channels, pipes, spillways",
         "application": "FluidDynamicsHydraulicsApplication",
         "capabilities": ["open_channel", "pipe_network", "spillway", "hydraulic_jump"],
+        "pitfalls": [
+            "[Integration] Catalog template is an availability-"
+            "probe STUB: imports KratosMultiphysics + the "
+            "FluidDynamicsHydraulicsApplication module, prints "
+            "availability. No open-channel / pipe-network "
+            "solver chain is configured. Signal: emitted "
+            "script < 30 lines, results_summary.json has only "
+            "a 'note' key. (Verified empirically 2026-06-01.)",
+        ],
     },
     "optimization": {
         "description": "General optimization framework: gradient-based, adjoint, multi-objective",

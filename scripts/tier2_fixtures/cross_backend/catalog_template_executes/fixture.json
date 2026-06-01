@@ -93,7 +93,14 @@
     "ngsolve::mhd::2d_rc=0",
     "ngsolve::phase_field::fracture_2d_rc=0",
     "ngsolve::hdivdiv::2d_rc=0",
-    "total_executed=87",
+    "kratos::pfem_solid::2d_rc=0",
+    "kratos::pfem2::2d_rc=0",
+    "kratos::dam::2d_rc=0",
+    "kratos::cable_net::2d_rc=0",
+    "kratos::droplet_dynamics::2d_rc=0",
+    "kratos::free_surface::2d_rc=0",
+    "kratos::fluid_hydraulics::2d_rc=0",
+    "total_executed=94",
     "failures=0"
   ],
   "forbid_in_output": [
