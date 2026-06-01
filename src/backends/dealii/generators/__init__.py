@@ -173,6 +173,23 @@ def get_knowledge(physics: str) -> dict:
         logger.debug("Cannot load knowledge for %r: %s", physics, exc)
         return {}
 
+    # Several specs (notably in .advanced) point at an UMBRELLA
+    # KNOWLEDGE dict whose keys are the physics names and whose
+    # values are the per-physics blocks. Without this unwrap step
+    # get_knowledge('mixed_laplacian') returns the umbrella dict
+    # (top-level keys = other physics names, no 'pitfalls'/
+    # 'description' at the top level) — so prepare_simulation's
+    # pitfall extraction silently sees zero pitfalls and the
+    # LLM client gets nothing actionable. (Audit 2026-06-01:
+    # 14 deal.II physics affected — mixed_laplacian,
+    # time_dependent_*, matrix_free, multigrid, ...)
+    if (isinstance(knowledge, dict)
+            and physics in knowledge
+            and isinstance(knowledge[physics], dict)
+            and ("pitfalls" in knowledge[physics]
+                 or "description" in knowledge[physics])):
+        knowledge = knowledge[physics]
+
     # Resolve elements / mesh_generators if in the structured (dict)
     # form; pass through if legacy (list) form. Done at retrieval
     # time, not import time, so each backend's catalog stays simple.
