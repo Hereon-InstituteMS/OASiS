@@ -59,20 +59,22 @@ SIGNAL_COVERAGE_MIN = {
     "skfem":   48.0,   # measured  49.5
     "ngsolve": 46.0,   # measured  47.4
     "febio":   45.0,   # measured  46.2
-    "fenics":  44.0,   # measured  45.7 (raised 2026-06-02 from
-                       #                 37.0 after pass 2 on
-                       #                 fenics: Signal: lines on
-                       #                 mixed_poisson #1, #2, #4,
-                       #                 #5, #7 (indefinite PC,
-                       #                 RT+DG inf-sup, BC on
-                       #                 sigma.n vs pressure,
-                       #                 pressure null-space,
-                       #                 basix.ufl.element API) and
-                       #                 deep_knowledge::heat #2,
-                       #                 #3, #4, #5 (BC update in
-                       #                 loop, mass-matrix sign,
-                       #                 unit consistency, BE/CN
-                       #                 trade-off).)
+    "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
+                       #                 2026-06-02 from 44.0 after
+                       #                 pass 3 on fenics:
+                       #                 multiphase #1, #4, #6
+                       #                 (interface-width
+                       #                 oscillation, AC volume
+                       #                 drift, level-set reinit)
+                       #                 and deep_knowledge::
+                       #                 thermal_structural #2, #3,
+                       #                 #4, #5 (T_ref pre-strain,
+                       #                 plane-strain/stress
+                       #                 confusion, RBM null-space,
+                       #                 Picard iteration). fenics
+                       #                 31.8% -> 38.8% -> 45.7%
+                       #                 -> 51.2% over three
+                       #                 commits.)
     "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
                        #                 2026-06-02 from 27.0 after
                        #                 a sixth pass: all 7

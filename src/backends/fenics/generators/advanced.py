@@ -309,12 +309,39 @@ _MULTIPHASE_KNOWLEDGE = {
     "function_space": "Lagrange order 1 (phase field scalar)",
     "solver": "Newton for Allen-Cahn (nonlinear double-well); linear for advective LS",
     "pitfalls": [
-        "Interface width epsilon: set to 2-4 mesh elements; too small -> oscillations",
+        (
+            "[Numerical] Interface width epsilon: set to 2-4 mesh "
+            "elements; too small -> oscillations. Signal: phi field "
+            "near the interface develops 10-30% overshoot/undershoot "
+            "with checkerboard pattern, OR Newton diverges with "
+            "`DIVERGED_FNORM_NAN` because the double-well derivative "
+            "W'(phi) ~ phi^3 amplifies the spurious oscillations. "
+            "Rule of thumb: eps >= 2 * h_min. (Audit 2026-06-02.)"
+        ),
         "Allen-Cahn: double-well potential W(phi) = (phi^2-1)^2 / (4*eps)",
         "Mobility parameter kappa scales interface diffusion; set to eps^2 typically",
-        "Mass conservation: Allen-Cahn does NOT conserve volume; Cahn-Hilliard does",
+        (
+            "[Numerical] Mass conservation: Allen-Cahn does NOT "
+            "conserve volume; Cahn-Hilliard does. Signal: integral "
+            "of phi over the domain drifts monotonically with time "
+            "(typical loss ~1-5% per characteristic interface time "
+            "in Allen-Cahn); a Cahn-Hilliard solve on the same "
+            "geometry preserves the integral to machine precision. "
+            "If volume conservation matters (two-phase flow, "
+            "spinodal decomposition), use Cahn-Hilliard. (Audit "
+            "2026-06-02.)"
+        ),
         "For two-fluid NS: couple with Navier-Stokes via density/viscosity interpolation",
-        "Level-set reinitialization required to keep |grad(phi)|=1 (signed distance property)",
+        (
+            "[Numerical] Level-set reinitialization required to keep "
+            "|grad(phi)|=1 (signed distance property). Signal: "
+            "max(|grad(phi)|) drifts away from 1 (>2 or <0.5) after "
+            "~10-50 time steps, causing front advection-velocity "
+            "errors >5%; periodic reinitialization (every ~10 "
+            "steps) via the Hamilton-Jacobi update "
+            "phi_tau + sign(phi_0)(|grad phi|-1) = 0 restores the "
+            "property. (Audit 2026-06-02.)"
+        ),
         "Smeared physical properties: rho = rho1*H(phi) + rho2*(1-H(phi)) where H is Heaviside",
     ],
     "materials": {

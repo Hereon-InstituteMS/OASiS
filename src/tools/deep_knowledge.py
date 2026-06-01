@@ -1280,10 +1280,49 @@ _FENICS_KNOWLEDGE = {
         "solver": {"thermal": "CG + hypre", "structural": "CG + GAMG"},
         "pitfalls": [
             "Thermal strain = alpha * DeltaT * Identity (isotropic expansion/contraction)",
-            "Reference temperature T_ref matters: DeltaT = T - T_ref",
-            "Plane strain: use full 3D Lame parameters (not plane stress modification)",
-            "Mechanical BC needed to prevent rigid body motion (over-constrained = locking)",
-            "Two-way coupling (thermoelastic) requires Picard iteration between fields",
+            (
+                "[Input] Reference temperature T_ref matters: "
+                "DeltaT = T - T_ref. Signal: leaving T_ref = 0 "
+                "with an SI material at room temperature gives an "
+                "initial thermal pre-strain of order alpha*T_room "
+                "(~3e-3 for steel at 300 K) that the structure "
+                "must equilibrate against — first-step "
+                "displacement is huge compared to the actual "
+                "loading and Newton may oscillate. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Plane strain: use full 3D Lame "
+                "parameters (not plane stress modification). "
+                "Signal: a plane-strain run that swaps in the "
+                "plane-stress E' = E/(1-nu^2) under-predicts "
+                "stress by a factor of ~(1+nu)/(1-nu) and the "
+                "displacement field diverges from the 3D "
+                "reference by ~20-50% at nu=0.3. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Mechanical BC needed to prevent "
+                "rigid body motion (over-constrained = locking). "
+                "Signal: linear solver hangs / reports near-zero "
+                "pivot; the stiffness matrix has 3 (2D) / 6 (3D) "
+                "zero eigenvalues corresponding to translation + "
+                "rotation. Add a minimal set of 3 (or 6) "
+                "DirichletBCs to kill the null space. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Two-way coupling (thermoelastic) "
+                "requires Picard iteration between fields. "
+                "Signal: one-shot (no-iteration) two-way solve "
+                "shows a delta-T-dependent error in displacement "
+                "of order |alpha*DeltaT*L| because the structural "
+                "response affects the heat-conduction geometry "
+                "but the back-influence was never iterated. The "
+                "Picard residual ||T_new - T_old|| / ||T_old|| "
+                "should drop below ~1e-3 across coupling "
+                "iterations. (Audit 2026-06-02.)"
+            ),
         ],
         "materials": {
             "E": {"range": [1e3, 1e12], "unit": "Pa"},
