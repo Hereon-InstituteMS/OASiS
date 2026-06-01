@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 40,
-    "passed": 40,
+    "n_fixtures": 42,
+    "passed": 42,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -601,6 +601,23 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/vector_source_on_scalar_form/source.py\", line 47, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/vector_source_on_scalar_form/source.py\", line 35, in main\n    f += CoefficientFunction((1.0, 2.0)) * v * dx\nnetgen.libngpy._meshing.NgException: SymbolicLFI needs scalar-valued CoefficientFunction\n"
     },
+    "skfem::stokes::6": {
+      "key": "skfem::stokes::6",
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 6,
+      "fixture_id": "asm_quadrature_mismatch",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "ValueError",
+        "Quadrature mismatch",
+        "same number of integration points"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/skfem/asm_quadrature_mismatch/source.py\", line 33, in main\n    skfem.asm(b_form, p2, p1)\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/__init__.py\", line 93, in asm\n    retval = to(map(lambda a: form.coo_data(*a[1], idx=a[0], **kwargs),\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/__init__.py\", line 64, in _sum\n    out = sum(blocks)\n          ^^^^^^^^^^^\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/skfem/assembly/__init__.py\", line 93, in <lambda>\n    retval = to(map(lambda a: form.coo_data(*a[1], idx=a[0], **kwar"
+    },
     "skfem::linear_elasticity::0": {
       "key": "skfem::linear_elasticity::0",
       "backend": "skfem",
@@ -667,6 +684,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "|u_correct|_max = 5.000e-01\n|u_wrong|_max   = 6.434e+14\nMissing condense() yields singular K; solve returns values orders of magnitude larger than the correctly condensed solution \u2014 wrong-by-magnitude signature confirmed.\n"
+    },
+    "skfem::stokes::4": {
+      "key": "skfem::stokes::4",
+      "backend": "skfem",
+      "physics": "stokes",
+      "pitfall_index": 4,
+      "fixture_id": "nbfun_vs_global_dof",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "P1_Nbfun=3",
+        "P2_Nbfun=6",
+        "global_differs"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "P1_Nbfun=3, P1_N_global=25\nP2_Nbfun=6, P2_N_global=81\nglobal_differs: confirmed Nbfun != N for both bases\n"
     }
   }
 }
