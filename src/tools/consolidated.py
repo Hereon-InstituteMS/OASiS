@@ -1279,7 +1279,7 @@ def register_consolidated_tools(mcp: FastMCP):
             # The old 3000-char cap silently dropped most of that.
             # Match the TEMPLATE_LIMIT of 12000 set above so the
             # LLM gets the full materials table. Audit 2026-06-01.
-            KNOWLEDGE_LIMIT = 12000
+            KNOWLEDGE_LIMIT = 16000
             payload_text = json.dumps(json_payload, indent=2, default=str)
             payload_truncated = len(payload_text) > KNOWLEDGE_LIMIT
             payload_body = payload_text[:KNOWLEDGE_LIMIT]
