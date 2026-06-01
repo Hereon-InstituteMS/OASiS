@@ -36,20 +36,54 @@ class DuneBackend(SolverBackend):
         return "DUNE-fem"
 
     def check_availability(self) -> tuple[BackendStatus, str]:
-        python = get_python_executable()
-        if not python:
-            return BackendStatus.NOT_INSTALLED, "No Python found"
+        # DUNE-fem is heavy enough that users typically install it
+        # into a dedicated conda env (ofa-dune is the convention
+        # mirroring ofa-fenicsx / ofa-dealii). The MCP server runs
+        # in the open-fem-agent .venv which usually does NOT have
+        # dune.fem. Check the active interpreter first, then
+        # probe known conda env layouts so discover/rediscover
+        # stay aligned. (Audit 2026-06-01.)
         import subprocess
-        try:
-            result = subprocess.run(
-                [python, "-c", "import dune.fem; print('OK')"],
-                capture_output=True, text=True, timeout=30
-            )
-            if result.returncode == 0:
-                return BackendStatus.AVAILABLE, "DUNE-fem available"
-            return BackendStatus.NOT_INSTALLED, f"dune.fem import failed: {result.stderr.strip()[:200]}"
-        except Exception as e:
-            return BackendStatus.NOT_INSTALLED, f"Check failed: {e}"
+        candidates = []
+        active = get_python_executable()
+        if active:
+            candidates.append(active)
+        for conda_base in (
+                Path.home() / "miniconda3" / "envs",
+                Path.home() / "anaconda3" / "envs",
+                Path.home() / "miniforge3" / "envs"):
+            if not conda_base.is_dir():
+                continue
+            for env_dir in conda_base.iterdir():
+                py = env_dir / "bin" / "python"
+                if py.is_file():
+                    # Prioritise *dune* envs but accept any
+                    name = env_dir.name.lower()
+                    priority = 0 if "dune" in name else 1
+                    candidates.append((priority, str(py)))
+        # De-dup while preserving order; sort by priority where annotated.
+        seen = set()
+        ordered = []
+        for c in candidates:
+            py = c[1] if isinstance(c, tuple) else c
+            if py in seen:
+                continue
+            seen.add(py)
+            ordered.append((c[0] if isinstance(c, tuple) else 99, py))
+        ordered.sort(key=lambda x: x[0])
+        for _, python in ordered:
+            try:
+                result = subprocess.run(
+                    [python, "-c", "import dune.fem; print('OK')"],
+                    capture_output=True, text=True, timeout=30,
+                )
+                if result.returncode == 0:
+                    return BackendStatus.AVAILABLE, f"DUNE-fem at {python}"
+            except Exception:
+                continue
+        return BackendStatus.NOT_INSTALLED, (
+            "dune.fem not importable in any candidate Python. "
+            "Try: conda create -n ofa-dune -c conda-forge dune-fem")
 
     def input_format(self) -> InputFormat:
         return InputFormat.PYTHON
