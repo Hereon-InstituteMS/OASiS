@@ -850,7 +850,7 @@ print(f"Newton: {{its}} iterations, converged reason = {{reason}}")
 
 # Postprocess: evaluate diffusivity D(u) at solution
 V_vis = fem.functionspace(domain, ("DG", 0))
-D_expr = fem.Expression(D_u, V_vis.element.interpolation_points())
+D_expr = fem.Expression(D_u, V_vis.element.interpolation_points)
 D_func = fem.Function(V_vis, name="diffusivity")
 D_func.interpolate(D_expr)
 
@@ -982,15 +982,15 @@ Az_h.name = "Az"
 # Post-process: magnetic flux density B = curl(A) = (dAz/dy, -dAz/dx, 0)
 # In 2D, computed on DG0 space
 V_vec = fem.functionspace(domain, ("DG", 0, (2,)))
-Bx_expr = fem.Expression(Az_h.dx(1),              V_vec.sub(0).collapse()[0].element.interpolation_points())
-By_expr = fem.Expression(-Az_h.dx(0),             V_vec.sub(0).collapse()[0].element.interpolation_points())
+Bx_expr = fem.Expression(Az_h.dx(1),              V_vec.sub(0).collapse()[0].element.interpolation_points)
+By_expr = fem.Expression(-Az_h.dx(0),             V_vec.sub(0).collapse()[0].element.interpolation_points)
 
 # Scalar DG0 for each component
 V_dg0 = fem.functionspace(domain, ("DG", 0))
 Bx = fem.Function(V_dg0, name="Bx")
 By = fem.Function(V_dg0, name="By")
-Bx.interpolate(fem.Expression(Az_h.dx(1),  V_dg0.element.interpolation_points()))
-By.interpolate(fem.Expression(-Az_h.dx(0), V_dg0.element.interpolation_points()))
+Bx.interpolate(fem.Expression(Az_h.dx(1),  V_dg0.element.interpolation_points))
+By.interpolate(fem.Expression(-Az_h.dx(0), V_dg0.element.interpolation_points))
 
 # |B| = sqrt(Bx^2 + By^2)
 B_mag = np.sqrt(Bx.x.array**2 + By.x.array**2)
