@@ -23,11 +23,36 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
         "dealii": Path("/usr/share/doc/libdeal.ii-doc/examples"),
     }
 
-    # FEniCS demos
-    fenics_demo = Path.home() / "miniconda3" / "envs" / "fenics" / "share" / "dolfinx" / "demo"
-    if fenics_demo.is_dir():
-        test_dirs["fenics"] = fenics_demo
-        test_dirs["fenicsx"] = fenics_demo
+    # FEniCS demos — probe several known conda-forge layouts.
+    # Without this, prepare_simulation('fenics', 'poisson')
+    # silently emits no reference test file because the
+    # hardcoded share/dolfinx/demo path does not exist on
+    # current ofa-fenicsx installs (conda-forge moved demos
+    # under etc/conda/test-files/fenics-dolfinx/0/python/demo).
+    candidates = [
+        # Legacy path (older conda-forge layout)
+        Path.home() / "miniconda3" / "envs" / "fenics"
+        / "share" / "dolfinx" / "demo",
+        # Current conda-forge ofa-fenicsx layout (probed 2026-06-01)
+        Path.home() / "miniconda3" / "envs" / "ofa-fenicsx"
+        / "etc" / "conda" / "test-files" / "fenics-dolfinx"
+        / "0" / "python" / "demo",
+    ]
+    # Also probe any *fenics* conda env present locally
+    conda_envs = Path.home() / "miniconda3" / "envs"
+    if conda_envs.is_dir():
+        for env in conda_envs.iterdir():
+            if "fenics" in env.name.lower():
+                candidates.extend([
+                    env / "share" / "dolfinx" / "demo",
+                    env / "etc" / "conda" / "test-files"
+                    / "fenics-dolfinx" / "0" / "python" / "demo",
+                ])
+    for fenics_demo in candidates:
+        if fenics_demo.is_dir():
+            test_dirs["fenics"] = fenics_demo
+            test_dirs["fenicsx"] = fenics_demo
+            break
 
     # Map physics to search keywords for ALL physics types
     search_terms = {
@@ -83,15 +108,41 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     if not test_dir or not test_dir.is_dir():
         return ""
 
-    keyword = search_terms.get(physics, physics)
     ext = "*.4C.yaml" if solver_key in ("fourc", "4c") else "*.cc" if solver_key == "dealii" else "*.py"
 
+    # The search_terms map is biased toward 4C / deal.II
+    # filename conventions (e.g. poisson -> scatra,
+    # heat -> thermo). Those keys do NOT match the FEniCS
+    # demo names (demo_poisson.py, demo_helmholtz.py, ...).
+    # Audit 2026-06-01: prepare_simulation('fenics','poisson')
+    # surfaced zero reference test files because the keyword
+    # was 'scatra' which doesn't appear in any dolfinx demo.
+    # Try BOTH the mapped keyword AND the raw physics name —
+    # also try with hyphens (dolfinx demos use hyphens for
+    # compound names: demo_navier-stokes.py, demo_mixed-
+    # poisson.py, demo_cahn-hilliard.py).
+    keywords = [physics]
+    if physics in search_terms:
+        keywords.insert(0, search_terms[physics])
+    if "_" in physics:
+        keywords.append(physics.replace("_", "-"))
+    # Common substring trims so the FEniCS demo naming
+    # convention (demo_elasticity.py, no "linear_" prefix)
+    # is reachable from the catalog name (linear_elasticity).
+    # Audit 2026-06-01.
+    for prefix in ("linear_", "nonlinear_", "time_dependent_"):
+        if physics.startswith(prefix):
+            keywords.append(physics[len(prefix):])
+
     matches = []
-    for f in sorted(test_dir.rglob(ext)):
-        if keyword.lower() in f.name.lower():
-            matches.append(f)
-            if len(matches) >= 2:
-                break
+    for kw in keywords:
+        for f in sorted(test_dir.rglob(ext)):
+            if kw.lower() in f.name.lower() and f not in matches:
+                matches.append(f)
+                if len(matches) >= 2:
+                    break
+        if len(matches) >= 2:
+            break
 
     if not matches:
         return ""
