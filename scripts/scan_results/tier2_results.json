@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 39,
-    "passed": 39,
+    "n_fixtures": 40,
+    "passed": 40,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -498,6 +498,23 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "\nUMFPACK V5.7.4 (Feb 1, 2016): WARNING: matrix is singular\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/ngsolve/arnoldi_shift_zero_singular/source.py\", line 33, in main\n    ArnoldiSolver(a.mat, m.mat, fes.FreeDofs(),\nnetgen.libngpy._meshing.NgException: UmfpackInverse: Numeric factorization failed.\n"
+    },
+    "ngsolve::poisson::0": {
+      "key": "ngsolve::poisson::0",
+      "backend": "ngsolve",
+      "physics": "poisson",
+      "pitfall_index": 0,
+      "fixture_id": "dirichlet_case_mismatch_silent",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "wrong_case_n_free=8",
+        "wrong_case_n_dirichlet=0",
+        "correct_case_n_free=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "correct_case_n_free=0\nwrong_case_n_free=8\nwrong_case_n_dirichlet=0\nndof=8\n"
     },
     "ngsolve::maxwell::7": {
       "key": "ngsolve::maxwell::7",

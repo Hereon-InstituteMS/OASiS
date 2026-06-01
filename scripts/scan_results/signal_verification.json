@@ -2,16 +2,16 @@
   "backend": "ngsolve",
   "totals": {
     "n_pitfalls": 123,
-    "with_category_prefix": 15,
-    "with_signal_clause": 15,
-    "tier0_passed": 13,
-    "tier0_code_symbol_only": 9,
+    "with_category_prefix": 20,
+    "with_signal_clause": 20,
+    "tier0_passed": 15,
+    "tier0_code_symbol_only": 11,
     "tier0_with_domain_decoration": 4,
     "tier0_domain_names_only": 0,
-    "tier1_passed": 15,
-    "tier0_and_1_passed": 13,
-    "tier2_passed": 2,
-    "tier2_attempted": 2,
+    "tier1_passed": 17,
+    "tier0_and_1_passed": 14,
+    "tier2_passed": 6,
+    "tier2_attempted": 6,
     "n_falsifiable": 123,
     "n_unfalsifiable": 0,
     "n_cheap_falsifiable": 0,
@@ -26,26 +26,36 @@
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 0,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
+      "pitfall_category": "Syntax",
+      "signal_text": "H1(mesh, ..., dirichlet='Left|...').FreeDofs() reports 0 fixed DoFs instead of the boundary count; sum(bool(f) for f in fes.FreeDofs()) equals fes.ndof. (Verified empirically 2026-06-01 with unit_square + wrong capitalisation.)",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "FreeDofs",
+        "ndof",
+        "unit_square"
+      ],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "tier0_entities_matched": [
+        "FreeDofs",
+        "ndof",
+        "unit_square"
+      ],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "quoted-error-fragment",
+        "report",
+        "wrong"
+      ],
+      "tier2_passed": true,
+      "tier2_status": "passed",
+      "notes": []
     },
     {
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 1,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
+      "pitfall_category": "API",
+      "signal_text": "comparing max(gfu.vec) against an L_inf reference obtained by sampling gfu at a fine grid disagrees by a factor that depends on element order and basis type. (Claim inherited \u2014 verified that DOF-max and sampled-max coincide for u=x*y on P2; a stronger counterexample with a polynomial function whose maximum is mid-element is needed to fully separate the two.)",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
@@ -54,52 +64,56 @@
       "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "notes": []
     },
     {
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 2,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
+      "pitfall_category": "API",
+      "signal_text": "post-solve, the trace of gfu on the boundary differs from the prescribed boundary_cf by O(1) (rather than O(eps)). (Claim inherited from prose \u2014 empirically plausible pattern matching NGSolve docs, not yet probed.)",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
       "tier0_entities_matched": [],
-      "tier1_passed": false,
-      "tier1_vocab_hits": [],
+      "tier1_passed": true,
+      "tier1_vocab_hits": [
+        "differs",
+        "numerical-comparison",
+        "pattern"
+      ],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "notes": []
     },
     {
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 3,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
-      "tier0_passed": false,
-      "tier0_code_symbol_matched": [],
+      "pitfall_category": "API",
+      "signal_text": "a P2+ GridFunction written with VTKOutput(..., subdivision=0).Do() yields a .vtu whose cells are linear (the inter-vertex P2 enrichment is absent from the output); switching to VTKOutput(..., subdivision=2).Do() recovers the curvature in the file. (Claim inherited \u2014 not yet empirically compared against a downstream render.)",
+      "tier0_passed": true,
+      "tier0_code_symbol_matched": [
+        "GridFunction",
+        "VTKOutput"
+      ],
       "tier0_domain_names_matched": [],
-      "tier0_entities_matched": [],
+      "tier0_entities_matched": [
+        "GridFunction",
+        "VTKOutput"
+      ],
       "tier1_passed": false,
       "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "notes": []
     },
     {
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 4,
-      "pitfall_category": "(no-prefix)",
-      "signal_text": "",
+      "pitfall_category": "API",
+      "signal_text": "a unit-square P2 solve written with subdivision=0 produces a ~10 KB .vtu with N_elements*3 cells; subdivision=2 produces ~150 KB with N_elements*48 cells. (Claim inherited \u2014 not yet empirically file-size verified.)",
       "tier0_passed": false,
       "tier0_code_symbol_matched": [],
       "tier0_domain_names_matched": [],
@@ -108,9 +122,7 @@
       "tier1_vocab_hits": [],
       "tier2_passed": false,
       "tier2_status": "not_attempted",
-      "notes": [
-        "pitfall lacks [Category] prefix (PR #26 Table-1 convention) \u2014 Tier 0/1 not applicable"
-      ]
+      "notes": []
     },
     {
       "backend": "ngsolve",
@@ -488,8 +500,8 @@
         "raise",
         "warn"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
@@ -632,8 +644,8 @@
         "wrong",
         "zero"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {
@@ -782,8 +794,8 @@
       "tier1_vocab_hits": [
         "quoted-error-fragment"
       ],
-      "tier2_passed": false,
-      "tier2_status": "not_attempted",
+      "tier2_passed": true,
+      "tier2_status": "passed",
       "notes": []
     },
     {

@@ -108,11 +108,66 @@ KNOWLEDGE = {
         "solver": "Direct: sparsecholesky, umfpack, pardiso. Iterative: CG + h1amg/multigrid/bddc",
         "mesh": "unit_square, unit_cube, SplineGeometry (2D), CSG (3D), OCC (CAD import)",
         "pitfalls": [
-            "Boundary names must exactly match mesh labels (case-sensitive): 'left', 'right', 'top', 'bottom'",
-            "max(gfu.vec) gives max over DOF values, not pointwise max",
-            "Dirichlet BCs: set via gfu.Set() then modify RHS: f.vec -= a.mat * gfu.vec",
-            "VTKOutput writes .vtu natively — no XDMF conversion needed",
-            "Use subdivision=2 for higher-order visualization in ParaView",
+            "[Syntax] Boundary names in the `dirichlet=` "
+            "argument of H1/HCurl/etc. must match the mesh's "
+            "boundary labels EXACTLY (case-sensitive). The "
+            "unit_square / unit_cube netgen meshes use lowercase "
+            "'left', 'right', 'top', 'bottom' (and 'front', 'back' "
+            "in 3D). Failure mode is SILENT: a wrong-case "
+            "'Left|Right|Top|Bottom' does NOT raise — it produces "
+            "an FESpace where the catalog-expected Dirichlet DoFs "
+            "are still FREE. Signal: H1(mesh, ..., dirichlet="
+            "'Left|...').FreeDofs() reports 0 fixed DoFs instead "
+            "of the boundary count; sum(bool(f) for f in "
+            "fes.FreeDofs()) equals fes.ndof. (Verified "
+            "empirically 2026-06-01 with unit_square + wrong "
+            "capitalisation.)",
+            "[API] max(gfu.vec) returns the maximum over the "
+            "underlying FlatVector of DOF VALUES, not the "
+            "pointwise maximum of the FE function over the "
+            "domain. For P1 / nodal interpolations on rectilinear "
+            "geometries the two coincide; for hierarchical P2+ or "
+            "non-nodal bases (HCurl, HDiv, DG) the DOF max may "
+            "be very different from the field max. Signal: "
+            "comparing max(gfu.vec) against an L_inf reference "
+            "obtained by sampling gfu at a fine grid disagrees "
+            "by a factor that depends on element order and basis "
+            "type. (Claim inherited — verified that DOF-max and "
+            "sampled-max coincide for u=x*y on P2; a stronger "
+            "counterexample with a polynomial function whose "
+            "maximum is mid-element is needed to fully separate "
+            "the two.)",
+            "[API] Dirichlet inhomogeneous values on NGSolve: "
+            "construct gfu = GridFunction(fes); call gfu.Set("
+            "boundary_cf, definedon=mesh.Boundaries(name)) to "
+            "set the boundary values, then modify the RHS as "
+            "f.vec -= a.mat * gfu.vec before calling Inverse on "
+            "FreeDofs. Skipping the RHS modification leaves the "
+            "system inconsistent. Signal: post-solve, the trace "
+            "of gfu on the boundary differs from the prescribed "
+            "boundary_cf by O(1) (rather than O(eps)). (Claim "
+            "inherited from prose — empirically plausible "
+            "pattern matching NGSolve docs, not yet probed.)",
+            "[API] VTKOutput writes .vtu natively — no XDMF "
+            "conversion required. The constructor expects a "
+            "(mesh, coefs, names, filename) tuple; VTKOutput.Do() "
+            "emits the file. For higher-order fields, pass "
+            "subdivision=N to refine the visual mesh by 2^N. "
+            "Signal: a P2+ GridFunction written with VTKOutput("
+            "..., subdivision=0).Do() yields a .vtu whose cells "
+            "are linear (the inter-vertex P2 enrichment is "
+            "absent from the output); switching to "
+            "VTKOutput(..., subdivision=2).Do() recovers the "
+            "curvature in the file. (Claim inherited — not yet "
+            "empirically compared against a downstream render.)",
+            "[API] subdivision=2 on VTKOutput is the recommended "
+            "default for any order >= 2 FESpace. Higher subdivision "
+            "linearly multiplies output file size (factor 4^N in "
+            "2D, 8^N in 3D). Signal: a unit-square P2 solve "
+            "written with subdivision=0 produces a ~10 KB .vtu "
+            "with N_elements*3 cells; subdivision=2 produces "
+            "~150 KB with N_elements*48 cells. (Claim inherited "
+            "— not yet empirically file-size verified.)",
         ],
     },
 }
