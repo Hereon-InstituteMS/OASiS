@@ -504,8 +504,20 @@ _FENICS_KNOWLEDGE = {
         "linear_solvers": {
             "high_level_api": {
                 "LinearProblem": {
-                    "api": "dolfinx.fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={...})",
-                    "usage": "Simplest interface: problem.solve() returns Function",
+                    "api": (
+                        "dolfinx.fem.petsc.LinearProblem(a, L, "
+                        "petsc_options_prefix='myprob_', "
+                        "bcs=bcs, petsc_options={...})"
+                    ),
+                    "usage": (
+                        "Simplest interface: problem.solve() "
+                        "returns Function. ALL non-form args are "
+                        "keyword-only in dolfinx 0.10; "
+                        "petsc_options_prefix is REQUIRED — "
+                        "omitting it raises TypeError "
+                        "'missing 1 required keyword-only "
+                        "argument: petsc_options_prefix'."
+                    ),
                     "0_10_note": "Now supports blocked problems via kind='mpi' or kind='nest'",
                 },
             },
@@ -539,7 +551,23 @@ _FENICS_KNOWLEDGE = {
         "nonlinear_solvers": {
             "SNES_via_NonlinearProblem": {
                 "api_0_9": "problem = NonlinearProblem(F, u, bcs); solver = NewtonSolver(MPI.COMM_WORLD, problem)",
-                "api_0_10": "problem = dolfinx.fem.petsc.NonlinearProblem(F, u, bcs, petsc_options={...}); problem.solve()",
+                "api_0_10": (
+                    "problem = dolfinx.fem.petsc.NonlinearProblem("
+                    "F, u, bcs=bcs, "
+                    "petsc_options_prefix='myprob_', "
+                    "petsc_options={...}); problem.solve()"
+                ),
+                "0_10_signature_pitfalls": (
+                    "ALL kwargs are keyword-only (after the * in "
+                    "the signature). NonlinearProblem(F, u, bcs) "
+                    "as positional fails with TypeError 'takes 3 "
+                    "positional arguments but 4 were given'. "
+                    "Omitting petsc_options_prefix fails with "
+                    "TypeError 'missing 1 required keyword-only "
+                    "argument: petsc_options_prefix'. (Empirically "
+                    "verified 2026-06-01 — Tier-2 fixture "
+                    "nonlinear_problem_signature_kwargs.)"
+                ),
                 "note": "dolfinx.nls.petsc.NewtonSolver deprecated in 0.10 in favor of NonlinearProblem wrapping SNES directly",
             },
             "snes_types": {
