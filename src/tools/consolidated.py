@@ -612,10 +612,22 @@ def register_consolidated_tools(mcp: FastMCP):
                         "as the 'solver' parameter, e.g. "
                         "discover(query='recommend', "
                         "solver='poisson').")
+            # Route the physics query through the canonical
+            # fuzzy resolver per backend so short shorthands
+            # ('ns', 'em', 'cfd', ...) hit the synonym map
+            # before a loose substring scan. The raw
+            # substring-on-name-or-description recommendation
+            # silently matched 'ns' to heat in fenics; 'em' to
+            # eigenvalue in fenics; 'pd' to nonlinear_pde in
+            # fenics. (Audit 2026-06-02; same drift class as
+            # the prepare_simulation fix.)
             results = []
             for b in available_backends():
+                matched = _fuzzy_match_physics(b, physics)
+                if not matched:
+                    continue
                 for p in b.supported_physics():
-                    if physics.lower() in p.name.lower() or physics.lower() in p.description.lower():
+                    if p.name == matched:
                         results.append(f"- **{b.display_name()}**: {p.description}")
                         break
             return "\n".join(results) if results else f"No solver found for '{physics}'"
@@ -697,17 +709,29 @@ def register_consolidated_tools(mcp: FastMCP):
                     if len(results) >= max_results:
                         break
 
-            # Also search templates. Same 12000-char limit as
-            # prepare_simulation — the harder Layer F templates
-            # (ngsolve hdivdiv / nonlinear_elasticity, fenics
-            # navier_stokes) exceed 3000 chars and lose their
-            # solver/output blocks if truncated lower. Audit
-            # 2026-06-01.
+            # Also search templates. Route the keyword through the
+            # canonical fuzzy resolver so short shorthands ('ns',
+            # 'em', 'cfd', ...) resolve to the right physics via
+            # the synonym map BEFORE a loose substring scan. The
+            # old code did a raw substring match on name OR
+            # description; keyword='ns' matched heat /
+            # thermal_structural / reaction_diffusion /
+            # multiphase / time_dependent_heat (all contain "ns"
+            # somewhere) — five wrong templates and never a
+            # navier_stokes one. (Audit 2026-06-02; same drift
+            # class as the prepare_simulation fix.)
+            #
+            # Same 12000-char limit as prepare_simulation — the
+            # harder Layer F templates (ngsolve hdivdiv /
+            # nonlinear_elasticity, fenics navier_stokes) exceed
+            # 3000 chars and lose their solver/output blocks if
+            # truncated lower. (Audit 2026-06-01.)
             backend = get_backend(solver)
             if backend:
                 EX_TEMPLATE_LIMIT = 12000
+                matched = _fuzzy_match_physics(backend, keyword)
                 for p in backend.supported_physics():
-                    if keyword.lower() in p.name.lower() or keyword.lower() in p.description.lower():
+                    if p.name == matched:
                         for v in p.template_variants[:1]:
                             try:
                                 content = backend.generate_input(p.name, v, {})
@@ -732,8 +756,16 @@ def register_consolidated_tools(mcp: FastMCP):
             backend = get_backend(solver)
             if not backend:
                 return f"Unknown solver: {solver}"
+            # Route the keyword through the canonical fuzzy
+            # resolver so short shorthands ('ns' -> navier_stokes,
+            # 'em' -> maxwell, ...) route via the synonym map
+            # first. The raw substring path here matched 'ns'
+            # against 'transient_heat' and never against
+            # 'navier_stokes' (no adjacent 'ns' substring in
+            # 'navier_stokes' itself). (Audit 2026-06-02.)
+            matched = _fuzzy_match_physics(backend, keyword)
             for p in backend.supported_physics():
-                if keyword.lower() in p.name.lower():
+                if p.name == matched:
                     variant = p.template_variants[0] if p.template_variants else "2d"
                     try:
                         content = backend.generate_input(p.name, variant, {})
