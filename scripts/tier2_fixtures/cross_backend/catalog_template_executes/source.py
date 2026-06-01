@@ -155,6 +155,16 @@ def main() -> int:
         ("ngsolve", "eigenvalue", "2d"),
         ("skfem", "eigenvalue", "2d"),
         ("skfem", "biharmonic", "2d"),
+        # Kratos coverage extension — most kratos catalog
+        # templates are scipy-based stubs that exercise
+        # catalog metadata + minimal solve. Probes likely
+        # to surface broken stubs.
+        ("kratos", "contact", "2d"),
+        ("kratos", "structural_dynamics", "2d"),
+        ("kratos", "fsi", "2d"),
+        ("kratos", "dem", "2d"),
+        ("kratos", "mpm", "2d"),
+        ("kratos", "geomechanics", "2d"),
     ]
     fail = []
     executed = 0
