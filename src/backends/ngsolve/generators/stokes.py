@@ -34,19 +34,29 @@ gfu = GridFunction(X)
 uin = CoefficientFunction((1, 0))
 gfu.components[0].Set(uin, definedon=mesh.Boundaries("top"))
 
+# Pin one pressure DOF to remove the constant-pressure
+# null space. Without this, MKL Pardiso reports phase-33
+# error -4 (zero pivot) because the saddle-point system
+# is rank-deficient by 1. The pinned value is 0, which
+# is consistent with zero-mean pressure for enclosed
+# Stokes flow.
+free = X.FreeDofs()
+free.Clear(V.ndof)
+gfu.vec[V.ndof] = 0.0
+
 # Solve with modified RHS for non-homogeneous Dirichlet
 f.vec.data -= a.mat * gfu.vec
 # Try available direct solvers (umfpack may not be installed)
 inv = None
 for solver_name in ["pardiso", "mumps", "umfpack"]:
     try:
-        inv = a.mat.Inverse(X.FreeDofs(), solver_name)
+        inv = a.mat.Inverse(free, solver_name)
         break
     except:
         pass
 if inv is None:
     from ngsolve.krylovspace import MinResSolver
-    inv = MinResSolver(a.mat, freedofs=X.FreeDofs(), maxsteps=10000, tol=1e-10)
+    inv = MinResSolver(a.mat, freedofs=free, maxsteps=10000, tol=1e-10)
 gfu.vec.data += inv * f.vec
 
 vel = gfu.components[0]

@@ -120,6 +120,11 @@ def main() -> int:
         # test; skfem ships a heat::2d that runs)
         ("skfem", "heat", "2d"),
         ("kratos", "heat", "2d"),
+        # stokes: ngsolve runs after free.Clear(V.ndof)
+        # pressure pin fix (this commit). skfem + fenics
+        # stokes still ship broken templates — tracked in
+        # stokes_templates_currently_broken fixture.
+        ("ngsolve", "stokes", "2d"),
     ]
     fail = []
     executed = 0

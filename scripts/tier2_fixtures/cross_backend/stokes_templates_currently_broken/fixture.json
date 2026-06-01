@@ -1,14 +1,13 @@
 {
-  "_comment": "Tier-2 Layer-F companion: inverted-gate fixture. Layer F caught on 2026-06-01 that the catalog's shipped Stokes templates for skfem/ngsolve/fenics all FAIL end-to-end. Rather than block Layer F's main gate, this companion fixture INVERTS the semantics: it PASSES while the 3 templates are broken-as-expected, and FAILS the moment the catalog improves (signaling that the row should move from this tracker to the main Layer F gate). Tracked failure modes: skfem stokes::2d ships homogeneous BC + missing pressure pin → ValueError from condense (task #26); ngsolve stokes lacks free.Clear(V.ndof) → MKL Pardiso phase-33 zero pivot (task #27); fenics stokes XDMFFile.write_function fails on sol.sub(0).collapse() (task #28). The fixture also asserts the FAILURE MODE matches the documented token — a partial fix that changes the error class but doesn't fully repair the template trips wrong_failure_mode_count. Verified 2026-06-01: 3 correct failures.",
+  "_comment": "Tier-2 Layer-F companion: inverted-gate fixture. Initially caught 3 known-broken stokes templates (skfem/ngsolve/fenics) on 2026-06-01. ngsolve was fixed in a follow-up commit (free.Clear(V.ndof) pressure pin) and moved to the main Layer F gate. The 2 remaining rows: skfem stokes::2d ships homogeneous BC + missing pressure pin → ValueError from condense (task #26); fenics stokes XDMFFile.write_function fails on sol.sub(0).collapse() (task #28). The fixture also asserts the FAILURE MODE matches the documented token — a partial fix that changes the error class but doesn't fully repair the template trips wrong_failure_mode_count.",
   "backend": "kratos",
   "physics": "auxiliary_overview",
   "pitfall_index": 103,
   "mode": "python",
   "expect_in_output": [
     "skfem::stokes::2d rc=1",
-    "ngsolve::stokes::2d rc=1",
     "fenics::stokes::2d rc=1",
-    "correct_failures=3",
+    "correct_failures=2",
     "unexpected_pass_count=0",
     "wrong_failure_mode_count=0"
   ],

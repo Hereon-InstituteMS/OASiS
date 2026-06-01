@@ -59,9 +59,9 @@ KNOWN_BROKEN = [
     ("skfem", "stokes", "2d",
      "ValueError",
      "task #26 — skfem stokes template ships broken BC"),
-    ("ngsolve", "stokes", "2d",
-     "Pardiso",
-     "task #27 — ngsolve stokes lacks pressure pin"),
+    # ngsolve stokes was fixed in commit (this iteration)
+    # via free.Clear(V.ndof) pressure pin — moved to the
+    # main Layer F gate.
     ("fenics", "stokes", "2d",
      "write_function",
      "task #28 — fenics stokes XDMF write path"),

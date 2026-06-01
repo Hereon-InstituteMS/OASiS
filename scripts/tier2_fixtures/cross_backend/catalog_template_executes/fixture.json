@@ -16,7 +16,8 @@
     "fenics::linear_elasticity::2d_rc=0",
     "skfem::heat::2d_rc=0",
     "kratos::heat::2d_rc=0",
-    "total_executed=10",
+    "ngsolve::stokes::2d_rc=0",
+    "total_executed=11",
     "failures=0"
   ],
   "forbid_in_output": [
