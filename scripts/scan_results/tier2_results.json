@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 28,
-    "passed": 28,
+    "n_fixtures": 30,
+    "passed": 30,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -262,6 +262,23 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/finite_element.py\", line 986, in string_to_family\n    return families[family]\n           ~~~~~~~~^^^^^^^^\nKeyError: 'NotAFamily'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/unknown_element_family/source.py\", line 23, in main\n    functionspace(mesh, (\"NotAFamily\", 1))\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/function.py\", line 604, in functionspace\n    ufl_e = basix.ufl.element(\n            ^^^^^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/ufl.py\", line 1613, in element\n    famil"
     },
+    "fenics::linear_elasticity::3": {
+      "key": "fenics::linear_elasticity::3",
+      "backend": "fenics",
+      "physics": "linear_elasticity",
+      "pitfall_index": 3,
+      "fixture_id": "xdmf_degree_mismatch",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "Degree of output Function must be same as mesh degree",
+        "interpolated"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/xdmf_degree_mismatch/source.py\", line 33, in main\n    f.write_function(u)\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/io/utils.py\", line 177, in write_function\n    super().write_function(getattr(u, \"_cpp_object\", u), t, mesh_xpath)\nRuntimeError: Degree of output Function must be same as mesh degree. Maybe the Function needs to be interpolated?\n"
+    },
     "kratos::linear_elasticity::8": {
       "key": "kratos::linear_elasticity::8",
       "backend": "kratos",
@@ -277,6 +294,24 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosStructuralMechanicsApplication \n    KRATOS   ___|  |                   |                   |\n           \\___ \\  __|  __| |   |  __| __| |   |  __| _` | |\n                 | |   |    |   | (    |   |   | |   (   | |\n           _____/ \\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\__,_|_| MECHANICS\nInitializing KratosStructuralMechanicsApplication...\nImporting    KratosConstitutiveLawsApplication \nInitializing KratosC"
+    },
+    "kratos::linear_elasticity::7": {
+      "key": "kratos::linear_elasticity::7",
+      "backend": "kratos",
+      "physics": "linear_elasticity",
+      "pitfall_index": 7,
+      "fixture_id": "echo_level_missing",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "RuntimeError",
+        "Getting a value that does not exist",
+        "echo_level",
+        "kratos_parameters"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/echo_level_missing/source.py\", line 35, in main\n    pd[\"echo_level\"].GetInt()\n    ~~^^^^^^^^^^^^^^\nRuntimeError: Error: Getting a value that does not exist. entry string : echo_level\n\nin kratos/sources/kratos_parameters.cpp:426: Parameters Parameters::GetValue(const string&)\n\n"
     },
     "kratos::linear_elasticity::0": {
       "key": "kratos::linear_elasticity::0",
