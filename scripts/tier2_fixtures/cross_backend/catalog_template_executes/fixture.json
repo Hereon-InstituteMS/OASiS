@@ -28,6 +28,7 @@
     "fenics::stokes_darcy::2d_rc=0",
     "fenics::navier_stokes::2d_rc=0",
     "fenics::hyperelasticity::3d_rc=0",
+    "fenics::eigenvalue::2d_rc=0",
     "ngsolve::eigenvalue::2d_rc=0",
     "skfem::eigenvalue::2d_rc=0",
     "skfem::biharmonic::2d_rc=0",
@@ -37,7 +38,7 @@
     "kratos::dem::2d_rc=0",
     "kratos::mpm::2d_rc=0",
     "kratos::geomechanics::2d_rc=0",
-    "total_executed=31",
+    "total_executed=32",
     "failures=0"
   ],
   "forbid_in_output": [

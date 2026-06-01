@@ -148,10 +148,16 @@ def main() -> int:
         # fenics hyperelasticity ships only "3d"
         # (backend.py L138 template_variants).
         ("fenics", "hyperelasticity", "3d"),
-        # fenics eigenvalue + ngsolve hyperelasticity
-        # had runtime errors in the previous Layer F run;
-        # tracked in a follow-up iteration. Left out for
-        # now to keep this commit's main gate green.
+        # ngsolve hyperelasticity Newton still does not
+        # converge — deferred (likely needs continuation /
+        # load-stepping rewrite). fenics eigenvalue was
+        # fixed this iteration: M must use diag=1.0 (not
+        # 0.0) to avoid a singular shifted operator that
+        # makes SLEPc abort with 'Zero pivot row 0';
+        # SMALLEST_REAL with the default Krylov-Schur ST
+        # returns the physical eigenvalues plus benign
+        # boundary-unit eigenvalues at Dirichlet rows.
+        ("fenics", "eigenvalue", "2d"),
         ("ngsolve", "eigenvalue", "2d"),
         ("skfem", "eigenvalue", "2d"),
         ("skfem", "biharmonic", "2d"),
