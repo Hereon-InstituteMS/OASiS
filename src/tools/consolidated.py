@@ -1275,6 +1275,74 @@ def register_consolidated_tools(mcp: FastMCP):
     # ═══════════════════════════════════════════════════════════
 
     @mcp.tool()
+    def reload_catalog() -> str:
+        """Hot-reload the per-backend KNOWLEDGE dicts from disk.
+
+        Closes the gap identified by the
+        mcp-catalog-staleness-runtime-isolation post-mortem
+        (2026-06-01): the MCP server normally imports
+        src/backends/<be>/generators/<physics>.py modules ONCE at
+        startup and never refreshes them, so catalog edits made
+        during a long-running session are invisible. Postmortems
+        in data/postmortems/ are scanned on every request (already
+        hot), but pitfall dicts are not.
+
+        This tool walks every imported `backends.<be>.generators.*`
+        and `backends.<be>.backend` module, runs importlib.reload
+        on each, and re-runs load_all_backends() so the registry
+        re-binds the backend objects to the refreshed module
+        attributes. After the call, the very next
+        mcp__open-fem-agent__knowledge call returns the on-disk
+        catalog without having to restart Claude Code.
+
+        Returns a one-line summary of which modules were
+        successfully reloaded vs which raised, so the caller can
+        tell when a syntax error in a newly-edited generator
+        prevented its module from re-importing (in that case the
+        OLD dict is still served from the previous import).
+        """
+        import importlib
+        import sys
+        reload_ok: list[str] = []
+        reload_fail: list[tuple[str, str]] = []
+
+        # Reload data/*_knowledge.py first (sourced by some
+        # backends).
+        for mod_name in list(sys.modules.keys()):
+            if (mod_name.endswith("_knowledge")
+                    and not mod_name.startswith("backends.")):
+                try:
+                    importlib.reload(sys.modules[mod_name])
+                    reload_ok.append(mod_name)
+                except Exception as exc:  # noqa: BLE001
+                    reload_fail.append((mod_name, str(exc)))
+
+        # Reload every imported backends.* submodule.
+        for mod_name in list(sys.modules.keys()):
+            if mod_name.startswith("backends.") and "." in mod_name:
+                try:
+                    importlib.reload(sys.modules[mod_name])
+                    reload_ok.append(mod_name)
+                except Exception as exc:  # noqa: BLE001
+                    reload_fail.append((mod_name, str(exc)))
+
+        # Re-bind backend objects to refreshed modules.
+        try:
+            from core.registry import load_all_backends
+            load_all_backends()
+            re_register = "ok"
+        except Exception as exc:  # noqa: BLE001
+            re_register = f"FAILED: {exc}"
+
+        msg = (f"reload_catalog: {len(reload_ok)} modules reloaded, "
+               f"{len(reload_fail)} failed; "
+               f"re-register backends: {re_register}.")
+        if reload_fail:
+            msg += "\n\nFailures:\n" + "\n".join(
+                f"  - {n}: {e[:200]}" for n, e in reload_fail[:10])
+        return msg
+
+    @mcp.tool()
     def rediscover_backends(confirm: bool = False) -> str:
         """Probe the system for solver backends and report findings.
 
