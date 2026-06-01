@@ -69,6 +69,26 @@ _TEMPLATE_SPECS: dict[str, tuple[str, str]] = {
     "dg_advection_reaction_2d":  (".advanced",             "_dg_advection_2d"),
     "cg_dg_coupled_2d":          (".advanced",             "_cg_dg_coupled_2d"),
     "optimal_control_2d":        (".advanced",             "_optimal_control_2d"),
+    # ── 2026-06-01: Catalog physics that the backend's
+    #    supported_physics() advertised but had no template
+    #    dispatch. They alias to the primary template-bearing
+    #    physics that covers the same underlying tutorial:
+    #
+    #      advection_dg ↔ dg_advection_reaction (step-9/12)
+    #      contact      ↔ obstacle_problem      (step-41/42)
+    #      nonlinear_elasticity ↔ hyperelasticity (step-44)
+    #
+    #    The aliasing avoids duplicating ~500 lines of C++ per
+    #    template. Each aliased physics still has its own
+    #    PhysicsCapability entry (so it appears in discover()
+    #    and the docs distinguish the framing) and its own
+    #    knowledge dict (_DEALII_KNOWLEDGE fallback), but
+    #    generate_input() returns the same template. Reflects
+    #    the comments in backend.py L319-342 ("Distinct from
+    #    ... but related to ...").
+    "advection_dg_2d":           (".advanced",             "_dg_advection_2d"),
+    "contact_2d":                (".advanced",             "_obstacle_2d"),
+    "nonlinear_elasticity_3d":   (".hyperelasticity",      "_hyperelasticity_3d"),
 }
 
 # Maps physics name to (module_path, dict_name) for knowledge.

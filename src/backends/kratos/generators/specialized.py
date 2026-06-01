@@ -298,6 +298,11 @@ GENERATORS = {
     "thermal_dem_2d": _thermal_dem_2d,
     "swimming_dem_2d": _swimming_dem_2d,
     "dem_structures_2d": _dem_structures_2d,
+    # PhysicsCapability name is 'dem_structures_coupling' (see
+    # backend.py L187), so generate_input() builds the key as
+    # 'dem_structures_coupling_2d' — alias to the same template
+    # to keep the dispatch consistent with the catalog name.
+    "dem_structures_coupling_2d": _dem_structures_2d,
     "fem_to_dem_2d": _fem_to_dem_2d,
     "cable_net_2d": _cable_net_2d,
     "chimera_2d": _chimera_2d,
