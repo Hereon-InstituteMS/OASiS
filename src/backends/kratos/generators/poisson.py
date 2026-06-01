@@ -98,6 +98,33 @@ KNOWLEDGE = {
         },
         "settings_object": "ConvectionDiffusionSettings — must be set on ProcessInfo, maps variable names",
         "pitfalls": [
+                        '[API] ConvectionDiffusionApplication element names — '
+                        'LaplacianElement2D3N / LaplacianElement3D4N / '
+                        'EulerianConvDiff2D3N / EulerianConvDiff3D4N — are '
+                        'C++-registered Kratos elements accessible ONLY '
+                        'through the string-typed factory call: '
+                        'model_part.CreateNewElement("LaplacianElement2D3N", '
+                        'id, node_id_list, properties). They are NOT exposed '
+                        'as Python attributes on KratosMultiphysics.'
+                        'ConvectionDiffusionApplication, so '
+                        'CDA.LaplacianElement2D3N raises AttributeError. '
+                        'Wrong-named strings (e.g. "ConvDiff2D3N" without '
+                        'the "Eulerian" prefix) are rejected at '
+                        'CreateNewElement with "The Element \'X\' is not '
+                        'registered!". Also: in a fresh install of '
+                        'KratosMultiphysics 10.4.2 the CDA sub-application '
+                        'is NOT included by default — pip install '
+                        'KratosConvectionDiffusionApplication is the '
+                        'separate package needed before this element '
+                        'family is usable. Signal: hasattr(CDA, '
+                        '"LaplacianElement2D3N") is False; '
+                        'mp.CreateNewElement("LaplacianElement2D3N", ...) '
+                        'returns a Kratos Element; '
+                        'mp.CreateNewElement("ConvDiff2D3N", ...) raises '
+                        'with "is not registered". (Verified empirically '
+                        '2026-06-01 — Tier-2 fixture '
+                        'poisson_cda_element_string_factory in scripts/'
+                        'tier2_fixtures/kratos/.)',
                         '[Numerical] LaplacianElement does NOT assemble source terms (HEAT_FLUX) — only -div(k*grad(T))=0 '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Numerical] For Poisson with source: use EulerianConvDiff elements AND set HEAT_FLUX as nodal data '
