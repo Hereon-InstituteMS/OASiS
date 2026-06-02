@@ -15,7 +15,13 @@ KNOWLEDGE = {
     ),
     "solver": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"},
     "pitfalls": [
-        "System is INDEFINITE — use direct (MUMPS) or block preconditioner, NOT CG",
+        "[Numerical] Saddle-point Stokes system is INDEFINITE — "
+        "use a direct solver (MUMPS via PETScKrylovSolver+preonly+LU) "
+        "or a block preconditioner (Schur complement), NEVER CG. "
+        "Signal: running PETScKrylovSolver with ksp_type='cg' on a "
+        "Taylor-Hood Stokes problem reports DIVERGED_INDEFINITE_PC or "
+        "stalls at residual ~1e0 within ~10 iterations. (Audit "
+        "2026-06-02.)",
         "[API] Mixed-element construction in dolfinx 0.10+ uses "
         "basix.ufl, NOT ufl: P2 = basix.ufl.element('Lagrange', "
         "domain.basix_cell(), 2, shape=(domain.geometry.dim,)); "
@@ -28,10 +34,35 @@ KNOWLEDGE = {
         "running a stokes script using ufl.VectorElement raises "
         "AttributeError: module 'ufl' has no attribute "
         "'VectorElement'.",
-        "TH = basix.ufl.mixed_element([P2, P1]), W = fem.functionspace(domain, TH)",
-        "Non-homogeneous Dirichlet: collapse sub-space, create Function, interpolate, then dirichletbc",
-        "Pressure determined up to constant — pin one DOF or ensure outflow BC",
-        "MINI element: P1+bubble for velocity, P1 for pressure (simpler but less accurate)",
+        "[API] Build the FunctionSpace from the mixed_element via "
+        "W = fem.functionspace(domain, TH) where TH = "
+        "basix.ufl.mixed_element([P2, P1]). Passing the bare element "
+        "tuple as kwarg is wrong. Signal: fem.functionspace(domain, "
+        "(P2, P1)) raises TypeError 'expected basix.ufl element or "
+        "tuple (family, degree)'. (Audit 2026-06-02.)",
+        "[API] Non-homogeneous Dirichlet BCs on the velocity sub-"
+        "space: collapse_subspace from W, create a Function on the "
+        "collapsed space, interpolate the desired profile, then call "
+        "fem.dirichletbc. Signal: passing a scalar value to "
+        "fem.dirichletbc on a sub of a VectorH1 raises "
+        "RuntimeError 'Value shape must match function space'; the "
+        "fix is W0, dofs = W.sub(0).collapse() + interpolate. "
+        "(Audit 2026-06-02.)",
+        "[Numerical] Pressure is determined only up to a constant "
+        "for enclosed flows — pin one DOF via fem.dirichletbc on a "
+        "single pressure node, or ensure an outflow boundary takes "
+        "the role of pressure datum. Signal: a closed-cavity Stokes "
+        "solve without pressure pin reports KSPSolve "
+        "DIVERGED_BREAKDOWN with near-zero pivot, or the resulting "
+        "pressure Function in the XDMFFile has a huge additive "
+        "offset (drifts O(1e6) between runs). (Audit 2026-06-02.)",
+        "[Numerical] MINI element (P1+bubble for velocity, P1 for "
+        "pressure) is an inf-sup-stable alternative to Taylor-Hood, "
+        "simpler implementation but less accurate. Signal: an MMS "
+        "convergence study with MINI shows L2-error of the velocity "
+        "Function in the XDMFFile output at rate ~h^2 instead of "
+        "Taylor-Hood's ~h^3 for the same mesh refinement. (Audit "
+        "2026-06-02.)",
     ],
 }
 
