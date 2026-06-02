@@ -87,6 +87,67 @@ FOURC_KNOWLEDGE = {
                 "4C_global_full_entrypoint_switch.cpp 2026-06-02.)"
             ),
         },
+        "cli_arguments": {
+            "source": "apps/global_full/4C_global_full_io.cpp",
+            "description": (
+                "Command-line arguments for nested-group parallelism and "
+                "I/O configuration. Parsed in setup_global_problem() "
+                "and validated by validate_argument_cross_compatibility()."
+            ),
+            "flags": {
+                "--ngroup=N":           "Number of nested-parallelism groups (default 1).",
+                "--glayout=N1,N2,...":  "Explicit per-group MPI rank counts. If omitted with --ngroup>1, ranks are split equally and FAIL if num_procs%n_groups!=0.",
+                "--nptype=<type>":      "Nested parallelism type (mandatory when --ngroup>1).",
+                "<input> <output>":     "Positional pair(s). Multiple pairs allowed when --nptype=separateInputFiles or nestedMultiscale.",
+            },
+            "nptype_enum_values": {
+                # snake_case (C++ enum) -> CLI-string alias (camelCase)
+                "no_nested_parallelism":        "noNestedParallelism (default if --nptype omitted)",
+                "every_group_read_input_file":  "everyGroupReadInputFile — single input, output gets _group_<N> suffix",
+                "separate_input_files":         "separateInputFiles — N input/output pairs required",
+                "nested_multiscale":            "nestedMultiscale — N input/output pairs required",
+            },
+            "io_input_keys": {
+                # YAML/dat keys read from the input file's I/O block by setup_parallel_output
+                "WRITE_TO_SCREEN":     "bool — stream Core::IO::cout to stdout",
+                "WRITE_TO_FILE":       "bool — stream Core::IO::cout to log file",
+                "PREFIX_GROUP_ID":     "bool — prepend group ID to each line",
+                "LIMIT_OUTP_TO_PROC":  "int — limit per-rank output to this MPI rank only",
+                "VERBOSITY":           "Core::IO::Verbositylevel enum (e.g. verbose, standard, minimal)",
+            },
+            "Signal": (
+                "[Input] CLI validation in validate_argument_cross_compatibility() "
+                "raises FOUR_C_THROW with literal text messages — these are "
+                "the verbatim error strings:\n"
+                "  - 'When --glayout is provided its number of entries must "
+                "equal --ngroup.'\n"
+                "  - 'when --ngroup > 1, a nested parallelism type must be "
+                "specified via --nptype.'\n"
+                "  - 'when using \\'no_nested_parallelism\\' or "
+                "\\'everyGroupReadInputFile\\' the number of <input> <output> "
+                "pairs must be exactly 1.'\n"
+                "  - 'when using \\'separateInputFiles\\' or "
+                "\\'nestedMultiscale\\' the number of <input> <output> pairs "
+                "must equal --ngroup ...'\n"
+                "  - 'When using --nptype other than \\'separateInputFiles\\', "
+                "only one restart step and one restartfrom identifier must be given.'\n"
+                "  - 'You need to specify a restart step when using restartfrom.'\n"
+                "  - 'Positional arguments must be provided as pairs: <input> <output>.'\n"
+                "Mixed naming: ENUM values are snake_case in C++ "
+                "(no_nested_parallelism) but the CLI string parses the "
+                "camelCase ALIAS (everyGroupReadInputFile / separateInputFiles "
+                "/ nestedMultiscale). The error messages quote BOTH forms in "
+                "the same sentence — user-facing inconsistency. (File walk "
+                "apps/global_full/4C_global_full_io.cpp 2026-06-02.)"
+            ),
+            "output_naming_under_groups": (
+                "When --nptype=everyGroupReadInputFile is set, output_identifier "
+                "gets _group_<N> suffix appended. If the user's identifier "
+                "already ends with -<num> (e.g. 'mysim-001'), the suffix is "
+                "inserted as 'mysim_group_<N>_001'. Restart identifier follows "
+                "the same convention. Source: update_io_identifiers() switch case."
+            ),
+        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════
