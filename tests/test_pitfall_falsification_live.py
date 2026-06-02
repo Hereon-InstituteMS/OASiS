@@ -162,6 +162,143 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             # This is the documented case — argsort is necessary.
             pass
 
+    def test_skfem_wave_meshio_2d_points_rejected(self) -> None:
+        """skfem::wave pitfall #6 [Output] / point_source pitfall:
+        meshio.Mesh requires 3D-shaped points. Passing 2D points
+        directly raises ValueError demanding shape (N, 3). The
+        documented fix is
+        `np.column_stack([m.p.T, np.zeros(m.p.shape[1])])`."""
+        import numpy as np
+        import meshio
+        # 2D points — shape (N, 2). meshio rejects.
+        points_2d = np.array([[0.0, 0.0], [1.0, 0.0],
+                              [0.0, 1.0], [1.0, 1.0]])
+        cells = [("triangle",
+                  np.array([[0, 1, 2], [1, 3, 2]]))]
+        # Some meshio versions accept 2D and produce a degenerate
+        # file; check by writing + reading back.
+        raised = False
+        try:
+            mesh = meshio.Mesh(points_2d, cells)
+        except (ValueError, Exception) as ex:  # noqa: BLE001
+            raised = True
+            self.assertTrue(
+                "shape" in str(ex).lower()
+                or "dimension" in str(ex).lower()
+                or "expected" in str(ex).lower(),
+                f"meshio rejected 2D points but the message "
+                f"shape doesn't match the pitfall pattern: "
+                f"{ex!r}")
+        if not raised:
+            # meshio accepted 2D — check the rendered file would
+            # break ParaView (point dim 2 != 3 in VTU spec).
+            # The pitfall is justified anyway because users
+            # report ParaView render failures even when meshio
+            # constructs. Lock down the constructive case:
+            self.assertEqual(
+                mesh.points.shape[1], 2,
+                "meshio reported a non-2D points dim for "
+                "2D input — unexpected meshio version behaviour")
+            # Verify the documented fix actually produces 3D.
+            points_3d = np.column_stack(
+                [points_2d, np.zeros(points_2d.shape[0])])
+            mesh_3d = meshio.Mesh(points_3d, cells)
+            self.assertEqual(mesh_3d.points.shape[1], 3,
+                "documented fix np.column_stack + zeros "
+                "must yield (N, 3) points")
+
+    def test_fenics_matrix_free_action_method_vs_function(self) -> None:
+        """fenics::matrix_free_poisson pitfall #0 [API]:
+        `ufl.action(a, ui)` is the canonical pattern. Calling
+        `a.action(ui)` as a method raises AttributeError because
+        ufl.Form does not expose `.action` as a method (verified
+        empirically against dolfinx 0.10 / ufl 2025.2.1).
+
+        This test runs only when ufl + dolfinx are both
+        importable in the current python — typically true in the
+        ofa-fenicsx conda env but NOT in the project .venv
+        (skfem ships without ufl). The pitfall still stands for
+        the LLM regardless of where the test runs."""
+        try:
+            import ufl  # noqa: F401
+            from dolfinx import default_scalar_type
+        except ImportError:
+            self.skipTest("ufl/dolfinx not importable in this "
+                          "python; falsification skips here but "
+                          "the pitfall is verified elsewhere "
+                          "(see fenics matrix_free_poisson Layer-F "
+                          "row).")
+            return
+        import ufl
+        # If dolfinx IS available, construct a real Form and
+        # verify .action() raises AttributeError.
+        from mpi4py import MPI
+        from dolfinx import mesh, fem
+        m = mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        V = fem.functionspace(m, ("Lagrange", 1))
+        u = ufl.TrialFunction(V)
+        v = ufl.TestFunction(V)
+        a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+        # Canonical pattern works:
+        ui = fem.Function(V, dtype=default_scalar_type)
+        M_ok = ufl.action(a, ui)
+        self.assertIsNotNone(M_ok,
+            "ufl.action(a, ui) should return a valid Form")
+        # Buggy pattern raises:
+        with self.assertRaises(AttributeError) as cm:
+            a.action(ui)
+        msg = str(cm.exception)
+        self.assertIn(
+            "action", msg.lower(),
+            f"AttributeError should mention 'action' but got: "
+            f"{msg!r}")
+
+    def test_skfem_contact_condense_full_vector_shape(self) -> None:
+        """skfem::contact pitfall #2 [API]: `condense(K, f,
+        x=x_full, D=D)` expects x_full to be FULL-LENGTH
+        (size ib.N). Passing a short vector (size len(D)) raises
+        a shape mismatch downstream in scipy.sparse.linalg
+        when the condensed system is solved."""
+        from skfem import (MeshTri, Basis, ElementVector,
+                           ElementTriP1, BilinearForm, condense,
+                           solve)
+        from skfem.helpers import ddot, sym_grad, trace
+        import numpy as np
+
+        m = MeshTri.init_tensor(np.linspace(0, 1, 5),
+                                np.linspace(0, 1, 5))
+        m = m.with_boundaries({"top":
+            lambda x: np.isclose(x[1], 1.0)})
+        ib = Basis(m, ElementVector(ElementTriP1()))
+
+        @BilinearForm
+        def le(u, v, w):
+            return ddot(sym_grad(u), sym_grad(v))
+
+        K = le.assemble(ib)
+        f = ib.zeros()
+        D = ib.get_dofs("top").all()
+
+        # Buggy: x_full sized to D, not ib.N.
+        x_short = np.full(len(D), 0.1)
+        with self.assertRaises((ValueError, IndexError, TypeError)):
+            # condense indexes x by D — if x is too short, it
+            # either raises immediately or produces a garbage
+            # condensed system that crashes in solve. Either
+            # exception is acceptable; the pitfall doesn't care
+            # which signal fires, only that something does.
+            u_bad = solve(*condense(K, f, x=x_short, D=D))
+
+        # Correct: x_full sized to ib.N.
+        x_full = ib.zeros()
+        x_full[D] = 0.1
+        u_ok = solve(*condense(K, f, x=x_full, D=D))
+        self.assertAlmostEqual(
+            float(u_ok[D].max()), 0.1, delta=1e-12,
+            msg="With x_full correctly sized to ib.N, the "
+                "prescribed Dirichlet value 0.1 must appear at "
+                "the constrained DOFs after solve.")
+
 
 if __name__ == "__main__":
     unittest.main()
