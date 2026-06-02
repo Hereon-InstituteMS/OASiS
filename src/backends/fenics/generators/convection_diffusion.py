@@ -10,10 +10,36 @@ KNOWLEDGE = {
     "function_space": "Lagrange order 1",
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
-        "SUPG: tau = h/(2|b|) * (coth(Pe) - 1/Pe), Pe = |b|*h/(2*eps)",
-        "Without stabilization: oscillations for Peclet > 1",
-        "CellDiameter(domain) gives the element size h for tau computation",
-        "For pure advection (eps=0): use DG methods instead",
+        "[Numerical] SUPG stabilisation parameter is "
+        "tau = h/(2|b|) * (coth(Pe) - 1/Pe), where the local Peclet "
+        "number is Pe = |b|*h/(2*eps). Signal: using a constant tau "
+        "(e.g. tau = 0.1) in the dolfinx BilinearForm produces "
+        "under-stabilisation in cells where Pe > 1 — the Function "
+        "shows visible wiggles in the XDMFFile output downstream of "
+        "the source. Use the per-cell formula with ufl.CellDiameter "
+        "and ufl.sqrt(ufl.dot(b, b)). (Audit 2026-06-02.)",
+        "[Numerical] Without SUPG / GLS stabilisation, plain "
+        "Galerkin in dolfinx develops oscillations for local "
+        "Peclet > 1. Signal: a dolfinx LinearProblem solve at Pe=10 "
+        "shows oscillations growing geometrically downstream of "
+        "boundary layers in the XDMFFile Function; adding the "
+        "tau*(b·grad(u), b·grad(v))*dx SUPG term removes them. "
+        "(Audit 2026-06-02.)",
+        "[API] The element size h needed for tau is given by "
+        "ufl.CellDiameter(domain) — NOT a global constant. Signal: "
+        "computing tau with a hard-coded h = 1/nx (instead of "
+        "ufl.CellDiameter) gives wrong stabilisation on non-uniform "
+        "meshes; the dolfinx Function output shows residual "
+        "oscillations in refined regions. (Audit 2026-06-02.)",
+        "[Numerical] Pure advection (eps=0) makes the Galerkin "
+        "system hyperbolic — SUPG is insufficient. Use DG methods "
+        "(jump terms, upwind flux) instead. Signal: setting eps=0 in "
+        "the convection-diffusion dolfinx form and running with SUPG "
+        "yields NaN within a few NewtonSolver iterations or a "
+        "fundamentally wrong Function profile; switching to a DG "
+        "discretisation (fem.functionspace with "
+        "basix.ufl.element('Discontinuous Lagrange', ...) + upwind "
+        "flux) recovers the correct solution. (Audit 2026-06-02.)",
     ],
 }
 

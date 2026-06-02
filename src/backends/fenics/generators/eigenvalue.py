@@ -9,8 +9,19 @@ KNOWLEDGE = {
     "solver": "SLEPc EPS: Krylov-Schur (default), Arnoldi, Lanczos, power method, Jacobi-Davidson",
     "function_space": "Lagrange (any order)",
     "pitfalls": [
-        "Requires slepc4py: pip install slepc4py (needs PETSc + SLEPc C libraries)",
-        "Generalized eigenvalue: A*x = lambda*M*x where A=stiffness, M=mass",
+        "[Integration] Eigenvalue solves require slepc4py: pip "
+        "install slepc4py (needs PETSc + SLEPc C libraries). Signal: "
+        "`from slepc4py import SLEPc` raises ImportError 'No module "
+        "named slepc4py' on a fresh dolfinx install — the conda-forge "
+        "fenics-env ships PETSc but slepc4py is a separate package "
+        "the user must add. (Audit 2026-06-02.)",
+        "[Numerical] Generalised eigenvalue problem is A*x = "
+        "lambda*M*x where A is the stiffness BilinearForm matrix and "
+        "M is the mass BilinearForm matrix. Signal: passing only A "
+        "to SLEPc.EPS().setOperators(A) solves the STANDARD problem "
+        "A*x = lambda*x — the eigenvalues are the discrete A "
+        "spectrum, not the physical ones; setOperators(A, M) "
+        "recovers the correct lambda. (Audit 2026-06-02.)",
         "[API] dolfinx 0.10 renamed the assemble_matrix kwarg 'diagonal' → 'diag'. "
         "Old call assemble_matrix(m, bcs=[bc], diagonal=0.0) raises TypeError: "
         "got an unexpected keyword argument 'diagonal'. Use diag=... (see next "
@@ -34,7 +45,13 @@ KNOWLEDGE = {
         "eigenvalues at Dirichlet rows followed by the physical eigenvalues "
         "(λ₁ = 2π² ≈ 19.74 for the unit-square Laplacian). Filter for "
         "λ > 2.0 post-hoc. (Verified empirically 2026-06-01.)",
-        "SLEPc not always available — check import and provide fallback",
+        "[Integration] SLEPc is not always available — check import "
+        "and provide a fallback. Signal: a top-level `from slepc4py "
+        "import SLEPc` in the dolfinx eigenvalue script raises "
+        "ImportError on conda envs without slepc4py; wrap in "
+        "try/except and either fall back to scipy.sparse.linalg.eigsh "
+        "on the assembled PETSc matrices (converted to csr) or emit a "
+        "clear error message. (Audit 2026-06-02.)",
     ],
 }
 

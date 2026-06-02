@@ -60,7 +60,19 @@ KNOWLEDGE = {
             "own implicit sub-step (Strang or Lie). (Audit "
             "2026-06-02.)"
         ),
-        "Common reaction models: Gray-Scott, Schnakenberg, Brusselator, Lotka-Volterra",
+        (
+            "[Physics] Common reaction models built on the "
+            "u-v reaction-diffusion two-species template are "
+            "Gray-Scott, Schnakenberg, Brusselator, and Lotka-"
+            "Volterra. Signal: a dolfinx LinearProblem solving the "
+            "wrong-coupling-sign form (e.g. -u*v in Gray-Scott "
+            "instead of +u*v^2) shows the Function field collapsing "
+            "to a homogeneous_steady_state instead of forming "
+            "Turing patterns visible in the XDMFFile output. The "
+            "right coupling for each model is published — check "
+            "against literature before running long Schnakenberg "
+            "sweeps. (Audit 2026-06-02.)"
+        ),
         (
             "[Numerical] Conservation: check mass integrals over "
             "time to verify correctness. Signal: for a closed "
