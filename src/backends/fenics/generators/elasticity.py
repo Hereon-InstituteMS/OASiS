@@ -69,11 +69,15 @@ KNOWLEDGE = {
         "Tet10 mesh gives true isoparametric elements; a P1 space "
         "on Tet10 uses curved geometry but linear interpolation. "
         "Mismatched expectations are a common subtle bug. Signal: "
-        "ufl.errornorm against a manufactured solution shows slope "
+        "the assembled L2 error (dolfinx.fem.assemble_scalar"
+        "(dolfinx.fem.form(ufl.inner(u_h-u_exact, u_h-u_exact)"
+        "*ufl.dx))) against a manufactured solution shows slope "
         "1 across mesh refinements where slope 2 is expected, "
         "because dolfinx.fem.functionspace was called with "
         "('Lagrange', 1) while the user thought ('Lagrange', 2) "
-        "was active.",
+        "was active. (Note 2026-06-02: dolfin's ufl.errornorm "
+        "helper does not exist in dolfinx — assemble the inner-"
+        "product form manually as shown.)",
         "[Numerical] Near-incompressible (nu > 0.49) requires a "
         "mixed-formulation (Taylor-Hood or three-field) to avoid "
         "volumetric locking. Pure displacement P1 or P2 at "

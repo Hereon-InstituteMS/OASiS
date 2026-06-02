@@ -1120,13 +1120,17 @@ _FENICS_KNOWLEDGE = {
             "per step, so dt > (target_l2_error) / Re is "
             "necessary for first-order splitting and tighter "
             "for higher-order projections. Signal: integrated "
-            "L2 error from ufl.errornorm of u_h (the Function "
-            "from LinearProblem.solve) vs an analytic reference "
+            "L2 error — computed as dolfinx.fem.assemble_scalar"
+            "(dolfinx.fem.form(ufl.inner(u_h-u_exact, "
+            "u_h-u_exact)*ufl.dx)) — of u_h (the Function from "
+            "LinearProblem.solve) vs an analytic reference "
             "saturates as dt is reduced because the splitting "
             "error dominates the spatial error; switching back "
             "to monolithic dolfinx.nls.petsc.NonlinearProblem + "
             "NewtonSolver recovers the spatial-error regime. "
-            "(Claim inherited.)",
+            "(Note 2026-06-02: dolfin's ufl.errornorm helper is "
+            "NOT available in dolfinx; assemble the inner-product "
+            "form manually as shown.)",
         ],
         "materials": {
             "Re": {"range": [1, 10000], "unit": "dimensionless", "description": "Reynolds number"},
