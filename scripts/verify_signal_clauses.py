@@ -422,6 +422,76 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Scalar_Transport", "Statics", "Stationary",
             "GenAlpha", "OneStepTheta",
         })
+    elif backend == "febio":
+        code_symbols.update({
+            # ── FEBio toolchain marker ───────────────────────────
+            "FEBio", "febio_spec",
+            # ── Top-level XML section names (febio_spec children)
+            "Module", "Globals", "Material", "Mesh",
+            "MeshDomains", "Geometry", "MeshData", "Step",
+            "Control", "Boundary", "Loads", "Initial",
+            "LoadData", "Discrete", "Constraints", "Contact",
+            "Output", "plotfile", "logfile", "Solutes",
+            "SolidDomain", "ShellDomain", "BCs", "Rigid",
+            # ── FEBio modules (Module type=...) ──────────────────
+            "solid", "biphasic", "multiphasic", "fluid",
+            "polar_fluid", "fluid_FSI", "biphasic_FSI",
+            "heat", "reaction_diffusion",
+            # ── Real FEBio material type names (the ones that
+            #    appear inside `<material type="..."/>` and that
+            #    error text echoes verbatim) ──────────────────────
+            "isotropic_elastic", "neo_Hookean",
+            "Mooney_Rivlin", "Ogden", "Holzapfel",
+            "transversely_isotropic", "fiber_neo_Hookean",
+            "uncoupled_solid_mixture", "solid_mixture",
+            "rigid_body", "growth", "isotropic_growth",
+            "viscoelastic", "uncoupled_viscoelastic",
+            "biphasic_solute", "triphasic", "multiphasic_solute",
+            "Newtonian", "Carreau", "Bingham",
+            "fluid_solute", "isotropic_Fourier",
+            "Bauschinger_shift", "yield_stress",
+            # ── Solver / NOX-status tokens that real FEBio logs
+            #    emit ───────────────────────────────────────────
+            "NOX", "FullNewton", "BFGS", "Quasi",
+            "DIVERGED_LINE_SEARCH", "DIVERGED_FNORM_NAN",
+            "MaxIters", "lc", "load_controller",
+            "step_size", "dt_0", "Jacobian",
+            "max_refs", "max_ups", "Rtol", "Etol",
+            "STATIC", "DYNAMIC", "TRANSIENT",
+            # ── Element types FEBio accepts in <Elements
+            #    type="..."/> ───────────────────────────────────
+            "hex8", "hex20", "hex27", "tet4", "tet10",
+            "tet15", "tet20", "penta6", "penta15",
+            "pyra5", "pyra13", "quad4", "quad8", "quad9",
+            "tri3", "tri6", "tri7",
+            # ── DOF + observable identifiers FEBio prints
+            #    (verified from FEBio output / catalog) ─────────
+            "x_dof", "y_dof", "z_dof",
+            "gx_dof", "gy_dof", "gz_dof",
+            "center_of_mass", "initial_stress",
+            "rigid_displacement", "shedding_period",
+            # ── Output / runtime helpers ─────────────────────────
+            "write_vtu", "post_vtu", "xplt", "plt",
+            # ── More FEBio runtime / PETSc-via-FEBio identifiers
+            #    extracted from actual error logs and catalog
+            #    Signal: prose ──────────────────────────────────
+            "KSPSolve", "ALE", "Hookean", "HGO",
+            "Holzapfel_Gasser_Ogden",
+            "kappa", "fiber", "Elements", "node",
+            "prescribed", "concentration", "sol",
+            "micro_rotation", "Cosserat",
+            "drainage", "tissue", "contact",
+            "fluid_pressure", "effective_concentration",
+            # ── FEBio XML attribute / parameter lowercase tokens
+            #    that show up in `<material>`/`<Element>` errors ──
+            "material", "parameter", "element",
+            "isotropic", "elastic", "displacement",
+            "restart", "history", "cycle",
+            # ── Output / plotfile observables ─────────────────
+            "plotfile_xplt", "logfile",
+            "stress_strain", "kinetic_energy",
+            "fluid_velocity", "elastic_strain",
+        })
 
     code_symbols.update({
         # ── Krylov solvers ─────────────────────────────────────

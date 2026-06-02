@@ -166,11 +166,12 @@ KNOWLEDGE = {
             (
                 "[Numerical] FSI is stiff — start with small dt and "
                 "use SMOOTH ramping of pressure / velocity BCs. "
-                "Sudden load application (LINEAR + small dt_0) "
-                "produces high-frequency oscillations in the "
-                "interface that take many steps to damp out. "
-                "Signal: kinetic energy at the interface oscillates "
-                "with amplitude > 50% of mean for the first ~50 "
+                "Sudden load application (LINEAR load_controller + "
+                "small dt_0) produces high-frequency oscillations "
+                "in the fluid_FSI interface that take many steps "
+                "to damp out. Signal: the kinetic_energy logfile "
+                "channel at the interface oscillates with "
+                "amplitude > 50% of mean for the first ~50 NOX "
                 "steps before settling. (Audit 2026-06-02.)"
             ),
         ],

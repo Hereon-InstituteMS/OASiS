@@ -132,10 +132,11 @@ KNOWLEDGE = {
                 "'zero micro-rotation' for a smooth wall. Forgetting "
                 "the rotation BC leaves the micro-rotation field "
                 "free at the boundary, producing unphysical "
-                "spinning at the walls. Signal: visualize the "
-                "'micro rotation' output near the no-slip wall — "
-                "it should be ~0 there; non-zero values mean the BC "
-                "was missed. (Audit 2026-06-02.)"
+                "spinning at the walls. Signal: opening the .xplt "
+                "plotfile and visualizing the micro_rotation output "
+                "channel near the no-slip wall shows non-zero "
+                "values where gx_dof / gy_dof / gz_dof should be "
+                "~0 — the BC was missed. (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Setting micro_viscosity = 0 recovers "
