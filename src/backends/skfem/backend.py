@@ -190,6 +190,13 @@ class SkfemBackend(SolverBackend):
                 element_types=["P1-tri"],
                 template_variants=["2d"],
             ),
+            PhysicsCapability(
+                name="schrodinger",
+                description="1D stationary Schrödinger eigenvalue problem -½ψ'' + V(x)ψ = Eψ. Default quantum harmonic oscillator V=½x² with analytic E_n = n+½. Matches scikit-fem ex39.",
+                spatial_dims=[1],
+                element_types=["P1-line"],
+                template_variants=["1d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:

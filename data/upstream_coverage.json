@@ -1370,6 +1370,7 @@
       "point_source",
       "poisson",
       "reaction_diffusion",
+      "schrodinger",
       "stokes",
       "time_dependent",
       "wave"
@@ -1385,7 +1386,6 @@
       "post_processing",
       "preconditioning",
       "restriction_matrix",
-      "schrodinger",
       "transmission_line"
     ],
     "extra_in_catalog_not_upstream": [
@@ -1394,7 +1394,7 @@
       "reaction_diffusion",
       "time_dependent"
     ],
-    "coverage_pct": 55.6
+    "coverage_pct": 59.3
   },
   "kratos": {
     "demo_dirs": [],
