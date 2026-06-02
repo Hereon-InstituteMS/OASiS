@@ -153,6 +153,26 @@ class TestKnowledgeAdversarial(unittest.TestCase):
                       f"Got: {result[:200]}")
 
 
+class TestDeveloperAdversarial(unittest.TestCase):
+    """developer tool corner cases."""
+
+    def test_architecture_returns_json(self) -> None:
+        dev = _get_tool("developer")
+        result = dev(action="architecture", solver="fenics")
+        self.assertIn("\"root\"", result,
+                      "developer('architecture') must return JSON "
+                      "with at least the 'root' key for the requested "
+                      "solver. Got: " + result[:200])
+
+    def test_unknown_action_shows_usage(self) -> None:
+        dev = _get_tool("developer")
+        result = dev(action="nonsense_action", solver="fenics")
+        self.assertIn("Usage", result,
+                      "developer('nonsense_action') must fall back "
+                      "to a usage hint listing valid actions. Got: "
+                      + result[:200])
+
+
 class TestIntrospectionToolsSmoke(unittest.TestCase):
     """Smoke gates for the introspection tools — confirm they
     return a non-empty markdown response and don't crash on
