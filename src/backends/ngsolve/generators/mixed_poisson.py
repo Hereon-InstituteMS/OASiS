@@ -54,13 +54,16 @@ KNOWLEDGE = {
         "pitfalls": [
             (
                 "[API] RT=True for Raviart-Thomas, RT=False "
-                "(default) for BDM elements. Signal: convergence "
-                "rate test shows the wrong family — RT(k) "
-                "converges at order k+1 in L2(flux), BDM(k) at "
-                "order k+1 with a different constant. If a "
-                "user expects RT but forgets RT=True, the "
-                "computed rate matches BDM exactly. (Audit "
-                "2026-06-02.)"
+                "(default) for BDM elements. Signal: "
+                "convergence-rate test on the flux "
+                "GridFunction computed by HDiv(mesh, "
+                "order=k, RT=True) BilinearForm shows the "
+                "wrong family — RT(k) converges at order "
+                "k+1 in L2(flux), BDM(k) at order k+1 with "
+                "a different constant. If a user expects "
+                "RT but forgets RT=True in the HDiv "
+                "constructor, the computed rate matches "
+                "BDM exactly. (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Normal component continuous across "

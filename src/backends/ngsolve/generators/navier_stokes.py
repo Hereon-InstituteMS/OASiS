@@ -89,10 +89,12 @@ KNOWLEDGE = {
             (
                 "[Numerical] Re > ~500 needs finer mesh or "
                 "stabilization (SUPG). Signal: spurious "
-                "wiggles upstream of obstacles; energy "
-                "spectrum has high-frequency content not "
-                "present in a reference DNS; on Schafer-Turek "
-                "drag coefficient differs > 10% from the "
+                "wiggles in the GridFunction velocity "
+                "upstream of obstacles; energy spectrum has "
+                "high-frequency content not present in a "
+                "reference DNS; on Schafer-Turek drag "
+                "coefficient computed via BilinearForm "
+                "boundary integrals differs > 10% from the "
                 "5.57 (Re=20) / 3.22 (Re=100) reference. "
                 "(Audit 2026-06-02.)"
             ),

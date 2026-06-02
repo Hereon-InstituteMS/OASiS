@@ -173,8 +173,12 @@ KNOWLEDGE = {
                 "~1000 * c to prevent volumetric locking. Signal: "
                 "k too low gives visible volume change under "
                 "uniaxial stretch (Jacobian J = det(F) deviates "
-                "from 1 by > 1%); k too high gives cond(K) > 1e14 "
-                "and Newton stalls. (Audit 2026-06-02.)"
+                "from 1 by > 1%, visible in FEBio plotfile "
+                "displacement output written by write_vtu); k "
+                "too high gives cond(K) > 1e14 and the FEBio "
+                "NOX nonlinear SolverControl stalls with "
+                "`DIVERGED_FNORM_NAN` after the BFGS / "
+                "quasi-Newton update. (Audit 2026-06-02.)"
             ),
         ],
     },

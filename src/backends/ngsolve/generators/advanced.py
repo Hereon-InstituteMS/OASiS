@@ -1337,14 +1337,16 @@ KNOWLEDGE = {
             ),
             (
                 "[Numerical] For Re > 1000: use stabilization "
-                "(SUPG, VMS) or finer mesh near boundary "
-                "layers. Signal: without stabilisation, "
-                "velocity field shows visible wiggles upstream "
-                "of obstacles or in boundary layers; energy "
-                "spectrum has spurious high-frequency content; "
-                "drag coefficient on a cylinder differs >10% "
-                "from the Schafer-Turek reference. (Audit "
-                "2026-06-02.)"
+                "(SUPG, VMS) added inside the BilinearForm "
+                "or finer mesh near boundary layers. Signal: "
+                "without stabilisation, the GridFunction "
+                "velocity field shows visible wiggles "
+                "upstream of obstacles or in boundary "
+                "layers; energy spectrum has spurious "
+                "high-frequency content; drag coefficient "
+                "on a cylinder (via BilinearForm boundary "
+                "Integrate) differs >10% from the Schafer-"
+                "Turek reference. (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Pressure uniqueness: fix pressure "
@@ -1358,13 +1360,16 @@ KNOWLEDGE = {
             ),
             (
                 "[Numerical] Taylor-Hood P2/P1 satisfies "
-                "inf-sup; P1/P1 does not (needs stabilization "
-                "like MINI). Signal: P1/P1 without "
-                "stabilisation produces checkerboard pressure "
-                "pattern with magnitude that does not converge "
-                "under refinement; switching to P2/P1 or "
-                "adding the cubic bubble (MINI) removes the "
-                "checkerboard. (Audit 2026-06-02.)"
+                "inf-sup; P1/P1 does not (needs "
+                "stabilization like MINI). Signal: P1/P1 "
+                "H1 spaces without stabilisation produce "
+                "checkerboard pressure pattern visible in "
+                "the GridFunction output, with magnitude "
+                "that does not converge under refinement; "
+                "switching to P2/P1 H1 spaces or adding "
+                "the cubic bubble (MINI) inside the "
+                "BilinearForm removes the checkerboard. "
+                "(Audit 2026-06-02.)"
             ),
             (
                 "[Validation] Benchmark: DFG Schafer-Turek "
@@ -1625,14 +1630,16 @@ KNOWLEDGE = {
             (
                 "[Numerical] Load stepping: apply "
                 "displacement / load in INCREMENTS, using "
-                "previous converged solution as initial "
-                "guess. Signal: applying full load at "
-                "t=0 to a hyperelastic problem at 30% "
+                "previous converged GridFunction as "
+                "initial guess. Signal: applying full load "
+                "at t=0 to a hyperelastic problem at 30% "
                 "nominal strain typically diverges "
-                "(NewtonMinimization residual grows ~10x "
-                "per iter); subdividing into 10 steps of "
-                "3% strain achieves quadratic convergence "
-                "per step. (Audit 2026-06-02.)"
+                "(ngsolve.solvers.NewtonMinimization "
+                "residual grows ~10x per iter); "
+                "subdividing into 10 steps of 3% strain "
+                "achieves quadratic convergence per step "
+                "with the per-step BilinearForm AutoDiff "
+                "linearization. (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Neo-Hookean energy: 0.5*mu*"
