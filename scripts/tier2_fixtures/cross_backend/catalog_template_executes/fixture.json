@@ -127,7 +127,8 @@
     "ngsolve::surface_pde::3d_rc=0",
     "kratos::auxiliary_overview::N/A_rc=0",
     "ngsolve::nonlinear_elasticity::3d_rc=0",
-    "total_executed=120",
+    "skfem::navier_stokes::2d_rc=0",
+    "total_executed=121",
     "failures=0"
   ],
   "forbid_in_output": [

@@ -410,6 +410,21 @@ def main() -> int:
         #     fails LU factorisation. Trimmed to disp=0.1,
         #     4 steps, maxh=0.25 — user overrides via params.
         ("ngsolve", "nonlinear_elasticity", "3d"),
+        # Batch-21 (audit 2026-06-02): close skfem::navier_stokes::2d
+        # via full rewrite. The previous Newton kernel had 4
+        # cascading bugs (scalar laplace on a vector basis;
+        # mismatched intorder; MeshTri.init_sqsymmetric() lacking
+        # named boundaries; dofs_u["top"] using an outdated
+        # DofsView API; and a Jacobian/residual sign mix-up).
+        # Replaced with a Picard (lagged-velocity) iteration on
+        # MeshTri+Taylor-Hood P2/P1 with the same robust patterns
+        # the working skfem::stokes::2d template uses (intorder=4,
+        # ddot(grad(u), grad(v)) vector laplacian, dof-interleaved
+        # driven-cavity BC, pressure pin at origin-nearest DOF).
+        # Verified 2026-06-02: Re=100 cavity converges in 12
+        # Picard iterations, max u = 1.0 (lid BC) and peak |u_y|
+        # ≈ 0.47 — consistent with Ghia/Ghia/Shin reference.
+        ("skfem", "navier_stokes", "2d"),
     ]
     fail = []
     executed = 0

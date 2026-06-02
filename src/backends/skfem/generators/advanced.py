@@ -12,147 +12,139 @@ time-dependent PDE, Helmholtz (complex), and reaction-diffusion.
 def _navier_stokes_2d(params: dict) -> str:
     """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
 
-    Navier-Stokes on lid-driven cavity with Newton iteration.
-    Velocity: P2 triangle, pressure: P1 triangle (Taylor-Hood).
+    Steady Navier-Stokes on the lid-driven cavity, solved by Picard
+    iteration (lagged-velocity convection). Taylor-Hood P2/P1
+    velocity-pressure. Rewritten 2026-06-02 (was broken — scalar
+    laplace on a vector basis raised shape mismatch + non-existent
+    DofsView subscript; the old Newton kernel mixed
+    Jacobian/residual blocks incorrectly).
     """
-    nx = params.get("nx", 16)
+    refine = int(params.get("refine", 4))
     Re = params.get("Re", 100.0)
-    tol = params.get("newton_tol", 1e-8)
-    max_iter = params.get("max_iter", 20)
+    tol = params.get("picard_tol", 1e-6)
+    max_iter = params.get("max_iter", 25)
     return f'''\
-"""Navier-Stokes lid-driven cavity — Newton iteration — Taylor-Hood P2/P1 — scikit-fem"""
-from skfem import *
-from skfem.models.poisson import laplace, mass
+"""Navier-Stokes lid-driven cavity — Picard iteration — Taylor-Hood P2/P1 — scikit-fem"""
+from skfem import (
+    MeshTri, Basis, BilinearForm,
+    ElementVector, ElementTriP1, ElementTriP2,
+    asm, condense, solve,
+)
+from skfem.helpers import grad, ddot, dot
 from skfem.models.general import divergence
+from scipy.sparse import bmat
 import numpy as np
-from scipy.sparse import bmat, eye as speye
-from scipy.sparse.linalg import spsolve
 import json
 
 Re = {Re}
 
-# --- Mesh & bases ---
-m = MeshTri.init_sqsymmetric().refined({max(1, int(nx / 8))})
-# Refine to get roughly nx cells along each edge
-while m.p.max() > 0 and m.nelements < {nx}**2 // 2:
-    m = m.refined()
+# --- Mesh + Taylor-Hood spaces ---
+# intorder=4 keeps trial/test quadrature matched on the
+# mixed B = -asm(divergence, basis_u, basis_p) block AND
+# is high enough for the (u_prev · ∇)u trial term.
+m = MeshTri().refined({refine})
+basis_u = Basis(m, ElementVector(ElementTriP2()), intorder=4)
+basis_p = Basis(m, ElementTriP1(), intorder=4)
 
-e_u = ElementVector(ElementTriP2())
-e_p = ElementTriP1()
-ib_u = Basis(m, e_u)
-ib_p = Basis(m, e_p)
 
-N_u = ib_u.N
-N_p = ib_p.N
+@BilinearForm
+def viscous(u, v, w):
+    """∫(grad u : grad v) dx — vector Laplacian."""
+    return ddot(grad(u), grad(v))
+
+
+@BilinearForm
+def convection(u, v, w):
+    """∫((u_prev · ∇) u) · v dx — lagged-velocity convection.
+
+    w['u_prev'] is the interpolated previous-iterate velocity:
+    a DiscreteField with .value shape (d, n_elem, n_quad)
+    and .grad shape (d, d, n_elem, n_quad). For a scalar u_p
+    component, u_p[i] would be (n_elem, n_quad). For grad(u)
+    (rank-2: components × spatial dims), grad(u)[i][j] is the
+    derivative of the i-th trial component w.r.t. x[j].
+    """
+    u_p = w['u_prev'].value
+    gu = grad(u)
+    # (u_prev · ∇) u_i = sum_j u_p[j] * du[i]/dx[j]
+    adv_u = np.stack([
+        u_p[0] * gu[0][0] + u_p[1] * gu[0][1],
+        u_p[0] * gu[1][0] + u_p[1] * gu[1][1],
+    ])
+    return dot(adv_u, v)
+
+
+# Stokes blocks (assembled ONCE, reused every Picard step).
+K_visc = asm(viscous, basis_u) / Re
+# B[q, u] = ∫q·div(u) dx (skfem +div convention) — negate
+# for the standard saddle-point [[K, -B^T], [-B, 0]] layout.
+B = -asm(divergence, basis_u, basis_p)
+
+N_u = basis_u.N
+N_p = basis_p.N
 N_total = N_u + N_p
 
-# --- Viscous (Laplacian) block ---
-A_visc = asm(laplace, ib_u) / Re  # kinematic viscosity 1/Re
+# --- Driven-cavity BC ---
+# ElementVector interleaves x/y dofs at each node:
+#   dof[2i] = x-component, dof[2i+1] = y-component.
+doflocs_u = basis_u.doflocs
+by = doflocs_u[1]
+top_x = np.isclose(by[0::2], 1.0)
+u_bc = np.zeros(basis_u.N)
+u_bc[0::2] = np.where(top_x, 1.0, 0.0)
+u_bc[1::2] = 0.0
 
-# --- Divergence block B (N_p x N_u) ---
-B = -asm(divergence, ib_u, ib_p)
+# Pressure pin at the DOF closest to the origin (removes
+# the constant-pressure null space).
+pdofs = basis_p.doflocs.T
+pin_p_local = int(np.argmin(np.linalg.norm(pdofs[:, :2], axis=1)))
+pin_p_global = N_u + pin_p_local
 
-# --- Boundary DOFs ---
-# Lid (top): u_x = 1, u_y = 0
-# Walls (left, right, bottom): u = 0
-dofs_u = ib_u.get_dofs()
-top_dofs_x  = dofs_u["top"].nodal["u^1"]    # x-component on top
-top_dofs_y  = dofs_u["top"].nodal["u^2"]    # y-component on top
-wall_dofs    = np.concatenate([
-    dofs_u["left"].flatten(),
-    dofs_u["right"].flatten(),
-    dofs_u["bottom"].flatten(),
-    top_dofs_y,
+D_u = basis_u.get_dofs().flatten()
+D = np.concatenate([
+    D_u,
+    np.array([pin_p_global], dtype=np.int64),
 ])
-all_D_u = np.unique(np.concatenate([top_dofs_x, wall_dofs]))
 
-# Pressure pin: fix pressure at node 0 to remove nullspace
-pin_p = np.array([N_u])  # global index of first pressure DOF
-
-# Free DOFs
-all_D = np.unique(np.concatenate([all_D_u, pin_p]))
-I = np.setdiff1d(np.arange(N_total), all_D)
-
-# --- Initial guess: zero ---
+# Initial guess: Stokes solution (Re → ∞ Picard step 0
+# with u_prev=0 reduces convection to 0).
 x = np.zeros(N_total)
-x[top_dofs_x] = 1.0   # lid BC
+x[:N_u] = u_bc
 
-# --- Nonlinear convection forms (depend on current velocity) ---
-@BilinearForm
-def convection_jac(u, v, w):
-    """Jacobian contribution: (u_prev . grad) u . v + (u . grad) u_prev . v"""
-    up = w["up"]   # interpolated previous velocity, shape (2,)
-    # (u_prev . grad) u . v
-    adv1 = (up[0] * u.grad[0][0] + up[1] * u.grad[0][1]) * v[0] \
-         + (up[0] * u.grad[1][0] + up[1] * u.grad[1][1]) * v[1]
-    # (u . grad) u_prev . v  — linearization term
-    upg = w["upg"]  # gradient of u_prev at quadrature points, shape (2,2)
-    adv2 = (u[0] * upg[0][0] + u[1] * upg[0][1]) * v[0] \
-         + (u[0] * upg[1][0] + u[1] * upg[1][1]) * v[1]
-    return adv1 + adv2
-
-@LinearForm
-def convection_res(v, w):
-    """Residual: (u_prev . grad) u_prev . v"""
-    up  = w["up"]
-    upg = w["upg"]
-    return (up[0] * upg[0][0] + up[1] * upg[0][1]) * v[0] \
-         + (up[0] * upg[1][0] + up[1] * upg[1][1]) * v[1]
-
-@LinearForm
-def divergence_res(v, w):
-    """Divergence residual: div(u_prev) * q"""
-    upg = w["upg"]
-    return (upg[0][0] + upg[1][1]) * v
-
-# Zero block for pressure-pressure part
-from scipy.sparse import csr_matrix
-Z_pp = csr_matrix((N_p, N_p))
-
-# --- Newton loop ---
+# --- Picard loop ---
+res_norm = np.inf
 for it in range({max_iter}):
-    # Extract velocity part of solution
-    u_vec = x[:N_u]
+    u_prev = x[:N_u]
+    u_prev_field = basis_u.interpolate(u_prev)
 
-    # Interpolate velocity and its gradient at quadrature points
-    u_intp  = ib_u.interpolate(u_vec)
-    up_val  = u_intp.value      # (2, n_quad_pts) array
-    upg_val = u_intp.grad       # (2, 2, n_quad_pts) array
+    # Assemble convection with current u_prev. Combined with
+    # the (constant) viscous block this gives the iteration
+    # Jacobian for the velocity-velocity block.
+    C = asm(convection, basis_u, u_prev=u_prev_field)
 
-    # Assemble convection Jacobian and residuals
-    C = asm(convection_jac, ib_u, up=up_val, upg=upg_val)
-    r_u = asm(convection_res, ib_u, up=up_val, upg=upg_val)
-    r_p = asm(divergence_res, ib_p, upg=upg_val)
+    A = bmat([[K_visc + C, B.T],
+              [B,          None]], format='csr')
+    F = np.zeros(N_total)
 
-    # Full system Jacobian:  J = [[A_visc + C, B^T], [B, 0]]
-    J = bmat([[A_visc + C, B.T], [B, Z_pp]], format="csr")
+    x_full = np.zeros(N_total)
+    x_full[:N_u] = u_bc
+    x_new = solve(*condense(A, F, D=D, x=x_full))
 
-    # Full residual:  R = J_lin * x + nonlinear_res
-    R = np.zeros(N_total)
-    R[:N_u] = (A_visc + C) @ u_vec + B.T @ x[N_u:] - r_u
-    # Wait — correct residual is: viscous*u + B^T*p - r_conv + B*u - r_div
-    # Re-assemble correctly:
-    R[:N_u] = A_visc @ u_vec + B.T @ x[N_u:] + r_u
-    R[N_u:] = B @ u_vec - r_p
-
-    # Apply BCs
-    R[all_D] = 0.0
-
-    dx = np.zeros(N_total)
-    dx[I] = spsolve(J[I][:, I], -R[I])
-
-    x += dx
-    res_norm = np.linalg.norm(dx[I])
-    print(f"Newton it {{it+1}}: ||dx|| = {{res_norm:.4e}}")
+    res_norm = np.linalg.norm(x_new[:N_u] - u_prev)
+    x = x_new
+    print(f"Picard it {{it+1}}: ||du|| = {{res_norm:.4e}}")
     if res_norm < {tol}:
-        print(f"Converged in {{it+1}} Newton iterations")
+        print(f"Converged in {{it+1}} Picard iterations")
         break
 
-u_sol = x[:N_u].reshape(2, -1)
-p_sol = x[N_u:]
-max_vel = np.sqrt(u_sol[0]**2 + u_sol[1]**2).max()
-print(f"Max velocity magnitude: {{max_vel:.6f}}")
+u_h = x[:N_u]
+p_h = x[N_u:]
+max_vel = np.sqrt(u_h[0::2]**2 + u_h[1::2]**2).max()
 print(f"Re = {Re}, DOFs = {{N_total}}")
+print(f"Max velocity magnitude: {{max_vel:.6f}}")
+print(f"||u_x||_inf = {{np.abs(u_h[0::2]).max():.6f}}")
+print(f"||u_y||_inf = {{np.abs(u_h[1::2]).max():.6f}}")
+print(f"||p||_inf   = {{np.abs(p_h).max():.6f}}")
 
 import meshio
 pts  = np.column_stack([m.p.T, np.zeros(m.p.shape[1])])
@@ -163,9 +155,10 @@ mio.write("result.vtu")
 summary = {{
     "Re": {Re},
     "max_velocity": float(max_vel),
-    "n_dofs": N_total,
-    "n_elements": m.nelements,
-    "newton_iter": it + 1,
+    "n_dofs": int(N_total),
+    "n_elements": int(m.nelements),
+    "picard_iter": it + 1,
+    "final_residual": float(res_norm),
     "element_type": "P2-P1 Taylor-Hood",
 }}
 with open("results_summary.json", "w") as _f:
