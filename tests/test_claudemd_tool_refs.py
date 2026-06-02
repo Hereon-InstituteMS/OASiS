@@ -1,5 +1,5 @@
-"""Regression: CLAUDE.md only references tools that the MCP
-server actually registers.
+"""Regression: project instructions (CLAUDE.md, README.md) only
+reference tools that the MCP server actually registers.
 
 Catches the drift surfaced 2026-06-02: CLAUDE.md mentioned
 `get_example_inputs()` (an older tool name from before the
@@ -8,9 +8,14 @@ consolidated.py refactor). The current registered tool is
 call `get_example_inputs()` would hit "no such tool" and
 get stuck.
 
-The gate parses CLAUDE.md, extracts every `tool_name(...)`
-mention (backtick-quoted with parens), and asserts each
-matches a registered MCP tool name.
+Two reference styles are checked:
+  - CLAUDE.md uses `tool(...)` form (backtick + parens) in
+    instructions to sub-agents.
+  - README.md uses bare `tool` form (backtick, no parens) in
+    the tool-reference table.
+
+Both are extracted and matched against the registered MCP
+tool set; any phantom advertisement fails the gate.
 """
 from __future__ import annotations
 
@@ -44,34 +49,70 @@ _NON_MCP_ALLOWED = {
     "X",                     # placeholder in prose
     "APPROVE", "REJECT",     # critic verdict tokens
     "search",                # verb / generic
+    # README backtick-without-parens mentions of non-tool nouns:
+    "open-fem-agent",        # MCP server name (not a tool)
 }
 
 
-class TestClaudeMdToolRefs(unittest.TestCase):
-    def test_referenced_tools_are_registered(self) -> None:
-        claudemd = _REPO / "CLAUDE.md"
-        self.assertTrue(claudemd.is_file(),
-                        f"CLAUDE.md not found at {claudemd}")
-        text = claudemd.read_text()
-
-        # Extract every `name(...)` mention. The backticks
-        # rule out prose-only callbacks like "the X function".
-        # Allow the form `name(arg=...)` and `name()`.
-        refs = set(re.findall(r"`([a-z_][a-z_0-9]*)\([^`]*\)`", text))
-
-        # Filter out backtick references that are obviously
-        # generic.
+class TestProjectInstructionsToolRefs(unittest.TestCase):
+    def _check_file(self, path: Path, pattern: str,
+                    description: str) -> None:
+        self.assertTrue(path.is_file(), f"{description} not found at {path}")
+        text = path.read_text()
+        refs = set(re.findall(pattern, text))
         refs = {r for r in refs if r not in _NON_MCP_ALLOWED}
-
         registered = _registered_mcp_tools()
         phantoms = refs - registered
         self.assertEqual(
             phantoms, set(),
-            f"CLAUDE.md references tools that are NOT registered: "
-            f"{sorted(phantoms)}. Registered MCP tools: "
-            f"{sorted(registered)}. Either update CLAUDE.md to the "
-            "current tool name OR re-register the missing tool in "
-            "src/tools/consolidated.py.")
+            f"{description} references tools that are NOT "
+            f"registered: {sorted(phantoms)}. Registered MCP "
+            f"tools: {sorted(registered)}. Either update "
+            f"{description} to the current tool name OR re-register "
+            "the missing tool in src/tools/consolidated.py.")
+
+    def test_claude_md(self) -> None:
+        """CLAUDE.md sub-agent instructions: `name(...)` form."""
+        self._check_file(
+            _REPO / "CLAUDE.md",
+            r"`([a-z_][a-z_0-9]*)\([^`]*\)`",
+            "CLAUDE.md")
+
+    def test_readme_md(self) -> None:
+        """README.md tool-reference table: bare `name` form.
+
+        README backticks wrap many non-tool nouns (filenames,
+        env vars, etc.); the regex extracts every backtick'd
+        snake_case identifier, then we filter via heuristic: a
+        registered MCP tool name is the canonical match set,
+        anything else is implicitly trusted (only flag actual
+        tool-name-shape phantoms)."""
+        readme = _REPO / "README.md"
+        self.assertTrue(readme.is_file(), f"README.md not found at {readme}")
+        text = readme.read_text()
+        refs = set(re.findall(r"`([a-z_][a-z_0-9]*)`", text))
+        # README backticks many non-tool nouns; restrict to
+        # snake-case identifiers that LOOK like tool names
+        # (>= 6 chars, contain underscore OR match a known tool).
+        registered = _registered_mcp_tools()
+        tool_shaped = {r for r in refs
+                       if r in registered
+                       or (len(r) >= 6 and "_" in r
+                           and r.endswith(("_simulation",
+                                            "_solve",
+                                            "_field",
+                                            "_mesh",
+                                            "_backends",
+                                            "_catalog",
+                                            "_insights",
+                                            "_generator")))}
+        tool_shaped -= _NON_MCP_ALLOWED
+        phantoms = tool_shaped - registered
+        self.assertEqual(
+            phantoms, set(),
+            f"README.md references tool-shaped names that are "
+            f"NOT registered: {sorted(phantoms)}. Registered MCP "
+            f"tools: {sorted(registered)}.")
 
 
 if __name__ == "__main__":
