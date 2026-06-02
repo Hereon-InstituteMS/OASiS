@@ -378,6 +378,23 @@ def main() -> int:
         ("kratos", "swimming_dem", "2d"),
         ("kratos", "dem_structures_coupling", "2d"),
         ("kratos", "pfem_fluid", "2d"),
+        # Batch-19 (audit 2026-06-02): 3 final uncovered rows.
+        # skfem::poisson::2d_tri  — fixed: cells declared as
+        #   "quad" but MeshTri.t.T is shape (n,3); change to
+        #   "triangle". Same typo class as the 3d hex row
+        #   already fixed (batch-12).
+        # ngsolve::surface_pde::3d — fixed: volume-mesh H1
+        #   trial/test cannot be combined with `ds`; use
+        #   definedon=mesh.Boundaries(".*") to put the space
+        #   on the surface AND wrap each trial/test with
+        #   .Trace() so the BND form typechecks (NGSolve
+        #   surface-FEM idiom from Schöberl iFEM notes).
+        # kratos::auxiliary_overview::N/A — meta-reference
+        #   physics; generate_input returns a no-op commentary
+        #   script. rc=0 is the only meaningful gate.
+        ("skfem", "poisson", "2d_tri"),
+        ("ngsolve", "surface_pde", "3d"),
+        ("kratos", "auxiliary_overview", "N/A"),
     ]
     fail = []
     executed = 0

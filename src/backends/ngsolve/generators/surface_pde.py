@@ -21,24 +21,39 @@ mesh.Curve({order})
 
 print(f"Surface mesh: {{mesh.ne}} elements, {{mesh.nv}} vertices")
 
-# H1 space on the surface manifold
-fes = H1(mesh, order={order}, dirichlet="")
-u, v = fes.TnT()
-
-# Laplace-Beltrami: surface gradient on the manifold
-# NGSolve automatically restricts grad to the tangent plane on surface meshes
-a = BilinearForm(grad(u) * grad(v) * ds).Assemble()
-
-# Source term on the surface — set for your problem
-# Use spherical harmonics Y_2^0 as forcing: f = 6*z^2 - 2 (eigenfunction)
-f_expr = 6 * z * z - 2
-f = LinearForm(f_expr * v * ds).Assemble()
-
-# Pin one DOF to fix the constant (Laplace-Beltrami has kernel = constants)
-fes_constrained = H1(mesh, order={order})
+# H1 space on the SURFACE (boundary of the volume mesh).
+# definedon=mesh.Boundaries(".*") restricts the FE space to
+# the spherical surface; without it, H1 lives on the full
+# volume and the boundary integrals below would mix trace
+# DOFs with interior DOFs.
+# Audit 2026-06-02: prior version used H1(mesh, order=...,
+# dirichlet="") on the volume mesh and then assembled
+# `grad(u) * grad(v) * ds`. NGSolve raised
+#   NgException: Trialfunction does not support BND-forms,
+#               maybe a Trace() operator is missing, type=grad
+# Fix: restrict the space to the surface AND wrap each
+# trial/test occurrence with .Trace() so the BND integral
+# typechecks. See Joachim Schöberl's surface-FEM example
+# in iFEM lecture notes (definedon + .Trace() pattern).
+fes_constrained = H1(mesh, order={order},
+                      definedon=mesh.Boundaries(".*"))
 u_c, v_c = fes_constrained.TnT()
-a_c = BilinearForm(grad(u_c) * grad(v_c) * ds + 1e-8 * u_c * v_c * ds).Assemble()
-f_c = LinearForm(f_expr * v_c * ds).Assemble()
+
+a_c = BilinearForm(fes_constrained)
+a_c += (grad(u_c).Trace() * grad(v_c).Trace()
+         + 1e-8 * u_c.Trace() * v_c.Trace()) * ds
+a_c.Assemble()
+
+# Source term on the surface — set for your problem.
+# Use spherical harmonics Y_2^0 as forcing: f = 6*z^2 - 2
+# (eigenfunction of -Δ_S on the unit sphere). Integral over
+# the sphere is 0, so the residual has no constant mode and
+# the 1e-8 regulariser is just a safety net to keep the
+# matrix non-singular.
+f_expr = 6 * z * z - 2
+f_c = LinearForm(fes_constrained)
+f_c += f_expr * v_c.Trace() * ds
+f_c.Assemble()
 
 gfu = GridFunction(fes_constrained)
 gfu.vec.data = a_c.mat.Inverse(fes_constrained.FreeDofs()) * f_c.vec

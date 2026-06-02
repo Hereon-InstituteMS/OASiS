@@ -82,7 +82,13 @@ max_val = u.max()
 print(f"max(u) = {{max_val:.10f}}")
 
 import meshio
-cells = [("quad", m.t.T)]
+# MeshTri.t.T has shape (n_cells, 3) — triangles, not quads.
+# Declaring 'quad' here makes meshio reject the array with
+# WriteError 'Unexpected cells array shape (n, 3) for quad
+# cells. Expected shape [:, 4]'. Same class of typo fixed
+# in _poisson_3d (hexahedron); this 2d_tri row was missed
+# until the 2026-06-02 Layer-F coverage audit.
+cells = [("triangle", m.t.T)]
 points = np.column_stack([m.p.T, np.zeros(m.p.shape[1])]) if m.p.shape[0] == 2 else m.p.T
 mio = meshio.Mesh(points, cells, point_data={{"phi": u}})
 mio.write("result.vtu")
