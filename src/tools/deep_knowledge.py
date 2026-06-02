@@ -1,10 +1,39 @@
 """
-MCP tools for deep, comprehensive domain knowledge across ALL backends.
+MCP-side deep domain knowledge for SELECTED backends.
 
-This is the brain of the agent — it knows weak forms, material libraries,
-solver configurations, pitfalls, element catalogs, and best practices for
-every supported FEM code. This is what makes Open FEM Agent genuinely useful
-compared to a generic LLM.
+This file is NOT a complete brain — it carries prose-style knowledge for
+only **4 of 8** registered backends, in two roles:
+
+  1. **Canonical** for FEniCSx (`_FENICS_KNOWLEDGE`, 31 keys, ~91 KB):
+     fenics/backend.py reads this FIRST and falls back to its own
+     generator KNOWLEDGE only when a key is missing. Touch with care
+     — adding/renaming keys here can shadow generator pitfalls.
+
+  2. **Last-fallback supplement** for deal.II (`_DEALII_KNOWLEDGE`,
+     14 keys, ~20 KB): dealii/backend.py reads
+     data/dealii_knowledge.py first, then generator KNOWLEDGE, then
+     this dict. Useful only for keys NOT covered upstream.
+
+  3. **Workflows.py merge source** for 4C/fourc (`_4C_KNOWLEDGE`,
+     9 keys, ~11 KB): the `module_knowledge` workflow overlays
+     backend pitfalls onto this dict for prose like description /
+     weak_form / problem_type / materials.
+
+Cross-solver hints (`_CROSS_SOLVER_KNOWLEDGE`) supply small
+benchmark-verification notes and live independently of any backend.
+
+**NOT covered here** (their canonical knowledge lives elsewhere):
+skfem, NGSolve, Kratos, DUNE, FEBio — these backends carry their
+catalogs in `src/backends/<name>/generators/` plus
+`data/<name>_knowledge.py` (where applicable). Do not add new
+entries for those backends here; extend the per-backend module
+instead.
+
+(`_FEBIO_KNOWLEDGE` was removed 2026-06-02: it had only 4 keys
+while the febio backend's own generators carry 16 physics with
+matching `description` fields, and the workflows.py merge shape
+allowed deep_knowledge to *shadow* the more-comprehensive backend
+catalog. The backend is now the single source of truth for febio.)
 """
 
 import json
@@ -2613,57 +2642,15 @@ _DEALII_KNOWLEDGE = {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FEBIO — COMPREHENSIVE DOMAIN KNOWLEDGE
+# FEBIO — REMOVED 2026-06-02
+# The previous `_FEBIO_KNOWLEDGE` covered only 4 of febio's 16 live
+# supported physics, while the febio backend's own generators carry
+# matching `description` fields for all 16. workflows.py's merge
+# (`dict(deep_knowledge); ... if k not in knowledge`) allowed the
+# 4-key deep_knowledge entry to SHADOW the backend's larger catalog.
+# The febio backend is now the single source of truth for febio
+# knowledge — extend src/backends/febio/generators/ to grow it.
 # ═══════════════════════════════════════════════════════════════════════════════
-
-_FEBIO_KNOWLEDGE = {
-    "linear_elasticity": {
-        "description": "Linear elasticity with FEBio — isotropic elastic material. XML input (.feb), v4.0.",
-        "input_format": "FEBio XML (.feb), version 4.0",
-        "solver": "Newton-Raphson with direct linear solver",
-        "materials": {
-            "isotropic elastic": {"E": "Young's modulus (Pa)", "v": "Poisson's ratio (NOTE: lowercase v, not nu)"},
-        },
-        "pitfalls": [
-            "FEBio uses lowercase 'v' for Poisson's ratio (not 'nu')",
-            "Element connectivity is 1-indexed",
-            "MeshDomains section required in v4.0 (links domain to material)",
-            "LoadData section with load_controller needed for prescribed BCs",
-        ],
-    },
-    "hyperelasticity": {
-        "description": "Nonlinear hyperelasticity — Neo-Hookean, Mooney-Rivlin, Ogden, HGO (tissue).",
-        "materials": {
-            "neo-Hookean": {"E": "Young's modulus", "v": "Poisson's ratio"},
-            "Mooney-Rivlin": {"c1": "1st constant", "c2": "2nd constant", "k": "bulk modulus"},
-            "Ogden": {"c1-c6": "Ogden constants", "m1-m6": "Ogden exponents", "k": "bulk modulus"},
-            "Holzapfel-Gasser-Ogden": {"c": "matrix modulus", "k1": "fiber stiffness", "k2": "fiber exponent",
-                                        "kappa": "dispersion (0=aligned, 1/3=isotropic)", "theta": "fiber angle"},
-        },
-        "pitfalls": [
-            "Use 'STATIC' analysis for quasi-static loading",
-            "Large deformations require proper step size control",
-            "Convergence issues: reduce step size or use line search",
-            "HGO model: fiber direction via local coordinate system",
-        ],
-    },
-    "biphasic": {
-        "description": "Biphasic poroelasticity — solid + fluid phases. Key for cartilage, hydrogels.",
-        "materials": {
-            "biphasic": {"solid": "Any hyperelastic + 'permeability' material",
-                         "permeability": "Holmes-Mow or constant permeability"},
-        },
-        "pitfalls": [
-            "Requires Module type='biphasic'",
-            "Fluid pressure BC via 'fluid pressure' boundary condition",
-            "Time stepping critical — fast diffusion requires small dt initially",
-        ],
-    },
-    "heat": {
-        "description": "Heat conduction (steady-state). Module type='heat'.",
-        "solver": "Direct or iterative",
-    },
-}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2707,228 +2694,3 @@ _CROSS_SOLVER_KNOWLEDGE = {
         ],
     },
 }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# MCP TOOL REGISTRATION
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def register_deep_knowledge_tools(mcp: FastMCP):
-
-    @mcp.tool()
-    def get_deep_knowledge(solver: str, physics: str) -> str:
-        """Get comprehensive domain knowledge for a physics module.
-
-        Returns everything needed to set up a simulation correctly:
-        materials, solver options, time integration, pitfalls, element types,
-        reference solutions, and best practices.
-
-        This is MUCH more detailed than get_physics_knowledge — use this
-        when you need to understand a physics problem deeply.
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-            physics: Physics key (e.g. 'poisson', 'navier_stokes', 'fsi', 'particle_pd')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE,
-            "4c": _4C_KNOWLEDGE,
-            "fenics": _FENICS_KNOWLEDGE,
-            "fenicsx": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE,
-            "deal.ii": _DEALII_KNOWLEDGE,
-            "febio": _FEBIO_KNOWLEDGE,
-        }
-
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}. Available: fourc, fenics, dealii, febio"
-
-        k = db.get(physics.lower())
-        if not k:
-            available = sorted(db.keys())
-            return f"No knowledge for '{physics}' in {solver}. Available: {', '.join(available)}"
-
-        return json.dumps(k, indent=2, default=str)
-
-    @mcp.tool()
-    def get_all_pitfalls(solver: str) -> str:
-        """Get ALL pitfalls/common mistakes for a solver, across all physics.
-
-        Critical for preventing simulation failures. Returns a consolidated
-        list organized by physics module.
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE, "fenics": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE,
-        }
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}"
-
-        lines = [f"# All Pitfalls for {solver}\n"]
-        for physics, k in sorted(db.items()):
-            pitfalls = k.get("pitfalls", [])
-            if pitfalls:
-                lines.append(f"## {physics}")
-                for p in pitfalls:
-                    lines.append(f"- {p}")
-                lines.append("")
-
-        return "\n".join(lines)
-
-    @mcp.tool()
-    def get_material_catalog(solver: str) -> str:
-        """Get the complete material catalog for a solver backend.
-
-        Lists all material types, their parameters, valid ranges,
-        and which physics modules use them.
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE, "fenics": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE,
-        }
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}"
-
-        catalog = {}
-        for physics, k in db.items():
-            materials = k.get("materials", {})
-            for mat_name, mat_info in materials.items():
-                if mat_name not in catalog:
-                    catalog[mat_name] = {"used_in": [], "parameters": mat_info}
-                catalog[mat_name]["used_in"].append(physics)
-
-        return json.dumps(catalog, indent=2, default=str)
-
-    @mcp.tool()
-    def get_solver_guidance(physics: str) -> str:
-        """Get cross-solver comparison and recommendation for a physics problem.
-
-        Compares how each available solver handles this physics type,
-        including strengths, weaknesses, and which to choose.
-
-        Args:
-            physics: Physics type (e.g. 'poisson', 'navier_stokes', 'fsi', 'hyperelasticity')
-        """
-        lines = [f"# Solver Guidance for: {physics}\n"]
-
-        all_knowledge = {
-            "FEniCSx": _FENICS_KNOWLEDGE,
-            "deal.II": _DEALII_KNOWLEDGE,
-            "4C": _4C_KNOWLEDGE,
-            "FEBio": _FEBIO_KNOWLEDGE,
-        }
-
-        found_any = False
-        for solver_name, db in all_knowledge.items():
-            k = db.get(physics.lower())
-            if k:
-                found_any = True
-                lines.append(f"## {solver_name}")
-                lines.append(f"**Description:** {k.get('description', 'N/A')}")
-                if "solver" in k:
-                    lines.append(f"**Solver:** {json.dumps(k['solver'], default=str)}")
-                if "pitfalls" in k:
-                    lines.append("**Key pitfalls:**")
-                    for p in k["pitfalls"][:3]:
-                        lines.append(f"  - {p}")
-                if "variants" in k:
-                    lines.append(f"**Templates:** {', '.join(k['variants'])}")
-                lines.append("")
-
-        if not found_any:
-            lines.append(f"No solver has knowledge for '{physics}'.")
-            lines.append("Available physics across all solvers:")
-            all_physics = set()
-            for db in all_knowledge.values():
-                all_physics.update(db.keys())
-            for p in sorted(all_physics):
-                lines.append(f"  - {p}")
-
-        # Recommendation
-        backend = None
-        avail = available_backends()
-        for b in avail:
-            for p in b.supported_physics():
-                if p.name == physics.lower():
-                    backend = b
-                    break
-            if backend:
-                break
-
-        if backend:
-            lines.append(f"\n**Recommended:** {backend.display_name()} (available on this machine)")
-
-        return "\n".join(lines)
-
-    @mcp.tool()
-    def get_solver_catalog(solver: str) -> str:
-        """Get the full capability catalog for a specific solver.
-
-        For deal.II: complete tutorial step catalog (50+ steps)
-        For 4C: all physics modules with problem types and templates
-        For FEniCS: all physics with weak forms and solver options
-        For FEBio: material catalog including biomechanics-specific
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE, "4c": _4C_KNOWLEDGE,
-            "fenics": _FENICS_KNOWLEDGE, "fenicsx": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "deal.ii": _DEALII_KNOWLEDGE,
-            "febio": _FEBIO_KNOWLEDGE,
-        }
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}. Available: fourc, fenics, dealii, febio"
-
-        lines = [f"# {solver} — Full Capability Catalog\n"]
-        for key, k in sorted(db.items()):
-            desc = k.get("description", "")
-            lines.append(f"## {key}")
-            if desc:
-                lines.append(f"{desc}")
-            if "problem_type" in k:
-                lines.append(f"**Problem type:** {k['problem_type']}")
-            if "weak_form" in k:
-                lines.append(f"**Weak form:** {k['weak_form']}")
-            if "variants" in k:
-                lines.append(f"**Templates:** {', '.join(k['variants'])}")
-            if "tutorial_steps" in k:
-                for step, sdesc in k["tutorial_steps"].items():
-                    lines.append(f"  - {step}: {sdesc}")
-            lines.append("")
-        return "\n".join(lines)
-
-    @mcp.tool()
-    def get_cross_solver_reference(problem: str = "") -> str:
-        """Get verified cross-solver reference solutions and validation knowledge.
-
-        Returns known-good reference values for standard FEM benchmark problems,
-        verified across FEniCS, deal.II, and 4C. Essential for:
-        - Checking if your simulation result is correct
-        - Understanding expected element-type differences (tri vs quad)
-        - Setting up matched cross-solver comparisons
-        - Knowing 4C inline mesh normalization rules
-
-        Args:
-            problem: Specific problem (e.g. 'poisson', 'heat', 'elasticity')
-                    or empty for all reference data
-        """
-        if problem:
-            key = problem.lower().replace(" ", "_")
-            # Search in reference solutions
-            for k, v in _CROSS_SOLVER_KNOWLEDGE["reference_solutions"].items():
-                if key in k:
-                    return json.dumps({k: v}, indent=2)
-            return f"No reference for '{problem}'. Available: {list(_CROSS_SOLVER_KNOWLEDGE['reference_solutions'].keys())}"
-        return json.dumps(_CROSS_SOLVER_KNOWLEDGE, indent=2)

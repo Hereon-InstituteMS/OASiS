@@ -71,10 +71,13 @@ def register_workflow_tools(mcp: FastMCP):
         # `module_knowledge` returned the prose deep_knowledge
         # pitfalls instead of the Table-1 ones the agent gets
         # via `prepare_simulation` — same backend, two answers.
-        from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE, _FEBIO_KNOWLEDGE
+        from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE
+        # `febio` was removed 2026-06-02 — the febio backend's own
+        # generators carry the canonical 16-physics catalog; the
+        # 4-key deep_knowledge.py shim was shadowing it.
         knowledge_map = {
             "fourc": _4C_KNOWLEDGE, "fenics": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE,
+            "dealii": _DEALII_KNOWLEDGE,
         }
         deep_db = knowledge_map.get(solver.lower(), {})
         deep_knowledge = deep_db.get(module.lower(), {})
@@ -134,7 +137,7 @@ def register_workflow_tools(mcp: FastMCP):
                 lines.append(f"\n**Available templates:** {', '.join(knowledge['variants'])}")
 
         lines.append(f"\nUse `generate_input('{solver}', '{module}', '<variant>')` to get a working template.")
-        lines.append(f"Use `get_deep_knowledge('{solver}', '{module}')` for the full knowledge dump.")
+        lines.append(f"Use `knowledge('physics', solver='{solver}', physics='{module}')` for the full knowledge dump.")
 
         return "\n".join(lines)
 
@@ -307,8 +310,10 @@ def register_workflow_tools(mcp: FastMCP):
             # Pitfalls are sourced from the backend (Table-1
             # promoted) — deep_knowledge supplies supplementary
             # fields (weak_form, problem_type, materials, ...).
-            from tools.deep_knowledge import _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE, _FEBIO_KNOWLEDGE
-            knowledge_map = {"fenics": _FENICS_KNOWLEDGE, "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE}
+            from tools.deep_knowledge import _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE
+            # `febio` removed 2026-06-02 — the febio backend's own
+            # generators carry the canonical 16-physics catalog.
+            knowledge_map = {"fenics": _FENICS_KNOWLEDGE, "dealii": _DEALII_KNOWLEDGE}
             db = knowledge_map.get(solver.lower())
             if not db:
                 return f"Unknown solver: {solver}"
