@@ -51,3 +51,4 @@ papers/.env
 # Local quarantine directories (work-in-progress, not for release)
 .quarantine_*
 benchmarks/probe_results/work/
+scripts/scan_results/work/
