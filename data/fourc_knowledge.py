@@ -116,19 +116,99 @@ FOURC_KNOWLEDGE = {
         "wall_element_params": "KINEM linear/nonlinear, EAS none/full, THICK 1.0, STRESS_STRAIN plane_strain/plane_stress, GP 2 2",
 
         "pitfalls": [
-            "SOLID QUAD4 (2D structural) needs: 'MAT 1 KINEM "
-            "nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain'. "
-            "DO NOT write 'WALL QUAD4' / 'THICK' / 'STRESS_STRAIN' — "
-            "those are the legacy keywords; current 4C 2026.3 "
-            "rejects WALL as 'Unknown type', and uses THICKNESS / "
-            "PLANE_ASSUMPTION (verified empirically; see Tier-2 "
-            "fixture structural_2d_solid_quad4_not_wall).",
-            "SOLID elements need: MAT 1 KINEM linear/nonlinearTotLag",
-            "SOLIDSCATRA: REQUIRED for TSI coupling — plain SOLID cannot couple with thermal",
-            "For statics: MAXITER 1 for linear problems, 10+ for nonlinear",
-            "PREDICT TangDis recommended for nonlinear Newton convergence",
-            "Body forces: DESIGN SURF NEUMANN (2D) or DESIGN VOL NEUMANN (3D) with NUMDOF 6",
-            "Beam elements need special BEAM3* type, not SOLID or WALL",
+            (
+                "[API] SOLID QUAD4 (2D structural) needs: "
+                "'MAT 1 KINEM nonlinear THICKNESS 1.0 "
+                "PLANE_ASSUMPTION plane_strain'. DO NOT "
+                "write 'WALL QUAD4', 'THICK', or "
+                "'STRESS_STRAIN' — those are the legacy "
+                "keywords. Signal: 4C 2026.3 rejects "
+                "'WALL' with 'Unknown type WALL of finite "
+                "element' from parobjectfactory.cpp:153; "
+                "'THICK' / 'STRESS_STRAIN' raise 'unknown "
+                "parameter' from input_spec_builders.cpp. "
+                "Verified empirically; see Tier-2 fixture "
+                "structural_2d_solid_quad4_not_wall. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] SOLID elements (3D + 2D) need: "
+                "MAT <id> KINEM <linear or nonlinearTotLag>. "
+                "Signal: writing KINEM nonlinear (without "
+                "the TotLag suffix in 3D) is silently "
+                "accepted in some 4C versions but produces "
+                "an updated-Lagrangian formulation instead "
+                "of total-Lagrangian — stress and strain "
+                "are referred to the wrong configuration. "
+                "Use nonlinearTotLag for finite-strain "
+                "problems unless you specifically want UL. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] SOLIDSCATRA element is REQUIRED for "
+                "TSI coupling — plain SOLID cannot couple "
+                "with the thermal field. Signal: a TSI "
+                "problem with SOLID elements (not "
+                "SOLIDSCATRA) raises 'no SCATRA "
+                "discretisation found' from "
+                "4C_tsi_factory.cpp at setup; the "
+                "structure has no SCATRA-side mass matrix "
+                "to clone into a thermal discretisation. "
+                "Replace 'SOLID' with 'SOLIDSCATRA' for "
+                "all elements in the structural mesh. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For statics: MAXITER = 1 for "
+                "linear problems, 10+ for nonlinear. "
+                "Signal: MAXITER = 1 on a nonlinear "
+                "problem stops after the first Newton "
+                "iterate with residual still O(1) — "
+                "result looks like the linear solution "
+                "but is wrong for KINEM nonlinear. "
+                "MAXITER > 1 on a linear problem wastes "
+                "iterations (residual is already at "
+                "tolerance after step 1). Match MAXITER "
+                "to KINEM. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] PREDICT: TangDis is "
+                "RECOMMENDED for nonlinear Newton "
+                "convergence — uses the tangent "
+                "stiffness to predict the next "
+                "iterate. Signal: PREDICT: ConstDis "
+                "(constant displacement) on a "
+                "geometrically-nonlinear problem "
+                "gives slow Newton convergence (5-10 "
+                "iters per step vs 2-3 with TangDis); "
+                "the tangent predictor jumps closer to "
+                "the equilibrium each step. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] Body forces: DESIGN SURF NEUMANN "
+                "(2D) or DESIGN VOL NEUMANN (3D) with "
+                "NUMDOF matching the spatial dimension. "
+                "Signal: a body-force section with "
+                "NUMDOF = 6 on a 3D solid raises 'NUMDOF "
+                "mismatch — expected 3 got 6'; gravity "
+                "and per-volume forces use 3 components "
+                "in 3D (FX, FY, FZ) and 2 in 2D. "
+                "NUMDOF = 6 is for beam DOFs. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Beam elements need SPECIAL BEAM3* "
+                "type — NOT SOLID or WALL. Signal: "
+                "writing 'SOLID LINE2' or 'WALL LINE2' "
+                "for beam elements raises 'Unknown type' "
+                "from parobjectfactory.cpp — the SOLID/"
+                "WALL factories only register volume/"
+                "surface element families. Use BEAM3R / "
+                "BEAM3K / BEAM3EB with the appropriate "
+                "LINE2/LINE3/LINE4 cell type and TRIADS. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 

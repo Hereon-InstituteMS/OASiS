@@ -251,7 +251,54 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   48.0,   # measured  49.6 — CROSSED 49% (raised
+    "fourc":   60.0,   # measured  61.8 — CROSSED 61% (raised
+                       #                 2026-06-02 from 48.0 after
+                       #                 pass 10: 41 new Signal lines
+                       #                 across six 7-pitfall blocks
+                       #                 — electrochemistry (EQUPOT
+                       #                 ENC vs divi, MATID matlist,
+                       #                 NUMMAT+1 phi scalars,
+                       #                 INITIALFIELD COMPONENT,
+                       #                 CALCFLUX_DOMAIN total, S2I
+                       #                 dual setup, no_stab default),
+                       #                 fpsi (ALE+CLONING required,
+                       #                 dual interface sets,
+                       #                 MAT_StructPoro nested,
+                       #                 INITPOROSITY (0,1),
+                       #                 permeability stiffness,
+                       #                 fluid -> ALE only, BJS slip
+                       #                 coefficient), fsi_xfem
+                       #                 (no-ALE, ghost-penalty,
+                       #                 water-tight cutter, Nitsche
+                       #                 gamma_N tuning, dt < h/v
+                       #                 CFL, cut-cell ParaView,
+                       #                 NA: Euler not ALE), fs3i
+                       #                 (5-field setup, dual CLONING
+                       #                 mappings, fluid-scatra SUPG,
+                       #                 diffusivity contrast under-
+                       #                 relax, NA: ALE for ALE-vel
+                       #                 in scatra, FS3I vs FSI
+                       #                 DYNAMIC, matching dt), ehl
+                       #                 (lubrication/structural mesh
+                       #                 compat, h->0 singularity,
+                       #                 piezoviscous Picard
+                       #                 divergence, alpha ramp,
+                       #                 correct face for Neumann,
+                       #                 transient squeeze-film,
+                       #                 consistent SI units),
+                       #                 structural_mechanics (SOLID
+                       #                 QUAD4 2D syntax, KINEM
+                       #                 linear vs nonlinearTotLag,
+                       #                 SOLIDSCATRA for TSI,
+                       #                 MAXITER per linear/nonlinear,
+                       #                 PREDICT TangDis, NUMDOF
+                       #                 spatial dim, BEAM3* not
+                       #                 SOLID/WALL).
+                       #                 fourc trajectory: 8.7% ->
+                       #                 14.0% -> 18.2% -> 22.1% ->
+                       #                 25.4% -> 28.1% -> 30.1% ->
+                       #                 34.6% -> 40.6% -> 49.6% ->
+                       #                 61.8% across eleven passes.)
                        #                 2026-06-02 from 39.0 after
                        #                 pass 9: 30 new Signal lines —
                        #                 tsi (10: CLONING required,
