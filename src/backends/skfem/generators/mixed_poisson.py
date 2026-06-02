@@ -140,6 +140,27 @@ KNOWLEDGE = {
             "the import succeeds from skfem.generic_utils. (File "
             "walk skfem/generic_utils.py 2026-06-02; verified live "
             "in skfem 12.0.1.)",
+            "[API] Refdom.normals attribute is NOT unit-length on "
+            "slanted reference-domain facets. Source: "
+            "skfem/refdom.py defines RefTri.normals[1] = [1, 1] "
+            "(norm = sqrt(2)) for the triangle's diagonal "
+            "hypotenuse, RefTet.normals[3] = [1, 1, 1] (norm = "
+            "sqrt(3)) for the tet's slanted face, RefWedge."
+            "normals[1] = [1, 1, 0] (norm = sqrt(2)) for the wedge "
+            "diagonal. RefLine, RefQuad, RefHex have all-unit "
+            "normals as expected. Users who compute boundary flux "
+            "integrals or normal-traction loads by indexing these "
+            "arrays directly get an O(1) scale error on diagonal "
+            "facets. Signal: numpy.linalg.norm(RefTri.normals, "
+            "axis=1) returns [1.0, 1.414, 1.0] — assert that fails "
+            "if you assumed all unit. Workaround: always normalise "
+            "before use (n_unit = n / np.linalg.norm(n)) OR use "
+            "FacetBasis.normal which IS unit-length. Also: "
+            "RefWedge.brefdom is None (uniquely among the 3D refdoms) "
+            "so FacetBasis on wedges is unsupported — RefTri/RefTet/"
+            "RefHex/RefQuad/RefLine all have proper brefdoms. (File "
+            "walk skfem/refdom.py 2026-06-02; verified live in "
+            "skfem 12.0.1.)",
         ],
     },
 }

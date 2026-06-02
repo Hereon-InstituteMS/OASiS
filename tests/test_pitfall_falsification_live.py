@@ -425,6 +425,49 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"Got {ib.Nbfun}.")
 
     @_skip_no_skfem
+    def test_skfem_refdom_normals_not_unit_on_slanted_facets(
+            self) -> None:
+        """skfem::mixed_poisson [API]: Refdom.normals is NOT unit-length
+        on slanted facets — RefTri.normals[1]=[1,1] has norm sqrt(2),
+        RefTet.normals[3]=[1,1,1] has norm sqrt(3), RefWedge.normals[1]
+        norm sqrt(2). RefLine/RefQuad/RefHex are unit. Also: RefWedge.
+        brefdom is None (unsupported FacetBasis). (File walk
+        skfem/refdom.py 2026-06-02.)"""
+        import numpy as np
+        from skfem.refdom import (RefLine, RefTri, RefQuad, RefTet,
+                                   RefHex, RefWedge)
+        # Triangle: facet 1 (hypotenuse) is sqrt(2)
+        nt = np.linalg.norm(RefTri.normals, axis=1)
+        self.assertTrue(np.isclose(nt[0], 1.0))
+        self.assertTrue(np.isclose(nt[1], np.sqrt(2)),
+                        f"RefTri.normals[1] (hypotenuse) should have "
+                        f"norm sqrt(2)={np.sqrt(2)}, got {nt[1]}.")
+        self.assertTrue(np.isclose(nt[2], 1.0))
+        # Tet: facet 3 (slanted) is sqrt(3)
+        nT = np.linalg.norm(RefTet.normals, axis=1)
+        self.assertTrue(np.allclose(nT[:3], 1.0))
+        self.assertTrue(np.isclose(nT[3], np.sqrt(3)),
+                        f"RefTet.normals[3] (slanted) should have "
+                        f"norm sqrt(3)={np.sqrt(3)}, got {nT[3]}.")
+        # Wedge: facet 1 (diagonal) is sqrt(2)
+        nW = np.linalg.norm(RefWedge.normals, axis=1)
+        self.assertTrue(np.isclose(nW[1], np.sqrt(2)))
+        # All other refdoms ARE unit
+        for name, R in (("RefLine", RefLine), ("RefQuad", RefQuad),
+                        ("RefHex", RefHex)):
+            n = np.linalg.norm(R.normals, axis=1)
+            self.assertTrue(
+                np.allclose(n, 1.0),
+                f"{name}.normals should be all unit; got norms {n}.")
+        # RefWedge.brefdom is None, others have proper brefdoms
+        self.assertIsNone(
+            RefWedge.brefdom,
+            "RefWedge.brefdom should be None (blocks FacetBasis on wedges).")
+        self.assertIsNotNone(RefTri.brefdom)
+        self.assertIsNotNone(RefTet.brefdom)
+        self.assertIsNotNone(RefHex.brefdom)
+
+    @_skip_no_skfem
     def test_skfem_quadrature_norder_ceiling_with_typo_message(
             self) -> None:
         """skfem::poisson [API]: get_quadrature_tri caps at order 15
