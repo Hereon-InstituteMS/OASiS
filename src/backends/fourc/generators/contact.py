@@ -230,10 +230,19 @@ class ContactGenerator(BaseGenerator):
                     "iteration. (Audit 2026-06-02.)"
                 ),
                 (
-                    "The slave surface should be the finer mesh or "
-                    "the softer body.  Swapping slave and master can "
-                    "cause convergence issues or inaccurate contact "
-                    "pressure distributions."
+                    "[Numerical] Slave surface should be the "
+                    "FINER mesh or the SOFTER body. Swapping "
+                    "slave and master can cause convergence "
+                    "issues or inaccurate pressure "
+                    "distributions. Signal: a coarse-mesh "
+                    "slave + fine-mesh master gives contact-"
+                    "pressure spikes at master-node "
+                    "locations (resolution mismatch makes "
+                    "the mortar projection over-concentrate "
+                    "load); swapping which side is slave "
+                    "evens out the distribution. Rule of "
+                    "thumb: slave = finer mesh OR softer "
+                    "material. (Audit 2026-06-02.)"
                 ),
                 (
                     "[Numerical] KINEM must be 'nonlinear' for contact "

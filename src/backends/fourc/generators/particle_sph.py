@@ -268,9 +268,19 @@ class ParticleSPHGenerator(BaseGenerator):
                     "(Audit 2026-06-02.)"
                 ),
                 (
-                    "Boundary particles (boundaryphase) should use "
-                    "the same INITDENSITY as the fluid for the Adami "
-                    "boundary formulation to work correctly."
+                    "[Input] Boundary particles "
+                    "(boundaryphase) should use the SAME "
+                    "INITDENSITY as the fluid for the Adami "
+                    "boundary formulation to work correctly. "
+                    "Signal: a mismatched density (e.g. "
+                    "boundaryphase = 100 vs fluid = 1000 "
+                    "kg/m^3) gives Adami's wall-pressure "
+                    "estimate the wrong reference — wall "
+                    "shear and pressure are off by the "
+                    "density ratio. The Adami formulation "
+                    "uses density-weighted averaging across "
+                    "fluid + boundary, so equal densities "
+                    "are essential. (Audit 2026-06-02.)"
                 ),
                 (
                     "[Numerical] Particle spacing must be uniform at "

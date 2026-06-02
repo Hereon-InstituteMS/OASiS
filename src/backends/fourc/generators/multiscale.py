@@ -191,18 +191,32 @@ class MultiscaleGenerator(BaseGenerator):
                     "constrains). (Audit 2026-06-02.)"
                 ),
                 (
-                    "The macro PROBLEM TYPE is 'Structure' (not a "
-                    "dedicated multiscale type).  The multiscale "
-                    "behaviour is activated purely through the "
-                    "MAT_Struct_Multiscale material."
+                    "[Input] Macro PROBLEM TYPE is "
+                    "'Structure' (NOT a dedicated multiscale "
+                    "type). The multiscale behaviour is "
+                    "activated purely through the "
+                    "MAT_Struct_Multiscale material. Signal: "
+                    "writing PROBLEMTYPE: 'Multiscale' "
+                    "raises 'unknown problem type' — there "
+                    "is no such enum. Use PROBLEMTYPE: "
+                    "Structure with at least one element "
+                    "assigned a MAT_Struct_Multiscale "
+                    "material referencing a micro input "
+                    "file. (Audit 2026-06-02.)"
                 ),
                 (
-                    "MPI parallelism interacts with multiscale: the "
-                    "macro problem can be distributed across "
-                    "processors, and each processor's Gauss points "
-                    "solve their RVEs independently.  Load balancing "
-                    "requires attention since RVE solve times can "
-                    "vary."
+                    "[Performance] MPI parallelism interacts "
+                    "with multiscale: macro problem "
+                    "distributed across processors, each "
+                    "processor's Gauss points solve their "
+                    "RVEs INDEPENDENTLY. Signal: imbalanced "
+                    "macro decomposition (RVEs differ in "
+                    "solve cost by 5-10x) gives wall-clock "
+                    "dominated by the slowest rank's RVE "
+                    "queue — 4C's load-balancer cannot "
+                    "redistribute mid-step. Pre-balance "
+                    "the macro mesh based on expected RVE "
+                    "complexity. (Audit 2026-06-02.)"
                 ),
                 (
                     "[Numerical] Convergence at the macro level "
@@ -217,11 +231,19 @@ class MultiscaleGenerator(BaseGenerator):
                     "convergence. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Output: macro-scale results show homogenised "
-                    "stress/strain.  Micro-scale fields (damage, "
-                    "plasticity) are NOT automatically output.  "
-                    "Special post-processing is needed to visualise "
-                    "micro fields."
+                    "[Output] Macro-scale results show "
+                    "HOMOGENISED stress/strain. Micro-scale "
+                    "fields (damage, plasticity) are NOT "
+                    "automatically output. Signal: opening "
+                    "the macro VTU in ParaView shows "
+                    "smooth homogenised stress; the "
+                    "micro-scale fluctuations (e.g. damage "
+                    "localisation in one RVE) are invisible "
+                    "in the macro output. Use the "
+                    "MULTISCALE micro-output writer "
+                    "(separate VTU per Gauss point) or "
+                    "post-process selected RVEs manually. "
+                    "(Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [

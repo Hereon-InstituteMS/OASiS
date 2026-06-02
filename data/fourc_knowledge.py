@@ -521,9 +521,44 @@ FOURC_KNOWLEDGE = {
             "ThermoRobin": "Robin BC for thermal",
         },
         "pitfalls": [
-            "Use THERMO not THERMAL in section names (DESIGN SURF THERMO DIRICH)",
-            "For TSI: thermal field is solved by 4C, not prescribed externally",
-            "INITIALFIELD: field_by_function + INITFUNCNO for initial temperature",
+            (
+                "[Syntax] Use THERMO not THERMAL in section "
+                "names: 'DESIGN SURF THERMO DIRICH', "
+                "'DESIGN SURF THERMO NEUMANN', "
+                "'DESIGN VOL THERMO DIRICH'. Signal: "
+                "writing 'DESIGN SURF THERMAL DIRICH' "
+                "raises 'unknown section' from "
+                "input_spec_builders.cpp at parse — the "
+                "vocabulary uses THERMO consistently "
+                "across all conditions; THERMAL appears "
+                "only in section names like 'THERMAL "
+                "DYNAMIC'. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] For TSI: thermal field is "
+                "SOLVED BY 4C, not prescribed externally. "
+                "Signal: prescribing temperature via a "
+                "Dirichlet on every node (instead of "
+                "letting 4C solve the heat equation) "
+                "defeats the coupling — there is no "
+                "feedback from structure to thermal. Use "
+                "thermal source terms (Joule heating, "
+                "mechanical dissipation) and BCs only on "
+                "physical heat-input/output boundaries. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] INITIALFIELD: field_by_function "
+                "with INITFUNCNO pointing to a FUNCT for "
+                "initial temperature. Signal: omitting "
+                "INITIALFIELD defaults to T = 0, which "
+                "for a problem with INITTEMP > 0 in the "
+                "structural material gives spurious "
+                "thermal-strain at t = 0 (the difference "
+                "T - INITTEMP drives the contraction). "
+                "Set INITIALFIELD to match INITTEMP. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 

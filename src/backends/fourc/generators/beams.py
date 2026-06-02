@@ -408,11 +408,16 @@ class BeamsGenerator(BaseGenerator):
                 "invalid material name fails at YAML parse with "
                 "input_spec_builders.cpp 'Could not match this input'. "
                 "Verified against 4C 2026.3 MATERIALS schema 2026-06-01.",
-                "[API] BEAM3R supports LINE2/LINE3/LINE4/LINE5 (catalog "
-                "previously missed LINE5). BEAM3K supports LINE2/LINE3/LINE4 "
-                "(catalog previously missed LINE4). BEAM3EB supports LINE2 "
-                "only — correct in catalog. Verified against 4C 2026.3 "
-                "STRUCTURE GEOMETRY/ELEMENT_BLOCKS schema 2026-06-01.",
+                "[API] BEAM3R supports LINE2/LINE3/LINE4/"
+                "LINE5; BEAM3K supports LINE2/LINE3/LINE4; "
+                "BEAM3EB supports LINE2 only. Signal: a "
+                "BEAM3R LINE6 (or any unsupported cell "
+                "type) raises 'Unknown beam element cell "
+                "type' from beam_factory.cpp at setup; the "
+                "factory only registers the cell types "
+                "listed. Verified against 4C 2026.3 "
+                "STRUCTURE GEOMETRY/ELEMENT_BLOCKS schema "
+                "2026-06-01.",
             ],
             "typical_experiments": [
                 {

@@ -26,9 +26,45 @@ class ReducedLungGenerator(BaseGenerator):
             "applications": ["ventilation simulation", "mechanical ventilation",
                              "lung disease modeling", "airway pressure distribution"],
             "pitfalls": [
-                "Airway tree topology must be physiologically reasonable",
-                "Alveolar compliance parameters vary with disease state",
-                "Coupling between 1D airways and 0D acini via flow/pressure matching",
+                (
+                    "[Input] Airway tree TOPOLOGY must be "
+                    "physiologically reasonable — typically "
+                    "16-23 generations (Weibel symmetric "
+                    "model). Signal: an unbalanced tree "
+                    "(e.g. all generations branching into "
+                    "only 1 child) gives wrong total airway "
+                    "resistance and tidal volume — should "
+                    "be ~ 2^23 = 8 million terminal acini "
+                    "for normal lung. Verify total alveolar "
+                    "surface ~ 130 m^2 against the modelled "
+                    "geometry. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] Alveolar compliance varies with "
+                    "DISEASE STATE. Healthy lung ~ 0.2 L/"
+                    "cmH2O; emphysema is hyper-compliant "
+                    "(0.5+); fibrosis is stiff (~ 0.05). "
+                    "Signal: using a uniform compliance "
+                    "for a diseased-lung model misses the "
+                    "spatial heterogeneity that drives the "
+                    "clinical pressure-volume curve — total "
+                    "lung capacity will be wrong by 20-50% "
+                    "vs measured. Vary compliance per "
+                    "acinus by region. (Audit "
+                    "2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Coupling between 1D "
+                    "airways and 0D acini via flow/pressure "
+                    "matching. Signal: unit mismatch at "
+                    "the interface (e.g. acinus expects Q "
+                    "in L/min but airway delivers L/s) "
+                    "gives factor-60 error in tidal "
+                    "volume — verify coupling units and "
+                    "DOF mapping. The interface must "
+                    "match flow Q AND pressure p at each "
+                    "terminal node. (Audit 2026-06-02.)"
+                ),
             ],
         }
 

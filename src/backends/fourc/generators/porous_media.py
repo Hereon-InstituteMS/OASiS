@@ -267,10 +267,17 @@ class PorousMediaGenerator(BaseGenerator):
                     "zero pressure gradient. (Audit 2026-06-02.)"
                 ),
                 (
-                    "For single-phase flow, set "
-                    "NUMFLUIDPHASES_IN_MULTIPHASEPORESPACE: 1 and "
-                    "NUMMAT: 1.  Even single-phase flow requires the "
-                    "full material hierarchy."
+                    "[Input] For single-phase flow, set "
+                    "NUMFLUIDPHASES_IN_MULTIPHASEPORESPACE: "
+                    "1 AND NUMMAT: 1. Even single-phase "
+                    "flow requires the full material "
+                    "hierarchy. Signal: leaving NUMMAT "
+                    "unset or = 0 raises 'material list "
+                    "size mismatch' at setup; the porofluid "
+                    "framework always wraps the single "
+                    "phase in MAT_FluidPoroMultiPhase even "
+                    "with NUMFLUIDPHASES = 1. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
                     "[Numerical] The initial condition must be set via "
@@ -303,10 +310,20 @@ class PorousMediaGenerator(BaseGenerator):
                     "lower-case strings. (Audit 2026-06-02.)"
                 ),
                 (
-                    "BULKMODULUS in MAT_PoroDensityLawExp controls "
-                    "fluid compressibility.  Very large values (> 1e6) "
-                    "may cause numerical issues; very small values "
-                    "produce unphysical compressibility."
+                    "[Numerical] BULKMODULUS in "
+                    "MAT_PoroDensityLawExp controls fluid "
+                    "compressibility. VERY LARGE values "
+                    "(> 1e10 Pa) may cause numerical "
+                    "stiffness (cond(K) blow-up); VERY "
+                    "SMALL values produce unphysical "
+                    "compressibility. Signal: K > 1e10 "
+                    "Pa makes iterative solvers stagnate; "
+                    "K < 1e6 Pa gives fluid that "
+                    "compresses more than the solid "
+                    "skeleton (non-physical for water in "
+                    "geomaterials). Typical water: "
+                    "K ~ 2.2e9 Pa; air: ~ 1e5 Pa. (Audit "
+                    "2026-06-02.)"
                 ),
             ],
             "typical_experiments": [

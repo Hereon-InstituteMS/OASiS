@@ -181,10 +181,18 @@ class BeamInteractionGenerator(BaseGenerator):
                     "5% of beam radius (too low). (Audit 2026-06-02.)"
                 ),
                 (
-                    "Beam-to-beam contact uses a point-to-point or "
-                    "line-to-line formulation.  The search algorithm "
-                    "must be configured to detect close beam pairs "
-                    "efficiently (SEARCH_RADIUS)."
+                    "[Input] Beam-to-beam contact uses a "
+                    "POINT-TO-POINT or LINE-TO-LINE "
+                    "formulation. The search algorithm must "
+                    "be configured to detect close beam "
+                    "pairs efficiently via SEARCH_RADIUS. "
+                    "Signal: too-small SEARCH_RADIUS "
+                    "misses contact pairs — beams pass "
+                    "through each other; too-large radius "
+                    "wastes compute on O(N^2) pair "
+                    "checks. Typical SEARCH_RADIUS ~ 2-3 "
+                    "* max beam diameter. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
                     "[Numerical] For beam-to-solid volume meshtying, "
@@ -230,10 +238,18 @@ class BeamInteractionGenerator(BaseGenerator):
                     "though the run completed. (Audit 2026-06-02.)"
                 ),
                 (
-                    "The PROBLEM TYPE is 'Structure' (not a dedicated "
-                    "beam-interaction type).  The BEAM INTERACTION "
-                    "section activates the beam contact/meshtying "
-                    "on top of the standard structural problem."
+                    "[Input] PROBLEM TYPE is 'Structure' "
+                    "(NOT a dedicated beam-interaction "
+                    "type). The BEAM INTERACTION section "
+                    "activates beam contact/meshtying on "
+                    "top of the standard structural "
+                    "problem. Signal: writing "
+                    "PROBLEMTYPE: 'BeamInteraction' raises "
+                    "'unknown problem type' — there is no "
+                    "such enum. Use PROBLEMTYPE: "
+                    "Structure + BEAM INTERACTION/SUBMODEL "
+                    "section to enable the beam contact "
+                    "framework. (Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [

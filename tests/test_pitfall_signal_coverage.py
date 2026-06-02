@@ -251,7 +251,42 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   88.0,   # measured  89.0 — CROSSED 88% (raised
+    "fourc":   99.0,   # measured 100.0 — fourc at FULL Signal
+                       #                 coverage (raised 2026-06-02
+                       #                 from 88.0 after pass 13:
+                       #                 final 37 scattered untagged
+                       #                 pitfalls Signal-tagged
+                       #                 across thermal (3),
+                       #                 linear_elasticity / plasticity /
+                       #                 structural_mechanics shared
+                       #                 (3: WALL→SOLID, NUMDOF, INT_
+                       #                 STRATEGY), scalar_transport
+                       #                 BDF2 (1), beams BEAM3R cell
+                       #                 types (1), contact slave-
+                       #                 master (1), particle_pd (7:
+                       #                 horizon ratio m, PRE_CRACKS,
+                       #                 bond-based nu lock, 2D z=0,
+                       #                 boundaryphase repulsive,
+                       #                 PDFIXED, plane-stress vs
+                       #                 -strain critical stretch),
+                       #                 particle_sph (1: boundary
+                       #                 INITDENSITY), low_mach (2),
+                       #                 fs3i (1), reduced_airways
+                       #                 (3), beam_interaction (2),
+                       #                 multiscale (3), porous_media
+                       #                 (2), reduced_lung (3).
+                       #                 fourc joins kratos, febio,
+                       #                 dealii, skfem, fenics,
+                       #                 ngsolve as SEVENTH backend
+                       #                 at 100% Signal coverage.
+                       #                 Trajectory: 8.7% -> 14.0%
+                       #                 -> 18.2% -> 22.1% -> 25.4%
+                       #                 -> 28.1% -> 30.1% -> 34.6%
+                       #                 -> 40.6% -> 49.6% -> 61.8%
+                       #                 -> 79.7% -> 89.0% ->
+                       #                 100.0% across fourteen
+                       #                 passes — 91pp progress
+                       #                 from start of session.)
                        #                 2026-06-02 from 78.0 after
                        #                 pass 12: 6 small files
                        #                 retyped (sti, shell,
