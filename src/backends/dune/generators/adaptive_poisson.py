@@ -125,12 +125,14 @@ KNOWLEDGE = {
                 "[Numerical] Doerfler marking: refine the "
                 "SMALLEST set of elements that captures "
                 "theta fraction (typical 0.25-0.5) of "
-                "total error. Signal: theta < 0.1 refines "
-                "too few elements per pass (slow "
-                "convergence to target tolerance); theta "
-                ">0.7 refines almost-uniformly (defeats "
-                "the adaptive benefit). 0.3 is a common "
-                "default. (Audit 2026-06-02.)"
+                "total error. Signal: when running on "
+                "alugrid via the dune.fem mark/adapt "
+                "loop, theta < 0.1 refines too few "
+                "elements per pass (slow convergence to "
+                "target tolerance); theta > 0.7 refines "
+                "almost-uniformly (defeats the adaptive "
+                "benefit). 0.3 is a common default. "
+                "(Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] For COARSENING: mark elements "
@@ -145,13 +147,15 @@ KNOWLEDGE = {
             ),
             (
                 "[Numerical] Nested iteration: use coarse-"
-                "grid solution as initial guess on the fine "
-                "grid. Signal: starting Newton from zero on "
-                "the fine grid for a nonlinear problem "
-                "takes 5-10 iterations; starting from the "
-                "interpolated coarse solution converges in "
-                "1-2 iterations because the initial guess "
-                "is already in the convergence basin. "
+                "grid solution as initial guess on the "
+                "fine alugrid. Signal: starting the "
+                "dune.fem galerkin scheme Newton from "
+                "zero on the fine lagrange space for a "
+                "nonlinear problem takes 5-10 iterations; "
+                "starting from the interpolated coarse "
+                "solution converges in 1-2 iterations "
+                "because the initial guess is already in "
+                "the convergence basin. "
                 "(Audit 2026-06-02.)"
             ),
         ],

@@ -97,11 +97,13 @@ KNOWLEDGE = {
             (
                 "[API] VTK output: gridView.writeVTK('name', "
                 "pointdata={'field': uh}). Signal: writing "
-                "with the dolfinx io.VTXWriter / "
-                "XDMFFile API fails — DUNE has its own "
-                "writeVTK method on the gridView. Outputs "
-                ".vtu file directly readable in ParaView. "
-                "(Audit 2026-06-02.)"
+                "with the dolfinx io.VTXWriter / XDMFFile "
+                "API fails — dune.grid gridView has its own "
+                "writeVTK method (NOT dolfinx). The galerkin "
+                "lagrange space's GridFunction is written "
+                "via gridView.writeVTK; outputs .vtu "
+                "directly readable in ParaView. (Audit "
+                "2026-06-02.)"
             ),
             (
                 "[API] structuredGrid creates QUAD "

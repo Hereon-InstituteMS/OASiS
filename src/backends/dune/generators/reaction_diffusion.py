@@ -58,14 +58,16 @@ KNOWLEDGE = {
         "pitfalls": [
             (
                 "[API] Nonlinear reaction term is "
-                "AUTOMATICALLY linearised by DUNE's Newton "
-                "solver. Signal: writing the form with "
-                "explicit u^n+1 inside R(u) (e.g. R(u) = "
-                "u*(1-u)) is accepted by DUNE-fem; UFL "
-                "automatic differentiation builds the "
-                "Jacobian and Newton iterates per time "
-                "step. Manual linearisation is not needed. "
-                "(Audit 2026-06-02.)"
+                "AUTOMATICALLY linearised by the dune.fem "
+                "galerkin scheme's internal Newton solver. "
+                "Signal: writing the form with explicit "
+                "u^n+1 inside R(u) (e.g. R(u) = u*(1-u)) "
+                "is accepted by the dune.fem lagrange-"
+                "space galerkin scheme; UFL automatic "
+                "differentiation builds the Jacobian and "
+                "Newton iterates per time step. Manual "
+                "linearisation is not needed. (Audit "
+                "2026-06-02.)"
             ),
             (
                 "[Numerical] For STIFF reactions: use "
