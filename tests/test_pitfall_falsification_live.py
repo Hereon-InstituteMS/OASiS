@@ -425,6 +425,47 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"Got {ib.Nbfun}.")
 
     @_skip_no_skfem
+    def test_skfem_helpers_det_inv_silent_zero_for_dim_ne_2_3(
+            self) -> None:
+        """skfem::hyperelasticity [API]: skfem.helpers.det() and inv()
+        only handle 2x2 and 3x3; ANY other leading dim silently returns
+        all-zeros (no NotImplementedError despite the doc claim). Real
+        hazard: mixed F+p formulations or extended 4x4 deformation
+        gradients produce J=0, log(0)=-inf, NaN Newton residual. (File
+        walk skfem/helpers.py 2026-06-02.)"""
+        import numpy as np
+        from skfem.helpers import det, inv
+        # 4x4 identity tiled over 5 elements
+        A4 = np.tile(np.eye(4)[:, :, None], (1, 1, 5)).astype(float)
+        d4 = det(A4)
+        self.assertTrue(
+            (d4 == 0).all(),
+            f"det(4x4 identity) should silently return all zeros "
+            f"(actual bug); got {d4}.")
+        # 5x5 same
+        A5 = np.tile(np.eye(5)[:, :, None], (1, 1, 3)).astype(float)
+        d5 = det(A5)
+        self.assertTrue(
+            (d5 == 0).all(),
+            f"det(5x5 identity) should silently return all zeros; "
+            f"got {d5}.")
+        # inv on 4x4 also broken (all zeros)
+        i4 = inv(A4)
+        self.assertTrue(
+            (i4 == 0).all(),
+            f"inv(4x4 identity) should silently return all zeros; "
+            f"got non-zero in {(i4 != 0).sum()} cells.")
+        # Sanity: 2x2 and 3x3 still work correctly
+        A2 = np.tile(np.eye(2)[:, :, None], (1, 1, 4)).astype(float)
+        self.assertTrue(
+            np.allclose(det(A2), 1.0),
+            "2x2 identity det should == 1.0 (working case).")
+        A3 = np.tile(np.eye(3)[:, :, None], (1, 1, 4)).astype(float)
+        self.assertTrue(
+            np.allclose(det(A3), 1.0),
+            "3x3 identity det should == 1.0 (working case).")
+
+    @_skip_no_skfem
     def test_skfem_oriented_boundary_not_top_level_export(
             self) -> None:
         """skfem::mixed_poisson [API]: OrientedBoundary is NOT exposed

@@ -1121,6 +1121,28 @@ KNOWLEDGE = {
                 "2026-06-02, post-mortem skfem-broken-newton-"
                 "templates-rewrite.)"
             ),
+            (
+                "[API] skfem.helpers.det() and inv() SILENTLY "
+                "return all-zeros for ANY square matrix whose "
+                "leading dimension is NOT 2 or 3. Source: "
+                "skfem/helpers.py defines det/inv with explicit "
+                "`A.shape[0] == 2` / `A.shape[0] == 3` branches "
+                "and no `else`; the initial `detA = zeros_like("
+                "A[0, 0])` sticks. 2x2 and 3x3 are silent for "
+                "deformation-gradient F, but mixed formulations "
+                "with augmented F (e.g. 4x4 F+p block) or any "
+                "user-supplied 4D/5D tensor produce a zero "
+                "Jacobian → log(0) = -inf → NaN-everywhere "
+                "Newton residual. No NotImplementedError raised. "
+                "Signal: assemble a hyperelastic form with "
+                "A.shape[0] >= 4 and check that "
+                "det(A).any() == True FAILS (returns zeros). "
+                "Workaround: pre-assert F.shape[0] in (2, 3) at "
+                "the top of your @BilinearForm body, or fall "
+                "back to numpy.linalg.det along the trailing "
+                "axes. (File-walk skfem/helpers.py 2026-06-02; "
+                "verified live in skfem 12.0.1.)"
+            ),
         ],
     },
     "dg_methods": {
