@@ -73,4 +73,40 @@ KNOWLEDGE["_general"] = {
         "Mortar methods for domain decomposition (MortarFacetBasis)",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
+    "mortar_workflow": {
+        "description": (
+            "Nonmatching-mesh (mortar / supermesh) workflow via "
+            "skfem.supermeshing — for domain-decomposition or "
+            "fluid-structure interface coupling. Source: "
+            "skfem/supermeshing.py."
+        ),
+        "functions": {
+            "skfem.supermeshing.intersect(m1, m2)": (
+                "Returns (supermesh, ix1, ix2) — supermesh + element-index "
+                "arrays into each input mesh. ONLY 1D-1D or 2D-2D; 3D-3D "
+                "or 1D-vs-2D raises NotImplementedError('The given mesh "
+                "types not supported.')."),
+            "skfem.supermeshing.elementwise_quadrature(mesh, supermesh, tind, intorder)": (
+                "Build per-element quadrature rules from a supermesh. "
+                "REQUIRES supermesh= kwarg explicitly (raises Exception "
+                "if missing). intorder defaults to 4."),
+        },
+        "Signal": (
+            "[API] skfem.supermeshing has three hard failure modes "
+            "users hit on first use: "
+            "(1) Calling intersect(m1, m2) with 3D meshes raises "
+            "NotImplementedError('The given mesh types not supported.') "
+            "— mortar in 3D is unsupported; "
+            "(2) Calling intersect on 2D meshes without shapely>=2 "
+            "installed raises Exception('2D supermeshing requires the "
+            "package shapely>=2.') — silent until first call; "
+            "(3) Calling elementwise_quadrature(mesh) without the "
+            "supermesh= kwarg raises Exception('elementwise_quadrature: "
+            "User must provide supermesh keyword argument which has been "
+            "created using skfem.supermeshing.intersect.') — Python "
+            "won't catch the missing kwarg at signature level because "
+            "supermesh has default None and the check is at runtime. "
+            "(File walk skfem/supermeshing.py 2026-06-03.)"
+        ),
+    },
 }
