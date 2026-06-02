@@ -131,6 +131,29 @@ KNOWLEDGE = {
                         "Signal: RuntimeError 'Element \"SphericParticle2D\" is not registered!' or 'Maybe you need to import the application where it is defined?' when an agent generates a 2D DEM template with the literal 2D element name. (Verified empirically 2026-06-01.)",
                         '[Integration] BOTH KratosContactStructuralMechanicsApplication (modern) AND the legacy KratosContactMechanicsApplication / KratosSolidMechanicsApplication are NOT published on PyPI. There is no pip-only path to Contact physics in Kratos 10.x. Building Kratos from source with `-DCONTACT_STRUCTURAL_MECHANICS_APPLICATION=ON` is the only option. '
                         "Signal: pip install reports 'ERROR: Could not find a version that satisfies the requirement KratosContactStructuralMechanicsApplication'; python import raises ModuleNotFoundError 'No module named KratosMultiphysics.ContactStructuralMechanicsApplication' (or '...ContactMechanicsApplication' on the legacy fallback path). (Verified empirically 2026-06-01 — both modern and legacy contact apps absent from PyPI; the legacy-fallback hint in prior catalog text was misleading.)",
+                        "[API] Source-of-truth ordering for kratos "
+                        "get_knowledge(): backends.kratos.generators."
+                        "KNOWLEDGE is the ONLY per-physics catalog "
+                        "consumed by KratosMultiphysics-using clients "
+                        "(the catalog drives every MainKratos.py / "
+                        "ProjectParameters.json the MCP emits). "
+                        "data/kratos_knowledge.py exports per-"
+                        "application constants (KRATOS_APPLICATIONS, "
+                        "STRUCTURAL_MECHANICS, FLUID_DYNAMICS, FSI, "
+                        "GEOMECHANICS, DEM, ...) and NOT a unified "
+                        "KRATOS_KNOWLEDGE dict — so importing it "
+                        "by-name will fail. Signal: a KratosMultiphysics "
+                        "backend whose get_knowledge wraps `from "
+                        "kratos_knowledge import KRATOS_KNOWLEDGE` in "
+                        "try/except ImportError silently runs the "
+                        "fallback branch — the import raises "
+                        "ImportError 'cannot import name "
+                        "KRATOS_KNOWLEDGE from kratos_knowledge' and "
+                        "the dead-code ModelPart-/Variable-level "
+                        "knowledge lookup is invisible until you add "
+                        "an alignment test. (Removed in 2026-06-02 "
+                        "audit; gated by tests/test_kratos_source_"
+                        "of_truth.py.)",
                     ],
     },
 }
