@@ -81,7 +81,19 @@ KNOWLEDGE = {
                 "the volume measure has no support on a "
                 "(d-1)-manifold. (Audit 2026-06-02.)"
             ),
-            "grad on surface mesh automatically gives tangential (surface) gradient",
+            (
+                "[API] grad on a surface mesh AUTOMATICALLY "
+                "produces the TANGENTIAL (surface) gradient — "
+                "no explicit projection needed. Signal: "
+                "manually projecting grad(u) onto the surface "
+                "tangent plane via (I - n n^T) * grad(u) "
+                "applies the projection TWICE (NGSolve already "
+                "did it for you) and yields a numerically "
+                "near-identical answer but at 2x the cost; "
+                "verify by checking that |grad(u) . n| at a "
+                "surface point is already ~1e-15. (Audit "
+                "2026-06-02.)"
+            ),
             (
                 "[Numerical] Laplace-Beltrami has kernel = "
                 "constants; pin one DOF or add regularization. "
@@ -101,8 +113,35 @@ KNOWLEDGE = {
                 "area converges to within ~1e-4 of the exact "
                 "value. (Audit 2026-06-02.)"
             ),
-            "For evolving surfaces: use deformation mapping + ALE approach",
-            "Surface meshes from OCC: Sphere, Cylinder, or any STEP/BREP surface",
+            (
+                "[Numerical] For evolving surfaces (moving "
+                "membranes, growth): use a deformation mapping "
+                "+ ALE approach with mesh.SetDeformation. "
+                "Signal: re-meshing every step (creating new "
+                "OCC geometry per time step) loses solution "
+                "continuity — the per-DOF solution from step "
+                "N doesn't transfer cleanly to step N+1 and "
+                "you see ~1-3% loss of L^2 norm per step "
+                "(spurious dissipation). ALE keeps the same "
+                "DOFs but deforms the mesh and resolves "
+                "transport on the moved geometry. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Surface meshes from OCC: Sphere(), "
+                "Cylinder(), or any imported STEP/BREP "
+                "surface via OCCGeometry(...). Signal: "
+                "loading a STEP file with a mix of "
+                "volumetric solids and surface patches "
+                "without selecting only the .faces leads to "
+                "a 3D mesh being constructed instead of a "
+                "surface mesh — Mesh.dim returns 3 instead "
+                "of 2, and subsequent ds integrations span "
+                "the volume boundary, not the intended "
+                "surface. Use OCC.Glue(faces) or "
+                "geo.faces[i] to select surfaces. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 }

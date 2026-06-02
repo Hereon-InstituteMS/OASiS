@@ -118,16 +118,71 @@ SIGNAL_COVERAGE_MIN = {
                        #                  Trajectory across this
                        #                  session: 49.5% -> 60.2% ->
                        #                  75.7% -> 100.0%.)
-    "ngsolve": 68.0,   # measured  69.6 — ties dealii (raised
-                       #                  2026-06-02 from 60.0
-                       #                  after pass 3: 5
-                       #                  convection_diffusion +
-                       #                  3 navier_stokes + 3
-                       #                  mixed_poisson pitfalls
-                       #                  Signal-tagged.
-                       #                  ngsolve 47.4% -> 55.6%
-                       #                  -> 61.5% -> 69.6% over
-                       #                  three commits.)
+    "ngsolve": 99.0,   # measured 100.0 — ngsolve at FULL Signal
+                       #                  coverage (raised 2026-06-02
+                       #                  from 68.0 after pass 4:
+                       #                  41 untagged pitfalls re-cast
+                       #                  across 11 physics —
+                       #                    navier_stokes (1: DFG
+                       #                    Schafer-Turek Cd~5.57,
+                       #                    Cl 0.0104-0.0110),
+                       #                    thermal_structural (3:
+                       #                    isotropic alpha*T*Id,
+                       #                    (3*lam+2*mu) bulk factor,
+                       #                    two-way iterate),
+                       #                    surface_pde (3: grad
+                       #                    auto-tangential, ALE for
+                       #                    evolving surfaces, OCC
+                       #                    .faces selection),
+                       #                    dg_methods (7: dgjumps=
+                       #                    True, u.Other(), skeleton
+                       #                    dx vs ds, alpha=4*(p+1)^2,
+                       #                    IfPos upwind, SIP penalty
+                       #                    even at high Pe, GMRES
+                       #                    not CG for advection),
+                       #                    contact (2: active set
+                       #                    vs penalty O(1/gamma)
+                       #                    floor, frictional
+                       #                    tangential penalty +
+                       #                    Coulomb),
+                       #                    time_dependent_ns (1:
+                       #                    DFG transient Cd~5.57,
+                       #                    lid-cavity Ghia
+                       #                    streamfunction),
+                       #                    mhd (7: low-Rm limit,
+                       #                    HCurl for A not VectorH1,
+                       #                    Hartmann Ha boundary
+                       #                    layer 1/Ha, mesh
+                       #                    refinement near walls,
+                       #                    splitting O(dt) error,
+                       #                    div(B)=0 via HDiv or
+                       #                    grad-div, grad-div u),
+                       #                    hdivdiv (7: NN-cty vs
+                       #                    H2 conformity, clamped
+                       #                    Nitsche dw/dn, simply-
+                       #                    supported only w=0,
+                       #                    HHJ order-optimal, Regge
+                       #                    for 3D elasticity, no-
+                       #                    locking mixed, w_max =
+                       #                    qL^4/(64D)),
+                       #                    nonlinear_elasticity (7:
+                       #                    det(F)>0, load stepping,
+                       #                    NH Tr(C)-d, Variation()
+                       #                    auto-AD, F-bar / mixed
+                       #                    for nu~0.5, Cauchy via
+                       #                    PK2 not PK1, Newton
+                       #                    dampfactor),
+                       #                    phase_field (3: semi-
+                       #                    implicit W'(c^n),
+                       #                    staggered vs monolithic,
+                       #                    l0 and h scale together).
+                       #                  ngsolve joins kratos, febio,
+                       #                  dealii, skfem, fenics as the
+                       #                  SIXTH backend at 100% Signal:
+                       #                  coverage. Trajectory across
+                       #                  this session: 47.4% -> 55.6%
+                       #                  -> 61.5% -> 69.6% -> 100.0%
+                       #                  across four passes.)
     "febio":   99.0,   # measured 100.0 — FEBio at FULL Signal
                        #                  coverage (raised
                        #                  2026-06-02 from 87.0

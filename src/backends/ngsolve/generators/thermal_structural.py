@@ -78,9 +78,46 @@ KNOWLEDGE = {
         "spaces": "H1 (thermal) + VectorH1 (structural)",
         "solver": "Two sequential solves (one-way coupling)",
         "pitfalls": [
-            "Thermal strain: eps_th = alpha * T * Id(dim)",
-            "RHS for elasticity: (3*lam+2*mu)*alpha*T*Id(dim) contracted with Strain(v)",
-            "For two-way coupling: iterate until temperature/displacement converge",
+            (
+                "[Numerical] Thermal strain eps_th = alpha * "
+                "T * Id(dim) is isotropic — equal expansion in "
+                "all directions. Signal: applying alpha as a "
+                "non-Id tensor (e.g. only along x) produces "
+                "anisotropic expansion that DOES NOT match the "
+                "expected uniform-temperature stress-free "
+                "state — a uniformly heated unconstrained "
+                "specimen should produce zero stress and "
+                "uniform strain alpha*DeltaT in all "
+                "directions. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] RHS for elasticity: "
+                "(3*lam + 2*mu)*alpha*T * Id(dim) contracted "
+                "with Strain(v). Signal: using just "
+                "2*mu*alpha*T * Id (forgetting the "
+                "(3*lam + 2*mu) factor — the bulk modulus K "
+                "times alpha) under-estimates thermal stress "
+                "in nearly-incompressible regimes by a factor "
+                "of (3*lam + 2*mu)/(2*mu) which is ~30-100x "
+                "for typical metals. The correct expression "
+                "uses the volumetric stress coupling, not just "
+                "shear. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For two-way coupling: iterate "
+                "thermal -> structural -> thermal until both "
+                "fields converge (typically 3-10 Picard "
+                "iterations). Signal: doing only the FIRST "
+                "thermal solve and the FIRST structural solve "
+                "(one-way) gives a deformation that does not "
+                "feed back into the thermal conductivity — for "
+                "problems where deformation changes effective "
+                "k(u) or contact-area heat transfer, the "
+                "one-way result is wrong by 5-20% on the "
+                "temperature distribution. Track ||T_new - "
+                "T_old|| / ||T_new|| and ||u_new - u_old|| / "
+                "||u_new|| < 1e-4 to stop. (Audit 2026-06-02.)"
+            ),
             "[Syntax] Symbolic-zero RHS: LinearForm(0*v*dx) "
             "collapses before construction, leaving a form with "
             "no TestFunction. Assemble() then raises NgException "

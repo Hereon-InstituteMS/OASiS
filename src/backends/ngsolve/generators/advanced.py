@@ -1093,13 +1093,91 @@ KNOWLEDGE = {
         "spaces": "L2(mesh, order=k, dgjumps=True) — fully discontinuous",
         "solver": "Direct (sparsecholesky / umfpack) for moderate size; GMRES + block-Jacobi for large",
         "pitfalls": [
-            "MUST set dgjumps=True — without it, cross-element coupling entries are not allocated",
-            "u.Other() accesses the neighbor element's trial function across a shared facet",
-            "dx(skeleton=True) integrates over interior facets; ds(skeleton=True) over boundary facets",
-            "Penalty parameter: alpha * order^2 / h — too small -> unstable, too large -> ill-conditioned",
-            "IfPos(b*n, u, u.Other()) selects the upwind side for convection",
-            "For convection-dominated (Pe >> 1): DG is naturally stable; SIP diffusion still needs penalty",
-            "Bilinear form is not symmetric when advection is present — use GMRES, not CG",
+            (
+                "[API] MUST set dgjumps=True on the L2 / DG "
+                "FE space — without it, the cross-element "
+                "coupling entries in the sparse matrix are "
+                "NOT allocated. Signal: assembling a DG "
+                "BilinearForm with jump terms after building "
+                "fes = L2(mesh, order=k) (no dgjumps=True) "
+                "raises `Sparse matrix: entry at (i,j) does "
+                "not exist` at .Assemble() or, on older "
+                "versions, silently drops the jump "
+                "contributions. The fix is "
+                "L2(mesh, order=k, dgjumps=True). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] u.Other() accesses the neighbour "
+                "element's trial function across a shared "
+                "facet — NGSolve's restriction operator. "
+                "Signal: writing the jump term as "
+                "(u - u_neighbour) using an external "
+                "function instead of u.Other() raises "
+                "`AttributeError: trial function has no "
+                "attribute neighbour`; the documented API "
+                "is u.Other(). Symmetric average: "
+                "0.5*(u + u.Other()). (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] dx(skeleton=True) integrates over "
+                "INTERIOR facets; ds(skeleton=True) over "
+                "BOUNDARY facets. Signal: applying a "
+                "jump-penalty term over plain dx (volume "
+                "measure) is silently dropped because the "
+                "jump is zero on the interior of an element "
+                "(u and u.Other() refer to the same value); "
+                "the assembled matrix has identical "
+                "structure but missing penalty entries — "
+                "stability is lost and the iterative solver "
+                "stagnates. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty parameter: alpha * "
+                "order^2 / h. Signal: alpha too small "
+                "(< order^2) gives coercivity loss — "
+                "discrete solution norm grows under "
+                "refinement instead of converging; alpha "
+                "too large (> 100 * order^2) gives "
+                "cond(K) > 1e14 and CG/GMRES stagnate. "
+                "Rule of thumb: alpha = 4 * (order + 1)^2 "
+                "for SIP DG. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] IfPos(b*n, u, u.Other()) selects the "
+                "upwind side for convection. Signal: using "
+                "0.5*(u + u.Other()) (central flux) on a "
+                "pure-advection DG problem produces "
+                "unconditional instability — the solution "
+                "amplitude grows exponentially in time "
+                "regardless of mesh; upwind via IfPos "
+                "restores stability. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For convection-dominated DG "
+                "(Pe >> 1): DG is naturally stable due to "
+                "upwind flux; SIP diffusion STILL needs "
+                "the alpha/h * jump penalty. Signal: "
+                "switching from Galerkin-CG to DG on "
+                "Pe=100 removes the gross oscillations but "
+                "the diffusion-dominated regions still "
+                "show small-amplitude ringing if the SIP "
+                "penalty is omitted (alpha=0); always add "
+                "the diffusion penalty even when advection "
+                "dominates the bulk. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] DG bilinear form is NOT "
+                "symmetric when advection is present "
+                "(upwind term is one-sided). Signal: "
+                "feeding the assembled matrix to a CG "
+                "solver raises a 'matrix not positive "
+                "definite' error or returns wildly wrong "
+                "iterates; switch to GMRES (or BiCGStab) "
+                "for the unsymmetric system. Pure "
+                "diffusion SIP DG IS symmetric — advection "
+                "breaks symmetry. (Audit 2026-06-02.)"
+            ),
             "[API] Python's builtin abs() is NOT defined on "
             "ngsolve.la.BaseVector. max(abs(gfu.vec)) raises "
             "TypeError 'bad operand type for abs(): "
@@ -1149,7 +1227,20 @@ KNOWLEDGE = {
                 "`DivisionByZero` / cond(K)>1e14 warnings "
                 "from the sparse solver. (Audit 2026-06-02.)"
             ),
-            "Active set method (Lagrange multiplier or semismooth Newton) is more accurate than pure penalty",
+            (
+                "[Numerical] Active-set method (Lagrange "
+                "multiplier or semismooth Newton) is MORE "
+                "ACCURATE than pure penalty — converges "
+                "without an O(1/gamma) error floor. Signal: "
+                "even with optimally-tuned penalty gamma, "
+                "the residual gap*lambda at convergence is "
+                "bounded below by O(h/gamma) — semismooth "
+                "Newton drives it to machine precision. "
+                "Penalty stalls at a fixed gap; the "
+                "active-set iteration converges in 3-10 "
+                "outer iterations to identical-active-set "
+                "fixed point. (Audit 2026-06-02.)"
+            ),
             (
                 "[API] IfPos(-gap, 1, 0) identifies active "
                 "contact nodes — evaluates at integration "
@@ -1168,7 +1259,20 @@ KNOWLEDGE = {
                 "evaluating specialcf.normal(2 or 3).dot(n_expected)"
                 " on the contact boundary. (Audit 2026-06-02.)"
             ),
-            "For frictional contact: add tangential penalty with Coulomb condition",
+            (
+                "[Numerical] For frictional contact: add a "
+                "tangential-direction penalty with Coulomb's "
+                "law |f_t| <= mu * |f_n| as a complementarity "
+                "constraint. Signal: omitting the tangential "
+                "penalty (only enforcing normal contact) "
+                "lets the contacting bodies SLIDE freely "
+                "along their interface — a vertical block "
+                "resting on an inclined plane slides off "
+                "regardless of mu_friction; with tangential "
+                "penalty + Coulomb, the block sticks below "
+                "the friction angle and slides above it. "
+                "(Audit 2026-06-02.)"
+            ),
             (
                 "[API] NGSolve has no built-in contact formulation "
                 "— must implement penalty or Lagrange multiplier "
@@ -1262,7 +1366,20 @@ KNOWLEDGE = {
                 "adding the cubic bubble (MINI) removes the "
                 "checkerboard. (Audit 2026-06-02.)"
             ),
-            "Benchmark: DFG Schafer-Turek (Re=20 steady, Re=100 periodic) and lid-driven cavity",
+            (
+                "[Validation] Benchmark: DFG Schafer-Turek "
+                "(Re=20 steady, Re=100 periodic vortex "
+                "shedding) and the lid-driven cavity at "
+                "Re=400, 1000, 5000. Signal: a transient NS "
+                "implementation should reproduce Schafer-"
+                "Turek drag/lift to within published bounds "
+                "(Cd ~ 5.57 at Re=20) and lid-cavity "
+                "Ghia-streamfunction values at the chosen "
+                "Re; values 5%+ off expose either a missing "
+                "convective term, mis-tuned theta, or "
+                "insufficient mesh near walls. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "mhd": {
@@ -1274,13 +1391,92 @@ KNOWLEDGE = {
         "spaces": "VectorH1*H1 (Taylor-Hood, fluid) + H1 (scalar magnetic, low-Rm)",
         "solver": "Operator splitting: fluid (umfpack) + magnetic (direct) each time step",
         "pitfalls": [
-            "Low-Rm limit (Rm << 1): induced field negligible, only Lorentz force matters",
-            "Full MHD (arbitrary Rm): need HCurl for vector A or Nedelec for B directly",
-            "Hartmann number Ha = B0*L*sqrt(sigma/rho*nu): Ha >> 1 creates boundary layers of thickness 1/Ha",
-            "Hartmann layers need mesh refinement near walls proportional to 1/Ha",
-            "Operator splitting introduces splitting error O(dt) — monolithic is more accurate",
-            "Divergence-free B constraint: ∇·B = 0 must be enforced (grad-div penalty or HDiv elements)",
-            "For incompressible MHD: add grad-div stabilization on velocity",
+            (
+                "[Numerical] Low-Rm limit (Rm << 1): induced "
+                "magnetic field is negligible, only the "
+                "Lorentz force J x B0 matters. Signal: at "
+                "Rm = 0.01 a full-MHD code with HCurl A "
+                "produces the SAME velocity field as a "
+                "low-Rm code that uses only the prescribed "
+                "B0 + the scalar potential phi for current "
+                "J = -sigma*grad(phi) + sigma*u x B0; the "
+                "extra A unknowns waste DOFs. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Full MHD (arbitrary Rm): use HCurl for "
+                "the vector potential A or Nedelec for B "
+                "directly — NOT Lagrange. Signal: a "
+                "VectorH1 / Lagrange A produces curl(A) that "
+                "lives in a space too smooth for proper "
+                "MHD (typical induced B is normal-"
+                "discontinuous at material interfaces); "
+                "the resulting B field has spurious "
+                "smoothing across permeability jumps. Switch "
+                "to HCurl(mesh, order=k). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Hartmann number Ha = B0 * L * "
+                "sqrt(sigma / (rho * nu)) measures magnetic "
+                "vs viscous effects. Ha >> 1 creates "
+                "boundary layers of thickness 1/Ha next to "
+                "walls. Signal: a uniform mesh at Ha = 100 "
+                "shows ZERO core-region velocity (correct) "
+                "but mis-resolved boundary-layer flux — the "
+                "computed wall shear stress is off by "
+                "factor of 5+ vs the analytic Hartmann "
+                "solution because the layer is spread across "
+                "only 1-2 cells. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Hartmann layers need mesh "
+                "refinement near walls proportional to 1/Ha. "
+                "Signal: an unrefined mesh gives "
+                "core-velocity accuracy O(1) but boundary-"
+                "layer wall shear off by 5-10x at Ha=100; "
+                "geometric grading with first-cell height "
+                "h_wall = L / (10*Ha) restores ~1% accuracy "
+                "on the wall integrals. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Operator splitting (solve "
+                "fluid, then magnetic, then iterate) "
+                "introduces a splitting error O(dt) — "
+                "monolithic (one big nonlinear solve per "
+                "step) is more accurate. Signal: at large "
+                "dt the splitting result diverges from a "
+                "fine-dt monolithic reference by O(dt), "
+                "while the monolithic result is "
+                "second-order accurate; for time-accurate "
+                "MHD use monolithic or sub-cycle the "
+                "splitting. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Divergence-free B constraint: "
+                "div(B) = 0 must be enforced via grad-div "
+                "penalty OR HDiv elements. Signal: a "
+                "VectorH1 B field on a non-trivial geometry "
+                "develops max|div(B)| ~ O(0.1) over time "
+                "(should be ~1e-14); this drives spurious "
+                "monopole currents and the kinetic energy "
+                "balance drifts. HDiv elements enforce "
+                "div(B) = 0 pointwise; grad-div penalty "
+                "tau*(div(B), div(C)) with tau ~ 1 is the "
+                "alternative for H1. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For incompressible MHD: add a "
+                "grad-div stabilisation tau*(div(u), "
+                "div(v))*dx on velocity (helps both "
+                "div(u)=0 and div(B)=0 if you use vector "
+                "potential A). Signal: omitting grad-div "
+                "stabilisation in a Taylor-Hood NS-MHD code "
+                "lets div(u) reach 1e-4 to 1e-3 (not "
+                "machine precision) — pressure becomes "
+                "noisy; tau = nu controls the deviation. "
+                "(Audit 2026-06-02.)"
+            ),
             "[Syntax] LinearForm integrand must be SCALAR-VALUED. "
             "Multiplying a vector-valued CoefficientFunction (e.g. "
             "CoefficientFunction((0, 1)) for an e_y unit vector) "
@@ -1305,13 +1501,92 @@ KNOWLEDGE = {
         "spaces": "HDivDiv(mesh, order=k-1) for moments + H1(mesh, order=k) for deflection",
         "solver": "Direct on saddle-point system (umfpack)",
         "pitfalls": [
-            "HDivDiv enforces normal-normal continuity across facets (weaker than H2 conformity)",
-            "For clamped plate: add boundary terms for dw/dn = 0 (Nitsche or Lagrange multiplier on skeleton)",
-            "For simply-supported plate: only w = 0 on boundary; normal moments naturally satisfied",
-            "HHJ is order-optimal: order k moments + order k deflection -> order k+1 in L2",
-            "Regge elements (different from HHJ) use HDivDiv for 3D elasticity compatibility",
-            "Mixed formulation avoids locking, unlike displacement-only C1 conforming methods",
-            "Verify against analytical: w_max = qL^4/(64D) for simply-supported uniform load",
+            (
+                "[Numerical] HDivDiv enforces normal-normal "
+                "continuity across facets — WEAKER than full "
+                "H2 conformity (which would require C1 "
+                "Lagrange). Signal: a finite element claiming "
+                "to be the HHJ moment space but using "
+                "VectorH1 instead of HDivDiv allows tangent-"
+                "tangent jumps at facets and yields a "
+                "non-conforming bilinear form; the converged "
+                "deflection is off by a constant factor (~1.1-"
+                "1.5) compared to the HHJ reference solution. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For CLAMPED plate: add boundary "
+                "terms for dw/dn = 0 (Nitsche penalty or "
+                "Lagrange multiplier on the skeleton). "
+                "Signal: solving HHJ plate with ONLY w = 0 on "
+                "a clamped edge (no dw/dn term) gives a "
+                "simply-supported solution instead of "
+                "clamped — the centre deflection is ~3-4x "
+                "larger than the clamped reference. Add the "
+                "moment term over skeleton to enforce dw/dn "
+                "weakly. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For SIMPLY-SUPPORTED plate: "
+                "only w = 0 on the boundary is needed; "
+                "normal moments M_nn vanish naturally as a "
+                "natural BC. Signal: adding an extra "
+                "Dirichlet on M_nn (the bending moment) over-"
+                "constrains a simply-supported plate, "
+                "increasing the stiffness — centre deflection "
+                "is ~10-20% smaller than the analytic "
+                "w_max = q*L^4 / (64*D); remove the moment "
+                "BC. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] HHJ is order-optimal: order k "
+                "moments + order k deflection give order "
+                "k+1 in L2 norm. Signal: a convergence-rate "
+                "study (h-refinement at fixed order=1) "
+                "should show L2 error of the deflection "
+                "scaling as h^2; if it scales as h, the "
+                "moment space is mis-typed (e.g. "
+                "VectorH1 instead of HDivDiv) and you've "
+                "lost an order. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Regge elements (Regge calculus, "
+                "DISTINCT from HHJ) use HDivDiv for 3D "
+                "elasticity compatibility — symmetric tensor "
+                "stress with prescribed traction continuity. "
+                "Signal: porting an HHJ 2D-plate code to 3D "
+                "elasticity without switching to Regge "
+                "elements produces a non-conforming solution "
+                "(traction jumps at facets); the "
+                "HCurlCurl/HDivDiv pairing for 3D Hellinger-"
+                "Reissner is the canonical Regge "
+                "discretisation. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Mixed formulation (HHJ / Regge) "
+                "AVOIDS locking, unlike displacement-only "
+                "C1-conforming methods. Signal: a "
+                "displacement-only thin-plate code at "
+                "h/thickness ratio > 100 shows shear locking "
+                "(centre deflection is 10-1000x smaller "
+                "than the analytic plate result) — the "
+                "discrete bending energy is dwarfed by "
+                "spurious shear strain. HHJ removes "
+                "locking entirely by using moments as "
+                "primary unknowns. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Validation] Verify against analytical: "
+                "w_max = q*L^4 / (64*D) for a simply-"
+                "supported uniform-load plate "
+                "(D = E*t^3 / (12*(1-nu^2))). Signal: a "
+                "HHJ implementation should converge to "
+                "within 1% of this value on a moderately "
+                "fine mesh (h/L < 0.1); a >5% deviation "
+                "exposes a mis-configured BC, wrong D, or "
+                "mis-typed HDivDiv vs VectorH1 moment "
+                "space. (Audit 2026-06-02.)"
+            ),
             "[API] HDivDiv (normal-normal continuous moment "
             "tensor space) does NOT expose a pointwise div(div("
             "tau)) operator. Constructing 'div(div(tau)) * v * "
@@ -1335,13 +1610,93 @@ KNOWLEDGE = {
         "spaces": "VectorH1(mesh, order=2) — displacement-based finite strain",
         "solver": "solvers.Newton() with load stepping; dampfactor reduces step size if needed",
         "pitfalls": [
-            "Det(F) must remain > 0 — initial guess must not cause element inversion",
-            "Load stepping: apply displacement/load in increments, use previous solution as initial guess",
-            "Neo-Hookean energy: 0.5*mu*(Tr(C)-d) - mu*ln(J) + 0.5*lam*ln(J)^2 (d=2 or 3)",
-            "Variation() auto-differentiates energy to get residual and tangent — very convenient",
-            "For nearly-incompressible (nu->0.5): use F-bar method or mixed formulation",
-            "Cauchy stress: sigma = (1/J) * F * S * F^T where S = dW/dE (PK2 stress)",
-            "Newton dampfactor < 1 helps when far from equilibrium (large load steps)",
+            (
+                "[Numerical] det(F) MUST remain > 0 — the "
+                "initial guess must not cause element "
+                "inversion. Signal: an initial displacement "
+                "guess that crushes the element to "
+                "near-zero or negative volume (e.g. "
+                "starting from u = -2*x in a unit-cube) "
+                "evaluates ln(J) with J <= 0 and raises "
+                "FloatingPointError or NaN in the first "
+                "Newton residual. Start from u = 0 and "
+                "load-step. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Load stepping: apply "
+                "displacement / load in INCREMENTS, using "
+                "previous converged solution as initial "
+                "guess. Signal: applying full load at "
+                "t=0 to a hyperelastic problem at 30% "
+                "nominal strain typically diverges "
+                "(NewtonMinimization residual grows ~10x "
+                "per iter); subdividing into 10 steps of "
+                "3% strain achieves quadratic convergence "
+                "per step. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Neo-Hookean energy: 0.5*mu*"
+                "(Tr(C) - d) - mu*ln(J) + 0.5*lam*ln(J)^2 "
+                "where d is the spatial dimension (2 or "
+                "3). Signal: forgetting the d subtraction "
+                "(using Tr(C) instead of Tr(C) - d) gives "
+                "W != 0 at F = I — a stress-free "
+                "reference produces a non-zero initial "
+                "stress; the first Newton iterate runs "
+                "off looking for a different equilibrium. "
+                "Sanity-check W(F=I) = 0. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Variation() auto-differentiates the "
+                "energy to get the residual and tangent — "
+                "MUCH safer than hand-coding. Signal: a "
+                "hand-coded P(F) and dP/dF with a sign "
+                "error or factor-of-2 produces linear (not "
+                "quadratic) Newton convergence — residual "
+                "halves per iter instead of squaring. "
+                "Switching to a.Apply / a.AssembleLinearization "
+                "with a Variation-built energy form "
+                "restores quadratic. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For nearly-incompressible "
+                "(nu -> 0.5): use F-bar method or mixed "
+                "(u, p) formulation. Signal: a pure-"
+                "displacement VectorH1 solve at nu = 0.4999 "
+                "locks volumetrically — the Cook-membrane "
+                "tip displacement is < 1% of the analytic "
+                "value; switching to mixed (u, p) with "
+                "Taylor-Hood-like spaces (VectorH1 order 2 "
+                "+ H1 order 1 for p) recovers within ~1%. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Cauchy stress: sigma = "
+                "(1/J) * F * S * F^T where S = dW/dE is "
+                "the 2nd Piola-Kirchhoff stress. Signal: "
+                "using sigma = (1/J) * F * P * F^T (P = "
+                "1st PK) mixes up the push-forward — "
+                "S and P are different objects "
+                "(P = F * S); the resulting 'Cauchy' "
+                "stress is wrong by a factor of F. "
+                "Correct: sigma = (1/J) * F * S * F^T or "
+                "sigma = (1/J) * P * F^T. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Newton dampfactor < 1 helps "
+                "when FAR from equilibrium (large load "
+                "steps). Signal: when load-stepping is "
+                "aggressive enough that Newton overshoots "
+                "the convergence basin (residual grows "
+                "between iterations), setting "
+                "dampfactor = 0.5 or 0.25 in "
+                "ngsolve.solvers.Newton restores "
+                "convergence at the cost of more "
+                "iterations; alternatively reduce the "
+                "load increment. (Audit 2026-06-02.)"
+            ),
             "[API] After solvers.Newton converges, the Cauchy / "
             "PK1 stress passed to VTKOutput must be rebuilt from "
             "the resolved GridFunction (Grad(gfu), Det(I+Grad("
@@ -1385,7 +1740,21 @@ KNOWLEDGE = {
                 "iterations` because W'(c) ~ c^3 amplifies "
                 "spurious oscillations. (Audit 2026-06-02.)"
             ),
-            "Semi-implicit treatment of W'(c): evaluate at c^n, solve linearly — avoids nonlinear solve",
+            (
+                "[Numerical] Semi-implicit treatment of "
+                "W'(c): evaluate at c^n (previous step), "
+                "solve linearly — avoids the nonlinear "
+                "solve. Signal: a fully-implicit treatment "
+                "with c^{n+1} inside W'(c) requires Newton "
+                "at each step (~5-10 inner iters), which "
+                "dominates wall-clock; the semi-implicit "
+                "lagging changes the stability constant "
+                "but keeps each step linear, ~5-10x faster. "
+                "Trade-off: stability constant shrinks "
+                "modestly (typical 10-20%); use a smaller "
+                "dt if you observe ringing. (Audit "
+                "2026-06-02.)"
+            ),
             (
                 "[Numerical] Phase-field fracture: irreversibility "
                 "d >= d_prev (crack cannot heal) — enforce "
@@ -1396,7 +1765,20 @@ KNOWLEDGE = {
                 "Enforce via max(d, d_prev) projection after each "
                 "solve. (Audit 2026-06-02.)"
             ),
-            "Staggered scheme converges to same solution as monolithic but takes more iterations",
+            (
+                "[Numerical] Staggered scheme (solve "
+                "elasticity, then phase-field, iterate) "
+                "converges to the SAME solution as monolithic "
+                "but takes more iterations per step. Signal: "
+                "staggered typically needs 5-20 outer iters "
+                "vs 1 nonlinear solve in monolithic, but each "
+                "iteration is cheaper (two linear solves "
+                "instead of one nonlinear). Wall-clock wins "
+                "depend on the relative cost; staggered is "
+                "easier to implement and more robust at "
+                "fracture-onset events where monolithic "
+                "Newton struggles. (Audit 2026-06-02.)"
+            ),
             (
                 "[Numerical] Miehe energy split (tension/"
                 "compression) prevents crack growth under "
@@ -1407,7 +1789,20 @@ KNOWLEDGE = {
                 "uniaxial-compression sanity test should show "
                 "max(d) < 1e-3. (Audit 2026-06-02.)"
             ),
-            "Length scale l0 must be small enough relative to specimen size; convergence as l0->0",
+            (
+                "[Numerical] Length scale l0 must be small "
+                "enough relative to specimen size; the "
+                "fracture-energy convergence is recovered as "
+                "l0 -> 0. Signal: l0 ~ 1/10 of the specimen "
+                "characteristic size produces a smeared "
+                "fracture zone visibly wider than expected "
+                "(captures rough crack location but the peak "
+                "load is over-predicted ~20-50% vs the "
+                "Griffith analytic load); refining the mesh "
+                "WITHOUT also reducing l0 does not help — "
+                "both must shrink together with l0 / h ~ 4-8 "
+                "preserved. (Audit 2026-06-02.)"
+            ),
             (
                 "[API] For Cahn-Hilliard: use H1 x H1 mixed "
                 "formulation (chemical potential + phase field). "

@@ -96,7 +96,19 @@ KNOWLEDGE = {
                 "5.57 (Re=20) / 3.22 (Re=100) reference. "
                 "(Audit 2026-06-02.)"
             ),
-            "Benchmark: Schafer-Turek DFG channel with cylinder (Re=20, 100)",
+            (
+                "[Validation] Benchmark: Schafer-Turek DFG "
+                "channel with cylinder at Re=20 (steady) and "
+                "Re=100 (periodic vortex shedding). Signal: a "
+                "Taylor-Hood Re=20 implementation should "
+                "produce drag coefficient Cd around 5.57 and "
+                "lift Cl in [0.0104, 0.0110] (Schafer-Turek "
+                "published bounds); values outside this "
+                "envelope expose either pressure-pin / "
+                "boundary-condition errors or insufficient "
+                "mesh refinement around the cylinder. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 }
