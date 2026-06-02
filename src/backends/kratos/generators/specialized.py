@@ -249,7 +249,21 @@ KNOWLEDGE = {
     "cable_net": {
         "description": "Cable and net structures: cables, membranes, form-finding",
         "application": "CableNetApplication",
-        "elements": ["CableElement3D2N", "MembraneElement3D3N", "MembraneElement3D4N"],
+        "elements": [
+            # Elements registered by CableNetApplication itself
+            # (cable_net_application.cpp Register()):
+            "WeakSlidingElement3D3N",       # 3-node triangle sliding contact
+            "SlidingCableElement3D3N",      # 3-node sliding cable (Line3DN)
+            "RingElement3D3N",              # 3-node ring (Line3DN)
+            "RingElement3D4N",              # 4-node ring (Line3DN)
+            "EmpiricalSpringElement3D2N",   # 2-node empirical spring
+            # Elements inherited from StructuralMechanicsApplication (loaded
+            # first as CableNetApplication's transitive dependency):
+            "CableElement3D2N",             # SMA-owned 2-node cable
+            "MembraneElement3D3N",          # SMA-owned 3-node membrane
+            "MembraneElement3D4N",          # SMA-owned 4-node membrane
+        ],
+        "variables": ["SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL"],
         "capabilities": ["form_finding", "prestress", "wind_loading_on_cables"],
         "pitfalls": [
             "[Integration] Catalog template is an availability-"
@@ -259,6 +273,28 @@ KNOWLEDGE = {
             "prestress / form-finding solve. Signal: emitted "
             "script < 30 lines, results_summary.json has only "
             "a 'note' key. (Verified empirically 2026-06-01.)",
+            "[API] CableNetApplication's own Register() exposes "
+            "5 elements with a Sliding/Ring/EmpiricalSpring "
+            "vocabulary, NOT the simpler CableElement3D2N / "
+            "MembraneElement3D3N / MembraneElement3D4N that the "
+            "catalog historically grouped under cable_net. The "
+            "simpler-named elements ARE usable from a CableNet "
+            "ProjectParameters.json — they exist because "
+            "CableNetApplication's Python loader imports "
+            "StructuralMechanicsApplication FIRST (its "
+            "transitive dependency), and Cable/Membrane "
+            "elements live in SMA. Signal: source walk of "
+            "applications/CableNetApplication/"
+            "cable_net_application.cpp shows only the 5 "
+            "Sliding/Ring/Empirical KRATOS_REGISTER_ELEMENT "
+            "calls; CableElement3D2N + MembraneElement3D[34]N "
+            "registrations live in applications/"
+            "StructuralMechanicsApplication/"
+            "structural_mechanics_application.cpp:578/619/620. "
+            "If a user removes the SMA dependency or loads "
+            "CableNetApplication in isolation, the simpler "
+            "names fail with 'Element <X> is not registered'. "
+            "(File walk 2026-06-02.)",
         ],
     },
     "chimera": {
