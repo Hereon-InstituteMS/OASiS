@@ -354,12 +354,13 @@ class ParticlePDGenerator(BaseGenerator):
                 (
                     "[Numerical] BIN_SIZE_LOWER_BOUND must be > horizon. "
                     " If bins are smaller than the horizon, some "
-                    "neighbors will not be found. Signal: neighbor-count "
-                    "diagnostics show ~50-70% of expected bonds (m=3 "
-                    "should give ~28 neighbors in 2D, ~123 in 3D); the "
-                    "PD wave speed in a uniaxial test is then ~sqrt of "
-                    "the true speed because the effective bulk modulus "
-                    "is under-estimated. (Audit 2026-06-02.)"
+                    "neighbors will not be found. Signal: PARTICLE DYNAMIC "
+                    "neighbor_count diagnostics from BinningStrategy show "
+                    "~50-70% of expected bonds (m=3 should give ~28 in 2D, "
+                    "~123 in 3D); the PDWaveSpeed in a uniaxial test is "
+                    "then ~sqrt of the true speed because the effective "
+                    "bulk modulus from MAT_ParticlePD is under-estimated. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
                     "[Input] Pre-cracks (PRE_CRACKS) must "

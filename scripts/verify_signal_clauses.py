@@ -505,6 +505,207 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Thermo_Structure_Interaction",
             "Scalar_Transport", "Statics", "Stationary",
             "GenAlpha", "OneStepTheta",
+            # ── Real 4C input/section keywords from catalog
+            #    Signal: prose ──────────────────────────────────
+            "NUMDOF", "TIMESTEP", "NUMSTEP", "MAXTIME",
+            "MAXITER", "ITEMAX", "TOLRES", "TOLDISP",
+            "RESTARTEVRY", "RESULTSEVRY", "RESULTSEVERY",
+            "KINEM", "INT_STRATEGY", "STRATEGY",
+            "PENALTY_PARAMETER", "REGULARIZATION",
+            "CONVTOL", "NORM_RESF", "PREDICT",
+            "TIMINTEGR", "NLNSOL", "LINEAR_SOLVER",
+            "STC_LAYER", "STC_SCALING",
+            "VOLFORCE", "NODEFORCE", "POINTNEUMANN",
+            "DESIGN_POINT_DIRICH", "DESIGN_LINE_DIRICH",
+            "DESIGN_SURF_DIRICH", "DESIGN_VOL_DIRICH",
+            "DESIGN_POINT_NEUMANN", "DESIGN_LINE_NEUMANN",
+            "DESIGN_SURF_NEUMANN", "DESIGN_VOL_NEUMANN",
+            "DESIGN_FSI_COUPLING",
+            "IO", "RUNTIME", "VTK", "OUTPUT",
+            # ── 4C element types (real registered) ────────────
+            "SOLID", "SOLIDSCATRA", "SOLIDPORO",
+            "HEX8", "HEX20", "HEX27", "TET4", "TET10",
+            "TET15", "PYRAMID5", "WEDGE6", "WEDGE15",
+            "QUAD4", "QUAD8", "QUAD9", "TRI3", "TRI6",
+            "LINE2", "LINE3", "POINT1",
+            "BEAM3K", "BEAM3EB", "TRUSS3", "TORSION3",
+            "FLUID2", "ALE3", "ALE2",
+            "POROFLUIDMULTIPHASE", "POROFLUID",
+            "TRANSP3", "TRANSP2", "TRANSP1",
+            "SHELL_KL_NURBS", "SHELL", "MEMBRANE",
+            "SHELL_KIRCHHOFF",
+            # ── 4C particle / PD identifiers ─────────────────
+            "PARTICLE", "PARTICLES", "PARTICLE_DYNAMIC",
+            "PARTICLE_TIMINT", "PD", "INTERACTION_HORIZON",
+            "PERIDYNAMIC_GRID_SPACING", "PRE_CRACKS",
+            "PDBODYID", "HORIZON",
+            # ── 4C material classes (more) ────────────────────
+            "MAT_ParticlePD", "MAT_Multiscale",
+            "MAT_myocard", "MAT_BeamReissnerElastHyper",
+            "MAT_BeamKirchhoffElastHyper",
+            "MAT_BeamKirchhoffTorsionFreeElastHyper",
+            "MAT_Beam_Reissner_ElastPlastic",
+            "MAT_Beam_Reissner_ElastHyper",
+            "MAT_StructPoro", "MAT_FluidPoro",
+            "MAT_Lubrication", "MAT_matlist",
+            "MAT_GrowthRemodel",
+            "CROSSAREA", "MOMINPOL", "MOMIN2", "MOMIN3",
+            "SHEARCORR", "TRIADS", "HERMITE_CENTERLINE",
+            # ── 4C solver / strategy names ────────────────────
+            "GenAlphaLieGroup", "OstAlpha", "ExplicitEuler",
+            "GenAlphaLieGroupTimeIntegrator",
+            "Solid", "Fluid", "Thermo", "ScaTra",
+            # ── 4C runtime / error / log markers ──────────────
+            "PROC", "ERROR", "FATAL",
+            "Discretization", "discretization",
+            "NOX", "NOXSolver",
+            "Aztec", "Belos", "Ifpack", "Amesos",
+            # ── Coupling block names ──────────────────────────
+            "FSI_DYNAMIC", "TSI", "FPSI", "SSI", "SSTI",
+            "STI", "ELCH", "FBI",
+            "PARTITIONED", "MONOLITHIC",
+            "COUPALGO", "COUPVARIABLE",
+            # ── 4C field/observable identifiers ───────────────
+            "velnp", "veln", "dispnp", "tempnp",
+            "displacement_field", "velocity_field",
+            "pressure_field", "temperature_field",
+            "fluid_pressure", "scalar_field", "phi",
+            "ALE_velocity", "structural_displacement",
+            "interface", "interface_node",
+            # ── Lowercase 4C section names (catalog prose) ────
+            "domain", "boundary", "condition", "section",
+            "porosity", "permeability", "viscosity",
+            "stiffness", "stress", "strain",
+            "load_step", "time_step",
+            # ── MCP-emitted artifacts ─────────────────────────
+            "results_summary", "post_vtu", "post_drt_ensight",
+            "visualize",
+            # ── Lowercase 4C output prefix / filename patterns ─
+            "scatra", "solid", "ale", "thermo",
+            "lubrication", "porofluid", "structure_output",
+            "fluid_output", "scatra_output",
+            "displacement_norm", "solution_norm",
+            "residual_norm", "convergence_norm",
+            "kinetic_energy", "strain_energy",
+            "internal_energy",
+            # ── 4C function / variable spec keys ──────────────
+            "COMPONENT", "VARIABLE", "EXPR", "DEFINITION",
+            "SYMBOLIC_FUNCTION_OF_TIME",
+            "SYMBOLIC_FUNCTION_OF_SPACE_TIME",
+            "VARFUNCTION", "VAREXPR",
+            # ── 4C cloning material map keys ──────────────────
+            "CLONING", "SRC_FIELD", "SRC_MAT",
+            "TAR_FIELD", "TAR_MAT",
+            "CLONING_MATERIAL_MAP",
+            # ── 4C coupling / specific BC keywords ────────────
+            "ConditionID", "GeometryID",
+            "BoundingBox", "InteractionType",
+            "BondType", "BondAlgorithm",
+            # ── Linear / Newton convergence channels ──────────
+            "NormF", "NormDisp", "NormUpdate",
+            "RestartFlag", "RESTART", "RESULTSEVRY",
+            # ── 4C fluid turbulence symbols ────────────────────
+            "TURBULENCE_MODEL", "Smagorinsky",
+            "Spalart", "kepsilon", "kw_SST",
+            "law_of_the_wall", "y_plus", "u_tau",
+            # ── 4C contact pitfall identifiers ────────────────
+            "CONTACT_TOL", "FRICTION_COEFFICIENT",
+            "PENALTY", "AUGMENTED_LAGRANGE",
+            "MORTAR", "NTS",
+            # ── 4C beam interaction / dynamics ────────────────
+            "BEAM3K_DYNAMIC", "BEAM_TO_FLUID_MESHTYING",
+            "BEAM_INTERACTION_PARAMS",
+            # ── 4C XFEM / cut-FEM identifiers ────────────────
+            "XFEM", "XFLUID3", "XFEM_GENERAL",
+            "level_set_value",
+            # ── PD / SPH ──────────────────────────────────────
+            "MAT_SphFluid", "SPHContact",
+            "smoothingLength",
+            # ── Multiphysics / cardio identifiers ─────────────
+            "MAT_FluidPoroSinglePhase",
+            "POROSITY_FORMULATION",
+            "CARDIAC_DYNAMICS", "MONODOMAIN",
+            "EP_DYNAMIC", "MEMBRANE_MODEL",
+            "phi_1", "phi_2",
+            # ── Generic 4C constants / observables that
+            #    appear lowercased in catalog prose ─────────────
+            "DENS", "VISC", "YOUNG", "NUE",
+            "POISSON", "lambda", "mu_shear",
+            "Sigma", "epsilon", "Cauchy",
+            # ── 4C source filenames (bare, without 4C_io_
+            #    prefix) that appear in catalog prose ────────────
+            "input_spec_builders", "input_file",
+            "global_data_read", "fem_discretization",
+            "thermo_element", "adapter_fld_base_algorithm",
+            "fbi_factory", "fluid_xfem_factory",
+            "lubrication_factory",
+            # ── 4C contact / mortar / NTS identifiers used in
+            #    Signal: prose ──────────────────────────────────
+            "Mortar", "MortarInterface", "DNODE", "DELE",
+            "DSURF", "DLINE", "MortarManager",
+            "slave", "master", "Hertz", "deformed",
+            # ── 4C particle binning / search ──────────────────
+            "DOMAINBOUNDINGBOX", "BinningStrategy",
+            "rigidphase", "fluidphase", "BondAlgorithm",
+            "Phase", "phase", "BondType",
+            "InitRadius", "INITRADIUS",
+            # ── Lowercase 4C channels / sections referenced
+            #    repeatedly in catalog prose ────────────────────
+            "pressure", "wall", "node", "field", "mesh",
+            "fluid", "velocity", "displacement",
+            "temperature", "thermal", "contact", "particle",
+            "beam", "airway", "density", "viscosity",
+            "porosity", "permeability", "stiffness", "stress",
+            "strain",
+            # ── 4C cardiac / EP / monodomain ──────────────────
+            "physiological", "monodomain", "ionic",
+            "MAT_ionic", "AnisotropicMaterial",
+            "DIFF1", "DIFF2", "DIFF3",
+            # ── 4C airway / reduced lung ──────────────────────
+            "Airway", "RedAirway", "REDUCED_AIRWAYS",
+            "TerminalUnit", "AirwayResistance",
+            # ── 4C beam / pair-interaction ─────────────────────
+            "BeamToBeamContact", "PenaltyParameter",
+            "BeamContact", "BeamInteraction",
+            # ── 4C XFEM cut / moment-fitting identifiers ──────
+            "MomentFitting", "Tessellation",
+            "CUTCALLS", "VOLUMECELL",
+            "BoundaryCell", "LevelSetField",
+            # ── 4C membrane / shell pitfall keys ───────────────
+            "THICK", "MATTYPE", "MEMBRANE_MATERIAL",
+            "InitialThickness",
+            # ── 4C constraint / saddle-point identifiers ──────
+            "ConstraintMatrix", "saddle_point",
+            "Schur", "rank", "ZeroPivot",
+            "MULTIPNT_CONSTRAINT",
+            # ── 4C cardiac / EP / monodomain ───────────────────
+            "FHN", "TenTusscher", "OHaraRudy", "APD",
+            "ten_Tusscher", "OHara_Rudy",
+            "ventricular_myocyte", "action_potential",
+            "stimulus", "subthreshold",
+            # ── 4C arterial / hemodynamics ─────────────────────
+            "ArterialNetwork", "blood_flow",
+            "vessel_segment", "c_max", "wave_speed",
+            # ── 4C lubrication / cavitation ─────────────────
+            "Elrod_Adams", "cavitation_pressure",
+            "p_ambient",
+            # ── 4C fluid turbulence inflow generators ────────
+            "Lund_Wu_Squires", "recycling",
+            "DNS", "LES", "RANS", "Smagorinsky_constant",
+            "y_plus", "Re_tau",
+            # ── 4C porous / Darcy / Brinkman ─────────────────
+            "Darcy", "Brinkman", "Reynolds",
+            "DarcyFlow", "porosity_form",
+            # ── 4C electrochemistry / SSI ─────────────────────
+            "BV", "Butler_Volmer", "ELECTRODE",
+            "ELCH_DYNAMIC", "BV_current",
+            "lithium_intercalation",
+            # ── 4C structural-dynamics mode-shape identifiers
+            "mode_shape", "eigenfrequency",
+            "omega_1", "omega_2", "rayleigh_damping",
+            # ── 4C particle PD bond / neighbor diagnostics ────
+            "neighbor_count", "bond_count",
+            "PDWaveSpeed", "DeltaConvergence",
         })
     elif backend == "febio":
         code_symbols.update({
