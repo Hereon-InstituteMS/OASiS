@@ -90,21 +90,28 @@ SIGNAL_COVERAGE_MIN = {
                        #                  ngsolve 47.4% -> 55.6%
                        #                  -> 61.5% -> 69.6% over
                        #                  three commits.)
-    "febio":   87.0,   # measured  88.5 (raised 2026-06-02 from
-                       #                  83.0 after febio pass 2c
-                       #                  — added 4 more physics
-                       #                  modules with Signal-tagged
-                       #                  pitfalls: biphasic_fsi (4),
-                       #                  polar_fluid (4), damage
-                       #                  (4), growth_remodeling
-                       #                  (4). FEBio catalog grew
-                       #                  from 12 -> 16 physics,
-                       #                  pitfalls 45 -> 61,
-                       #                  Signal-tagged 38 -> 54.
-                       #                  Cumulative this session:
-                       #                  4 physics / 46.2% Signal
-                       #                  -> 16 physics / 88.5%
-                       #                  Signal.)
+    "febio":   99.0,   # measured 100.0 — FEBio at FULL Signal
+                       #                  coverage (raised
+                       #                  2026-06-02 from 87.0
+                       #                  after pass 2d Signal-
+                       #                  tagged the remaining 7
+                       #                  untagged pitfalls in
+                       #                  linear_elasticity (4: v
+                       #                  not nu, 1-indexed nodes,
+                       #                  MeshDomains v4 required,
+                       #                  LoadData lc=N) and
+                       #                  hyperelasticity (3:
+                       #                  STATIC vs DYNAMIC, step-
+                       #                  size for large strain,
+                       #                  line search for
+                       #                  convergence). FEBio:
+                       #                  the second backend
+                       #                  after kratos to reach
+                       #                  100% Signal coverage.
+                       #                  Trajectory across this
+                       #                  session: 46.2% -> 75.9%
+                       #                  -> 84.4% -> 88.5% ->
+                       #                  100.0%.)
     "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
                        #                 2026-06-02 from 44.0 after
                        #                 pass 3 on fenics:

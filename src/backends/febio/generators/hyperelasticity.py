@@ -87,9 +87,43 @@ KNOWLEDGE = {
                               "k": "bulk modulus"},
         },
         "pitfalls": [
-            "Use 'STATIC' analysis for quasi-static loading",
-            "Large deformations require proper step size control",
-            "Convergence issues: reduce step size or use line search",
+            (
+                "[Input] Use 'STATIC' analysis for quasi-static "
+                "loading. 'DYNAMIC' adds an inertia term that "
+                "couples acceleration to the stress balance and "
+                "produces oscillation at the load-onset step on "
+                "a problem where you only wanted equilibrium. "
+                "Signal: visualizing displacement at step 1 shows "
+                "a velocity-overshoot pattern (peak displacement "
+                "exceeds the target by ~50%) instead of a clean "
+                "load ramp; switching <analysis> to STATIC "
+                "removes the overshoot. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Large deformations require proper "
+                "step-size control. A single load step from zero "
+                "to full deformation rarely converges past ~10% "
+                "nominal strain for neo-Hookean / Mooney-Rivlin "
+                "materials. Use ~10 time_steps with "
+                "step_size = 0.1 to incrementally apply the "
+                "prescribed displacement. Signal: NOX reports "
+                "`DIVERGED_LINE_SEARCH` or `MaxIters` at step 1 "
+                "for stretch ratios > 1.1; subdividing the load "
+                "into 10 substeps converges quadratically per "
+                "substep. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convergence issues: reduce step size "
+                "or enable line search. FEBio's solver has a "
+                "<lstol> tag inside <solver> to enable line "
+                "search with the default LS damping; aggressive "
+                "load steps benefit from <max_ups>10</max_ups> "
+                "to allow BFGS quasi-Newton updates between "
+                "stiffness reassemblies. Signal: NOX residual "
+                "oscillates between two values without "
+                "converging — line search would catch this and "
+                "back off the step. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }

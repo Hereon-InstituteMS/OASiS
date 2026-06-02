@@ -104,10 +104,51 @@ KNOWLEDGE = {
             "Mooney-Rivlin": {"c1": "material constant 1", "c2": "material constant 2"},
         },
         "pitfalls": [
-            "FEBio uses lowercase 'v' for Poisson's ratio (not 'nu')",
-            "Element connectivity is 1-indexed",
-            "MeshDomains section required in v4.0 (links domain to material)",
-            "LoadData section with load_controller needed for prescribed BCs",
+            (
+                "[Input] FEBio uses lowercase 'v' for Poisson's "
+                "ratio (NOT 'nu'). The 'nu' name is convention in "
+                "FEniCSx / deal.II / NGSolve but FEBio's XML schema "
+                "rejects it. Signal: input parser raises "
+                "`unknown material parameter nu in isotropic "
+                "elastic` or `material 1: parameter nu not "
+                "found`; replacing <nu> with <v> resolves the "
+                "error. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Element connectivity is 1-indexed. Node "
+                "id=0 does not exist in FEBio's XML schema; many "
+                "mesh-conversion scripts (PyVista, meshio) "
+                "default to 0-indexing and need an explicit +1 "
+                "offset. Signal: input parser aborts with "
+                "`element references node 0 — node IDs must "
+                "start at 1` at mesh-loading time. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] MeshDomains section is REQUIRED in v4.0 "
+                "(links each domain to a material id). Older "
+                "v3.x .feb files put the mat attribute directly "
+                "on the <Elements> tag; v4.0 requires the "
+                "explicit MeshDomains/SolidDomain mapping. "
+                "Signal: FEBio aborts with `domain Part1 has no "
+                "MeshDomains entry — required for v4.0` or "
+                "silently associates the domain with material "
+                "id=1 (giving the wrong material if there are "
+                "multiple). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] LoadData section with <load_controller> "
+                "is needed for any prescribed BC that uses "
+                "`lc=N` attribute. Forgetting the LoadData block "
+                "while keeping `lc=1` on a BC value silently "
+                "leaves the BC at its initial value (no ramping). "
+                "Signal: prescribed-displacement BC stays at 0 "
+                "throughout the simulation; result shows no "
+                "applied loading even though the input file looks "
+                "correct. Look for the `lc=N` attribute on every "
+                "<value> and confirm each N has a matching "
+                "<load_controller id=N>. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }
