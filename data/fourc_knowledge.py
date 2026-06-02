@@ -127,7 +127,56 @@ FOURC_KNOWLEDGE = {
                 "every_group_read_input_file":  "everyGroupReadInputFile — single input, output gets _group_<N> suffix",
                 "separate_input_files":         "separateInputFiles — N input/output pairs required",
                 "nested_multiscale":            "nestedMultiscale — N input/output pairs required",
+                "diffgroup0":                   "Sets nptype=no_nested_parallelism + diffgroup=0; first of two paired runs whose vectors/matrices/results will be diff'd",
+                "diffgroup1":                   "Sets nptype=no_nested_parallelism + diffgroup=1; second of paired runs. Suffixes other than '0' or '1' rejected by CLI11 ValidationError",
             },
+            "restart_special_values": {
+                "last_possible":  "Sentinel string accepted by --restart; passes -1 internally, meaning 'restart from the last available checkpoint'",
+                "<a>,<b>,<c>":    "Comma-separated per-group restart steps. Only meaningful with --nptype=separateInputFiles (one entry per group)",
+            },
+            "legacy_cli_syntax": {
+                "description": (
+                    "adapt_legacy_cli_arguments rewrites old-style invocations before CLI11 sees them — "
+                    "two compat sets:"),
+                "single_dash_legacy_names":  ["ngroup", "glayout", "nptype"],
+                "nodash_legacy_names":       ["restart", "restartfrom"],
+                "explanation": (
+                    "single_dash: `4C -ngroup 4 ...` rewritten to `4C --ngroup=4 ...`. "
+                    "nodash: `4C restart=10 input.yaml output.pre` rewritten to `4C --restart=10 input.yaml output.pre`. "
+                    "Lets old scripts keep working but is invisible in --help."),
+            },
+            "build_options_affecting_runtime": {
+                "FOUR_C_ENABLE_FE_TRAPPING": (
+                    "If defined at compile time, main.cpp calls "
+                    "feenableexcept(FE_INVALID | FE_DIVBYZERO) — the OS "
+                    "kills the process via SIGFPE on the first NaN or "
+                    "division-by-zero (informative message). Useful for "
+                    "debugging numerical drift; will crash production runs "
+                    "that intentionally use NaN sentinels."),
+                "FOUR_C_ENABLE_CORE_DUMP": (
+                    "If defined: run() is called WITHOUT a try/catch around "
+                    "Core::Exception, so any throw triggers a core dump "
+                    "(for post-mortem in gdb). If NOT defined (default): "
+                    "Core::Exception is caught, stack trace printed via "
+                    "err.what_with_stacktrace(), and MPI_Abort(MPI_COMM_WORLD, "
+                    "EXIT_FAILURE) is called."),
+            },
+            "additional_io_input_keys": {
+                "WRITE_TIMINGS": (
+                    "bool — when true, run() writes "
+                    "`<output_file_identifier>-timings.yaml` via export_timings() "
+                    "after the simulation completes. Read from io_params."),
+            },
+            "memory_high_water_mark_summary": (
+                "After run() completes, main calls get_memory_high_water_mark(comm) "
+                "which reads /proc/self/status for VmHWM, MPI-gathers, and prints "
+                "'Memory High Water Mark Summary: MinOverProcs [PID] / MeanOverProcs / "
+                "MaxOverProcs [PID] / SumOverProcs' in GB. LINUX-ONLY — guarded by "
+                "#if defined(__linux__); macOS/Windows runs print 'Memory High Water "
+                "Mark summary not available on this operating system.' instead. "
+                "Failure to open /proc/self/status (e.g. namespace restrictions in "
+                "containers) prints a friendlier 'status file could not be opened "
+                "on every proc.' rather than failing — does NOT abort the run."),
             "io_input_keys": {
                 # YAML/dat keys read from the input file's I/O block by setup_parallel_output
                 "WRITE_TO_SCREEN":     "bool — stream Core::IO::cout to stdout",
