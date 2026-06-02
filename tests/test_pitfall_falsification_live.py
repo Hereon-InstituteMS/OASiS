@@ -606,6 +606,66 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"got: {[str(w.message) for w in dep_new]!r}")
         self.assertEqual(r_new.shape, (ib_p1.N,))
 
+    def test_kratos_cablenet_empirical_spring_source_invariants(
+            self) -> None:
+        """kratos::cable_net [Input]+[Numerical]: confirm the
+        upstream CableNetApplication source still implements
+        EmpiricalSpringElement3D2N with (a) highest-degree-first
+        polynomial evaluation (poly[i] * disp^(size-1-i)),
+        (b) size-<2 rejection in Check(), (c) unconditional
+        lumped-mass matrix (no consistent-mass branch),
+        (d) mandatory DENSITY + CROSS_AREA in Check(). All four
+        claims in the cable_net pitfalls block are grounded in
+        these exact source lines; if upstream rewrites any of
+        them, this probe fails and the pitfall needs revisit.
+        (File walk empirical_spring.cpp 2026-06-03.)"""
+        from pathlib import Path
+        src = Path(__file__).resolve().parent.parent / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/custom_elements/"
+            "empirical_spring.cpp")
+        if not src.exists():
+            self.skipTest(
+                "Kratos CableNet upstream source not cloned at "
+                f"{src}; run `ensure_source(backend='kratos')` "
+                "first.")
+        body = src.read_text()
+        # (a) highest-degree-first polynomial loop
+        self.assertIn(
+            "std::pow(current_disp,rPolynomial.size()-1-i)",
+            body,
+            "EmpiricalSpringElement3D2N::EvaluatePolynomial loop "
+            "no longer follows highest-degree-first convention "
+            "— pitfall about poly[0]=highest-degree needs revisit.")
+        # (b) size < 2 rejected in Check()
+        self.assertIn(
+            "SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL]"
+            ".size()<2", body,
+            "Check() no longer rejects size<2 polynomials.")
+        # (c) Mass matrix unconditionally lumped
+        # (CalculateMassMatrix dispatches to CalculateLumpedMassVector)
+        idx = body.find("void EmpiricalSpringElement3D2N::"
+                        "CalculateMassMatrix")
+        self.assertGreaterEqual(idx, 0)
+        mass_fn = body[idx:idx + 1500]
+        self.assertIn("CalculateLumpedMassVector", mass_fn,
+                      "CalculateMassMatrix no longer dispatches "
+                      "to LumpedMassVector — consistent-mass "
+                      "branch may now exist.")
+        # No USE_CONSISTENT_MASS_MATRIX gate in the function body
+        self.assertNotIn(
+            "USE_CONSISTENT_MASS_MATRIX", mass_fn,
+            "CalculateMassMatrix now references "
+            "USE_CONSISTENT_MASS_MATRIX — the 'always-lumped' "
+            "pitfall needs revisit.")
+        # (d) Check() requires DENSITY + CROSS_AREA
+        self.assertIn(
+            "DENSITY not provided for this element", body,
+            "Check() no longer KRATOS_ERRORs on missing DENSITY.")
+        self.assertIn(
+            "CROSS_AREA not provided for this element", body,
+            "Check() no longer KRATOS_ERRORs on missing CROSS_AREA.")
+
     @_skip_no_skfem
     def test_skfem_utils_init_bc_rejects_both_I_and_D(self) -> None:
         """skfem::_general.linear_system_utils [API]:
