@@ -237,17 +237,21 @@ class KratosBackend(SolverBackend):
         # name resolves.
         if physics == "auxiliary_overview":
             physics = "_auxiliary_overview"
-        # Try deep knowledge first
-        try:
-            import sys
-            data_dir = str(Path(__file__).resolve().parents[3] / "data")
-            if data_dir not in sys.path:
-                sys.path.insert(0, data_dir)
-            from kratos_knowledge import KRATOS_KNOWLEDGE as deep_knowledge
-            if physics in deep_knowledge:
-                return deep_knowledge[physics]
-        except ImportError:
-            pass
+        # Source-of-truth (audit 2026-06-02):
+        # The kratos catalog has exactly ONE per-physics
+        # source: backends.kratos.generators.KNOWLEDGE. A
+        # previous version of this method tried
+        # `from kratos_knowledge import KRATOS_KNOWLEDGE` —
+        # but data/kratos_knowledge.py exports per-application
+        # constants (KRATOS_APPLICATIONS, STRUCTURAL_MECHANICS,
+        # FLUID_DYNAMICS, FSI, ...) and NOT a unified
+        # `KRATOS_KNOWLEDGE` dict, so the import always raised
+        # ImportError and the lookup was silent dead code.
+        # Removed in 2026-06-02 audit; if cross-application
+        # catalog access is needed in future, plumb it through
+        # explicitly (e.g. a knowledge('kratos_application',
+        # 'StructuralMechanicsApplication') surface) rather
+        # than re-introducing a phantom flat-dict import.
         return KNOWLEDGE.get(physics, {})
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
