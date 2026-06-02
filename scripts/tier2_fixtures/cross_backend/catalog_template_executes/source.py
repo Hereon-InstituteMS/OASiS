@@ -354,6 +354,30 @@ def main() -> int:
         ("fenics", "linear_elasticity", "thick_beam"),
         ("fenics", "linear_elasticity", "plate_hole"),
         ("fenics", "navier_stokes", "channel_cylinder"),
+        # Batch-18 (audit 2026-06-02): 16 Kratos application-
+        # stub templates that were advertised but never
+        # exercised. Each emits a minimal "import the kratos
+        # application + register it + Deregister" script and
+        # exits rc=0. Same shape as batch-16: lock in the
+        # availability-probe behaviour so any regression in
+        # the underlying kratos application binding trips this
+        # gate. Verified 2026-06-02: all 16 rc=0, no Traceback.
+        ("kratos", "iga", "2d"),
+        ("kratos", "rom", "2d"),
+        ("kratos", "chimera", "2d"),
+        ("kratos", "poromechanics", "2d"),
+        ("kratos", "optimization", "2d"),
+        ("kratos", "topology_optimization", "2d"),
+        ("kratos", "cosimulation", "2d"),
+        ("kratos", "constitutive_laws", "2d"),
+        ("kratos", "compressible_potential", "2d"),
+        ("kratos", "wind_engineering", "2d"),
+        ("kratos", "fluid_biomedical", "2d"),
+        ("kratos", "thermal_dem", "2d"),
+        ("kratos", "fem_to_dem", "2d"),
+        ("kratos", "swimming_dem", "2d"),
+        ("kratos", "dem_structures_coupling", "2d"),
+        ("kratos", "pfem_fluid", "2d"),
     ]
     fail = []
     executed = 0
