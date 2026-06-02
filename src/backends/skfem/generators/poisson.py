@@ -237,6 +237,22 @@ KNOWLEDGE = {
             "type(ElementTriP1()).__bases__ shows the Element "
             "ABC. (Catalog claim inherited; not separately "
             "Tier-2 falsified this iteration.)",
+            "[API] skfem.quadrature.get_quadrature has a hard "
+            "norder ceiling per reference domain: TRIANGLE order "
+            "<= 15, TETRAHEDRON order <= 5. Tabulated rules "
+            "stop there; orders above raise "
+            "NotImplementedError. Triangle's message has a "
+            "TYPO — 'The requested order of quadratureis not "
+            "implemented!' (literal 'quadratureis' with missing "
+            "space) — tet's message is 'The requested order of "
+            "quadrature is not available.' Real consequence: "
+            "high-order tet elements that need quadrature 2k "
+            "(e.g. P4 tet would want order ~6 for K matrix) "
+            "fail to assemble. Signal: in skfem 12.0.1, "
+            "get_quadrature_tri(16) raises with the typo'd "
+            "message; get_quadrature_tet(6) raises with the "
+            "correct-spacing message. (File walk "
+            "skfem/quadrature.py 2026-06-02; verified live.)",
         ],
     },
 }

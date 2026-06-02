@@ -425,6 +425,39 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"Got {ib.Nbfun}.")
 
     @_skip_no_skfem
+    def test_skfem_quadrature_norder_ceiling_with_typo_message(
+            self) -> None:
+        """skfem::poisson [API]: get_quadrature_tri caps at order 15
+        (raises NotImplementedError with TYPO 'quadratureis' missing
+        space) and get_quadrature_tet caps at order 5 (proper
+        spacing). High-order tet elements requiring quadrature >5 fail
+        to assemble. (File walk skfem/quadrature.py 2026-06-02.)"""
+        from skfem.quadrature import (get_quadrature_tri,
+                                       get_quadrature_tet)
+        # Order 15 OK for tri
+        X15, _ = get_quadrature_tri(15)
+        self.assertGreater(X15.shape[1], 0)
+        # Order 16 raises with TYPO message
+        with self.assertRaises(NotImplementedError) as cm_tri:
+            get_quadrature_tri(16)
+        self.assertIn(
+            "quadratureis not implemented",
+            str(cm_tri.exception),
+            f"Expected TYPO 'quadratureis' (no space) in tri error; "
+            f"got {str(cm_tri.exception)!r}.")
+        # Order 5 OK for tet
+        Xt5, _ = get_quadrature_tet(5)
+        self.assertGreater(Xt5.shape[1], 0)
+        # Order 6 raises (proper spacing)
+        with self.assertRaises(NotImplementedError) as cm_tet:
+            get_quadrature_tet(6)
+        self.assertIn(
+            "quadrature is not available",
+            str(cm_tet.exception),
+            f"Expected proper-spacing tet error; "
+            f"got {str(cm_tet.exception)!r}.")
+
+    @_skip_no_skfem
     def test_skfem_helpers_det_inv_silent_zero_for_dim_ne_2_3(
             self) -> None:
         """skfem::hyperelasticity [API]: skfem.helpers.det() and inv()
