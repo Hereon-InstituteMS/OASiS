@@ -153,5 +153,40 @@ class TestKnowledgeAdversarial(unittest.TestCase):
                       f"Got: {result[:200]}")
 
 
+class TestIntrospectionToolsSmoke(unittest.TestCase):
+    """Smoke gates for the introspection tools — confirm they
+    return a non-empty markdown response and don't crash on
+    default arguments."""
+
+    def test_rediscover_backends_default(self) -> None:
+        rb = _get_tool("rediscover_backends")
+        result = rb(confirm=False)
+        # The tool must enumerate backends found / missing and
+        # list at least one of each. Confirms the discovery
+        # probe path doesn't silently return empty.
+        self.assertIn("Backend Discovery", result,
+                      "rediscover_backends must surface the standard "
+                      "'Backend Discovery' header.")
+        self.assertTrue(
+            "Available" in result or "Not found" in result,
+            "rediscover_backends must list at least the "
+            "Available / Not found sections.")
+
+    def test_reload_catalog_default(self) -> None:
+        rl = _get_tool("reload_catalog")
+        result = rl()
+        self.assertIn("reload_catalog", result,
+                      "reload_catalog must echo its own name in "
+                      "the summary line.")
+        self.assertIn("modules reloaded", result,
+                      "reload_catalog summary must report a "
+                      "'modules reloaded' count.")
+        # Reloads should not fail for a healthy tree.
+        self.assertIn("0 failed", result,
+                      "reload_catalog reported failures — module "
+                      "import is broken somewhere. "
+                      f"Got: {result[:300]}")
+
+
 if __name__ == "__main__":
     unittest.main()
