@@ -341,6 +341,19 @@ def main() -> int:
         ("kratos", "droplet_dynamics", "2d"),
         ("kratos", "free_surface", "2d"),
         ("kratos", "fluid_hydraulics", "2d"),
+        # Batch-17 (audit 2026-06-02): coverage-gap audit
+        # found 6 fenics template variants advertised by
+        # supported_physics().template_variants but never
+        # exercised here. Each generates AND runs cleanly
+        # rc=0 under the ofa-fenicsx conda env (verified
+        # 2026-06-02). Lock them in so a future regression in
+        # the underlying generator trips this gate.
+        ("fenics", "poisson", "rectangle"),
+        ("fenics", "poisson", "l_domain"),
+        ("fenics", "heat", "rectangle"),
+        ("fenics", "linear_elasticity", "thick_beam"),
+        ("fenics", "linear_elasticity", "plate_hole"),
+        ("fenics", "navier_stokes", "channel_cylinder"),
     ]
     fail = []
     executed = 0

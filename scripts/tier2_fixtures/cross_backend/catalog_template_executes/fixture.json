@@ -101,7 +101,13 @@
     "kratos::droplet_dynamics::2d_rc=0",
     "kratos::free_surface::2d_rc=0",
     "kratos::fluid_hydraulics::2d_rc=0",
-    "total_executed=94",
+    "fenics::poisson::rectangle_rc=0",
+    "fenics::poisson::l_domain_rc=0",
+    "fenics::heat::rectangle_rc=0",
+    "fenics::linear_elasticity::thick_beam_rc=0",
+    "fenics::linear_elasticity::plate_hole_rc=0",
+    "fenics::navier_stokes::channel_cylinder_rc=0",
+    "total_executed=100",
     "failures=0"
   ],
   "forbid_in_output": [
