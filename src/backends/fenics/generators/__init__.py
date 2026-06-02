@@ -228,4 +228,50 @@ GENERAL_KNOWLEDGE = {
         "Mixed elements: arbitrary combinations via mixed_element()",
         "Checkpointing via adios4dolfinx",
     ],
+    "mixed_domain_assembly": {
+        "description": (
+            "Co-dimension-0 mixed assembly: assemble bilinear forms "
+            "where trial and test spaces live on DIFFERENT meshes (a "
+            "parent mesh and a submesh of a region of interest). "
+            "Source: cpp/demo/codim_0_assembly/main.cpp + "
+            "mixed_codim0.py."
+        ),
+        "workflow": [
+            "1. Mark cells with a MeshTags scalar (e.g. 2 for the "
+            "subregion, 1 elsewhere).",
+            "2. submesh, emap, v_map, g_map = mesh.create_submesh(parent, "
+            "tdim, subcells) — RETURNS 4-TUPLE, not just submesh; the "
+            "EntityMap `emap` is REQUIRED for cross-mesh form assembly.",
+            "3. V = parent FunctionSpace, W = submesh FunctionSpace.",
+            "4. integration_entities = fem.compute_integration_domains("
+            "IntegralType.cell, parent.topology, marker.find(2)).",
+            "5. subdomain_data = {IntegralType.cell: [(<marker_id>, "
+            "integration_entities)]} — marker_id (e.g. 3) chosen at "
+            "UFL form-definition time as dx(3); it's the form-side tag, "
+            "NOT the MeshTags value (2 above).",
+            "6. fem.create_form(form, [V, W], coefficients={}, "
+            "constants={}, subdomains=subdomain_data, "
+            "entity_maps=[emap], parent_mesh=V.mesh) — the "
+            "extended-signature variant; vanilla create_form lacks "
+            "entity_maps + parent_mesh args.",
+        ],
+        "Signal": (
+            "[API] Two distinct tag-id namespaces in mixed-domain "
+            "assembly that frequently confuse users: (a) the MeshTags "
+            "value (e.g. 2 for the subregion in this demo) is what "
+            "marks cells in the PYTHON topology, while (b) the dx(N) "
+            "marker on the UFL FORM (e.g. 3 in the demo's "
+            "subdomain_data) is what the form expects at assembly. The "
+            "subdomain_data dict bridges them by mapping form-tag -> "
+            "(MeshTags-selected entity list). Confusing the two yields "
+            "either empty assembly (no marker match) or an unrelated "
+            "subdomain getting integrated. Use distinct numeric values "
+            "(e.g. 2 in MeshTags, 3 in dx) until you've validated the "
+            "mapping. Plus: dolfinx demos use "
+            "mesh.create_cell_partitioner(GhostMode.shared_facet, 2) "
+            "for these mixed assemblies (extra overlap=2 needed for "
+            "cross-mesh entity matching). (File walk "
+            "cpp/demo/codim_0_assembly/main.cpp 2026-06-03.)"
+        ),
+    },
 }
