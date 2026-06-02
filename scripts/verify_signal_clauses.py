@@ -64,7 +64,8 @@ OBSERVABLE_VOCAB = (
     "checkerboard", "pattern", "amplitude", "value",
     "grows", "shrinks", "exceeds", "below", "above",
     "larger", "smaller", "slower", "faster",
-    "wall-time", "wall time", "iteration", "iterations",
+    "wall-time", "wall time", "wall-clock", "wall clock",
+    "iteration", "iterations",
     "reach", "returns",
     # ── Round-5 vocabulary extension (2026-06-02): observable
     #    verbs widely used across catalog Signal: prose. Each
@@ -76,7 +77,8 @@ OBSERVABLE_VOCAB = (
     "silent",                       # silently does nothing / allocated
     "fail",                         # fails to converge / fails with
     "factor", "magnitude",          # by factor of / orders of magnitude
-    "lock",                         # volumetric / shear locking
+    "locking", "locks",             # volumetric/shear locking; X locks
+                                    # ('lock' alone substring-matches 'block')
     "jump",                         # field jumps at boundary
     "decay",                        # no decay observed
     "leak",                         # numerical leak / energy leak

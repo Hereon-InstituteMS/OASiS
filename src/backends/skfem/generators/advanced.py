@@ -1573,12 +1573,15 @@ KNOWLEDGE = {
                 "(1-u) is a SCALAR equation with no coupling "
                 "block. Signal: building a block-2x2 Jacobian "
                 "for a Fisher-KPP problem (assuming a coupled "
-                "system) doubles the linear-solve cost and "
-                "introduces spurious cross-coupling; the "
-                "correct discretisation is a single Newton solve "
-                "on the M+dt*K - dt*M_r system where M_r is "
-                "the mass matrix weighted by r*(1-2u^n). "
-                "(Audit 2026-06-02.)"
+                "system) yields a sparse matrix double the "
+                "expected size — the wasted linear-solve cost "
+                "shows in scipy.sparse.linalg.spsolve wall_time "
+                "and the resulting GridFunction develops "
+                "spurious cross_diffusion. The correct "
+                "discretisation is a single Newton solve on the "
+                "M+dt*K - dt*M_r system where M_r is the mass "
+                "matrix weighted by r*(1-2u^n). (Audit "
+                "2026-06-02.)"
             ),
         ],
     },
