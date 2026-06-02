@@ -606,6 +606,51 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"got: {[str(w.message) for w in dep_new]!r}")
         self.assertEqual(r_new.shape, (ib_p1.N,))
 
+    @_skip_no_skfem
+    def test_skfem_utils_init_bc_rejects_both_I_and_D(self) -> None:
+        """skfem::_general.linear_system_utils [API]:
+        enforce/condense/penalize use _init_bc which requires
+        exactly ONE of I or D — passing both raises Exception
+        'Give only I or only D!'; passing neither raises
+        Exception 'Either I or D must be given!'. Also asserts
+        solver_iter_pcg(**kw) is identity-equivalent to
+        solver_iter_krylov(**kw) (no PCG specialization). (File
+        walk skfem/utils.py 2026-06-03.)"""
+        import inspect
+        import numpy as np
+        import scipy.sparse as sp
+        from skfem.utils import (
+            enforce, condense, penalize,
+            solver_iter_pcg, solver_iter_krylov,
+        )
+        A = sp.eye(5).tocsr()
+        b = np.ones(5)
+        I_arr = np.array([0, 1], dtype=np.int32)
+        D_arr = np.array([2, 3], dtype=np.int32)
+        # Both → reject
+        for fn in (enforce, condense, penalize):
+            with self.assertRaises(Exception) as cm:
+                fn(A, b, I=I_arr, D=D_arr)
+            self.assertIn(
+                "Give only I or only D",
+                str(cm.exception),
+                f"{fn.__name__} should reject both I+D with "
+                f"that exact wording; got {cm.exception!r}")
+            # Neither → reject
+            with self.assertRaises(Exception) as cm2:
+                fn(A, b)
+            self.assertIn(
+                "Either I or D must be given",
+                str(cm2.exception),
+                f"{fn.__name__} should reject neither-given with "
+                f"that wording; got {cm2.exception!r}")
+        # solver_iter_pcg is a forwarder
+        src = inspect.getsource(solver_iter_pcg)
+        self.assertIn(
+            "solver_iter_krylov(**kwargs)", src,
+            "solver_iter_pcg should be a one-line forwarder to "
+            "solver_iter_krylov; got body:\n" + src)
+
     @_skip_no_dolfinx
     def test_fenics_dolfinx_connectivity_lazy_vs_explicit(self) -> None:
         """fenics::poisson #0 nuance: locate_entities_boundary +

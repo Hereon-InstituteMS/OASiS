@@ -73,6 +73,58 @@ KNOWLEDGE["_general"] = {
         "Mortar methods for domain decomposition (MortarFacetBasis)",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
+    "linear_system_utils": {
+        "description": (
+            "skfem.utils linear-system entry points (enforce / "
+            "condense / penalize / solve / mpc / "
+            "solver_iter_krylov / solver_iter_pcg). Source: "
+            "skfem/utils.py."
+        ),
+        "boundary_dof_input_modes": (
+            "enforce/condense/penalize all use _init_bc which "
+            "requires EXACTLY ONE of I (free DOFs) or D "
+            "(Dirichlet DOFs). Passing BOTH raises "
+            "Exception('Give only I or only D!'); passing NEITHER "
+            "raises Exception('Either I or D must be given!'). "
+            "The unspecified set is derived as the setdiff against "
+            "np.arange(A.shape[0])."),
+        "solver_iter_pcg_is_an_alias": (
+            "solver_iter_pcg(**kwargs) is a one-line forwarder to "
+            "solver_iter_krylov(**kwargs) with NO specialization "
+            "beyond the docstring claim ('Conjugate gradient "
+            "solver, specialized from solver_iter_krylov') — the "
+            "default krylov of solver_iter_krylov is already "
+            "scipy.sparse.linalg.cg, so the two are functionally "
+            "identical."),
+        "auto_injected_diagonal_preconditioner": (
+            "solver_iter_krylov(...) auto-injects M=build_pc_diag(A) "
+            "iff the literal string 'M' is NOT in kwargs at call "
+            "time. Calling solver_iter_krylov(M=None) suppresses "
+            "the injection and passes M=None straight to scipy "
+            "(== no preconditioner). Convergence diagnostics that "
+            "miss this misattribute speedups to the iterative "
+            "method when the diagonal PC is actually doing the "
+            "work."),
+        "Signal": (
+            "[API] Three sharp edges in skfem.utils that bite "
+            "users on first contact: "
+            "(1) Passing both I=... and D=... to enforce / "
+            "condense / penalize raises Exception('Give only I "
+            "or only D!') — the two are mutually exclusive "
+            "complements (setdiff against arange(A.shape[0])), "
+            "not intersectable filter sets. "
+            "(2) solver_iter_pcg is a synonym for "
+            "solver_iter_krylov, NOT a specialized PCG — both "
+            "default to scipy.sparse.linalg.cg with auto-injected "
+            "diagonal preconditioner. "
+            "(3) The diagonal-PC auto-injection in "
+            "solver_iter_krylov is gated on `'M' not in kwargs` "
+            "— solver_iter_krylov(M=None) ≠ solver_iter_krylov(); "
+            "the former gets no preconditioner (M=None forwarded "
+            "to scipy), the latter gets a Jacobi PC silently. "
+            "(File walk skfem/utils.py 2026-06-03.)"
+        ),
+    },
     "mortar_workflow": {
         "description": (
             "Nonmatching-mesh (mortar / supermesh) workflow via "
