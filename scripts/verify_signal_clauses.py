@@ -352,6 +352,70 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "linfty_norm", "l2_norm",
             # Common error classes / attribute names
             "ValueError", "TypeError", "shape", "ndof", "interpolate",
+            # ── skfem.models / canonical helper functions ──────
+            "lame_parameters", "skfem.helpers",
+            "skfem.models.elasticity",
+            "skfem.models.helmholtz",
+            "skfem.models.stokes",
+            "skfem.models.heat",
+            "linear_elasticity_form",
+            "mass", "laplace", "stiffness",
+            "M_assemble", "K_assemble",
+            # ── scipy.sparse.linalg eigsh / arpack identifiers
+            "eigsh", "eigs", "ArpackError",
+            "arpack", "shift_invert", "LM", "SM",
+            "spsolve_triangular", "splu",
+            # ── numpy / Python helpers in catalog prose ─────
+            "math", "math_isclose", "isclose", "float64",
+            "np_isclose", "np_allclose",
+            "dot", "abs_max", "norm",
+            # ── skfem boundary/dof accessors used in catalog
+            "ib_u", "ib_p", "ib", "DoF", "DoFs",
+            "n_u_dof", "n_p_dof", "u_dof", "p_dof",
+            "Basis_N", "Basis_get_dofs",
+            "DofsView", "boundary_dofs_view",
+            # ── Centered/upwind DG keywords ─────────────────
+            "centered_flux", "upwind", "downwind",
+            "jump", "u_other", "other",
+            "interior_facet", "exterior_facet",
+            # ── PDE-specific observables ────────────────────
+            "T_D", "T_fluid", "T_solid", "T_room",
+            "T_ref", "T_init", "u_ss", "u_steady",
+            "p_skfem", "p_ngsolve",
+            "monolithic_Krylov", "Schur_complement",
+            "GMRES", "BiCGStab", "MINRES",
+            "k_eff", "k_thermal",
+            # ── nonlinear / Newton fallback prose ──────────
+            "NewtonSolver", "newton",
+            "backtracking", "line_search",
+            "alpha", "tau", "rhs", "lhs",
+            # ── Phase-field / damage / fracture ─────────────
+            "phase_field", "Allen_Cahn", "Cahn_Hilliard",
+            "damage_d", "Griffith",
+            # ── Cross-backend identifiers used in skfem prose
+            "FEniCSx", "dolfinx", "ngsolve_compare",
+            # ── Catalog lowercase tokens that map to
+            #    real skfem channels ──────────────────────────
+            "solution", "boundary", "interface",
+            "temperature", "pressure", "velocity",
+            "displacement", "stress", "strain",
+            "sigma", "epsilon",
+            # ── scipy.sparse.linalg tokenised components ────
+            "scipy", "sparse", "linalg",
+            "cg", "gmres", "lu",
+            # ── Numerical-analysis observables in skfem prose
+            "lambda_min", "lambda_max",
+            "phase_drift", "phase_error",
+            "k_c", "k_squared", "gamma",
+            # ── Reaction-diffusion benchmark names ──────────
+            "Turing", "Schnakenberg", "Gray_Scott",
+            "Brusselator", "Lotka_Volterra",
+            "homogeneous_steady_state",
+            "cross_diffusion", "pattern_formation",
+            "d_u", "d_v",
+            # ── DG / time-stepping observables ──────────────
+            "t_transient", "u_transient",
+            "sharp_transient", "smeared",
         })
     elif backend == "kratos":
         code_symbols.update({
