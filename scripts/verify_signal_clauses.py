@@ -60,12 +60,69 @@ OBSERVABLE_VOCAB = (
     "report", "error", "exit", "raise", "warn", "stall",
     "converge", "diverge", "oscillat", "break", "crash",
     "abort", "missing", "undefined", "differs", "drop", "drift",
-    "appears", "shows", "matches", "wrong", "zero", "nan",
+    "appear", "shows", "matches", "wrong", "zero", "nan",
     "checkerboard", "pattern", "amplitude", "value",
     "grows", "shrinks", "exceeds", "below", "above",
     "larger", "smaller", "slower", "faster",
     "wall-time", "wall time", "iteration", "iterations",
-    "reaches", "returns",
+    "reach", "returns",
+    # ── Round-5 vocabulary extension (2026-06-02): observable
+    #    verbs widely used across catalog Signal: prose. Each
+    #    is a legitimate symptom token a post-execution critic
+    #    could grep for in solver output (see audit-pass-15
+    #    commit message for the per-token rationale). ────────
+    "produc", "give", "yield",      # X produces / gives / yields Y
+    "disagree",                     # disagrees with reference
+    "silent",                       # silently does nothing / allocated
+    "fail",                         # fails to converge / fails with
+    "factor", "magnitude",          # by factor of / orders of magnitude
+    "lock",                         # volumetric / shear locking
+    "jump",                         # field jumps at boundary
+    "decay",                        # no decay observed
+    "leak",                         # numerical leak / energy leak
+    "spike",                        # contact-pressure spikes
+    "reset",                        # resets to default
+    "force",                        # forces re-compile / forces zero
+    "reduce",                       # reduces stiffness
+    # ── Round-6 vocabulary extension (2026-06-02) ──────────
+    "iterat",                       # iterates / iterating / iteration
+    "stagnat",                      # stagnates / stagnating
+    "accept",                       # accepted by / silently accepts
+    "lose",                         # loses solution continuity
+    "explod",                       # explodes at first step
+    "miss",                         # misses contact pairs
+    "deviat",                       # deviates ~30%
+    "satura",                       # damage has saturated
+    "passes",                       # passes through (no contact)
+    "wast",                         # wastes compute
+    "translat",                     # translates as rigid body
+    "smear",                        # smears interface / mass-smearing
+    "identical",                    # looks identical
+    "deplete",                      # depletes mass / energy
+    "tighten", "looser",            # tighten the tolerance
+    "untouched",                    # left untouched
+    # ── Round-7 vocabulary extension (2026-06-02) ──────────
+    "should",                       # should be in [..] range
+    "stops",                        # stops decreasing
+    "negative",                     # gap goes negative
+    "offset",                       # huge additive offset
+    "ignor",                        # ignores cross-diffusion
+    "cannot",                       # cannot capture growth
+    "disable",                      # disables modern hooks
+    "defeat",                       # defeats the coupling
+    "instead",                      # X instead of Y
+    "longer",                       # takes 10-100x longer
+    "stderr", "stdout",             # appears in 4C stderr
+    "free",                         # leaves nodes free
+    "freely",                       # particles move freely
+    "uniformly",                    # uniformly low / uniform
+    "huge",                         # huge additive offset
+    "elastic", "pure_elastic",
+    "approaches",                   # max(D) approaches 0.99
+    "regardless",                   # X stays constant regardless of Y
+    "times out", "timeout",         # MCP stdio times out at 60s
+    "noticeably",                   # noticeably slow
+    " == ",                         # API claim: Nbfun == 6
 )
 
 
