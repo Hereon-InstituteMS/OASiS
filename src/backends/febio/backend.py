@@ -145,6 +145,41 @@ class FebioBackend(SolverBackend):
                 element_types=["hex8", "tet4"],
                 template_variants=["3d_pushdown"],
             ),
+            PhysicsCapability(
+                name="viscoelasticity",
+                description=("Prony-series viscoelastic stress relaxation / "
+                             "creep response (cartilage, ligament, tendon)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_stress_relax"],
+            ),
+            PhysicsCapability(
+                name="plasticity",
+                description=("Rate-independent plasticity (J2 / Hill / "
+                             "user-curve hardening) — cortical bone, "
+                             "metal implants, surgical tools"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_uniaxial"],
+            ),
+            PhysicsCapability(
+                name="fiber_reinforced",
+                description=("Anisotropic fiber-reinforced hyperelasticity "
+                             "(HGO, transversely isotropic) — arterial "
+                             "wall, ligament, tendon, myocardium"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_hgo"],
+            ),
+            PhysicsCapability(
+                name="active_contraction",
+                description=("Active contractile fibers on a passive "
+                             "elastic base (cardiac chamber, skeletal "
+                             "muscle, peristalsis)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_fiber"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
