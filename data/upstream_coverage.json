@@ -134,6 +134,7 @@
       "hyperelasticity",
       "linear_elasticity",
       "magnetostatics",
+      "matrix_free_poisson",
       "maxwell",
       "mixed_poisson",
       "multiphase",
@@ -151,7 +152,6 @@
       "axisymmetric",
       "hdg",
       "lagrange_variants",
-      "matrix_free_poisson",
       "pml",
       "scattering",
       "static_condensation",
@@ -176,7 +176,7 @@
       "thermal_structural",
       "time_dependent_heat"
     ],
-    "coverage_pct": 47.1
+    "coverage_pct": 52.9
   },
   "dealii": {
     "demo_dirs": [
@@ -314,10 +314,339 @@
   },
   "skfem": {
     "demo_dirs": [],
-    "found": [],
+    "found": [
+      {
+        "file": "curated:ex01",
+        "stem": "ex01",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex02",
+        "stem": "ex02",
+        "topic": "biharmonic",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex03",
+        "stem": "ex03",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex04",
+        "stem": "ex04",
+        "topic": "contact",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex05",
+        "stem": "ex05",
+        "topic": "biharmonic",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex06",
+        "stem": "ex06",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex07",
+        "stem": "ex07",
+        "topic": "dg_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex08",
+        "stem": "ex08",
+        "topic": "hyperelasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex09",
+        "stem": "ex09",
+        "topic": "wave",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex10",
+        "stem": "ex10",
+        "topic": "nonlinear",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex11",
+        "stem": "ex11",
+        "topic": "adaptive_poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex12",
+        "stem": "ex12",
+        "topic": "post_processing",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex13",
+        "stem": "ex13",
+        "topic": "mixed_poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex14",
+        "stem": "ex14",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex15",
+        "stem": "ex15",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex16",
+        "stem": "ex16",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex17",
+        "stem": "ex17",
+        "topic": "point_source",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex18",
+        "stem": "ex18",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex19",
+        "stem": "ex19",
+        "topic": "heat_transient",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex20",
+        "stem": "ex20",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex21",
+        "stem": "ex21",
+        "topic": "eigenvalue",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex22",
+        "stem": "ex22",
+        "topic": "adaptive_poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex23",
+        "stem": "ex23",
+        "topic": "nonlinear",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex24",
+        "stem": "ex24",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex25",
+        "stem": "ex25",
+        "topic": "convection_diffusion",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex26",
+        "stem": "ex26",
+        "topic": "restriction_matrix",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex27",
+        "stem": "ex27",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex28",
+        "stem": "ex28",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex29",
+        "stem": "ex29",
+        "topic": "hydraulic_resistance",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex30",
+        "stem": "ex30",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex31",
+        "stem": "ex31",
+        "topic": "curved_elements",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex32",
+        "stem": "ex32",
+        "topic": "preconditioning",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex33",
+        "stem": "ex33",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex34",
+        "stem": "ex34",
+        "topic": "biharmonic",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex35",
+        "stem": "ex35",
+        "topic": "transmission_line",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex36",
+        "stem": "ex36",
+        "topic": "wave",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex37",
+        "stem": "ex37",
+        "topic": "mixed_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex38",
+        "stem": "ex38",
+        "topic": "point_source",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex39",
+        "stem": "ex39",
+        "topic": "schrodinger",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex40",
+        "stem": "ex40",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex41",
+        "stem": "ex41",
+        "topic": "biharmonic",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex42",
+        "stem": "ex42",
+        "topic": "periodic_mesh",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex43",
+        "stem": "ex43",
+        "topic": "hyperelasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex44",
+        "stem": "ex44",
+        "topic": "wave",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex45",
+        "stem": "ex45",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex46",
+        "stem": "ex46",
+        "topic": "hyperelasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex47",
+        "stem": "ex47",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex48",
+        "stem": "ex48",
+        "topic": "p2_meshes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex49",
+        "stem": "ex49",
+        "topic": "biharmonic",
+        "source": "curated"
+      },
+      {
+        "file": "curated:ex50",
+        "stem": "ex50",
+        "topic": "operator_splitting",
+        "source": "curated"
+      }
+    ],
     "unmapped": [],
     "skipped": [],
-    "topics_upstream": [],
+    "topics_upstream": [
+      "adaptive_poisson",
+      "biharmonic",
+      "contact",
+      "convection_diffusion",
+      "curved_elements",
+      "dg_methods",
+      "eigenvalue",
+      "heat_transient",
+      "hydraulic_resistance",
+      "hyperelasticity",
+      "linear_elasticity",
+      "mixed_methods",
+      "mixed_poisson",
+      "navier_stokes",
+      "nonlinear",
+      "operator_splitting",
+      "p2_meshes",
+      "periodic_mesh",
+      "point_source",
+      "poisson",
+      "post_processing",
+      "preconditioning",
+      "restriction_matrix",
+      "schrodinger",
+      "stokes",
+      "transmission_line",
+      "wave"
+    ],
     "catalog_topics": [
       "adaptive_poisson",
       "biharmonic",
@@ -338,28 +667,28 @@
       "time_dependent",
       "wave"
     ],
-    "gap_upstream_not_in_catalog": [],
-    "extra_in_catalog_not_upstream": [
-      "adaptive_poisson",
-      "biharmonic",
-      "convection_diffusion",
-      "dg_methods",
-      "eigenvalue",
-      "heat",
-      "heat_transient",
-      "helmholtz",
-      "hyperelasticity",
-      "linear_elasticity",
-      "mixed_poisson",
-      "navier_stokes",
-      "nonlinear",
-      "poisson",
-      "reaction_diffusion",
-      "stokes",
-      "time_dependent",
-      "wave"
+    "gap_upstream_not_in_catalog": [
+      "contact",
+      "curved_elements",
+      "hydraulic_resistance",
+      "mixed_methods",
+      "operator_splitting",
+      "p2_meshes",
+      "periodic_mesh",
+      "point_source",
+      "post_processing",
+      "preconditioning",
+      "restriction_matrix",
+      "schrodinger",
+      "transmission_line"
     ],
-    "coverage_pct": null
+    "extra_in_catalog_not_upstream": [
+      "heat",
+      "helmholtz",
+      "reaction_diffusion",
+      "time_dependent"
+    ],
+    "coverage_pct": 51.9
   },
   "kratos": {
     "demo_dirs": [],

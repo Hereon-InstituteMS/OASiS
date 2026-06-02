@@ -141,6 +141,83 @@ _NON_PHYSICS_STEMS: set[str] = {
 }
 
 
+# ─────────────────────────────────────────────────────────────────
+# CURATED UPSTREAM INVENTORIES
+#
+# Some backends ship their demos/examples in their SOURCE tree, not
+# in the binary install. For those, hand-curate the upstream
+# inventory here. Keep these dicts in sync with upstream:
+#
+#   * skfem: https://github.com/kinnala/scikit-fem/tree/master/docs/examples
+#   * dealii: https://www.dealii.org/current/doxygen/deal.II/Tutorial.html
+#   * ngsolve: https://docu.ngsolve.org/latest/i-tutorials/
+#   * kratos: kratos/applications/<App>/README.md
+#   * dune-fem: dune-fem/dune/fem/examples/
+#   * fourc: 4C/tests/input_files/ (no public listing — derive from
+#     local checkout if present)
+#   * febio: FEBio User's Manual modules
+#
+# Each entry maps a stem-like key (e.g. "ex02") to the canonical
+# physics topic it demonstrates. Same TOPIC_MAP semantics apply
+# downstream.
+# ─────────────────────────────────────────────────────────────────
+
+_SKFEM_UPSTREAM: dict[str, str] = {
+    # scikit-fem v12 docs/examples/, sourced from upstream README.
+    # When upstream adds ex51+, append here.
+    "ex01": "poisson",
+    "ex02": "biharmonic",         # Kirchhoff plate via Morley
+    "ex03": "linear_elasticity",  # 3D elasticity
+    "ex04": "contact",            # Linearized contact
+    "ex05": "biharmonic",         # Argyris plate
+    "ex06": "stokes",
+    "ex07": "dg_methods",
+    "ex08": "hyperelasticity",
+    "ex09": "wave",               # 3D wave
+    "ex10": "nonlinear",          # Minimal surface
+    "ex11": "adaptive_poisson",
+    "ex12": "post_processing",    # edge / facet I/O
+    "ex13": "mixed_poisson",
+    "ex14": "poisson",            # inhomogeneous BC
+    "ex15": "poisson",            # 1D smooth solution
+    "ex16": "linear_elasticity",  # VTK output
+    "ex17": "point_source",
+    "ex18": "stokes",             # stabilized
+    "ex19": "heat_transient",
+    "ex20": "stokes",             # creeping flow Taylor-Hood
+    "ex21": "eigenvalue",         # structural eigenvalues
+    "ex22": "adaptive_poisson",   # residual estimator
+    "ex23": "nonlinear",          # Bratu-Gelfand
+    "ex24": "stokes",             # driven cavity
+    "ex25": "convection_diffusion",
+    "ex26": "restriction_matrix",
+    "ex27": "navier_stokes",      # backward-facing step
+    "ex28": "navier_stokes",      # lid-driven cavity penalty
+    "ex29": "hydraulic_resistance",
+    "ex30": "stokes",             # Krylov-Uzawa
+    "ex31": "curved_elements",
+    "ex32": "preconditioning",
+    "ex33": "linear_elasticity",  # 3D sphere with cube hole
+    "ex34": "biharmonic",         # Euler-Bernoulli beam
+    "ex35": "transmission_line",  # characteristic impedance
+    "ex36": "wave",
+    "ex37": "mixed_methods",
+    "ex38": "point_source",
+    "ex39": "schrodinger",
+    "ex40": "stokes",             # Hagen-Poiseuille
+    "ex41": "biharmonic",         # Mindlin-Reissner plate
+    "ex42": "periodic_mesh",
+    "ex43": "hyperelasticity",    # torsion
+    "ex44": "wave",
+    "ex45": "poisson",            # 1D manufactured
+    "ex46": "hyperelasticity",    # 3D incompressible
+    "ex47": "stokes",             # 3D
+    "ex48": "p2_meshes",
+    "ex49": "biharmonic",         # Reissner-Mindlin mixed
+    "ex50": "operator_splitting",
+}
+
+
 def _backend_demo_dirs(backend: str) -> list[Path]:
     """Return all candidate demo/example/tutorial directories for
     the named backend. Empty list = not installed / nothing to scan."""
@@ -227,11 +304,24 @@ def _classify(stem: str) -> str | None:
     return None
 
 
+_CURATED_INVENTORIES: dict[str, dict[str, str]] = {
+    "skfem": _SKFEM_UPSTREAM,
+}
+
+
 def _scan_one(backend: str) -> dict:
     dirs = _backend_demo_dirs(backend)
     found: list[dict] = []
     unmapped: list[dict] = []
     skipped: list[str] = []
+
+    # Merge curated upstream entries if this backend has one. Mark
+    # the source as "curated:" + key so the gap report stays
+    # traceable.
+    curated = _CURATED_INVENTORIES.get(backend, {})
+    for key, topic in curated.items():
+        found.append({"file": f"curated:{key}", "stem": key,
+                      "topic": topic, "source": "curated"})
     for d in dirs:
         for f in sorted(d.rglob("*.py")):
             stem = f.stem
