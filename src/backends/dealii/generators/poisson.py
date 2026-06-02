@@ -883,7 +883,45 @@ GENERAL_KNOWLEDGE = {
             ),
         },
         "DEAL_II_SETUP_TARGET":          "Apply deal.II's include dirs + libs to a target. Call AFTER add_executable.",
-        "DEAL_II_INVOKE_AUTOPILOT":      "All-in-one shortcut for the common tutorial template (uses the other macros).",
+        "DEAL_II_INVOKE_AUTOPILOT": {
+            "signature": "DEAL_II_INVOKE_AUTOPILOT()",
+            "purpose": (
+                "All-in-one shortcut for the canonical tutorial template. "
+                "Reads CALLER-SET variables, creates an executable + 8 "
+                "custom CMake targets."),
+            "caller_variables": {
+                "TARGET":         "REQUIRED — project + executable name",
+                "TARGET_SRC":     "REQUIRED — list of .cc source files",
+                "TARGET_RUN":     "optional — `make run` command (defaults to ${TARGET}); empty disables",
+                "CLEAN_UP_FILES": "optional — files removed by runclean/distclean (defaults to glob `*.log *.gmv *.gnuplot *.gpl *.eps *.pov *.vtk *.ucd *.d2`)",
+            },
+            "targets_created": {
+                "run":            "compile + execute (gated by TARGET_RUN!=empty)",
+                "sign":           "Mac OSX codesign (requires OSX_CERTIFICATE_NAME)",
+                "debug":          "switch CMAKE_BUILD_TYPE to Debug (only if DEAL_II_BUILD_TYPE matches Debug)",
+                "release":        "switch CMAKE_BUILD_TYPE to Release (only if matches Release)",
+                "runclean":       "remove output files matching CLEAN_UP_FILES glob",
+                "distclean":      "remove CMakeCache.txt, CMakeFiles/, Makefile, build.ninja, .ninja_* (NUKES build state)",
+                "strip_comments": "IRREVERSIBLE: runs `perl -pi -e 's#^[ \\t]*//.*\\n##g;' ${TARGET_SRC}` in place",
+                "info":           "print usage message",
+            },
+            "Signal": (
+                "[API] DEAL_II_INVOKE_AUTOPILOT creates a target named "
+                "`strip_comments` that the macro itself documents as "
+                "'irreversible'. The implementation is "
+                "ADD_CUSTOM_TARGET(strip_comments COMMAND perl -pi -e "
+                "'s#^[ \\t]*//.*\\n##g;' ${TARGET_SRC}) — Perl rewrites "
+                "the SOURCE FILES in place, dropping all // line comments. "
+                "There is NO confirmation prompt and NO backup. Run "
+                "`make strip_comments` once and your tutorial's comments "
+                "are gone. Also: `make distclean` nukes CMakeCache.txt + "
+                "Makefile + .ninja_* — far more aggressive than `make "
+                "clean`. Default CLEAN_UP_FILES glob may delete unrelated "
+                "*.log / *.vtk files the user produced manually in the "
+                "build dir. (File walk "
+                "macro_deal_ii_invoke_autopilot.cmake 2026-06-03.)"
+            ),
+        },
         "DEAL_II_PICKUP_TESTS":          "Discover .output files in tests/ and register them as ctest cases.",
         "DEAL_II_QUERY_GIT_INFORMATION": "Set DEAL_II_GIT_BRANCH / _REVISION / _SHORTREV / _TIMESTAMP from .git metadata.",
     },
