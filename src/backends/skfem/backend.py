@@ -169,6 +169,13 @@ class SkfemBackend(SolverBackend):
                 element_types=["Q1-quad"],
                 template_variants=["2d"],
             ),
+            PhysicsCapability(
+                name="wave",
+                description="2D scalar wave equation u_tt - c^2 Δu = 0 with explicit central-difference time integration and lumped mass (no per-step linear solve)",
+                spatial_dims=[2],
+                element_types=["Q1-quad"],
+                template_variants=["2d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
