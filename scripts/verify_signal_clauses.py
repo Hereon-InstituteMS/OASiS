@@ -357,10 +357,13 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Compile", "comp",
             # ── Mass matrix / bilinear form attribute accessors
             "a_mat", "m_mat", "f_vec",
-            "mat", "vec",
+            "vec",
+            # (bare 'mat' was too generic — math word, dropped)
             # ── Numerical-analysis observables that appear in
             #    NGSolve catalog Signal: prose ──────────────────
-            "coercivity_loss", "alpha", "alpha_0",
+            "coercivity_loss", "alpha_0",
+            # (bare 'alpha' would also pass — math notation, not
+            #  an ngsolve identifier — dropped 2026-06-02)
             "phase_error", "phase_velocity",
             "kinetic_energy", "div_u", "grad_div",
             "Taylor_Hood", "MINI", "Mini",
@@ -430,8 +433,10 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "DOF_transfer",
             # ── Lowercase generic catalog terms reused often ─
             "solution", "boundary", "mesh",
-            "alpha", "tau", "rhs", "lhs",
-            "iter", "step", "time_step",
+            "step", "time_step",
+            # (alpha/tau/rhs/lhs/iter dropped 2026-06-02 — math
+            #  notation, not ngsolve identifiers; honest-tier-0
+            #  audit pass 3)
         })
     elif backend == "skfem":
         code_symbols.update({
@@ -503,7 +508,7 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # ── nonlinear / Newton fallback prose ──────────
             "NewtonSolver", "newton",
             "backtracking", "line_search",
-            "alpha", "tau", "rhs", "lhs",
+            # (alpha/tau/rhs/lhs dropped — math notation only)
             # ── Phase-field / damage / fracture ─────────────
             "phase_field", "Allen_Cahn", "Cahn_Hilliard",
             "damage_d", "Griffith",
@@ -514,14 +519,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "solution", "boundary", "interface",
             "temperature", "pressure", "velocity",
             "displacement", "stress", "strain",
-            "sigma", "epsilon",
+            # (sigma/epsilon dropped — pure math symbols)
             # ── scipy.sparse.linalg tokenised components ────
             "scipy", "sparse", "linalg",
             "cg", "gmres", "lu",
             # ── Numerical-analysis observables in skfem prose
             "lambda_min", "lambda_max",
             "phase_drift", "phase_error",
-            "k_c", "k_squared", "gamma",
+            "k_c", "k_squared",
+            # (bare 'gamma' dropped — math notation)
             # ── Reaction-diffusion benchmark names ──────────
             "Turing", "Schnakenberg", "Gray_Scott",
             "Brusselator", "Lotka_Volterra",
@@ -704,7 +710,8 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "uniaxial_compression",
             # ── Kratos JSON solver/scheme parameters used
             #    in structural dynamics signal text ───────────
-            "alpha_m", "alpha_f", "gamma", "beta",
+            "alpha_m", "alpha_f",
+            # (bare 'gamma'/'beta' dropped — math notation)
             "rayleigh_alpha", "rayleigh_beta",
         })
     elif backend == "fenics":
@@ -834,7 +841,8 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Gram_Schmidt", "Lanczos", "Arnoldi",
             "Cook_membrane", "volumetric_locking",
             "Taylor_Hood", "grad_div", "div_u",
-            "tau", "stabilisation", "stabilization",
+            "stabilisation", "stabilization",
+            # (bare 'tau' dropped — math notation)
             "centred", "Krylov",
             # ── dune linear-algebra / IO ─────────────────────
             "SolverCG", "SolverGMRES", "SolverDirect",
@@ -842,8 +850,8 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "writeVTK", "VTKWriter", "ParaView",
             "GMRES", "BiCGStab",
             # ── Misc identifiers used in dune.fem catalog ────
-            "u_old", "u_new", "rhs", "lhs",
-            "sigma", "epsilon",
+            "u_old", "u_new",
+            # (rhs/lhs/sigma/epsilon dropped — math notation)
             "phase", "phase_field", "Allen_Cahn",
             "neo_Hookean", "nu",
         })
@@ -947,7 +955,9 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "velnp", "veln", "dispnp", "tempnp",
             "displacement_field", "velocity_field",
             "pressure_field", "temperature_field",
-            "fluid_pressure", "scalar_field", "phi",
+            "fluid_pressure", "scalar_field",
+            # (bare 'phi' dropped — use 'phi_1'/'phi_2' for
+            #  real 4C SCATRA channel names)
             "ALE_velocity", "structural_displacement",
             "interface", "interface_node",
             # ── Lowercase 4C section names (catalog prose) ────
@@ -1009,7 +1019,8 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             #    appear lowercased in catalog prose ─────────────
             "DENS", "VISC", "YOUNG", "NUE",
             "POISSON", "lambda", "mu_shear",
-            "Sigma", "epsilon", "Cauchy",
+            "Sigma", "Cauchy",
+            # (lowercase 'epsilon' dropped — math notation)
             # ── 4C source filenames (bare, without 4C_io_
             #    prefix) that appear in catalog prose ────────────
             "input_spec_builders", "input_file",

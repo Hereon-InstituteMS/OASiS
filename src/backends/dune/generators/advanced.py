@@ -736,13 +736,15 @@ KNOWLEDGE = {
             (
                 "[Numerical] Shift sigma CLOSE TO BUT BELOW "
                 "target eigenvalue accelerates shift-"
-                "invert convergence. Signal: sigma far "
-                "from any eigenvalue gives slow inverse "
-                "iteration (10s of iters); sigma > "
-                "target jumps to a different eigenvalue. "
-                "For first eigenpair, sigma slightly "
-                "below 0 works (Laplacian eigenvalues "
-                "are positive). (Audit 2026-06-02.)"
+                "invert convergence. Signal: passing a sigma "
+                "kwarg to the scipy.sparse.linalg.eigsh "
+                "shift_invert solver far from any eigenvalue "
+                "gives slow inverse_iteration (10s of "
+                "iters); sigma > target jumps to a different "
+                "eigenvalue. For the first eigenpair on the "
+                "dune.fem lagrange Space, sigma slightly "
+                "below 0 works (Laplacian eigenvalues are "
+                "positive). (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] DEFLATION required to compute "

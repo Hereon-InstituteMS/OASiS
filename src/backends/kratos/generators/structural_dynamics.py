@@ -155,7 +155,7 @@ KNOWLEDGE = {
         },
         "pitfalls": [
                         '[Numerical] Newmark average acceleration uses beta=0.25, gamma=0.5 (no numerical damping). Choosing gamma > 0.5 adds artificial damping; gamma < 0.5 is unconditionally unstable. '
-                        'Signal: with gamma < 0.5 the displacement amplitude grows exponentially across time steps regardless of dt.',
+                        'Signal: in a ResidualBasedNewmarkDisplacementScheme run with gamma < 0.5, the DISPLACEMENT amplitude in the VtkOutput grows exponentially across time steps regardless of dt.',
                         "[Syntax] Bossak adds mild numerical damping for high-frequency noise (alpha_m ≈ -0.1). In the Kratos JSON the parameter name is 'damp_factor_m' (NOT alpha_m). Wrong key is silently ignored and the scheme runs without damping. "
                         "Signal: spurious high-frequency oscillation in the response remains even after enabling 'Bossak' in the time_integration block.",
                         '[Numerical] Mass matrix: consistent (default) or lumped (faster for explicit). Lumped on linear tets/quads is OK; lumped on quadratic elements loses accuracy for higher-frequency modes. '
