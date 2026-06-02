@@ -1,0 +1,722 @@
+{
+  "skfem": {
+    "package": "skfem",
+    "version": "12.0.1",
+    "n_public_symbols": 217,
+    "n_documented": 75,
+    "n_uncovered": 142,
+    "coverage_pct": 34.6,
+    "uncovered": [
+      {
+        "module": "skfem",
+        "name": "AbstractBasis",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "BoundaryFacetBasis",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementComposite",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementGlobal",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementH1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHcurl",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHdiv",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHex0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHex1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHex2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHexC1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHexDG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHexRT1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHexS2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementHexSkeleton0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementLineMini",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementLineP0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementLineP1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementLineP2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementLinePp",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuad0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuad1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuad2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuad2G",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuadDG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuadN1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuadP",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuadRT0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuadRT1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementQuadS2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetCCR",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetCR",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetDG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetN0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetN1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetP0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetRT1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTetSkeletonP0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTri15ParamPlate",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriBDM1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriCCR",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriCR",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriHHJ0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriHHJ1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriHermite",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriN1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriN2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriN3",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP1B",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP1G",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP2B",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP2G",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP3",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriP4",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriRT2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriSkeletonP0",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementTriSkeletonP1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementVectorH1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ElementWedge1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "ExteriorFacetBasis",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MappingAffine",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MappingIsoparametric",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "Mesh2D",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "Mesh3D",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshHex1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshHex1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshHex2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshLine1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshLine1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshQuad1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshQuad2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshTet1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshTet2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshTri1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshTri1DG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshTri2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "MeshWedge1",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "TrilinearForm",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
+        "name": "adaptive_theta",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "build_pc_diag",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "build_pc_ilu",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "mpc",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "rcm",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solve_eigen",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solve_linear",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solver_direct_scipy",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solver_eigen_scipy",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solver_eigen_scipy_sym",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solver_iter_cg",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solver_iter_krylov",
+        "kind": "function"
+      },
+      {
+        "module": "skfem",
+        "name": "solver_iter_pcg",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.assembly.basis.abstract_basis",
+        "name": "Refdom",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.assembly.basis.abstract_basis",
+        "name": "get_quadrature",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.assembly.basis.composite_basis",
+        "name": "CompositeBasis",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.assembly.basis.facet_basis",
+        "name": "OrientedBoundary",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.assembly.form.bilinear_form",
+        "name": "COOData",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.assembly.form.bilinear_form",
+        "name": "FormExtraParams",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_hex.element_hex0",
+        "name": "RefHex",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_line.element_line_hermite",
+        "name": "RefLine",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_matrix",
+        "name": "ElementMatrix",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_quad.element_quad0",
+        "name": "RefQuad",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_tet.element_tet_ccr",
+        "name": "RefTet",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_tri.element_tri_15param_plate",
+        "name": "RefTri",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.element.element_wedge_1",
+        "name": "RefWedge",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.experimental.supermeshing",
+        "name": "elementwise_quadrature",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.generic_utils",
+        "name": "hash_args",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.helpers",
+        "name": "ddd",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.helpers",
+        "name": "dddd",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.helpers",
+        "name": "dddot",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.helpers",
+        "name": "sym_grad",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.io",
+        "name": "from_meshio",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.io.json",
+        "name": "from_file",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.io.json",
+        "name": "to_file",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.mesh",
+        "name": "MeshLineConstructor",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.mesh.mesh_2d_2",
+        "name": "Mesh2D2",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.mesh.mesh_dg",
+        "name": "MeshDG",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.mesh.mesh_line_1",
+        "name": "MeshSimplex",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.models",
+        "name": "linear_stress",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.quadrature",
+        "name": "RefPoint",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.quadrature",
+        "name": "get_quadrature_line",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.quadrature",
+        "name": "get_quadrature_point",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.quadrature",
+        "name": "get_quadrature_tet",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.quadrature",
+        "name": "get_quadrature_tri",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "draw",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "draw_basis",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "draw_mesh2d",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "draw_mesh3d",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "draw_meshline",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot3",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot3_basis",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot3_meshtri",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot_basis",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot_meshline",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot_meshquad",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "plot_meshtri",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.matplotlib",
+        "name": "savefig",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.svg",
+        "name": "Server",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.visuals.svg",
+        "name": "SvgPlot",
+        "kind": "class"
+      },
+      {
+        "module": "skfem.visuals.svg",
+        "name": "draw_geometry2d",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.svg",
+        "name": "plot_mesh2d",
+        "kind": "function"
+      },
+      {
+        "module": "skfem.visuals.svg",
+        "name": "points_to_figure",
+        "kind": "function"
+      }
+    ]
+  }
+}
