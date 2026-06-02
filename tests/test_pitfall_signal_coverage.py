@@ -55,27 +55,27 @@ sys.path.insert(0, str(_REPO / "src"))
 # pulling the average down) WILL.
 SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
-    "dealii":  75.0,   # measured  76.8 (raised 2026-06-02 from
-                       #                  68.0 after pass 1 on
-                       #                  dealii: 14 pitfalls
-                       #                  tagged across 4 physics
-                       #                  in deep_knowledge.py —
-                       #                  advection_dg (4: flux-
-                       #                  sparsity pattern, IP
-                       #                  alpha, face-normal
-                       #                  sign, downstream DoF
-                       #                  renumbering),
-                       #                  compressible_euler (4:
-                       #                  CG instability,
-                       #                  LF vs HLLC, CFL, slope
-                       #                  limiter), contact (3:
-                       #                  active-set iteration,
-                       #                  penalty mis-tune,
-                       #                  AffineConstraints),
-                       #                  nonlinear_elasticity
-                       #                  (3: three-field for
-                       #                  nu>0.49, Newton load
-                       #                  steps, Sacado AD).)
+    "dealii":  84.0,   # measured  85.5 (raised 2026-06-02 from
+                       #                  75.0 — pass 2 added 12
+                       #                  Signal lines in advanced.py:
+                       #                  compressible_euler (3:
+                       #                  shock-capturing, CFL, low-
+                       #                  Mach conditioning),
+                       #                  matrix_free (3: tensor-
+                       #                  product elements, no-matrix
+                       #                  profile sanity, GMG-
+                       #                  essential), multigrid (2:
+                       #                  smoother choice, coarse-
+                       #                  grid solver),
+                       #                  obstacle_problem (1:
+                       #                  vanilla Newton vs active-
+                       #                  set), topology_opt_dealii
+                       #                  (3: SIMP p, filter radius
+                       #                  vs checkerboard, mesh-
+                       #                  dependence regularization).
+                       #                  dealii trajectory: 68% ->
+                       #                  76.8% -> 85.5% across two
+                       #                  passes.)
     "skfem":   74.0,   # measured  75.7 (raised 2026-06-02 from
                        #                  58.0 after pass 2 on
                        #                  skfem: 6 reaction_

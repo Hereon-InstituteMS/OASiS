@@ -95,9 +95,32 @@ KNOWLEDGE = {
     "compressible_euler": {
         "description": "Compressible Euler equations — shock-capturing DG (step-33, step-69)",
         "methods": ["Lax-Friedrichs flux", "HLLC Riemann solver", "entropy viscosity"],
-        "pitfalls": ["Shock capturing requires artificial viscosity or limiting",
-                     "CFL condition for explicit time stepping",
-                     "Mach number scaling affects conditioning"],
+        "pitfalls": [
+            (
+                "[Numerical] Shock capturing requires artificial "
+                "viscosity or limiting. Signal: high-order DG "
+                "without limiting shows Gibbs over/undershoot of "
+                "5-20% at shocks that does not decay with mesh "
+                "refinement; entropy viscosity (step-69) or "
+                "TVB-Minmod limiting eliminates them. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] CFL condition for explicit time "
+                "stepping. Signal: dt > h/(|u|+c) gives NaN "
+                "within ~10 steps; SSP-RK3 needs safety factor "
+                "~0.3. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Mach number scaling affects "
+                "conditioning. Signal: low-Mach limit (M < 0.1) "
+                "makes the compressible Euler stiffness matrix "
+                "scale with 1/M^2; iterative solver iteration "
+                "count grows linearly with 1/M unless a "
+                "preconditioned-flux variant is used. (Audit "
+                "2026-06-02.)"
+            ),
+        ],
     },
     "time_dependent_heat": {
         "description": "Transient heat equation with AMR (step-26)",
@@ -119,15 +142,65 @@ KNOWLEDGE = {
     "matrix_free": {
         "description": "Matrix-free operator evaluation — high performance FEM (step-37, step-59)",
         "performance": "10-100x faster than sparse matrix for high-order elements",
-        "pitfalls": ["Requires tensor-product elements (FE_Q, FE_DGQ)",
-                     "No matrix assembly — operator is applied on-the-fly",
-                     "Geometric multigrid essential for preconditioning"],
+        "pitfalls": [
+            (
+                "[API] Requires tensor-product elements (FE_Q, "
+                "FE_DGQ). Signal: instantiating MatrixFree<dim> "
+                "with FE_RaviartThomas / FE_BDM / non-tensor-"
+                "product elements raises `MatrixFree: element "
+                "type not supported` or silently disables "
+                "vectorization. The performance gain (10-100x) "
+                "depends entirely on tensor-product evaluation. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] No matrix assembly — operator is "
+                "applied on-the-fly. Signal: profiling shows zero "
+                "time in SparseMatrix::add() (no global matrix); "
+                "the bulk of wall-clock should be in MatrixFree::"
+                "cell_loop and FEEvaluation::evaluate / "
+                "integrate. If matrix-related calls appear, the "
+                "code accidentally falls back to a sparse "
+                "path. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Geometric multigrid essential for "
+                "preconditioning. Signal: CG without multigrid on "
+                "a matrix-free Laplace problem converges in "
+                "~O(h^-1) iterations (gets worse with refinement); "
+                "GMG keeps it at ~10-20 iterations independent "
+                "of h. step-37 and step-50 show the canonical "
+                "matrix-free + GMG combination. (Audit "
+                "2026-06-02.)"
+            ),
+        ],
     },
     "multigrid": {
         "description": "Geometric multigrid preconditioner (step-16, step-50)",
         "types": ["h-multigrid (mesh hierarchy)", "p-multigrid (polynomial degree)"],
-        "pitfalls": ["Smoother choice: Chebyshev for SPD, GMRES for indefinite",
-                     "Coarse grid solver: direct (Amesos) or iterative"],
+        "pitfalls": [
+            (
+                "[Numerical] Smoother choice: Chebyshev for SPD, "
+                "GMRES for indefinite. Signal: applying Chebyshev "
+                "to an indefinite Stokes-type system produces "
+                "diverging multigrid V-cycles (norm grows by "
+                "factor ~1.5 per cycle); switching to a few "
+                "smoothing steps of GMRES restores convergence. "
+                "Conversely, GMRES smoothing on SPD is slower "
+                "than Chebyshev. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Coarse grid solver: direct (Amesos) "
+                "or iterative. Signal: leaving the coarse-grid "
+                "solver as a default Jacobi gives V-cycle "
+                "convergence rate proportional to coarse-grid "
+                "DOFs; Amesos / SparseDirectUMFPACK on the "
+                "coarsest level restores h-independent multigrid "
+                "convergence. For very large meshes use an "
+                "iterative coarse solver to avoid the direct "
+                "solver memory blowup. (Audit 2026-06-02.)"
+            ),
+        ],
     },
     "multiphysics_dealii": {
         "description": "Two-phase flow and multi-physics coupling (step-21, step-43)",
@@ -137,13 +210,54 @@ KNOWLEDGE = {
     "obstacle_problem": {
         "description": "Variational inequality / contact / obstacle problem (step-41)",
         "method": "Active set strategy — project onto feasible set each Newton step",
-        "pitfalls": ["Non-smooth problem — requires special solver (active set, penalty)"],
+        "pitfalls": [
+            (
+                "[Numerical] Non-smooth problem — requires special "
+                "solver (active set, penalty). Signal: a "
+                "vanilla Newton solve on a variational inequality "
+                "(elastic body pressing into a rigid obstacle) "
+                "either diverges or oscillates between two "
+                "active-set states without converging; step-41's "
+                "active-set strategy iterates "
+                "(constraint-detection -> linear solve) until two "
+                "consecutive active sets are identical, typically "
+                "3-10 outer iterations. (Audit 2026-06-02.)"
+            ),
+        ],
     },
     "topology_opt_dealii": {
         "description": "SIMP topology optimization (step-79)",
         "method": "SIMP with density filtering and MMA optimizer",
-        "pitfalls": ["Penalization factor p=3", "Filter radius prevents checkerboard",
-                     "Mesh-dependent without proper regularization"],
+        "pitfalls": [
+            (
+                "[Numerical] Penalization factor p=3 is the SIMP "
+                "default (intermediate-density penalisation). "
+                "Signal: p < 2 leaves the optimisation with too "
+                "much grey-scale intermediate density (volume "
+                "fraction outside [0.05, 0.95] for > 30% of "
+                "cells); p > 4 can over-penalise and freeze the "
+                "topology in the wrong configuration. Standard "
+                "SIMP literature ranges 3-5. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Filter radius prevents checkerboard. "
+                "Signal: without density filtering, the optimal "
+                "topology shows alternating high/low density on "
+                "adjacent elements (checkerboard pattern); a "
+                "density filter with radius ~1.5*h removes it. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Mesh-dependent without proper "
+                "regularization. Signal: refining the mesh and "
+                "re-running gives a DIFFERENT optimal topology "
+                "(more thin struts) — physical solution is "
+                "ill-posed without a length scale. Density "
+                "filtering with a FIXED physical radius (not "
+                "h-scaled) restores mesh-independent optimal "
+                "design. (Audit 2026-06-02.)"
+            ),
+        ],
     },
     "error_estimation": {
         "description": "Dual-weighted residual (DWR) error estimation (step-14, step-74)",
