@@ -2,104 +2,287 @@
 
 
 def _elasticity_2d_kratos(params: dict) -> str:
-    """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
+    """Real Kratos plane-strain linear elasticity on a rectangular beam.
 
-    Linear elasticity on rectangular domain — Kratos (manual assembly)."""
-    nx = params.get("nx", 40)
+    Uses StructuralMechanicsApplication with `SmallDisplacementElement2D4N`
+    on a structured quad grid, `LinearElasticPlaneStrain2DLaw`, and a
+    Newton-Raphson static strategy.  The left edge is clamped; the
+    mid-tip node is given a prescribed y-displacement so the cell
+    produces a finite, deterministic displacement field without
+    needing a separate Condition for the point load.  Output is
+    written via `KM.VtkOutput` (legacy `.vtk` — Kratos's VtkOutput
+    does not write `.vtu`; the sweep harness accepts both).
+    """
+    nx = params.get("nx", 32)
     ny = params.get("ny", 4)
     E = params.get("E", 1000.0)
     nu = params.get("nu", 0.3)
     lx = params.get("lx", 10.0)
     ly = params.get("ly", 1.0)
-    mu = E / (2 * (1 + nu))
-    lam = E * nu / ((1 + nu) * (1 - 2 * nu))
+    tip_uy = params.get("tip_uy", -0.5)  # prescribed tip displacement
     return f'''\
-"""Linear elasticity: rectangular domain, fixed left — Kratos (manual assembly)"""
-import numpy as np
-from scipy.sparse import lil_matrix
-from scipy.sparse.linalg import spsolve
+"""Linear elastic 2D cantilever (plane strain) — Kratos StructuralMechanicsApplication.
+
+Clamped left edge, prescribed y-displacement at the mid-tip node.
+Writes the converged DISPLACEMENT and REACTION fields as `Structure_0_1.vtk`.
+"""
 import json
+import KratosMultiphysics as KM
+import KratosMultiphysics.StructuralMechanicsApplication as SMA
 
-nx, ny, lx, ly = {nx}, {ny}, {lx}, {ly}
-nid = 1; node_map = {{}}; coords = {{}}
-for j in range(ny+1):
-    for i in range(nx+1):
-        coords[nid] = (i*lx/nx, j*ly/ny)
-        node_map[(i,j)] = nid; nid += 1
-n_nodes = nid - 1
+# Problem geometry / material (template parameters at file generation time)
+nx, ny = {nx}, {ny}
+L,  h  = {lx}, {ly}
+E,  nu = {E}, {nu}
+tip_uy = {tip_uy}
 
-elements = []
+# Linear interpolation in x and y produces a structured quad grid.
+def node_id(i, j):
+    return 1 + j * (nx + 1) + i
+
+model = KM.Model()
+mp = model.CreateModelPart("Structure")
+mp.ProcessInfo[KM.DOMAIN_SIZE] = 2
+mp.SetBufferSize(2)
+for v in (KM.DISPLACEMENT, KM.REACTION, KM.VOLUME_ACCELERATION):
+    mp.AddNodalSolutionStepVariable(v)
+
+# Nodes
+for j in range(ny + 1):
+    yj = -h / 2.0 + j * h / ny
+    for i in range(nx + 1):
+        xi = i * L / nx
+        mp.CreateNewNode(node_id(i, j), xi, yj, 0.0)
+
+# Properties: plane-strain linear elastic
+prop = mp.CreateNewProperties(1)
+prop.SetValue(KM.YOUNG_MODULUS, E)
+prop.SetValue(KM.POISSON_RATIO, nu)
+prop.SetValue(KM.DENSITY, 0.0)
+prop.SetValue(KM.CONSTITUTIVE_LAW, SMA.LinearElasticPlaneStrain2DLaw())
+
+# Quad elements (CCW orientation)
+eid = 1
 for j in range(ny):
     for i in range(nx):
-        n1,n2,n3,n4 = node_map[(i,j)],node_map[(i+1,j)],node_map[(i+1,j+1)],node_map[(i,j+1)]
-        elements.append((n1,n2,n4)); elements.append((n2,n3,n4))
+        mp.CreateNewElement(
+            "SmallDisplacementElement2D4N", eid,
+            [node_id(i, j), node_id(i + 1, j),
+             node_id(i + 1, j + 1), node_id(i, j + 1)],
+            prop,
+        )
+        eid += 1
 
-ndof = 2 * n_nodes
-K = lil_matrix((ndof, ndof))
-F = np.zeros(ndof)
-mu, lam = {mu}, {lam}
+# Add DOFs.  SmallDisplacementElement2D4N inherits SolidElementCheck which
+# requires the Z dof in every node (Kratos uses 3-component vectors
+# internally); we add it everywhere and Dirichlet-pin Z = 0.
+for node in mp.Nodes:
+    node.AddDof(KM.DISPLACEMENT_X, KM.REACTION_X)
+    node.AddDof(KM.DISPLACEMENT_Y, KM.REACTION_Y)
+    node.AddDof(KM.DISPLACEMENT_Z, KM.REACTION_Z)
+    node.Fix(KM.DISPLACEMENT_Z)
+    node.SetSolutionStepValue(KM.DISPLACEMENT_Z, 0.0)
 
-for tri in elements:
-    ids = [t-1 for t in tri]
-    x = np.array([coords[t][0] for t in tri])
-    y = np.array([coords[t][1] for t in tri])
-    area = 0.5 * abs((x[1]-x[0])*(y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0]))
-    b = np.array([y[1]-y[2], y[2]-y[0], y[0]-y[1]]) / (2*area)
-    c = np.array([x[2]-x[1], x[0]-x[2], x[1]-x[0]]) / (2*area)
+# Clamp left edge (i = 0)
+for j in range(ny + 1):
+    n = mp.Nodes[node_id(0, j)]
+    n.Fix(KM.DISPLACEMENT_X)
+    n.Fix(KM.DISPLACEMENT_Y)
+    n.SetSolutionStepValue(KM.DISPLACEMENT_X, 0.0)
+    n.SetSolutionStepValue(KM.DISPLACEMENT_Y, 0.0)
 
-    B = np.zeros((3, 6))
-    for a in range(3):
-        B[0, 2*a] = b[a]; B[1, 2*a+1] = c[a]
-        B[2, 2*a] = c[a]; B[2, 2*a+1] = b[a]
-    D = np.array([[lam+2*mu, lam, 0], [lam, lam+2*mu, 0], [0, 0, mu]])
-    Ke = area * B.T @ D @ B
+# Prescribe tip mid-node y-displacement
+j_mid = ny // 2
+tip_node = mp.Nodes[node_id(nx, j_mid)]
+tip_node.Fix(KM.DISPLACEMENT_Y)
+tip_node.SetSolutionStepValue(KM.DISPLACEMENT_Y, tip_uy)
 
-    dofs = []
-    for a in range(3):
-        dofs.extend([2*ids[a], 2*ids[a]+1])
-    for i in range(6):
-        F[dofs[i]] += -1.0 * area / 3.0 if i % 2 == 1 else 0  # body force — set for your problem
-        for j_idx in range(6):
-            K[dofs[i], dofs[j_idx]] += Ke[i, j_idx]
-K = K.tocsr()
+# Newton-Raphson static solver
+scheme = KM.ResidualBasedIncrementalUpdateStaticScheme()
+builder_and_solver = KM.ResidualBasedBlockBuilderAndSolver(
+    KM.SkylineLUFactorizationSolver()
+)
+conv = KM.ResidualCriteria(1.0e-8, 1.0e-12)
+strat = KM.ResidualBasedNewtonRaphsonStrategy(
+    mp, scheme, conv, builder_and_solver,
+    20, True, False, True,
+)
+strat.SetEchoLevel(0)
+strat.Check()
+mp.CloneTimeStep(1.0)
+mp.ProcessInfo[KM.STEP] = 1
+strat.Solve()
 
-# Fix left edge
-fixed = set()
-for j in range(ny+1):
-    n = node_map[(0,j)] - 1
-    fixed.add(2*n); fixed.add(2*n+1)
-interior = sorted(set(range(ndof)) - fixed)
+# VTK output
+vtk_params = KM.Parameters(json.dumps({{
+    "model_part_name": "Structure",
+    "output_control_type": "step",
+    "output_interval": 1,
+    "file_format": "ascii",
+    "output_path": ".",
+    "output_sub_model_parts": False,
+    "save_output_files_in_folder": False,
+    "nodal_solution_step_data_variables": ["DISPLACEMENT", "REACTION"],
+}}))
+KM.VtkOutput(mp, vtk_params).PrintOutput()
 
-u = np.zeros(ndof)
-u[interior] = spsolve(K[np.ix_(interior, interior)], F[interior])
-
-uy = u[1::2]
-print(f"Max tip displacement: {{uy.min():.6f}}")
-summary = {{"max_displacement_y": float(uy.min()), "n_dofs": ndof}}
-with open("results_summary.json", "w") as _f: json.dump(summary, _f, indent=2)
+# Scalar summary for the layer-3 sweep
+tip = mp.Nodes[node_id(nx, j_mid)]
+summary = {{
+    "tip_ux": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_X)),
+    "tip_uy": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_Y)),
+    "n_nodes": mp.NumberOfNodes(),
+    "n_elements": mp.NumberOfElements(),
+}}
+print(f"tip displacement: ux={{summary['tip_ux']:.6f}}  uy={{summary['tip_uy']:.6f}}")
+with open("results_summary.json", "w") as _f:
+    json.dump(summary, _f, indent=2)
 '''
 
 
 def _elasticity_nonlinear_kratos(params: dict) -> str:
-    """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
+    """Geometrically-nonlinear plane-strain elasticity — Kratos SMA.
 
-    Nonlinear elasticity via Kratos StructuralMechanicsApplication."""
+    Uses `TotalLagrangianElement2D4N` (large-rotation kinematics) with
+    `LinearElasticPlaneStrain2DLaw` as the small-strain constitutive
+    law.  The pip-installed Kratos wheel does NOT ship a Neo-Hookean
+    2D law (those live in `ConstitutiveLawsApplication`, not in the
+    base StructuralMechanicsApplication on PyPI), so "nonlinear" here
+    means geometric nonlinearity only.  Switching to a hyperelastic
+    material is straightforward once `ConstitutiveLawsApplication`
+    is available — replace the SetValue on KM.CONSTITUTIVE_LAW with
+    e.g. `CLA.HyperElasticIsotropicNeoHookeanPlaneStrain2DLaw()`.
+    """
+    nx = params.get("nx", 16)
+    ny = params.get("ny", 4)
+    E = params.get("E", 1000.0)
+    nu = params.get("nu", 0.3)
+    lx = params.get("lx", 4.0)
+    ly = params.get("ly", 1.0)
+    tip_uy = params.get("tip_uy", -0.5)
+    n_substeps = params.get("n_substeps", 5)
     return f'''\
-"""Nonlinear structural mechanics — Kratos StructuralMechanicsApplication"""
+"""Geometrically-nonlinear plane-strain elasticity — Kratos SMA.
+
+TotalLagrangianElement2D4N + LinearElasticPlaneStrain2DLaw on a
+structured quad grid.  Clamped left edge; tip y-displacement applied
+in `n_substeps` Newton-Raphson load steps.  Writes the converged
+DISPLACEMENT and REACTION fields as `Structure_0_*.vtk`.
+"""
 import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.StructuralMechanicsApplication as SMA
-    print("StructuralMechanicsApplication available")
-    # Full Kratos structural analysis would use:
-    # from KratosMultiphysics.StructuralMechanicsApplication.structural_mechanics_analysis import StructuralMechanicsAnalysis
-    # with ProjectParameters.json + mesh.mdpa
-    summary = {{"note": "Kratos SMA available — use ProjectParameters.json workflow for full analysis"}}
-except ImportError:
-    print("StructuralMechanicsApplication not installed")
-    print("Install: pip install KratosStructuralMechanicsApplication")
-    summary = {{"note": "KratosStructuralMechanicsApplication not installed"}}
-with open("results_summary.json", "w") as _f: json.dump(summary, _f, indent=2)
+import KratosMultiphysics as KM
+import KratosMultiphysics.StructuralMechanicsApplication as SMA
+
+nx, ny = {nx}, {ny}
+L,  h  = {lx}, {ly}
+E,  nu = {E}, {nu}
+tip_uy = {tip_uy}
+n_substeps = {n_substeps}
+
+
+def node_id(i, j):
+    return 1 + j * (nx + 1) + i
+
+
+model = KM.Model()
+mp = model.CreateModelPart("Structure")
+mp.ProcessInfo[KM.DOMAIN_SIZE] = 2
+mp.SetBufferSize(2)
+for v in (KM.DISPLACEMENT, KM.REACTION, KM.VOLUME_ACCELERATION):
+    mp.AddNodalSolutionStepVariable(v)
+
+for j in range(ny + 1):
+    yj = -h / 2.0 + j * h / ny
+    for i in range(nx + 1):
+        mp.CreateNewNode(node_id(i, j), i * L / nx, yj, 0.0)
+
+prop = mp.CreateNewProperties(1)
+prop.SetValue(KM.YOUNG_MODULUS, E)
+prop.SetValue(KM.POISSON_RATIO, nu)
+prop.SetValue(KM.DENSITY, 0.0)
+prop.SetValue(KM.CONSTITUTIVE_LAW, SMA.LinearElasticPlaneStrain2DLaw())
+
+eid = 1
+for j in range(ny):
+    for i in range(nx):
+        mp.CreateNewElement(
+            "TotalLagrangianElement2D4N", eid,
+            [node_id(i, j), node_id(i + 1, j),
+             node_id(i + 1, j + 1), node_id(i, j + 1)],
+            prop,
+        )
+        eid += 1
+
+for node in mp.Nodes:
+    node.AddDof(KM.DISPLACEMENT_X, KM.REACTION_X)
+    node.AddDof(KM.DISPLACEMENT_Y, KM.REACTION_Y)
+    node.AddDof(KM.DISPLACEMENT_Z, KM.REACTION_Z)
+    node.Fix(KM.DISPLACEMENT_Z)
+    node.SetSolutionStepValue(KM.DISPLACEMENT_Z, 0.0)
+
+for j in range(ny + 1):
+    n = mp.Nodes[node_id(0, j)]
+    n.Fix(KM.DISPLACEMENT_X)
+    n.Fix(KM.DISPLACEMENT_Y)
+    # Set the Dirichlet value explicitly to 0.0 alongside the Fix()
+    # call.  Kratos's `Fix(...)` flags the DOF as constrained but
+    # does not by itself prescribe the value (the solution-step
+    # value defaults to 0.0 for fresh nodes, but for nodes that have
+    # already participated in an earlier solve step on the same
+    # ModelPart the prior value persists — a real bug when the
+    # template is re-used inside a larger workflow).
+    n.SetSolutionStepValue(KM.DISPLACEMENT_X, 0.0)
+    n.SetSolutionStepValue(KM.DISPLACEMENT_Y, 0.0)
+
+j_mid = ny // 2
+tip_node = mp.Nodes[node_id(nx, j_mid)]
+tip_node.Fix(KM.DISPLACEMENT_Y)
+
+scheme = KM.ResidualBasedIncrementalUpdateStaticScheme()
+builder_and_solver = KM.ResidualBasedBlockBuilderAndSolver(
+    KM.SkylineLUFactorizationSolver()
+)
+conv = KM.ResidualCriteria(1.0e-8, 1.0e-12)
+strat = KM.ResidualBasedNewtonRaphsonStrategy(
+    mp, scheme, conv, builder_and_solver,
+    50, True, False, True,
+)
+strat.SetEchoLevel(0)
+
+vtk_params = KM.Parameters(json.dumps({{
+    "model_part_name": "Structure",
+    "output_control_type": "step",
+    "output_interval": 1,
+    "file_format": "ascii",
+    "output_path": ".",
+    "output_sub_model_parts": False,
+    "save_output_files_in_folder": False,
+    "nodal_solution_step_data_variables": ["DISPLACEMENT", "REACTION"],
+}}))
+vtk = KM.VtkOutput(mp, vtk_params)
+
+# Ramp the tip displacement in n_substeps load steps.  TotalLagrangian
+# requires sufficiently small increments for Newton convergence at
+# large rotations.
+strat.Check()
+for step in range(1, n_substeps + 1):
+    mp.CloneTimeStep(float(step))
+    mp.ProcessInfo[KM.STEP] = step
+    tip_node.SetSolutionStepValue(KM.DISPLACEMENT_Y, tip_uy * step / n_substeps)
+    strat.Solve()
+vtk.PrintOutput()
+
+tip = mp.Nodes[node_id(nx, j_mid)]
+summary = {{
+    "tip_ux": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_X)),
+    "tip_uy": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_Y)),
+    "n_steps": n_substeps,
+    "n_nodes": mp.NumberOfNodes(),
+    "n_elements": mp.NumberOfElements(),
+}}
+print(f"tip ux={{summary['tip_ux']:.6f}}  uy={{summary['tip_uy']:.6f}}  (target uy={{tip_uy}})")
+with open("results_summary.json", "w") as _f:
+    json.dump(summary, _f, indent=2)
 '''
 
 
