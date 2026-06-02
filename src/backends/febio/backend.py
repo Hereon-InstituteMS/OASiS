@@ -110,6 +110,41 @@ class FebioBackend(SolverBackend):
                 element_types=["hex8"],
                 template_variants=["3d_bar"],
             ),
+            PhysicsCapability(
+                name="multiphasic",
+                description=("Biphasic poroelasticity + solute transport "
+                             "(charged-hydrated cartilage, electrolyte "
+                             "diffusion, drug delivery)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_diffusion"],
+            ),
+            PhysicsCapability(
+                name="fluid",
+                description=("Incompressible Newtonian fluid via FEBio's "
+                             "pressure-velocity fluid solver "
+                             "(cardiovascular CFD)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_channel"],
+            ),
+            PhysicsCapability(
+                name="fluid_fsi",
+                description=("Strongly-coupled monolithic FSI "
+                             "(arterial wall hemodynamics, cardiac "
+                             "chamber dynamics, valve modeling)"),
+                spatial_dims=[3],
+                element_types=["hex8"],
+                template_variants=["3d_block"],
+            ),
+            PhysicsCapability(
+                name="rigid_body",
+                description=("Rigid-body material (impactors, fixtures, "
+                             "articulating joints, contact prescription)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_pushdown"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:

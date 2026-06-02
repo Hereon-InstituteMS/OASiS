@@ -90,7 +90,16 @@ SIGNAL_COVERAGE_MIN = {
                        #                  ngsolve 47.4% -> 55.6%
                        #                  -> 61.5% -> 69.6% over
                        #                  three commits.)
-    "febio":   45.0,   # measured  46.2
+    "febio":   74.0,   # measured  75.9 (raised 2026-06-02 from
+                       #                  45.0 after febio pass 2a
+                       #                  — added 4 new physics
+                       #                  modules with Signal-tagged
+                       #                  pitfalls: multiphasic (4),
+                       #                  fluid (4), fluid_fsi (4),
+                       #                  rigid_body (4). FEBio
+                       #                  catalog jumped from 4 -> 8
+                       #                  physics, pitfalls 13 -> 29,
+                       #                  Signal-tagged 6 -> 22.)
     "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
                        #                 2026-06-02 from 44.0 after
                        #                 pass 3 on fenics:
