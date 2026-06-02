@@ -1082,6 +1082,45 @@ KNOWLEDGE = {
                 "each substep should deliver < 10% stretch "
                 "ratio increment. (Audit 2026-06-02.)"
             ),
+            (
+                "[API] The numpy @ matmul operator does NOT "
+                "work on skfem's (d, d, n_elem, n_quad)-shape "
+                "tensor fields inside a @BilinearForm kernel. "
+                "matmul tries the last-two-dims convention and "
+                "aborts. Signal: 'matmul: Input operand 1 has "
+                "a mismatch in its core dimension 0, with "
+                "gufunc signature (n?,k),(k,m?)->(n?,m?) (size "
+                "N is different from d)' from numpy inside the "
+                "BilinearForm. Fall back to explicit component "
+                "algebra (Finv[0,0]*Finv[0,0] + Finv[0,1]*"
+                "Finv[0,1] for (Finv * Finv^T)[0,0]) or use "
+                "skfem.helpers.ddot / dot / transpose helpers "
+                "that operate elementwise on the rank-2 "
+                "deformation-gradient tensor. (Audit "
+                "2026-06-02, post-mortem skfem-broken-newton-"
+                "templates-rewrite.)"
+            ),
+            (
+                "[Numerical] Newton iteration on a Neo-Hookean "
+                "BilinearForm with an aggressive default load "
+                "(e.g. E=1.0 / traction=0.1 — ~10% normalised "
+                "force) drives the deformation gradient F into "
+                "J = det(F) <= 0 territory in a few quadrature "
+                "points after the first iter; the subsequent "
+                "log(J) call returns NaN; the Newton iteration "
+                "diverges to NaN-everywhere displacements; "
+                "exit code is STILL 0 and pure rc=0 gates miss "
+                "the failure. Signal: a Layer-F-style smoke "
+                "gate that only checks rc=0 passes silently, "
+                "while the printed 'Max displacement: nan' / "
+                "'||du|| = nan' lines reveal the divergence. "
+                "Defence: keep first-iter strain < 1% via "
+                "stiffer material (E=1000) or smaller "
+                "traction, AND add explicit 'nan' sentinels "
+                "to the gate's forbid_in_output list. (Audit "
+                "2026-06-02, post-mortem skfem-broken-newton-"
+                "templates-rewrite.)"
+            ),
         ],
     },
     "dg_methods": {
