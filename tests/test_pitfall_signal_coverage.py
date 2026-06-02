@@ -55,7 +55,27 @@ sys.path.insert(0, str(_REPO / "src"))
 # pulling the average down) WILL.
 SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
-    "dealii":  68.0,   # measured  69.6
+    "dealii":  75.0,   # measured  76.8 (raised 2026-06-02 from
+                       #                  68.0 after pass 1 on
+                       #                  dealii: 14 pitfalls
+                       #                  tagged across 4 physics
+                       #                  in deep_knowledge.py —
+                       #                  advection_dg (4: flux-
+                       #                  sparsity pattern, IP
+                       #                  alpha, face-normal
+                       #                  sign, downstream DoF
+                       #                  renumbering),
+                       #                  compressible_euler (4:
+                       #                  CG instability,
+                       #                  LF vs HLLC, CFL, slope
+                       #                  limiter), contact (3:
+                       #                  active-set iteration,
+                       #                  penalty mis-tune,
+                       #                  AffineConstraints),
+                       #                  nonlinear_elasticity
+                       #                  (3: three-field for
+                       #                  nu>0.49, Newton load
+                       #                  steps, Sacado AD).)
     "skfem":   74.0,   # measured  75.7 (raised 2026-06-02 from
                        #                  58.0 after pass 2 on
                        #                  skfem: 6 reaction_
