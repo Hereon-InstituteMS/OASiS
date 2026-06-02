@@ -49,6 +49,7 @@ _AUDIT_DRIVEN_PHYSICS: list[tuple[str, str]] = [
     ("skfem",  "point_source"),          # ex17 / ex38
     ("skfem",  "schrodinger"),           # ex39
     ("skfem",  "contact"),               # ex04
+    ("skfem",  "hydraulic_resistance"),  # ex29
     ("fenics", "matrix_free_poisson"),   # demo_poisson_matrix_free.py
 ]
 

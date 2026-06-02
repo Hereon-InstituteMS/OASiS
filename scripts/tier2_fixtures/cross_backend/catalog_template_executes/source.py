@@ -461,6 +461,11 @@ def main() -> int:
         # active-set frictionless contact, monotone active-set
         # update prevents Picard oscillation.
         ("skfem", "contact", "2d"),
+        # Batch-23 (2026-06-02): skfem hydraulic_resistance (ex29)
+        # — pressure-driven Stokes in a channel; R = ΔP/Q vs
+        # Poiseuille 12μL/H³ closed form (default L/H=20 →
+        # entrance-effect bias ~1.6%, matches pitfall).
+        ("skfem", "hydraulic_resistance", "2d"),
     ]
     fail = []
     executed = 0

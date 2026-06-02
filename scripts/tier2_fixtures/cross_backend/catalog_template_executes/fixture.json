@@ -135,7 +135,8 @@
     "skfem::schrodinger::1d_rc=0",
     "fenics::matrix_free_poisson::2d_rc=0",
     "skfem::contact::2d_rc=0",
-    "total_executed=128",
+    "skfem::hydraulic_resistance::2d_rc=0",
+    "total_executed=129",
     "failures=0"
   ],
   "forbid_in_output": [

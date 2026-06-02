@@ -204,6 +204,13 @@ class SkfemBackend(SolverBackend):
                 element_types=["P1-tri"],
                 template_variants=["2d"],
             ),
+            PhysicsCapability(
+                name="hydraulic_resistance",
+                description="Stokes flow through a 2D rectangular channel; computes resistance R=ΔP/Q against the Poiseuille closed-form 12μL/H³. Matches scikit-fem ex29.",
+                spatial_dims=[2],
+                element_types=["Taylor-Hood (P2-P1) tri"],
+                template_variants=["2d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
