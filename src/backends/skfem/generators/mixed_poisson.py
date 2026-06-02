@@ -124,6 +124,22 @@ KNOWLEDGE = {
             "the boundary integral via skfem.FacetBasis + asm() "
             "recovers it. (Claim inherited — not yet empirically "
             "separated.)",
+            "[API] OrientedBoundary is NOT exposed at top level — "
+            "skfem.OrientedBoundary raises AttributeError. To tag "
+            "boundary facets with signed normal direction (needed "
+            "for RT/BDM/N1 flux assembly and any FacetBasis usage "
+            "that depends on outward normal sign), import from the "
+            "submodule: `from skfem.generic_utils import "
+            "OrientedBoundary`. The class is a subclass of "
+            "numpy.ndarray carrying an `ori` attribute "
+            "(int array of ±1 per facet). FacetBasis branches on "
+            "`isinstance(self.find, OrientedBoundary)` to decide "
+            "whether to apply orientation — passing a plain "
+            "ndarray silently disables orientation handling. "
+            "Signal: hasattr(skfem, 'OrientedBoundary') is False; "
+            "the import succeeds from skfem.generic_utils. (File "
+            "walk skfem/generic_utils.py 2026-06-02; verified live "
+            "in skfem 12.0.1.)",
         ],
     },
 }

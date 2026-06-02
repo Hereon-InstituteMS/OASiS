@@ -425,6 +425,31 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"Got {ib.Nbfun}.")
 
     @_skip_no_skfem
+    def test_skfem_oriented_boundary_not_top_level_export(
+            self) -> None:
+        """skfem::mixed_poisson [API]: OrientedBoundary is NOT exposed
+        as skfem.OrientedBoundary — must `from skfem.generic_utils
+        import OrientedBoundary` (used to tag boundary facets with ±1
+        normal-direction sign for FacetBasis assembly with
+        RT/BDM/Nedelec). The class is an ndarray subclass with an
+        `ori` int array attribute. (File walk skfem/generic_utils.py
+        2026-06-02.)"""
+        import numpy as np
+        import skfem
+        self.assertFalse(
+            hasattr(skfem, "OrientedBoundary"),
+            "skfem.OrientedBoundary should NOT be top-level "
+            "exported; pitfall claims hasattr is False (forcing "
+            "import from skfem.generic_utils).")
+        from skfem.generic_utils import OrientedBoundary
+        ob = OrientedBoundary([0, 1, 2], [1, -1, 1])
+        self.assertIsInstance(ob, np.ndarray)
+        self.assertTrue(hasattr(ob, "ori"),
+                        "OrientedBoundary should carry an `ori` "
+                        "attribute (sign per facet).")
+        self.assertEqual(list(ob.ori), [1, -1, 1])
+
+    @_skip_no_skfem
     def test_skfem_dg_methods_project_module_level_deprecated(
             self) -> None:
         """skfem::dg_methods [API]: module-level skfem.project()
