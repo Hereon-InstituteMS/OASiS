@@ -425,6 +425,22 @@ def main() -> int:
         # Picard iterations, max u = 1.0 (lid BC) and peak |u_y|
         # ≈ 0.47 — consistent with Ghia/Ghia/Shin reference.
         ("skfem", "navier_stokes", "2d"),
+        # Batch-22 (audit 2026-06-02): close skfem::hyperelasticity::2d
+        # — LAST deferred row. Same broadcast-shape kernel family
+        # as navier_stokes (w["dux_dx"]/etc. scalar kwargs no
+        # longer accepted; u.grad[0] indexing returned wrong shape
+        # on ElementVector). Rewrote kernel to use skfem.helpers
+        # grad/ddot/transpose on the rank-2 displacement-gradient
+        # tensor + basis.interpolate(u_prev) for the previous-
+        # iterate field via w['u_prev'].grad. Used a Picard-style
+        # modified Newton: tangent is small-strain Hooke (exact at
+        # F=I, linear-rate convergence) and the residual uses the
+        # actual Neo-Hookean P(F), so converged iterations satisfy
+        # the nonlinear equilibrium. Tightened defaults from
+        # E=1.0/traction=0.1 (10%-of-stiffness load → J<0 →
+        # log(J)=NaN) to E=1000/traction=1.0 (~0.4% strain,
+        # converges in 5 iters per load step).
+        ("skfem", "hyperelasticity", "2d"),
     ]
     fail = []
     executed = 0

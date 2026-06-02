@@ -128,7 +128,8 @@
     "kratos::auxiliary_overview::N/A_rc=0",
     "ngsolve::nonlinear_elasticity::3d_rc=0",
     "skfem::navier_stokes::2d_rc=0",
-    "total_executed=121",
+    "skfem::hyperelasticity::2d_rc=0",
+    "total_executed=122",
     "failures=0"
   ],
   "forbid_in_output": [
