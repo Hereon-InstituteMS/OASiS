@@ -120,5 +120,38 @@ class TestExamplesAdversarial(unittest.TestCase):
             f"{result[:200]}")
 
 
+class TestKnowledgeAdversarial(unittest.TestCase):
+    """knowledge tool corner cases."""
+
+    def test_empty_topic_shows_usage(self) -> None:
+        knowledge = _get_tool("knowledge")
+        result = knowledge(topic="")
+        self.assertIn("Topics:", result,
+                      "knowledge(topic='') must surface a usage "
+                      "hint listing all valid topics.")
+        # Defense in depth: the postmortems topic was added in
+        # task #147 and the usage hint must include it.
+        self.assertIn("postmortems", result,
+                      "knowledge usage hint must list "
+                      "'postmortems' topic (task #147).")
+
+    def test_unknown_topic_shows_usage(self) -> None:
+        knowledge = _get_tool("knowledge")
+        result = knowledge(topic="nonsense_topic")
+        # Unknown topic should NOT silently return empty —
+        # surface the same usage hint so the LLM can pick.
+        self.assertIn("Topics:", result,
+                      "knowledge(topic='nonsense') must fall back "
+                      "to the usage hint.")
+
+    def test_unknown_solver_clean_error(self) -> None:
+        knowledge = _get_tool("knowledge")
+        result = knowledge(topic="physics", solver="ghost",
+                            physics="poisson")
+        self.assertIn("Unknown solver", result,
+                      f"Expected clean 'Unknown solver' error. "
+                      f"Got: {result[:200]}")
+
+
 if __name__ == "__main__":
     unittest.main()
