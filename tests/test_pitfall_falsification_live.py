@@ -385,6 +385,46 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"on 4x4 unit-square. Got {dim_P1P1}.")
 
     @_skip_no_dolfinx
+    def test_fenics_linear_elasticity_ufl_sym_rank_check(self) -> None:
+        """fenics::linear_elasticity #0 [Syntax]: ufl.sym on a
+        rank != 2 tensor raises 'Symmetric part of tensor with
+        rank != 2 is undefined.' Verifies the catalog's exact
+        ValueError wording."""
+        import ufl
+        from mpi4py import MPI
+        from dolfinx import mesh, fem
+        m = mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        V = fem.functionspace(m, ("Lagrange", 1))   # scalar
+        u = ufl.TrialFunction(V)                    # rank 0
+        with self.assertRaises(ValueError) as cm:
+            ufl.sym(u)
+        self.assertIn(
+            "Symmetric part of tensor with rank != 2",
+            str(cm.exception),
+            f"fenics::linear_elasticity #0 predicts exact "
+            f"wording 'Symmetric part of tensor with rank != 2 "
+            f"is undefined.' Got: {str(cm.exception)!r}")
+
+    @_skip_no_skfem
+    def test_skfem_mixed_poisson_rt0_nbfun_invariant(self) -> None:
+        """skfem::mixed_poisson #1 [API]: ElementTriRT0 is
+        registered + a Basis with it has Nbfun == 3 on triangles
+        (matches the 3 edges per triangle, since RT0 has one DOF
+        per facet)."""
+        import skfem
+        self.assertTrue(
+            hasattr(skfem, "ElementTriRT0"),
+            "skfem.ElementTriRT0 should be importable; pitfall "
+            "claims hasattr is True.")
+        m = skfem.MeshTri()
+        ib = skfem.Basis(m, skfem.ElementTriRT0())
+        self.assertEqual(
+            ib.Nbfun, 3,
+            f"ElementTriRT0 Nbfun on triangles should be 3 "
+            f"(one DOF per edge × 3 edges per triangle). "
+            f"Got {ib.Nbfun}.")
+
+    @_skip_no_dolfinx
     def test_fenics_dolfinx_connectivity_lazy_vs_explicit(self) -> None:
         """fenics::poisson #0 nuance: locate_entities_boundary +
         locate_dofs_topological succeed WITHOUT explicit
