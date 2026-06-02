@@ -128,14 +128,44 @@ def _walk_package(pkg_name: str) -> list[dict]:
                 visit(f"{modname}.{sub.name}")
 
     visit(pkg_name)
-    # Deduplicate: a class may appear in many modules via
-    # re-export; canonicalise to its __module__.
-    out: dict[tuple[str, str], dict] = {}
+    # Deduplicate. Two passes:
+    #   1. By (name, kind) — drop re-exports of the same name.
+    #   2. By object identity — drop aliases (where one symbol
+    #      is just a re-binding of another, e.g. skfem's
+    #      `BoundaryFacetBasis is FacetBasis`).
+    by_name: dict[tuple[str, str], dict] = {}
     for entry in found:
         key = (entry["name"], entry["kind"])
-        if key not in out:
-            out[key] = entry
-    return list(out.values())
+        if key not in by_name:
+            by_name[key] = entry
+
+    # Resolve each entry back to its underlying object identity
+    # and collapse aliases. Keep the canonical-named one
+    # (shortest/lexicographically-first __qualname__ match).
+    by_objid: dict[int, dict] = {}
+    for entry in by_name.values():
+        try:
+            mod = importlib.import_module(entry["module"])
+            obj = getattr(mod, entry["name"])
+            oid = id(obj)
+        except Exception:
+            # Keep entry as-is if we can't resolve.
+            by_objid[id(entry)] = entry
+            continue
+        existing = by_objid.get(oid)
+        if existing is None:
+            by_objid[oid] = entry
+        else:
+            # Prefer the canonical name — the one matching
+            # __name__ if available; else lexicographic.
+            canonical_name = getattr(obj, "__name__",
+                                     entry["name"])
+            if entry["name"] == canonical_name:
+                by_objid[oid] = entry
+            elif existing["name"] != canonical_name and \
+                 entry["name"] < existing["name"]:
+                by_objid[oid] = entry
+    return list(by_objid.values())
 
 
 def _collect_catalog_text() -> str:

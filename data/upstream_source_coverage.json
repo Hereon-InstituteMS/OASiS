@@ -2,19 +2,14 @@
   "skfem": {
     "package": "skfem",
     "version": "12.0.1",
-    "n_public_symbols": 217,
-    "n_documented": 75,
-    "n_uncovered": 142,
-    "coverage_pct": 34.6,
+    "n_public_symbols": 198,
+    "n_documented": 65,
+    "n_uncovered": 133,
+    "coverage_pct": 32.8,
     "uncovered": [
       {
         "module": "skfem",
         "name": "AbstractBasis",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "BoundaryFacetBasis",
         "kind": "class"
       },
       {
@@ -60,11 +55,6 @@
       {
         "module": "skfem",
         "name": "ElementHexC1",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "ElementHexDG",
         "kind": "class"
       },
       {
@@ -129,22 +119,12 @@
       },
       {
         "module": "skfem",
-        "name": "ElementQuadDG",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
         "name": "ElementQuadN1",
         "kind": "class"
       },
       {
         "module": "skfem",
         "name": "ElementQuadP",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "ElementQuadRT0",
         "kind": "class"
       },
       {
@@ -165,16 +145,6 @@
       {
         "module": "skfem",
         "name": "ElementTetCR",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "ElementTetDG",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "ElementTetN0",
         "kind": "class"
       },
       {
@@ -209,7 +179,7 @@
       },
       {
         "module": "skfem",
-        "name": "ElementTriCCR",
+        "name": "ElementTriP2B",
         "kind": "class"
       },
       {
@@ -234,6 +204,11 @@
       },
       {
         "module": "skfem",
+        "name": "ElementTriP1B",
+        "kind": "class"
+      },
+      {
+        "module": "skfem",
         "name": "ElementTriN1",
         "kind": "class"
       },
@@ -249,22 +224,12 @@
       },
       {
         "module": "skfem",
-        "name": "ElementTriP1B",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
         "name": "ElementTriP1DG",
         "kind": "class"
       },
       {
         "module": "skfem",
         "name": "ElementTriP1G",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "ElementTriP2B",
         "kind": "class"
       },
       {
@@ -299,17 +264,7 @@
       },
       {
         "module": "skfem",
-        "name": "ElementVectorH1",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
         "name": "ElementWedge1",
-        "kind": "class"
-      },
-      {
-        "module": "skfem",
-        "name": "ExteriorFacetBasis",
         "kind": "class"
       },
       {
