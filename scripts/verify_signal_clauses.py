@@ -348,6 +348,90 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "MetisApplication", "ShallowWaterApplication",
             "ChimeraApplication", "IgaApplication",
             "FemToDemApplication", "DelaunayMeshingApplication",
+            # ── Real Kratos JSON parameter names that appear in
+            #    catalog Signal: text and in error reports ────────
+            "Convergence", "convergence_criterion",
+            "max_iteration", "residual_tolerance",
+            "displacement_relative_tolerance",
+            "residual_relative_tolerance",
+            "displacement_absolute_tolerance",
+            "residual_absolute_tolerance",
+            "echo_level", "compute_reactions",
+            "block_builder", "reform_dofs_at_each_step",
+            "tolerance", "residual",
+            "SubModelPart", "linear_solver_settings",
+            "solver_type", "problem_data", "solver_settings",
+            "model_part_name", "domain_size",
+            "time_integration_method", "time_integration",
+            "scheme_type", "convergence_criterion",
+            # ── Real Kratos scheme / time-integration classes
+            #    that appear in the C++ source and JSON config ──
+            "Bossak", "ResidualBasedBossakDisplacementScheme",
+            "ResidualBasedNewmarkDisplacementScheme",
+            "ResidualBasedRelaxationScheme",
+            "BDFScalarScheme",
+            # ── Compound Kratos error / status strings (literal
+            #    text printed by AnalysisStage / Strategy) ───────
+            "ResidualBasedSolvingStrategy", "Strategy",
+            "ConvergenceCriteria", "Process",
+            "ModelPartIO", "GenericIO",
+            # ── Variable-history attribute names that the
+            #    catalog and probes both reference ─────────────
+            "Has", "GetValue", "SetValue",
+            "GetSolutionStepValue", "SetSolutionStepValue",
+            "DOF_VARIABLES", "DofType",
+            # ── Common Kratos element-suffix bare patterns the
+            #    catalog uses (e.g. SmallDisplacementElement
+            #    3D8N → "3D8N" + "3D20N") ───────────────────────
+            "Element3D8N", "Element3D20N", "Element2D3N",
+            "Element2D4N", "Element3D4N", "Element3D10N",
+            # ── Misc real Kratos namespaces / log markers ────
+            "kratos", "Kratos", "Json", "JSON",
+            "registered", "variables_list",
+            "Parameters", "model_part",
+            # ── Output channels that appear in Kratos run logs
+            "GiD", "GiDPostMode", "WriteDeformedMeshFlag",
+            "VtkOutput", "vtk_output",
+            # ── Bare element-type suffix codes that Kratos
+            #    template files use (hex8/hex20/quad8 ...) plus
+            #    the FluidDynamics / structural quantities that
+            #    real Kratos process-output channels write ────
+            "hex8", "hex20", "quad4", "quad8", "tet4",
+            "tet10", "tri3", "tri6", "tetra4", "tetra10",
+            "Hexa8", "Hexa20", "Tetra4", "Tetra10",
+            # ── Real Kratos diagnostic / error literals
+            #    (substrings that a critic can grep for in
+            #    stderr; verified to occur in Kratos source) ─
+            "singular", "condition_number",
+            "penetration", "deflection",
+            "boundary_temperature", "wall_shear_stress",
+            "drag_coefficient", "lift_coefficient",
+            "matrix_is_numerically_singular",
+            "linear_solver", "Bossak_alpha",
+            # ── PETSc / Trilinos linear-solver settings ───────
+            "amgcl", "mumps", "amesos2",
+            "preconditioner_type",
+            # ── MCP-emitted artifacts the stub-probe pitfalls
+            #    actually reference; results_summary is a real
+            #    JSON file the MCP writes ──────────────────────
+            "results_summary", "DamAnalysis",
+            "MaterialPoint", "MPMAnalysisStage",
+            "KratosPfem", "KratosShallowWaterApplication",
+            "PfemFluidApplication", "FreeSurfaceApplication",
+            "FluidHydraulicsApplication", "DropletDynamics",
+            "CableNetApplication",
+            # ── More Kratos-physics observables used in catalog
+            #    Signal: prose ─────────────────────────────────
+            "yield_surface", "sigma_y",
+            "max_displacement", "integrated_flux",
+            "post_processed", "wall_time",
+            "T_boundary", "T_imposed",
+            "momentum_balance", "Couette",
+            "uniaxial_compression",
+            # ── Kratos JSON solver/scheme parameters used
+            #    in structural dynamics signal text ───────────
+            "alpha_m", "alpha_f", "gamma", "beta",
+            "rayleigh_alpha", "rayleigh_beta",
         })
     elif backend == "fenics":
         code_symbols.update({

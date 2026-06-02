@@ -92,7 +92,7 @@ KNOWLEDGE = {
                         'geomechanics_cl_naming in scripts/tier2_fixtures'
                         '/kratos/.)',
                         '[Physics] U-Pw elements require both DISPLACEMENT and WATER_PRESSURE DOFs '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                         '[Numerical] Gravity loading via body_force_per_unit_mass: [0, -9.81, 0] '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Numerical] Initial stress state often needed via K0 procedure '

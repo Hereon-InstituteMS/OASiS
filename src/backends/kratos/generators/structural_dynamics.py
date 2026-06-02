@@ -161,7 +161,7 @@ KNOWLEDGE = {
                         '[Numerical] Mass matrix: consistent (default) or lumped (faster for explicit). Lumped on linear tets/quads is OK; lumped on quadratic elements loses accuracy for higher-frequency modes. '
                         'Signal: natural-frequency study with lumped quad8 shows frequency error 2-5% for f_2..f_5 vs <0.5% with consistent mass.',
                         '[Numerical] Effective stiffness K_eff = K + 1/(beta*dt^2)*M — factor it ONCE for linear dynamics, reuse across steps. Re-factorising every step costs O(N^1.5) instead of O(N). '
-                        'Signal: per-step wall time scales as N^1.5 with mesh refinement instead of N.',
+                        'Signal: per-step wall_time of ResidualBasedBlockBuilderAndSolver scales as N^1.5 with mesh refinement instead of N — set reform_dofs_at_each_step: false in the linear_solver_settings to reuse the factorisation.',
                         '[Numerical] For nonlinear dynamics: tangent must be re-assembled at each Newton iteration (not just each time step). Caching the initial tangent gives modified-Newton with slow convergence. '
                         "Signal: ResidualBasedNewtonRaphsonStrategy iteration log shows the ResidualCriteria ratio decreasing by < 0.5 per iter (should be O(0.01) for full Newton); the strategy saturates at max_iteration without ResidualBasedBlockBuilderAndSolver reaching tolerance.",
                         '[Numerical] ELEMENT SELECTION: Linear hex8 (SmallDisplacementElement3D8N) shear-locks in bending-dominated problems — use quadratic hex20 or hex27. Same applies to linear quad4 in 2D — use quad8/quad9. '

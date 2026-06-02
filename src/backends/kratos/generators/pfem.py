@@ -67,7 +67,7 @@ KNOWLEDGE = {
                         '[Numerical] Requires DelaunayMeshingApplication for remeshing '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Physics] Alpha-shape parameter controls free-surface detection (default ~1.25) '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                         '[Numerical] Time step must be small enough for remeshing stability '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Numerical] Output: particles move, so mesh changes every step '

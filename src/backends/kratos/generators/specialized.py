@@ -118,7 +118,7 @@ KNOWLEDGE = {
         "capabilities": ["u-pw coupling", "fracture_propagation", "interface_elements"],
         "pitfalls": [
                         '[Physics] Different from GeoMechanicsApplication — this focuses on fracture in porous media '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                     ]    },
     "shallow_water": {
         "description": "Shallow water equations (Saint-Venant) for flood/dam-break/coastal simulation",
@@ -214,7 +214,7 @@ KNOWLEDGE = {
                         '[Numerical] Requires DEMApplication as base '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Physics] Temperature DOF per particle '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                     ],
     },
     "swimming_dem": {

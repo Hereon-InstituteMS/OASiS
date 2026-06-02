@@ -175,7 +175,7 @@ KNOWLEDGE = {
                         '[Syntax] Non-homogeneous Dirichlet: use AssignScalarVariableProcess with constrained=True. Setting constrained=False applies the value but does NOT fix the DOF, so the solver overwrites it. '
                         'Signal: boundary temperatures drift away from the prescribed values during the solve; T_boundary - T_imposed is O(1) instead of O(eps).',
                         '[Syntax] Neumann (heat flux): use ApplyConstantScalarValueProcess on FACE_HEAT_FLUX (not TEMPERATURE). Targeting TEMPERATURE applies a Dirichlet pseudo-flux. '
-                        'Signal: the steady-state interior temperature is wrong by a multiplicative factor; integrated flux on the boundary does not match the applied value.',
+                        'Signal: the steady-state interior TEMPERATURE field from the VtkOutput .vtu is wrong by a multiplicative factor; the FACE_HEAT_FLUX integral on the boundary does not match the applied value.',
                     ],
     },
     "heat_transient": {
@@ -193,7 +193,7 @@ KNOWLEDGE = {
                         '[Numerical] Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Physics] For varying BCs in time: update Dirichlet values each step '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                         '[Numerical] Consistent mass matrix gives better accuracy than lumped '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                     ],

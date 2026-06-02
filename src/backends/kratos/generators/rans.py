@@ -79,7 +79,7 @@ KNOWLEDGE = {
                         '[Numerical] Wall distance computation needed for SST model '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Physics] Inlet turbulence: specify k and epsilon/omega from turbulence intensity '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                         '[Numerical] y+ must be appropriate for chosen wall treatment (30-300 for wall functions) '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                     ],

@@ -285,7 +285,7 @@ KNOWLEDGE = {
                         '[Numerical] Zero-energy modes possible with linear elements: use stabilization '
                         "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
                         '[Physics] For free surface: particles leaving grid are lost (expand grid or use remeshing) '
-                        'Signal: post-processed quantity (max displacement, integrated flux, pressure) disagrees with analytic / textbook reference by 10-100%.',
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
                     ],
     },
 }
