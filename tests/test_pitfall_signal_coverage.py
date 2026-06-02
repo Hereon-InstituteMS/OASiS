@@ -431,7 +431,62 @@ SIGNAL_COVERAGE_MIN = {
                        #                 18.2% -> 22.1% -> 25.4% ->
                        #                 28.1% -> 30.1% -> 34.6% ->
                        #                 40.6% across nine passes.)
-    "dune":     0.0,   # measured   0.0 — known total gap
+    "dune":    99.0,   # measured 100.0 — dune at FULL Signal
+                       #                 coverage (raised 2026-06-02
+                       #                 from 0.0 after pass 1: 68
+                       #                 untagged pitfalls Signal-
+                       #                 tagged across 15 physics:
+                       #                 poisson (7: UFL = FEniCS,
+                       #                 JIT 30-60s, cached, dune.ufl
+                       #                 .DirichletBC, gridView.
+                       #                 writeVTK, structuredGrid =
+                       #                 QUAD, Constant() needs
+                       #                 domain), heat (3), linear_
+                       #                 elasticity (3: dimRange,
+                       #                 Lame mu/lam formulae,
+                       #                 sym(grad(u))), nonlinear
+                       #                 (3: internal Newton, load
+                       #                 stepping, scheme parameters),
+                       #                 reaction_diffusion (3: auto-
+                       #                 linearisation, implicit for
+                       #                 stiff, dimRange for multi-
+                       #                 species), stokes (3: product
+                       #                 space, Uzawa, PETSc fieldsplit),
+                       #                 adaptive_poisson (6: ALUGrid
+                       #                 vs YaspGrid, eta_K^2,
+                       #                 space.update + interpolate,
+                       #                 Doerfler theta, coarsening,
+                       #                 nested iteration), dg_advection
+                       #                 (6: CFL h/(2p+1), UFL upwind,
+                       #                 dS vs ds, dune-fem-dg, modal
+                       #                 dgonb, limiters), maxwell
+                       #                 (4: no Nedelec, indefinite
+                       #                 GMRES, pollution, spurious
+                       #                 modes), eigenvalue (4: shift
+                       #                 sigma, deflation, SLEPc,
+                       #                 scheme.jacobian), hyperelasticity
+                       #                 (5: NH energy d-subtraction,
+                       #                 F = I + grad(u), load step,
+                       #                 mixed for nu~0.5, UFL auto-
+                       #                 AD), navier_stokes (5: Picard
+                       #                 vs Newton, grad-div, P2/P1
+                       #                 LBB, block precond, SUPG/PSPG),
+                       #                 helmholtz (5: indefinite,
+                       #                 P3+ pollution, Robin/PML,
+                       #                 shifted-Laplacian, 10 elem/
+                       #                 lambda), time_dependent_heat
+                       #                 (5: BE RHS update, scheme
+                       #                 reuse, mass cache, CN factor
+                       #                 1/2, dt by accuracy),
+                       #                 mixed_methods (6: RT+DG_k-1
+                       #                 LBB, product_space,
+                       #                 TrialFunctions unpack, sigma.n
+                       #                 weak BC, postprocess to H1,
+                       #                 block precond / direct).
+                       #                 dune is the EIGHTH and FINAL
+                       #                 backend at 100% Signal: coverage.
+                       #                 Trajectory: 0.0% -> 100.0% in
+                       #                 a SINGLE pass.)
 }
 
 

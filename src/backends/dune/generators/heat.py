@@ -52,9 +52,42 @@ KNOWLEDGE = {
         "solver": "Same galerkin scheme; for transient, use time-stepping loop",
         "time_stepping": "Backward Euler, Crank-Nicolson, DIRK23, DIRK34, SDIRK22, Heun",
         "pitfalls": [
-            "Non-homogeneous Dirichlet via conditional() in UFL expression",
-            "Transient: mass matrix + dt*stiffness matrix per step",
-            "DUNE caches compiled code — first step slow, rest fast",
+            (
+                "[API] Non-homogeneous Dirichlet via "
+                "conditional() in UFL expression. Signal: "
+                "writing DirichletBC(space, T_fixed) with "
+                "a constant fails to apply different "
+                "values per boundary segment; the canonical "
+                "DUNE pattern is "
+                "DirichletBC(space, conditional(x[0] < eps, "
+                "T_left, T_right)) — the UFL conditional "
+                "selects values based on coordinate. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Transient: assemble mass matrix "
+                "M + dt * stiffness matrix K per step. "
+                "Signal: assembling only K (forgetting the "
+                "mass contribution) gives a steady-state "
+                "solution at every time step regardless of "
+                "dt — the heat-front transient is missing. "
+                "The galerkin scheme handles this when the "
+                "form includes (u - u_old)/dt * v * dx + "
+                "k * dot(grad(u), grad(v)) * dx. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] DUNE caches compiled code — "
+                "FIRST step slow (~30-60s), rest fast. "
+                "Signal: a 10-step transient with first-"
+                "step time of 35s and subsequent steps "
+                "of 0.1s each shows the JIT cost; if "
+                "every step is slow, the form is "
+                "regenerating each step (form parameters "
+                "changing in unintended ways forcing "
+                "re-JIT). Keep form structure constant. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 }

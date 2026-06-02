@@ -47,9 +47,43 @@ KNOWLEDGE = {
         "description": "Nonlinear PDEs solved via built-in Newton iteration",
         "solver": "galerkin scheme handles Newton automatically when form depends on solution",
         "pitfalls": [
-            "DUNE-fem linearizes and applies Newton internally — no manual Newton loop needed",
-            "For difficult nonlinear problems: use load stepping or continuation",
-            "Convergence controlled by scheme parameters (tolerance, max iterations)",
+            (
+                "[API] DUNE-fem LINEARIZES AND APPLIES "
+                "NEWTON INTERNALLY — no manual Newton loop "
+                "needed. Signal: writing a manual "
+                "while-not-converged loop with explicit "
+                "Jacobian assembly works but is "
+                "redundant; scheme.solve() handles "
+                "Newton-Krylov natively. The form must "
+                "be the nonlinear residual a(u) = 0, "
+                "NOT a linearised a == b. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] For DIFFICULT nonlinear "
+                "problems: use load stepping or "
+                "continuation. Signal: scheme.solve() "
+                "returning 'Newton did not converge' "
+                "(max iterations hit at residual O(1)) "
+                "on a problem with strong nonlinearity "
+                "(D(u) = u^3, large deformation); solving "
+                "a sequence of problems with continuation "
+                "parameter from easy to hard with each "
+                "previous solution as initial guess "
+                "succeeds. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Convergence controlled by scheme "
+                "parameters (tolerance, max iterations). "
+                "Signal: scheme = galerkin([...], "
+                "solver='gmres', parameters={'newton."
+                "tolerance': 1e-8, 'newton.maxiter': 50}) "
+                "tunes the Newton settings. Default "
+                "tolerance 1e-6 / maxiter 20 is often too "
+                "loose for sensitive problems; tighten "
+                "for accuracy, loosen for first runs. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 }

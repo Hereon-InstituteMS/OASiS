@@ -93,12 +93,74 @@ KNOWLEDGE = {
         "spaces": "dglagrange(gridView, order=k) — discontinuous Lagrange of any order",
         "time_stepping": "Explicit Euler, SSP-RK2, SSP-RK3 for stability",
         "pitfalls": [
-            "CFL condition: dt < h / (2*order+1) / max(|b|) for stability",
-            "Upwind flux: use conditional(gt(b.n, 0), u('+'), u('-')) for upwind selection",
-            "Interior facet integrals: dS in UFL (capital S), boundary: ds (lowercase)",
-            "DG with dune-fem-dg module: optimized SSP-RK time steppers available",
-            "For high-order DG: use modal basis (dgonb, dglegendre) for better conditioning",
-            "Limiters may be needed for discontinuous solutions (TVD/TVB/WENO)",
+            (
+                "[Numerical] CFL condition: dt < h / "
+                "(2*order + 1) / max(|b|) for stability. "
+                "Signal: dt > CFL gives NaN within ~10 "
+                "steps; the (2*order+1) denominator "
+                "tightens the CFL for higher-order DG "
+                "elements (order=3 needs dt 7x smaller "
+                "than order=1). Safety factor 0.5 is "
+                "conservative. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Upwind flux: use UFL conditional(gt"
+                "(b.n, 0), u('+'), u('-')) for upwind "
+                "selection. Signal: a centred flux "
+                "(0.5*(u('+') + u('-'))) on pure-"
+                "advection DG produces unconditional "
+                "instability — solution amplitude grows "
+                "exponentially regardless of dt. Use "
+                "upwind via UFL conditional. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Interior facet integrals: dS in "
+                "UFL (CAPITAL S); boundary integrals: "
+                "ds (lowercase). Signal: writing jump "
+                "terms over ds instead of dS silently "
+                "drops them on interior facets — the "
+                "discrete operator has wrong sparsity "
+                "(no facet coupling). UFL "
+                "case-sensitively distinguishes ds "
+                "(boundary) from dS (interior). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] DG with the dune-fem-dg "
+                "module: optimised SSP-RK time steppers "
+                "available (SSPRK3 / SSPRK4). Signal: "
+                "writing a manual explicit Euler loop "
+                "for DG advection is 2-5x slower than "
+                "the dune-fem-dg SSPRK time stepper, "
+                "which uses tuned cell loops and "
+                "block-diagonal mass-matrix inversion. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For HIGH-ORDER DG: use "
+                "MODAL basis (dgonb, dglegendre) for "
+                "better conditioning. Signal: nodal "
+                "DG (lagrange order=5) on a high-order "
+                "DG problem gives cond(K) > 1e10; "
+                "switching to dgonb (orthonormal "
+                "basis) gives cond(K) ~ 1e4 for the "
+                "same problem — iterative solver "
+                "iterations drop accordingly. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Limiters may be needed for "
+                "DISCONTINUOUS solutions (TVD / TVB / "
+                "WENO). Signal: high-order DG on a "
+                "shock problem produces 10-30% over/"
+                "undershoot at the discontinuity that "
+                "does NOT decay with refinement; "
+                "applying a minmod or WENO limiter "
+                "monotonically clips the oscillations "
+                "at the cost of one order of accuracy. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 }
