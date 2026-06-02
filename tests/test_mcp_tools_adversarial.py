@@ -152,6 +152,57 @@ class TestKnowledgeAdversarial(unittest.TestCase):
                       f"Expected clean 'Unknown solver' error. "
                       f"Got: {result[:200]}")
 
+    def test_overview_surfaces_general_catalog(self) -> None:
+        """knowledge(topic='overview', solver=<6-of-8>) must
+        return the backend-level _general reference catalog as
+        JSON. Before 2026-06-02 this content was reachable only
+        via the internal get_knowledge('_general') call — LLMs
+        had no MCP-visible path to discover it. (Task #52.)"""
+        knowledge = _get_tool("knowledge")
+        # The 6 backends with substantive _general content.
+        # dealii is the largest (~5.2 KB); the others are 1-2 KB.
+        for solver in ("dealii", "fenics", "ngsolve", "skfem",
+                       "kratos", "dune"):
+            result = knowledge(topic="overview", solver=solver)
+            self.assertIn(f'"{solver}"', result,
+                f"knowledge(topic='overview', solver={solver!r}) "
+                f"must return JSON keyed by solver name. "
+                f"Got: {result[:200]}")
+            self.assertIn("description", result,
+                f"overview for {solver} must contain the "
+                f"'description' field from _general. Got: "
+                f"{result[:200]}")
+
+    def test_overview_missing_solver(self) -> None:
+        knowledge = _get_tool("knowledge")
+        result = knowledge(topic="overview", solver="")
+        # No solver → fall through to usage hint.
+        self.assertIn("Topics:", result,
+            "knowledge(topic='overview') without solver must "
+            "fall back to usage hint, not silently return empty.")
+        self.assertIn("overview", result,
+            "knowledge usage hint must list 'overview' topic "
+            "(task #52).")
+
+    def test_overview_unknown_solver_clean_error(self) -> None:
+        knowledge = _get_tool("knowledge")
+        result = knowledge(topic="overview", solver="ghost")
+        self.assertIn("Unknown solver", result,
+            f"overview with bogus solver must clean-error. "
+            f"Got: {result[:200]}")
+
+    def test_overview_empty_general_clean_message(self) -> None:
+        """fourc and febio have empty/error _general; the
+        branch must emit a self-explanatory message instead of
+        crashing or returning '{}'."""
+        knowledge = _get_tool("knowledge")
+        for solver in ("fourc", "febio"):
+            result = knowledge(topic="overview", solver=solver)
+            self.assertIn("No backend-level overview catalog", result,
+                f"overview for {solver} (which has empty "
+                f"_general) must emit a clear no-content "
+                f"message. Got: {result[:200]}")
+
 
 class TestDeveloperAdversarial(unittest.TestCase):
     """developer tool corner cases."""

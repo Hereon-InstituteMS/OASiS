@@ -358,6 +358,11 @@ def register_consolidated_tools(mcp: FastMCP):
                 - "input_guide" — how to write input files for a solver
                 - "solver_guidance" — which solver to use for a physics type
                 - "hardware" — parallelism, GPU, and hardware acceleration capabilities
+                - "overview" — backend-level reference catalog (element
+                  families, mesh types, solver catalogue, unique
+                  features). The content under the special "_general"
+                  knowledge key — for dealii ~5 KB, fenics / ngsolve /
+                  skfem / kratos / dune ~1-2 KB each. Needs solver=...
             solver: Backend name (e.g. 'fenics', 'fourc', 'dealii', 'ngsolve')
             physics: Physics type (e.g. 'poisson', 'linear_elasticity', 'navier_stokes')
             signal: Optional substring to filter post-mortem
@@ -490,6 +495,24 @@ def register_consolidated_tools(mcp: FastMCP):
                 if k and "materials" in k:
                     materials[p.name] = k["materials"]
             return json.dumps(materials, indent=2) if materials else f"No material catalog for {solver}"
+
+        elif topic == "overview" and solver:
+            # Surface the backend-level "_general" reference catalog
+            # (element families, mesh types, solver catalogue, unique
+            # features). Discovered 2026-06-02: get_knowledge('_general')
+            # returns substantive reference content for 6 of 8 backends
+            # (dealii 5.2 KB; fenics/ngsolve/skfem/kratos/dune 1-2 KB
+            # each) but was NOT exposed via any `knowledge(topic=...)`
+            # surface — LLMs had no way to discover it existed.
+            backend = get_backend(solver)
+            if not backend:
+                return f"Unknown solver: {solver}"
+            general = backend.get_knowledge("_general")
+            if not isinstance(general, dict) or not general or "error" in general:
+                return (f"No backend-level overview catalog for "
+                        f"{solver} (get_knowledge('_general') is "
+                        "empty or returned an error).")
+            return json.dumps({solver: general}, indent=2)
 
         elif topic == "coupling":
             from tools.knowledge import register_knowledge_tools
@@ -639,7 +662,7 @@ def register_consolidated_tools(mcp: FastMCP):
             return (
                 "Usage: knowledge(topic, solver, physics, signal='')\n"
                 "Topics: physics, pitfalls, postmortems, materials, "
-                "coupling, tsi, precice, input_guide, "
+                "overview, coupling, tsi, precice, input_guide, "
                 "solver_guidance, hardware"
             )
 

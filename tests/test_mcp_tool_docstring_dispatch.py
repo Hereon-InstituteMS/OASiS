@@ -21,8 +21,9 @@ Pinned tools:
   • examples(action=...)           — search/template/tutorials
   • developer(action=...)          — architecture/files/capabilities
   • knowledge(topic=...)           — physics/pitfalls/postmortems/
-                                     materials/coupling/tsi/precice/
-                                     input_guide/solver_guidance/hardware
+                                     materials/overview/coupling/tsi/
+                                     precice/input_guide/solver_guidance/
+                                     hardware
   • visualize(action=...)          — summary/list/plot/validate
   • session_insights(action=...)   — review/ingest/approve_all/reject_all/stats
   • transfer_field(target_format=...) — json/fenics/4c_neumann
