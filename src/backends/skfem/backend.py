@@ -176,6 +176,13 @@ class SkfemBackend(SolverBackend):
                 element_types=["Q1-quad"],
                 template_variants=["2d"],
             ),
+            PhysicsCapability(
+                name="adaptive_poisson",
+                description="h-adaptive Poisson with Babuška-Rheinboldt residual estimator on L-shape (canonical re-entrant-corner test)",
+                spatial_dims=[2],
+                element_types=["P1-tri"],
+                template_variants=["2d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
