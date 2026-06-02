@@ -485,22 +485,132 @@ FOURC_KNOWLEDGE = {
         ],
 
         "pitfalls": [
-            "Without CLONING MATERIAL MAP: 4C crashes at initialization",
-            "THEXPANS in MAT_Struct_ThermoStVenantK: thermal expansion coefficient (units must match T units)",
-            "INITTEMP: reference temperature for zero thermal strain",
-            "TSI DYNAMIC controls coupling; STRUCTURAL/THERMAL DYNAMIC control individual solvers",
-            "For one-way: ITEMAX 1 (only one coupling iteration needed)",
-            "SOLIDSCATRA elements REQUIRE 'TYPE Undefined' in the element definition. "
-            "Full format: <id> SOLIDSCATRA HEX8 <n1..n8> MAT <id> KINEM nonlinear TYPE Undefined",
-            "For one-way thermal→structural: MUST add TSI DYNAMIC/PARTITIONED section "
-            "with COUPVARIABLE: Temperature. Without this, 4C defaults to displacement "
-            "coupling (structural→thermal), which is backwards for heating problems "
-            "and produces zero displacement.",
-            "Monolithic TSI requires Belos iterative solver with block preconditioner "
-            "(NOT UMFPACK). For simple one-way problems, use partitioned tsi_oneway "
-            "instead — it works with UMFPACK and is simpler to set up.",
-            "Volume-level thermal Dirichlet: use DESIGN VOL THERMO DIRICH CONDITIONS "
-            "with DVOL-NODE TOPOLOGY to prescribe temperature on all nodes.",
+            (
+                "[Input] Without CLONING MATERIAL MAP, 4C "
+                "crashes at initialization. Signal: TSI setup "
+                "phase aborts with 'cannot clone material for "
+                "thermo field' from "
+                "4C_adapter_str_factory.cpp; the thermal "
+                "discretisation has no way to inherit the "
+                "structural cell topology + nodes. Standard "
+                "form: SRC_FIELD: structure, SRC_MAT: <struct_"
+                "mat_id>, TAR_FIELD: thermo, TAR_MAT: <thermo_"
+                "mat_id>. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] THEXPANS in MAT_Struct_"
+                "ThermoStVenantK is the thermal-expansion "
+                "coefficient — UNITS must match the "
+                "temperature units used elsewhere. Signal: "
+                "a 4C input with INITTEMP in Kelvin and "
+                "THEXPANS in 1/Celsius produces displacement "
+                "that differs from analytic by exactly the "
+                "T_reference offset (273.15) times "
+                "alpha*length — easily mistaken for boundary-"
+                "condition error. Use consistent units (all "
+                "SI, all CGS, etc.) throughout. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] INITTEMP is the reference "
+                "temperature for ZERO thermal strain. Signal: "
+                "omitting INITTEMP defaults to 0 — a heated "
+                "specimen at T = 300 K with no INITTEMP "
+                "specified produces unrealistically large "
+                "thermal strains as if it started from "
+                "absolute zero; expansion u = alpha * "
+                "DeltaT * L where DeltaT = T - 0 instead of "
+                "T - T_ref. Set INITTEMP to the stress-free "
+                "temperature (room temperature for typical "
+                "experiments). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] TSI DYNAMIC controls the COUPLING "
+                "(time step, ITEMAX, COUPALGO); the per-"
+                "field STRUCTURAL DYNAMIC and THERMAL "
+                "DYNAMIC sections control the individual "
+                "field solvers. Signal: setting NUMSTEP in "
+                "STRUCTURAL DYNAMIC but not in TSI DYNAMIC "
+                "is silently ignored — TSI DYNAMIC's "
+                "NUMSTEP wins and the structural section's "
+                "value is unused. Always set time-loop "
+                "controls in TSI DYNAMIC; use per-field "
+                "DYNAMIC sections for tolerances and "
+                "predictor type only. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] For one-way TSI (no feedback): "
+                "ITEMAX = 1 (only one coupling iteration "
+                "needed). Signal: ITEMAX > 1 on a one-way "
+                "problem still converges but wastes wall-"
+                "clock — each extra iteration recomputes "
+                "the second field with unchanged inputs. "
+                "Conversely, ITEMAX = 1 on a TWO-way "
+                "problem stops before convergence and "
+                "yields a partly-converged solution that "
+                "looks like the right answer but has 5-20% "
+                "error on the coupled response. Match "
+                "ITEMAX to coupling type. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] SOLIDSCATRA elements REQUIRE 'TYPE "
+                "Undefined' in the element definition. "
+                "Signal: omitting TYPE or writing 'TYPE "
+                "Std' triggers a RUNTIME FOUR_C_THROW "
+                "'TYPE ... not valid for SOLIDSCATRA "
+                "elements' at problem setup (TYPE is a "
+                "free-form schema string, so the YAML "
+                "parser does NOT reject it). Full format: "
+                "<id> SOLIDSCATRA HEX8 <n1..n8> MAT <id> "
+                "KINEM nonlinear TYPE Undefined. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] For one-way thermal -> structural "
+                "TSI: MUST add TSI DYNAMIC/PARTITIONED "
+                "section with COUPVARIABLE: Temperature. "
+                "Signal: without it, 4C defaults to "
+                "displacement coupling (structural -> "
+                "thermal), which is BACKWARDS for heating "
+                "problems — the result is zero "
+                "displacement everywhere because the "
+                "structural field gets no thermal forcing "
+                "input. Sanity check: a heated bar should "
+                "expand; if it doesn't, COUPVARIABLE is "
+                "likely missing or set to Displacement. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Monolithic TSI requires the "
+                "Belos iterative solver with a block "
+                "preconditioner (NOT UMFPACK). Signal: "
+                "writing 'SOLVER: UMFPACK' for a "
+                "tsi_monolithic problem aborts with "
+                "'monolithic TSI requires Belos' from "
+                "4C_tsi_monolithic.cpp at setup; the "
+                "monolithic Jacobian is too large and ill-"
+                "conditioned for a direct solver. For "
+                "simple one-way problems, use partitioned "
+                "tsi_oneway with UMFPACK (much simpler "
+                "setup). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Volume-level thermal Dirichlet: "
+                "use DESIGN VOL THERMO DIRICH CONDITIONS + "
+                "DVOL-NODE TOPOLOGY to prescribe "
+                "temperature on all nodes in a volume "
+                "region. Signal: applying a Dirichlet to "
+                "the surface-only set when you want a "
+                "constant-temperature volume leaves "
+                "interior nodes free — temperature "
+                "develops a non-uniform interior profile "
+                "instead of staying clamped. For "
+                "uniform-T initial condition over a "
+                "region, prefer INITIALFIELD + FUNCT over "
+                "DIRICH BCs (more efficient). (Audit "
+                "2026-06-02.)"
+            ),
             "[API] TSI DYNAMIC/COUPALGO is an enum of exactly 7 "
             "values: tsi_oneway, tsi_sequstagg, tsi_iterstagg, "
             "tsi_iterstagg_aitken, tsi_iterstagg_aitkenirons, "
@@ -531,7 +641,12 @@ FOURC_KNOWLEDGE = {
             "elements') rather than at YAML parse time. "
             "SOLIDSCATRA also supports QUAD4, QUAD9, TRI3, "
             "TRI6, HEX27, TET4, TET10, NURBS27 — not just HEX8. "
-            "Verified 2026-06-01.",
+            "Signal: 4C stderr emits 'TYPE <bad value> not "
+            "valid for SOLIDSCATRA elements' at the first "
+            "time step (NOT at YAML parse) when the TYPE "
+            "string is not in the 11-value enum; correct it "
+            "to one of the listed values. Verified "
+            "2026-06-01.",
         ],
     },
 
@@ -990,17 +1105,138 @@ PARTICLE DYNAMIC/SPH:
         },
 
         "pitfalls": [
-            "SPH section is MANDATORY even for pure PD — without it, no PD bonds are found",
-            "IO/RUNTIME VTK OUTPUT/PARTICLES must be added for ParaView output (VTP files)",
-            "Particle grid must be REGULAR for PD (uniform spacing in all directions)",
-            "INTERACTION_HORIZON must equal m*dx where m is the horizon ratio (typically 3)",
-            "PERIDYNAMIC_GRID_SPACING must match the actual particle spacing exactly",
-            "PRE_CRACKS uses semicolon-separated line segments: 'x1 y1 x2 y2 ; x3 y3 x4 y4'",
-            "PDBODYID must be specified for PD phase particles (e.g., PDBODYID 0)",
-            "Boundary phase particles (impactor) need TYPE boundaryphase, PD particles need TYPE pdphase",
-            "CFL condition: dt < 0.5 * dx / c_wave where c_wave = sqrt(E/rho)",
-            "BINNING STRATEGY BIN_SIZE_LOWER_BOUND must be > horizon for neighbor search",
-            "DOMAINBOUNDINGBOX must enclose all particles INCLUDING impactor motion range",
+            (
+                "[Input] PARTICLE DYNAMIC/SPH section is "
+                "MANDATORY even for PURE peridynamics — the "
+                "PD implementation lives inside the SPH "
+                "interaction framework. Signal: omitting SPH "
+                "section gives pd_neighbor_pairs = 0 at "
+                "runtime (visible in stderr) and zero "
+                "displacement, with NO error message — 4C "
+                "happily runs a no-force simulation. Add the "
+                "SPH block with KERNEL: QuinticSpline, "
+                "KERNEL_SPACE_DIM: Kernel2D (or 3D), "
+                "INITIALPARTICLESPACING matching dx. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Output] IO/RUNTIME VTK OUTPUT/PARTICLES "
+                "must be added for ParaView output (VTP "
+                "files). Signal: a PD simulation runs to "
+                "completion but no .vtp / .pvd files are in "
+                "the output directory — 4C produces native "
+                "files only, no particle output unless the "
+                "PARTICLES subsection is configured with "
+                "PARTICLE_OUTPUT: true. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] PD requires a REGULAR particle grid "
+                "(uniform spacing in all directions). "
+                "Signal: a non-uniform / refined particle "
+                "set produces visibly anisotropic wave "
+                "propagation in PD (waves travel faster in "
+                "dense regions) and wrong fracture patterns "
+                "— PD bond stiffness depends on uniform "
+                "spacing dx. Generate particles on a regular "
+                "grid (e.g. nx*ny loop with uniform dx). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] INTERACTION_HORIZON must equal m * "
+                "dx where m is the horizon ratio (typically "
+                "3). Signal: setting horizon < 2*dx gives a "
+                "PD model with each particle only seeing 1-2 "
+                "neighbours — bond count is too sparse, "
+                "stiffness is mesh-dependent and "
+                "convergence as dx -> 0 fails. m=3 is the "
+                "minimum for delta-convergence to classical "
+                "elasticity. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] PERIDYNAMIC_GRID_SPACING in the "
+                "input must EXACTLY match the actual "
+                "particle spacing in the mesh. Signal: a "
+                "mismatch (e.g. PERIDYNAMIC_GRID_SPACING: "
+                "0.1 but actual particles at 0.05 spacing) "
+                "produces wrong volume corrections at the "
+                "horizon — fracture stress is off by 2x or "
+                "more vs analytic Griffith load. Verify dx "
+                "by computing min pairwise distance between "
+                "first 10 particles. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] PRE_CRACKS uses semicolon-separated "
+                "line segments: 'x1 y1 x2 y2 ; x3 y3 x4 y4'. "
+                "Signal: mis-formatted PRE_CRACKS (e.g. comma "
+                "separator, or missing semicolons between "
+                "segments) parses as ONE crack with "
+                "concatenated endpoints — bonds across all "
+                "spurious segments break instead of just the "
+                "intended ones; the initial damage pattern "
+                "visualised in ParaView reveals the wrong "
+                "geometry. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] PDBODYID must be specified for PD "
+                "phase particles (e.g. PDBODYID 0). Signal: "
+                "omitting PDBODYID gives all PD particles "
+                "the default body ID -1; force assembly is "
+                "applied across body boundaries that should "
+                "be separate, producing non-physical "
+                "coupling between bodies (e.g. an impactor "
+                "experiences PD bonds with its target). "
+                "Each distinct body needs a unique PDBODYID. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Boundary phase particles (impactor) "
+                "need TYPE boundaryphase; PD particles need "
+                "TYPE pdphase. Signal: swapping TYPE between "
+                "impactor and target makes 4C apply "
+                "boundary-phase contact law where PD bonds "
+                "are expected and vice versa — the impactor "
+                "either passes through the target (no "
+                "contact reaction) or sticks to it (no "
+                "rebound). Verify TYPE per phase in the "
+                "PHASE_TO_MATERIAL_ID mapping. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] CFL condition for PD: dt < "
+                "0.5 * dx / c_wave where c_wave = sqrt(E/"
+                "rho). Signal: dt > CFL gives NaN within "
+                "~10 time steps (typical 'energy not "
+                "conserved' message); reducing dt by 2x at "
+                "a time until stable. For PD with damage, "
+                "safety factor 0.3 is more conservative "
+                "than 0.5 because cracks reduce effective "
+                "stiffness and increase wave speed. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] BINNING STRATEGY's "
+                "BIN_SIZE_LOWER_BOUND must be > horizon for "
+                "correct neighbour search. Signal: too "
+                "small a bin (< horizon) misses neighbour "
+                "pairs at bin boundaries — pd_neighbor_pairs "
+                "drops below the expected ~ 4*pi*delta^2 / "
+                "dx^2 per particle, fracture pattern "
+                "develops spurious gaps at bin boundaries. "
+                "Set BIN_SIZE_LOWER_BOUND >= horizon, "
+                "ideally 1.5 * horizon. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] DOMAINBOUNDINGBOX must enclose ALL "
+                "particles INCLUDING the impactor motion "
+                "range. Signal: an impactor moving outside "
+                "the original bounding box triggers "
+                "'particle out of domain' from 4C particle "
+                "engine — simulation aborts mid-run. Set "
+                "the bbox larger than the initial particle "
+                "extent by at least the maximum expected "
+                "impactor displacement over the simulation. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 

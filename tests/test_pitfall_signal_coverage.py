@@ -251,7 +251,42 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   39.0,   # measured  40.6 — CROSSED 40% (raised
+    "fourc":   48.0,   # measured  49.6 — CROSSED 49% (raised
+                       #                 2026-06-02 from 39.0 after
+                       #                 pass 9: 30 new Signal lines —
+                       #                 tsi (10: CLONING required,
+                       #                 THEXPANS units, INITTEMP
+                       #                 reference, TSI DYNAMIC vs
+                       #                 per-field, ITEMAX=1 one-way,
+                       #                 SOLIDSCATRA TYPE Undefined,
+                       #                 COUPVARIABLE: Temperature,
+                       #                 Belos for monolithic,
+                       #                 DESIGN VOL THERMO DIRICH,
+                       #                 SOLIDSCATRA 11 TYPE enum) +
+                       #                 particles (11: mandatory SPH
+                       #                 section, IO/RUNTIME VTK
+                       #                 PARTICLES, regular grid,
+                       #                 INTERACTION_HORIZON = m*dx,
+                       #                 PERIDYNAMIC_GRID_SPACING
+                       #                 match, PRE_CRACKS syntax,
+                       #                 PDBODYID, phase TYPE,
+                       #                 CFL dt < 0.5*dx/c_wave,
+                       #                 BIN_SIZE > horizon,
+                       #                 DOMAINBOUNDINGBOX) +
+                       #                 beams (9: Exodus
+                       #                 unsupported for beams,
+                       #                 NUMDOF match, TRIADS req,
+                       #                 LINE3 ordering ep1-ep2-mid,
+                       #                 Hermite NUMDOF=9,
+                       #                 GenAlphaLieGroup for
+                       #                 finite rotations,
+                       #                 MASSLIN rotations,
+                       #                 consistent A/I/J,
+                       #                 DNODE/DLINE TOPOLOGY).
+                       #                 fourc trajectory: 8.7% ->
+                       #                 14.0% -> 18.2% -> 22.1% ->
+                       #                 25.4% -> 28.1% -> 30.1% ->
+                       #                 34.6% -> 40.6% -> 49.6%.)
                        #                 2026-06-02 from 34.0 after
                        #                 pass 8: all 20 untagged fsi
                        #                 pitfalls Signal-tagged in

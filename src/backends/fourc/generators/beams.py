@@ -276,25 +276,129 @@ class BeamsGenerator(BaseGenerator):
                 ),
             },
             "pitfalls": [
-                "Beams CANNOT use Exodus mesh files -- must use inline NODE COORDS "
-                "+ STRUCTURE ELEMENTS format.",
-                "NUMDOF must match the element type: 6 for standard BEAM3R LINE3 "
-                "(without Hermite), 9 for BEAM3R LINE3 with HERMITE_CENTERLINE true.",
-                "TRIADS keyword is required for BEAM3R and specifies initial "
-                "orientation angles at each node of the element.  For a beam "
-                "aligned with the x-axis, all TRIADS values are 0.",
-                "For LINE3 elements (quadratic), node ordering is "
-                "endpoint1-endpoint2-midpoint (not sequential!).",
-                "HERMITE_CENTERLINE true adds 3 tangent DOFs per node (6 -> 9 DOFs).",
-                "Use GenAlphaLieGroup for dynamics -- standard Newmark/GenAlpha "
-                "does not handle finite rotations correctly.",
-                "MASSLIN: rotations is required for GenAlphaLieGroup time integration.",
-                "Cross-section properties (A, I, J) must be mutually consistent -- "
-                "use the helper functions circular_cross_section() or "
-                "rectangular_cross_section().",
-                "DNODE-NODE TOPOLOGY entries are needed for point Dirichlet and "
-                "Neumann conditions.  DLINE-NODE TOPOLOGY entries are needed for "
-                "distributed line loads.",
+                (
+                    "[Input] Beams CANNOT use Exodus mesh "
+                    "files — must use inline NODE COORDS + "
+                    "STRUCTURE ELEMENTS format. Signal: "
+                    "passing STRUCTURE GEOMETRY: FILE: "
+                    "mesh.e with BEAM elements raises "
+                    "'beam element type not supported in "
+                    "Exodus' from 4C_io_meshreader.cpp. "
+                    "Beam elements have nodal triads + "
+                    "tangent vectors that the Exodus format "
+                    "does not encode; inline YAML is the "
+                    "only path. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] NUMDOF must match the element "
+                    "type: 6 for standard BEAM3R LINE3 "
+                    "(without Hermite), 9 for BEAM3R LINE3 "
+                    "with HERMITE_CENTERLINE: true. Signal: "
+                    "NUMDOF mismatch raises 'inconsistent "
+                    "DOF count for beam element' at "
+                    "discretisation setup; a Dirichlet with "
+                    "wrong NUMDOF triggers the same. Always "
+                    "match NUMDOF to the element's "
+                    "configuration (6 rotational DOF or 9 "
+                    "Hermite-enriched). (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] TRIADS keyword is REQUIRED for "
+                    "BEAM3R — specifies initial orientation "
+                    "angles at each element node. Signal: "
+                    "omitting TRIADS gives zero initial "
+                    "rotation reference, but the FIRST "
+                    "load step then computes finite "
+                    "rotations from an undefined "
+                    "configuration — visible as random "
+                    "initial twist (NaN-like rotation "
+                    "increments on first step). For a beam "
+                    "aligned with the x-axis, all TRIADS "
+                    "values are 0. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] For LINE3 elements (quadratic), "
+                    "node ordering is "
+                    "endpoint1-endpoint2-midpoint (NOT "
+                    "sequential!). Signal: writing nodes in "
+                    "sequential 1-2-3 order along the beam "
+                    "makes 4C treat the geometric midpoint "
+                    "as endpoint2 — element length is "
+                    "halved, stiffness is wrong by factor "
+                    "2-4. Specify: endpoint1, endpoint2, "
+                    "midpoint (the LINE3 convention). "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] HERMITE_CENTERLINE: true adds 3 "
+                    "tangent DOFs per node (6 -> 9 DOFs). "
+                    "Signal: enabling Hermite without "
+                    "increasing NUMDOF from 6 to 9 produces "
+                    "an under-DOF'd element — the tangent "
+                    "DOFs are silently allocated but "
+                    "Dirichlet BCs with NUMDOF=6 leave them "
+                    "free, and you get spurious tangent "
+                    "growth at constrained nodes. Match "
+                    "NUMDOF to HERMITE_CENTERLINE choice. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Use GenAlphaLieGroup for "
+                    "beam dynamics — standard Newmark/"
+                    "GenAlpha does NOT handle finite "
+                    "rotations correctly. Signal: a "
+                    "rotating beam (e.g. spinning rigid "
+                    "rod) under standard GenAlpha shows "
+                    "monotonically growing angular momentum "
+                    "(energy drift); switching to "
+                    "GenAlphaLieGroup conserves angular "
+                    "momentum to machine precision. The "
+                    "Lie-group variant uses the SO(3) "
+                    "rotation manifold, not Euclidean "
+                    "averaging. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] MASSLIN: rotations is REQUIRED "
+                    "for GenAlphaLieGroup time integration. "
+                    "Signal: GenAlphaLieGroup with "
+                    "MASSLIN: linear aborts with "
+                    "'inconsistent mass linearisation for "
+                    "Lie-group integrator' at setup; the "
+                    "Lie-group needs the rotational-mass "
+                    "linearisation to construct the "
+                    "tangent-space update correctly. Use "
+                    "MASSLIN: rotations for finite-"
+                    "rotation dynamics. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] Cross-section properties "
+                    "(A, I, J) must be MUTUALLY CONSISTENT "
+                    "— e.g. A = pi*r^2, Iyy = Izz = "
+                    "pi*r^4/4, J = pi*r^4/2 for a solid "
+                    "circular cross-section. Signal: "
+                    "specifying A = 1.0 but Iyy = 0.01 for "
+                    "a 'circular' section produces a beam "
+                    "whose bending stiffness does not match "
+                    "axial stiffness — frequency analysis "
+                    "shows wrong mode shapes. Use the "
+                    "helper functions circular_cross_"
+                    "section() or rectangular_cross_"
+                    "section() to enforce consistency. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] DNODE-NODE TOPOLOGY entries are "
+                    "needed for point Dirichlet and Neumann "
+                    "conditions. DLINE-NODE TOPOLOGY entries "
+                    "are needed for distributed LINE loads. "
+                    "Signal: applying a DESIGN POINT NEUMANN "
+                    "without DNODE-NODE TOPOLOGY raises "
+                    "'no design nodes found' from "
+                    "4C_io_input_file.cpp; the design-node "
+                    "set is empty. Map node IDs -> design "
+                    "node IDs in DNODE-NODE TOPOLOGY first. "
+                    "(Audit 2026-06-02.)"
+                ),
                 "[API] Beam material names use CamelCase WITHOUT inner "
                 "underscores: MAT_BeamReissnerElastHyper (NOT "
                 "MAT_Beam_Reissner_ElastHyper), MAT_BeamKirchhoffElastHyper, "
