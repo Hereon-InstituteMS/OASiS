@@ -45,6 +45,49 @@ for _k in (_le_kn, _he_kn, _bi_kn, _ht_kn,
 
 KNOWLEDGE["_general"] = {
     "description": "FEBio general capabilities and C++ embedding surface",
+    "adaptive_mesh_refinement": {
+        "description": (
+            "FEAMR module (FEBio::FEAMR library) registers .feb XML tag "
+            "names users type in the <Adaptive> / <Step> blocks. "
+            "Source: FEAMR/FEAMR.cpp -> FEAMR::InitModule()."
+        ),
+        "mesh_adaptors": {
+            "erosion":       "FEErosionAdaptor — remove elements failing a criterion",
+            "hex_refine":    "FEHexRefine — uniform 3D hex split",
+            "hex_refine2d":  "FEHexRefine2D — 2D analogue",
+            "tet_refine":    "FETetRefine — uniform tet split",
+            "mmg_remesh":    "FEMMGRemesh — anisotropic remesh via MMG library (requires MMG build)",
+            "test_refine":   "FETestRefine — EXPERIMENTAL adaptor flagged FECORE_EXPERIMENTAL in source; do not use in production",
+        },
+        "adaptor_criteria": {
+            "max_variable":      "FEVariableCriterion — threshold on a field variable",
+            "element_selection": "FEElementSelectionCriterion",
+            "math":              "FEScaleAdaptorCriterion — math-expression scaling",
+            "min-max filter":    "FEMinMaxFilterAdaptorCriterion — SPACED-AND-HYPHEN tag name",
+            "relative error":    "FEDomainErrorCriterion — SPACED tag name",
+            "element data":      "FEElementDataCriterion — SPACED tag name",
+            "tet-quality":       "FETetQualityCriterion",
+            "mean-ratio":        "FEMeanRatioQualityCriterion",
+            "scaled Jacobian":   "FEScaledJacobianQualityCriterion — SPACED-AND-CAMELCASE tag name",
+        },
+        "plot_variables": {
+            "tet-quality":     "FEPlotTetQuality",
+            "mean-ratio":      "FEPlotMeanRatio",
+            "scaled-Jacobian": "FEPlotScaledJacobian — HYPHEN-AND-CAMELCASE",
+        },
+        "Signal": (
+            "[Input] Some FEAMR .feb tag names contain SPACES and "
+            "hyphens that look non-XML-like — they ARE the canonical "
+            "strings the FECoreKernel registers and parses. Examples: "
+            "'min-max filter', 'relative error', 'element data', "
+            "'scaled Jacobian', 'scaled-Jacobian' (plot). Replacing "
+            "spaces with underscores ('min_max_filter') silently fails "
+            "to match in the FECoreKernel registry — FEBio reports the "
+            "unknown tag at parse time. Also note test_refine has "
+            "FECORE_EXPERIMENTAL flag in the source — production use "
+            "is unsupported. (File walk FEAMR/FEAMR.cpp 2026-06-02.)"
+        ),
+    },
     "cmake_embedding": {
         "find_package": "find_package(FEBio) — defined by FEBioConfig.cmake "
                         "at the FEBio source tree root; detects in-tree-build "
