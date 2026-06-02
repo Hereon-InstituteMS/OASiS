@@ -112,33 +112,23 @@ SIGNAL_COVERAGE_MIN = {
                        #                  session: 46.2% -> 75.9%
                        #                  -> 84.4% -> 88.5% ->
                        #                  100.0%.)
-    "fenics":  77.0,   # measured  79.1 (raised 2026-06-02 from
-                       #                 65.0 after pass 5 on
-                       #                 fenics: Signal-tagged the
-                       #                 4 fully-no-Signal physics
-                       #                 in deep_knowledge.py —
-                       #                 helmholtz (4: pollution,
-                       #                 indefinite/CG, shifted-
-                       #                 Laplacian PC, complex
-                       #                 PETSc),
-                       #                 nearly_incompressible_
-                       #                 elasticity (4: locking at
-                       #                 nu>0.49, LBB checkerboard,
-                       #                 P2/P1 vs P1/P0, penalty
-                       #                 sensitivity), fracture (4:
-                       #                 h vs l0, irreversibility
-                       #                 monotonicity, staggered
-                       #                 vs monolithic, Miehe
-                       #                 tension/compression
-                       #                 split), stokes_darcy (4:
-                       #                 no built-in API, BJS
-                       #                 interface, submesh
-                       #                 regions, multi-scale K
-                       #                 PC).
-                       #                 fenics: 31.8% -> 38.8% ->
-                       #                 45.7% -> 51.2% -> 66.7%
-                       #                 -> 79.1% across five
-                       #                 commits.)
+    "fenics":  82.0,   # measured  83.7 (raised 2026-06-02 from
+                       #                 77.0 after pass 6:
+                       #                 6 partial-coverage pitfalls
+                       #                 tagged in advanced.py —
+                       #                 dg_methods (3: IP alpha,
+                       #                 FacetNormal '+'/'-' side,
+                       #                 inflow weak BC),
+                       #                 time_dependent_heat (2:
+                       #                 Robin BC omission,
+                       #                 Neumann BC omission),
+                       #                 nonlinear_pde (1:
+                       #                 NonlinearProblem missing
+                       #                 J argument). Remaining
+                       #                 untagged in fenics are
+                       #                 mostly informational tips
+                       #                 (formulation conventions,
+                       #                 not failure modes).)
     "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
                        #                 2026-06-02 from 27.0 after
                        #                 a sixth pass: all 7

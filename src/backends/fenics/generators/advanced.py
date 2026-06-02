@@ -35,9 +35,33 @@ _DG_KNOWLEDGE = {
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
         "DG advection flux: upwind — use ufl.conditional(ufl.dot(b,n)('+') > 0, u('+'), u('-'))",
-        "Interior penalty diffusion: alpha >= O(p^2) for coercivity; alpha=4 safe for p=1",
-        "FacetNormal n is outward; avg/jump operators need '+'/'-' sides",
-        "Inflow BC imposed weakly via boundary integral, NOT Dirichlet",
+        (
+            "[Numerical] Interior penalty diffusion: alpha >= "
+            "O(p^2) for coercivity; alpha=4 safe for p=1. Signal: "
+            "alpha too small -> coercivity loss + solution norm "
+            "diverges with refinement; alpha too large -> "
+            "cond(K)>1e14 and iterative stagnates. Rule of "
+            "thumb: alpha = 4 * (p+1)^2 for symmetric IP. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[API] FacetNormal n is outward; avg/jump operators "
+            "need '+'/'-' sides. Signal: writing dot(b, n) "
+            "without a side suffix in an interior-facet integral "
+            "raises `Error: side specifier required on '+' or "
+            "'-' for restricted facet integrals` at form "
+            "compilation; the same expression with "
+            "dot(b, n('+')) compiles. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Inflow BC imposed weakly via boundary "
+            "integral, NOT Dirichlet. Signal: applying "
+            "DirichletBC(V, u_inlet, inflow_facets) on a DG "
+            "space silently does nothing — DG DOFs don't honour "
+            "strong Dirichlet across element interiors. The "
+            "inflow BC must enter the form via "
+            "+ b_n*u_inlet*v*ds(inflow). (Audit 2026-06-02.)"
+        ),
         "For pure advection (eps=0): drop diffusion terms entirely",
         "DG mass matrix is block-diagonal — efficient for explicit time stepping",
         "[API] Modern UFL has no ufl.Abs symbol — use Python's "
@@ -479,8 +503,25 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {
             "transients is k*dt/(rho*cp*h^2) < ~1/6. (Audit "
             "2026-06-02.)"
         ),
-        "Convective BC: add h*(T - T_inf)*v*ds to bilinear form (Robin BC)",
-        "Heat flux BC: add -q_n*v*ds to linear form (Neumann BC)",
+        (
+            "[Input] Convective BC: add h*(T - T_inf)*v*ds to "
+            "bilinear form (Robin BC). Signal: forgetting the "
+            "Robin term gives an insulated boundary (natural "
+            "BC) regardless of the h and T_inf values "
+            "specified — temperature at the cooling boundary "
+            "stays at the initial value because the heat-"
+            "transfer coefficient is never coupled into the "
+            "weak form. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Input] Heat flux BC: add -q_n*v*ds to linear "
+            "form (Neumann BC). Signal: a Neumann flux declared "
+            "in the input description but missing from the "
+            "weak form is silently treated as zero flux "
+            "(insulated). Visualize: temperature gradient at "
+            "the supposed-flux boundary is ~0 instead of "
+            "matching the prescribed q_n. (Audit 2026-06-02.)"
+        ),
         "Material properties rho, cp, k can be spatially varying Functions",
         (
             "[Numerical] For PCM: enthalpy method with effective "
@@ -819,7 +860,16 @@ _NONLINEAR_PDE_KNOWLEDGE = {
     "function_space": "Lagrange order 1 or 2 (scalar or vector)",
     "solver": "PETSc SNES (newtonls) with automatic UFL Jacobian",
     "pitfalls": [
-        "Jacobian computed via ufl.derivative(F, u, du) — automatic, no hand differentiation needed",
+        (
+            "[API] Jacobian computed via ufl.derivative(F, u, du) "
+            "— automatic, no hand differentiation needed. Signal: "
+            "passing only F (without J) to "
+            "dolfinx.fem.petsc.NonlinearProblem raises "
+            "`TypeError: NonlinearProblem missing required "
+            "argument J` or SNES picks a finite-difference "
+            "Jacobian that converges linearly instead of "
+            "quadratically. (Audit 2026-06-02.)"
+        ),
         (
             "[Numerical] Newton convergence: start from a good "
             "initial guess (e.g., linear solution or continuation). "
