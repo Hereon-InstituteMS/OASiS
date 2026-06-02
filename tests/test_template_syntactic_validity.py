@@ -100,6 +100,36 @@ class TestTemplateSyntacticValidity(unittest.TestCase):
             missing_include, [],
             f"dealii templates without #include: {missing_include}")
 
+    def test_python_backends_compile(self) -> None:
+        """Python-based backends (skfem, kratos, ngsolve, fenics,
+        dune) — every template must compile to bytecode without
+        SyntaxError. Layer-F runs the rc=0 path; this catches a
+        different bug class: dead branches inside the template
+        that aren't exercised at runtime but would crash the
+        interpreter at module-import time if the user did
+        `python template.py`. dune is the most important target
+        here because the actual library isn't installed in any
+        test env — Layer F skips it; this gate keeps the
+        generators honest."""
+        failures = []
+        for backend in ("dune", "skfem", "kratos", "ngsolve",
+                         "fenics"):
+            for physics, variant, tmpl in _gather_templates(backend):
+                self.assertIsNotNone(
+                    tmpl, f"{backend}::{physics}::{variant}: GEN_FAIL")
+                try:
+                    compile(tmpl,
+                            f"<{backend}_{physics}_{variant}>",
+                            "exec")
+                except SyntaxError as e:
+                    failures.append(
+                        (backend, physics, variant,
+                         f"line {e.lineno}: {e.msg}"))
+        self.assertEqual(
+            failures, [],
+            "Python-template SyntaxError: "
+            f"{failures}. Generator must emit valid Python.")
+
 
 if __name__ == "__main__":
     unittest.main()
