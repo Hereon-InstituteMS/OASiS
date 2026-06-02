@@ -112,20 +112,33 @@ SIGNAL_COVERAGE_MIN = {
                        #                  session: 46.2% -> 75.9%
                        #                  -> 84.4% -> 88.5% ->
                        #                  100.0%.)
-    "fenics":  65.0,   # measured  66.7 (raised 2026-06-02 from
-                       #                 50.0 after pass 4 on
+    "fenics":  77.0,   # measured  79.1 (raised 2026-06-02 from
+                       #                 65.0 after pass 5 on
                        #                 fenics: Signal-tagged the
-                       #                 remaining 5 no-Signal
-                       #                 physics in deep_knowledge
-                       #                 + reaction_diffusion.py:
-                       #                 convection_diffusion (4),
-                       #                 biharmonic (4),
-                       #                 reaction_diffusion (5+5
-                       #                 across two source files),
-                       #                 contact (4), cahn_hilliard
-                       #                 (4). fenics: 31.8% -> 38.8%
-                       #                 -> 45.7% -> 51.2% -> 66.7%
-                       #                 across four commits.)
+                       #                 4 fully-no-Signal physics
+                       #                 in deep_knowledge.py —
+                       #                 helmholtz (4: pollution,
+                       #                 indefinite/CG, shifted-
+                       #                 Laplacian PC, complex
+                       #                 PETSc),
+                       #                 nearly_incompressible_
+                       #                 elasticity (4: locking at
+                       #                 nu>0.49, LBB checkerboard,
+                       #                 P2/P1 vs P1/P0, penalty
+                       #                 sensitivity), fracture (4:
+                       #                 h vs l0, irreversibility
+                       #                 monotonicity, staggered
+                       #                 vs monolithic, Miehe
+                       #                 tension/compression
+                       #                 split), stokes_darcy (4:
+                       #                 no built-in API, BJS
+                       #                 interface, submesh
+                       #                 regions, multi-scale K
+                       #                 PC).
+                       #                 fenics: 31.8% -> 38.8% ->
+                       #                 45.7% -> 51.2% -> 66.7%
+                       #                 -> 79.1% across five
+                       #                 commits.)
     "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
                        #                 2026-06-02 from 27.0 after
                        #                 a sixth pass: all 7
