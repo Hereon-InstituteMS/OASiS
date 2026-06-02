@@ -31,10 +31,50 @@ _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO / "src"))
 
 
+# Module-level availability checks. The falsification tests are
+# split across multiple FEM backends; each backend's tests need
+# its package importable. Run in BOTH .venv (skfem/kratos/ngsolve)
+# AND ofa-fenicsx (dolfinx). Unavailable-backend tests skip
+# cleanly rather than raising ModuleNotFoundError.
+try:
+    import skfem  # noqa: F401
+    _HAS_SKFEM = True
+except ImportError:
+    _HAS_SKFEM = False
+
+try:
+    import KratosMultiphysics  # noqa: F401
+    _HAS_KRATOS = True
+except ImportError:
+    _HAS_KRATOS = False
+
+try:
+    import ngsolve  # noqa: F401
+    _HAS_NGSOLVE = True
+except ImportError:
+    _HAS_NGSOLVE = False
+
+try:
+    import dolfinx  # noqa: F401
+    _HAS_DOLFINX = True
+except ImportError:
+    _HAS_DOLFINX = False
+
+_skip_no_skfem = unittest.skipUnless(
+    _HAS_SKFEM, "skfem not importable in this python env")
+_skip_no_kratos = unittest.skipUnless(
+    _HAS_KRATOS, "KratosMultiphysics not importable")
+_skip_no_ngsolve = unittest.skipUnless(
+    _HAS_NGSOLVE, "ngsolve not importable")
+_skip_no_dolfinx = unittest.skipUnless(
+    _HAS_DOLFINX, "dolfinx not importable")
+
+
 class TestPitfallFalsificationLive(unittest.TestCase):
     """Each test deliberately triggers a bug pattern the catalog
     documents, then asserts the exact predicted error fires."""
 
+    @_skip_no_skfem
     def test_skfem_contact_ddot_vs_dot(self) -> None:
         """skfem::contact pitfall #1 [API]: using `dot` instead of
         `ddot` on rank-2 symmetric strain tensors must raise
@@ -66,6 +106,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"changed its error wording — update either the "
             f"pitfall or this test.")
 
+    @_skip_no_skfem
     def test_skfem_hydraulic_resistance_quadrature_mismatch(self) -> None:
         """skfem::hydraulic_resistance: Taylor-Hood needs aligned
         intorder on velocity + pressure bases. Without it,
@@ -99,6 +140,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"should have same number of integration points', "
             f"but got: {msg!r}")
 
+    @_skip_no_skfem
     def test_skfem_schrodinger_eigsh_arbitrary_order(self) -> None:
         """skfem::schrodinger pitfall: eigsh with shift-invert
         returns eigenvalues in arbitrary order. Specifically:
@@ -162,6 +204,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             # This is the documented case — argsort is necessary.
             pass
 
+    @_skip_no_skfem
     def test_skfem_wave_meshio_2d_points_rejected(self) -> None:
         """skfem::wave pitfall #6 [Output] / point_source pitfall:
         meshio.Mesh requires 3D-shaped points. Passing 2D points
@@ -207,6 +250,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 "documented fix np.column_stack + zeros "
                 "must yield (N, 3) points")
 
+    @_skip_no_dolfinx
     def test_fenics_vtxwriter_rejects_nedelec_element(self) -> None:
         """fenics::poisson pitfall #2 [API]: VTXWriter (ADIOS2
         backend) supports only Lagrange / DG element families.
@@ -265,6 +309,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 if "Lagrange" in msg or "VTX" in msg:
                     pass
 
+    @_skip_no_dolfinx
     def test_fenics_stokes_taylor_hood_mini_p1p1_dimensions(self) -> None:
         """fenics::stokes #0 catalog claim: with a 4x4 unit-square
         triangulation in dolfinx 0.10, basix.ufl.mixed_element
@@ -339,6 +384,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"fenics::stokes #0 catalog claims P1/P1 dim is 75 "
             f"on 4x4 unit-square. Got {dim_P1P1}.")
 
+    @_skip_no_dolfinx
     def test_fenics_matrix_free_action_method_vs_function(self) -> None:
         """fenics::matrix_free_poisson pitfall #0 [API]:
         `ufl.action(a, ui)` is the canonical pattern. Calling
@@ -385,6 +431,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"AttributeError should mention 'action' but got: "
             f"{msg!r}")
 
+    @_skip_no_skfem
     def test_skfem_poisson_meshio_wrong_cell_type(self) -> None:
         """skfem::poisson pitfall #0 [Syntax]: declaring cells as
         'quad' for a MeshTri (or vice versa) raises meshio
@@ -407,6 +454,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                                              delete=False) as tf:
                 mio.write(tf.name)
 
+    @_skip_no_skfem
     def test_skfem_linear_elasticity_scalar_basis_wrong(self) -> None:
         """skfem::linear_elasticity pitfall #0 [Syntax]: using a
         scalar Basis for vector elasticity raises shape-mismatch.
@@ -434,6 +482,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"2D; got vector.Nbfun={ib_vector.Nbfun}, "
             f"scalar.Nbfun={ib_scalar.Nbfun}.")
 
+    @_skip_no_skfem
     def test_skfem_poisson_boundaries_none_get_dofs_raises(self) -> None:
         """skfem::poisson pitfall #2 [API]: on a fresh mesh
         (no with_boundaries), get_dofs('left') raises because
@@ -465,6 +514,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             # Documented behavior — pitfall confirmed.
             pass
 
+    @_skip_no_skfem
     def test_skfem_contact_condense_full_vector_shape(self) -> None:
         """skfem::contact pitfall #2 [API]: `condense(K, f,
         x=x_full, D=D)` expects x_full to be FULL-LENGTH
@@ -512,6 +562,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 "the constrained DOFs after solve.")
 
 
+    @_skip_no_kratos
     def test_kratos_poisson_laplacian_element_string_factory_only(self) -> None:
         """kratos::poisson pitfall #0 [API]: LaplacianElement2D3N
         is C++-registered as a string-typed factory element —
@@ -571,6 +622,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"'Eulerian' prefix) raises 'is not registered'. "
             f"Got: {msg!r}")
 
+    @_skip_no_ngsolve
     def test_ngsolve_heat_nonsym_kwarg_silently_dropped(self) -> None:
         """ngsolve::heat pitfall #0 [API]: BilinearForm(...,
         nonsym=True) — the prior catalog wording claimed this
@@ -634,6 +686,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"default.size={size_default}, "
             f"nonsym.size={size_nonsym}.")
 
+    @_skip_no_ngsolve
     def test_ngsolve_heat_basematrix_data_assignment_required(self) -> None:
         """ngsolve::heat pitfall #1 [API]: building the implicit-
         Euler operator M* via `mstar = m.mat + dt * a.mat`
@@ -676,6 +729,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 f"Unexpected exception during BaseMatrix "
                 f"expression build: {ex!r}")
 
+    @_skip_no_kratos
     def test_kratos_heat_temperature_variable_not_added(self) -> None:
         """kratos::heat pitfall #0 [API]: SetSolutionStepValue on
         TEMPERATURE before AddNodalSolutionStepVariable(TEMPERATURE)
@@ -705,6 +759,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"Pitfall predicts 'variables list doesn't have "
             f"this variable' phrasing. Got: {msg[:200]!r}")
 
+    @_skip_no_skfem
     def test_skfem_stokes_pressure_null_space_solve_blows_up(self) -> None:
         """skfem::stokes / hydraulic_resistance pressure-null-space
         pitfall: Stokes saddle-point without pressure pinning
