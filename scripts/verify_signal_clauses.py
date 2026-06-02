@@ -125,6 +125,10 @@ OBSERVABLE_VOCAB = (
     "times out", "timeout",         # MCP stdio times out at 60s
     "noticeably",                   # noticeably slow
     " == ",                         # API claim: Nbfun == 6
+    "eigenvalu",                    # eigenvalues from eigsh ...
+                                    # (real observable; recovered after the
+                                    #  word-boundary tightening dropped the
+                                    #  loose 'value' inside 'eigenvalue')
 )
 
 
@@ -1262,9 +1266,22 @@ def _tier0_check(signal: str, code_symbols: set[str],
 
 
 def _tier1_check(signal: str, result: SignalVerification) -> None:
-    """Tier 1: Signal uses observable-symptom vocabulary."""
+    """Tier 1: Signal uses observable-symptom vocabulary.
+
+    Tokens are matched at word-boundary on the LEFT (regex \\b before
+    the token) so that 'lock' does not match inside 'block', 'force'
+    does not match inside 'enforce', 'stall' does not match inside
+    'install', 'lose' does not match inside 'close', and 'nan' does
+    not match inside 'StVenantKirchhoff'. Catches the over-fit class
+    flagged by audit pass 2 (2026-06-02). Tokens are still treated
+    as prefixes — 'produc' matches 'produces'/'producing' (the next
+    char after 'produc' need not be a boundary).
+    """
     low = signal.lower()
-    hits = sorted({w for w in OBSERVABLE_VOCAB if w in low})
+    hits = sorted({
+        w for w in OBSERVABLE_VOCAB
+        if re.search(r"\b" + re.escape(w), low)
+    })
     # Plus quoted error fragments (anything inside backticks or
     # double quotes within the signal counts as a concrete error
     # observable).
