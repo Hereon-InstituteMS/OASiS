@@ -1206,6 +1206,22 @@ KNOWLEDGE = {
                 "visualization. (Audit 2026-06-02.)"
             ),
             (
+                "[API] Module-level skfem.project() and "
+                "skfem.projection() are DEPRECATED and emit "
+                "DeprecationWarning('will be removed in the "
+                "next release'). Source: "
+                "skfem/__init__.py top-level __all__ flags "
+                "both with `# TODO remove due to deprecation`. "
+                "Signal: existing DG-to-P1 visualization "
+                "snippets `skfem.project(u, basis_from=ib_dg, "
+                "basis_to=ib_p1)` warn now and will raise "
+                "AttributeError on upgrade. Replacement: "
+                "`f = ib_dg.interpolator(u); "
+                "u_p1 = ib_p1.project(f)` — the Basis.project "
+                "INSTANCE method. (File-walk audit "
+                "2026-06-02; verified live in skfem 12.0.1.)"
+            ),
+            (
                 "[Numerical] DG system is non-symmetric even "
                 "for symmetric problems (upwind asymmetry). "
                 "Signal: scipy.sparse.linalg.cg fails with "

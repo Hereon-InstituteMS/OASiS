@@ -424,6 +424,46 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"(one DOF per edge × 3 edges per triangle). "
             f"Got {ib.Nbfun}.")
 
+    @_skip_no_skfem
+    def test_skfem_dg_methods_project_module_level_deprecated(
+            self) -> None:
+        """skfem::dg_methods [API]: module-level skfem.project()
+        and skfem.projection() are deprecated and emit
+        DeprecationWarning saying 'will be removed in the next
+        release' — catalog DG-to-P1 visualization snippets that
+        still use them are on borrowed time. Replacement is the
+        Basis.project INSTANCE method. (File walk
+        skfem/__init__.py 2026-06-02.)"""
+        import warnings
+        import numpy as np
+        import skfem
+        m = skfem.MeshTri().refined(2)
+        ib_dg = skfem.Basis(m, skfem.ElementTriDG(skfem.ElementTriP1()))
+        ib_p1 = skfem.Basis(m, skfem.ElementTriP1())
+        u = np.ones(ib_dg.N)
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            r_old = skfem.project(u, basis_from=ib_dg, basis_to=ib_p1)
+        msgs = [str(w.message) for w in ws
+                if issubclass(w.category, DeprecationWarning)]
+        self.assertTrue(
+            any("deprecated" in m.lower() for m in msgs),
+            f"Expected DeprecationWarning from skfem.project(...); "
+            f"got warnings: {msgs!r}")
+        self.assertEqual(r_old.shape, (ib_p1.N,))
+        # Modern replacement should NOT warn.
+        with warnings.catch_warnings(record=True) as ws2:
+            warnings.simplefilter("always")
+            f = ib_dg.interpolator(u)
+            r_new = ib_p1.project(f)
+        dep_new = [w for w in ws2
+                   if issubclass(w.category, DeprecationWarning)]
+        self.assertEqual(
+            len(dep_new), 0,
+            f"Basis.project should NOT emit DeprecationWarning; "
+            f"got: {[str(w.message) for w in dep_new]!r}")
+        self.assertEqual(r_new.shape, (ib_p1.N,))
+
     @_skip_no_dolfinx
     def test_fenics_dolfinx_connectivity_lazy_vs_explicit(self) -> None:
         """fenics::poisson #0 nuance: locate_entities_boundary +
