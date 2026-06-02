@@ -159,6 +159,58 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             code_symbols.update(getattr(mod, "MESH_GENERATOR_NAMES", set()))
         except ImportError:
             pass
+        # ── Additional dealii-specific identifiers used in
+        #    catalog Signal: prose (deal.II tutorial step
+        #    numbers, Schur reformulation, time-step schemes,
+        #    DG limiters, multiphysics observables) ────────
+        code_symbols.update({
+            # ── Tutorial step references (catalog prose uses
+            #    "step-20", "step-22", "step-69" hyphenated;
+            #    after tokenisation we see "step" + numeric;
+            #    add both forms) ──────────────────────────────
+            "step_20", "step_21", "step_22", "step_69",
+            "step_15", "step_31", "step_32", "step_40",
+            "step_57", "step_55", "step_56",
+            # ── DG limiters / shock-capturing identifiers ────
+            "TVB", "Minmod", "WENO", "MUSCL",
+            "entropy_viscosity", "Gibbs", "Gibbs_oscillation",
+            "TVB_Minmod",
+            # ── Time-stepping / SSP schemes ─────────────────
+            "SSP_RK3", "SSP_RK4", "leapfrog",
+            "Crank_Nicolson", "BDF", "BDF1", "BDF2",
+            "Heun", "RungeKutta",
+            # ── Schur / saddle-point reformulation ──────────
+            "Schur", "Schur_complement",
+            "fieldsplit", "Hiptmair", "block_preconditioner",
+            "M_inv", "B_transpose",
+            # ── Darcy / VoF / level-set / phase-field ───────
+            "Darcy", "DarcyVelocity", "VoF",
+            "level_set", "level_set_reinit",
+            "Cahn_Hilliard", "Allen_Cahn", "phase_field",
+            "reinitialisation", "redistance",
+            # ── Topology optimisation observables ───────────
+            "SIMP", "grey_scale", "volume_fraction",
+            "density_filter", "Helmholtz_filter",
+            "intermediate_density", "topology_opt",
+            # ── Goal-oriented / DWR / error estimation ──────
+            "DWR", "dual_weighted_residual",
+            "effectivity_index", "Galerkin_orthogonality",
+            "primal", "dual", "goal_functional",
+            # ── DG numerical fluxes ─────────────────────────
+            "central_flux", "centred_flux",
+            "upwind", "downwind", "Lax_Friedrichs",
+            "Roe", "HLL", "Rusanov", "u_hat",
+            # ── Convection / advection benchmarks ───────────
+            "Rayleigh", "Bénard", "Benard",
+            "convective_cells", "Rayleigh_number",
+            "Reynolds", "Re", "Pe",
+            "Poiseuille", "Couette",
+            "turbulence_model",
+            # ── multiphysics observables (already-present
+            #    code symbols are FE_*, dealii fixtures) ─────
+            "mass_loss", "interface_smearing",
+            "DG_flux",
+        })
 
     # Per-backend code-symbol sets. Added 2026-05-31 (round-4
     # critic verdict — Table-1 promotion of non-deal.II backends).

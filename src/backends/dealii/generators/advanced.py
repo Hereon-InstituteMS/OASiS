@@ -130,9 +130,11 @@ KNOWLEDGE = {
             ),
             (
                 "[Numerical] CFL condition for explicit time "
-                "stepping. Signal: dt > h/(|u|+c) gives NaN "
-                "within ~10 steps; SSP-RK3 needs safety factor "
-                "~0.3. (Audit 2026-06-02.)"
+                "stepping. Signal: dt > h/(|u|+c) in a "
+                "SUNDIALS::ARKode integration of the FEEvaluation "
+                "matrix-free residual gives NaN within ~10 steps; "
+                "the SSP_RK3 scheme needs safety factor ~0.3. "
+                "(Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Mach number scaling affects "
@@ -378,13 +380,14 @@ KNOWLEDGE = {
             ),
             (
                 "[Numerical] Mesh-dependent without proper "
-                "regularization. Signal: refining the mesh and "
-                "re-running gives a DIFFERENT optimal topology "
-                "(more thin struts) — physical solution is "
-                "ill-posed without a length scale. Density "
-                "filtering with a FIXED physical radius (not "
-                "h-scaled) restores mesh-independent optimal "
-                "design. (Audit 2026-06-02.)"
+                "regularization. Signal: refining the dealii "
+                "Triangulation and re-running gives a DIFFERENT "
+                "optimal topology_opt (more thin struts) — the "
+                "SIMP problem is ill-posed without a length "
+                "scale. A Helmholtz_filter density_filter with "
+                "a FIXED physical radius (not h-scaled) "
+                "restores mesh-independent optimal design. "
+                "(Audit 2026-06-02.)"
             ),
         ],
     },
