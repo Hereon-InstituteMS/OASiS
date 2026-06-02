@@ -60,6 +60,13 @@ _GENERATOR_CANONICAL: set[str] = {
     "time_dependent_heat",
     "nonlinear_pde",
     "magnetostatics",
+    # New physics added via the upstream-demo audit; their
+    # KNOWLEDGE lives in the per-physics generator module rather
+    # than in deep_knowledge.py because they were not part of the
+    # original 4c-ai-interface port. Pattern is fine — generator
+    # KNOWLEDGE is the canonical source when deep_knowledge has
+    # no entry.
+    "matrix_free_poisson",   # demo_poisson_matrix_free.py (2026-06-02)
 }
 
 
