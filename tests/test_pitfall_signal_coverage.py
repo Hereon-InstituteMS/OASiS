@@ -56,23 +56,30 @@ sys.path.insert(0, str(_REPO / "src"))
 SIGNAL_COVERAGE_MIN = {
     "kratos":  99.0,   # measured 100.0
     "dealii":  68.0,   # measured  69.6
-    "skfem":   58.0,   # measured  60.2 (raised 2026-06-02 from
-                       #                  48.0 after pass 1 on
-                       #                  skfem: 7 dg_methods
-                       #                  (ElementDG wrapper,
+    "skfem":   74.0,   # measured  75.7 (raised 2026-06-02 from
+                       #                  58.0 after pass 2 on
+                       #                  skfem: 6 reaction_
+                       #                  diffusion (block J,
+                       #                  reaction-Jacobian
+                       #                  mass form, IC
+                       #                  perturbation, Turing
+                       #                  d_v/d_u ratio,
+                       #                  natural BC vs Dirichlet,
+                       #                  gamma * L^2) + 7
+                       #                  navier_stokes (no built-
+                       #                  in NS, missing C(u),
+                       #                  ElementVector split,
+                       #                  pressure pin, Picard
+                       #                  -> Newton, Picard
+                       #                  linearisation, ib_u.N
+                       #                  for block split) + 3
+                       #                  convection_diffusion
+                       #                  (u.grad attr,
                        #                  InteriorFacetBasis,
-                       #                  upwind direction,
-                       #                  IP-DG penalty,
-                       #                  post-processing
-                       #                  projection, non-
-                       #                  symmetric DG matrix) +
-                       #                  4 time_dependent (CN
-                       #                  oscillation, factorized
-                       #                  reuse, time-varying BC
-                       #                  re-condense, BE/BDF2
-                       #                  for stiff, explicit
-                       #                  CFL).
-                       #                  skfem 49.5% -> 60.2%.)
+                       #                  high-Pe SUPG/DG).
+                       #                  skfem 49.5% -> 60.2%
+                       #                  -> 75.7% in two
+                       #                  commits.)
     "ngsolve": 68.0,   # measured  69.6 — ties dealii (raised
                        #                  2026-06-02 from 60.0
                        #                  after pass 3: 5

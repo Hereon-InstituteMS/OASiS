@@ -961,13 +961,73 @@ KNOWLEDGE = {
         "solver": "Newton loop: linearize convection term, solve block saddle-point with spsolve",
         "elements": "Taylor-Hood: ElementVector(ElementTriP2()) + ElementTriP1()",
         "pitfalls": [
-            "scikit-fem has NO built-in Newton solver or NS assembly — must build manually",
-            "Block system: [[A_visc + C(u), B^T], [B, 0]] where C is linearized convection",
-            "Use InteriorFacetBasis for ElementVector DOFs in the convection term",
-            "Pressure nullspace for enclosed flow: pin one pressure DOF",
-            "High Re: consider Picard (fixed-point) for first few iterations, then Newton",
-            "Convection linearization: (u_prev.grad)delta_u + (delta_u.grad)u_prev",
-            "InteriorFacetBasis DOF ordering with ElementVector: use ib_u.N for block split",
+            (
+                "[API] scikit-fem has NO built-in Newton solver "
+                "or NS assembly — must build manually. Signal: "
+                "searching skfem.utils for `NewtonSolver` or "
+                "`NavierStokes` returns no match; the catalog "
+                "ships hand-coded Newton+block-assembly "
+                "snippets that the user copies — there is no "
+                "single-call NS API. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Block system: [[A_visc + C(u), "
+                "B^T], [B, 0]] where C is linearized "
+                "convection. Signal: omitting C(u) gives a "
+                "Stokes Jacobian and Newton converges "
+                "linearly (not quadratically) on Navier-Stokes "
+                "— residual ratio ~0.5 per iteration instead "
+                "of decreasing geometrically. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Use InteriorFacetBasis for ElementVector "
+                "DOFs in the convection term. Signal: trying "
+                "to access a vector-component on a plain "
+                "ElementTriP2 raises "
+                "`AttributeError: 'CellBasis' has no attribute "
+                "'split'` or the assembled C(u) has the wrong "
+                "block size. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Pressure nullspace for enclosed "
+                "flow: pin one pressure DOF. Signal: "
+                "scipy.sparse.linalg.spsolve raises "
+                "`MatrixRankWarning: matrix is singular` or "
+                "yields a pressure field with arbitrary "
+                "constant offset; bottling up the constant by "
+                "fixing p(p0)=0 removes the warning. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] High Re: consider Picard (fixed-"
+                "point) for first few iterations, then Newton. "
+                "Signal: pure Newton at Re > ~200 diverges "
+                "from an at-rest initial guess (residual "
+                "explodes within 2-3 iterations); Picard for "
+                "5 iterations brings the state into Newton's "
+                "convergence basin and switching restores "
+                "quadratic convergence. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convection linearization: "
+                "(u_prev.grad)delta_u + (delta_u.grad)u_prev. "
+                "Signal: dropping the second term (Picard "
+                "linearization instead of Newton) gives "
+                "linear convergence — useful as a starter but "
+                "switch to full Newton for quadratic. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] InteriorFacetBasis DOF ordering with "
+                "ElementVector: use ib_u.N for block split. "
+                "Signal: hard-coding `n_u_dof = nx * dim * 2` "
+                "for the velocity-block size gives off-by-one "
+                "errors on hex / triangle meshes where the "
+                "DOF count depends on the element family; "
+                "ib_u.N is the canonical accessor. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "hyperelasticity": {
@@ -1160,13 +1220,67 @@ KNOWLEDGE = {
         "solver": "Backward Euler in time + Newton iteration per step; block 2x2 system for coupled species",
         "elements": "ElementQuad1 (any H1 element; Neumann BCs are natural)",
         "pitfalls": [
-            "Coupled system: assemble block Jacobian [[J_uu, J_uv], [J_vu, J_vv]] at each Newton step",
-            "Reaction Jacobian blocks: assembled as mass matrices with pointwise coefficient",
-            "Initial condition: perturb homogeneous steady state to trigger Turing instability",
-            "Turing instability requires d_v >> d_u (fast inhibitor, slow activator)",
+            (
+                "[Numerical] Coupled system: assemble block "
+                "Jacobian [[J_uu, J_uv], [J_vu, J_vv]] at each "
+                "Newton step. Signal: assembling only the "
+                "diagonal blocks (J_uu, J_vv) and dropping the "
+                "off-diagonal coupling gives a linear-rate "
+                "Newton instead of quadratic; the off-diagonal "
+                "terms scale with the reaction-rate Jacobian "
+                "df_u/dv and df_v/du which are non-zero for "
+                "any coupled reaction. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Reaction Jacobian blocks: assembled as "
+                "mass matrices with pointwise coefficient. "
+                "Signal: assembling reaction terms via the "
+                "stiffness pattern instead of mass produces "
+                "spurious diffusion in J_uv / J_vu; sub-block "
+                "structure visibly differs from a "
+                "reference scipy implementation that uses "
+                "M @ diag(df_u/dv). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Initial condition: perturb "
+                "homogeneous steady state to trigger Turing "
+                "instability. Signal: starting from exactly "
+                "(u_ss, v_ss) gives no pattern formation — "
+                "solution stays uniform throughout the "
+                "simulation. Add a small random or "
+                "spatially-structured perturbation "
+                "(amplitude ~1e-3 * u_ss). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Turing instability requires "
+                "d_v >> d_u (fast inhibitor, slow activator). "
+                "Signal: setting d_v = d_u (or d_u > d_v) "
+                "kills the cross-diffusion mechanism — "
+                "amplitudes decay back to homogeneous steady "
+                "state with no pattern. The Turing condition "
+                "needs d_v/d_u above ~10 for Schnakenberg. "
+                "(Audit 2026-06-02.)"
+            ),
             "Schnakenberg steady state: u_ss = a+b, v_ss = b/(a+b)^2",
-            "Neumann (zero-flux) BCs are natural in the weak form — no explicit enforcement needed",
-            "Pattern formation requires gamma large enough relative to domain size",
+            (
+                "[API] Neumann (zero-flux) BCs are natural in "
+                "the weak form — no explicit enforcement "
+                "needed. Signal: applying a DirichletBC with "
+                "value=0 instead silences the natural BC and "
+                "imposes a far stronger constraint (u=0 at "
+                "boundary, not just du/dn=0); pattern is "
+                "pulled toward zero at the boundary instead "
+                "of bulging outward. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Pattern formation requires gamma "
+                "large enough relative to domain size. "
+                "Signal: gamma * L^2 < the critical Turing "
+                "wavelength k_c^2 -> no pattern (homogeneous "
+                "state stable on the domain); pattern emerges "
+                "only when gamma * L^2 > pi^2 * (a+b)^2 for "
+                "Schnakenberg. (Audit 2026-06-02.)"
+            ),
             "For Fisher-KPP: du/dt = D*Δu + r*u*(1-u), scalar equation, no coupling block",
         ],
     },

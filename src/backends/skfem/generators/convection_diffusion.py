@@ -45,10 +45,36 @@ KNOWLEDGE = {
         "solver": "GMRES with diagonal preconditioner (non-symmetric system)",
         "elements": "ElementQuad1 (SUPG), ElementTriDG(ElementTriP1()) for DG",
         "pitfalls": [
-            "Custom BilinearForm: access u.grad, v.grad for gradients",
-            "For DG: use InteriorFacetBasis for jump terms",
+            (
+                "[API] Custom BilinearForm: access u.grad, "
+                "v.grad for gradients. Signal: writing "
+                "`grad(u)` instead of `u.grad` inside a "
+                "BilinearForm decorator raises "
+                "`NameError: grad is not defined`; the "
+                "scikit-fem BilinearForm convention exposes "
+                "the gradient as the .grad attribute on the "
+                "test/trial argument, not as a free "
+                "function. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] For DG: use InteriorFacetBasis for "
+                "jump terms. Signal: building a jump form "
+                "on a plain Basis raises `AttributeError: "
+                "'Basis' has no attribute 'normals'` or "
+                "yields zero matrix entries on facets. "
+                "(Audit 2026-06-02.)"
+            ),
             "Periodic mesh: example 42 shows advection on periodic domain",
-            "High Peclet: use DG or increase mesh resolution",
+            (
+                "[Numerical] High Peclet: use DG or "
+                "increase mesh resolution. Signal: standard "
+                "CG on Pe > ~10 develops oscillations "
+                "upstream of sharp source/sink locations "
+                "that do not damp under refinement of the "
+                "advection-aligned direction; SUPG or DG "
+                "stabilisation removes them. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 }
