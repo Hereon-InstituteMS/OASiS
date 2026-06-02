@@ -972,43 +972,76 @@ TRANSPORT ELEMENTS:
         # prepare_simulation.
         "pitfalls": [
             # ExodusII block IDs
-            "CRITICAL: meshio (Python) writes ExodusII element block IDs starting "
-            "at 0 (0-indexed), but 4C YAML ELEMENT_BLOCKS use 1-indexed IDs.  "
-            "Getting this wrong produces cryptic errors like 'Pressure map empty'.  "
-            "Fix: after writing with meshio, patch with netCDF4: "
-            "import netCDF4; ds=netCDF4.Dataset('mesh.e','r+'); "
-            "ds.variables['eb_prop1'][:] += 1; ds.close()  "
-            "Or verify IDs: python3 -c \"import meshio; m=meshio.read('mesh.e'); "
-            "print([c.type for c in m.cells])\"",
+            "[API] CRITICAL: meshio (Python) writes ExodusII "
+            "element block IDs starting at 0 (0-indexed), but "
+            "4C YAML ELEMENT_BLOCKS use 1-indexed IDs. Signal: "
+            "4C stderr emits the cryptic 'Pressure map empty' "
+            "(or analogous map-empty errors for transport / "
+            "fluid / structure) at problem-setup time — the "
+            "block-ID mismatch makes 4C find zero elements of "
+            "the expected family. Fix: after writing with "
+            "meshio, patch with netCDF4 — "
+            "import netCDF4; ds = netCDF4.Dataset("
+            "'mesh.e', 'r+'); ds.variables['eb_prop1'][:] += "
+            "1; ds.close(). Verify with: python3 -c \"import "
+            "meshio; m = meshio.read('mesh.e'); print([c.type "
+            "for c in m.cells])\". (Audit 2026-06-02.)",
 
             # FUNCT COMPONENT requirement
-            "SYMBOLIC_FUNCTION_OF_SPACE_TIME with VARIABLE/multifunction "
-            "REQUIRES 'COMPONENT: 0' in the same list item.  Without COMPONENT, "
-            "the VARIABLE definition is silently ignored and the function returns "
-            "wrong values.  SYMBOLIC_FUNCTION_OF_TIME (pure time functions) do "
-            "NOT need COMPONENT.",
+            "[Syntax] SYMBOLIC_FUNCTION_OF_SPACE_TIME with "
+            "VARIABLE/multifunction REQUIRES 'COMPONENT: 0' "
+            "in the same list item. Signal: omitting COMPONENT "
+            "does NOT raise an error at parse time — the "
+            "VARIABLE definition is silently ignored and the "
+            "function returns the WRONG values (the variable "
+            "expression evaluates to 0 everywhere). A "
+            "Dirichlet BC driven by such a function stays "
+            "stuck at 0 instead of ramping up; comparing "
+            "results vs an analytic ramp exposes the silent "
+            "miss. SYMBOLIC_FUNCTION_OF_TIME (pure time "
+            "functions) do NOT need COMPONENT. (Audit "
+            "2026-06-02.)",
 
             # Shared-node NUMDOF conflict
-            "In multi-physics problems (FSI, TSI, SSI), DESIGN ... DIRICH "
-            "CONDITIONS apply to ALL discretizations containing a node.  If a "
-            "node is shared between structure (NUMDOF=2 in 2D) and fluid "
-            "(NUMDOF=3), applying a structural Dirichlet with NUMDOF=2 on that "
-            "node will fail because the fluid discretization expects NUMDOF=3.  "
-            "Solutions: (a) use separate node sets, (b) offset meshes to avoid "
-            "shared nodes at Dirichlet boundaries, (c) use mortar coupling.",
+            "[API] In multi-physics problems (FSI, TSI, SSI), "
+            "DESIGN ... DIRICH CONDITIONS apply to ALL "
+            "discretisations containing a node. Signal: a node "
+            "shared between structure (NUMDOF=2 in 2D) and "
+            "fluid (NUMDOF=3) hit by a Dirichlet with "
+            "NUMDOF=2 raises 'inconsistent NUMDOF on shared "
+            "node' (or equivalent dof_check failure) from "
+            "4C_io_input_spec.cpp during setup. Solutions: "
+            "(a) use separate node sets per discretisation, "
+            "(b) offset meshes to avoid shared nodes at "
+            "Dirichlet boundaries, (c) use mortar coupling "
+            "with non-matching meshes. (Audit 2026-06-02.)",
 
             # Invalid section names
-            "4C is strict about section names.  Common invalid sections: "
-            "EVERY_ITERATION (not a valid IO parameter), "
-            "DESIGN FLUID LINE LIFT&DRAG (does not exist for 2D), "
-            "DESIGN THERMO LINE DIRICH CONDITIONS (wrong — must be "
-            "DESIGN LINE THERMO DIRICH CONDITIONS).  "
-            "Check valid names with: 4C --parameters | grep DESIGN",
+            "[Syntax] 4C is STRICT about section names. Common "
+            "invalid sections: EVERY_ITERATION (not a valid IO "
+            "parameter), DESIGN FLUID LINE LIFT&DRAG (does not "
+            "exist for 2D), DESIGN THERMO LINE DIRICH "
+            "CONDITIONS (wrong — must be DESIGN LINE THERMO "
+            "DIRICH CONDITIONS). Signal: 4C aborts with "
+            "'unknown section' or 'Could not match this input' "
+            "from 4C_io_input_spec_builders.cpp at parse time, "
+            "echoing the offending YAML block. Check valid "
+            "names with: 4C --parameters | grep DESIGN. "
+            "(Audit 2026-06-02.)",
 
             # Output
-            "4C writes native .control/.mesh/.result files.  To get VTU, either: "
-            "(a) add IO/RUNTIME VTK OUTPUT sections (recommended), or "
-            "(b) run post_vtu --file=output_prefix after the simulation.",
+            "[API] 4C writes native .control/.mesh/.result "
+            "files. To get VTU output for ParaView, either: "
+            "(a) add IO/RUNTIME VTK OUTPUT sections "
+            "(recommended), or (b) run post_vtu --file="
+            "output_prefix AFTER the simulation. Signal: "
+            "looking for a .vtu / .pvd output file in the "
+            "results directory finds nothing — 4C only "
+            "produced .control / .mesh / .result; either the "
+            "VTK section is missing or post_vtu was not "
+            "invoked. The native files are HDF5-readable but "
+            "not directly ParaView-loadable. (Audit "
+            "2026-06-02.)",
 
             # 2026-06-01: .dat extension rejected
             "[Syntax] 4C 2026.3.0-dev accepts ONLY .yaml / .yml / .json input "
@@ -1035,74 +1068,141 @@ TRANSPORT ELEMENTS:
             "not in the allowed enum set. (Verified empirically 2026-06-01.)",
 
             # THICKNESS parameter for 2D plane strain
-            "For 2D plane strain SOLID elements, THICKNESS is "
-            "the out-of-plane depth (unit thickness), NOT the "
-            "element width. Almost always THICKNESS: 1.0. "
-            "Getting this wrong silently scales all forces and "
-            "stresses by the THICKNESS value. NOTE: the legacy "
-            "keyword 'THICK' was renamed to 'THICKNESS' along "
-            "with the WALL → SOLID eletype change in 4C 2026.3.",
+            "[Input] For 2D plane-strain SOLID elements, "
+            "THICKNESS is the out-of-plane depth (unit "
+            "thickness), NOT the element width. Almost always "
+            "THICKNESS: 1.0. Signal: THICKNESS set to the "
+            "element edge length (or some geometric width) "
+            "silently scales ALL forces and stresses by that "
+            "factor — total reaction force at a fixed edge "
+            "is off by exactly THICKNESS, no error from 4C. "
+            "Sanity: integrate sigma_xx over a cross-section "
+            "and compare to applied force / THICKNESS. NOTE: "
+            "the legacy keyword 'THICK' was renamed to "
+            "'THICKNESS' along with the WALL -> SOLID eletype "
+            "change in 4C 2026.3. (Audit 2026-06-02.)",
 
             # 2D VTK output artifacts — applies to fluid AND porofluid
-            "In 2D simulations, fluid AND porofluid VTK output may show NaN for "
-            "pressure and garbage for the z-velocity component. This is a VTK "
-            "output artifact, NOT divergence. Read pressure from native HDF5 result "
-            "files instead. This affects fluid, poro, and FSI problems in 2D.",
+            "[Output] In 2D simulations, fluid AND porofluid "
+            "VTK output may show NaN for pressure and garbage "
+            "for the z-velocity component. Signal: opening "
+            "the .vtu in ParaView shows pressure = NaN "
+            "everywhere (white/uncolored field) while the "
+            "simulation actually converged — the issue is a "
+            "VTK output artifact for 2D problems, NOT "
+            "divergence. Native HDF5 .result files contain "
+            "the correct pressure. Affects fluid, poro, and "
+            "FSI in 2D; 3D output is unaffected. (Audit "
+            "2026-06-02.)",
 
             # Poro-specific
-            "4C poro uses a DYNAMIC formulation (with inertia) even for quasi-static "
-            "problems. Use slow load ramps (>10x wave traversal time) to avoid "
-            "elastic waves. For 1D consolidation, ramp time >> H/sqrt(E/rho).",
+            "[Numerical] 4C poro uses a DYNAMIC formulation "
+            "(with inertia) even for quasi-static problems — "
+            "the structural momentum balance retains the "
+            "rho*a term. Signal: a step-load applied to a 1D "
+            "consolidation column shows elastic-wave "
+            "ringing (oscillating pressure / displacement at "
+            "frequency ~ c_p/H where c_p = sqrt(E/rho)) — "
+            "NOT the smooth Terzaghi consolidation curve. "
+            "Fix: ramp the load over a time >> 10 * H / "
+            "sqrt(E/rho) (10x wave traversal time) so the "
+            "elastic transient damps before consolidation "
+            "begins. (Audit 2026-06-02.)",
 
 
             # 2D structural element types (post-WALL→SOLID
             # rename in 4C 2026.3).
-            "2D structural elements are 'SOLID QUAD4 / QUAD8 / "
-            "QUAD9' and 'SOLID TRI3 / TRI6'. The legacy 'WALL' "
-            "eletype was renamed to 'SOLID' — the new naming "
-            "covers BOTH 2D (with PLANE_ASSUMPTION) and 3D (no "
-            "PLANE_ASSUMPTION) under one factory string. Writing "
+            "[API] 2D structural elements are 'SOLID QUAD4 / "
+            "QUAD8 / QUAD9' and 'SOLID TRI3 / TRI6'. The "
+            "legacy 'WALL' eletype was renamed to 'SOLID' — "
+            "the new naming covers BOTH 2D (with "
+            "PLANE_ASSUMPTION) and 3D (no PLANE_ASSUMPTION) "
+            "under one factory string. Signal: writing "
             "'WALL QUAD4' / 'WALL TRI3' raises 'Unknown type "
-            "WALL of finite element' from parobjectfactory.cpp.",
+            "WALL of finite element' from parobjectfactory."
+            "cpp:153 at problem setup; the fix is replacing "
+            "every 'WALL' eletype string with 'SOLID' and "
+            "adding PLANE_ASSUMPTION (plane_strain or "
+            "plane_stress) for 2D. (Audit 2026-06-02.)",
 
             # FSI mesh requirements
-            "For monolithic FSI: the structure and fluid meshes must have SEPARATE "
-            "nodes at the FSI interface (not shared conforming nodes).  A single "
-            "Gmsh mesh shares nodes — you must post-process to duplicate interface "
-            "nodes, remapping fluid element connectivity and boundary node sets.  "
-            "Alternative: use mortar coupling (iter_mortar_monolithicfluidsplit) "
-            "which handles non-matching meshes natively.",
+            "[API] For monolithic FSI: the structure and "
+            "fluid meshes MUST have SEPARATE nodes at the "
+            "FSI interface (NOT shared conforming nodes). "
+            "Signal: a single Gmsh mesh used for both phases "
+            "shares interface nodes, and the FSI coupling "
+            "operator detects only zero interface DOFs — "
+            "either 4C aborts with 'no FSI interface nodes "
+            "found' or the simulation runs without coupling "
+            "(fluid and solid never exchange forces, "
+            "deformation stays zero). Post-process Gmsh to "
+            "duplicate interface nodes, remap connectivity. "
+            "Alternative: mortar coupling "
+            "(iter_mortar_monolithicfluidsplit) handles "
+            "non-matching meshes natively. (Audit "
+            "2026-06-02.)",
 
             # Large inline YAML performance
-            "For meshes with >200 nodes, use an ExodusII mesh file (.e) instead "
-            "of inline NODE COORDS + ELEMENTS sections. Inline YAML with 1000+ "
-            "lines is slow to generate and can cause MCP transport timeouts. "
-            "Use meshio to write the mesh to .e format, then reference it with "
-            "STRUCTURE GEOMETRY: FILE: mesh.e",
+            "[Performance] For meshes with > 200 nodes, use "
+            "an ExodusII mesh file (.e) instead of inline "
+            "NODE COORDS + ELEMENTS sections. Signal: an "
+            "inline YAML with > 1000 lines takes 30+ seconds "
+            "to parse — the MCP stdio transport times out at "
+            "60s, and even direct CLI 4C startup is "
+            "noticeably slow. Use meshio to write the mesh "
+            "to .e format, then reference it with "
+            "STRUCTURE GEOMETRY: FILE: mesh.e. (Audit "
+            "2026-06-02.)",
 
             # FSI + runtime VTK
-            "IO/RUNTIME VTK OUTPUT/STRUCTURE may be incompatible with FSI — "
-            "FSI overrides INT_STRATEGY internally.  If structure VTK output "
-            "causes errors, remove it and use post_vtu for post-processing instead.",
+            "[Output] IO/RUNTIME VTK OUTPUT/STRUCTURE may be "
+            "INCOMPATIBLE with FSI — FSI overrides "
+            "INT_STRATEGY internally. Signal: a structural "
+            "VTK section in an FSI input causes 4C to abort "
+            "with 'inconsistent integration strategy' or "
+            "similar error from the FSI setup phase; removing "
+            "the IO/RUNTIME VTK OUTPUT/STRUCTURE section and "
+            "using post_vtu after the simulation succeeds. "
+            "(Audit 2026-06-02.)",
 
             # GPU / hardware acceleration
-            "4C linear algebra is CPU-only (Epetra-based, Trilinos 16.2.0). "
-            "Epetra does NOT support GPU execution. Tpetra (GPU-capable via "
-            "Kokkos CUDA/HIP/SYCL backends) is not yet integrated. Do NOT "
-            "expect GPU speedup for assembly or linear solves.",
+            "[Hardware] 4C linear algebra is CPU-ONLY "
+            "(Epetra-based, Trilinos 16.2.0). Epetra does NOT "
+            "support GPU execution. Signal: setting "
+            "CUDA_VISIBLE_DEVICES, KOKKOS_NUM_DEVICES, or any "
+            "GPU-targeted environment variable has zero effect "
+            "on 4C runtime — wall-clock for assembly and "
+            "linear solves stays identical. Tpetra "
+            "(GPU-capable via Kokkos CUDA/HIP/SYCL backends) "
+            "is not yet integrated. Plan compute on CPU only. "
+            "(Audit 2026-06-02.)",
 
             # ArborX optional GPU component
-            "The only GPU-accelerated component in 4C is ArborX (optional, "
-            "OFF by default), used for geometric search (bounding volume "
-            "hierarchy queries in contact/particle problems). Enable with "
-            "-DFOUR_C_WITH_ARBORX=ON and a Kokkos GPU backend in Trilinos. "
-            "This does NOT accelerate the solver itself.",
+            "[Hardware] The ONLY GPU-accelerated component in "
+            "4C is ArborX (optional, OFF by default), used "
+            "for geometric search (bounding-volume-hierarchy "
+            "queries in contact / particle problems). Enable "
+            "with cmake flag -DFOUR_C_WITH_ARBORX=ON and a "
+            "Kokkos GPU backend in Trilinos. Signal: even "
+            "with ArborX-on, the LINEAR SOLVER wall-clock is "
+            "unchanged — only the contact-search phase "
+            "shrinks; for problems dominated by linear solve "
+            "(most), ArborX gives < 5% total speedup. (Audit "
+            "2026-06-02.)",
 
             # MPI parallelism
-            "4C supports MPI parallelism for domain decomposition. Use "
-            "mpirun -np N 4C input.4C.yaml for parallel runs. MPI is the "
-            "primary parallelism mechanism for large-scale problems. "
-            "Thread-level parallelism uses OpenMP (set OMP_NUM_THREADS).",
+            "[Hardware] 4C uses MPI for domain decomposition. "
+            "Standard invocation: mpirun -np N 4C input.4C."
+            "yaml. Signal: forgetting mpirun on a multi-CPU "
+            "machine restricts 4C to a single rank — wall-"
+            "clock is N-fold higher than expected for a "
+            "well-decomposable problem and CPU utilisation "
+            "is < 1/N on the system monitor. MPI is the "
+            "primary parallelism mechanism; thread-level "
+            "parallelism uses OpenMP (set OMP_NUM_THREADS). "
+            "Mixing both (mpirun + OMP_NUM_THREADS) is "
+            "supported but oversubscribes if "
+            "N_mpi * N_omp > N_cores. (Audit 2026-06-02.)",
         ],
 
         "element_type_per_physics": {

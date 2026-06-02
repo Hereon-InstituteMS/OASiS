@@ -251,17 +251,50 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
-                       #                 2026-06-02 from 27.0 after
-                       #                 a sixth pass: all 7
-                       #                 xfem_fluid pitfalls
-                       #                 received Signal: lines.
-                       #                 fourc has gone 8.7% ->
+    "fourc":   34.0,   # measured  34.6 — CROSSED 34% (raised
+                       #                 2026-06-02 from 29.0 after
+                       #                 pass 7: all 15 untagged
+                       #                 input_format pitfalls in
+                       #                 data/fourc_knowledge.py
+                       #                 Signal-tagged. These are
+                       #                 the universal 4C YAML
+                       #                 format gotchas:
+                       #                   - ExodusII meshio 0-vs
+                       #                     -1-indexed block IDs,
+                       #                   - FUNCT COMPONENT
+                       #                     requirement (silent
+                       #                     miss without it),
+                       #                   - shared-node NUMDOF
+                       #                     conflict in multi-
+                       #                     physics,
+                       #                   - strict section name
+                       #                     vocabulary,
+                       #                   - VTU output via
+                       #                     IO/RUNTIME VTK or
+                       #                     post_vtu,
+                       #                   - THICKNESS for 2D
+                       #                     plane strain,
+                       #                   - 2D VTK NaN-pressure
+                       #                     output artifact,
+                       #                   - poro DYNAMIC ringing
+                       #                     vs slow ramp,
+                       #                   - WALL -> SOLID rename
+                       #                     in 4C 2026.3,
+                       #                   - FSI separate-nodes
+                       #                     at interface,
+                       #                   - large inline YAML
+                       #                     performance,
+                       #                   - IO/RUNTIME VTK
+                       #                     STRUCTURE FSI incompat,
+                       #                   - 4C CPU-only Epetra,
+                       #                   - ArborX optional GPU
+                       #                     for search only,
+                       #                   - MPI parallelism.
+                       #                 fourc trajectory: 8.7% ->
                        #                 14.0% -> 18.2% -> 22.1%
                        #                 -> 25.4% -> 28.1% ->
-                       #                 30.1% across seven
-                       #                 commits — a 3.5x
-                       #                 improvement.)
+                       #                 30.1% -> 34.6% across
+                       #                 eight passes.)
     "dune":     0.0,   # measured   0.0 — known total gap
 }
 
