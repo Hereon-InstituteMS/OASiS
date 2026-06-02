@@ -10,13 +10,65 @@ KNOWLEDGE = {
     "function_space": "Mixed: P1 + P1 (one per species) via mixed_element",
     "solver": "Newton (PETSc SNES) with LU direct for each time step",
     "pitfalls": [
-        "Nonlinear reaction terms require Newton iteration (NonlinearProblem)",
-        "Time stepping: backward Euler is robust; Crank-Nicolson can oscillate",
-        "Initial conditions: must set on collapsed sub-spaces, then scatter_forward",
-        "No-flux (Neumann zero) is the natural BC \u2014 no Dirichlet needed for insulated walls",
-        "For stiff reactions: may need smaller dt or implicit-explicit (IMEX) splitting",
+        (
+            "[Numerical] Nonlinear reaction terms require Newton "
+            "iteration (NonlinearProblem). Signal: a single-step "
+            "linear-only solve on R(u,v) = u*v gives wrong "
+            "steady-state \u2014 quadratic coupling means the linear "
+            "problem is not the linearisation of the nonlinear "
+            "one. Use dolfinx.nls.petsc.NewtonSolver with the "
+            "UFL Jacobian. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Time stepping: backward Euler is robust; "
+            "Crank-Nicolson can oscillate at sharp activation "
+            "fronts. Signal: visualizing u at a moving "
+            "concentration front shows 10-30% over/undershoot "
+            "in CN that does not damp with mesh refinement; BE "
+            "removes the oscillation at the cost of 1st-order "
+            "phase error. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Initial conditions: must be set on COLLAPSED "
+            "sub-spaces, then call scatter_forward(). Signal: "
+            "writing u0 = w.sub(0).interpolate(initial_u) on a "
+            "mixed Function w raises "
+            "`AttributeError: Function.sub() returns a sub-"
+            "function not a sub-space` or the IC stays at zero. "
+            "Use w_sub_0, w_sub_0_to_w = w.sub(0).collapse() "
+            "first. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] No-flux (Neumann zero) is the natural BC \u2014 no "
+            "Dirichlet needed for insulated walls. Signal: "
+            "applying DirichletBC(value=0) on an 'insulated' "
+            "boundary over-constrains (u=0, not du/dn=0) and "
+            "pulls the species concentration toward zero at the "
+            "boundary. Compare a no-BC vs Dirichlet=0 run \u2014 the "
+            "no-BC version shows bulged-out concentration "
+            "profiles at the boundary. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] For stiff reactions: may need smaller "
+            "dt or implicit-explicit (IMEX) splitting. Signal: "
+            "explicit Euler with dt > 2/lambda_max where "
+            "lambda_max ~ rate constant gives NaN within a few "
+            "steps; for Da > 1000, even BE converges slowly "
+            "without splitting the stiff reaction onto its own "
+            "implicit sub-step (Strang or Lie). (Audit "
+            "2026-06-02.)"
+        ),
         "Common reaction models: Gray-Scott, Schnakenberg, Brusselator, Lotka-Volterra",
-        "Conservation: check mass integrals over time to verify correctness",
+        (
+            "[Numerical] Conservation: check mass integrals over "
+            "time to verify correctness. Signal: for a closed "
+            "system (no source/sink, no-flux BCs) the integral "
+            "of (u + v) over the domain should be conserved; "
+            "if it drifts > 0.1% per unit time, the time "
+            "integrator has a numerical leak \u2014 refine dt or "
+            "switch to a conservative scheme. (Audit "
+            "2026-06-02.)"
+        ),
     ],
     "materials": {
         "D1": {"range": [1e-6, 10.0], "unit": "m^2/s (diffusion coefficient, species 1)"},

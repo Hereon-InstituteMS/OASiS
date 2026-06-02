@@ -112,22 +112,20 @@ SIGNAL_COVERAGE_MIN = {
                        #                  session: 46.2% -> 75.9%
                        #                  -> 84.4% -> 88.5% ->
                        #                  100.0%.)
-    "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
-                       #                 2026-06-02 from 44.0 after
-                       #                 pass 3 on fenics:
-                       #                 multiphase #1, #4, #6
-                       #                 (interface-width
-                       #                 oscillation, AC volume
-                       #                 drift, level-set reinit)
-                       #                 and deep_knowledge::
-                       #                 thermal_structural #2, #3,
-                       #                 #4, #5 (T_ref pre-strain,
-                       #                 plane-strain/stress
-                       #                 confusion, RBM null-space,
-                       #                 Picard iteration). fenics
-                       #                 31.8% -> 38.8% -> 45.7%
-                       #                 -> 51.2% over three
-                       #                 commits.)
+    "fenics":  65.0,   # measured  66.7 (raised 2026-06-02 from
+                       #                 50.0 after pass 4 on
+                       #                 fenics: Signal-tagged the
+                       #                 remaining 5 no-Signal
+                       #                 physics in deep_knowledge
+                       #                 + reaction_diffusion.py:
+                       #                 convection_diffusion (4),
+                       #                 biharmonic (4),
+                       #                 reaction_diffusion (5+5
+                       #                 across two source files),
+                       #                 contact (4), cahn_hilliard
+                       #                 (4). fenics: 31.8% -> 38.8%
+                       #                 -> 45.7% -> 51.2% -> 66.7%
+                       #                 across four commits.)
     "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
                        #                 2026-06-02 from 27.0 after
                        #                 a sixth pass: all 7

@@ -1208,10 +1208,46 @@ _FENICS_KNOWLEDGE = {
             "GLS": "Galerkin Least Squares — similar to SUPG but also stabilizes reaction",
         },
         "pitfalls": [
-            "Without stabilization, Galerkin method produces oscillations for Pe > 1",
-            "SUPG tau parameter depends on mesh size h and velocity magnitude — must compute per cell",
-            "DG methods are a cleaner alternative for pure advection (no diffusion)",
-            "For time-dependent: use SUPG in space, implicit time stepping",
+            (
+                "[Numerical] Without stabilization, Galerkin method "
+                "produces oscillations for Pe > 1. Signal: solution "
+                "develops visible wiggles upstream of source/sink "
+                "locations; oscillation amplitude does not damp "
+                "with mesh refinement in the advection-aligned "
+                "direction. Add SUPG, GLS, or upwind DG. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] SUPG tau parameter depends on mesh "
+                "size h and velocity magnitude — must compute "
+                "PER CELL via tau = h / (2*|b|) for high-Pe "
+                "regime. Using a constant global tau "
+                "under-stabilises on fine cells and over-"
+                "diffuses on coarse ones. Signal: convergence "
+                "rate degrades from O(h^2) to ~O(h) with a "
+                "constant tau; per-cell tau restores O(h^2). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] DG methods are a cleaner alternative "
+                "for pure advection (no diffusion). Signal: for "
+                "vanishing diffusion kappa -> 0, SUPG's tau "
+                "formula degenerates (tau -> h/|b|, but "
+                "stabilisation residual scales with kappa); "
+                "upwind DG on the same mesh maintains stability "
+                "with no parameter tuning. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For time-dependent: SUPG in space + "
+                "implicit time stepping. Mixing SUPG with "
+                "explicit Euler can break: SUPG injects time-"
+                "derivative coupling via the residual, which "
+                "needs implicit treatment. Signal: explicit + "
+                "SUPG diverges to NaN within a few steps even "
+                "below the convective CFL; switching to implicit "
+                "(theta=1 or BDF2) restores stability. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1344,10 +1380,50 @@ _FENICS_KNOWLEDGE = {
         "alternative": "Hermite elements (C1 conforming) — avoids DG penalty terms but limited to simplices",
         "solver": "LU (direct) for moderate sizes, GMRES for large",
         "pitfalls": [
-            "Penalty parameter alpha must be large enough for stability (scales with polynomial degree^2)",
-            "h_E is a measure of cell size — must be computed correctly for penalty term",
-            "Interior penalty requires interior facet integrals (dS) — more expensive than standard FEM",
-            "Alternative: split into two 2nd-order equations (mixed method with auxiliary variable)",
+            (
+                "[Numerical] Penalty parameter alpha must be large "
+                "enough for stability (scales with polynomial "
+                "degree^2). Signal: too small -> coercivity loss "
+                "and the solution norm diverges with mesh "
+                "refinement; too large -> cond(K) > 1e14 and "
+                "iterative solver stalls. Rule of thumb: alpha = "
+                "4 * (k+1)^2 for C0 interior-penalty biharmonic "
+                "with degree-k Lagrange. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] h_E (cell-size measure for the penalty "
+                "weight) must use the proper UFL CellDiameter / "
+                "FacetArea expressions — hard-coding h as a scalar "
+                "gives wrong scaling on graded meshes. Signal: "
+                "convergence rate degrades from O(h^2) to ~O(h) "
+                "or stagnates because the penalty does not scale "
+                "correctly with element size. Use "
+                "ufl.CellDiameter(mesh) inside the form. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] Interior penalty requires interior "
+                "facet integrals (dS) — more expensive than "
+                "standard FEM (each facet visited from both "
+                "sides). Signal: assembly time per step in a "
+                "biharmonic problem is 5-10x the equivalent "
+                "Poisson; profile shows dolfinx.fem.assemble_matrix "
+                "spending most time in facet kernels. Mixed "
+                "method (u + auxiliary sigma) avoids dS at the "
+                "cost of doubling the DOF count. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Alternative: split into two "
+                "2nd-order equations (mixed method with auxiliary "
+                "variable). Signal: writing biharmonic as a "
+                "single 4th-order operator on C0 Lagrange "
+                "elements raises `NotImplementedError: H2 "
+                "conformity required` or silently uses the "
+                "interior-penalty form when assembling. Mixed "
+                "(u, sigma) with sigma = Laplacian(u) works on "
+                "plain P1 x P1. (Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1430,10 +1506,46 @@ _FENICS_KNOWLEDGE = {
             "M": "Mobility coefficient",
         },
         "pitfalls": [
-            "Very stiff system — requires small time step especially initially",
-            "Chemical potential df/dc must use ufl.variable() and ufl.diff() for automatic differentiation",
-            "Random initial condition: c_0 = 0.63 + 0.02*(random - 0.5) for spinodal decomposition",
-            "Newton convergence sensitive to time step — reduce dt if diverging",
+            (
+                "[Numerical] Very stiff system — requires small time "
+                "step especially initially. Signal: starting from a "
+                "random initial condition with dt ~ 1.0 gives "
+                "SNES `DIVERGED_FNORM_NAN` within the first 1-3 "
+                "steps; using dt ~ 1e-5 for the first ~100 steps "
+                "and ramping to dt ~ 1e-2 afterwards is the "
+                "standard recipe. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Chemical potential df/dc must use "
+                "ufl.variable() and ufl.diff() for automatic "
+                "differentiation. Signal: hand-coding the Cahn-"
+                "Hilliard chemical potential (12 * c * (c-1) * "
+                "(2c-1) for the double-well derivative) and "
+                "missing a factor or sign gives sublinear "
+                "convergence; ufl.diff guarantees the analytic "
+                "exact derivative. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Random initial condition: "
+                "c_0 = 0.63 + 0.02*(random - 0.5) for spinodal "
+                "decomposition. Signal: starting from c_0 = 0.5 "
+                "exactly (the unstable symmetric mean) gives no "
+                "phase separation — the field stays uniformly at "
+                "0.5 because there's no symmetry-breaking "
+                "perturbation. Visualize at t = 1 should show "
+                "interface formation; if not, the IC is too "
+                "symmetric. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Newton convergence sensitive to time "
+                "step — reduce dt if diverging. Signal: SNES "
+                "warning `step rejected, reducing dt`; or "
+                "residual diverges within 2-3 Newton iterations. "
+                "Cahn-Hilliard becomes singular at fast-evolving "
+                "interfaces; dt ~ eps^4 / M is the conservative "
+                "stability limit (eps = interface thickness, M = "
+                "mobility). (Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1478,10 +1590,44 @@ _FENICS_KNOWLEDGE = {
         "demo_url": "https://jsdokken.com/dolfinx-tutorial/chapter2/intro.html (advection-diffusion-reaction systems)",
         "solver": "SNES Newton for nonlinear reaction terms",
         "pitfalls": [
-            "Nonlinear reaction terms require Newton iteration",
-            "Stiff reactions (fast kinetics) may need implicit time stepping with small dt",
-            "Species concentrations should remain non-negative — check solution and add constraints if needed",
-            "Use ufl.variable() and ufl.diff() for automatic Jacobian of reaction terms",
+            (
+                "[Numerical] Nonlinear reaction terms require "
+                "Newton iteration. Signal: a single-Picard-step "
+                "solve on a quadratic reaction R(u) = u^2 "
+                "converges linearly (residual ratio ~0.5 per "
+                "iteration) instead of quadratically; SNES "
+                "Newton with the UFL-derived Jacobian restores "
+                "quadratic convergence. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Stiff reactions (fast kinetics) may "
+                "need implicit time stepping with small dt. "
+                "Signal: explicit Euler / theta < 0.5 on a "
+                "Damkohler-number-100 problem requires dt < "
+                "2/lambda_max ~ 1e-3, which is infeasible. "
+                "Switch to backward Euler or BDF2; for very "
+                "stiff systems (Da > 1000) use SUNDIALS via "
+                "external coupling. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Species concentrations should remain "
+                "non-negative — check solution and add constraints "
+                "if needed. Signal: visualizing c shows pockets "
+                "of negative concentration (often near steep "
+                "gradients) — unphysical. Standard fix: SUPG + "
+                "shock-capturing, or projection onto the "
+                "non-negative cone after each step. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Use ufl.variable() and ufl.diff() for "
+                "automatic Jacobian of reaction terms. Signal: "
+                "hand-coding the Jacobian and forgetting a "
+                "df/dv coupling between species causes Newton "
+                "to converge linearly instead of quadratically; "
+                "ufl.diff(R(u), u) emits the exact partials. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1517,10 +1663,50 @@ _FENICS_KNOWLEDGE = {
             "dolfinx_contact": "github.com/jorgensd/dolfinx_contact — extension package for contact in DOLFINx",
         },
         "pitfalls": [
-            "No built-in contact in DOLFINx — must implement penalty/Nitsche or use extensions",
-            "Penalty parameter: too small = penetration, too large = ill-conditioning",
-            "Contact detection (gap computation) requires geometric search",
-            "Self-contact requires careful implementation of contact pairs",
+            (
+                "[API] No built-in contact in DOLFINx — must "
+                "implement penalty/Nitsche manually OR use the "
+                "dolfinx_contact extension package. Signal: "
+                "searching dolfinx.fem for `ContactBoundary` or "
+                "`ContactProblem` returns nothing; the catalog "
+                "ships hand-coded penalty / Nitsche snippets the "
+                "user copies — there is no single-call contact "
+                "API. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty parameter: too small = "
+                "penetration, too large = ill-conditioning. "
+                "Signal: penetration > 5% of element edge "
+                "indicates the penalty is too low; PETSc condition-"
+                "number warning > 1e14 indicates too high. Rule "
+                "of thumb: penalty = 1e2 * E / h for solid contact "
+                "where E is the softer material's Young modulus. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Contact detection (gap computation) "
+                "requires geometric search — naive O(N^2) "
+                "all-pairs is fine for small problems but "
+                "dominates wall-clock past ~10k surface points. "
+                "Use bounding-volume hierarchies (BVH) from "
+                "dolfinx.geometry. Signal: assembly time per "
+                "Newton iteration grows quadratically with mesh "
+                "size; using "
+                "dolfinx.geometry.bb_tree(mesh, dim) keeps it "
+                "near-linear. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Self-contact requires careful "
+                "implementation of contact pairs — a node on the "
+                "surface can contact another part of the SAME "
+                "surface (not just the partner body). Signal: "
+                "a buckling problem (post-bifurcation cylinder, "
+                "ring crush) shows surfaces passing through "
+                "themselves; visualize confirms intersecting "
+                "geometry; need to flag the surface as both "
+                "slave AND master in the contact pair list. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
