@@ -441,6 +441,22 @@ def main() -> int:
         # log(J)=NaN) to E=1000/traction=1.0 (~0.4% strain,
         # converges in 5 iters per load step).
         ("skfem", "hyperelasticity", "2d"),
+        # Batch-21 (2026-06-02): five new audit-driven physics
+        # from the upstream-demo gap report. Each closes an
+        # explicit ex<NN> / demo_<topic>.py upstream entry:
+        #   skfem::wave::2d              — ex09 / ex36 / ex44
+        #   skfem::adaptive_poisson::2d  — ex11 / ex22
+        #   skfem::point_source::2d      — ex17 / ex38
+        #   skfem::schrodinger::1d       — ex39
+        #   fenics::matrix_free_poisson  — demo_poisson_matrix_free.py
+        # All five end-to-end verified in the live env when
+        # added (rc=0 + finite output); this batch armours them
+        # against silent regression.
+        ("skfem", "wave", "2d"),
+        ("skfem", "adaptive_poisson", "2d"),
+        ("skfem", "point_source", "2d"),
+        ("skfem", "schrodinger", "1d"),
+        ("fenics", "matrix_free_poisson", "2d"),
     ]
     fail = []
     executed = 0

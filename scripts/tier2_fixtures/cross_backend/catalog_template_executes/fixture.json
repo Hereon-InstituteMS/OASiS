@@ -129,7 +129,12 @@
     "ngsolve::nonlinear_elasticity::3d_rc=0",
     "skfem::navier_stokes::2d_rc=0",
     "skfem::hyperelasticity::2d_rc=0",
-    "total_executed=122",
+    "skfem::wave::2d_rc=0",
+    "skfem::adaptive_poisson::2d_rc=0",
+    "skfem::point_source::2d_rc=0",
+    "skfem::schrodinger::1d_rc=0",
+    "fenics::matrix_free_poisson::2d_rc=0",
+    "total_executed=127",
     "failures=0"
   ],
   "forbid_in_output": [
