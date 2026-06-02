@@ -138,6 +138,10 @@ _NON_PHYSICS_STEMS: set[str] = {
     "conftest", "test", "p_mesh_tags", "mesh_tags", "custom_mesh",
     "custom_assembler", "io", "performance", "demo_io",
     "interpolation-io", "demo_interpolation",
+    # Infrastructure / educational tutorials — not physics.
+    "step_1", "step_2", "step_10", "step_13", "step_49",
+    "step_53", "step_54", "step_65",
+    "step_85",  # generic matrix-free intro
 }
 
 
@@ -304,8 +308,136 @@ def _classify(stem: str) -> str | None:
     return None
 
 
+_DEALII_UPSTREAM: dict[str, str] = {
+    # deal.II tutorial steps from the published Tutorial.html.
+    # Coverage: step-1..step-50 (the canonical 50). step-51..step-97
+    # are advanced / research-grade; encode incrementally as you
+    # validate.
+    # step-1 / step-2 are infrastructure (mesh + dof_handler intro)
+    # — not encoded here as physics; remove if upstream tutorials
+    # docs add new step-N entries that are pure infrastructure.
+    "step-3":  "poisson",
+    "step-4":  "poisson",                # dimension-independent
+    "step-5":  "poisson",                # variable coefficient
+    "step-6":  "adaptive_poisson",       # h-adaptive
+    "step-7":  "helmholtz",
+    "step-8":  "linear_elasticity",
+    "step-9":  "advection_dg",           # advection upwind
+    # step-10 / step-13 / step-49 / step-53 / step-54 / step-65 are
+    # manifold/design infrastructure — not physics.
+    "step-11": "poisson",                # mean-value constraint
+    "step-12": "advection_dg",           # DG upwind
+    "step-14": "error_estimation",
+    "step-15": "nonlinear",              # Newton min-surface
+    "step-16": "multigrid",
+    "step-17": "linear_elasticity",      # MPI parallel
+    "step-18": "linear_elasticity",      # nonlinear large-def
+    "step-19": "particle_methods",
+    "step-20": "mixed_poisson",          # Raviart-Thomas
+    "step-21": "darcy",                  # two-phase porous
+    "step-22": "stokes",                 # Taylor-Hood
+    "step-23": "wave",                   # Newmark
+    "step-24": "wave",                   # absorbing BC
+    "step-25": "schrodinger",            # Sine-Gordon
+    "step-26": "heat",                   # AMR in time
+    "step-27": "hp_adaptive",
+    "step-28": "neutron_transport",
+    "step-29": "helmholtz",              # complex
+    "step-30": "advection_dg",           # anisotropic refinement
+    "step-31": "navier_stokes",          # Boussinesq
+    "step-32": "navier_stokes",          # parallel mantle convection
+    "step-33": "compressible_euler",
+    "step-34": "boundary_integral",
+    "step-35": "stokes_tangential_bc",
+    "step-36": "eigenvalue",             # SLEPc
+    "step-37": "matrix_free",            # CG matrix-free
+    "step-38": "surface_pde",            # Laplace-Beltrami
+    "step-39": "advection_dg",           # interior penalty
+    "step-40": "linear_elasticity",      # parallel large
+    "step-41": "obstacle_problem",
+    "step-42": "obstacle_problem",       # elastoplastic
+    "step-43": "navier_stokes",          # porous + DG
+    "step-44": "hyperelasticity",        # quasi-static
+    "step-45": "periodic_mesh",
+    "step-46": "fsi",
+    "step-47": "biharmonic",             # C0-IPG
+    "step-48": "wave",                   # parallel + matrix-free
+    "step-50": "multigrid",              # parallel + matrix-free
+    "step-51": "hdg",
+    "step-52": "heat_transient",         # method-of-lines
+    "step-55": "stokes",                 # parallel block
+    "step-56": "multigrid",              # Stokes block
+    "step-57": "navier_stokes",
+    "step-58": "schrodinger",
+    "step-59": "matrix_free",            # DG matrix-free
+    "step-60": "non_matching_grids",
+    "step-61": "hdg",
+    "step-62": "scattering",
+    "step-63": "multigrid",
+    "step-64": "matrix_free",            # CUDA matrix-free
+    "step-66": "fsi",                    # parallel matrix-free
+    "step-67": "compressible_euler",
+    "step-68": "particle_methods",       # advected particles
+    "step-69": "shallow_water",
+    "step-70": "particle_methods",       # immersed
+    "step-71": "plasticity",             # constitutive update
+    "step-72": "plasticity",             # AD
+    "step-73": "scattering",             # FE-DGQ
+    "step-74": "advection_dg",           # SIPG
+    "step-75": "hp_adaptive",            # parallel
+    "step-76": "linear_elasticity",      # MPI shared-mem
+    "step-77": "hyperelasticity",        # Trilinos
+    "step-78": "black_scholes",          # finance / parabolic
+    "step-79": "topology_opt",
+    "step-80": "particle_methods",
+    "step-81": "maxwell",                # HDG Maxwell
+    "step-82": "level_set",
+    "step-83": "checkpoint_restart",
+    "step-84": "non_matching_grids",
+    "step-85": "matrix_free",
+    "step-86": "evolution_pde",
+    "step-87": "shape_optimization",
+    # step-88..step-97 are recent additions; encode as you verify.
+}
+
+
+_NGSOLVE_UPSTREAM: dict[str, str] = {
+    # NGSolve i-tutorials from docu.ngsolve.org.
+    # Stable subset covering the canonical physics.
+    "unit-1.1":  "poisson",
+    "unit-1.2":  "advection_dg",
+    "unit-1.3":  "convection_diffusion",
+    "unit-1.4":  "helmholtz",
+    "unit-1.5":  "linear_elasticity",
+    "unit-1.6":  "stokes",
+    "unit-1.7":  "navier_stokes",
+    "unit-1.8":  "maxwell",
+    "unit-2.1":  "linear_elasticity",  # symbolic
+    "unit-2.2":  "stokes",             # mixed
+    "unit-2.3":  "mixed_methods",
+    "unit-2.4":  "heat",
+    "unit-2.5":  "hyperelasticity",
+    "unit-2.6":  "phase_field",
+    "unit-2.7":  "hdg",
+    "unit-2.8":  "eigenvalue",
+    "unit-2.9":  "navier_stokes",
+    "unit-2.10": "plasticity",
+    "unit-3.1":  "dg_methods",         # CR / nonconforming
+    "unit-3.2":  "hdivdiv",
+    "unit-3.3":  "surface_pde",
+    "unit-3.4":  "shells",
+    "unit-3.5":  "contact",
+    "unit-3.6":  "trefftz",
+    "unit-3.7":  "vem",
+    "unit-3.8":  "time_dependent",
+    "unit-3.9":  "time_dependent_ns",
+}
+
+
 _CURATED_INVENTORIES: dict[str, dict[str, str]] = {
-    "skfem": _SKFEM_UPSTREAM,
+    "skfem":   _SKFEM_UPSTREAM,
+    "dealii":  _DEALII_UPSTREAM,
+    "ngsolve": _NGSOLVE_UPSTREAM,
 }
 
 

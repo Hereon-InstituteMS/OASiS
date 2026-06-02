@@ -182,10 +182,528 @@
     "demo_dirs": [
       "/home/hermann/miniconda3/envs/ofa-dealii/share/doc/xz/examples"
     ],
-    "found": [],
+    "found": [
+      {
+        "file": "curated:step-3",
+        "stem": "step-3",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-4",
+        "stem": "step-4",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-5",
+        "stem": "step-5",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-6",
+        "stem": "step-6",
+        "topic": "adaptive_poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-7",
+        "stem": "step-7",
+        "topic": "helmholtz",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-8",
+        "stem": "step-8",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-9",
+        "stem": "step-9",
+        "topic": "advection_dg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-11",
+        "stem": "step-11",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-12",
+        "stem": "step-12",
+        "topic": "advection_dg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-14",
+        "stem": "step-14",
+        "topic": "error_estimation",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-15",
+        "stem": "step-15",
+        "topic": "nonlinear",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-16",
+        "stem": "step-16",
+        "topic": "multigrid",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-17",
+        "stem": "step-17",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-18",
+        "stem": "step-18",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-19",
+        "stem": "step-19",
+        "topic": "particle_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-20",
+        "stem": "step-20",
+        "topic": "mixed_poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-21",
+        "stem": "step-21",
+        "topic": "darcy",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-22",
+        "stem": "step-22",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-23",
+        "stem": "step-23",
+        "topic": "wave",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-24",
+        "stem": "step-24",
+        "topic": "wave",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-25",
+        "stem": "step-25",
+        "topic": "schrodinger",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-26",
+        "stem": "step-26",
+        "topic": "heat",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-27",
+        "stem": "step-27",
+        "topic": "hp_adaptive",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-28",
+        "stem": "step-28",
+        "topic": "neutron_transport",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-29",
+        "stem": "step-29",
+        "topic": "helmholtz",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-30",
+        "stem": "step-30",
+        "topic": "advection_dg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-31",
+        "stem": "step-31",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-32",
+        "stem": "step-32",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-33",
+        "stem": "step-33",
+        "topic": "compressible_euler",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-34",
+        "stem": "step-34",
+        "topic": "boundary_integral",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-35",
+        "stem": "step-35",
+        "topic": "stokes_tangential_bc",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-36",
+        "stem": "step-36",
+        "topic": "eigenvalue",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-37",
+        "stem": "step-37",
+        "topic": "matrix_free",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-38",
+        "stem": "step-38",
+        "topic": "surface_pde",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-39",
+        "stem": "step-39",
+        "topic": "advection_dg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-40",
+        "stem": "step-40",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-41",
+        "stem": "step-41",
+        "topic": "obstacle_problem",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-42",
+        "stem": "step-42",
+        "topic": "obstacle_problem",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-43",
+        "stem": "step-43",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-44",
+        "stem": "step-44",
+        "topic": "hyperelasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-45",
+        "stem": "step-45",
+        "topic": "periodic_mesh",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-46",
+        "stem": "step-46",
+        "topic": "fsi",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-47",
+        "stem": "step-47",
+        "topic": "biharmonic",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-48",
+        "stem": "step-48",
+        "topic": "wave",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-50",
+        "stem": "step-50",
+        "topic": "multigrid",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-51",
+        "stem": "step-51",
+        "topic": "hdg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-52",
+        "stem": "step-52",
+        "topic": "heat_transient",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-55",
+        "stem": "step-55",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-56",
+        "stem": "step-56",
+        "topic": "multigrid",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-57",
+        "stem": "step-57",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-58",
+        "stem": "step-58",
+        "topic": "schrodinger",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-59",
+        "stem": "step-59",
+        "topic": "matrix_free",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-60",
+        "stem": "step-60",
+        "topic": "non_matching_grids",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-61",
+        "stem": "step-61",
+        "topic": "hdg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-62",
+        "stem": "step-62",
+        "topic": "scattering",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-63",
+        "stem": "step-63",
+        "topic": "multigrid",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-64",
+        "stem": "step-64",
+        "topic": "matrix_free",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-66",
+        "stem": "step-66",
+        "topic": "fsi",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-67",
+        "stem": "step-67",
+        "topic": "compressible_euler",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-68",
+        "stem": "step-68",
+        "topic": "particle_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-69",
+        "stem": "step-69",
+        "topic": "shallow_water",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-70",
+        "stem": "step-70",
+        "topic": "particle_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-71",
+        "stem": "step-71",
+        "topic": "plasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-72",
+        "stem": "step-72",
+        "topic": "plasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-73",
+        "stem": "step-73",
+        "topic": "scattering",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-74",
+        "stem": "step-74",
+        "topic": "advection_dg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-75",
+        "stem": "step-75",
+        "topic": "hp_adaptive",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-76",
+        "stem": "step-76",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-77",
+        "stem": "step-77",
+        "topic": "hyperelasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-78",
+        "stem": "step-78",
+        "topic": "black_scholes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-79",
+        "stem": "step-79",
+        "topic": "topology_opt",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-80",
+        "stem": "step-80",
+        "topic": "particle_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-81",
+        "stem": "step-81",
+        "topic": "maxwell",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-82",
+        "stem": "step-82",
+        "topic": "level_set",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-83",
+        "stem": "step-83",
+        "topic": "checkpoint_restart",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-84",
+        "stem": "step-84",
+        "topic": "non_matching_grids",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-85",
+        "stem": "step-85",
+        "topic": "matrix_free",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-86",
+        "stem": "step-86",
+        "topic": "evolution_pde",
+        "source": "curated"
+      },
+      {
+        "file": "curated:step-87",
+        "stem": "step-87",
+        "topic": "shape_optimization",
+        "source": "curated"
+      }
+    ],
     "unmapped": [],
     "skipped": [],
-    "topics_upstream": [],
+    "topics_upstream": [
+      "adaptive_poisson",
+      "advection_dg",
+      "biharmonic",
+      "black_scholes",
+      "boundary_integral",
+      "checkpoint_restart",
+      "compressible_euler",
+      "darcy",
+      "eigenvalue",
+      "error_estimation",
+      "evolution_pde",
+      "fsi",
+      "hdg",
+      "heat",
+      "heat_transient",
+      "helmholtz",
+      "hp_adaptive",
+      "hyperelasticity",
+      "level_set",
+      "linear_elasticity",
+      "matrix_free",
+      "maxwell",
+      "mixed_poisson",
+      "multigrid",
+      "navier_stokes",
+      "neutron_transport",
+      "non_matching_grids",
+      "nonlinear",
+      "obstacle_problem",
+      "particle_methods",
+      "periodic_mesh",
+      "plasticity",
+      "poisson",
+      "scattering",
+      "schrodinger",
+      "shallow_water",
+      "shape_optimization",
+      "stokes",
+      "stokes_tangential_bc",
+      "surface_pde",
+      "topology_opt",
+      "wave"
+    ],
     "catalog_topics": [
       "advection_dg",
       "cg_dg_coupled",
@@ -220,49 +738,246 @@
       "topology_opt_dealii",
       "wave"
     ],
-    "gap_upstream_not_in_catalog": [],
+    "gap_upstream_not_in_catalog": [
+      "adaptive_poisson",
+      "biharmonic",
+      "black_scholes",
+      "boundary_integral",
+      "checkpoint_restart",
+      "darcy",
+      "evolution_pde",
+      "fsi",
+      "hdg",
+      "heat_transient",
+      "level_set",
+      "maxwell",
+      "mixed_poisson",
+      "neutron_transport",
+      "non_matching_grids",
+      "particle_methods",
+      "periodic_mesh",
+      "plasticity",
+      "scattering",
+      "schrodinger",
+      "shallow_water",
+      "shape_optimization",
+      "stokes_tangential_bc",
+      "surface_pde",
+      "topology_opt"
+    ],
     "extra_in_catalog_not_upstream": [
-      "advection_dg",
       "cg_dg_coupled",
-      "compressible_euler",
       "contact",
       "convection_diffusion",
       "dg_advection_reaction",
       "dg_transport",
-      "eigenvalue",
-      "error_estimation",
-      "heat",
-      "helmholtz",
-      "hp_adaptive",
-      "hyperelasticity",
-      "linear_elasticity",
-      "matrix_free",
       "mixed_laplacian",
-      "multigrid",
       "multiphysics_dealii",
-      "navier_stokes",
-      "nonlinear",
       "nonlinear_elasticity",
-      "obstacle_problem",
       "optimal_control",
       "parallel_poisson",
       "phase_field",
-      "poisson",
-      "stokes",
       "time_dependent_heat",
       "time_dependent_ns",
       "time_dependent_wave",
-      "topology_opt_dealii",
-      "wave"
+      "topology_opt_dealii"
     ],
-    "coverage_pct": null
+    "coverage_pct": 40.5
   },
   "ngsolve": {
     "demo_dirs": [],
-    "found": [],
+    "found": [
+      {
+        "file": "curated:unit-1.1",
+        "stem": "unit-1.1",
+        "topic": "poisson",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.2",
+        "stem": "unit-1.2",
+        "topic": "advection_dg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.3",
+        "stem": "unit-1.3",
+        "topic": "convection_diffusion",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.4",
+        "stem": "unit-1.4",
+        "topic": "helmholtz",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.5",
+        "stem": "unit-1.5",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.6",
+        "stem": "unit-1.6",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.7",
+        "stem": "unit-1.7",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-1.8",
+        "stem": "unit-1.8",
+        "topic": "maxwell",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.1",
+        "stem": "unit-2.1",
+        "topic": "linear_elasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.2",
+        "stem": "unit-2.2",
+        "topic": "stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.3",
+        "stem": "unit-2.3",
+        "topic": "mixed_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.4",
+        "stem": "unit-2.4",
+        "topic": "heat",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.5",
+        "stem": "unit-2.5",
+        "topic": "hyperelasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.6",
+        "stem": "unit-2.6",
+        "topic": "phase_field",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.7",
+        "stem": "unit-2.7",
+        "topic": "hdg",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.8",
+        "stem": "unit-2.8",
+        "topic": "eigenvalue",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.9",
+        "stem": "unit-2.9",
+        "topic": "navier_stokes",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-2.10",
+        "stem": "unit-2.10",
+        "topic": "plasticity",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.1",
+        "stem": "unit-3.1",
+        "topic": "dg_methods",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.2",
+        "stem": "unit-3.2",
+        "topic": "hdivdiv",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.3",
+        "stem": "unit-3.3",
+        "topic": "surface_pde",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.4",
+        "stem": "unit-3.4",
+        "topic": "shells",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.5",
+        "stem": "unit-3.5",
+        "topic": "contact",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.6",
+        "stem": "unit-3.6",
+        "topic": "trefftz",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.7",
+        "stem": "unit-3.7",
+        "topic": "vem",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.8",
+        "stem": "unit-3.8",
+        "topic": "time_dependent",
+        "source": "curated"
+      },
+      {
+        "file": "curated:unit-3.9",
+        "stem": "unit-3.9",
+        "topic": "time_dependent_ns",
+        "source": "curated"
+      }
+    ],
     "unmapped": [],
     "skipped": [],
-    "topics_upstream": [],
+    "topics_upstream": [
+      "advection_dg",
+      "contact",
+      "convection_diffusion",
+      "dg_methods",
+      "eigenvalue",
+      "hdg",
+      "hdivdiv",
+      "heat",
+      "helmholtz",
+      "hyperelasticity",
+      "linear_elasticity",
+      "maxwell",
+      "mixed_methods",
+      "navier_stokes",
+      "phase_field",
+      "plasticity",
+      "poisson",
+      "shells",
+      "stokes",
+      "surface_pde",
+      "time_dependent",
+      "time_dependent_ns",
+      "trefftz",
+      "vem"
+    ],
     "catalog_topics": [
       "contact",
       "convection_diffusion",
@@ -286,31 +1001,22 @@
       "thermal_structural",
       "time_dependent_ns"
     ],
-    "gap_upstream_not_in_catalog": [],
+    "gap_upstream_not_in_catalog": [
+      "advection_dg",
+      "hdg",
+      "mixed_methods",
+      "shells",
+      "time_dependent",
+      "trefftz",
+      "vem"
+    ],
     "extra_in_catalog_not_upstream": [
-      "contact",
-      "convection_diffusion",
-      "dg_methods",
-      "eigenvalue",
-      "hdivdiv",
-      "heat",
-      "helmholtz",
-      "hyperelasticity",
-      "linear_elasticity",
-      "maxwell",
       "mhd",
       "mixed_poisson",
-      "navier_stokes",
       "nonlinear_elasticity",
-      "phase_field",
-      "plasticity",
-      "poisson",
-      "stokes",
-      "surface_pde",
-      "thermal_structural",
-      "time_dependent_ns"
+      "thermal_structural"
     ],
-    "coverage_pct": null
+    "coverage_pct": 70.8
   },
   "skfem": {
     "demo_dirs": [],
