@@ -183,6 +183,13 @@ class SkfemBackend(SolverBackend):
                 element_types=["P1-tri"],
                 template_variants=["2d"],
             ),
+            PhysicsCapability(
+                name="point_source",
+                description="Poisson with Dirac-delta point source — discrete RHS is N_i(x0) (Kronecker e_node for mesh-coincident source). Matches scikit-fem ex17 + ex38.",
+                spatial_dims=[2],
+                element_types=["P1-tri"],
+                template_variants=["2d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:

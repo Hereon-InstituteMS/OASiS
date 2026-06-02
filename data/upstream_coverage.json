@@ -661,6 +661,7 @@
       "mixed_poisson",
       "navier_stokes",
       "nonlinear",
+      "point_source",
       "poisson",
       "reaction_diffusion",
       "stokes",
@@ -675,7 +676,6 @@
       "operator_splitting",
       "p2_meshes",
       "periodic_mesh",
-      "point_source",
       "post_processing",
       "preconditioning",
       "restriction_matrix",
@@ -688,7 +688,7 @@
       "reaction_diffusion",
       "time_dependent"
     ],
-    "coverage_pct": 51.9
+    "coverage_pct": 55.6
   },
   "kratos": {
     "demo_dirs": [],

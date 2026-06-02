@@ -11,6 +11,7 @@ from .biharmonic import GENERATORS as _biharmonic_gen, KNOWLEDGE as _biharmonic_
 from .nonlinear import GENERATORS as _nonlinear_gen, KNOWLEDGE as _nonlinear_kn
 from .wave import GENERATORS as _wave_gen, KNOWLEDGE as _wave_kn
 from .adaptive_poisson import GENERATORS as _adapt_gen, KNOWLEDGE as _adapt_kn
+from .point_source import GENERATORS as _ps_gen, KNOWLEDGE as _ps_kn
 from .advanced import GENERATORS as _advanced_gen, KNOWLEDGE as _advanced_kn
 
 # Merged generator registry: physics_variant -> callable(params) -> str
@@ -18,7 +19,7 @@ GENERATORS: dict[str, callable] = {}
 for _g in [
     _poisson_gen, _heat_gen, _elast_gen, _stokes_gen,
     _eigen_gen, _mixed_gen, _convdiff_gen, _biharmonic_gen,
-    _nonlinear_gen, _wave_gen, _adapt_gen, _advanced_gen,
+    _nonlinear_gen, _wave_gen, _adapt_gen, _ps_gen, _advanced_gen,
 ]:
     GENERATORS.update(_g)
 
@@ -27,7 +28,7 @@ KNOWLEDGE: dict[str, dict] = {}
 for _k in [
     _poisson_kn, _heat_kn, _elast_kn, _stokes_kn,
     _eigen_kn, _mixed_kn, _convdiff_kn, _biharmonic_kn,
-    _nonlinear_kn, _wave_kn, _adapt_kn, _advanced_kn,
+    _nonlinear_kn, _wave_kn, _adapt_kn, _ps_kn, _advanced_kn,
 ]:
     KNOWLEDGE.update(_k)
 
