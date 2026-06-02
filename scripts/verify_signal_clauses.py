@@ -521,6 +521,57 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "solve", "assembled", "galerkin",
             "GridView", "Entity", "Intersection",
             "RuntimeError", "ImportError",
+            # ── ufl operators / element identifiers used in
+            #    dune.fem Signal: prose ──────────────────────
+            "grad", "div", "curl", "sym", "skew",
+            "inner", "outer", "dot", "tr",
+            "TrialFunction", "TrialFunctions",
+            "TestFunction", "TestFunctions",
+            "Function", "GridFunction", "FunctionSpace",
+            "VectorH1", "H1", "L2", "HDiv",
+            "Raviart", "Thomas", "raviartThomas",
+            "Nedelec", "BDM", "dglagrange",
+            "interpolate", "interpolated",
+            "uflSpace", "Form",
+            "conditional", "Min", "Max", "abs", "exp", "ln",
+            "FacetNormal", "CellDiameter",
+            # ── dune.fem JIT / Schwarz / build-time markers ───
+            "JIT", "re_JIT", "compile", "compiled",
+            "C_plus_plus_compile", "ccompile",
+            # ── dune.fem time-stepping schemes ────────────────
+            "BE", "CN", "FE", "DIRK22", "SDIRK22",
+            "Heun", "RungeKutta", "ImplicitEuler",
+            "ExplicitEuler", "Crank_Nicolson",
+            "TimeStepper", "femDG",
+            # ── dune.fem mesh refinement / adaptive ───────────
+            "eta_K", "theta_coarse", "theta_refine",
+            "indicator", "adapt", "mark", "refine",
+            "coarsen", "preAdapt", "postAdapt",
+            "space_update", "GridAdapt",
+            # ── DG flux / limiter terms ──────────────────────
+            "centred_flux", "upwind", "Lax_Friedrichs",
+            "Roe", "HLL", "Rusanov",
+            "WENO", "minmod", "MUSCL", "TVD",
+            "Limiter", "moments",
+            # ── Numerical-analysis observables in Signal: ─────
+            "CFL", "lambda_max", "Pollution",
+            "phase_velocity", "wavelength",
+            "inverse_iteration", "deflation",
+            "Gram_Schmidt", "Lanczos", "Arnoldi",
+            "Cook_membrane", "volumetric_locking",
+            "Taylor_Hood", "grad_div", "div_u",
+            "tau", "stabilisation", "stabilization",
+            "centred", "Krylov",
+            # ── dune linear-algebra / IO ─────────────────────
+            "SolverCG", "SolverGMRES", "SolverDirect",
+            "SolverBiCGStab", "preconditioner",
+            "writeVTK", "VTKWriter", "ParaView",
+            "GMRES", "BiCGStab",
+            # ── Misc identifiers used in dune.fem catalog ────
+            "u_old", "u_new", "rhs", "lhs",
+            "sigma", "epsilon",
+            "phase", "phase_field", "Allen_Cahn",
+            "neo_Hookean", "nu",
         })
     elif backend == "fourc":
         code_symbols.update({
