@@ -265,22 +265,30 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 if "Lagrange" in msg or "VTX" in msg:
                     pass
 
-    def test_fenics_stokes_taylor_hood_p1p1_dimensions(self) -> None:
+    def test_fenics_stokes_taylor_hood_mini_p1p1_dimensions(self) -> None:
         """fenics::stokes #0 catalog claim: with a 4x4 unit-square
         triangulation in dolfinx 0.10, basix.ufl.mixed_element
         returns FunctionSpaces with these specific dimensions:
 
           Taylor-Hood (P2-vec + P1-scalar):  187
-          P1-P1       (P1-vec + P1-scalar):   75
+          MINI       (P1+Bubble vec + P1):   139
+          P1-P1      (P1-vec + P1-scalar):    75
 
-        Verify these exact numbers fire — both prove the catalog
-        prose is numerically grounded against the live env.
-        (MINI dim 139 from the same claim is excluded because its
-        Enriched element family path differs across basix versions.)"""
+        Verify all three exact numbers fire. This pins down the
+        prose against current basix/dolfinx semantics; if any
+        upstream change shifts the dimensions, the gate fires
+        and the catalog claim needs updating.
+
+        MINI construction in dolfinx 0.10: enriched_element([P1,
+        Bubble]) gives a scalar-valued enriched element; wrap
+        with blocked_element(shape=(gdim,)) to get the vector-
+        valued velocity component."""
         try:
             from mpi4py import MPI
             from dolfinx import mesh, fem
-            from basix.ufl import element, mixed_element
+            from basix.ufl import (element, mixed_element,
+                                   enriched_element,
+                                   blocked_element)
         except ImportError:
             self.skipTest("dolfinx not importable; pitfall valid "
                           "for fenics users.")
@@ -289,6 +297,7 @@ class TestPitfallFalsificationLive(unittest.TestCase):
         gdim = m.geometry.dim
         cell = m.basix_cell()
 
+        # Taylor-Hood.
         TH = mixed_element([
             element("Lagrange", cell, 2, shape=(gdim,)),
             element("Lagrange", cell, 1),
@@ -299,10 +308,25 @@ class TestPitfallFalsificationLive(unittest.TestCase):
         self.assertEqual(
             dim_TH, 187,
             f"fenics::stokes #0 catalog claims TH dim is 187 on "
-            f"4x4 unit-square. Got {dim_TH}. Either basix "
-            f"changed element-construction semantics OR the "
-            f"claim was always wrong.")
+            f"4x4 unit-square. Got {dim_TH}.")
 
+        # MINI: enriched_element([P1, Bubble]) for scalar
+        # component, then blocked_element((gdim,)) for the
+        # vector velocity, then mixed_element with P1 pressure.
+        P1_scalar = element("Lagrange", cell, 1)
+        Bubble = element("Bubble", cell, 3)
+        P1_plus_B = enriched_element([P1_scalar, Bubble])
+        P1B_vec = blocked_element(P1_plus_B, shape=(gdim,))
+        MINI = mixed_element([P1B_vec, P1_scalar])
+        V_MINI = fem.functionspace(m, MINI)
+        dim_MINI = (V_MINI.dofmap.index_map.size_global
+                    * V_MINI.dofmap.index_map_bs)
+        self.assertEqual(
+            dim_MINI, 139,
+            f"fenics::stokes #0 catalog claims MINI dim is 139 "
+            f"on 4x4 unit-square. Got {dim_MINI}.")
+
+        # P1-P1 (unstable, but the dim claim still holds).
         P1P1 = mixed_element([
             element("Lagrange", cell, 1, shape=(gdim,)),
             element("Lagrange", cell, 1),
