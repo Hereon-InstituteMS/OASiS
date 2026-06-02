@@ -457,6 +457,10 @@ def main() -> int:
         ("skfem", "point_source", "2d"),
         ("skfem", "schrodinger", "1d"),
         ("fenics", "matrix_free_poisson", "2d"),
+        # Batch-22 (2026-06-02): skfem contact (ex04) — Picard
+        # active-set frictionless contact, monotone active-set
+        # update prevents Picard oscillation.
+        ("skfem", "contact", "2d"),
     ]
     fail = []
     executed = 0

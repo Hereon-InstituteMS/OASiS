@@ -197,6 +197,13 @@ class SkfemBackend(SolverBackend):
                 element_types=["P1-line"],
                 template_variants=["1d"],
             ),
+            PhysicsCapability(
+                name="contact",
+                description="Linearized frictionless contact between a 2D elastic block and a rigid foundation, via Picard iteration on the active set. Matches scikit-fem ex04.",
+                spatial_dims=[2],
+                element_types=["P1-tri"],
+                template_variants=["2d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:

@@ -134,7 +134,8 @@
     "skfem::point_source::2d_rc=0",
     "skfem::schrodinger::1d_rc=0",
     "fenics::matrix_free_poisson::2d_rc=0",
-    "total_executed=127",
+    "skfem::contact::2d_rc=0",
+    "total_executed=128",
     "failures=0"
   ],
   "forbid_in_output": [
