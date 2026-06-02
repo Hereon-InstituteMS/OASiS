@@ -22,6 +22,71 @@ FOURC_KNOWLEDGE = {
         "problem_types": 40,
         "material_models": "120+",
         "condition_types": "130+",
+        "entrypoint_dispatch": {
+            "source": "apps/global_full/4C_global_full_entrypoint_switch.cpp",
+            "function": "entrypoint_switch()",
+            "description": (
+                "Authoritative Core::ProblemType -> solver-driver mapping. "
+                "Every 4C input YAML's PROBLEM TYPE section selects ONE of "
+                "these 36 enum values; misspellings hit the default arm "
+                "and raise FOUR_C_THROW \"solution of unknown problemtype "
+                "<X> requested\"."
+            ),
+            "problem_types": {
+                "structure": "caldyn_drt()",
+                "polymernetwork": "caldyn_drt()",
+                "fluid": "dyn_fluid_drt(restart)",
+                "fluid_redmodels": "dyn_fluid_drt(restart)",
+                "lubrication": "lubrication_dyn(restart)",
+                "ehl": "ehl_dyn()",
+                "scatra": "scatra_dyn(restart)",
+                "cardiac_monodomain": "scatra_cardiac_monodomain_dyn(restart)",
+                "sti": "sti_dyn(restart)",
+                "fluid_xfem": "fluid_xfem_drt(problem)",
+                "fluid_ale": "fluid_ale_drt(problem)",
+                "fsi": "fsi_ale_drt(problem)",
+                "fsi_redmodels": "fsi_ale_drt(problem)",
+                "fsi_xfem": "xfsi_drt(problem)",
+                "fpsi_xfem": "xfpsi_drt(problem)",
+                "gas_fsi": "fs3i_dyn()",
+                "biofilm_fsi": "fs3i_dyn()",
+                "thermo_fsi": "fs3i_dyn()",
+                "fps3i": "fs3i_dyn()",
+                "fbi": "fsi_immersed_drt(problem)",
+                "ale": "dyn_ale_drt()",
+                "thermo": "thermo_dyn_drt()",
+                "tsi": "tsi_dyn_drt()",
+                "loma": "loma_dyn(restart)",
+                "elch": "elch_dyn(restart)",
+                "art_net": "dyn_art_net_drt()",
+                "red_airways": "dyn_red_airways_drt()",
+                "reduced_lung": "ReducedLung::reduced_lung_main()",
+                "one_d_pipe_flow": "ReducedLung1dPipeFlow::main()",
+                "poroelast": "poroelast_drt()",
+                "poroscatra": "poro_scatra_drt()",
+                "porofluid_pressure_based": "porofluid_pressure_based_dyn(restart)",
+                "porofluid_pressure_based_elast": "porofluid_elast_dyn(restart)",
+                "porofluid_pressure_based_elast_scatra": "porofluid_pressure_based_elast_scatra_dyn(restart)",
+                "fpsi": "fpsi_drt()",
+                "ssi": "ssi_drt()",
+                "ssti": "ssti_drt()",
+                "particle": "particle_drt()",
+                "pasi": "pasi_dyn()",
+                "level_set": "levelset_dyn(restart)",
+                "np_support": "MultiScale::np_support_drt()",
+            },
+            "Signal": (
+                "[Input] Mis-typed PROBLEM TYPE in input YAML fails the "
+                "switch-case in entrypoint_switch() and FOUR_C_THROWs "
+                "with literal text 'solution of unknown problemtype "
+                "<value> requested'. Common confusions: "
+                "'fluid_struct_interaction' or 'fsi3d' instead of 'fsi'; "
+                "'thermo_structural_interaction' instead of 'tsi'; "
+                "'porous' instead of 'poroelast'. Check this table for "
+                "the exact spelling. (File walk apps/global_full/"
+                "4C_global_full_entrypoint_switch.cpp 2026-06-02.)"
+            ),
+        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════
