@@ -500,9 +500,10 @@ FOURC_KNOWLEDGE = {
             "phi_1, phi_2, ... (not 'temperature' or 'u' as "
             "users sometimes assume). When loading the result "
             "in ParaView, the array name must match. Signal: "
-            "ParaView (or paraview-python) reports 'no array "
-            "named temperature' when the user expects 'phi_1'. "
-            "(Claim inherited.)",
+            "ParaView (or paraview-python) opening the "
+            "post_vtu output of a SCATRA DYNAMIC run reports "
+            "'no array named temperature' when the user "
+            "expects 'phi_1'. (Claim inherited.)",
         ],
     },
 
@@ -1599,13 +1600,15 @@ TRANSPORT ELEMENTS:
             "(a) add IO/RUNTIME VTK OUTPUT sections "
             "(recommended), or (b) run post_vtu --file="
             "output_prefix AFTER the simulation. Signal: "
-            "looking for a .vtu / .pvd output file in the "
-            "results directory finds nothing — 4C only "
-            "produced .control / .mesh / .result; either the "
-            "VTK section is missing or post_vtu was not "
-            "invoked. The native files are HDF5-readable but "
-            "not directly ParaView-loadable. (Audit "
-            "2026-06-02.)",
+            "after PROBLEMTYPE / STRUCTURAL DYNAMIC / FLUID "
+            "DYNAMIC / SCATRA DYNAMIC run completes, looking "
+            "for a .vtu / .pvd output file in the results "
+            "directory finds nothing — 4C only produced "
+            ".control / .mesh / .result; either the IO/"
+            "RUNTIME VTK OUTPUT section is missing or "
+            "post_vtu was not invoked. The native files are "
+            "HDF5-readable but not directly ParaView-"
+            "loadable. (Audit 2026-06-02.)",
 
             # 2026-06-01: .dat extension rejected
             "[Syntax] 4C 2026.3.0-dev accepts ONLY .yaml / .yml / .json input "

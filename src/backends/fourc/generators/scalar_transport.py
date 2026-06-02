@@ -169,14 +169,16 @@ class ScalarTransportGenerator(BaseGenerator):
                 (
                     "[Numerical] When using BDF2 time "
                     "integration, the first step is "
-                    "AUTOMATICALLY handled with a lower-order "
-                    "scheme (backward Euler) — no special "
-                    "start-up needed. Signal: a manual two-"
-                    "step BDF2 start with non-physical IC "
-                    "guesses doubles the first-step error "
-                    "vs default 4C handling; rely on the "
-                    "built-in start-up. (Audit "
-                    "2026-06-02.)"
+                    "AUTOMATICALLY handled with a lower-"
+                    "order scheme (backward Euler) — no "
+                    "special start-up needed. Signal: a "
+                    "manual two-step BDF2 start in the "
+                    "4C TIMEINTEGR loop with non-physical "
+                    "IC guesses (via INITIALFIELD + "
+                    "INITFUNCNO + FUNCT) doubles the "
+                    "first-step error vs default 4C "
+                    "handling; rely on the built-in "
+                    "start-up. (Audit 2026-06-02.)"
                 ),
             ],
             "typical_experiments": [

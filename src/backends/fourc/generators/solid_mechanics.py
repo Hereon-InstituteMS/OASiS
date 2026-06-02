@@ -366,14 +366,20 @@ class SolidMechanicsGenerator(BaseGenerator):
                     "with no inertia effect. (Audit 2026-06-02.)"
                 ),
                 (
-                    "[Numerical] HEX8 elements suffer from volumetric and "
-                    "shear locking in bending-dominated or nearly-"
-                    "incompressible problems.  Use TECH: eas_full or "
-                    "TECH: fbar to mitigate locking, or use higher-order "
-                    "elements (HEX27, TET10). Signal: deflection in a "
-                    "cantilever / plate-bending benchmark is much smaller "
-                    "than analytical (often 10-100x too stiff), or Poisson "
-                    "ratio nu approaching 0.5 makes the response "
+                    "[Numerical] HEX8 elements suffer from "
+                    "volumetric and shear locking in "
+                    "bending-dominated or nearly-"
+                    "incompressible problems. Use TECH: "
+                    "eas_full or TECH: fbar on the SOLID "
+                    "MAT_ElastHyper element, or use "
+                    "higher-order elements (HEX27, TET10). "
+                    "Signal: deflection in a cantilever / "
+                    "plate-bending benchmark (with "
+                    "PROBLEMTYPE: Structure and "
+                    "STRUCTURAL DYNAMIC: Statics) is much "
+                    "smaller than analytical (often "
+                    "10-100x too stiff), or Poisson ratio "
+                    "nu approaching 0.5 makes the response "
                     "approach rigid. (Audit 2026-06-02.)"
                 ),
                 (

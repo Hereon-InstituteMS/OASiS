@@ -415,8 +415,10 @@ class TestSignalParseDiscipline(unittest.TestCase):
     # side passes trivially. Including them prevents future
     # pitfall promotion from silently re-introducing broken
     # 'Signal (verified ...):' parens patterns.
+    # 2026-06-02: fourc added — Signal: coverage is at 100%
+    # and every [Category]'d pitfall now parses cleanly.
     BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos",
-                "dune", "febio")
+                "dune", "febio", "fourc")
 
     def test_every_categorised_pitfall_has_parseable_signal(self):
         from verify_signal_clauses import verify_backend
@@ -473,8 +475,12 @@ class TestCrossBackendGameableFloor(unittest.TestCase):
     # promotion. Including them now prevents a future
     # promotion that DOES add [Category] from re-broken
     # gameable-Tier-0 entries.
+    # 2026-06-02: fourc added after gameable Tier-0 cleanup
+    # drove its count from 16 → 0 (passes 1-5). Locks in the
+    # alignment for the last backend with promoted Signal:
+    # clauses across all physics categories.
     BACKENDS = ("dealii", "ngsolve", "skfem", "fenics", "kratos",
-                "dune", "febio")
+                "dune", "febio", "fourc")
 
     def test_no_backend_has_gameable_entries(self):
         from verify_signal_clauses import verify_backend

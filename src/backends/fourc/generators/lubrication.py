@@ -111,14 +111,15 @@ class LubricationGenerator(BaseGenerator):
                 (
                     "[Numerical] Reynolds equation is valid "
                     "ONLY for thin films (gap << lateral "
-                    "dimension). Signal: applying Reynolds "
-                    "to a gap comparable to lateral extent "
-                    "(h/L > 0.1) under-predicts pressure by "
-                    "factor ~2-10x vs full NS — the "
-                    "lubrication assumption neglects inertia "
-                    "and convective acceleration. Use full "
-                    "Navier-Stokes for thicker gaps. (Audit "
-                    "2026-06-02.)"
+                    "dimension). Signal: PROBLEMTYPE: "
+                    "Lubrication applied to a gap comparable "
+                    "to lateral extent (h/L > 0.1) under-"
+                    "predicts pressure by factor ~2-10x vs a "
+                    "full FLUID_DYNAMIC Navier-Stokes run — "
+                    "the lubrication assumption neglects "
+                    "inertia and convective acceleration. "
+                    "Switch to PROBLEMTYPE: Fluid + FLUID3 "
+                    "for thicker gaps. (Audit 2026-06-02.)"
                 ),
                 (
                     "[API] Lubrication elements are 2D "
