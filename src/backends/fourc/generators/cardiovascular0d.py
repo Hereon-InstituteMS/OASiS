@@ -35,11 +35,65 @@ class Cardiovascular0DGenerator(BaseGenerator):
             "applications": ["cardiac simulation", "hemodynamics", "afterload modeling",
                              "valve simulation", "ventricular assist device"],
             "pitfalls": [
-                "Windkessel parameters must match the vascular impedance",
-                "Time-varying elastance requires cardiac cycle timing parameters",
-                "Coupling to 3-D: cavity volume computed from surface integral",
-                "Initial conditions: set initial pressures in the 0-D model",
-                "Typically used with fluid or FSI, not standalone",
+                (
+                    "[Input] Windkessel parameters (R, C) "
+                    "must MATCH the vascular impedance. "
+                    "Signal: arbitrary R, C give non-"
+                    "physiological pressure waveforms — "
+                    "too-high R gives strong reflection "
+                    "(double-peak central pressure); too-"
+                    "low R damps the wave. Tune from "
+                    "Z_terminal = rho*c/A and TPVR / "
+                    "compliance estimates for the modelled "
+                    "vascular bed. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] Time-varying elastance requires "
+                    "cardiac cycle TIMING parameters (T_S "
+                    "systole, T_D diastole). Signal: a "
+                    "constant-elastance 0D model produces "
+                    "no pumping action — pressure follows "
+                    "volume linearly without the systolic "
+                    "spike. For active cardiac models, "
+                    "ELASTANCE_FUNCTION over the heart "
+                    "cycle is required. (Audit "
+                    "2026-06-02.)"
+                ),
+                (
+                    "[API] Coupling to 3D: cavity volume "
+                    "computed from SURFACE INTEGRAL over "
+                    "the closed cavity boundary. Signal: "
+                    "an OPEN cavity boundary (mesh hole "
+                    "or missing surface) gives wrong "
+                    "volume — the surface integral is "
+                    "incorrect and the 0D-3D coupling "
+                    "drifts. Verify mesh closure with "
+                    "Gmsh CheckClosedSurface. (Audit "
+                    "2026-06-02.)"
+                ),
+                (
+                    "[Input] Initial conditions: set "
+                    "initial pressures in the 0D model. "
+                    "Signal: default zero pressure with a "
+                    "physiological elastance gives a "
+                    "transient that takes 5-10 cardiac "
+                    "cycles to stabilise; pre-set "
+                    "physiological diastolic pressures "
+                    "(~ 10 kPa LV diastolic) to skip the "
+                    "warm-up. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] Cardiovascular0D is typically "
+                    "used with FLUID or FSI, NOT "
+                    "standalone. Signal: a standalone "
+                    "Cardiovascular0D problem has no field "
+                    "to couple to and produces a "
+                    "degenerate setup; 4C's "
+                    "Cardiovascular0D adapter requires a "
+                    "parent field (PROBLEMTYPE: Fluid or "
+                    "Structure with this condition "
+                    "applied). (Audit 2026-06-02.)"
+                ),
             ],
         }
 

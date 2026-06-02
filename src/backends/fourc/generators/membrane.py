@@ -27,10 +27,54 @@ class MembraneGenerator(BaseGenerator):
             "materials": ["MAT_ElastHyper (with membrane kinematics)",
                           "MAT_Struct_StVenantKirchhoff"],
             "pitfalls": [
-                "Membranes have zero bending stiffness — prone to wrinkling",
-                "Use prestress or pressure loading to stabilize",
-                "For wrinkling: enable wrinkling model in material definition",
-                "THICK parameter defines membrane thickness",
+                (
+                    "[Numerical] Membranes have ZERO bending "
+                    "stiffness — prone to WRINKLING. Signal: "
+                    "an unloaded thin membrane under "
+                    "compression produces visible buckling "
+                    "with arbitrary wavelength (numerical "
+                    "noise dictates) instead of a physical "
+                    "wrinkle pattern; the membrane has no "
+                    "bending energy to set the wavelength. "
+                    "Pre-tensioning or pressure stabilises. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Use PRESTRESS or pressure "
+                    "loading to STABILISE the membrane. "
+                    "Signal: a membrane analysis without "
+                    "any in-plane tension produces zero-"
+                    "eigenvalue modes in the stiffness "
+                    "matrix — direct LU reports 'singular', "
+                    "iterative solver stalls. Apply "
+                    "prestress via PRESTRESS section or "
+                    "internal pressure DESIGN SURF NEUMANN. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] For wrinkling: enable wrinkling "
+                    "model in material definition (e.g. "
+                    "MAT_MembraneWrinkling). Signal: a "
+                    "standard MAT_ElastHyper on a "
+                    "compressive membrane gives negative "
+                    "principal stresses (which the "
+                    "membrane cannot carry); the wrinkling "
+                    "model relaxes compressive states to "
+                    "zero stress + wrinkle direction. "
+                    "Without it the result is non-"
+                    "physical. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] THICK parameter defines "
+                    "membrane thickness. Signal: omitting "
+                    "THICK uses default 1.0, which "
+                    "silently scales all in-plane forces "
+                    "linearly — total reaction force at a "
+                    "constrained edge is off by exactly "
+                    "the THICK factor. Always specify "
+                    "THICK to the physical membrane "
+                    "thickness. (Audit 2026-06-02.)"
+                ),
             ],
         }
 

@@ -251,7 +251,22 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   78.0,   # measured  79.7 — CROSSED 79% (raised
+    "fourc":   88.0,   # measured  89.0 — CROSSED 88% (raised
+                       #                 2026-06-02 from 78.0 after
+                       #                 pass 12: 6 small files
+                       #                 retyped (sti, shell,
+                       #                 cardiovascular0d, membrane,
+                       #                 mixture, constraint,
+                       #                 brownian_dynamics) — ~31
+                       #                 new Signal lines, mostly
+                       #                 4-5 entries each.
+                       #                 fourc this session: 8.7% ->
+                       #                 14.0% -> 18.2% -> 22.1% ->
+                       #                 25.4% -> 28.1% -> 30.1% ->
+                       #                 34.6% -> 40.6% -> 49.6% ->
+                       #                 61.8% -> 79.7% -> 89.0%
+                       #                 across thirteen passes —
+                       #                 80pp progress.)
                        #                 2026-06-02 from 60.0 after
                        #                 pass 11: 60 new Signal lines
                        #                 across 10 six-pitfall blocks
