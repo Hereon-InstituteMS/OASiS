@@ -1035,13 +1035,90 @@ KNOWLEDGE = {
         "solver": "Newton loop: assemble tangent stiffness K_tan and residual R_int, spsolve",
         "elements": "ElementVector(ElementTriP1()) or ElementVector(ElementTriP2())",
         "pitfalls": [
-            "No built-in hyperelastic model — must implement PK1 stress and tangent manually",
-            "Neo-Hookean: W = mu/2*(I1-2) - mu*lnJ + lam/2*(lnJ)^2",
-            "1st PK stress: P = mu*(F - F^{-T}) + lam*lnJ*F^{-T}",
-            "Deformation gradient: F = I + grad(u_displacement)",
-            "Material tangent: C4 = lam*Cinv⊗Cinv + 2*(mu-lam*lnJ)*I4_sym_Cinv",
-            "Geometric stiffness: S : (grad delta_u)^T * grad v  (essential for convergence)",
-            "Use ib.interpolate(u) to get displacement gradient at quadrature points",
+            (
+                "[API] scikit-fem has NO built-in hyperelastic "
+                "model — you must implement PK1 stress and "
+                "tangent manually inside a BilinearForm. Signal: "
+                "looking for skfem.models.elasticity.neohookean "
+                "or similar fails (`ImportError`); the only "
+                "linear elasticity helper is "
+                "skfem.models.elasticity.linear_elasticity. "
+                "Hyperelastic problems require hand-coded "
+                "P(F) + C(F) inside @BilinearForm. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Neo-Hookean strain energy: W = "
+                "mu/2 * (I1 - 2) - mu * lnJ + lam/2 * (lnJ)^2. "
+                "Signal: swapping the +/- signs on the lnJ "
+                "term (e.g. + mu * lnJ instead of - mu * lnJ) "
+                "produces a Newton tangent that is symmetric "
+                "but with the WRONG sign — Newton diverges with "
+                "residual growing by factor ~10 per iteration "
+                "instead of converging quadratically. Sanity: "
+                "at F = I, W must be 0 and P must be 0; verify "
+                "before stepping. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] 1st Piola-Kirchhoff stress: P = "
+                "mu*(F - F^{-T}) + lam * lnJ * F^{-T}. Signal: "
+                "using the 2nd PK form S = mu*(I - C^{-1}) + "
+                "lam*lnJ*C^{-1} (small-strain-looking) and "
+                "feeding it directly to the weak form ∫P:gradv "
+                "dx adds a missing F-pre-multiplication — "
+                "the residual is wrong by a factor of F and "
+                "Newton diverges. Recipe: stay in PK1 if your "
+                "weak form is ∫P:grad(v) dx; use S only if you "
+                "actually integrate ∫S:0.5*(F^T grad v + "
+                "grad(v)^T F) dx. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Deformation gradient: F = I + grad(u). "
+                "Signal: forgetting the identity I gives a "
+                "degenerate F at the reference configuration "
+                "(F = 0 instead of I), J = det(F) = 0, and "
+                "lnJ = -inf. The first Newton residual is "
+                "either NaN or several orders of magnitude too "
+                "large. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Material tangent: C4 = lam * "
+                "C^{-1} ⊗ C^{-1} + 2*(mu - lam*lnJ) * "
+                "I4_sym_C^{-1}. Signal: dropping the "
+                "I4_sym_C^{-1} (symmetric fourth-order tensor "
+                "constructed from C^{-1}) and using a "
+                "scalar-multiplied identity I4 gives Newton "
+                "convergence rate ~0.5 (linear instead of "
+                "quadratic) because the tangent only "
+                "approximates the true derivative. The exact "
+                "C^{-1}-built tangent restores quadratic. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Geometric stiffness term S : "
+                "(grad du)^T * grad v is ESSENTIAL for Newton "
+                "convergence under large deformations. Signal: "
+                "dropping it (only assembling the material "
+                "stiffness C4) gives quadratic Newton "
+                "convergence at small strains (< 5%) but "
+                "STAGNATES at large strains (residual drops "
+                "by ~10x then flat-lines around 1e-6 absolute) "
+                "— the missing geometric term is needed for "
+                "exact linearisation. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Use ib.interpolate(u) to obtain the "
+                "displacement and gradient at quadrature "
+                "points inside the bilinear form. Signal: "
+                "trying to access u directly inside the "
+                "@BilinearForm body raises `NameError: name "
+                "'u' is not defined` (or, with an outer "
+                "closure, computes against the LAST u rather "
+                "than the current Newton iterate). The correct "
+                "pattern is u_qp = w['u'] / w['displacement'] "
+                "passed via ib.interpolate(u). (Audit "
+                "2026-06-02.)"
+            ),
             "[API] skfem 12 renamed MeshQuad.to_simplex() → "
             "MeshQuad.to_meshtri() (returns a MeshTri with each "
             "quad split into two triangles). Legacy templates that "
@@ -1051,7 +1128,19 @@ KNOWLEDGE = {
             "skfem.MeshQuad.init_tensor([0,1],[0,1]), 'to_meshtri') "
             "is True; hasattr(..., 'to_simplex') is False. "
             "(Verified empirically 2026-06-01 — Layer F catch.)",
-            "Load stepping: ramp load for large deformations to keep Newton in convergence basin",
+            (
+                "[Numerical] Load stepping: ramp the load over "
+                "N steps for large deformations to keep Newton "
+                "inside its convergence basin. Signal: a "
+                "single-step application of a load that "
+                "produces > 10% nominal strain typically "
+                "diverges (Newton residual grows ~10x per "
+                "iteration); subdividing into N steps with "
+                "load_factor = i/N achieves quadratic Newton "
+                "convergence per substep. Heuristic: each "
+                "substep should deliver < 10% stretch ratio "
+                "increment. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "dg_methods": {
@@ -1078,7 +1167,18 @@ KNOWLEDGE = {
                 "attribute 'normals'` or yields a matrix with "
                 "no facet-coupling entries. (Audit 2026-06-02.)"
             ),
-            "FacetBasis: assembles over boundary facets — for inflow/outflow BC",
+            (
+                "[API] FacetBasis assembles over BOUNDARY facets "
+                "(not interior); used for inflow/outflow flux "
+                "BCs. Signal: applying an inflow BC by adding a "
+                "term over InteriorFacetBasis instead of "
+                "FacetBasis silently adds the inflow to every "
+                "interior edge — the solution gets a spurious "
+                "source distributed across the mesh interior. "
+                "Sanity check: a pure-Dirichlet steady advection "
+                "with the wrong basis shows a non-monotone "
+                "solution. (Audit 2026-06-02.)"
+            ),
             (
                 "[Numerical] Upwind flux: bn * u_upwind * [v]; "
                 "must identify upwind side from sign of b.n. "
@@ -1089,7 +1189,19 @@ KNOWLEDGE = {
                 "in the advection direction. (Audit "
                 "2026-06-02.)"
             ),
-            "scikit-fem uses a single-sided InteriorFacetBasis — '+' and '-' sides implicit",
+            (
+                "[API] scikit-fem uses a SINGLE-SIDED "
+                "InteriorFacetBasis — '+' and '-' sides are "
+                "implicit (assembly visits each interior facet "
+                "twice with sign-flipped normals, not once with "
+                "an explicit jump). Signal: porting a "
+                "FEniCSx-style form that uses 'jump(u)' literally "
+                "produces the wrong factor of 2 — in scikit-fem "
+                "the jump appears naturally as (u - u.other). "
+                "A factor-of-2 amplitude error on the DG flux "
+                "indicates the import was copied verbatim. "
+                "(Audit 2026-06-02.)"
+            ),
             (
                 "[Numerical] For IP (interior penalty) "
                 "diffusion DG: penalty = sigma/h on each "
@@ -1119,7 +1231,19 @@ KNOWLEDGE = {
                 "or stalls; switch to gmres / direct LU. "
                 "(Audit 2026-06-02.)"
             ),
-            "SUPG (continuous Galerkin with stabilization) is often more stable than pure DG for advection",
+            (
+                "[Numerical] SUPG (continuous Galerkin with "
+                "stabilisation) is often more stable than pure "
+                "DG for steady-state advection on a P1 mesh. "
+                "Signal: a pure-DG run at Pe_h > 5 on a coarse "
+                "mesh shows ringing across element faces "
+                "(amplitude ~10-30% of nominal) that takes "
+                "~3 levels of refinement to clear; an "
+                "equivalent SUPG-CG run damps the oscillation "
+                "monotonically as h decreases. For "
+                "predominantly-smooth solutions, SUPG-CG wins "
+                "on cost-per-accuracy. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "time_dependent": {
@@ -1127,7 +1251,19 @@ KNOWLEDGE = {
         "solver": "factorized(A) for efficient time-stepping; A = M + theta*dt*K assembled once",
         "elements": "ElementQuad1, ElementTriP1 (any H1-conforming element)",
         "pitfalls": [
-            "Backward Euler (theta=1): unconditionally stable, 1st order in time",
+            (
+                "[Numerical] Backward Euler (theta=1) is "
+                "unconditionally stable, 1st order in time. "
+                "Signal: comparing a BE solution at dt=0.1 vs "
+                "dt=0.01 against an exact transient (e.g. heat "
+                "equation with sin(pi x) IC) shows L2 error "
+                "decreasing linearly with dt — slope 1 on a "
+                "log-log plot. If the slope is 2, the scheme is "
+                "actually Crank-Nicolson and theta is "
+                "mis-configured; if the slope is 0, dt is too "
+                "large to be in the asymptotic regime. (Audit "
+                "2026-06-02.)"
+            ),
             (
                 "[Numerical] Crank-Nicolson (theta=0.5): "
                 "2nd order in time but can have oscillations. "
@@ -1157,7 +1293,19 @@ KNOWLEDGE = {
                 "diverges from the prescribed time-varying "
                 "BC. (Audit 2026-06-02.)"
             ),
-            "CFL condition: not needed for BE (implicit), but affects accuracy",
+            (
+                "[Numerical] CFL is NOT needed for BE (the "
+                "implicit scheme is L-stable), but dt still "
+                "affects ACCURACY. Signal: dt larger than the "
+                "shortest physical timescale of the problem "
+                "(e.g. dt >> 1/lambda_min) gives the correct "
+                "steady state but smears any sharp transient — "
+                "comparing the simulated u(t=t_transient) "
+                "against a fine-dt reference shows L2 error "
+                "~ O(dt) instead of resolving the front. "
+                "Choose dt by accuracy, not stability, for "
+                "implicit schemes. (Audit 2026-06-02.)"
+            ),
             (
                 "[Numerical] For stiff systems (reaction-"
                 "dominated): backward Euler or BDF2 preferred. "
@@ -1170,7 +1318,19 @@ KNOWLEDGE = {
                 "is infeasible. Switch to BE/BDF2. (Audit "
                 "2026-06-02.)"
             ),
-            "doflocs property: ib.doflocs gives (ndim, N) coordinate array for initial conditions",
+            (
+                "[API] ib.doflocs is the (ndim, N) coordinate "
+                "array used for initial-condition assignment. "
+                "Signal: setting u_init from a callable like "
+                "u_init = np.sin(np.pi * ib.mesh.p[0]) (using "
+                "mesh.p directly) only matches DOFs for P1 "
+                "elements; for ElementVector / P2 / higher-order "
+                "the DOFs include face/edge midpoints and the "
+                "initial condition is silently zero on those "
+                "DOFs. Use ib.doflocs to get the correct (ndim, "
+                "nDOF) array and ib.project / ib.interpolator "
+                "for IC assignment. (Audit 2026-06-02.)"
+            ),
             (
                 "[Numerical] For explicit time stepping: "
                 "M*du/dt = -K*u + f (avoid for stiff "
@@ -1190,14 +1350,96 @@ KNOWLEDGE = {
         "solver": "Direct sparse with complex128 (spsolve handles complex); GMRES for large k",
         "elements": "ElementQuad1, ElementTriP1 (standard H1; use fine mesh: ~10 DOFs per wavelength)",
         "pitfalls": [
-            "scikit-fem supports complex arithmetic natively — cast matrices to .astype(complex)",
-            "Rule of thumb: at least 10 elements per wavelength (lambda = 2*pi/k)",
-            "Absorbing BC: +i*k*u on boundary via FacetBasis BilinearForm",
-            "PML (perfectly matched layer): extend domain with complex stretch factor",
-            "High k (k > 20): consider higher-order elements (P2, P3) or DG to reduce pollution error",
-            "System is non-Hermitian with ABC — cannot use eigsh; use spsolve or GMRES",
-            "Output real part (physical wave) and magnitude |u| for visualization",
-            "Pollution effect: for large k, standard P1 has O(k^3 h^2) phase error — use p-refinement",
+            (
+                "[API] scikit-fem supports complex arithmetic "
+                "natively — cast matrices to .astype(complex) "
+                "before solving. Signal: assembling a Helmholtz "
+                "bilinear form with -k^2 * mass without casting "
+                "leaves the matrix dtype=float64, and adding a "
+                "complex absorbing-BC term raises `TypeError: "
+                "Cannot cast array data from dtype('complex128') "
+                "to dtype('float64')` at sparse-matrix add, or "
+                "silently drops the imaginary part if you used "
+                ".real(). Cast K = K.astype(complex) before any "
+                "BC additions. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Rule of thumb: at least 10 elements "
+                "per wavelength (lambda = 2*pi/k). Signal: at "
+                "fewer than 5 elements per wavelength the "
+                "computed phase velocity is visibly wrong "
+                "(e.g. a propagating wave hits the boundary at "
+                "the wrong time by 10-30%); the standard "
+                "dispersion error is O(k h)^2 for P1 and "
+                "becomes catastrophic for h k > 1. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Absorbing BC: +i*k*u on the "
+                "boundary, assembled via FacetBasis "
+                "BilinearForm. Signal: omitting the ABC "
+                "produces standing-wave reflection off the "
+                "domain boundary — visualised |u| shows a "
+                "checkerboard interference pattern with peaks "
+                "spaced at lambda/2; adding the +i*k*u term "
+                "absorbs the outgoing wave. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] PML (perfectly matched layer): "
+                "extend the domain with a complex stretch "
+                "factor (s = 1 - i*sigma(x)/k). Signal: too-thin "
+                "PML (< lambda/2 thick) gives visible back-"
+                "reflection in the interior; too-large sigma "
+                "creates a numerical impedance jump and "
+                "reflects more than it absorbs. Standard "
+                "choices: PML thickness 1-2 lambda, sigma_max "
+                "such that |R| < 1e-3 at normal incidence. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] High k (k > 20): use higher-order "
+                "elements (P2, P3) or DG to reduce pollution "
+                "error. Signal: standard P1 at k=40 on a mesh "
+                "with 10 elements / wavelength shows the "
+                "computed solution drifting out of phase across "
+                "the domain — the trailing-edge crest is shifted "
+                "by ~1/4 wavelength relative to the analytic "
+                "plane wave; P2 on the same mesh recovers the "
+                "phase. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] System is non-Hermitian with ABC — cannot "
+                "use eigsh (which requires Hermitian). Signal: "
+                "scipy.sparse.linalg.eigsh(K, k=1, M=M) on a "
+                "Helmholtz problem with absorbing BCs raises "
+                "`ArpackNoConvergence: ARPACK error ... "
+                "non-Hermitian` or returns garbage eigenvalues. "
+                "Use scipy.sparse.linalg.eigs (general non-"
+                "Hermitian ARPACK) or spsolve / GMRES for the "
+                "forward problem. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Output the REAL PART (physical wave) and "
+                "the MAGNITUDE |u| for visualisation — the "
+                "solution is complex. Signal: writing "
+                "u.tofile(...) without the .real / np.abs split "
+                "writes complex128, which most ParaView writers "
+                "either reject (`Cannot write complex array`) "
+                "or truncate to the real part silently, "
+                "discarding amplitude information. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Pollution effect: for large k, "
+                "standard P1 has O(k^3 h^2) phase error — use "
+                "p-refinement to control it. Signal: at fixed "
+                "h*k = 0.1 (nominally well-resolved), P1 at "
+                "k=50 still shows ~5-10% phase drift across "
+                "the domain because the constant in front of "
+                "k^3 h^2 dominates; the same h with P2 "
+                "(O(k^5 h^4)) keeps the drift < 0.1%. (Audit "
+                "2026-06-02.)"
+            ),
             "[API] MeshQuad.init_tensor (and most other init_*) "
             "does NOT attach named boundaries. The canonical "
             "incantation is m = MeshQuad.init_tensor(...)"
@@ -1261,7 +1503,18 @@ KNOWLEDGE = {
                 "needs d_v/d_u above ~10 for Schnakenberg. "
                 "(Audit 2026-06-02.)"
             ),
-            "Schnakenberg steady state: u_ss = a+b, v_ss = b/(a+b)^2",
+            (
+                "[Numerical] Schnakenberg homogeneous steady "
+                "state: u_ss = a+b, v_ss = b/(a+b)^2. Signal: "
+                "running with initial conditions that do not "
+                "match (u_ss, v_ss) leads to a long startup "
+                "transient (~1/r time units) before patterns "
+                "emerge; comparing simulated u against the "
+                "analytic steady state catches off-by-one or "
+                "mis-typed (a, b) parameters — a 10% deviation "
+                "in u_ss at t=10 means a or b is wrong by a "
+                "similar factor. (Audit 2026-06-02.)"
+            ),
             (
                 "[API] Neumann (zero-flux) BCs are natural in "
                 "the weak form — no explicit enforcement "
@@ -1281,7 +1534,18 @@ KNOWLEDGE = {
                 "only when gamma * L^2 > pi^2 * (a+b)^2 for "
                 "Schnakenberg. (Audit 2026-06-02.)"
             ),
-            "For Fisher-KPP: du/dt = D*Δu + r*u*(1-u), scalar equation, no coupling block",
+            (
+                "[Numerical] Fisher-KPP: du/dt = D*Δu + r*u*"
+                "(1-u) is a SCALAR equation with no coupling "
+                "block. Signal: building a block-2x2 Jacobian "
+                "for a Fisher-KPP problem (assuming a coupled "
+                "system) doubles the linear-solve cost and "
+                "introduces spurious cross-coupling; the "
+                "correct discretisation is a single Newton solve "
+                "on the M+dt*K - dt*M_r system where M_r is "
+                "the mass matrix weighted by r*(1-2u^n). "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 }

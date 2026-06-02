@@ -64,7 +64,20 @@ KNOWLEDGE = {
                 "yields zero matrix entries on facets. "
                 "(Audit 2026-06-02.)"
             ),
-            "Periodic mesh: example 42 shows advection on periodic domain",
+            (
+                "[API] Periodic mesh: example 42 shows "
+                "advection on a periodic domain via "
+                "MeshPeriodic. Signal: building a regular "
+                "MeshTri / MeshQuad without periodic wrapping "
+                "and expecting outflow = inflow gives an "
+                "open-boundary system; the upstream "
+                "concentration drains via free Neumann BC and "
+                "the downstream face piles up. The "
+                "periodic-mesh helper identifies left/right "
+                "(and top/bottom) face DOFs so they share the "
+                "same column in the system matrix. (Audit "
+                "2026-06-02.)"
+            ),
             (
                 "[Numerical] High Peclet: use DG or "
                 "increase mesh resolution. Signal: standard "

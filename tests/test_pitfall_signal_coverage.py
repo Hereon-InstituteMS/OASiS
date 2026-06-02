@@ -80,30 +80,44 @@ SIGNAL_COVERAGE_MIN = {
                        #                  session: 69.6% -> 76.8% ->
                        #                  85.5% -> 100.0% in three
                        #                  passes.)
-    "skfem":   74.0,   # measured  75.7 (raised 2026-06-02 from
-                       #                  58.0 after pass 2 on
-                       #                  skfem: 6 reaction_
-                       #                  diffusion (block J,
-                       #                  reaction-Jacobian
-                       #                  mass form, IC
-                       #                  perturbation, Turing
-                       #                  d_v/d_u ratio,
-                       #                  natural BC vs Dirichlet,
-                       #                  gamma * L^2) + 7
-                       #                  navier_stokes (no built-
-                       #                  in NS, missing C(u),
-                       #                  ElementVector split,
-                       #                  pressure pin, Picard
-                       #                  -> Newton, Picard
-                       #                  linearisation, ib_u.N
-                       #                  for block split) + 3
-                       #                  convection_diffusion
-                       #                  (u.grad attr,
-                       #                  InteriorFacetBasis,
-                       #                  high-Pe SUPG/DG).
-                       #                  skfem 49.5% -> 60.2%
-                       #                  -> 75.7% in two
-                       #                  commits.)
+    "skfem":   99.0,   # measured 100.0 — skfem at FULL Signal
+                       #                  coverage (raised 2026-06-02
+                       #                  from 74.0 after pass 3:
+                       #                  25 untagged pitfalls re-
+                       #                  cast across 6 physics —
+                       #                    hyperelasticity (8: no
+                       #                    built-in NH, neo-
+                       #                    Hookean energy sign,
+                       #                    PK1 vs PK2 wiring,
+                       #                    F=I+grad(u), C4 with
+                       #                    I4_sym_C^{-1}, geometric
+                       #                    stiffness, ib.interpolate),
+                       #                    helmholtz (8: cast to
+                       #                    complex, 10 elem/wavelength,
+                       #                    +i*k*u ABC, PML thickness,
+                       #                    P2/P3 for k>20, eigsh
+                       #                    non-Hermitian, real/abs
+                       #                    output, pollution P1
+                       #                    O(k^3 h^2)),
+                       #                    dg_methods (3: FacetBasis
+                       #                    vs InteriorFacetBasis,
+                       #                    single-sided IFB, SUPG-
+                       #                    CG vs DG),
+                       #                    time_dependent (3: BE
+                       #                    convergence slope,
+                       #                    accuracy vs stability,
+                       #                    ib.doflocs),
+                       #                    reaction_diffusion (2:
+                       #                    Schnakenberg steady,
+                       #                    Fisher-KPP scalar),
+                       #                    convection_diffusion (1:
+                       #                    MeshPeriodic).
+                       #                  skfem joins kratos, febio,
+                       #                  dealii as the FOURTH backend
+                       #                  at 100% Signal coverage.
+                       #                  Trajectory across this
+                       #                  session: 49.5% -> 60.2% ->
+                       #                  75.7% -> 100.0%.)
     "ngsolve": 68.0,   # measured  69.6 — ties dealii (raised
                        #                  2026-06-02 from 60.0
                        #                  after pass 3: 5
