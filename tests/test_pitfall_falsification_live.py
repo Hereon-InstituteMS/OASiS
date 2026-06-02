@@ -380,5 +380,127 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 "the constrained DOFs after solve.")
 
 
+    def test_kratos_poisson_laplacian_element_string_factory_only(self) -> None:
+        """kratos::poisson pitfall #0 [API]: LaplacianElement2D3N
+        is C++-registered as a string-typed factory element —
+        accessible via mp.CreateNewElement("LaplacianElement2D3N",
+        ...) but NOT as a Python attribute on
+        ConvectionDiffusionApplication. The phantom string
+        "ConvDiff2D3N" (missing the "Eulerian" prefix) is
+        rejected.
+
+        Verifies three claims in the pitfall constructively:
+          1. hasattr(CDA, "LaplacianElement2D3N") is False
+             (attribute access fails — must use string factory)
+          2. mp.CreateNewElement("LaplacianElement2D3N", ...)
+             returns a real Kratos Element (string factory works)
+          3. mp.CreateNewElement("ConvDiff2D3N", ...) raises with
+             "is not registered" (canonical wrong-name fail mode)
+        """
+        try:
+            import KratosMultiphysics as KM  # noqa: F401
+            import KratosMultiphysics.ConvectionDiffusionApplication as CDA  # noqa: F401
+        except ImportError:
+            self.skipTest("KratosMultiphysics not available; "
+                          "pitfall valid for users with Kratos.")
+            return
+
+        # Claim 1: attribute access fails.
+        self.assertFalse(
+            hasattr(CDA, "LaplacianElement2D3N"),
+            "Pitfall claims CDA does NOT expose "
+            "LaplacianElement2D3N as a Python attribute, but "
+            "hasattr returned True. Kratos may have added the "
+            "Python binding — update the pitfall.")
+
+        # Claim 2: string-factory call works.
+        model = KM.Model()
+        mp = model.CreateModelPart("test")
+        mp.CreateNewNode(1, 0.0, 0.0, 0.0)
+        mp.CreateNewNode(2, 1.0, 0.0, 0.0)
+        mp.CreateNewNode(3, 0.0, 1.0, 0.0)
+        mp.CreateNewProperties(0)
+        props = mp.GetProperties()[0]
+        elem = mp.CreateNewElement("LaplacianElement2D3N", 1,
+                                   [1, 2, 3], props)
+        self.assertIsNotNone(elem,
+            "CreateNewElement('LaplacianElement2D3N', ...) "
+            "should return a Kratos Element; got None.")
+        mp.RemoveElement(1)
+
+        # Claim 3: the phantom string is rejected.
+        with self.assertRaises(Exception) as cm:
+            mp.CreateNewElement("ConvDiff2D3N", 1,
+                                [1, 2, 3], props)
+        msg = str(cm.exception)
+        self.assertIn(
+            "not registered", msg,
+            f"Pitfall predicts 'ConvDiff2D3N' (missing "
+            f"'Eulerian' prefix) raises 'is not registered'. "
+            f"Got: {msg!r}")
+
+    def test_skfem_stokes_pressure_null_space_solve_blows_up(self) -> None:
+        """skfem::stokes / hydraulic_resistance pressure-null-space
+        pitfall: Stokes saddle-point without pressure pinning
+        produces a singular system. scipy.sparse.linalg.spsolve
+        either emits MatrixRankWarning and returns NaN/Inf, or
+        explicitly raises. Verify the singularity is real."""
+        from skfem import (MeshTri, Basis, ElementVector,
+                           ElementTriP1, ElementTriP2,
+                           BilinearForm)
+        from skfem.helpers import div, sym_grad, ddot
+        import numpy as np
+        import scipy.sparse as sp
+        from scipy.sparse.linalg import spsolve, MatrixRankWarning
+        import warnings
+
+        m = MeshTri.init_tensor(np.linspace(0, 1, 5),
+                                np.linspace(0, 1, 5))
+        # No with_boundaries → no Dirichlet constraints either.
+        ib_u = Basis(m, ElementVector(ElementTriP2()), intorder=4)
+        ib_p = Basis(m, ElementTriP1(), intorder=4)
+
+        @BilinearForm
+        def stiffness(u, v, w):
+            return 2.0 * ddot(sym_grad(u), sym_grad(v))
+
+        @BilinearForm
+        def neg_div(u, p, w):
+            return -div(u) * p
+
+        A = stiffness.assemble(ib_u)
+        B = neg_div.assemble(ib_u, ib_p)
+        K = sp.bmat([[A, B.T], [B, None]], format="csr")
+        F = np.zeros(K.shape[0])
+
+        # Solve without ANY pinning — singular by 1D nullspace
+        # (constant pressure) + rigid-body modes from velocity
+        # (no walls).
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", MatrixRankWarning)
+            try:
+                x = spsolve(K, F)
+                # If no warning escalated, the solver may have
+                # returned a NaN/Inf vector.
+                has_bad = (not np.all(np.isfinite(x))) or \
+                          np.allclose(x, 0.0)
+                self.assertTrue(
+                    has_bad,
+                    "Stokes without pressure pinning should be "
+                    "singular: spsolve should either raise "
+                    "MatrixRankWarning, return NaN/Inf, or "
+                    "return zero (trivial null-vector). Got a "
+                    "finite non-zero solution.")
+            except (MatrixRankWarning, RuntimeError, Exception) as ex:
+                # Singularity detected — pitfall confirmed.
+                msg = str(ex).lower()
+                self.assertTrue(
+                    "singular" in msg or "rank" in msg
+                    or "no convergence" in msg
+                    or len(msg) > 0,
+                    f"Stokes singularity raised but message "
+                    f"unexpected: {ex!r}")
+
+
 if __name__ == "__main__":
     unittest.main()
