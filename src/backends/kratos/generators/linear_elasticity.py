@@ -315,20 +315,75 @@ KNOWLEDGE = {
         },
         "solver_types": ["static (Newton-Raphson)", "dynamic (Newmark, Bossak, GenAlpha)",
                         "explicit (central differences)", "formfinding"],
+        # Pitfalls are tagged with Table-1 category prefix
+        # ([Syntax]/[Physics]/[Numerical]/[API]/[Integration]) so the
+        # agent and any downstream tooling can filter on category.
+        # New entries SHOULD include a `Signal:` clause stating the
+        # observable symptom — silent no-ops (the FSI velocity-30x
+        # case in the Open-FEM-Agent paper, Section 3.2) are the
+        # category that has hurt users most, so making the symptom
+        # explicit lets the post-exec critic match against it.
         "pitfalls": [
-            "Element names MUST include node count: SmallDisplacementElement2D3N, not SmallDisplacement2D",
-            "Materials defined in StructuralMaterials.json, referenced by Properties ID",
-            "SubModelParts must match between .mdpa and ProjectParameters.json exactly",
-            "For nonlinear: increase max_iterations (default 10 may not suffice)",
-            "DISPLACEMENT variable for structural, ROTATION for beams/shells",
-            "SHEAR LOCKING: Linear hex8 (3D8N) and quad4 (2D4N) elements lock in "
-            "bending-dominated problems, producing overly stiff results and wrong "
-            "frequencies. Use quadratic elements (3D20N, 3D27N, 2D8N, 2D9N) for "
-            "any problem with significant bending.",
-            "For POINT_LOAD application: use assign_vector_variable_process with "
-            "constrained: [false, false, false]. Do NOT use "
-            "assign_vector_by_direction_process (crashes for load variables).",
-            "problem_data section MUST include 'echo_level' field.",
+            "[Syntax] Element names MUST include node count: "
+            "SmallDisplacementElement2D3N, not SmallDisplacement2D. "
+            "Signal: `KratosMultiphysics.Exception: Element name not found`.",
+            "[API] Materials defined in StructuralMaterials.json, referenced "
+            "by Properties ID. The .json + mdpa + ProjectParameters.json "
+            "trio must agree on the Properties ID or the law silently "
+            "defaults to a zero constitutive response. "
+            "Signal: displacements are linear in load but unrealistically large.",
+            "[Syntax] SubModelParts must match between .mdpa and "
+            "ProjectParameters.json exactly. A typo binds the process "
+            "to an empty SubModelPart and the BC silently no-ops. "
+            "Signal: BC nodes show non-zero residuals at convergence.",
+            "[Numerical] For nonlinear: increase max_iterations beyond "
+            "the default 10. With contact, plasticity, or large rotation "
+            "10 iterations is usually insufficient. "
+            "Signal: solver reports 'max iterations reached' but exits 0.",
+            "[Physics] DISPLACEMENT is the primary DOF for solid elements; "
+            "ROTATION is also required on beams/shells. Adding only "
+            "DISPLACEMENT for a beam element silently drops the rotational "
+            "DOF and gives a hinge-like response. "
+            "Signal: beam tip deflects but does not rotate under moment load.",
+            "[Numerical] SHEAR LOCKING — Linear hex8 (3D8N) and quad4 "
+            "(2D4N) elements lock in bending-dominated problems, "
+            "producing overly stiff results and wrong frequencies. Use "
+            "quadratic elements (3D20N, 3D27N, 2D8N, 2D9N) for any "
+            "problem with significant bending. "
+            "Signal: tip deflection is order-of-magnitude smaller than "
+            "Euler-Bernoulli prediction.",
+            "[API] For POINT_LOAD application: use assign_vector_variable_process "
+            "with constrained: [false, false, false]. Do NOT use "
+            "assign_vector_by_direction_process — it expects a kinematic "
+            "variable (DISPLACEMENT class) and silently no-ops for load "
+            "variables, leaving the model unloaded. "
+            "Signal: nodal reactions sum to zero and tip displacement is zero "
+            "despite the process being present in ProjectParameters.json.",
+            "[Syntax] problem_data section MUST include 'echo_level' "
+            "field. Missing it raises a confusing 'Parameters' KeyError "
+            "inside the analysis stage rather than at parameter validation.",
+            # --- Retroactive entries from PR #24 Kratos LE stub-replacement ---
+            "[Syntax] SmallDisplacementElement2D{3,4,6,8,9}N inherits the "
+            "SolidElementCheck path from BaseSolidElement, which queries "
+            "the Z DOF on every node even in plane analyses (Kratos uses "
+            "3-component vectors internally). Add DISPLACEMENT_Z and "
+            "REACTION_Z DOFs to every node and Fix(DISPLACEMENT_Z)=0. "
+            "Signal: `Check failed for DISPLACEMENT_Z` at strat.Check(), "
+            "long before the first solver step.",
+            "[API] CONSTITUTIVE_LAW Properties binding takes an *instance*, "
+            "not a class: `prop.SetValue(KM.CONSTITUTIVE_LAW, "
+            "SMA.LinearElasticPlaneStrain2DLaw())`. Passing the class "
+            "itself silently keeps the default null law and the element "
+            "responds with zero stiffness. "
+            "Signal: K matrix assembles but is singular; spsolve reports "
+            "extreme condition number or NaN displacements.",
+            "[API] Nodal solution-step variables (DISPLACEMENT, REACTION, "
+            "VOLUME_ACCELERATION, etc.) MUST be added via "
+            "`mp.AddNodalSolutionStepVariable(v)` BEFORE the first node "
+            "is created and BEFORE `mp.SetBufferSize(2)`. Adding after "
+            "leaves the variable unallocated on existing nodes. "
+            "Signal: `RuntimeError: trying to access non-existing "
+            "Kratos component` when reading DISPLACEMENT post-solve.",
         ],
     },
 }

@@ -1,0 +1,20 @@
+{
+  "_comment": "Schema for entries under data/postmortems/. Each post-mortem is one JSON file recording a fix and the pitfall-DB entries that shipped with it. Format motivated by Open-FEM-Agent Section 3.2 / Table 1 and operationalised by task #46.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["id", "date", "backend", "physics", "surface_symptom",
+               "root_cause", "categories", "pitfall_db_entries",
+               "agent_detection_after_fix", "source_refs"],
+  "properties": {
+    "id":   {"type": "string", "description": "Short kebab-case slug, e.g. 'kratos-le-z-dof-2d'."},
+    "date": {"type": "string", "format": "date"},
+    "backend": {"type": "string", "enum": ["kratos", "fenics", "fourc", "ngsolve", "skfem", "dealii", "dune", "febio"]},
+    "physics": {"type": "string", "description": "Physics-catalog key, e.g. 'linear_elasticity'."},
+    "surface_symptom":  {"type": "string", "description": "What the agent or the user observed first."},
+    "root_cause":       {"type": "string", "description": "The underlying invariant that was violated."},
+    "categories":       {"type": "array", "items": {"enum": ["Syntax", "Physics", "Numerical", "API", "Integration"]}, "minItems": 1},
+    "pitfall_db_entries": {"type": "array", "items": {"type": "string"}, "minItems": 1, "description": "Exact strings (with [Category] prefix) added to the KNOWLEDGE['pitfalls'] list."},
+    "agent_detection_after_fix": {"type": "string", "description": "How the agent now catches this — which knowledge surface, which signal, which critic gate."},
+    "source_refs":      {"type": "array", "items": {"type": "string"}, "description": "PR numbers, commit hashes, paper sections, upstream issue links."}
+  }
+}
