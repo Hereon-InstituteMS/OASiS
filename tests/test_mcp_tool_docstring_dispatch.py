@@ -25,6 +25,7 @@ Pinned tools:
                                      input_guide/solver_guidance/hardware
   • visualize(action=...)          — summary/list/plot/validate
   • session_insights(action=...)   — review/ingest/approve_all/reject_all/stats
+  • transfer_field(target_format=...) — json/fenics/4c_neumann
 
 If a tool's dispatch chain doesn't match this exact pattern (or
 uses a literal dispatch dict), it's audited by a separate gate or
@@ -135,6 +136,9 @@ class TestMcpToolDocstringDispatch(unittest.TestCase):
 
     def test_session_insights_action(self) -> None:
         self._check("session_insights", "action")
+
+    def test_transfer_field_target_format(self) -> None:
+        self._check("transfer_field", "target_format")
 
 
 if __name__ == "__main__":
