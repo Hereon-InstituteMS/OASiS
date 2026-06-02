@@ -41,3 +41,46 @@ for _k in (_le_kn, _he_kn, _bi_kn, _ht_kn,
            _ve_kn, _pl_kn, _fr_kn, _ac_kn,
            _bfs_kn, _pf_kn, _dm_kn, _gr_kn):
     KNOWLEDGE.update(_k)
+
+
+KNOWLEDGE["_general"] = {
+    "description": "FEBio general capabilities and C++ embedding surface",
+    "cmake_embedding": {
+        "find_package": "find_package(FEBio) — defined by FEBioConfig.cmake "
+                        "at the FEBio source tree root; detects in-tree-build "
+                        "vs install layout automatically via "
+                        "_FEBIO_IS_SOURCE_TREE.",
+        "imported_targets": [
+            "FEBio::FECore     — core FE framework",
+            "FEBio::FEBioMech  — solid-mechanics module",
+            "FEBio::FEBioMix   — biphasic / multiphasic mixture mechanics",
+            "FEBio::FEBioFluid — fluid + biphasic-fluid",
+            "FEBio::FEBioRVE   — RVE / multiscale support",
+            "FEBio::FEBioPlot  — output plot file writer (.xplt)",
+            "FEBio::FEBioXML   — .feb XML input parser",
+            "FEBio::FEBioLib   — top-level orchestration / module registry",
+            "FEBio::FEAMR      — adaptive mesh refinement",
+            "FEBio::FEBioOpt   — parameter optimization",
+            "FEBio::FEImgLib   — image-based meshing / DICOM support",
+        ],
+        "build_configurations": "_febio_find_library probes lib/Release "
+                                "+ lib/Debug + lib/MinSizeRel + "
+                                "lib/RelWithDebInfo, with a fallback that "
+                                "matches anything under lib/. Multi-config "
+                                "users (Visual Studio) get correct per-config "
+                                "binaries.",
+        "Signal": (
+            "[Output] FEBioConfig.cmake sets FEBio_FOUND=FALSE if ANY of "
+            "the 11 imported targets fails to locate its library — the "
+            "config aborts with `return()` after the first missing lib. "
+            "A partial build (e.g. only Release + FECore + FEBioMech, no "
+            "FEImgLib because OpenCV wasn't installed) makes "
+            "find_package(FEBio) report not-found even though the "
+            "subset would suffice for mechanics-only embedding. "
+            "Workaround: build all 11 libs even if the user only needs a "
+            "subset, OR maintain a local fork of FEBioConfig.cmake with "
+            "the unwanted libs removed from _FEBIO_LIBS. "
+            "(File-walk audit of FEBioConfig.cmake 2026-06-02.)"
+        ),
+    },
+}
