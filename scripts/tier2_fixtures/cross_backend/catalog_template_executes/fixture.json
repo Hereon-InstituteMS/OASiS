@@ -135,6 +135,10 @@
   "forbid_in_output": [
     "Traceback",
     "FAIL:",
-    "TIMEOUT"
+    "TIMEOUT",
+    "Max displacement: nan",
+    "Max velocity magnitude: nan",
+    "max(u) = nan",
+    "||du|| = nan"
   ]
 }
