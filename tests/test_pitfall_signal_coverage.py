@@ -251,7 +251,23 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   60.0,   # measured  61.8 — CROSSED 61% (raised
+    "fourc":   78.0,   # measured  79.7 — CROSSED 79% (raised
+                       #                 2026-06-02 from 60.0 after
+                       #                 pass 11: 60 new Signal lines
+                       #                 across 10 six-pitfall blocks
+                       #                 — ssi, ale, level_set, ssti,
+                       #                 fbi, pasi, lubrication,
+                       #                 cardiac_monodomain,
+                       #                 arterial_network,
+                       #                 fluid_turbulence. Each block
+                       #                 retyped ~6 pitfalls as full
+                       #                 Signal-tagged paragraphs.
+                       #                 fourc trajectory: 8.7% ->
+                       #                 14.0% -> 18.2% -> 22.1% ->
+                       #                 25.4% -> 28.1% -> 30.1% ->
+                       #                 34.6% -> 40.6% -> 49.6% ->
+                       #                 61.8% -> 79.7% across twelve
+                       #                 passes — 71pp improvement.)
                        #                 2026-06-02 from 48.0 after
                        #                 pass 10: 41 new Signal lines
                        #                 across six 7-pitfall blocks
