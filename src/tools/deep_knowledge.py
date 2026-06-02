@@ -2266,14 +2266,17 @@ _DEALII_KNOWLEDGE = {
                 "SIPG. (Audit 2026-06-02.)"
             ),
             (
-                "[Numerical] Face integrals require careful normal "
-                "orientation handling. Signal: FEFaceValues "
-                "evaluated on the (-) side gives normal pointing "
-                "FROM (-) TO (+); swapping +/- in the jump integral "
-                "gives a SIGN ERROR — the assembled matrix is the "
-                "TRANSPOSE of what was intended, and convergence "
-                "rate degrades from O(h^(p+1)) to O(1) (no "
-                "convergence). (Audit 2026-06-02.)"
+                "[Numerical] Face integrals require careful "
+                "normal orientation handling via FEValues / "
+                "FEInterfaceValues. Signal: FEFaceValues / "
+                "FEInterfaceValues evaluated on the (-) side "
+                "gives normal pointing FROM (-) TO (+); "
+                "swapping +/- in the jump integral gives a "
+                "SIGN ERROR — the assembled SparseMatrix is "
+                "the TRANSPOSE of what was intended, and "
+                "convergence rate degrades from O(h^(p+1)) to "
+                "O(1) (no convergence, diagnosable via "
+                "KellyErrorEstimator). (Audit 2026-06-02.)"
             ),
             (
                 "[Performance] Streamline ordering of DOFs can "
@@ -2319,10 +2322,13 @@ _DEALII_KNOWLEDGE = {
                 "[Numerical] Newton convergence requires good "
                 "initial guess and small load steps. Signal: a "
                 "single load step from zero to full deformation "
-                "diverges within 2-3 Newton iterations for "
-                "stretch ratios > 1.1; subdividing into 10-20 "
-                "load increments brings each step inside Newton's "
-                "convergence basin. (Audit 2026-06-02.)"
+                "diverges within 2-3 Newton iterations (visible "
+                "in SolverControl::log_history) for stretch "
+                "ratios > 1.1; subdividing into 10-20 load "
+                "increments with the previous AffineConstraints-"
+                "constrained solution as initial guess brings "
+                "each step inside Newton's convergence basin. "
+                "(Audit 2026-06-02.)"
             ),
             (
                 "[Performance] Automatic differentiation "
