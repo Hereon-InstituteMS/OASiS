@@ -148,12 +148,21 @@ async def main_async() -> int:
                 failures.append(
                     f"prep_missing_physics_name="
                     f"{backend}::{phys}")
-            for tok in ("Unknown solver", "Traceback",
-                        "ERROR:"):
+            for tok in ("Unknown solver", "Traceback"):
                 if tok in prep:
                     failures.append(
                         f"prep_error_tok="
                         f"{backend}::{phys}::{tok!r}")
+            # 'ERROR:' must be at line start (after optional
+            # leading whitespace) — substring matching false-
+            # positives on real backend YAML keys like 4C's
+            # FLUID DYNAMIC `CALCERROR: byfunct`. Audit pass 4
+            # tightening (2026-06-02).
+            import re as _re
+            if _re.search(r"^\s*ERROR:", prep, _re.MULTILINE):
+                failures.append(
+                    f"prep_error_tok="
+                    f"{backend}::{phys}::'^ERROR:'")
             # knowledge — topic="physics" is the
             # documented dispatch route for per-physics
             # catalog lookups (NOT topic=<physics_name>;

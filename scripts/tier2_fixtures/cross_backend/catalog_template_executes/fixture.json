@@ -4,6 +4,7 @@
   "physics": "auxiliary_overview",
   "pitfall_index": 102,
   "mode": "python",
+  "timeout_seconds": 480,
   "expect_in_output": [
     "repo_venv_python=",
     "skfem::poisson::2d_rc=0",

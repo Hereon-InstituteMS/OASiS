@@ -43,6 +43,25 @@ PHYSICS_TO_MODULE = {
     "hyperelasticity": "solid",
     "biphasic": "biphasic",
     "heat": "heat",
+    # ── Audit pass 4 (2026-06-02): catch-up after FEBio
+    #    refactor passes 181 + 182 added 12 new physics
+    #    (active_contraction, damage, fiber_reinforced,
+    #    fluid, fluid_fsi, biphasic_fsi, growth_remodeling,
+    #    multiphasic, plasticity, polar_fluid, rigid_body,
+    #    viscoelasticity). Mapping verified against
+    #    `<Module type="X"/>` in each generators/*.py.
+    "active_contraction": "solid",
+    "damage": "solid",
+    "fiber_reinforced": "solid",
+    "fluid": "fluid",
+    "fluid_fsi": "fluid-FSI",
+    "biphasic_fsi": "biphasic-FSI",
+    "growth_remodeling": "solid",
+    "multiphasic": "multiphasic",
+    "plasticity": "solid",
+    "polar_fluid": "polar fluid",
+    "rigid_body": "solid",
+    "viscoelasticity": "solid",
 }
 
 
@@ -81,13 +100,39 @@ def _load_febio_backend():
     sys.modules["core.registry"] = cr
     sys.modules["core"].registry = cr
 
-    backend_path = (Path(__file__).resolve().parents[4]
-                    / "src" / "backends" / "febio"
-                    / "backend.py")
+    # Load febio backend as a real PACKAGE so the relative
+    # import `from .generators import ...` inside backend.py
+    # resolves. spec_from_file_location with a bare module
+    # name does NOT set up __package__ correctly for
+    # relative imports; loading via submodule_search_locations
+    # makes febio_backend a package whose __path__ contains
+    # the febio backend dir. Audit pass 4 fix (2026-06-02).
+    febio_dir = (Path(__file__).resolve().parents[4]
+                 / "src" / "backends" / "febio")
+    backend_path = febio_dir / "backend.py"
     spec = importlib.util.spec_from_file_location(
-        "febio_backend", backend_path)
+        "febio_backend.backend", backend_path,
+        submodule_search_locations=[str(febio_dir)],
+    )
+    # Pre-register the package so the relative import sees it.
+    pkg = types.ModuleType("febio_backend")
+    pkg.__path__ = [str(febio_dir)]
+    sys.modules["febio_backend"] = pkg
     mod = importlib.util.module_from_spec(spec)
-    sys.modules["febio_backend"] = mod
+    mod.__package__ = "febio_backend"
+    sys.modules["febio_backend.backend"] = mod
+    # The relative `from .generators import ...` needs the
+    # generators subpackage to be importable via the parent.
+    gen_path = febio_dir / "generators"
+    gen_spec = importlib.util.spec_from_file_location(
+        "febio_backend.generators",
+        gen_path / "__init__.py",
+        submodule_search_locations=[str(gen_path)],
+    )
+    gen_mod = importlib.util.module_from_spec(gen_spec)
+    gen_mod.__package__ = "febio_backend.generators"
+    sys.modules["febio_backend.generators"] = gen_mod
+    gen_spec.loader.exec_module(gen_mod)
     spec.loader.exec_module(mod)
     return mod
 
@@ -116,9 +161,14 @@ def main() -> int:
 
     xml_errors = []
     module_mismatches = []
+    # Iterate physics keys in length-descending order so
+    # 'fluid_fsi' and 'biphasic_fsi' match before their
+    # 'fluid' / 'biphasic' prefixes (audit pass 4 fix).
+    _physics_keys_by_len = sorted(
+        PHYSICS_TO_MODULE.keys(), key=len, reverse=True)
     for key, gen in templates.items():
         physics_name = None
-        for p in PHYSICS_TO_MODULE:
+        for p in _physics_keys_by_len:
             if key.startswith(p + "_"):
                 physics_name = p
                 break

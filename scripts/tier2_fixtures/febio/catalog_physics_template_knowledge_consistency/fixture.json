@@ -5,9 +5,9 @@
   "pitfall_index": 0,
   "mode": "python",
   "expect_in_output": [
-    "physics_count=4",
-    "templates_count=4",
-    "knowledge_count=4",
+    "physics_count=16",
+    "templates_count=16",
+    "knowledge_count=16",
     "missing_templates=[]",
     "missing_knowledge=[]",
     "template_xml_errors=[]",

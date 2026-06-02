@@ -418,7 +418,15 @@ def _eval_fixture(fixture_dir: Path,
                 return result
             python = cand
         cmd = [python, str(src)]
-        rc, out = _run(cmd, cwd=fixture_dir, env=env, timeout=120)
+        # Per-fixture timeout override (default 120s). Some
+        # fixtures spawn many backend subprocesses (e.g. the
+        # cross_backend/catalog_template_executes fixture) and
+        # legitimately need more wall-time. Audit pass 4 fix
+        # (2026-06-02).
+        per_fixture_timeout = int(meta.get("timeout_seconds", 120))
+        rc, out = _run(
+            cmd, cwd=fixture_dir, env=env,
+            timeout=per_fixture_timeout)
         result.captured_head = out[:800]
     elif mode == "cmd":
         src = fixture_dir / "cmd.sh"
@@ -427,7 +435,10 @@ def _eval_fixture(fixture_dir: Path,
             result.notes.append("cmd.sh not present")
             return result
         cmd = ["bash", str(src)]
-        rc, out = _run(cmd, cwd=fixture_dir, env=env, timeout=120)
+        per_fixture_timeout = int(meta.get("timeout_seconds", 120))
+        rc, out = _run(
+            cmd, cwd=fixture_dir, env=env,
+            timeout=per_fixture_timeout)
         result.captured_head = out[:800]
     else:
         result.status = "harness_pending"
