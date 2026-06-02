@@ -744,9 +744,18 @@ def _nonlinear_elasticity_3d(params: dict) -> str:
     3D large-deformation Neo-Hookean elasticity."""
     E = params.get("E", 200.0)
     nu = params.get("nu", 0.3)
-    disp_mag = params.get("applied_displacement", 0.3)
-    n_steps = params.get("load_steps", 8)
-    maxh = params.get("maxh", 0.12)
+    # Defaults trimmed 2026-06-02 audit: previously
+    # disp=0.3 / 8 steps / maxh=0.12 → ~3.75% strain per
+    # step + a fine mesh, which made the Neo-Hookean
+    # tangent stiffness so ill-conditioned that UmfpackInverse
+    # aborted with "Numeric factorization failed" inside the
+    # 3rd-or-4th step Newton update. Smaller per-step
+    # increment + a coarser mesh keeps the full template
+    # convergent. The user can override via params for
+    # bigger studies.
+    disp_mag = params.get("applied_displacement", 0.1)
+    n_steps = params.get("load_steps", 4)
+    maxh = params.get("maxh", 0.25)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
     return f'''\
@@ -760,7 +769,18 @@ mesh = Mesh(unit_cube.GenerateMesh(maxh={maxh}))
 mu_lam  = {mu}
 lam_val = {lam}
 
-fes = VectorH1(mesh, order=2, dirichlet="left")
+# dirichlet MUST list every boundary that will receive a
+# prescribed displacement via gfu.Set(..., definedon=
+# mesh.Boundaries(...)). Audit 2026-06-02: previous version
+# set dirichlet="left" only, then later wrote
+#   gfu.Set(CF((0,0,disp_now)), definedon=mesh.Boundaries("top"))
+# but with "top" NOT in the dirichlet spec those DOFs are
+# free, so the prescribed displacement is overwritten by the
+# Newton update — the tangent stiffness then has a near-
+# kernel direction and UmfpackInverse aborts with
+#   NgException: UmfpackInverse: Numeric factorization failed.
+# Fix: pin both clamped (left) and loaded (top) faces.
+fes = VectorH1(mesh, order=2, dirichlet="left|top")
 u = fes.TrialFunction()
 
 d = 3

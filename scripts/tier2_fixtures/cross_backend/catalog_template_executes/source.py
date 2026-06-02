@@ -395,6 +395,21 @@ def main() -> int:
         ("skfem", "poisson", "2d_tri"),
         ("ngsolve", "surface_pde", "3d"),
         ("kratos", "auxiliary_overview", "N/A"),
+        # Batch-20 (audit 2026-06-02): close deferred row
+        # ngsolve::nonlinear_elasticity::3d. Two bugs:
+        # (a) dirichlet="left" omitted the "top" boundary
+        #     even though gfu.Set(..., definedon=
+        #     mesh.Boundaries("top")) prescribes a
+        #     displacement there. Free DOFs on top → Newton
+        #     loops away from the prescribed value and the
+        #     tangent stiffness picks up a near-kernel mode
+        #     → UmfpackInverse aborts.
+        # (b) defaults (disp=0.3, 8 steps, maxh=0.12) push
+        #     ~3.75% strain per step on a fine mesh of a
+        #     Neo-Hookean material → ill-conditioned tangent
+        #     fails LU factorisation. Trimmed to disp=0.1,
+        #     4 steps, maxh=0.25 — user overrides via params.
+        ("ngsolve", "nonlinear_elasticity", "3d"),
     ]
     fail = []
     executed = 0
