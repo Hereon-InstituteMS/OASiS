@@ -922,7 +922,55 @@ GENERAL_KNOWLEDGE = {
                 "macro_deal_ii_invoke_autopilot.cmake 2026-06-03.)"
             ),
         },
-        "DEAL_II_PICKUP_TESTS":          "Discover .output files in tests/ and register them as ctest cases.",
+        "DEAL_II_PICKUP_TESTS": {
+            "signature": "DEAL_II_PICKUP_TESTS()",
+            "purpose": (
+                "Glob *.output files in the current source dir, parse each "
+                "filename for feature constraints, and register each as a "
+                "ctest case via DEAL_II_ADD_TEST(<dir-name>, <test>, <output>)."),
+            "test_filename_grammar": (
+                "Tests are identified by a *.output file. The filename can "
+                "encode constraints between dots: "
+                "  <name>.with_<feature><op><value>.output "
+                "Operators: = .ge. .le. .geq. .leq. "
+                "Values: boolean (on/off/yes/no/true/false) for = comparisons; "
+                "        version number (e.g. 11.2) for .ge./.le./.geq./.leq. "
+                "Examples: "
+                "  mytest.with_petsc=on.output           — needs DEAL_II_WITH_PETSC "
+                "  mytest.with_cuda.geq.11.2.output      — needs CUDA >= 11.2 "
+                "  mytest.mpirun=4.output                — runs under mpirun -np 4; "
+                "                                          SKIPPED if DEAL_II_WITH_MPI=OFF"),
+            "env_vars": {
+                "TEST_PICKUP_REGEX": "regex filter on '<category>/<test>' names; empty = catchall (default)",
+                "TEST_TIME_LIMIT":   "wall clock limit per test in seconds (default 600)",
+                "DIFF_DIR":          "hint path for diff executable",
+                "NUMDIFF_DIR":       "hint path for numdiff executable (preferred over diff)",
+                "TEST_LIBRARIES":    "extra libs/targets to link against",
+                "TEST_LIBRARIES_DEBUG / _RELEASE":  "per-config link list",
+                "TEST_TARGET":       "test target name (or _DEBUG / _RELEASE pair)",
+            },
+            "Signal": (
+                "[Input] DEAL_II_PICKUP_TESTS has three FATAL_ERROR traps: "
+                "(1) calling it outside an external project (DEAL_II_PROJECT_CONFIG_INCLUDED "
+                "not set) — literal 'DEAL_II_PICKUP_TESTS can only be called in "
+                "external (test sub-)projects after the inclusion of "
+                "deal.IIConfig.cmake'; "
+                "(2) neither diff nor numdiff on PATH — 'Could not find diff "
+                "or numdiff. One of those are required'; "
+                "(3) numdiff IS a symlink to diff (common on minimal installs) — "
+                "macro runs a relative-tolerance probe and dies with 'The "
+                "detected numdiff executable was not able to pass a simple "
+                "relative tolerance test. This usually means that either "
+                "numdiff was misconfigured or that it is a symbolic link to "
+                "diff.' Workaround: install real numdiff from "
+                "savannah.gnu.org/projects/numdiff or set NUMDIFF_DIR. "
+                "Additionally: an unknown `with_<feature>` in a test filename "
+                "(neither DEAL_II_WITH_<F> nor DEAL_II_<F> defined) silently "
+                "drops the test from ctest's discovery — easy way to lose "
+                "tests after a dealii config option rename. (File walk "
+                "macro_deal_ii_pickup_tests.cmake 2026-06-03.)"
+            ),
+        },
         "DEAL_II_QUERY_GIT_INFORMATION": "Set DEAL_II_GIT_BRANCH / _REVISION / _SHORTREV / _TIMESTAMP from .git metadata.",
     },
 }
