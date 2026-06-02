@@ -208,5 +208,45 @@ class TestIntrospectionToolsSmoke(unittest.TestCase):
                       f"Got: {result[:300]}")
 
 
+class TestSimulationToolsUnknownSolver(unittest.TestCase):
+    """Smoke gates for the run / coupled_solve tools — each
+    must produce a clean 'Unknown solver' / 'Backend not found'
+    error rather than crashing when handed an unrecognised
+    solver name. Full real-backend exercises are covered by
+    Layer-D / Layer-F suites; this gate just defends the
+    error path."""
+
+    def test_run_simulation_unknown_solver(self) -> None:
+        import asyncio
+        rs = _get_tool("run_simulation")
+        result = asyncio.run(rs(solver="ghost_solver",
+                                 input_content="print('ok')"))
+        self.assertIn("Unknown solver", str(result),
+                      "run_simulation must produce a clean "
+                      "'Unknown solver' error on an unrecognised "
+                      f"solver. Got: {str(result)[:200]}")
+
+    def test_run_with_generator_unknown_solver(self) -> None:
+        import asyncio
+        rwg = _get_tool("run_with_generator")
+        result = asyncio.run(rwg(solver="ghost_solver",
+                                  generator_script="print('ok')"))
+        self.assertIn("Unknown solver", str(result),
+                      "run_with_generator must produce a clean "
+                      "'Unknown solver' error on an unrecognised "
+                      f"solver. Got: {str(result)[:200]}")
+
+    def test_coupled_solve_unknown_backend(self) -> None:
+        import asyncio
+        cs = _get_tool("coupled_solve")
+        result = asyncio.run(cs(problem="poisson_dd",
+                                 solver_a="ghost",
+                                 solver_b="fenics"))
+        self.assertIn("not found", str(result).lower(),
+                      "coupled_solve must surface a clean "
+                      "'Backend not found' error when either side "
+                      "is unrecognised. Got: " + str(result)[:200])
+
+
 if __name__ == "__main__":
     unittest.main()
