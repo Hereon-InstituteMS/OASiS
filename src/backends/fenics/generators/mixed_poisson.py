@@ -29,7 +29,21 @@ KNOWLEDGE = {
             "fails to reach machine precision. (Audit "
             "2026-06-02.)"
         ),
-        "BDM(k) + DG(k-1): alternative H(div) pair with full polynomial",
+        (
+            "[Numerical] BDM(k) + DG(k-1) is an alternative "
+            "H(div) pair with FULL polynomial space — RT(k) is "
+            "the subset with vanishing-divergence boundary "
+            "terms. Signal: BDM gives the same div-conforming "
+            "stability as RT but adds DOFs (~ 2x for k=1 in "
+            "2D); preferred if higher-order convergence in the "
+            "flux variable is needed (BDM is order k+1 in "
+            "L^2 vs RT's order k). Choosing BDM for k=1 with "
+            "DG(0) pressure but expecting RT-like flux "
+            "convergence under-uses the richer space and "
+            "yields the same convergence rate as RT but at "
+            "higher cost — pick by convergence target, not "
+            "stability. (Audit 2026-06-02.)"
+        ),
         (
             "[API] Essential BC is on sigma.n (normal flux), NOT "
             "on pressure. Signal: applying a dolfinx DirichletBC "
@@ -46,7 +60,20 @@ KNOWLEDGE = {
             "pinning DOF or use a nullspace removal to restore "
             "uniqueness. (Audit 2026-06-02.)"
         ),
-        "For heterogeneous permeability: weight the (sigma, tau) term by K^{-1}",
+        (
+            "[Numerical] For heterogeneous permeability K(x): "
+            "weight the (sigma, tau) bilinear-form term by "
+            "K^{-1}(x), giving (K^{-1}*sigma, tau)*dx. Signal: "
+            "if the K^{-1} weighting is omitted in a layered "
+            "domain (e.g. K = 1e-12 in one half, 1e-6 in the "
+            "other), the discrete flux is continuous across "
+            "the layer boundary instead of jumping by the "
+            "permeability contrast; mass-balance error at the "
+            "interface is O(1). The correct weak form has "
+            "K^{-1} on the velocity term, not just on the "
+            "Darcy-law sigma = -K * grad(p) post-processing. "
+            "(Audit 2026-06-02.)"
+        ),
         (
             "[API] Use basix.ufl.element('RT', cell, k) for "
             "Raviart-Thomas in dolfinx. Signal: passing a "

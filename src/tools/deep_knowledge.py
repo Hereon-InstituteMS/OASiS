@@ -1150,7 +1150,19 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": {"direct": "LU (small)", "iterative": "CG + hypre per time step"},
         "pitfalls": [
-            "Insulated boundary = natural BC (do nothing, zero flux)",
+            (
+                "[API] Insulated boundary = natural BC — DO "
+                "NOTHING (zero flux is built into the weak "
+                "form). Signal: applying a DirichletBC with "
+                "value=0 on a wall meant to be insulated "
+                "OVER-constrains the temperature (forces T=0 "
+                "there, not dT/dn=0); the simulated temperature "
+                "is pulled toward zero at the boundary instead "
+                "of merely having no heat flux. Compare the "
+                "no-BC run vs Dirichlet=0 — the difference "
+                "exposes the misapplied BC. (Audit "
+                "2026-06-02.)"
+            ),
             (
                 "[Numerical] For transient: update BCs and source "
                 "term at each time step. Signal: result at step N "
@@ -1315,7 +1327,21 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": {"thermal": "CG + hypre", "structural": "CG + GAMG"},
         "pitfalls": [
-            "Thermal strain = alpha * DeltaT * Identity (isotropic expansion/contraction)",
+            (
+                "[Numerical] Thermal strain = alpha * DeltaT * "
+                "Identity is isotropic (equal expansion in all "
+                "directions). Signal: applying alpha as a "
+                "scalar inside sigma = C:eps(u) but FORGETTING "
+                "to subtract alpha*DeltaT*I from the elastic "
+                "strain gives a free-expansion temperature "
+                "field that produces ZERO mechanical "
+                "displacement at unconstrained boundaries; the "
+                "expected uniform expansion u = alpha * DeltaT "
+                "* x is missing. The correct form is "
+                "sigma = C : (eps(u) - alpha * DeltaT * I), "
+                "with the subtraction applied INSIDE the "
+                "constitutive law. (Audit 2026-06-02.)"
+            ),
             (
                 "[Input] Reference temperature T_ref matters: "
                 "DeltaT = T - T_ref. Signal: leaving T_ref = 0 "

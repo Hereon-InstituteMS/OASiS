@@ -150,23 +150,52 @@ SIGNAL_COVERAGE_MIN = {
                        #                  session: 46.2% -> 75.9%
                        #                  -> 84.4% -> 88.5% ->
                        #                  100.0%.)
-    "fenics":  82.0,   # measured  83.7 (raised 2026-06-02 from
-                       #                 77.0 after pass 6:
-                       #                 6 partial-coverage pitfalls
-                       #                 tagged in advanced.py —
-                       #                 dg_methods (3: IP alpha,
-                       #                 FacetNormal '+'/'-' side,
-                       #                 inflow weak BC),
-                       #                 time_dependent_heat (2:
-                       #                 Robin BC omission,
-                       #                 Neumann BC omission),
-                       #                 nonlinear_pde (1:
-                       #                 NonlinearProblem missing
-                       #                 J argument). Remaining
-                       #                 untagged in fenics are
-                       #                 mostly informational tips
-                       #                 (formulation conventions,
-                       #                 not failure modes).)
+    "fenics":  99.0,   # measured 100.0 — fenics at FULL Signal
+                       #                 coverage (raised 2026-06-02
+                       #                 from 82.0 after pass 4:
+                       #                 21 untagged pitfalls re-cast
+                       #                 across 9 physics —
+                       #                   heat (1: insulated BC =
+                       #                   natural / do-nothing),
+                       #                   thermal_structural (1:
+                       #                   alpha*DeltaT*I inside
+                       #                   sigma = C:(eps-alpha*DT*I)),
+                       #                   mixed_poisson (2: BDM(k)+
+                       #                   DG(k-1) vs RT(k), K^{-1}
+                       #                   weight for heterogeneous
+                       #                   permeability),
+                       #                   dg_methods (3: upwind vs
+                       #                   centred flux instability,
+                       #                   drop diffusion entirely
+                       #                   for eps=0, block-diagonal
+                       #                   mass matrix),
+                       #                   multiphase (4: Allen-Cahn
+                       #                   W(phi) 1/(4eps) prefactor,
+                       #                   mobility kappa = eps^2,
+                       #                   smoothed Heaviside
+                       #                   coupling, surface tension
+                       #                   jump),
+                       #                   time_dependent_heat (3:
+                       #                   BE slope-1 sanity,
+                       #                   piecewise-Function for
+                       #                   layered k, dt by accuracy
+                       #                   not stability),
+                       #                   nonlinear_pde (2: SNES
+                       #                   line-search for strongly
+                       #                   nonlinear D(u),
+                       #                   snes_monitor/ksp_monitor),
+                       #                   magnetostatics (5: 2D
+                       #                   scalar Az vs Nedelec
+                       #                   over-DOF, 2D auto-gauge,
+                       #                   B = curl(A) sign in 2D,
+                       #                   J=0 in iron via MeshTags,
+                       #                   piecewise mu_r DG0).
+                       #                 fenics joins kratos, febio,
+                       #                 dealii, skfem as the FIFTH
+                       #                 backend at 100% Signal
+                       #                 coverage. Trajectory: 31.8%
+                       #                 -> 49% -> 65% -> 77% -> 83.7%
+                       #                 -> 100.0% across four passes.)
     "fourc":   29.0,   # measured  30.1 — CROSSED 30% (raised
                        #                 2026-06-02 from 27.0 after
                        #                 a sixth pass: all 7
