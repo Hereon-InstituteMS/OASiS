@@ -102,9 +102,11 @@ KNOWLEDGE = {
             "[Physics] B = curl(A) — magnetic field is the curl of "
             "the vector potential. Forgetting the curl gives B == A "
             "(vector potential treated as field) and Tesla units "
-            "off by order(curl) ~ 1/L. Signal: post-processed "
-            "max(|B|) is on the order of the prescribed Dirichlet "
-            "value of A directly (no spatial derivative taken).",
+            "off by order(curl) ~ 1/L. Signal: the post-processed "
+            "max_B of the HCurl GridFunction is on the order of "
+            "the prescribed Dirichlet value of the A "
+            "CoefficientFunction directly (no curl spatial "
+            "derivative taken).",
             "[Syntax] Complex-valued for time-harmonic: HCurl("
             "mesh, complex=True). On a real HCurl (complex=False) "
             "space, adding a BilinearForm integrator with an "

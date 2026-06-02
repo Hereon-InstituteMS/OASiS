@@ -72,18 +72,20 @@ KNOWLEDGE = {
             (
                 "[Numerical] CFL condition for explicit "
                 "convection: dt < h / max(velocity). Signal: "
-                "velocity field reaches NaN within the first "
-                "10 steps when dt*max|u|/h > ~0.5; per-step "
-                "max(|u|) diverges geometrically. (Audit "
-                "2026-06-02.)"
+                "the VectorH1 GridFunction velocity field "
+                "reaches NaN within the first 10 steps when "
+                "violation_ratio dt*max|u|/h > ~0.5; per-step "
+                "max_u of the gfu diverges geometrically. "
+                "(Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Convection term: Grad(velocity)*"
                 "velocity for standard, or skew-symmetric "
                 "form. Signal: in a closed periodic box the "
-                "non-conservative form drifts the total "
-                "kinetic energy by ~1% over 1000 steps; the "
-                "skew-symmetric variant preserves it to "
+                "non_conservative form of the BilinearForm "
+                "drifts the total kinetic_energy by ~1% over "
+                "1000 steps; the skew_symmetric variant of "
+                "the GridFunction velocity preserves it to "
                 "machine precision. (Audit 2026-06-02.)"
             ),
             (

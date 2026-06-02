@@ -222,6 +222,101 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "L2Norm", "ComputeRadialMode",
             # Common method/attribute names that appear in tracebacks
             "Assemble", "TnT", "FreeDofs", "ndof",
+            # ── NGSolve GridFunction conventional name + attrs
+            "gfu", "gfu_vec", "vecs", "components",
+            "mdcomponents",
+            # ── NGSolve CoefficientFunction conventional names
+            "boundary_cf", "rhs_cf", "stress_cf",
+            "coefficient_function",
+            # ── Skeleton / DG form keywords ──────────────────
+            "dgjumps", "Other", "skeleton",
+            "BND", "VOL", "INNER", "OUTER",
+            "SparseMatrixDynamic", "SymbolicEnergy",
+            # ── Krylov / direct solvers + preconditioners ────
+            "MinResSolver", "Krylov",
+            "CGSolverPlusGradedAMG",
+            # ── VTK / output kwargs ───────────────────────────
+            "VTKOutput", "subdivision", "filename",
+            # ── ufl/ngsolve operator helpers ──────────────────
+            "IfPos", "And", "Or", "Not",
+            "Compile", "comp",
+            # ── Mass matrix / bilinear form attribute accessors
+            "a_mat", "m_mat", "f_vec",
+            "mat", "vec",
+            # ── Numerical-analysis observables that appear in
+            #    NGSolve catalog Signal: prose ──────────────────
+            "coercivity_loss", "alpha", "alpha_0",
+            "phase_error", "phase_velocity",
+            "kinetic_energy", "div_u", "grad_div",
+            "Taylor_Hood", "MINI", "Mini",
+            "p_plus_1", "h_squared",
+            "lambda_max", "lambda_min", "max_u",
+            "downwind", "upwind",
+            "Crank_Nicolson", "BE", "CN",
+            "FE", "ImplicitEuler", "ExplicitEuler",
+            # ── NGSolve geometry / mesh attribute accessors
+            "Mesh_dim", "ne", "nv",
+            "mesh_dim", "GetMaterials", "GetBoundaries",
+            "vertices", "elements", "facets",
+            # ── NGSolve output channels in catalog prose ──────
+            "max_B", "max_u", "max_p", "max_sigma",
+            "sigma_n", "sigma_xx", "sigma_yy",
+            "B_field", "E_field", "Hcurl_field",
+            "stress_field", "strain_field",
+            # ── NGSolve LinearForm attribute names ────────────
+            "Assemble", "Update", "vector",
+            "Set", "SetCoefficientFunction",
+            # ── NGSolve nonlinear iteration / Newton internals
+            "NgsAMG", "AMG", "BlockJacobi", "BlockSmoother",
+            "ChebyshevPC", "PreconditionerType",
+            # ── Mesh attributes / NumProc class names ─────────
+            "NumProc", "PySolve", "krylov", "iters",
+            # ── NGSolve catalog lowercase 'real' identifiers
+            "matrix", "vector_norm",
+            "energy_norm", "L2_norm", "H1_norm",
+            "solver_iterations", "iter_count",
+            # ── PETSc-status tokens that NGSolve also surfaces
+            #    via krylovspace bindings ──────────────────────
+            "KSPSolve", "KSP",
+            "DIVERGED_INDEFINITE_PC",
+            "DIVERGED_BREAKDOWN", "DIVERGED_MAX_IT",
+            "DIVERGED_FNORM_NAN", "DIVERGED_INF",
+            "DivisionByZero", "ZeroDivisionError",
+            # ── NGSolve special CoefficientFunctions / normals
+            "specialcf", "normal", "tangential",
+            "Mesh_size", "JacobianFinite",
+            # ── MHD-physics-specific identifiers ──────────────
+            "Hartmann", "Hartmann_layer", "Hartmann_solution",
+            "MHD", "magnetohydrodynamic",
+            "wall_shear", "wall_shear_stress",
+            "boundary_layer", "core_velocity",
+            # ── Plate / shell theory identifiers ──────────────
+            "M_nn", "simply_supported",
+            "w_max", "centre_deflection",
+            "shear_locking", "volumetric_locking",
+            "bending_energy", "bending_moment",
+            # ── Hyperelasticity stress / strain measures ──────
+            "Piola_Kirchhoff", "PK1", "PK2",
+            "Cauchy_stress", "first_PK", "second_PK",
+            "push_forward", "pull_back",
+            # ── Phase-field fracture / damage ─────────────────
+            "Griffith", "phase_field_d", "damage",
+            "l0_length_scale",
+            "energy_split", "spectral_split",
+            # ── NS observables ────────────────────────────────
+            "u_lid", "lid_velocity",
+            "non_conservative", "skew_symmetric",
+            "violation_ratio", "max_u_over_h",
+            # ── Contact-specific NGSolve identifiers ──────────
+            "tangential_penalty", "normal_contact",
+            "penalty", "gap_function",
+            # ── Surface-PDE / OCC re-meshing ──────────────────
+            "OCC", "OCCGeometry", "remesh",
+            "DOF_transfer",
+            # ── Lowercase generic catalog terms reused often ─
+            "solution", "boundary", "mesh",
+            "alpha", "tau", "rhs", "lhs",
+            "iter", "step", "time_step",
         })
     elif backend == "skfem":
         code_symbols.update({
