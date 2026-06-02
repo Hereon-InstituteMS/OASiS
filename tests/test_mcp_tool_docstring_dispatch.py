@@ -17,9 +17,14 @@ chain, and asserts it equals the bullet-list set in the docstring
 (`- "X" — ...`).
 
 Pinned tools:
-  • discover(query=...)         — list/physics/capabilities/recommend
-  • examples(action=...)        — search/template/tutorials
-  • developer(action=...)       — architecture/files/capabilities
+  • discover(query=...)            — list/physics/capabilities/recommend
+  • examples(action=...)           — search/template/tutorials
+  • developer(action=...)          — architecture/files/capabilities
+  • knowledge(topic=...)           — physics/pitfalls/postmortems/
+                                     materials/coupling/tsi/precice/
+                                     input_guide/solver_guidance/hardware
+  • visualize(action=...)          — summary/list/plot/validate
+  • session_insights(action=...)   — review/ingest/approve_all/reject_all/stats
 
 If a tool's dispatch chain doesn't match this exact pattern (or
 uses a literal dispatch dict), it's audited by a separate gate or
@@ -35,15 +40,16 @@ from pathlib import Path
 _REPO = Path(__file__).resolve().parent.parent
 
 
-def _find_tool_function(tree: ast.AST, name: str) -> ast.FunctionDef:
+def _find_tool_function(tree: ast.AST, name: str):
+    """Match both sync `def` and `async def` tools."""
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == name:
+        if (isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and node.name == name):
             return node
     raise AssertionError(f"tool function {name} not found")
 
 
-def _docstring_bullets(func: ast.FunctionDef,
-                       param_name: str) -> set[str]:
+def _docstring_bullets(func, param_name: str) -> set[str]:
     """Pull `- "value" — ...` bullets from the section of the
     docstring that follows the `<param_name>:` Args entry.
 
@@ -75,8 +81,7 @@ def _docstring_bullets(func: ast.FunctionDef,
     return set(re.findall(r'-\s+"([^"]+)"', text))
 
 
-def _dispatch_string_constants(func: ast.FunctionDef,
-                               param_name: str) -> set[str]:
+def _dispatch_string_constants(func, param_name: str) -> set[str]:
     """Walk the function body looking for `<param> == "X"`
     comparisons. Returns the set of X-values."""
     out: set[str] = set()
@@ -121,6 +126,15 @@ class TestMcpToolDocstringDispatch(unittest.TestCase):
 
     def test_developer_action(self) -> None:
         self._check("developer", "action")
+
+    def test_knowledge_topic(self) -> None:
+        self._check("knowledge", "topic")
+
+    def test_visualize_action(self) -> None:
+        self._check("visualize", "action")
+
+    def test_session_insights_action(self) -> None:
+        self._check("session_insights", "action")
 
 
 if __name__ == "__main__":
