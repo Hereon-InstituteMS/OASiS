@@ -590,28 +590,172 @@ FOURC_KNOWLEDGE = {
         },
 
         "pitfalls": [
-            "FSI is the most complex problem type in 4C.",
-            "Fluid elements MUST use NA: ALE (not Euler!).",
-            "ALE Dirichlet BCs on all outer fluid boundaries except FSI interface.",
-            "CLONING MATERIAL MAP required: maps fluid -> ALE material.",
-            "SHAPEDERIVATIVES: true required in FSI DYNAMIC/MONOLITHIC SOLVER.",
-            "Each field (structure, fluid, ALE) needs its own SOLVER N entry.",
-            "2D: DESIGN FSI COUPLING LINE CONDITIONS. 3D: SURF CONDITIONS.",
-            "Structure NUMDOF matches dimension (2 or 3), fluid NUMDOF = dim+1.",
-            "DESIGN LINE DIRICH CONDITIONS applies to ALL discretizations "
-            "containing a node. Shared nodes between structure (NUMDOF=2) and "
-            "fluid (NUMDOF=3) cause NUMDOF mismatch errors. Offset meshes or "
-            "use mortar coupling to avoid shared nodes at Dirichlet boundaries.",
-            "DESIGN FLUID LINE LIFT&DRAG does NOT exist in 2D. Use LIFTDRAG: "
-            "true in FLUID DYNAMIC instead.",
-            "IO section has no EVERY_ITERATION parameter.",
-            "FUNCT with SYMBOLIC_FUNCTION_OF_SPACE_TIME + VARIABLE requires "
-            "COMPONENT: 0 in the same list item. Without it, the variable "
-            "is silently ignored and the function returns wrong values.",
-            "Monolithic FSI requires SEPARATE nodes at the FSI interface — "
-            "structure and fluid must not share nodes. If using a single Gmsh "
-            "mesh, post-process to duplicate interface nodes and remap fluid "
-            "connectivity. Or use mortar coupling which handles non-matching meshes.",
+            (
+                "[Reference] FSI is the most complex problem "
+                "type in 4C — three coupled fields (structure "
+                "+ fluid + ALE), each needs its own DYNAMIC "
+                "section + SOLVER, plus FSI DYNAMIC/MONOLITHIC "
+                "or PARTITIONED SOLVER + CLONING MATERIAL MAP. "
+                "Signal: an FSI input missing any of the "
+                "required sections (PROBLEM TYPE / STRUCTURAL "
+                "DYNAMIC / FLUID DYNAMIC / ALE DYNAMIC / FSI "
+                "DYNAMIC / CLONING MATERIAL MAP) aborts at "
+                "setup with 'missing required section' from "
+                "4C_io_input_file.cpp — work from a tutorial "
+                "instead of greenfield. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] FSI fluid elements MUST set "
+                "NA: ALE (not Euler) in the FLUID GEOMETRY "
+                "ELEMENT_BLOCKS entry. Signal: leaving NA: "
+                "Euler triggers 'fluid element type "
+                "incompatible with ALE mesh motion' at setup, "
+                "OR (worse) the simulation runs but the fluid "
+                "mesh does NOT move with the structure — "
+                "interface velocities mismatch and Newton "
+                "diverges within ~10 steps. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] ALE Dirichlet BCs MUST be applied on "
+                "ALL outer fluid boundaries except the FSI "
+                "interface (where the mesh follows the "
+                "structure). Signal: missing ALE Dirichlet on "
+                "an outflow / outer wall lets the ALE mesh "
+                "drift freely there, producing inverted "
+                "elements within ~5-20 steps and "
+                "'det(J) < 0' from the ALE solver — "
+                "simulation aborts. The ALE Dirichlet pins "
+                "the mesh at fluid-domain edges. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] CLONING MATERIAL MAP is REQUIRED: it "
+                "maps the fluid material ID to a derived ALE "
+                "(St. Venant-Kirchhoff pseudo-) material. "
+                "Signal: missing CLONING MATERIAL MAP aborts "
+                "with 'cannot clone material for ALE field' "
+                "from 4C_adapter_fld_base_algorithm. Standard "
+                "form: SRC_FIELD: fluid, SRC_MAT: <fluid_id>, "
+                "TAR_FIELD: ale, TAR_MAT: <ale_id>. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] SHAPEDERIVATIVES: true is REQUIRED "
+                "in FSI DYNAMIC/MONOLITHIC SOLVER for "
+                "monolithic schemes — accounts for the "
+                "derivative of the fluid residual w.r.t. ALE "
+                "displacement in the Jacobian. Signal: with "
+                "SHAPEDERIVATIVES: false, the monolithic "
+                "Newton iteration is missing a term and "
+                "shows linear (not quadratic) convergence; "
+                "for partitioned algorithms the flag is "
+                "irrelevant. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Each FSI field (structure, fluid, "
+                "ALE) needs its OWN SOLVER N entry, "
+                "referenced by LINEAR_SOLVER: N in the "
+                "respective DYNAMIC section. Signal: "
+                "referencing a SOLVER that is not defined "
+                "raises 'SOLVER N not found' at setup; "
+                "reusing one SOLVER for all three fields is "
+                "ALLOWED but typically suboptimal (e.g. "
+                "structure benefits from CG+ML, fluid from "
+                "GMRES+ILU, ALE from direct UMFPACK). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] FSI coupling-condition sections "
+                "differ by spatial dimension: 2D uses "
+                "DESIGN FSI COUPLING LINE CONDITIONS, 3D "
+                "uses DESIGN FSI COUPLING SURF CONDITIONS. "
+                "Signal: a 2D problem with SURF CONDITIONS "
+                "(or vice versa) silently has ZERO coupling "
+                "nodes — the FSI interface is degenerate and "
+                "structure / fluid evolve independently; "
+                "neither one diverges, but the structural "
+                "deformation does not affect the flow. "
+                "Sanity: count DOF-coupling rows in the "
+                "Jacobian. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Field NUMDOF: structure uses NUMDOF "
+                "matching dimension (2 or 3); fluid uses "
+                "NUMDOF = dim + 1 (extra DOF is pressure). "
+                "Signal: a structural Dirichlet with "
+                "NUMDOF=3 on a 2D problem (or NUMDOF=2 on a "
+                "3D problem) aborts at setup with 'invalid "
+                "NUMDOF' — the field's DOF count is fixed by "
+                "the physics. Fluid always +1 vs structure "
+                "for the pressure unknown. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] DESIGN LINE DIRICH CONDITIONS in "
+                "FSI applies to ALL discretisations "
+                "containing a node — structure AND fluid AND "
+                "ALE. Signal: a shared node between "
+                "structure (NUMDOF=2) and fluid (NUMDOF=3) "
+                "hit by a Dirichlet with NUMDOF=2 raises a "
+                "'NUMDOF mismatch' from 4C_dofset.cpp. "
+                "Workarounds: (a) offset structural mesh "
+                "slightly to avoid shared nodes, "
+                "(b) mortar coupling with non-conforming "
+                "meshes, (c) remove structural Dirichlet "
+                "and rely on FSI coupling. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] DESIGN FLUID LINE LIFT&DRAG does NOT "
+                "exist in 4C for 2D. Signal: writing it in a "
+                "2D FSI input raises 'unknown section "
+                "DESIGN FLUID LINE LIFT&DRAG' from "
+                "4C_io_input_spec_builders.cpp. For 2D "
+                "lift/drag, set LIFTDRAG: true in FLUID "
+                "DYNAMIC — 4C computes it automatically from "
+                "the no-slip boundaries. SURF LIFT&DRAG "
+                "exists for 3D only. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Syntax] IO section has NO EVERY_ITERATION "
+                "parameter — that is not valid in 4C. Signal: "
+                "writing 'EVERY_ITERATION: true' in IO "
+                "aborts with 'unknown parameter "
+                "EVERY_ITERATION' at parse time. Use "
+                "RESULTSEVERY in each field's DYNAMIC section "
+                "(STRUCTURAL DYNAMIC, FLUID DYNAMIC, ALE "
+                "DYNAMIC) to control output frequency per "
+                "field. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Syntax] FUNCT with "
+                "SYMBOLIC_FUNCTION_OF_SPACE_TIME + VARIABLE "
+                "requires COMPONENT: 0 in the same list "
+                "item. Signal: without COMPONENT, the "
+                "VARIABLE definition is silently ignored and "
+                "the function returns wrong values — an "
+                "inflow ramp stays stuck at 0 instead of "
+                "ramping up. Compare evaluated function "
+                "output against an analytic expression to "
+                "catch the silent miss. SYMBOLIC_FUNCTION_OF_"
+                "TIME (pure time) does NOT need COMPONENT. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Monolithic FSI requires SEPARATE "
+                "nodes at the FSI interface — structure and "
+                "fluid must NOT share nodes. Signal: a single "
+                "Gmsh mesh shares nodes, and 4C reports 'no "
+                "FSI interface nodes found' or runs without "
+                "coupling (fluid and solid never exchange "
+                "forces). Post-process Gmsh to duplicate "
+                "interface nodes and remap fluid connectivity, "
+                "OR use mortar coupling "
+                "(iter_mortar_monolithicfluidsplit) which "
+                "handles non-matching meshes natively. "
+                "(Audit 2026-06-02.)"
+            ),
             "[API] 4C 2026.3 2D structural element name is "
             "'SOLID QUAD4' (NOT 'WALL QUAD4'). The eletype "
             "string 'WALL' triggers 'PROC 0 ERROR ... Unknown "
@@ -630,33 +774,102 @@ FOURC_KNOWLEDGE = {
             "fill_complete. (Verified empirically 2026-06-01 "
             "— Tier-2 fixture structural_2d_solid_quad4_not_wall "
             "in scripts/tier2_fixtures/fourc/.)",
-            "IO/RUNTIME VTK OUTPUT/STRUCTURE may conflict with FSI (INT_STRATEGY "
-            "override). If it causes errors, remove it and use post_vtu instead.",
-            "2D fluid VTK output may show NaN pressure and garbage vz — this is "
-            "a VTK artifact, not divergence. Check vx/vy and convergence logs.",
-            "For complex FSI geometries (e.g. flag attached to cylinder): offset "
-            "the flag slightly (e.g. 0.1mm gap) to avoid Gmsh fragment operations "
-            "that create non-quad-meshable surfaces. This is a negligible geometric "
-            "approximation that vastly simplifies meshing.",
-            "FSI SLAVE interface CANNOT carry Dirichlet BCs. With "
-            "iter_monolithicstructuresplit (structure=slave), structural Dirichlet "
-            "nodes must NOT overlap FSI coupling nodes. If they do, switch to "
-            "iter_monolithicfluidsplit (structure=master) or exclude overlapping "
-            "nodes from the FSI interface.",
-            "IO/RUNTIME VTK OUTPUT/ALE does NOT exist — it crashes 4C. Only "
-            "/STRUCTURE and /FLUID subsections are valid for FSI VTK output. "
-            "For ALE fields, use post_processor --filter=vtu on native output.",
-            "Valid COUPALGO values for monolithic FSI: "
-            "iter_monolithicfluidsplit (structure=master, recommended), "
-            "iter_monolithicstructuresplit (structure=slave), "
-            "iter_mortar_monolithicfluidsplit (non-matching meshes), "
-            "iter_sliding_monolithicfluidsplit (sliding interface). "
-            "For partitioned: iter_stagg_AITKEN_rel_force (default), "
-            "iter_stagg_fixed_rel_force.",
-            "Inflow ramp rate affects FSI stability. For initial testing, use "
-            "a slow ramp (5-10s period, e.g. cos(pi*t/5)) rather than the "
-            "standard 2s Turek-Hron ramp. Fast ramps cause Newton divergence "
-            "even with laminar flow.",
+            (
+                "[Output] IO/RUNTIME VTK OUTPUT/STRUCTURE may "
+                "CONFLICT with FSI (INT_STRATEGY override). "
+                "Signal: an FSI input with that section "
+                "aborts with 'inconsistent integration "
+                "strategy' from FSI setup phase; removing "
+                "the section and using post_vtu after the "
+                "simulation succeeds. The override happens "
+                "inside the FSI adapter, not the user input. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Output] 2D fluid VTK output may show NaN "
+                "pressure and garbage vz component — this "
+                "is a VTK output artifact, NOT divergence. "
+                "Signal: ParaView shows pressure = NaN over "
+                "the entire 2D fluid domain while the "
+                "simulation logs report convergence; HDF5 "
+                ".result files contain the correct pressure. "
+                "Check vx/vy (correct in 2D) and convergence "
+                "logs (residual decreasing) to confirm — the "
+                "issue is output, not solve. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Mesh] For complex FSI geometries (e.g. flag "
+                "attached to cylinder): offset the flag "
+                "slightly (e.g. 0.1mm gap) to avoid Gmsh "
+                "fragment operations that create non-quad-"
+                "meshable surfaces. Signal: a flag glued to "
+                "a cylinder produces a degenerate "
+                "intersection edge that Gmsh can only mesh "
+                "with TRI3 (not QUAD4) — typically 100x more "
+                "elements than a clean offset geometry; or "
+                "Gmsh aborts with 'cannot quad-mesh non-"
+                "planar fragment'. A 0.1mm gap is a "
+                "negligible geometric approximation that "
+                "vastly simplifies meshing. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] FSI SLAVE interface CANNOT carry "
+                "Dirichlet BCs. Signal: with "
+                "iter_monolithicstructuresplit "
+                "(structure=slave), a structural Dirichlet "
+                "on a node that also belongs to the FSI "
+                "coupling interface aborts with 'slave node "
+                "carries Dirichlet' from 4C_fsi_monolithic_"
+                "structuresplit.cpp. Fix: switch to "
+                "iter_monolithicfluidsplit (structure=master) "
+                "or exclude the overlapping nodes from the "
+                "FSI interface. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Output] IO/RUNTIME VTK OUTPUT/ALE does NOT "
+                "exist — it crashes 4C. Signal: writing /ALE "
+                "as a subsection causes an immediate parse "
+                "failure with 'unknown subsection ALE in "
+                "IO/RUNTIME VTK OUTPUT' from "
+                "4C_io_input_spec_builders.cpp. Only "
+                "/STRUCTURE and /FLUID subsections are valid "
+                "for FSI VTK output. For ALE fields, use "
+                "post_processor --filter=vtu on native "
+                "output instead. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Valid COUPALGO values for monolithic "
+                "FSI: iter_monolithicfluidsplit "
+                "(structure=master, recommended), "
+                "iter_monolithicstructuresplit "
+                "(structure=slave), "
+                "iter_mortar_monolithicfluidsplit (non-"
+                "matching meshes), "
+                "iter_sliding_monolithicfluidsplit (sliding "
+                "interface). For partitioned: "
+                "iter_stagg_AITKEN_rel_force (default), "
+                "iter_stagg_fixed_rel_force. Signal: a "
+                "mis-spelled COUPALGO value aborts with "
+                "'unknown coupling algorithm' from "
+                "4C_fsi_adapter.cpp — copy verbatim from "
+                "this list. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Inflow ramp rate affects FSI "
+                "stability. Signal: a fast inflow ramp "
+                "(e.g. step or 1s rise) over a flexible "
+                "structure produces Newton divergence "
+                "within ~10 time steps even at laminar "
+                "Re — the structural response cannot follow "
+                "the fluid forcing transient. For initial "
+                "testing, use a slow ramp (5-10s period, "
+                "e.g. cos(pi*t/5)) rather than the standard "
+                "Turek-Hron 2s ramp. Once stable, gradually "
+                "decrease the ramp period. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 

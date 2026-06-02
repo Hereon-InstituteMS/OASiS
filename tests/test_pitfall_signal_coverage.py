@@ -251,50 +251,38 @@ SIGNAL_COVERAGE_MIN = {
                        #                 coverage. Trajectory: 31.8%
                        #                 -> 49% -> 65% -> 77% -> 83.7%
                        #                 -> 100.0% across four passes.)
-    "fourc":   34.0,   # measured  34.6 — CROSSED 34% (raised
-                       #                 2026-06-02 from 29.0 after
-                       #                 pass 7: all 15 untagged
-                       #                 input_format pitfalls in
-                       #                 data/fourc_knowledge.py
-                       #                 Signal-tagged. These are
-                       #                 the universal 4C YAML
-                       #                 format gotchas:
-                       #                   - ExodusII meshio 0-vs
-                       #                     -1-indexed block IDs,
-                       #                   - FUNCT COMPONENT
-                       #                     requirement (silent
-                       #                     miss without it),
-                       #                   - shared-node NUMDOF
-                       #                     conflict in multi-
-                       #                     physics,
-                       #                   - strict section name
-                       #                     vocabulary,
-                       #                   - VTU output via
-                       #                     IO/RUNTIME VTK or
-                       #                     post_vtu,
-                       #                   - THICKNESS for 2D
-                       #                     plane strain,
-                       #                   - 2D VTK NaN-pressure
-                       #                     output artifact,
-                       #                   - poro DYNAMIC ringing
-                       #                     vs slow ramp,
-                       #                   - WALL -> SOLID rename
-                       #                     in 4C 2026.3,
-                       #                   - FSI separate-nodes
-                       #                     at interface,
-                       #                   - large inline YAML
-                       #                     performance,
-                       #                   - IO/RUNTIME VTK
-                       #                     STRUCTURE FSI incompat,
-                       #                   - 4C CPU-only Epetra,
-                       #                   - ArborX optional GPU
-                       #                     for search only,
-                       #                   - MPI parallelism.
-                       #                 fourc trajectory: 8.7% ->
-                       #                 14.0% -> 18.2% -> 22.1%
-                       #                 -> 25.4% -> 28.1% ->
-                       #                 30.1% -> 34.6% across
-                       #                 eight passes.)
+    "fourc":   39.0,   # measured  40.6 — CROSSED 40% (raised
+                       #                 2026-06-02 from 34.0 after
+                       #                 pass 8: all 20 untagged fsi
+                       #                 pitfalls Signal-tagged in
+                       #                 data/fourc_knowledge.py —
+                       #                 NA: ALE requirement, ALE
+                       #                 Dirichlet on all outer
+                       #                 walls except FSI interface,
+                       #                 CLONING MATERIAL MAP,
+                       #                 SHAPEDERIVATIVES, separate
+                       #                 SOLVER N per field, LINE vs
+                       #                 SURF coupling-condition by
+                       #                 dim, NUMDOF per field,
+                       #                 shared-node NUMDOF in multi-
+                       #                 field DIRICH, DESIGN FLUID
+                       #                 LINE LIFT&DRAG (3D only),
+                       #                 EVERY_ITERATION not a
+                       #                 parameter, FUNCT COMPONENT
+                       #                 requirement, separate-nodes
+                       #                 at FSI interface, IO/RUNTIME
+                       #                 VTK STRUCTURE conflict, 2D
+                       #                 VTK NaN artifact, Gmsh
+                       #                 fragment quad-mesh failure,
+                       #                 SLAVE-cannot-carry-Dirichlet,
+                       #                 IO/RUNTIME VTK ALE crash,
+                       #                 valid COUPALGO enum,
+                       #                 slow inflow ramp.
+                       #                 fourc trajectory thru this
+                       #                 session: 8.7% -> 14.0% ->
+                       #                 18.2% -> 22.1% -> 25.4% ->
+                       #                 28.1% -> 30.1% -> 34.6% ->
+                       #                 40.6% across nine passes.)
     "dune":     0.0,   # measured   0.0 — known total gap
 }
 
