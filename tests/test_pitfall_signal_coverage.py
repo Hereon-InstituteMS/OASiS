@@ -90,19 +90,21 @@ SIGNAL_COVERAGE_MIN = {
                        #                  ngsolve 47.4% -> 55.6%
                        #                  -> 61.5% -> 69.6% over
                        #                  three commits.)
-    "febio":   83.0,   # measured  84.4 (raised 2026-06-02 from
-                       #                  74.0 after febio pass 2b
+    "febio":   87.0,   # measured  88.5 (raised 2026-06-02 from
+                       #                  83.0 after febio pass 2c
                        #                  — added 4 more physics
                        #                  modules with Signal-tagged
-                       #                  pitfalls: viscoelasticity
-                       #                  (4), plasticity (4),
-                       #                  fiber_reinforced (4),
-                       #                  active_contraction (4).
-                       #                  FEBio catalog grew from
-                       #                  8 -> 12 physics, pitfalls
-                       #                  29 -> 45, Signal-tagged
-                       #                  22 -> 38. Cumulative:
-                       #                  46.2% -> 75.9% -> 84.4%.)
+                       #                  pitfalls: biphasic_fsi (4),
+                       #                  polar_fluid (4), damage
+                       #                  (4), growth_remodeling
+                       #                  (4). FEBio catalog grew
+                       #                  from 12 -> 16 physics,
+                       #                  pitfalls 45 -> 61,
+                       #                  Signal-tagged 38 -> 54.
+                       #                  Cumulative this session:
+                       #                  4 physics / 46.2% Signal
+                       #                  -> 16 physics / 88.5%
+                       #                  Signal.)
     "fenics":  50.0,   # measured  51.2 — CROSSED 50% (raised
                        #                 2026-06-02 from 44.0 after
                        #                 pass 3 on fenics:

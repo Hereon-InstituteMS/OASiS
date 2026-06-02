@@ -180,6 +180,45 @@ class FebioBackend(SolverBackend):
                 element_types=["hex8", "tet4"],
                 template_variants=["3d_fiber"],
             ),
+            PhysicsCapability(
+                name="biphasic_fsi",
+                description=("Coupled biphasic tissue + free-fluid FSI "
+                             "(blood-tissue perfusion, drug elution, "
+                             "cartilage-synovial fluid)"),
+                spatial_dims=[3],
+                element_types=["hex8"],
+                template_variants=["3d_block"],
+            ),
+            PhysicsCapability(
+                name="polar_fluid",
+                description=("Micropolar (Cosserat) fluid with "
+                             "independent micro-rotation DOFs "
+                             "(blood-rheology, polymer suspensions, "
+                             "near-wall turbulence corrections)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_channel"],
+            ),
+            PhysicsCapability(
+                name="damage",
+                description=("Continuum damage mechanics — progressive "
+                             "stiffness degradation under repeated "
+                             "loading (tissue tearing, cartilage "
+                             "wear, elastomer fatigue)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_cycle"],
+            ),
+            PhysicsCapability(
+                name="growth_remodeling",
+                description=("Multiplicative growth-and-remodeling "
+                             "F = F_e * F_g (vascular adaptation, "
+                             "tissue scaffolds, muscle hypertrophy, "
+                             "tumor mechanobiology)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_isotropic"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
