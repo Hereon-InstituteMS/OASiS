@@ -97,6 +97,25 @@ KNOWLEDGE = {
         "qR^4/(64*D) within ~1% on a refined mesh — divergence "
         "from this number by an order of magnitude indicates a "
         "BC or D-formula error.",
+        "[Performance] DG-style interior-penalty biharmonic (the "
+        "official dolfinx demo formulation: a = inner(div(grad(u)), "
+        "div(grad(v)))*dx + jump-grad / avg-div terms over dS) "
+        "REQUIRES mesh.GhostMode.shared_facet on MPI runs so each "
+        "rank sees its neighbours' DOFs across shared facets. "
+        "create_unit_square defaults to shared_facet ALREADY, but "
+        "users who pass a custom partitioner via the partitioner= "
+        "kwarg, or who construct the mesh from a custom imported "
+        "topology, MUST set ghost_mode=mesh.GhostMode.shared_facet. "
+        "GhostMode.none silently produces wrong assembly on dS "
+        "integrals (missing neighbour contributions zero out at "
+        "rank boundaries). The C++ workflow goes further — "
+        "cpp/demo/biharmonic/main.cpp uses "
+        "create_cell_partitioner(GhostMode::shared_facet, 2) with "
+        "EXTRA overlap depth = 2 needed for biharmonic's "
+        "second-order facet terms. (File walk "
+        "cpp/demo/biharmonic/main.cpp 2026-06-02; verified live "
+        "in dolfinx — mesh.GhostMode has exactly two values: "
+        "{none, shared_facet}, with shared_facet as the default.)",
     ],
 }
 
