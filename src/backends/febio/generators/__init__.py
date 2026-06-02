@@ -71,9 +71,12 @@ KNOWLEDGE["_general"] = {
             "scaled Jacobian":   "FEScaledJacobianQualityCriterion — SPACED-AND-CAMELCASE tag name",
         },
         "plot_variables": {
-            "tet-quality":     "FEPlotTetQuality",
-            "mean-ratio":      "FEPlotMeanRatio",
-            "scaled-Jacobian": "FEPlotScaledJacobian — HYPHEN-AND-CAMELCASE",
+            "tet-quality":     ("FEPlotTetQuality — silently writes 0.0 for "
+                                "non-ET_TET4 elements on mixed meshes "
+                                "(FEAMR/FEAMRPlot.cpp:44 explicit else branch); "
+                                "tag name warns but no log message"),
+            "mean-ratio":      "FEPlotMeanRatio — applies to ALL element shapes",
+            "scaled-Jacobian": "FEPlotScaledJacobian — HYPHEN-AND-CAMELCASE; applies to ALL element shapes",
         },
         "Signal": (
             "[Input] Some FEAMR .feb tag names contain SPACES and "
