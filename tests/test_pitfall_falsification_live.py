@@ -385,6 +385,42 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"on 4x4 unit-square. Got {dim_P1P1}.")
 
     @_skip_no_dolfinx
+    def test_fenics_dolfinx_connectivity_lazy_vs_explicit(self) -> None:
+        """fenics::poisson #0 nuance: locate_entities_boundary +
+        locate_dofs_topological succeed WITHOUT explicit
+        create_connectivity in current dolfinx, but
+        exterior_facet_indices does NOT — it requires explicit
+        m.topology.create_connectivity(fdim, tdim) first."""
+        import numpy as np
+        from mpi4py import MPI
+        from dolfinx import mesh, fem
+
+        m = mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        V = fem.functionspace(m, ("Lagrange", 1))
+        tdim = m.topology.dim
+        fdim = tdim - 1
+
+        # Auto-building: locate_entities_boundary.
+        facets = mesh.locate_entities_boundary(
+            m, fdim, lambda x: np.isclose(x[0], 0.0))
+        self.assertGreater(len(facets), 0)
+        # Auto-building: locate_dofs_topological.
+        dofs = fem.locate_dofs_topological(V, fdim, facets)
+        self.assertGreater(len(dofs), 0)
+
+        # NOT auto-building: exterior_facet_indices needs
+        # explicit create_connectivity. Use fresh mesh.
+        m2 = mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        with self.assertRaises(RuntimeError) as cm:
+            mesh.exterior_facet_indices(m2.topology)
+        self.assertIn("connectivity has not been computed",
+                      str(cm.exception))
+        # After explicit create_connectivity, it works.
+        m2.topology.create_connectivity(tdim - 1, tdim)
+        f2 = mesh.exterior_facet_indices(m2.topology)
+        self.assertGreater(len(f2), 0)
+
+    @_skip_no_dolfinx
     def test_fenics_matrix_free_action_method_vs_function(self) -> None:
         """fenics::matrix_free_poisson pitfall #0 [API]:
         `ufl.action(a, ui)` is the canonical pattern. Calling
