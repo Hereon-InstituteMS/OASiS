@@ -455,6 +455,59 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "tr", "sym", "skew", "det", "Identity",
             "dx", "ds", "dS",
             "RuntimeError", "ValueError", "TypeError",
+            # ── PETSc / SNES / KSP nonlinear / Krylov status
+            #    tokens that dolfinx emits in real tracebacks ──
+            "SNES", "KSP", "KSPSolve", "SNESSolve",
+            "DIVERGED_LINE_SEARCH", "DIVERGED_BREAKDOWN",
+            "DIVERGED_MAX_IT", "DIVERGED_FNORM_NAN",
+            "DIVERGED_INF", "DIVERGED_PC_FAILED",
+            "CONVERGED_ATOL", "CONVERGED_RTOL",
+            "convergence_criterion", "solver_type",
+            "ksp_type", "pc_type", "snes_type",
+            "GMRES", "BiCGStab", "Newton",
+            # ── ufl operators / elements not yet covered ──────
+            "Nedelec", "Raviart", "Thomas", "BDM",
+            "Bubble", "RestrictedElement", "EnrichedElement",
+            "FacetElement", "InteriorElement",
+            "CellDiameter", "FacetNormal", "CellVolume",
+            "SpatialCoordinate", "conditional",
+            "Min", "Max", "abs", "exp", "ln",
+            "real", "imag", "conj",
+            # ── dolfinx I/O / XDMF / VTK ──────────────────────
+            "XDMFFile", "VTKFile", "VTXWriter",
+            "FidesWriter", "io",
+            # ── Real dolfinx attribute names that appear in
+            #    catalog Signal: prose ─────────────────────────
+            "x_array", "x", "array",
+            "vector", "interpolate",
+            "scatter_forward", "ghost_update",
+            "topology", "geometry",
+            # ── Linear-algebra fallback channels (real)
+            "scipy", "linalg", "spsolve", "splu",
+            "csc_matrix", "csr_matrix",
+            "LocalSolver",
+            # ── Maxwell / EM / Helmholtz observables ──────────
+            "J_coil", "B_field", "B_H_curve", "mu_r",
+            "iron", "coil", "magnetic_field",
+            # ── Phase-field / Cahn-Hilliard / Allen-Cahn ──────
+            "Cahn", "Hilliard", "Allen", "Cahn_Hilliard",
+            "Allen_Cahn", "phase_field", "interface_width",
+            "front", "kappa", "eps", "epsilon_phi",
+            # ── Reaction-diffusion / heat transient ───────────
+            "DirichletBC", "NeumannBC",
+            "no_flux", "insulated", "Strang", "Lie",
+            "BE", "CN", "theta", "Crank_Nicolson",
+            "c_eff", "T_melt", "T_room", "T_ref",
+            # ── Plane-strain / linear elasticity ─────────────
+            "plane_strain", "plane_stress",
+            "mixed_P2_P1", "Taylor_Hood",
+            "nullspace", "rigid_body_modes",
+            # ── Fracture / phase-field damage ─────────────────
+            "d_old", "d_new", "phase_field_d",
+            "irreversibility",
+            # ── DG penalty / coercivity ───────────────────────
+            "alpha_0", "p_plus_1", "SIPG",
+            "coercivity_loss",
         })
     elif backend == "dune":
         code_symbols.update({

@@ -64,12 +64,12 @@ KNOWLEDGE = {
         (
             "[Numerical] Conservation: check mass integrals over "
             "time to verify correctness. Signal: for a closed "
-            "system (no source/sink, no-flux BCs) the integral "
-            "of (u + v) over the domain should be conserved; "
-            "if it drifts > 0.1% per unit time, the time "
-            "integrator has a numerical leak \u2014 refine dt or "
-            "switch to a conservative scheme. (Audit "
-            "2026-06-02.)"
+            "system (no source/sink, no_flux NeumannBC) the "
+            "dolfinx fem.assemble_scalar integral of (u + v) "
+            "*dx over the domain should be conserved; if it "
+            "drifts > 0.1% per unit time, the time integrator "
+            "has a numerical leak \u2014 refine dt or switch to a "
+            "conservative scheme. (Audit 2026-06-02.)"
         ),
     ],
     "materials": {

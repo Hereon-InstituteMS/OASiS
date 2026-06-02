@@ -32,8 +32,9 @@ KNOWLEDGE = {
         "constrained (perfect electric conductor: n × E = 0). Use "
         "fem.locate_dofs_topological on the Nedelec space — Dirichlet "
         "on E projects the tangential component to zero. "
-        "Signal: using the wrong BC type (e.g. fixing all components) "
-        "produces over-constrained solution with wrong eigenmodes.",
+        "Signal: using the wrong dolfinx dirichletbc type (e.g. "
+        "fixing all components of the Nedelec Function) produces "
+        "an over-constrained solution with wrong eigenmodes.",
     ],
 }
 

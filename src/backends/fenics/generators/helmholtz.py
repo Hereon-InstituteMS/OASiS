@@ -22,8 +22,9 @@ KNOWLEDGE = {
         "few iterations on a Helmholtz problem.",
         "[Numerical] Resolution rule: ~10 DOFs per wavelength minimum. "
         "Pollution effect grows with k — high-k problems need 20+ DOFs/wavelength. "
-        "Signal: solution amplitude shrinks vs analytic plane-wave by factor "
-        "(1 - C*k*h^2) for under-resolved meshes.",
+        "Signal: the dolfinx Function solution amplitude in the XDMFFile output "
+        "shrinks vs analytic plane-wave by factor (1 - C*k*h^2) for "
+        "under-resolved meshes.",
         "[Syntax] Complex-valued mode requires dolfinx.default_scalar_type "
         "to be np.complex128 — set via PETSC_DIR / petsc env. "
         "Signal: 'ScalarType is not complex' error at form-compilation time.",

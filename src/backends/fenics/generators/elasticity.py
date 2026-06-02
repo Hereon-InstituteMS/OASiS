@@ -35,9 +35,10 @@ KNOWLEDGE = {
         "lambda accordingly. Plane stress uses lambda_star = "
         "2*lambda*mu/(lambda+2*mu); using plane strain lambda for "
         "a thin plate gives a stiffness ~30% too high (Poisson "
-        "contraction is suppressed). Signal: tip deflection "
-        "differs from analytic plane-stress reference by a factor "
-        "(1-nu) at nu=0.3.",
+        "contraction is suppressed). Signal: the dolfinx "
+        "VectorFunctionSpace tip deflection of the plane_strain "
+        "Function differs from the analytic plane_stress reference "
+        "by a factor (1-nu) at nu=0.3.",
         "[API] XDMFFile requires the Function degree to match "
         "the underlying mesh degree. A P2 Function on a P1 mesh "
         "(the common case) cannot be written directly — interpolate "
@@ -60,9 +61,9 @@ KNOWLEDGE = {
         "a surface integral: q = M / integral(|r| ds) where r is "
         "the position relative to the axis. Naively applying q = "
         "M/A (uniform) gives a uniform shear that violates "
-        "moment-vs-arm balance. Signal: integrated reaction "
-        "moment differs from applied M by 20-40% on a thick beam "
-        "with torsion BC.",
+        "moment-vs-arm balance. Signal: a dolfinx ds-integrated "
+        "reaction moment of the resulting Function differs from "
+        "applied M by 20-40% on a thick beam with torsion BC.",
         "[Syntax] Mesh element order (gmsh Tet10) and FE "
         "polynomial degree (P2) are independent. A P2 space on a "
         "Tet10 mesh gives true isoparametric elements; a P1 space "
@@ -77,8 +78,9 @@ KNOWLEDGE = {
         "mixed-formulation (Taylor-Hood or three-field) to avoid "
         "volumetric locking. Pure displacement P1 or P2 at "
         "nu=0.4999 has displacement underestimated by orders of "
-        "magnitude. Signal: tip deflection at nu=0.4999 is "
-        "1e-3 of the true value; switching to mixed P2-P1 "
+        "magnitude. Signal: the dolfinx VectorFunctionSpace tip "
+        "deflection at nu=0.4999 is 1e-3 of the true value; "
+        "switching to a Taylor_Hood mixed_P2_P1 MixedElement "
         "recovers the analytic deflection to within 1%.",
         "[API] dolfinx.fem.FunctionSpace rejects element family "
         "names other than the registered basix families. Passing "

@@ -898,15 +898,17 @@ _FENICS_KNOWLEDGE = {
             "be adjusted. Plane stress uses lambda_star = "
             "2*lambda*mu/(lambda+2*mu); using plane strain "
             "lambda on a thin plate gives ~30% over-stiffness. "
-            "Signal: tip deflection differs from analytic "
-            "plane-stress reference by factor (1-nu) at nu=0.3.",
+            "Signal: a dolfinx plane_strain Function tip "
+            "deflection differs from the analytic plane_stress "
+            "reference by factor (1-nu) at nu=0.3.",
             "[Numerical] Near-incompressible (nu > 0.49): MUST "
             "use mixed formulation (Taylor-Hood or three-field) "
             "to avoid volumetric locking. Pure displacement P1/P2 "
             "at nu=0.4999 has displacement underestimated by "
-            "orders of magnitude. Signal: tip deflection at "
-            "nu=0.4999 is ~1e-3 of analytic value; switching to "
-            "P2-P1 mixed recovers it to within 1%.",
+            "orders of magnitude. Signal: a dolfinx single-field "
+            "VectorFunctionSpace tip deflection at nu=0.4999 is "
+            "~1e-3 of analytic value; switching to a mixed_P2_P1 "
+            "Taylor_Hood MixedElement recovers it to within 1%.",
             "[Numerical] For GAMG/AMG: MUST provide near-nullspace "
             "(rigid body modes — 3 translations + 3 rotations in "
             "3D). Without it, CG+GAMG fails to converge on "

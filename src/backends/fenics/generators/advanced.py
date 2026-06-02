@@ -48,11 +48,12 @@ _DG_KNOWLEDGE = {
         (
             "[Numerical] Interior penalty diffusion: alpha >= "
             "O(p^2) for coercivity; alpha=4 safe for p=1. Signal: "
-            "alpha too small -> coercivity loss + solution norm "
-            "diverges with refinement; alpha too large -> "
-            "cond(K)>1e14 and iterative stagnates. Rule of "
-            "thumb: alpha = 4 * (p+1)^2 for symmetric IP. "
-            "(Audit 2026-06-02.)"
+            "for the SIPG penalty alpha_0 too small -> "
+            "coercivity_loss + the dolfinx Function L2 norm "
+            "diverges with refinement; alpha_0 too large -> "
+            "cond(K) > 1e14 and the PETScKrylovSolver stagnates. "
+            "Rule of thumb: alpha_0 = 4 * p_plus_1^2 for "
+            "symmetric IP. (Audit 2026-06-02.)"
         ),
         (
             "[API] FacetNormal n is outward; avg/jump operators "
