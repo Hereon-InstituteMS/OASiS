@@ -1402,10 +1402,14 @@ def register_consolidated_tools(mcp: FastMCP):
         """Developer tools: architecture, source files, capabilities matrix.
 
         Args:
-            action: 'architecture' (extension points), 'files' (source listing),
-                    'capabilities' (full matrix)
+            action: What to surface. Options:
+                - "architecture" — extension points + source-tree
+                  layout for the requested solver
+                - "files" — source-file listing filtered by keyword
+                - "capabilities" — full backend × physics × variant
+                  matrix dump
             solver: Backend name
-            keyword: File pattern for 'files' action
+            keyword: File pattern for "files" action
         """
         if action == "files":
             _get_journal().record("source_read", "developer",
