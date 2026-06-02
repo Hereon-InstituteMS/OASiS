@@ -602,6 +602,35 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 f"Unexpected exception during BaseMatrix "
                 f"expression build: {ex!r}")
 
+    def test_kratos_heat_temperature_variable_not_added(self) -> None:
+        """kratos::heat pitfall #0 [API]: SetSolutionStepValue on
+        TEMPERATURE before AddNodalSolutionStepVariable(TEMPERATURE)
+        raises RuntimeError 'variables list doesn't have this
+        variable: TEMPERATURE' from kratos containers/variables_
+        list_data_value_container."""
+        try:
+            import KratosMultiphysics as KM
+        except ImportError:
+            self.skipTest("KratosMultiphysics not available.")
+            return
+        model = KM.Model()
+        mp = model.CreateModelPart("t")
+        # Deliberately skip AddNodalSolutionStepVariable.
+        mp.CreateNewNode(1, 0.0, 0.0, 0.0)
+        node = mp.GetNode(1)
+        with self.assertRaises(RuntimeError) as cm:
+            node.SetSolutionStepValue(KM.TEMPERATURE, 0, 100.0)
+        msg = str(cm.exception)
+        self.assertIn(
+            "TEMPERATURE", msg,
+            f"Pitfall predicts the error message mentions "
+            f"TEMPERATURE. Got: {msg[:200]!r}")
+        self.assertTrue(
+            "doesn't have this variable" in msg
+            or "variables list" in msg,
+            f"Pitfall predicts 'variables list doesn't have "
+            f"this variable' phrasing. Got: {msg[:200]!r}")
+
     def test_skfem_stokes_pressure_null_space_solve_blows_up(self) -> None:
         """skfem::stokes / hydraulic_resistance pressure-null-space
         pitfall: Stokes saddle-point without pressure pinning
