@@ -265,6 +265,56 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 if "Lagrange" in msg or "VTX" in msg:
                     pass
 
+    def test_fenics_stokes_taylor_hood_p1p1_dimensions(self) -> None:
+        """fenics::stokes #0 catalog claim: with a 4x4 unit-square
+        triangulation in dolfinx 0.10, basix.ufl.mixed_element
+        returns FunctionSpaces with these specific dimensions:
+
+          Taylor-Hood (P2-vec + P1-scalar):  187
+          P1-P1       (P1-vec + P1-scalar):   75
+
+        Verify these exact numbers fire — both prove the catalog
+        prose is numerically grounded against the live env.
+        (MINI dim 139 from the same claim is excluded because its
+        Enriched element family path differs across basix versions.)"""
+        try:
+            from mpi4py import MPI
+            from dolfinx import mesh, fem
+            from basix.ufl import element, mixed_element
+        except ImportError:
+            self.skipTest("dolfinx not importable; pitfall valid "
+                          "for fenics users.")
+            return
+        m = mesh.create_unit_square(MPI.COMM_WORLD, 4, 4)
+        gdim = m.geometry.dim
+        cell = m.basix_cell()
+
+        TH = mixed_element([
+            element("Lagrange", cell, 2, shape=(gdim,)),
+            element("Lagrange", cell, 1),
+        ])
+        V_TH = fem.functionspace(m, TH)
+        dim_TH = (V_TH.dofmap.index_map.size_global
+                  * V_TH.dofmap.index_map_bs)
+        self.assertEqual(
+            dim_TH, 187,
+            f"fenics::stokes #0 catalog claims TH dim is 187 on "
+            f"4x4 unit-square. Got {dim_TH}. Either basix "
+            f"changed element-construction semantics OR the "
+            f"claim was always wrong.")
+
+        P1P1 = mixed_element([
+            element("Lagrange", cell, 1, shape=(gdim,)),
+            element("Lagrange", cell, 1),
+        ])
+        V_P1P1 = fem.functionspace(m, P1P1)
+        dim_P1P1 = (V_P1P1.dofmap.index_map.size_global
+                    * V_P1P1.dofmap.index_map_bs)
+        self.assertEqual(
+            dim_P1P1, 75,
+            f"fenics::stokes #0 catalog claims P1/P1 dim is 75 "
+            f"on 4x4 unit-square. Got {dim_P1P1}.")
+
     def test_fenics_matrix_free_action_method_vs_function(self) -> None:
         """fenics::matrix_free_poisson pitfall #0 [API]:
         `ufl.action(a, ui)` is the canonical pattern. Calling
