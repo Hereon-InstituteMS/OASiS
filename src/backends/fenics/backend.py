@@ -442,7 +442,29 @@ class FenicsBackend(SolverBackend):
         except Exception:
             pass
 
-        # Try comprehensive deep knowledge first (from tools/deep_knowledge.py)
+        # ─────────────────────────────────────────────────────────
+        # Source-of-truth ordering (fenics-only, audit 2026-06-02):
+        #   1. src/tools/deep_knowledge.py — CANONICAL for the 17
+        #      physics covered there (hyperelasticity, stokes, poisson,
+        #      heat, helmholtz, eigenvalue, reaction_diffusion,
+        #      convection_diffusion, navier_stokes, cahn_hilliard,
+        #      biharmonic, fracture, nearly_incompressible_elasticity,
+        #      maxwell, stokes_darcy, thermal_structural, contact).
+        #      verify_signal_clauses + the pitfall-DB audit gate read
+        #      from HERE; the matching KNOWLEDGE dicts in
+        #      src/backends/fenics/generators/*.py for these physics
+        #      are DEAD CODE and may have drifted — do NOT edit them
+        #      and expect a behaviour change.
+        #   2. Generator-level KNOWLEDGE — canonical for the 6
+        #      exposed physics NOT in deep_knowledge.py
+        #      (mixed_poisson, dg_methods, multiphase,
+        #      time_dependent_heat, nonlinear_pde, magnetostatics).
+        #      These DO surface via prepare_simulation/knowledge.
+        #      The elasticity generator file also has its own
+        #      KNOWLEDGE but is shared-implementation code for the
+        #      `linear_elasticity` template (which itself lives in
+        #      deep_knowledge.py), so it is NOT canonical.
+        # ─────────────────────────────────────────────────────────
         try:
             from tools.deep_knowledge import get_deep_fenics_knowledge
             deep = get_deep_fenics_knowledge(physics)
@@ -453,7 +475,9 @@ class FenicsBackend(SolverBackend):
         except (ImportError, Exception):
             pass
 
-        # Fall back to generator-level knowledge
+        # Fall back to generator-level knowledge (canonical for the
+        # 7 physics listed in the comment above; dead code for the
+        # 17 deep_knowledge.py-covered physics).
         from .generators import get_knowledge as gen_knowledge, GENERAL_KNOWLEDGE
         try:
             return gen_knowledge(physics)
