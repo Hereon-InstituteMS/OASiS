@@ -846,4 +846,45 @@ GENERAL_KNOWLEDGE = {
         "Automatic differentiation via Sacado/ADOL-C for nonlinear problems",
         "Scalable to 10^12 DOFs on 300,000+ MPI processes",
     ],
+    "cmake_user_macros": {
+        "description": (
+            "User-callable DEAL_II_* CMake macros that downstream users "
+            "invoke in their CMakeLists.txt. Source: "
+            "dealii/cmake/macros/macro_deal_ii_*.cmake."
+        ),
+        "DEAL_II_INITIALIZE_CACHED_VARIABLES": {
+            "signature": "DEAL_II_INITIALIZE_CACHED_VARIABLES()",
+            "purpose": "Inherit deal.II's compiler + build settings.",
+            "order_constraint": (
+                "MUST be called AFTER find_package(deal.II) — needs "
+                "DEAL_II_PROJECT_CONFIG_INCLUDED. AND MUST be called "
+                "BEFORE project() — sets CMAKE_CXX_COMPILER + build-type "
+                "cache that project() must consume."
+            ),
+            "Signal": (
+                "[Input] Wrong-order use of DEAL_II_INITIALIZE_CACHED_VARIABLES "
+                "fails with FATAL_ERROR literal text "
+                "'DEAL_II_INITIALIZE_CACHED_VARIABLES can only be called in "
+                "external projects after the inclusion of deal.IIConfig.cmake. "
+                "It is not intended for internal use.' "
+                "Two subtle silent side effects: "
+                "(1) If user's -DCMAKE_BUILD_TYPE=Debug doesn't match the "
+                "dealii install's DEAL_II_BUILD_TYPE (e.g. user wants Debug "
+                "but dealii built Release-only), the macro FORCEs "
+                "CMAKE_BUILD_TYPE to a valid mode and emits a banner "
+                "starting with '#  WARNING:' and the literal "
+                "'CMAKE_BUILD_TYPE was forced to'. "
+                "(2) The macro WIPES user-set CMAKE_CXX_FLAGS / "
+                "CMAKE_CXX_FLAGS_DEBUG / CMAKE_CXX_FLAGS_RELEASE to empty "
+                "strings — any -O3 / -march=native / etc. set BEFORE the "
+                "macro is lost. To customise flags, set them AFTER calling "
+                "the macro. (File walk macro_deal_ii_initialize_cached_variables.cmake "
+                "2026-06-02.)"
+            ),
+        },
+        "DEAL_II_SETUP_TARGET":          "Apply deal.II's include dirs + libs to a target. Call AFTER add_executable.",
+        "DEAL_II_INVOKE_AUTOPILOT":      "All-in-one shortcut for the common tutorial template (uses the other macros).",
+        "DEAL_II_PICKUP_TESTS":          "Discover .output files in tests/ and register them as ctest cases.",
+        "DEAL_II_QUERY_GIT_INFORMATION": "Set DEAL_II_GIT_BRANCH / _REVISION / _SHORTREV / _TIMESTAMP from .git metadata.",
+    },
 }
