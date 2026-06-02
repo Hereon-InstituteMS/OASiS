@@ -352,3 +352,90 @@ def register_developer_tools(mcp: FastMCP):
         ])
 
         return "\n".join(lines)
+
+    @mcp.tool()
+    def discover_sources(refresh: bool = False) -> str:
+        """Find source trees + binaries for every backend by scanning the
+        local filesystem. Reads ~/.config/open-fem-agent/sources.json for
+        pinned paths first, then walks $HOME / /opt / /usr/local/src.
+
+        Each backend gets one of four statuses:
+          - both:             source + working binary detected
+          - source_tree:      source on disk, no built binary yet
+          - installed_binary: importable / on PATH, no source on disk
+          - missing:          neither found — call fetch_source to clone
+
+        Args:
+            refresh: bypass the 1-hour cache and re-scan disk
+        """
+        import sys as _sys
+        from pathlib import Path as _Path
+        _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+        from core.source_discovery import discover as _discover
+        res = _discover(use_cache=not refresh)
+        lines = ["## Source / binary status\n",
+                 "| Backend | Status | Source | Binary |",
+                 "|---|---|---|---|"]
+        for be, info in res.items():
+            src = info.get("source_path") or "—"
+            bn = info.get("binary_info") or "—"
+            lines.append(f"| {be} | {info['status']} | `{src}` | `{bn}` |")
+        lines.append("\nEdit `~/.config/open-fem-agent/sources.json` to pin paths "
+                     "globally, or set `$OFA_SOURCE_CONFIG=<file>` for "
+                     "session-local overrides.")
+        return "\n".join(lines)
+
+    @mcp.tool()
+    def fetch_source(backend: str, background: bool = True) -> str:
+        """Clone the canonical upstream source for a backend into
+        upstream_sources/<backend>/. Idempotent: skips if directory exists.
+        Shallow clone (--depth 1) by default; pass background=False to
+        block until done.
+        """
+        import sys as _sys
+        from pathlib import Path as _Path
+        _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+        from core.source_fetch import fetch as _fetch
+        try:
+            dest, procs = _fetch(backend, background=background, shallow=True)
+        except Exception as ex:
+            return f"FAILED: {ex}"
+        pids = [p.pid for p in procs] or ["(already cloned)"]
+        return f"{backend} → {dest}  pids: {pids}"
+
+    @mcp.tool()
+    def build_source(backend: str, background: bool = True) -> str:
+        """Run the build recipe (CMake + ninja, or pip install -e .) for a
+        backend's source tree. Source must already exist (call fetch_source
+        first). Builds are LONG (minutes to hours); use background=True.
+        """
+        import sys as _sys
+        from pathlib import Path as _Path
+        _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+        from core.source_discovery import discover as _discover
+        from core.source_build import build as _build, recipe_summary
+        res = _discover()
+        src = res.get(backend, {}).get("source_path")
+        if not src:
+            return (f"No source path for {backend}. Run fetch_source first.")
+        recipe = recipe_summary(backend)
+        log, proc = _build(backend, _Path(src), background=background)
+        return (f"## Building {backend}\n"
+                f"**Recipe:** {recipe['description']}  "
+                f"(~{recipe['typical_minutes']} min)\n"
+                f"**Log:** `{log}`\n"
+                f"**PID:** {proc.pid if proc else 'completed'}")
+
+    @mcp.tool()
+    def ensure_source(backend: str, build_if_no_binary: bool = False) -> str:
+        """One-shot: discover → fetch if missing → optionally build if no
+        binary. Single entry point for getting a backend usable.
+        """
+        import sys as _sys
+        from pathlib import Path as _Path
+        _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+        from core.source_orchestrator import ensure_source as _ensure
+        r = _ensure(backend, fetch_if_missing=True,
+                    build_if_no_binary=build_if_no_binary, background=True)
+        import json as _json
+        return f"## ensure_source({backend})\n\n```json\n{_json.dumps(r, indent=2)}\n```"
