@@ -254,6 +254,16 @@ GENERAL_KNOWLEDGE = {
             "entity_maps=[emap], parent_mesh=V.mesh) — the "
             "extended-signature variant; vanilla create_form lacks "
             "entity_maps + parent_mesh args.",
+            "UFL-side idiom (cpp/demo/codim_0_assembly/mixed_codim0.py): "
+            "the bilinear form is written as "
+            "`a_mixed = inner(p, v) * dx(domain=mesh, subdomain_id=3)` "
+            "with trial p on submesh W, test v on parent mesh V. BOTH "
+            "kwargs are essential: domain=mesh picks the integration "
+            "domain (parent, not the trial-space's submesh); "
+            "subdomain_id=3 is the form-side numeric tag bridged by "
+            "the subdomain_data dict at create_form time. The UFL file "
+            "must also expose a top-level `forms = [a_mixed, a]` list "
+            "for ffcx code generation.",
         ],
         "Signal": (
             "[API] Two distinct tag-id namespaces in mixed-domain "
