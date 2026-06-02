@@ -78,4 +78,49 @@ KNOWLEDGE["_general"] = {
         "Surface FEM for PDEs on manifolds",
         "Multiple storage backends: numpy, istl, petsc",
     ],
+    "cmake_user_macros": {
+        "description": (
+            "User-callable CMake helpers defined in dune-fem's "
+            "cmake/modules/FemShort.cmake — downstream dune-fem-based "
+            "projects invoke these in their CMakeLists.txt."
+        ),
+        "dune_add_subdirs": {
+            "signature": "dune_add_subdirs(<dir1> [<dir2>...] [EXCLUDE <str> | NOEXCLUDE])",
+            "purpose": "Add multiple subdirectories with one call. Subdirs "
+                       "matching EXCLUDE (default: 'test') are added with "
+                       "EXCLUDE_FROM_ALL; NOEXCLUDE adds everything.",
+        },
+        "dune_fem_add_test": {
+            "signature": (
+                "dune_fem_add_test(<test1> [<test2>...] "
+                "[FAILTEST <ftest>...] [COMPILEFAILTEST <cftest>...] "
+                "[DEPENDENCY_ONLY <dep>...] [NO_DEPENDENCY <ntest>...])"),
+            "purpose": "Register tests with CMake testing framework.",
+            "kwargs": {
+                "FAILTEST":        "Tests EXPECTED to fail "
+                                   "(WILL_FAIL property set to true)",
+                "COMPILEFAILTEST": "Tests EXPECTED to fail at compile time "
+                                   "(WILL_FAIL too, runs via "
+                                   "cmake --build . --target <test>)",
+                "DEPENDENCY_ONLY": "Add targets as test dependencies but "
+                                   "NOT as runnable tests",
+                "NO_DEPENDENCY":   "Add target as test but NOT as dependency",
+            },
+        },
+        "dune_install": {
+            "signature": "dune_install(<files>...)",
+            "purpose": "Install given files into the current source dir's "
+                       "include-directory location "
+                       "(CMAKE_CURRENT_SOURCE_DIR with CMAKE_SOURCE_DIR "
+                       "replaced by CMAKE_INSTALL_INCLUDEDIR).",
+        },
+        "Signal": (
+            "[API] FAILTEST and COMPILEFAILTEST tests have "
+            "WILL_FAIL=true. A test that passes in those buckets is "
+            "REPORTED AS FAILING by ctest — the inversion is intentional. "
+            "Don't list a working test under FAILTEST expecting it to "
+            "pass cleanly; ctest will report it as a regression. (File "
+            "walk dune-fem/cmake/modules/FemShort.cmake 2026-06-02.)"
+        ),
+    },
 }
