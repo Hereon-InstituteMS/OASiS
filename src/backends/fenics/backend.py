@@ -295,6 +295,18 @@ _PHYSICS_CAPABILITIES = [
         element_types=["triangle", "tetrahedron"],
         template_variants=["2d"],
     ),
+    PhysicsCapability(
+        name="matrix_free_poisson",
+        description=(
+            "Matrix-free conjugate-gradient Poisson solver. "
+            "Builds A as a callable action_A(x, y) via "
+            "ufl.action(a, ui) — no global sparse assembly. "
+            "Mirrors dolfinx demo_poisson_matrix_free.py."
+        ),
+        spatial_dims=[2],
+        element_types=["Lagrange"],
+        template_variants=["2d"],
+    ),
 ]
 
 

@@ -160,7 +160,7 @@ class SignalVerification:
 
 _PITFALL_PREFIX_RE = re.compile(
     r"^\s*\[(Syntax|Physics|Numerical|API|Integration|Input|Output|"
-    r"Mesh|Performance|Hardware|Validation|Reference)\]")
+    r"Mesh|Performance|Hardware|Validation|Reference|Parallel)\]")
 _SIGNAL_RE = re.compile(r"\bSignal:\s*(.+?)$", re.IGNORECASE | re.DOTALL)
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]+")
 
@@ -789,6 +789,18 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # ── DG penalty / coercivity ───────────────────────
             "alpha_0", "p_plus_1", "SIPG",
             "coercivity_loss",
+            # ── dolfinx la.Vector + parallel MPI tokens used in
+            #    matrix-free / ghost-exchange pitfalls (verified
+            #    against upstream demo_poisson_matrix_free.py) ──
+            "la", "la.Vector", "la.InsertMode", "InsertMode",
+            "scatter_reverse", "scatter_forward",
+            "index_map", "size_local", "size_global",
+            "allreduce", "MPI.SUM", "MPI.COMM_WORLD",
+            "comm", "rank", "Bcast",
+            "assemble_scalar", "scatter",
+            "ufl.action", "action",
+            "ghost", "ghost_dof", "ghost_dofs",
+            "default_scalar_type",
         })
     elif backend == "dune":
         code_symbols.update({

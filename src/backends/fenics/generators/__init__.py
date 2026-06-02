@@ -40,6 +40,7 @@ _PHYSICS_MODULES: dict[str, str] = {
     "nearly_incompressible_elasticity": ".nearly_incompressible_elasticity",
     "fracture":             ".fracture",
     "stokes_darcy":         ".stokes_darcy",
+    "matrix_free_poisson":  ".matrix_free_poisson",
     # Advanced physics — all served by .advanced (multi-physics module)
     "dg_methods":           ".advanced",
     "contact":              ".advanced",
