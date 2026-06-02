@@ -99,6 +99,27 @@ FOURC_KNOWLEDGE = {
                 "--glayout=N1,N2,...":  "Explicit per-group MPI rank counts. If omitted with --ngroup>1, ranks are split equally and FAIL if num_procs%n_groups!=0.",
                 "--nptype=<type>":      "Nested parallelism type (mandatory when --ngroup>1).",
                 "<input> <output>":     "Positional pair(s). Multiple pairs allowed when --nptype=separateInputFiles or nestedMultiscale.",
+                "--parameters":         "Parameters-dump mode (skips io_pairs validation). When set, the cross-compat validator does NOT require <input> <output> count to match --ngroup.",
+                "--diffgroup=N":        "Diff-mode group ID (default -1 = disabled). Used to compare outputs across nested groups.",
+                "--interactive":        "Interactive mode (default false).",
+                "--restart=N":          "Restart step (default 0 = no restart).",
+                "--restartfrom=<id>":   "Output identifier to restart from. With nested parallelism, can be specified per-group via repeated flag.",
+            },
+            "commandline_arguments_struct_defaults": {
+                # Source: apps/global_full/4C_global_full_io.hpp:38 CommandlineArguments
+                "n_groups":                       1,
+                "parameters":                     "false (set by --parameters)",
+                "group_layout":                   "empty (auto-split if n_groups>1)",
+                "nptype":                         "no_nested_parallelism",
+                "diffgroup":                      -1,
+                "restart":                        0,
+                "restart_file_identifier":        "''",
+                "restart_per_group":              "empty",
+                "restart_identifier_per_group":   "empty",
+                "interactive":                    False,
+                "io_pairs":                       "empty",
+                "input_file_name":                "''",
+                "output_file_identifier":         "''",
             },
             "nptype_enum_values": {
                 # snake_case (C++ enum) -> CLI-string alias (camelCase)
