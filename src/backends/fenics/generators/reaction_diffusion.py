@@ -51,11 +51,13 @@ KNOWLEDGE = {
         (
             "[Numerical] For stiff reactions: may need smaller "
             "dt or implicit-explicit (IMEX) splitting. Signal: "
-            "explicit Euler with dt > 2/lambda_max where "
-            "lambda_max ~ rate constant gives NaN within a few "
-            "steps; for Da > 1000, even BE converges slowly "
-            "without splitting the stiff reaction onto its own "
-            "implicit sub-step (Strang or Lie). (Audit "
+            "an explicit Euler update on the dolfinx Function "
+            "with dt > 2/lambda_max (lambda_max ~ rate "
+            "constant) gives NaN in the assemble_vector RHS "
+            "within a few steps; for Da > 1000, even backward "
+            "Euler via NonlinearProblem converges slowly "
+            "without splitting the stiff reaction onto its "
+            "own implicit sub-step (Strang or Lie). (Audit "
             "2026-06-02.)"
         ),
         "Common reaction models: Gray-Scott, Schnakenberg, Brusselator, Lotka-Volterra",

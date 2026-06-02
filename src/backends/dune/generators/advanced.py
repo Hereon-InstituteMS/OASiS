@@ -950,13 +950,14 @@ KNOWLEDGE = {
             (
                 "[Input] For SCATTERING: add absorbing BC "
                 "(Robin / PML) on truncated domain. "
-                "Signal: a pure-Dirichlet outer boundary "
-                "reflects the outgoing wave — visible "
-                "standing-wave interference in |u| with "
-                "lambda/2 spacing. Add (i*k*u, v) * ds "
-                "on the truncation boundary or a PML "
-                "layer with complex stretch. (Audit "
-                "2026-06-02.)"
+                "Signal: in dune.fem galerkin, a pure-"
+                "DirichletBC outer boundary reflects the "
+                "outgoing wave — visible standing-wave "
+                "interference in |u| (the GridFunction "
+                "magnitude) with lambda/2 spacing. Add "
+                "(i*k*u, v) * ds in the ufl Form on the "
+                "truncation boundary or a PML layer with "
+                "complex stretch. (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] k^2 < pi^2: system positive "

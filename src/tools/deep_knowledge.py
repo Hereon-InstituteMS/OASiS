@@ -1348,14 +1348,16 @@ _FENICS_KNOWLEDGE = {
             ),
             (
                 "[Input] Reference temperature T_ref matters: "
-                "DeltaT = T - T_ref. Signal: leaving T_ref = 0 "
-                "with an SI material at room temperature gives an "
-                "initial thermal pre-strain of order alpha*T_room "
-                "(~3e-3 for steel at 300 K) that the structure "
-                "must equilibrate against — first-step "
-                "displacement is huge compared to the actual "
-                "loading and Newton may oscillate. (Audit "
-                "2026-06-02.)"
+                "DeltaT = T - T_ref. Signal: leaving the "
+                "T_ref ufl.Constant at 0 with an SI material "
+                "at room temperature gives an initial "
+                "thermal pre-strain of order alpha*T_room "
+                "(~3e-3 for steel at 300 K) that the "
+                "dolfinx NonlinearProblem structure must "
+                "equilibrate against — first-step "
+                "displacement Function is huge compared to "
+                "the actual loading and the Newton iteration "
+                "may oscillate. (Audit 2026-06-02.)"
             ),
             (
                 "[Numerical] Plane strain: use full 3D Lame "

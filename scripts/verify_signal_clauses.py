@@ -96,7 +96,8 @@ class SignalVerification:
 
 
 _PITFALL_PREFIX_RE = re.compile(
-    r"^\s*\[(Syntax|Physics|Numerical|API|Integration)\]")
+    r"^\s*\[(Syntax|Physics|Numerical|API|Integration|Input|Output|"
+    r"Mesh|Performance|Hardware|Validation|Reference)\]")
 _SIGNAL_RE = re.compile(r"\bSignal:\s*(.+?)$", re.IGNORECASE | re.DOTALL)
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]+")
 

@@ -191,10 +191,12 @@ class CardiacMonodomainGenerator(BaseGenerator):
                     "alignment). Signal: anisotropic "
                     "physiology (DIFF1 ~ 4*DIFF2 for "
                     "myocardium) but isotropic DIFF in the "
-                    "input gives spherical instead of "
-                    "elliptical wavefronts — visible in "
-                    "ParaView; the long axis aligns with "
-                    "fiber. (Audit 2026-06-02.)"
+                    "MAT_myocard MATERIALS block gives "
+                    "spherical instead of elliptical "
+                    "wavefronts in the SCATRA DYNAMIC "
+                    "post_vtu output — visible in ParaView; "
+                    "the long axis aligns with fiber. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
                     "[Input] Ionic cell model parameters "
