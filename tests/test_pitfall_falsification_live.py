@@ -998,6 +998,64 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       "GIT_TAG path no longer goes through "
                       "get_latest_tag.sh.")
 
+    @_skip_no_dolfinx
+    def test_fenics_maxwell_nedelec_to_dg_visualization_workaround(
+            self) -> None:
+        """fenics::maxwell [Output]: confirm the catalog's claim
+        that (a) writing a Nedelec/H(curl) Function directly to
+        VTXWriter raises a RuntimeError citing Lagrange-only
+        support, and (b) the canonical workaround of
+        interpolating into a vector-valued discontinuous Lagrange
+        space then VTX-writing that succeeds. (File walk
+        cpp/demo/interpolation-io/main.cpp 2026-06-03.)"""
+        import tempfile
+        from pathlib import Path
+        import numpy as np
+        from mpi4py import MPI
+        import basix
+        from basix.ufl import element
+        from dolfinx import fem, mesh
+        from dolfinx.io import VTXWriter
+        msh = mesh.create_unit_square(
+            MPI.COMM_WORLD, 4, 4, mesh.CellType.triangle)
+        # H(curl) Nedelec 1st kind, degree 2
+        e_n = element(basix.ElementFamily.N1E,
+                      msh.basix_cell(), 2)
+        V_n = fem.functionspace(msh, e_n)
+        u_n = fem.Function(V_n)
+        u_n.interpolate(lambda x: np.vstack([x[0], x[1]]))
+        # (a) Direct VTXWriter on Nedelec → RuntimeError
+        with tempfile.TemporaryDirectory() as td:
+            target = Path(td) / "u_nedelec.bp"
+            with self.assertRaises(RuntimeError) as cm:
+                with VTXWriter(msh.comm, str(target), [u_n],
+                               "BP4") as vtx:
+                    vtx.write(0.0)
+            msg = str(cm.exception).lower()
+            self.assertTrue(
+                "lagrange" in msg or "vtx" in msg
+                or "interpolate" in msg
+                or "supported" in msg,
+                f"VTXWriter on Nedelec no longer raises a "
+                f"Lagrange-/VTX-citing RuntimeError; got: "
+                f"{cm.exception!r}")
+            # (b) Workaround: vector DG Lagrange degree 2, interpolate,
+            # then VTX-write — must succeed.
+            e_dg = element("Lagrange", msh.basix_cell(), 2,
+                           shape=(2,), discontinuous=True)
+            V_dg = fem.functionspace(msh, e_dg)
+            u_dg = fem.Function(V_dg)
+            u_dg.interpolate(u_n)
+            target2 = Path(td) / "u_dg.bp"
+            with VTXWriter(msh.comm, str(target2), [u_dg],
+                           "BP4") as vtx:
+                vtx.write(0.0)
+            self.assertTrue(
+                target2.exists(),
+                "VTXWriter on the DG-projected workaround target "
+                "did not produce a .bp output directory; "
+                f"expected {target2}")
+
     def test_kratos_cablenet_ring_element_source_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Numerical]: confirm

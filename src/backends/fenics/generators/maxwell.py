@@ -35,6 +35,27 @@ KNOWLEDGE = {
         "Signal: using the wrong dolfinx dirichletbc type (e.g. "
         "fixing all components of the Nedelec Function) produces "
         "an over-constrained solution with wrong eigenmodes.",
+        "[Output] Nédélec / H(curl) Functions CANNOT be written "
+        "directly to VTX or XDMF for visualization — both writers "
+        "raise 'Cannot interpolate function ... to the VTX output "
+        "basis' / 'ADIOS2 VTX only supports Lagrange elements' or "
+        "the equivalent XDMF check. ParaView/VisIt also can't "
+        "render H(curl) DOFs sensibly because they're edge "
+        "tangents, not nodal point values. Workaround (canonical, "
+        "from cpp/demo/interpolation-io/main.cpp:interpolate_nedelec): "
+        "create a vector-valued DISCONTINUOUS Lagrange space of "
+        "the SAME OR HIGHER degree, interpolate the Nedelec "
+        "Function into it via `u_dg.interpolate(u_nedelec)`, then "
+        "VTX/XDMF-write u_dg. The 6th positional arg of "
+        "basix.create_element / basix.ufl.element is the "
+        "`discontinuous` bool — set True. Example: for N1E degree "
+        "2, build a degree-2 vector DG Lagrange space (it contains "
+        "N1E degree 2). Signal: opening the resulting .bp file in "
+        "ParaView, the tangential component is continuous across "
+        "edges while the normal component visibly jumps at "
+        "interfaces — that's the correct H(curl) signature, not "
+        "a bug. (File walk cpp/demo/interpolation-io/main.cpp "
+        "2026-06-03.)",
     ],
 }
 
