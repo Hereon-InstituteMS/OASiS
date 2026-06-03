@@ -280,6 +280,58 @@ FOURC_KNOWLEDGE = {
                     "cmake/setup_global_options.cmake 2026-06-03.)"
                 ),
             },
+            "cmake_install_export": {
+                "description": (
+                    "Configure-time surfaces defined in "
+                    "cmake/setup_install.cmake — install rules, "
+                    "exported 4CTargets, and the 4CConfig.cmake "
+                    "consumer file."),
+                "exported_targets_namespace": "4C::",
+                "config_file_destination": (
+                    "${CMAKE_INSTALL_DATADIR}/cmake/4C/4CConfig.cmake"
+                    " (plus 4CConfigVersion.cmake)"),
+                "version_compatibility": "ExactVersion",
+                "dependency_toggles_FOUR_C_WITH_*": [
+                    "HDF5", "MPI", "Qhull", "Trilinos", "VTK",
+                    "gmsh", "deal.II", "Boost", "ArborX", "FFTW",
+                    "CLN", "MIRCO", "Backtrace", "ryml",
+                    "magic_enum", "ZLIB", "pybind11", "CLI11",
+                ],
+                "rolled_up_dependency_target": (
+                    "four_c_all_enabled_external_dependencies — "
+                    "single CMake target rolling up every "
+                    "FOUR_C_WITH_<X>=ON external; downstream "
+                    "consumers link via 4C::lib4C only."),
+                "Signal": (
+                    "[Input] 4CConfig.cmake exports the package "
+                    "with COMPATIBILITY ExactVersion (line 100 of "
+                    "setup_install.cmake). Downstream "
+                    "find_package(4C <version> EXACT) requires "
+                    "EXACT FOUR_C_VERSION_MAJOR.MINOR match — "
+                    "find_package(4C 1.3) when 4C is installed at "
+                    "1.4 FAILS with 'incompatible version' even "
+                    "though they may be API-compatible. Use "
+                    "find_package(4C) (no version pin) to fall "
+                    "back to whatever is installed, or pin to the "
+                    "EXACT installed MAJOR.MINOR. The 18-package "
+                    "FOUR_C_WITH_<X> boolean surface (HDF5 / MPI "
+                    "/ Qhull / Trilinos / VTK / gmsh / deal.II / "
+                    "Boost / ArborX / FFTW / CLN / MIRCO / "
+                    "Backtrace / ryml / magic_enum / ZLIB / "
+                    "pybind11 / CLI11) is set by the parent "
+                    "build's FOUR_C_WITH_<X> CMake cache values "
+                    "and baked into the exported config — "
+                    "downstream cannot RE-enable a dep that was "
+                    "OFF at 4C install time. The "
+                    "four_c_all_enabled_external_dependencies "
+                    "rolled-up target is the canonical downstream "
+                    "link edge; downstream projects do "
+                    "target_link_libraries(myapp PRIVATE "
+                    "4C::lib4C) and inherit the dependency "
+                    "transitively. (File walk "
+                    "cmake/setup_install.cmake 2026-06-03.)"
+                ),
+            },
             "additional_io_input_keys": {
                 "WRITE_TIMINGS": (
                     "bool — when true, run() writes "

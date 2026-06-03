@@ -1359,6 +1359,56 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "copy-paste-error pitfall fix may have landed "
             "upstream; revisit edge 10.")
 
+    def test_fourc_cmake_install_export_invariants(self) -> None:
+        """fourc::overview.cli_arguments.cmake_install_export
+        [Input]: confirm setup_install.cmake still
+        (a) exports 4CTargets with NAMESPACE 4C::,
+        (b) write_basic_package_version_file uses COMPATIBILITY
+            ExactVersion,
+        (c) the 18 documented FOUR_C_WITH_<X> dep toggles are
+            all configured via _add_dependency_to_config,
+        (d) four_c_all_enabled_external_dependencies is the
+            rolled-up downstream link target.
+        (File walk cmake/setup_install.cmake 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/cmake/"
+                 "setup_install.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/cmake/setup_install.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C setup_install.cmake not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) 4CTargets export + 4C:: namespace
+        self.assertIn("EXPORT 4CTargets", body,
+                      "4CTargets export changed.")
+        self.assertIn("NAMESPACE 4C::", body,
+                      "4C:: namespace changed.")
+        # (b) ExactVersion compatibility
+        self.assertIn("COMPATIBILITY ExactVersion", body,
+                      "Package version COMPATIBILITY changed; "
+                      "ExactVersion pitfall may be relaxed.")
+        # (c) 18 FOUR_C_WITH_<X> deps
+        for dep in ("HDF5", "MPI", "Qhull", "Trilinos", "VTK",
+                    "gmsh", "deal.II", "Boost", "ArborX", "FFTW",
+                    "CLN", "MIRCO", "Backtrace", "ryml",
+                    "magic_enum", "ZLIB", "pybind11", "CLI11"):
+            self.assertIn(f"_add_dependency_to_config({dep})",
+                          body,
+                          f"Dep toggle {dep!r} no longer "
+                          "registered via "
+                          "_add_dependency_to_config; the 18-"
+                          "package list needs revisit.")
+        # (d) rolled-up dependency target
+        self.assertIn(
+            "four_c_all_enabled_external_dependencies", body,
+            "four_c_all_enabled_external_dependencies rolled-up "
+            "target name changed.")
+
     def test_fourc_cmake_build_config_invariants(self) -> None:
         """fourc::overview.cli_arguments.cmake_build_config_options
         [Performance]: confirm setup_global_options.cmake still has
