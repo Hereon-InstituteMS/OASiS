@@ -606,6 +606,53 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"got: {[str(w.message) for w in dep_new]!r}")
         self.assertEqual(r_new.shape, (ib_p1.N,))
 
+    def test_febio_domain_error_criterion_source_invariants(
+            self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input]:
+        confirm FEDomainErrorCriterion (the 'relative error' FEAMR
+        tag) still (a) registers <error> + <data> as required
+        children via BEGIN_FECORE_CLASS / ADD_PARAMETER /
+        ADD_PROPERTY, (b) short-circuits to an EMPTY refinement
+        list when fabs(smin - smax) < 1e-12, (c) implements the
+        relative-error formula |sj - snj| / (smax - smin), and
+        (d) returns size-scale s = m_error/max_err when max_err
+        exceeds the user tolerance. (File walk
+        FEAMR/FEDomainErrorCriterion.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/febio/FEAMR/"
+                "FEDomainErrorCriterion.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"FEBio FEDomainErrorCriterion.cpp not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) ADD_PARAMETER(m_error, "error") + ADD_PROPERTY(m_data, "data")
+        self.assertIn('BEGIN_FECORE_CLASS(FEDomainErrorCriterion, '
+                      'FEMeshAdaptorCriterion)', body,
+                      "FECORE_CLASS registration changed.")
+        self.assertIn('ADD_PARAMETER(m_error, "error")', body,
+                      'Required <error> parameter no longer '
+                      'registered with that tag name.')
+        self.assertIn('ADD_PROPERTY(m_data, "data")', body,
+                      'Required <data> property no longer '
+                      'registered with that tag name.')
+        # (b) Empty-list short-circuit on uniform field
+        self.assertIn("fabs(smin - smax) < 1e-12", body,
+                      "Uniform-field short-circuit threshold or "
+                      "form changed.")
+        # (c) Error formula
+        self.assertIn("fabs(sj - snj) / (smax - smin)", body,
+                      "Relative-error formula changed; pitfall "
+                      "needs revisit.")
+        # (d) Size-scale formula
+        self.assertIn("(max_err > m_error ? m_error / max_err : 1.0)",
+                      body,
+                      "Size-scale clamp formula changed.")
+
     def test_fourc_post_monitor_source_invariants(self) -> None:
         """fourc::overview.post_monitor_tool [Output]: confirm the
         upstream post_monitor source still implements (a) serial-

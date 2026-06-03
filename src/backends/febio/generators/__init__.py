@@ -64,7 +64,17 @@ KNOWLEDGE["_general"] = {
             "element_selection": "FEElementSelectionCriterion",
             "math":              "FEScaleAdaptorCriterion — math-expression scaling",
             "min-max filter":    "FEMinMaxFilterAdaptorCriterion — SPACED-AND-HYPHEN tag name",
-            "relative error":    "FEDomainErrorCriterion — SPACED tag name",
+            "relative error": (
+                "FEDomainErrorCriterion — SPACED tag name. Required "
+                "child params: <error> (double, target relative-error "
+                "tolerance) and <data> (FEMeshAdaptorCriterion property "
+                "providing per-Gauss-point scalar via "
+                "GetMaterialPointValue). Error formula per element: "
+                "max_j |s_j - s_hat_j| / (smax - smin), where s_hat is "
+                "the recovered nodal projection evaluated at Gauss "
+                "point j. Returns size-scale s = error/max_err when "
+                "max_err>error (shrink), else s=1 (keep). Source: "
+                "FEAMR/FEDomainErrorCriterion.cpp"),
             "element data":      "FEElementDataCriterion — SPACED tag name",
             "tet-quality":       "FETetQualityCriterion",
             "mean-ratio":        "FEMeanRatioQualityCriterion",
@@ -88,7 +98,16 @@ KNOWLEDGE["_general"] = {
             "to match in the FECoreKernel registry — FEBio reports the "
             "unknown tag at parse time. Also note test_refine has "
             "FECORE_EXPERIMENTAL flag in the source — production use "
-            "is unsupported. (File walk FEAMR/FEAMR.cpp 2026-06-02.)"
+            "is unsupported. Plus a quiet behavior in 'relative error' "
+            "(FEDomainErrorCriterion::GetElementSelection): if the "
+            "data-field range across the element set is below 1e-12 "
+            "(fabs(smin - smax) < 1e-12 — e.g. an undisturbed step-0 "
+            "state with zero stress everywhere), the function returns "
+            "an EMPTY FEMeshAdaptorSelection and refinement is silently "
+            "a no-op. Users probing the criterion before the first "
+            "solve see no refinement and no warning. (File walks "
+            "FEAMR/FEAMR.cpp 2026-06-02, "
+            "FEAMR/FEDomainErrorCriterion.cpp 2026-06-03.)"
         ),
     },
     "cmake_embedding": {
