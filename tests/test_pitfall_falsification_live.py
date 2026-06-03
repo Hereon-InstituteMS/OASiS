@@ -934,6 +934,29 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 f"RemoveIslands DOF-open check on {tok!r} "
                 f"changed; the mechanics-only-island caveat needs "
                 f"revisit.")
+        # (g) Header-comment drift on m_nsort — the .h says
+        #     '1 = smallest to largest, 2 = largest to smallest'
+        #     but the .cpp does the OPPOSITE. The catalog warns
+        #     users; this gate ensures the drift is still there
+        #     (so we'd notice if the header is fixed upstream and
+        #     we should drop the caveat).
+        hpp = src.parent / "FEErosionAdaptor.h"
+        if hpp.exists():
+            hbody = hpp.read_text()
+            self.assertIn(
+                "0 = none, 1 = smallest to largest, "
+                "2 = largest to smallest", hbody,
+                "FEErosionAdaptor.h m_nsort header comment "
+                "appears to have been corrected upstream — the "
+                "catalog's header-drift caveat may no longer "
+                "apply; revisit.")
+            # And the .cpp does still implement the opposite
+            self.assertIn("SORT_DECREASING", body,
+                          "SORT_DECREASING token missing from .cpp; "
+                          "header-drift caveat needs revisit.")
+            self.assertIn("SORT_INCREASING", body,
+                          "SORT_INCREASING token missing from .cpp; "
+                          "header-drift caveat needs revisit.")
 
     def test_fourc_single_field_writers_source_invariants(
             self) -> None:

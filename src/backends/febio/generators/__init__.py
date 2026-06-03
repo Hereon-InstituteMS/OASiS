@@ -86,7 +86,13 @@ KNOWLEDGE["_general"] = {
                         "Only consulted when max_elems > 0 — with "
                         "max_elems == 0 the sort value is IGNORED, "
                         "no log line. Sorts by the criterion's "
-                        "per-element scalar."),
+                        "per-element scalar. Header-comment drift: "
+                        "FEErosionAdaptor.h:58 says '1 = smallest to "
+                        "largest, 2 = largest to smallest' — the "
+                        "OPPOSITE of what the .cpp dispatch "
+                        "(FEErosionAdaptor.cpp:89-100) implements "
+                        "(1 -> SORT_DECREASING, 2 -> SORT_INCREASING). "
+                        "Trust the .cpp; the header doc is wrong."),
                     "remove_islands": (
                         "bool, default false. When true, calls "
                         "RemoveIslands(FEMeshTopo) after deactivating "
