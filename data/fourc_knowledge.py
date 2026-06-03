@@ -499,6 +499,9 @@ FOURC_KNOWLEDGE = {
                     "export.dependency_toggles_FOUR_C_WITH_*) "
                     "controls WHETHER to use it at all."),
                 "shape": (
+                    "There are TWO sub-shapes. "
+                    "HEAVY (e.g. configure_ArborX.cmake, plus "
+                    "Trilinos / VTK / HDF5 / deal.II): "
                     "(1) Declares a FOUR_C_<DEP>_FIND_INSTALLED "
                     "boolean option (default usually OFF) via "
                     "four_c_process_global_option. "
@@ -509,10 +512,23 @@ FOURC_KNOWLEDGE = {
                     "_makeavailable from a PINNED commit hash, "
                     "then sets FOUR_C_<DEP>_ROOT to "
                     "${CMAKE_INSTALL_PREFIX}. "
-                    "(4) four_c_remember_variable_for_install on "
-                    "both FOUR_C_<DEP>_FIND_INSTALLED + "
-                    "FOUR_C_<DEP>_ROOT so downstream consumers' "
-                    "4CConfig.cmake replays the same choice."),
+                    "(4) four_c_remember_variable_for_install "
+                    "on both FOUR_C_<DEP>_FIND_INSTALLED + "
+                    "FOUR_C_<DEP>_ROOT. "
+                    "LIGHT (e.g. configure_Backtrace.cmake, plus "
+                    "Boost / CLI11 / pybind11 / ZLIB / typical "
+                    "system libraries): "
+                    "(1) NO FOUR_C_<DEP>_FIND_INSTALLED toggle "
+                    "— no fetch fallback. "
+                    "(2) Direct find_package(<Dep> REQUIRED) — "
+                    "configure aborts if not found. "
+                    "(3) target_link_libraries(four_c_all_"
+                    "enabled_external_dependencies INTERFACE "
+                    "<Dep>::<Dep>) attaches the dep. "
+                    "(4) four_c_remember_variable_for_install "
+                    "on the relevant FindPackage cache vars "
+                    "(e.g. <Dep>_INCLUDE_DIR, <Dep>_LIBRARY) "
+                    "for downstream replay."),
                 "Signal": (
                     "[Integration] Two-layer toggle structure to "
                     "be aware of: FOUR_C_WITH_<Dep>=ON enables "
