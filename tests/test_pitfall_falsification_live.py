@@ -659,6 +659,53 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"aliases; pitfall about silent aliases needs "
             f"revisit. Warnings: {[str(w.message) for w in dep]!r}")
 
+    def test_febio_element_data_criterion_source_invariants(
+            self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input]:
+        confirm FEElementDataCriterion (the 'element data' FEAMR
+        criterion) still (a) registers <element_data> UNDERSCORE
+        child param via ADD_PARAMETER(m_data, "element_data"),
+        (b) dispatches via fecore_new<FELogElemData>(name, fem) —
+        unknown name silently returns nullptr → Init false,
+        (c) GetElementValue returns m_pd->value(el) when m_pd is
+        non-null else false. (File walk
+        FEAMR/FEElementDataCriterion.cpp 2026-06-03.)"""
+        from pathlib import Path
+        src = Path(__file__).resolve().parent.parent / (
+            "upstream_sources/febio/FEAMR/"
+            "FEElementDataCriterion.cpp")
+        if not src.exists():
+            self.skipTest(
+                f"FEBio FEElementDataCriterion.cpp not found in "
+                f"{src}.")
+        body = src.read_text()
+        # (a) FECORE_CLASS registration + ADD_PARAMETER name
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEElementDataCriterion, "
+            "FEMeshAdaptorCriterion)", body,
+            "FECORE_CLASS registration changed.")
+        self.assertIn(
+            'ADD_PARAMETER(m_data, "element_data")', body,
+            "Child param no longer registered as the UNDERSCORE "
+            'string "element_data"; pitfall about the '
+            "outer-tag-space vs inner-param-underscore convention "
+            "needs revisit.")
+        # (b) Init dispatch via fecore_new<FELogElemData>
+        self.assertIn(
+            "fecore_new<FELogElemData>(m_data.c_str(), "
+            "GetFEModel())", body,
+            "Init dispatch no longer goes through "
+            "fecore_new<FELogElemData>; silent-nullptr-on-unknown "
+            "pitfall needs revisit.")
+        self.assertIn(
+            "if (m_pd == nullptr) return false;", body,
+            "Unknown-name silent-false short-circuit changed.")
+        # (c) GetElementValue dispatches via m_pd->value(el)
+        self.assertIn(
+            "val = m_pd->value(el);", body,
+            "GetElementValue dispatch via m_pd->value(el) "
+            "changed.")
+
     def test_febio_domain_error_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]:

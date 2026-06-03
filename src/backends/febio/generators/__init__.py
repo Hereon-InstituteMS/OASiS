@@ -75,7 +75,19 @@ KNOWLEDGE["_general"] = {
                 "point j. Returns size-scale s = error/max_err when "
                 "max_err>error (shrink), else s=1 (keep). Source: "
                 "FEAMR/FEDomainErrorCriterion.cpp"),
-            "element data":      "FEElementDataCriterion — SPACED tag name",
+            "element data": (
+                "FEElementDataCriterion — SPACED tag name on the "
+                "outer <criterion type=\"element data\"> wrapper. "
+                "Required child uses UNDERSCORE form: "
+                "<element_data>...</element_data>. The string value "
+                "is dispatched via fecore_new<FELogElemData>(name, "
+                "fem) to look up a registered log-element-data "
+                "variant; unknown name silently returns nullptr → "
+                "Init() returns false → criterion is silently "
+                "disabled with no log line. Vocabulary matches the "
+                "<plot> tag set (use the same registered "
+                "FELogElemData names you see in .feb plot output). "
+                "Source: FEAMR/FEElementDataCriterion.cpp"),
             "tet-quality":       "FETetQualityCriterion",
             "mean-ratio":        "FEMeanRatioQualityCriterion",
             "scaled Jacobian":   "FEScaledJacobianQualityCriterion — SPACED-AND-CAMELCASE tag name",
