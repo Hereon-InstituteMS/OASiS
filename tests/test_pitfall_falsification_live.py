@@ -1203,6 +1203,67 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "copy-paste-error pitfall fix may have landed "
             "upstream; revisit edge 10.")
 
+    def test_fourc_post_processor_post_gid_dead_wrapper(
+            self) -> None:
+        """fourc::overview.post_processor_tool [Output] edge 12:
+        the apps/post_processor/scripts/post_gid wrapper ships
+        via create_post_scripts.cmake but invokes
+        `post_processor --filter=gid` — and 'gid' is NOT in the
+        post_processor filter enum. Anchors:
+        (a) create_post_scripts.cmake DOES contain
+            copy_script(post_gid),
+        (b) the post_gid wrapper script DOES exec post_processor
+            --filter=gid,
+        (c) post_processor.cpp does NOT accept filter == 'gid'
+            anywhere — so every invocation hits the
+            'Unknown filter ... given' FOUR_C_THROW.
+        (File walk apps/post_processor/scripts/
+        create_post_scripts.cmake + post_gid 2026-06-03.)"""
+        from pathlib import Path
+        roots = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc"),
+        ]
+        root = next((r for r in roots if r.exists()), None)
+        if root is None:
+            self.skipTest(f"4C source not found in {roots}.")
+        cmake = root / (
+            "apps/post_processor/scripts/create_post_scripts.cmake")
+        wrapper = root / "apps/post_processor/scripts/post_gid"
+        main = root / "apps/post_processor/4C_post_processor.cpp"
+        for p in (cmake, wrapper, main):
+            if not p.exists():
+                self.skipTest(f"Required source not present: {p}")
+        # (a) copy_script(post_gid) line in CMake glue
+        self.assertIn(
+            "copy_script(post_gid)", cmake.read_text(),
+            "CMake no longer copies the post_gid wrapper — the "
+            "dead-wrapper pitfall may have been fixed; revisit "
+            "edge 12.")
+        # (b) post_gid wrapper invokes --filter=gid
+        self.assertIn(
+            "--filter=gid", wrapper.read_text(),
+            "post_gid wrapper no longer invokes --filter=gid — "
+            "the dead-wrapper pitfall is out of date.")
+        # (c) post_processor.cpp does NOT accept gid filter
+        body = main.read_text()
+        self.assertIn(
+            'filter == "ensight" || filter == "vtu" || filter == '
+            '"vtu_node_based" || filter == "vti"', body,
+            "post_processor filter-enum line changed; pitfall "
+            "needs revisit.")
+        self.assertNotIn(
+            'filter == "gid"', body,
+            "post_processor now accepts filter == 'gid' — the "
+            "post_gid wrapper is no longer dead; revisit "
+            "edge 12.")
+        self.assertIn(
+            "Unknown filter {} given, supported filters: "
+            "[ensight|vtu|vti]", body,
+            "post_processor unknown-filter FOUR_C_THROW message "
+            "changed; pitfall needs revisit.")
+
     def test_fourc_post_processor_thermo_heatflux_enum_invariants(
             self) -> None:
         """fourc::overview.post_processor_tool [Output] edge 11:
