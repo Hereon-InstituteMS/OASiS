@@ -1662,6 +1662,61 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "py4C)", body,
             "py4C subdirectory inclusion changed.")
 
+    def test_fourc_cmake_linker_detection_invariants(self) -> None:
+        """fourc::overview.cli_arguments.cmake_build_config_options
+        [Performance] edge (e): confirm cmake/checks/
+        01_detect_linkers.cmake still has
+        (a) FOUR_C_ENABLE_LINKER_DETECTION default ON,
+        (b) Linker preference order: mold > lld > gold > bfd,
+        (c) `-fuse-ld=<name>` flag used in four_c_check_compiles,
+        (d) OpenMPI/Ubuntu workaround retry with `-lopen-pal`,
+        (e) FATAL_ERROR when no linker works.
+        (File walk cmake/checks/01_detect_linkers.cmake
+        2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/cmake/"
+                 "checks/01_detect_linkers.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/cmake/checks/"
+                "01_detect_linkers.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C 01_detect_linkers.cmake not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) Option default ON
+        self.assertIn(
+            "FOUR_C_ENABLE_LINKER_DETECTION", body,
+            "FOUR_C_ENABLE_LINKER_DETECTION option missing.")
+        self.assertIn('DEFAULT\n  ON', body,
+                      "Default value flipped from ON.")
+        # (b) Preference order — assert by exact literal list
+        self.assertIn(
+            'set(_linkers "mold" "lld" "gold" "bfd")', body,
+            "Linker preference order changed; edge (e) lists "
+            "mold > lld > gold > bfd in that exact order.")
+        # (c) -fuse-ld=<name> link option
+        self.assertIn(
+            '"-fuse-ld=${_linker_name}"', body,
+            "-fuse-ld=<name> probe link option missing.")
+        # (d) -lopen-pal OpenMPI workaround
+        self.assertIn(
+            '"open-pal"', body,
+            "OpenMPI -lopen-pal workaround removed; the Ubuntu "
+            "20.04 mpic++ retry path documented in edge (e) "
+            "may be obsolete.")
+        self.assertIn(
+            "FOUR_C_LINKER_FUNCTIONAL_WITH_OPEN_PAL_", body,
+            "WITH_OPEN_PAL_<name> cache variable no longer set "
+            "— retry path may be gone.")
+        # (e) FATAL_ERROR on no linker
+        self.assertIn(
+            "Failed to find any working linker.", body,
+            "No-linker-found FATAL_ERROR text changed.")
+
     def test_fourc_cmake_test_setup_invariants(self) -> None:
         """fourc::overview.cli_arguments.cmake_test_setup_options
         [Integration]+[Performance]: confirm cmake/setup_tests.cmake
