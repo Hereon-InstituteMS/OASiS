@@ -418,6 +418,72 @@ FOURC_KNOWLEDGE = {
                 "NOT the full ~50-tag set. Used for partial restart-"
                 "style writes. Users expecting stresses/strains/contact "
                 "tags from a per-step call get only displacement."),
+            "structure_stress_filter_internals": {
+                "post_stress_stresstype_enum": [
+                    "ndxyz",
+                    "cxyz",
+                    "cxyz_ndxyz",
+                    "nd123",
+                    "c123",
+                    "c123_nd123",
+                ],
+                "post_stress_dispatch": {
+                    "ndxyz": "write_stress(..., nodebased)",
+                    "cxyz": "write_stress(..., elementbased)",
+                    "cxyz_ndxyz": (
+                        "write_stress(..., nodebased) then PostResult "
+                        "reset then write_stress(..., elementbased) "
+                        "— dual write"),
+                    "nd123": "write_eigen_stress(..., nodebased)",
+                    "c123": "write_eigen_stress(..., elementbased)",
+                    "c123_nd123": (
+                        "write_eigen_stress(..., nodebased) then "
+                        "PostResult reset then write_eigen_stress("
+                        "..., elementbased) — dual write"),
+                },
+                "special_field_subclasses_in_file": [
+                    "WriteNodalStressStep (6-component nodal stress, "
+                    "via Core::FE::extrapolate_gauss_point_quantity_"
+                    "to_nodes)",
+                    "WriteElementCenterStressStep (6-component element-"
+                    "center stress, via Core::FE::evaluate_gauss_point_"
+                    "quantity_at_element_center)",
+                    "WriteElementCenterRotation (9-component element-"
+                    "center rotation tensor R, only triggered when "
+                    "groupname=='rotation'; comment 'pfaller may17')",
+                    "WriteNodalEigenStressStep (num_df_map = "
+                    "{1,1,1,3,3,3} — 3 eigenvalues + 3 eigenvector "
+                    "columns × 3 components; uses symmetric_eigen_"
+                    "problem)",
+                    "WriteElementCenterEigenStressStep (same shape as "
+                    "WriteNodalEigenStressStep but at element centers)",
+                ],
+                "write_stress_groupname_vocab": [
+                    "gauss_2PK_stresses_xyz",
+                    "gauss_cauchy_stresses_xyz",
+                    "gauss_GL_strains_xyz",
+                    "gauss_EA_strains_xyz",
+                    "gauss_LOG_strains_xyz",
+                    "gauss_pl_GL_strains_xyz",
+                    "gauss_pl_EA_strains_xyz",
+                    "rotation",
+                ],
+                "write_eigen_stress_groupname_vocab": [
+                    "gauss_2PK_stresses_xyz",
+                    "gauss_cauchy_stresses_xyz",
+                    "gauss_GL_strains_xyz",
+                    "gauss_EA_strains_xyz",
+                    "gauss_LOG_strains_xyz",
+                    "gauss_pl_GL_strains_xyz",
+                    "gauss_pl_EA_strains_xyz",
+                ],
+                "eigen_output_naming_pattern": (
+                    "For each groupname, write_eigen_stress emits 6 "
+                    "names: <base>_eigenval{1,2,3} (1 component each) "
+                    "and <base>_eigenvec{1,2,3} (3 components each). "
+                    "Both nodal_ and element_ prefixes applied via "
+                    "stresskind dispatch."),
+            },
             "Signal": (
                 "[Output] Six sharp edges in post_processor most users "
                 "hit at least once: "
@@ -494,8 +560,29 @@ FOURC_KNOWLEDGE = {
                 "(GL/EA/LOG/pl_GL/pl_EA) — users counting writes "
                 "from log lines see 'attempted N writes, got M' "
                 "without an error indicator. "
+                "(10) StructureFilter::post_stress dispatches on a "
+                "6-VALUE stresstype enum {'ndxyz', 'cxyz', "
+                "'cxyz_ndxyz', 'nd123', 'c123', 'c123_nd123'} — "
+                "WIDER than post_monitor's {'none', 'ndxyz'}. The two "
+                "tools have ASYMMETRIC vocabularies and users "
+                "routinely cross-confuse them. Any value outside the "
+                "6-set FOUR_C_THROWs 'Unknown stress/strain type'. "
+                "The '*_ndxyz' / '*_123' compound forms are DUAL-"
+                "WRITE paths: write nodal first, PostResult reset, "
+                "then element-center. Eigen variants (nd123/c123/"
+                "c123_nd123) route to write_eigen_stress which emits "
+                "<base>_eigenval{1,2,3} + <base>_eigenvec{1,2,3} per "
+                "groupname (6 outputs per call). The eigen path is "
+                "missing the 'rotation' groupname that write_stress "
+                "supports — asking for principal rotation tensors is "
+                "silently undefined. Also note write_eigen_stress's "
+                "final else clause throws 'Unknown heatflux type' "
+                "(line 636) — a verbatim copy-paste error from "
+                "ThermoFilter, never updated; the message is "
+                "misleading for structure dispatch. "
                 "(File walks apps/post_processor/4C_post_processor.cpp + "
-                "4C_post_processor_single_field_writers.cpp "
+                "4C_post_processor_single_field_writers.cpp + "
+                "4C_post_processor_structure_stress.cpp "
                 "2026-06-03.)"
             ),
         },

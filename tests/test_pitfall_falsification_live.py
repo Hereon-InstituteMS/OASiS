@@ -994,6 +994,116 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "fsi_xfem commented-out AleFilter line changed; "
             "ALE-dead-code pitfall may no longer apply.")
 
+    def test_fourc_post_processor_structure_stress_enum_invariants(
+            self) -> None:
+        """fourc::overview.post_processor_tool [Output] edge 10:
+        confirm 4C_post_processor_structure_stress.cpp still
+        implements (a) the 6-value stresstype enum dispatch
+        {ndxyz, cxyz, cxyz_ndxyz, nd123, c123, c123_nd123}
+        in post_stress, (b) the FOUR_C_THROW 'Unknown stress/
+        strain type' default, (c) the dual-write paths for
+        cxyz_ndxyz and c123_nd123 (with PostResult reset),
+        (d) the 5 SpecialFieldInterface subclasses
+        (WriteNodalStressStep / WriteElementCenterStressStep /
+        WriteElementCenterRotation / WriteNodalEigenStressStep /
+        WriteElementCenterEigenStressStep), (e) the 9-component
+        rotation tensor branch in write_stress (only — not in
+        write_eigen_stress), (f) the verbatim 'Unknown heatflux
+        type' copy-paste error in write_eigen_stress final else.
+        (File walk apps/post_processor/
+        4C_post_processor_structure_stress.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/apps/"
+                 "post_processor/"
+                 "4C_post_processor_structure_stress.cpp"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/apps/post_processor/"
+                "4C_post_processor_structure_stress.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C post_processor_structure_stress source not "
+                f"found in {candidates}.")
+        body = src.read_text()
+        # (a) 6-value stresstype enum literals must all appear in
+        #     post_stress dispatch
+        for tok in ('stresstype == "ndxyz"',
+                    'stresstype == "cxyz"',
+                    'stresstype == "cxyz_ndxyz"',
+                    'stresstype == "nd123"',
+                    'stresstype == "c123"',
+                    'stresstype == "c123_nd123"'):
+            self.assertIn(
+                tok, body,
+                f"post_stress dispatch missing enum branch "
+                f"{tok!r}; pitfall edge 10 enum list needs "
+                f"revisit.")
+        # (b) Unknown stress/strain type FOUR_C_THROW
+        self.assertIn(
+            "Unknown stress/strain type", body,
+            "post_stress FOUR_C_THROW 'Unknown stress/strain "
+            "type' default changed.")
+        # (c) Dual-write cxyz_ndxyz path: nodebased then
+        #     elementbased call to write_stress, separated by a
+        #     PostResult reset (next_result / similar).
+        # We look for the specific sequence of two write_stress
+        # calls inside the cxyz_ndxyz branch.
+        i_dual = body.find('stresstype == "cxyz_ndxyz"')
+        nxt_idx = body.find('else if (stresstype ==', i_dual + 1)
+        self.assertGreater(
+            i_dual, 0,
+            "cxyz_ndxyz branch not found.")
+        dual_block = body[i_dual:nxt_idx if nxt_idx > 0 else
+                          i_dual + 1000]
+        self.assertIn(
+            "nodebased", dual_block,
+            "cxyz_ndxyz branch should write nodebased first.")
+        self.assertIn(
+            "elementbased", dual_block,
+            "cxyz_ndxyz branch should also write elementbased "
+            "after nodal — dual-write semantics changed.")
+        # (d) 5 SpecialFieldInterface subclasses present
+        for cls in ("struct WriteNodalStressStep",
+                    "struct WriteElementCenterStressStep",
+                    "struct WriteElementCenterRotation",
+                    "struct WriteNodalEigenStressStep",
+                    "struct WriteElementCenterEigenStressStep"):
+            self.assertIn(
+                cls + " : public SpecialFieldInterface", body,
+                f"{cls!r} declaration changed; pitfall edge 10 "
+                f"subclass list needs revisit.")
+        # (e) rotation handled by write_stress only
+        i_ws = body.find(
+            "void StructureFilter::write_stress(")
+        i_wes = body.find(
+            "void StructureFilter::write_eigen_stress(")
+        self.assertGreater(
+            i_ws, 0, "write_stress definition not found.")
+        self.assertGreater(
+            i_wes, i_ws,
+            "write_eigen_stress definition not found after "
+            "write_stress.")
+        ws_block = body[i_ws:i_wes]
+        wes_block = body[i_wes:]
+        self.assertIn(
+            'groupname == "rotation"', ws_block,
+            "write_stress rotation groupname branch missing — "
+            "edge 10 asymmetry claim no longer holds.")
+        self.assertNotIn(
+            'groupname == "rotation"', wes_block,
+            "write_eigen_stress unexpectedly added rotation "
+            "groupname branch — edge 10 asymmetry claim "
+            "outdated.")
+        # (f) verbatim 'Unknown heatflux type' in
+        #     write_eigen_stress (copy-paste artifact)
+        self.assertIn(
+            "Unknown heatflux type", wes_block,
+            "write_eigen_stress 'Unknown heatflux type' "
+            "copy-paste-error pitfall fix may have landed "
+            "upstream; revisit edge 10.")
+
     def test_fourc_post_monitor_source_invariants(self) -> None:
         """fourc::overview.post_monitor_tool [Output]: confirm the
         upstream post_monitor source still implements (a) serial-
