@@ -261,6 +261,110 @@ _MPI_SIGNAL = (
 )
 
 
+_ELEMENT_TYPE_DESC = (
+    "Element-type names like 'hex8' / 'HEX8' / 'C3D8' / 'Element3D8N' / "
+    "'ElementHex8' refer to nominally the same 8-node hexahedral "
+    "element across all 8 backends — but each backend's API exposes a "
+    "DIFFERENT string for the same shape, and a copy-pasted element "
+    "name from one backend's example silently fails in another."
+)
+
+_ELEMENT_TYPE_PITFALLS = [
+    "[Cross-Backend][API] Element-type naming: kratos uses "
+    "Element3D8N (8-node hex), Element3D4N (4-node tet), "
+    "Element3D6N (6-node wedge), Element3D10N (10-node tet). 4C uses "
+    "SOLIDHEX8 / SOLIDTET4 / SOLIDTET10 / SOLIDPYRAMID5 / SOLIDWEDGE6, "
+    "but EARLIER 4C versions used HEX8 / TET4 directly without the "
+    "SOLID prefix — the prefix was added in the migration to the "
+    "unified solid namespace. fenics/dolfinx uses cell type enums "
+    "mesh.CellType.hexahedron / tetrahedron / prism (lowercase), "
+    "passed as the cell_type kwarg to mesh.create_box. skfem uses "
+    "Python classes ElementHex1 / ElementTetP1 / ElementHex2 / "
+    "ElementTetP2 (with explicit polynomial order in the class name). "
+    "FEBio's .feb XML uses elem type='hex8' / 'tet4' / 'tet10' / "
+    "'penta6' (note: 'penta' not 'wedge' or 'prism'). dealii uses C++ "
+    "enum ReferenceCells::Hexahedron / Tetrahedron / Pyramid / Wedge. "
+    "Signal: copy-pasting an element name string from one backend's "
+    "example into another's input file silently fails. Kratos throws "
+    "KratosError 'element type 'HEX8' is not registered' (uses "
+    "Element3D8N); 4C silently emits 'unrecognized element name HEX8' "
+    "in older versions vs 'SOLIDHEX8 expected' in newer; FEBio's XML "
+    "parser raises XMLSyntaxError on 'hexahedron'. Defense: never "
+    "copy an element string between backends. Look up the target "
+    "backend's exact spelling in its own catalog (knowledge tool, "
+    "topic='overview') before writing the input.",
+
+    "[Cross-Backend][API] Wedge / prism / pyramid element naming "
+    "is the most-confused: 4C calls it SOLIDWEDGE6, kratos calls it "
+    "Element3D6N (the dimensionality-and-node-count name; no shape "
+    "indicator at all), fenics calls it mesh.CellType.prism, dealii "
+    "uses ReferenceCells::Wedge, FEBio uses 'penta6'. Five different "
+    "words for the same 6-node element. Signal: a Gmsh-generated mesh "
+    "containing wedge cells imports correctly to fenics (prism) and "
+    "dealii (Wedge) but fails to load in kratos unless the .mdpa "
+    "element block names them Element3D6N, and fails in FEBio unless "
+    "the .feb element type='penta6'. Defense: pre-process Gmsh "
+    "output through meshio's per-backend writers (meshio.write with "
+    "the target format), not through a single-format intermediate.",
+]
+
+_ELEMENT_TYPE_SIGNAL = (
+    "[Cross-Backend][API] Element-type strings (hex8 / HEX8 / "
+    "SOLIDHEX8 / Element3D8N / ElementHex1 / mesh.CellType.hexahedron) "
+    "are backend-specific spellings of the same shape. Never copy "
+    "between backends. Look up the target backend's exact spelling "
+    "in its own catalog before writing input."
+)
+
+
+_TIME_INTEGRATION_DESC = (
+    "Implicit-dynamics time integration scheme defaults differ across "
+    "backends. The SAME problem (mass-spring oscillator, structural "
+    "dynamics, transient heat) ported across backends gives different "
+    "trajectories because the default beta / gamma / alpha parameters "
+    "are not standardised."
+)
+
+_TIME_INTEGRATION_PITFALLS = [
+    "[Cross-Backend][Numerical] Newmark-beta default parameters: "
+    "the 'average acceleration' / 'undamped trapezoidal' scheme is "
+    "beta=1/4, gamma=1/2 (unconditionally stable, no algorithmic "
+    "damping). 4C's default for structural_dynamics is beta=0.25, "
+    "gamma=0.5 (matches average-acceleration). FEBio's default is "
+    "ALSO beta=0.25, gamma=0.5 (matches). NGSolve's "
+    "TimeIntegrationNewmark and skfem helper default to "
+    "beta=0.25, gamma=0.5. Kratos's StructuralMechanicsApplication "
+    "ResidualBasedNewmarkDisplacementScheme uses beta=0.25, "
+    "gamma=0.5 as DEFAULT but exposes alpha_m / alpha_f for "
+    "generalised-alpha; if the user passes alpha_m != 0 it switches "
+    "implicitly to the Hilber-Hughes-Taylor (HHT) family and beta / "
+    "gamma get RECOMPUTED from alpha, silently. dealii's "
+    "step-23/step-25 wave examples use a fixed Newmark variant with "
+    "theta=0.5 (which is NOT the same as gamma=0.5 — theta there is "
+    "the time-discretisation parameter for the velocity, not the "
+    "Newmark gamma). Signal: a 4C linear oscillator with damping "
+    "ported to a Kratos generalised-alpha scheme produces a "
+    "displacement amplitude that decays faster than expected even "
+    "though both backends report 'Newmark beta=0.25 gamma=0.5' — the "
+    "Kratos implementation silently added alpha_m=0.05 algorithmic "
+    "damping. Defense: when porting a transient structural problem, "
+    "explicitly set beta, gamma, alpha_m, alpha_f in EVERY backend's "
+    "input (do not rely on defaults); verify with a no-damping "
+    "single-DOF reference: period error after 100 cycles should be "
+    "< 1% if and only if the schemes match.",
+]
+
+_TIME_INTEGRATION_SIGNAL = (
+    "[Cross-Backend][Numerical] If a transient solid/structural "
+    "problem matches across backends at t=0 but the displacement "
+    "envelope decays at different rates, the cause is almost always "
+    "an algorithmic-damping parameter (alpha_m / alpha_f) silently "
+    "added by one backend's default but not the other's. Always "
+    "explicitly set ALL Newmark/generalised-alpha parameters in the "
+    "input, do not trust 'default'."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -291,6 +395,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _MPI_DESC,
         "pitfalls": _MPI_PITFALLS,
         "Signal": _MPI_SIGNAL,
+    },
+    "element_type_naming": {
+        "description": _ELEMENT_TYPE_DESC,
+        "pitfalls": _ELEMENT_TYPE_PITFALLS,
+        "Signal": _ELEMENT_TYPE_SIGNAL,
+    },
+    "time_integration_defaults": {
+        "description": _TIME_INTEGRATION_DESC,
+        "pitfalls": _TIME_INTEGRATION_PITFALLS,
+        "Signal": _TIME_INTEGRATION_SIGNAL,
     },
 }
 
