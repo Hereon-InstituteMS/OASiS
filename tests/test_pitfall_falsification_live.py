@@ -1283,6 +1283,89 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "copy-paste-error pitfall fix may have landed "
             "upstream; revisit edge 10.")
 
+    def test_fourc_cmake_build_config_invariants(self) -> None:
+        """fourc::overview.cli_arguments.cmake_build_config_options
+        [Performance]: confirm setup_global_options.cmake still has
+        (a) FOUR_C_ENABLE_FE_TRAPPING defaults to ON +
+            FATAL_ERROR check on -ftrapping-math support,
+        (b) DEBUG build type FORCE-sets ENABLE_ASSERTIONS=ON,
+        (c) RELEASE / RELWITHDEBINFO add -O3 -funroll-loops to
+            four_c_private_compile_interface,
+        (d) The legacy BUILD_SHARED_LIBS → FOUR_C_BUILD_SHARED_LIBS
+            migration path emits a CMake WARNING and force-syncs.
+        (File walk cmake/setup_global_options.cmake 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/cmake/"
+                 "setup_global_options.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/cmake/"
+                "setup_global_options.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C setup_global_options.cmake not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) FE_TRAPPING defaults to ON + FATAL_ERROR check
+        i_trap = body.find("FOUR_C_ENABLE_FE_TRAPPING")
+        self.assertGreater(
+            i_trap, 0, "FOUR_C_ENABLE_FE_TRAPPING option no "
+            "longer present.")
+        # The option block has DEFAULT \n  ON for default-ON
+        trap_block = body[i_trap:i_trap + 400]
+        self.assertIn("DEFAULT\n  ON", trap_block,
+                      "FOUR_C_ENABLE_FE_TRAPPING default no "
+                      "longer DEFAULT\\n  ON; revisit edge (a).")
+        self.assertIn("-ftrapping-math", body,
+                      "-ftrapping-math flag no longer in "
+                      "compile-flag config.")
+        self.assertIn(
+            "Option FOUR_C_ENABLE_FE_TRAPPING is ON but the "
+            "compiler does not support this feature.", body,
+            "FE_TRAPPING configure-time FATAL_ERROR message "
+            "changed.")
+        # (b) DEBUG forces ENABLE_ASSERTIONS=ON via FORCE
+        i_dbg = body.find("MATCHES DEBUG")
+        self.assertGreater(
+            i_dbg, 0, "DEBUG build-type match line missing.")
+        dbg_block = body[i_dbg:i_dbg + 400]
+        self.assertIn('set(FOUR_C_ENABLE_ASSERTIONS', dbg_block,
+                      "DEBUG no longer sets ENABLE_ASSERTIONS; "
+                      "revisit edge (b).")
+        self.assertIn('CACHE BOOL "Forced ON due to build type '
+                      'DEBUG" FORCE', dbg_block,
+                      "DEBUG no longer FORCEs ENABLE_ASSERTIONS=ON "
+                      "with the 'Forced ON due to build type "
+                      "DEBUG' message; revisit edge (b).")
+        # (c) RELEASE / RELWITHDEBINFO -O3 + -funroll-loops
+        for build in ("MATCHES RELEASE", "MATCHES RELWITHDEBINFO"):
+            i = body.find(build)
+            self.assertGreater(i, 0, f"{build} block missing.")
+            blk = body[i:i + 500]
+            self.assertIn('"-O3"', blk,
+                          f"{build} no longer applies -O3 to "
+                          "four_c_private_compile_interface.")
+            self.assertIn('-funroll-loops', blk,
+                          f"{build} no longer enables "
+                          "-funroll-loops.")
+        # (d) BUILD_SHARED_LIBS → FOUR_C_BUILD_SHARED_LIBS
+        #     migration block with WARNING + FORCE cache write
+        self.assertIn(
+            "if(NOT DEFINED FOUR_C_BUILD_SHARED_LIBS AND "
+            "DEFINED BUILD_SHARED_LIBS)", body,
+            "BUILD_SHARED_LIBS migration if-block changed; "
+            "revisit edge (d).")
+        self.assertIn(
+            'message(\n    WARNING', body,
+            "BUILD_SHARED_LIBS migration no longer emits a "
+            "CMake WARNING; revisit edge (d).")
+        self.assertIn(
+            'Set FOUR_C_BUILD_SHARED_LIBS instead of '
+            'BUILD_SHARED_LIBS.', body,
+            "BUILD_SHARED_LIBS migration WARNING text changed.")
+
     def test_fourc_post_processor_post_gid_dead_wrapper(
             self) -> None:
         """fourc::overview.post_processor_tool [Output] edge 12:

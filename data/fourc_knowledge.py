@@ -161,6 +161,125 @@ FOURC_KNOWLEDGE = {
                     "err.what_with_stacktrace(), and MPI_Abort(MPI_COMM_WORLD, "
                     "EXIT_FAILURE) is called."),
             },
+            "cmake_build_config_options": {
+                "description": (
+                    "Configure-time CMake cache variables defined in "
+                    "cmake/setup_global_options.cmake. All take the "
+                    "FOUR_C_* prefix and are surfaced via "
+                    "four_c_process_global_option."),
+                "options": {
+                    "FOUR_C_BUILD_SHARED_LIBS": (
+                        "bool, default ON. Force-syncs the legacy CMake "
+                        "BUILD_SHARED_LIBS via FORCE cache writes if "
+                        "only the legacy var is set — emits a CMake "
+                        "WARNING in that case. Both names point to "
+                        "the same value."),
+                    "FOUR_C_ENABLE_DEVELOPER_MODE": (
+                        "bool, default OFF. Optimizes the setup for "
+                        "iterative development cycles."),
+                    "FOUR_C_ENABLE_WARNINGS_AS_ERRORS": (
+                        "bool, default OFF. Adds -Werror to the "
+                        "private compile interface when ON."),
+                    "FOUR_C_ENABLE_NATIVE_OPTIMIZATIONS": (
+                        "bool, default OFF. Adds -march=native; "
+                        "incompatible with portable binaries / "
+                        "container images run on heterogeneous "
+                        "hardware."),
+                    "FOUR_C_ENABLE_ADDRESS_SANITIZER": (
+                        "bool, default OFF. Adds -fsanitize=address "
+                        "to both compile and link. FATAL_ERRORs at "
+                        "configure time if the compiler+linker "
+                        "don't accept the flag."),
+                    "FOUR_C_ENABLE_COVERAGE": (
+                        "bool, default OFF. LLVM source-based "
+                        "coverage: -fprofile-instr-generate + "
+                        "-fcoverage-mapping + -Wl,--build-id=sha1. "
+                        "FATAL_ERROR at configure time if compiler "
+                        "doesn't support."),
+                    "FOUR_C_ENABLE_CORE_DUMP": (
+                        "bool, default OFF. See "
+                        "build_options_affecting_runtime."),
+                    "FOUR_C_ENABLE_FE_TRAPPING": (
+                        "bool, DEFAULT ON. Adds -ftrapping-math to "
+                        "the compile interface. FATAL_ERRORs at "
+                        "configure time if the compiler does not "
+                        "support -ftrapping-math (most GCC/Clang "
+                        "do; some Intel ICX / older Clang versions "
+                        "don't). When OFF, instead adds "
+                        "-fno-trapping-math. See "
+                        "build_options_affecting_runtime for the "
+                        "runtime behavior."),
+                    "FOUR_C_ENABLE_IWYU": (
+                        "bool, default OFF. Enables include-what-"
+                        "you-use linter. FATAL_ERROR if iwyu "
+                        "binary not found; user can override via "
+                        "FOUR_C_IWYU_EXECUTABLE CMake variable."),
+                    "FOUR_C_ENABLE_PYTHON_BINDINGS": (
+                        "bool, default OFF. Builds the py4C "
+                        "pybind11 bindings."),
+                    "FOUR_C_ENABLE_ASSERTIONS": (
+                        "bool, default OFF — but FORCE-set to ON "
+                        "when build type is DEBUG (line 252-255: "
+                        "explicit FORCE cache write). Adds "
+                        "-D_GLIBCXX_ASSERTIONS for libstdc++ "
+                        "assertions in addition to 4C's own "
+                        "assertions."),
+                    "FOUR_C_ENABLE_METADATA_GENERATION": (
+                        "bool, default ON. Invokes Python after "
+                        "build to generate metadata; requires "
+                        "Python on the build host."),
+                    "FOUR_C_CXX_FLAGS": (
+                        "string, default empty. Expert setting; "
+                        "additional C++ compile flags appended at "
+                        "the END of the compile interface (so they "
+                        "DO override earlier defaults). "
+                        "separate_arguments-split."),
+                    "FOUR_C_CXX_LINKER_FLAGS": (
+                        "string, default empty. Expert setting; "
+                        "additional linker flags appended at the "
+                        "end."),
+                },
+                "build_type_optimization_flags": {
+                    "DEBUG":          "-O0 -g (+ forces ENABLE_ASSERTIONS=ON)",
+                    "RELEASE":        "-O3 -funroll-loops",
+                    "RELWITHDEBINFO": "-O3 -g -funroll-loops",
+                },
+                "Signal": (
+                    "[Performance] FOUR_C_ENABLE_FE_TRAPPING defaults "
+                    "to ON in setup_global_options.cmake:195. Compilers "
+                    "that don't accept -ftrapping-math (some Intel "
+                    "ICX builds, older Clang on certain platforms) "
+                    "FATAL_ERROR at CMake configure time with "
+                    "'Option FOUR_C_ENABLE_FE_TRAPPING is ON but the "
+                    "compiler does not support this feature. "
+                    "Specifically, the compiler does not support "
+                    "-ftrapping-math, which is necessary to generate "
+                    "code that can safely use the floating-point "
+                    "trapping mechanism.' Users on such compilers "
+                    "must explicitly cmake -DFOUR_C_ENABLE_FE_TRAPPING="
+                    "OFF. Plus three other configure-time pitfalls: "
+                    "(a) DEBUG build type silently FORCEs "
+                    "FOUR_C_ENABLE_ASSERTIONS=ON even if the user "
+                    "explicitly passed -DFOUR_C_ENABLE_ASSERTIONS=OFF "
+                    "(lines 251-255: explicit FORCE cache write with "
+                    "'Forced ON due to build type DEBUG' help text); "
+                    "(b) RELEASE / RELWITHDEBINFO build types add "
+                    "-O3 + -funroll-loops directly to "
+                    "four_c_private_compile_interface BEFORE "
+                    "user FOUR_C_CXX_FLAGS — but FOUR_C_CXX_FLAGS is "
+                    "appended at the END so it wins; CMAKE_CXX_FLAGS "
+                    "by contrast is added in FRONT and cannot "
+                    "override (file's own comment at lines 240-242 "
+                    "spells this out); "
+                    "(c) BUILD_SHARED_LIBS → FOUR_C_BUILD_SHARED_LIBS "
+                    "migration emits a CMake WARNING but does NOT "
+                    "fail — users following older 4C docs that "
+                    "reference BUILD_SHARED_LIBS get a warning, "
+                    "their value is force-synced into the new name, "
+                    "and the build proceeds. (File walk "
+                    "cmake/setup_global_options.cmake 2026-06-03.)"
+                ),
+            },
             "additional_io_input_keys": {
                 "WRITE_TIMINGS": (
                     "bool — when true, run() writes "
