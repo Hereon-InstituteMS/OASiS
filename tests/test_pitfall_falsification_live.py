@@ -1242,6 +1242,66 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                 "did not produce a .bp output directory; "
                 f"expected {target2}")
 
+    def test_kratos_cablenet_sliding_cable_source_invariants(
+            self) -> None:
+        """kratos::cable_net [Input]+[Numerical]: confirm
+        SlidingCableElement3D's three knobs are still live in
+        source: (a) CONSTITUTIVE_LAW required at Init with the
+        'A constitutive law needs to be specified' KRATOS_ERROR;
+        (b) mIsCompressed flag set by GetInternalForces and
+        gates LHS / internal-force-RHS; (c) FRICTION_COEFFICIENT
+        property activates Capstan-style friction (gated on >0).
+        (File walk sliding_cable_element_3D.cpp 2026-06-03.)"""
+        from pathlib import Path
+        src = Path(__file__).resolve().parent.parent / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/custom_elements/"
+            "sliding_cable_element_3D.cpp")
+        if not src.exists():
+            self.skipTest(
+                f"Kratos CableNet sliding_cable_element_3D.cpp "
+                f"not cloned at {src}.")
+        body = src.read_text()
+        # (a) Init() KRATOS_ERROR on missing CONSTITUTIVE_LAW
+        self.assertIn(
+            'if (GetProperties()[CONSTITUTIVE_LAW] != nullptr)',
+            body,
+            "Init() CONSTITUTIVE_LAW gate changed.")
+        self.assertIn(
+            "A constitutive law needs to be specified for the "
+            "element with ID", body,
+            "Missing-constitutive-law KRATOS_ERROR message "
+            "changed.")
+        # Check() also enforces it
+        self.assertIn(
+            "KRATOS_ERROR_IF_NOT(GetProperties()[CONSTITUTIVE_LAW])",
+            body, "Check() CONSTITUTIVE_LAW assertion changed.")
+        # (b) mIsCompressed flag-set + gate
+        self.assertIn("mIsCompressed = false;", body,
+                      "mIsCompressed reset line missing.")
+        self.assertIn("mIsCompressed = true;", body,
+                      "mIsCompressed activation line missing.")
+        self.assertIn("if (!mIsCompressed) {", body,
+                      "mIsCompressed gate on LHS / RHS missing.")
+        # (c) FRICTION_COEFFICIENT property + friction>0 gate
+        self.assertIn(
+            "this->GetProperties().Has(FRICTION_COEFFICIENT)",
+            body,
+            "FRICTION_COEFFICIENT property check missing.")
+        self.assertIn("if (friction_coefficient>0.0)", body,
+                      "Friction activation gate (>0) missing.")
+        # Capstan-style force-update: next_n = current ± friction
+        self.assertIn(
+            "next_n = internal_normal_resulting_forces[i] - "
+            "friction_force;", body,
+            "Capstan negative-direction friction-force update "
+            "missing.")
+        self.assertIn(
+            "next_n = internal_normal_resulting_forces[i] + "
+            "friction_force;", body,
+            "Capstan positive-direction friction-force update "
+            "missing.")
+
     def test_kratos_cablenet_ring_element_source_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Numerical]: confirm
