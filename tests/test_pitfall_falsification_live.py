@@ -706,6 +706,70 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       body,
                       "Size-scale clamp formula changed.")
 
+    def test_fourc_post_processor_source_invariants(self) -> None:
+        """fourc::overview.post_processor_tool [Output]: confirm
+        upstream still implements (a) case-sensitive --filter
+        enum (FOUR_C_THROW on unknown), (b) silent no-op on
+        single-discretization scatra problemtype (comment
+        'runtime output is used for scatra'), (c) [[fallthrough]]
+        chain fluid → fluid_redmodels → fluid_ale, (d) the
+        fsi_xfem inverted-logic disname.compare(1, 12,
+        \"boundary_of_\"), (e) commented-out AleFilter in
+        fsi_xfem branch. (File walk
+        apps/post_processor/4C_post_processor.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/apps/"
+                 "post_processor/4C_post_processor.cpp"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/apps/post_processor/"
+                "4C_post_processor.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C post_processor source not found in {candidates}.")
+        body = src.read_text()
+        # (a) --filter enum + unknown-filter FOUR_C_THROW
+        self.assertIn(
+            'clp.setOption("filter", &filter, "filter to run '
+            '[ensight, vtu, vti]");', body,
+            "--filter CLI option line changed.")
+        self.assertIn(
+            'filter == "ensight" || filter == "vtu" || filter == '
+            '"vtu_node_based" || filter == "vti"', body,
+            "Filter enum vocabulary changed; pitfall lists need "
+            "revisit.")
+        self.assertIn(
+            "Unknown filter {} given, supported filters: "
+            "[ensight|vtu|vti]", body,
+            "Unknown-filter FOUR_C_THROW message changed.")
+        # (b) Silent no-op on numfield==1 scatra
+        self.assertIn(
+            "// runtime output is used for scatra", body,
+            "Source-level 'runtime output is used for scatra' "
+            "comment changed.")
+        # (c) [[fallthrough]] chain
+        # There should be at least two [[fallthrough]]; in the
+        # fluid → fluid_redmodels → fluid_ale stack.
+        self.assertGreaterEqual(
+            body.count("[[fallthrough]];"), 2,
+            "fluid → fluid_redmodels [[fallthrough]] chain "
+            "changed; pitfall about triple-writer stack needs "
+            "revisit.")
+        # (d) fsi_xfem inverted-logic substring test
+        self.assertIn(
+            'disname.compare(1, 12, "boundary_of_")', body,
+            "fsi_xfem inverted-logic disname.compare line "
+            "changed; pitfall #4 needs revisit (upstream may "
+            "have fixed the bug).")
+        # (e) fsi_xfem ALE branch commented-out
+        self.assertIn(
+            "//          AleFilter alewriter(field, basename);",
+            body,
+            "fsi_xfem commented-out AleFilter line changed; "
+            "ALE-dead-code pitfall may no longer apply.")
+
     def test_fourc_post_monitor_source_invariants(self) -> None:
         """fourc::overview.post_monitor_tool [Output]: confirm the
         upstream post_monitor source still implements (a) serial-

@@ -315,6 +315,90 @@ FOURC_KNOWLEDGE = {
                 "2026-06-03.)"
             ),
         },
+        "post_processor_tool": {
+            "description": (
+                "The standalone post_processor CLI binary — the bigger "
+                "sibling of post_monitor. Reads native 4C output and "
+                "writes per-field visualization files (Ensight .case or "
+                "ParaView VTU/VTI). Source: apps/post_processor/"
+                "4C_post_processor.cpp main() + run_ensight_vtu_filter()."),
+            "cli_arguments": {
+                "--filter": ("String, default 'ensight'. CASE-SENSITIVE "
+                             "enum: {'ensight', 'vtu', 'vtu_node_based', "
+                             "'vti'}. Any other value FOUR_C_THROWs "
+                             "'Unknown filter {} given, supported "
+                             "filters: [ensight|vtu|vti]'."),
+            },
+            "supported_problem_types_in_dispatch": [
+                "fsi", "fsi_redmodels", "gas_fsi", "thermo_fsi",
+                "biofilm_fsi", "structure", "polymernetwork",
+                "fluid", "fluid_redmodels", "fluid_ale",
+                "particle", "pasi", "ale", "lubrication",
+                "cardiac_monodomain", "scatra",
+                "fsi_xfem", "fpsi_xfem", "fluid_xfem",
+                "loma", "elch", "art_net", "thermo",
+                "red_airways", "poroelast", "poroscatra",
+                "fpsi", "fbi", "fps3i", "ehl", "none",
+            ],
+            "filter_writer_classes": [
+                "StructureFilter (also used for art_net, red_airways)",
+                "FluidFilter (also used for porofluid)",
+                "XFluidFilter (XFEM-only)",
+                "AleFilter",
+                "MortarFilter (structure problem with do_mortar_interfaces)",
+                "InterfaceFilter (fsi_xfem boundary discretizations)",
+                "ThermoFilter (uses heatfluxtype + tempgradtype)",
+                "LubricationFilter",
+                "AnyFilter (ProblemType::none — write whatever vectors exist)",
+            ],
+            "Signal": (
+                "[Output] Six sharp edges in post_processor most users "
+                "hit at least once: "
+                "(1) --filter is case-sensitive enum {'ensight', 'vtu', "
+                "'vtu_node_based', 'vti'}. Common mistakes: 'VTU' "
+                "(uppercase), 'paraview', 'vtkhdf' — all FOUR_C_THROW "
+                "'Unknown filter <X> given'. "
+                "(2) On problemtype scatra / cardiac_monodomain / elch "
+                "with num_discr() == 1, the tool SILENTLY DOES NOTHING "
+                "(comment in source: 'runtime output is used for scatra'). "
+                "No .case file appears, no error, no warning. The "
+                "runtime VTU output written during the solve is the only "
+                "result; users running post_processor expecting "
+                "additional output get nothing. "
+                "(3) The fluid case has [[fallthrough]] to fluid_redmodels "
+                "which has [[fallthrough]] to fluid_ale. A `fluid` "
+                "problem with num_discr()==2 and disc[1].name()=='xfluid' "
+                "writes THREE filters (XFluidFilter for disc[1] + the "
+                "fluid_redmodels artery branch's StructureFilter on the "
+                "same disc + FluidFilter for disc[0]). If disc[1] is NOT "
+                "named 'xfluid', the fluid_redmodels artery branch still "
+                "writes StructureFilter on disc[1], which is wrong for a "
+                "pure ALE fluid. "
+                "(4) fsi_xfem / fpsi_xfem branch has an INVERTED-LOGIC "
+                "test: `disname.compare(1, 12, \"boundary_of_\")` "
+                "returns 0 (falsy) when the substring at offset 1 IS "
+                "'boundary_of_', so the InterfaceFilter branch runs ONLY "
+                "for discretizations whose name does NOT match. Discs "
+                "literally named like '_boundary_of_fluid' fall to the "
+                "FOUR_C_THROW 'You try to postprocess a discretization "
+                "with name {X}, maybe you should add it here?'. The fix "
+                "would be `== 0` or `starts_with` — upstream bug worth "
+                "reporting. "
+                "(5) fsi_xfem ALE branch (case Core::ProblemType::fsi_xfem "
+                "around line 305-310) is DEAD CODE: 'ale' name matches "
+                "and prints the header but the AleFilter constructor + "
+                "WriteFiles call are COMMENTED OUT. ALE fields in "
+                "fsi_xfem problems produce no output despite the visual "
+                "indicator. "
+                "(6) ProblemType::none uses AnyFilter and writes "
+                "'whatever vectors exist' in the first discretization. "
+                "This is the right escape hatch for ad-hoc field dumps "
+                "but offers no diagnostic if the discretization is "
+                "missing — user sees an empty .case. "
+                "(File walk apps/post_processor/4C_post_processor.cpp "
+                "2026-06-03.)"
+            ),
+        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════
