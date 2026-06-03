@@ -216,7 +216,25 @@ FOURC_KNOWLEDGE = {
                         "FOUR_C_IWYU_EXECUTABLE CMake variable."),
                     "FOUR_C_ENABLE_PYTHON_BINDINGS": (
                         "bool, default OFF. Builds the py4C "
-                        "pybind11 bindings."),
+                        "pybind11 bindings. Gated by cmake/"
+                        "setup_py4C.cmake: requires BOTH "
+                        "FOUR_C_BUILD_SHARED_LIBS=ON AND "
+                        "FOUR_C_WITH_PYBIND11=ON, and is "
+                        "INCOMPATIBLE with "
+                        "FOUR_C_ENABLE_ADDRESS_SANITIZER=ON — "
+                        "each violation FATAL_ERRORs at "
+                        "configure time. The Python package "
+                        "name written into the build dir is "
+                        "literally 'py4C' (set via "
+                        "FOUR_C_PYTHON_BINDINGS_PROJECT_NAME); "
+                        "pyproject.toml.in and __init__.py.in "
+                        "are configure_file'd from "
+                        "utilities/py4C/src/config/ into "
+                        "${PROJECT_BINARY_DIR}/py4C/."),
+                    "FOUR_C_WITH_PYBIND11": (
+                        "bool. Toggles the project-level "
+                        "pybind11 dependency. Hard precondition "
+                        "for FOUR_C_ENABLE_PYTHON_BINDINGS."),
                     "FOUR_C_ENABLE_ASSERTIONS": (
                         "bool, default OFF — but FORCE-set to ON "
                         "when build type is DEBUG (line 252-255: "
@@ -276,8 +294,31 @@ FOURC_KNOWLEDGE = {
                     "fail — users following older 4C docs that "
                     "reference BUILD_SHARED_LIBS get a warning, "
                     "their value is force-synced into the new name, "
-                    "and the build proceeds. (File walk "
-                    "cmake/setup_global_options.cmake 2026-06-03.)"
+                    "and the build proceeds. "
+                    "(d) [Integration] FOUR_C_ENABLE_PYTHON_BINDINGS=ON "
+                    "has three configure-time prerequisites checked "
+                    "by cmake/setup_py4C.cmake (NOT by setup_global_"
+                    "options.cmake — easy to miss when reading only "
+                    "the option declaration): "
+                    "(i) FOUR_C_BUILD_SHARED_LIBS must be ON "
+                    "(FATAL_ERROR: '4C Python bindings require to "
+                    "build 4C with shared libraries (FOUR_C_BUILD_"
+                    "SHARED_LIBS).'); "
+                    "(ii) FOUR_C_WITH_PYBIND11 must be ON "
+                    "(FATAL_ERROR: '4C Python bindings require to "
+                    "build 4C with pybind11 (FOUR_C_WITH_PYBIND11).'); "
+                    "(iii) FOUR_C_ENABLE_ADDRESS_SANITIZER must be "
+                    "OFF (FATAL_ERROR: '4C Python bindings are "
+                    "currently not compatible with an address "
+                    "sanitizer build. Either set FOUR_C_ENABLE_"
+                    "ADDRESS_SANITIZER=OFF or FOUR_C_ENABLE_PYTHON_"
+                    "BINDINGS=OFF.'). The bindings build outputs a "
+                    "pip-installable package at "
+                    "${PROJECT_BINARY_DIR}/py4C/, with pyproject.toml "
+                    "and __init__.py generated from "
+                    "utilities/py4C/src/config/*.in templates. "
+                    "(File walk cmake/setup_global_options.cmake + "
+                    "cmake/setup_py4C.cmake 2026-06-03.)"
                 ),
             },
             "cmake_install_export": {

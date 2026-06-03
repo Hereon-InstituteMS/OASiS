@@ -1492,6 +1492,76 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             'BUILD_SHARED_LIBS.', body,
             "BUILD_SHARED_LIBS migration WARNING text changed.")
 
+    def test_fourc_cmake_setup_py4c_invariants(self) -> None:
+        """fourc::overview.cli_arguments.cmake_build_config_options
+        [Integration] edge (d): confirm cmake/setup_py4C.cmake
+        still has
+        (a) FOUR_C_ENABLE_PYTHON_BINDINGS gates the whole block,
+        (b) Three FATAL_ERROR preconditions:
+            (i) FOUR_C_BUILD_SHARED_LIBS must be ON,
+            (ii) FOUR_C_WITH_PYBIND11 must be ON,
+            (iii) FOUR_C_ENABLE_ADDRESS_SANITIZER must be OFF,
+        (c) Python module name is literally 'py4C',
+        (d) pyproject.toml.in and __init__.py.in are configure_
+            file'd from utilities/py4C/src/config/ to the build dir.
+        (File walk cmake/setup_py4C.cmake 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/cmake/"
+                 "setup_py4C.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/cmake/setup_py4C.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C setup_py4C.cmake not found in {candidates}.")
+        body = src.read_text()
+        # (a) outer gate
+        self.assertIn(
+            "if(FOUR_C_ENABLE_PYTHON_BINDINGS)", body,
+            "Outer FOUR_C_ENABLE_PYTHON_BINDINGS gate missing.")
+        # (b)(i) shared-libs precondition
+        self.assertIn(
+            "if(NOT FOUR_C_BUILD_SHARED_LIBS)", body,
+            "Shared-libs precondition check missing.")
+        self.assertIn(
+            "4C Python bindings require to build 4C with shared "
+            "libraries (FOUR_C_BUILD_SHARED_LIBS).", body,
+            "Shared-libs FATAL_ERROR text changed.")
+        # (b)(ii) pybind11 precondition
+        self.assertIn(
+            "if(NOT FOUR_C_WITH_PYBIND11)", body,
+            "pybind11 precondition check missing.")
+        self.assertIn(
+            "4C Python bindings require to build 4C with "
+            "pybind11 (FOUR_C_WITH_PYBIND11).", body,
+            "pybind11 FATAL_ERROR text changed.")
+        # (b)(iii) ASan exclusion
+        self.assertIn(
+            "if(FOUR_C_ENABLE_ADDRESS_SANITIZER)", body,
+            "ASan exclusion check missing.")
+        self.assertIn(
+            "4C Python bindings are currently not compatible "
+            "with an address sanitizer build.", body,
+            "ASan FATAL_ERROR text changed.")
+        # (c) project name set to py4C
+        self.assertIn(
+            "set(FOUR_C_PYTHON_BINDINGS_PROJECT_NAME py4C)", body,
+            "FOUR_C_PYTHON_BINDINGS_PROJECT_NAME no longer set "
+            "to literal 'py4C'.")
+        # (d) configure_file pyproject.toml.in + __init__.py.in
+        self.assertIn(
+            "utilities/py4C/src/config/pyproject.toml.in", body,
+            "pyproject.toml.in source path changed.")
+        self.assertIn(
+            "utilities/py4C/src/config/__init__.py.in", body,
+            "__init__.py.in source path changed.")
+        self.assertIn(
+            "add_subdirectory(${PROJECT_SOURCE_DIR}/utilities/"
+            "py4C)", body,
+            "py4C subdirectory inclusion changed.")
+
     def test_fourc_post_processor_post_gid_dead_wrapper(
             self) -> None:
         """fourc::overview.post_processor_tool [Output] edge 12:
