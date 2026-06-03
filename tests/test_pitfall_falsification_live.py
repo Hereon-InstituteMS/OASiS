@@ -2636,6 +2636,112 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "ctor — the documented two-path failure mode may "
             "have collapsed; revisit edge (e).")
 
+    def test_kratos_cablenet_sliding_edge_process_invariants(
+            self) -> None:
+        """kratos::cable_net [Validation]+[Integration]: confirm
+        SlidingEdgeProcess is still BROKEN at both C++ and Python
+        layers:
+        (a) C++ default_parameters JSON declares "constraint_name"
+            but the code reads "constraint_set_name" (and never
+            consults "constraint_name"),
+        (b) C++ code also reads bucket_size /
+            neighbor_search_radius / must_find_neighbor — none in
+            the defaults JSON,
+        (c) Python wrapper references undefined variable
+            `model_part_name` at line 32,
+        (d) Python wrapper reads settings["model_name"] (line 34)
+            but that key is not in the wrapper's own defaults
+            either.
+        (File walk sliding_edge_process.h + python_scripts/
+        sliding_edge_process.py 2026-06-03.)"""
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent
+        h = root / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/custom_processes/"
+            "sliding_edge_process.h")
+        py = root / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/python_scripts/"
+            "sliding_edge_process.py")
+        if not h.exists() or not py.exists():
+            self.skipTest(
+                f"Kratos sliding_edge_process sources not found "
+                f"in {h} / {py}.")
+        h_body = h.read_text()
+        py_body = py.read_text()
+        # (a) Defaults uses "constraint_name" but body uses
+        #     "constraint_set_name"
+        self.assertIn(
+            '"constraint_name"           : '
+            '"LinearMasterSlaveConstraint"', h_body,
+            "default_parameters JSON `constraint_name` key "
+            "changed.")
+        self.assertGreaterEqual(
+            h_body.count('mParameters["constraint_set_name"]'),
+            5,
+            "Body no longer reads `constraint_set_name` from "
+            "mParameters — edge (a) schema/code mismatch may "
+            "be fixed upstream.")
+        self.assertEqual(
+            h_body.count('mParameters["constraint_name"]'), 0,
+            "Body now reads `constraint_name` — edge (a) may "
+            "be fixed by renaming the code side.")
+        # (b) Three required keys not in defaults
+        for key in ('bucket_size', 'neighbor_search_radius',
+                    'must_find_neighbor'):
+            self.assertIn(
+                f'mParameters["{key}"]', h_body,
+                f"Body no longer reads `{key}` — edge (b) "
+                "schema gap may be closing.")
+            # Defaults JSON is between `Parameters default_para`
+            # and `default_parameters.ValidateAndAssignDefaults`
+            defaults_idx = h_body.find(
+                "Parameters default_parameters")
+            validate_idx = h_body.find(
+                "default_parameters.ValidateAndAssignDefaults")
+            self.assertGreater(defaults_idx, 0)
+            self.assertGreater(validate_idx, defaults_idx)
+            defaults_block = h_body[defaults_idx:validate_idx]
+            self.assertNotIn(
+                f'"{key}"', defaults_block,
+                f"Defaults JSON now declares `{key}` — edge "
+                "(b) gap may be closing.")
+        # (c) Python wrapper references undefined
+        #     `model_part_name`
+        self.assertIn(
+            "model_part_name.GetSubModelPart", py_body,
+            "Python wrapper no longer references undefined "
+            "model_part_name — edge (c) may be fixed.")
+        # The wrapper-defaults block doesn't define
+        # model_part_name, and the only assignment in the file
+        # is non-existent — so `model_part_name` IS undefined.
+        # Sanity: it's not defined as a local before line 32.
+        self.assertNotIn(
+            "model_part_name =", py_body,
+            "Python wrapper now defines model_part_name — "
+            "edge (c) NameError may be fixed.")
+        # (d) Wrapper reads settings["model_name"] not in defaults
+        self.assertIn(
+            'settings["model_name"]', py_body,
+            "Wrapper no longer reads model_name — edge (d) "
+            "may be fixed.")
+        # The defaults block in the wrapper doesn't contain
+        # "model_name" key.
+        wrapper_default_idx = py_body.find(
+            "default_settings = ")
+        wrapper_validate_idx = py_body.find(
+            "default_settings.ValidateAndAssignDefaults")
+        self.assertGreater(wrapper_default_idx, 0)
+        self.assertGreater(
+            wrapper_validate_idx, wrapper_default_idx)
+        wrapper_defaults_block = py_body[
+            wrapper_default_idx:wrapper_validate_idx]
+        self.assertNotIn(
+            '"model_name"', wrapper_defaults_block,
+            "Wrapper defaults now declare `model_name` — "
+            "edge (d) gap may be closing.")
+
     def test_kratos_cablenet_apply_weak_sliding_process_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Performance]: confirm
