@@ -59,6 +59,80 @@ KNOWLEDGE["_general"] = {
             "mmg_remesh":    "FEMMGRemesh — anisotropic remesh via MMG library (requires MMG build)",
             "test_refine":   "FETestRefine — EXPERIMENTAL adaptor flagged FECORE_EXPERIMENTAL in source; do not use in production",
         },
+        "mesh_adaptor_details": {
+            "erosion (FEErosionAdaptor)": {
+                "description": (
+                    "Iteratively deactivates elements that match a "
+                    "criterion. Operates IN-PLACE on the mesh — no "
+                    "remeshing, just .setInactive() on selected "
+                    "elements + optional surface/topology cleanup. "
+                    "Source: FEAMR/FEErosionAdaptor.cpp"),
+                "parameters": {
+                    "max_iters": (
+                        "int, default -1 = UNLIMITED. Apply() only "
+                        "self-terminates via 'Max iterations reached' "
+                        "when max_iters >= 0 and iteration crosses "
+                        "it. Default behaviour: erosion never stops "
+                        "voluntarily — relies on the outer time-"
+                        "step / load controller to bound the loop."),
+                    "max_elems": (
+                        "int, default 0 = NO CAP. Caps how many "
+                        "elements get deactivated per Apply() call. "
+                        "When 0, the entire criterion-selection is "
+                        "processed in one call."),
+                    "sort": (
+                        "int enum {0=none (default), 1=largest first "
+                        "(DECREASING), 2=smallest first (INCREASING)}. "
+                        "Only consulted when max_elems > 0 — with "
+                        "max_elems == 0 the sort value is IGNORED, "
+                        "no log line. Sorts by the criterion's "
+                        "per-element scalar."),
+                    "remove_islands": (
+                        "bool, default false. When true, calls "
+                        "RemoveIslands(FEMeshTopo) after deactivating "
+                        "the selection — flood-fills active elements "
+                        "and removes any disconnected component whose "
+                        "ALL nodes have BC == DOF_OPEN on DOFs 0/1/2."),
+                    "erode_surfaces": (
+                        "enum, default 'yes' (ERODE). Values: "
+                        "{'no' (DONT_ERODE), 'yes' (ERODE), 'grow' "
+                        "(GROW), 'reconstruct' (RECONSTRUCT)}. "
+                        "Registered via setEnums(\"no\\0yes\\0grow\\0"
+                        "reconstruct\\0\")."),
+                    "criterion": (
+                        "REQUIRED <criterion> child property "
+                        "(FEMeshAdaptorCriterion). Without it, "
+                        "Apply() returns false silently — NO log "
+                        "line, no error."),
+                },
+                "erode_surfaces_semantics": {
+                    "no": (
+                        "DONT_ERODE — leave surfaces untouched; faces "
+                        "attached to deactivated elements remain "
+                        "active. Useful when surfaces represent "
+                        "external loading patches that should persist."),
+                    "yes": (
+                        "ERODE (default) — ErodeSurfaces(): for each "
+                        "surface, deactivate any face whose owning "
+                        "element became inactive. Calls surf.Init() "
+                        "only when faces were actually eroded."),
+                    "grow": (
+                        "GROW — GrowErodedSurfaces(): same as 'yes' "
+                        "PLUS rebuild boundary as the eroded surface "
+                        "grows inward. New faces are INVERTED "
+                        "(node[l] = node[nf-1-l]) to keep normals "
+                        "outward-pointing. Materializes new FE_TRI3G3 "
+                        "/ FE_QUAD4G4 surface elements."),
+                    "reconstruct": (
+                        "RECONSTRUCT — discard existing surface faces, "
+                        "rebuild from FEDomainBoundary(domainList) "
+                        "where the surface name matches a registered "
+                        "FEDomainList name. Surfaces NOT generated "
+                        "from part lists with matching names are "
+                        "silently skipped — no log, no error."),
+                },
+            },
+        },
         "adaptor_criteria": {
             "max_variable":      "FEVariableCriterion — threshold on a field variable",
             "element_selection": (
@@ -166,10 +240,35 @@ KNOWLEDGE["_general"] = {
             "GetElementValue returns false. Higher-order solids "
             "(ET_TET10, ET_HEX20), 2D shells, beams, etc. are "
             "invisible to these criteria. Mixed meshes get partial "
-            "coverage with no warning. (File walks "
+            "coverage with no warning. Five FEErosionAdaptor "
+            "edges users routinely hit on damage / erosion runs: "
+            "(c) <erode_surfaces> is a 4-VALUE enum {'no', 'yes', "
+            "'grow', 'reconstruct'} registered via setEnums("
+            "\"no\\0yes\\0grow\\0reconstruct\\0\"). Any other "
+            "spelling (e.g. 'true', 'erode', 'remove') silently "
+            "FAILS the enum gate at XML parse time — the parameter "
+            "stays at its default ERODE. (d) Default <max_iters> "
+            "is -1 (UNLIMITED) — Apply() only emits 'Max "
+            "iterations reached' when max_iters >= 0; with the "
+            "default the loop NEVER self-terminates and relies on "
+            "the outer load step. (e) <sort> is silently IGNORED "
+            "when <max_elems> == 0 (default). Users setting "
+            "sort=1 expecting biggest-failures-first behaviour "
+            "must ALSO set max_elems > 0. (f) <criterion> is "
+            "REQUIRED — omitting it makes Apply() return false "
+            "silently (no feLog, no error). The mesh adaptor is "
+            "effectively a no-op with no diagnostic. (g) "
+            "RemoveIslands has a HARDCODED 'TODO: mechanics "
+            "only!' check — it tests nj.get_bc(0/1/2) != DOF_OPEN. "
+            "For biphasic / multiphasic / thermal / scalar-only "
+            "problems where mechanics DOFs are open by default, "
+            "EVERY component looks isolated → remove_islands=true "
+            "deletes the entire mesh. Source comment line "
+            "FEAMR/FEErosionAdaptor.cpp:206. (File walks "
             "FEAMR/FEAMR.cpp 2026-06-02, "
             "FEAMR/FEDomainErrorCriterion.cpp 2026-06-03, "
-            "FEAMR/FEElementQualityCriterion.cpp 2026-06-03.)"
+            "FEAMR/FEElementQualityCriterion.cpp 2026-06-03, "
+            "FEAMR/FEErosionAdaptor.cpp 2026-06-03.)"
         ),
     },
     "cmake_embedding": {

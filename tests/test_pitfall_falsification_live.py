@@ -859,6 +859,82 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       body,
                       "Size-scale clamp formula changed.")
 
+    def test_febio_erosion_adaptor_source_invariants(self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input] FEErosion
+        Adaptor edges (c)-(g): confirm
+        FEAMR/FEErosionAdaptor.cpp still implements
+        (a) BEGIN_FECORE_CLASS(FEErosionAdaptor, FEMeshAdaptor)
+            with the 5 parameters max_iters / max_elems / sort /
+            remove_islands / erode_surfaces + the criterion property,
+        (b) erode_surfaces ENUM exactly
+            'no\\0yes\\0grow\\0reconstruct\\0' via setEnums,
+        (c) m_maxIters defaults to -1 (unlimited),
+        (d) m_maxelem defaults to 0 and the sort-only-when-cap gate
+            (m_maxelem > 0) && (m_nsort != 0),
+        (e) missing-criterion short-circuit (m_criterion == nullptr
+            -> return false) with NO log line,
+        (f) the 'TODO: mechanics only!' comment + the
+            nj.get_bc(0/1/2) != DOF_OPEN gate in RemoveIslands.
+        (File walk FEAMR/FEErosionAdaptor.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/febio/FEAMR/"
+                "FEErosionAdaptor.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"FEBio FEErosionAdaptor.cpp not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) FECORE_CLASS + 5 params + 1 property
+        self.assertIn(
+            'BEGIN_FECORE_CLASS(FEErosionAdaptor, FEMeshAdaptor)',
+            body, "FECORE_CLASS registration changed.")
+        for tok in ('ADD_PARAMETER(m_maxIters, "max_iters")',
+                    'ADD_PARAMETER(m_maxelem, "max_elems")',
+                    'ADD_PARAMETER(m_nsort, "sort")',
+                    'ADD_PARAMETER(m_bremoveIslands, "remove_islands")',
+                    'ADD_PARAMETER(m_erodeSurfaces, "erode_surfaces")',
+                    'ADD_PROPERTY(m_criterion, "criterion")'):
+            self.assertIn(
+                tok, body,
+                f"Erosion adaptor registration line {tok!r} "
+                f"changed; pitfall parameter list needs revisit.")
+        # (b) Exact 4-value enum string
+        self.assertIn(
+            'setEnums("no\\0yes\\0grow\\0reconstruct\\0")', body,
+            "erode_surfaces enum vocabulary changed.")
+        # (c) m_maxIters default
+        self.assertIn("m_maxIters = -1;", body,
+                      "max_iters default changed from -1 (unlimited).")
+        # (d) sort-only-when-cap composite gate
+        self.assertIn(
+            "if ((m_maxelem > 0) && (m_nsort != 0))", body,
+            "sort-only-when-max_elems-set gate changed; the "
+            "'<sort> silently ignored' edge needs revisit.")
+        # (e) missing-criterion silent short-circuit
+        self.assertIn(
+            "if (m_criterion == nullptr) return false;", body,
+            "Missing-criterion short-circuit (silent return false) "
+            "changed; edge (f) — silent no-op when <criterion> "
+            "omitted — needs revisit.")
+        # (f) Mechanics-only TODO + DOF_OPEN check on first 3 DOFs
+        self.assertIn(
+            "// TODO: mechanics only!", body,
+            "'mechanics only' TODO comment removed; the biphasic/"
+            "thermal island-detection caveat (edge g) may no "
+            "longer apply.")
+        for tok in ('nj.get_bc(0) != DOF_OPEN',
+                    'nj.get_bc(1) != DOF_OPEN',
+                    'nj.get_bc(2) != DOF_OPEN'):
+            self.assertIn(
+                tok, body,
+                f"RemoveIslands DOF-open check on {tok!r} "
+                f"changed; the mechanics-only-island caveat needs "
+                f"revisit.")
+
     def test_fourc_single_field_writers_source_invariants(
             self) -> None:
         """fourc::overview.post_processor_tool [Output]: confirm
