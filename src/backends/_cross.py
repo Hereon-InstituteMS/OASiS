@@ -805,6 +805,123 @@ _MATERIAL_ORIENTATION_SIGNAL = (
 )
 
 
+_FREQUENCY_DESC = (
+    "Eigenvalue / modal analysis backends differ in whether "
+    "they report eigenvalues as angular frequency squared "
+    "(omega^2 = (2*pi*f)^2 in rad^2/s^2), as angular frequency "
+    "(omega in rad/s), or as ordinary frequency (f in Hz). "
+    "The same modal problem solved by two backends produces "
+    "numerical results that look unrelated until you account "
+    "for factors of 2*pi and squaring."
+)
+
+_FREQUENCY_PITFALLS = [
+    "[Cross-Backend][Numerical] Eigenvalue return convention "
+    "for modal analysis: SLEPc (used by dolfinx via "
+    "dolfinx.fem.petsc + slepc4py) and PETSc returns "
+    "eigenvalues as the literal numerical eigenvalues of the "
+    "(K, M) generalised problem K phi = lambda M phi — i.e. "
+    "lambda = omega^2 in rad^2/s^2 (NOT Hz, NOT rad/s). NGSolve's "
+    "ArnoldiSolver / PINVIT returns lambda = omega^2 in the same "
+    "convention. skfem.utils.solver_eigen.scipy.LinearEig wraps "
+    "scipy.sparse.linalg.eigsh which also returns omega^2. "
+    "Kratos's EigensolverStrategy in StructuralMechanics returns "
+    "lambda = omega^2 by default but the FrequencyResponse "
+    "post-processor REPORTS them as Hz after sqrt(lambda)/(2*pi). "
+    "4C's MODAL ANALYSIS section reports frequencies in Hz "
+    "directly (post-processed from lambda internally). FEBio's "
+    "modal analysis reports omega in rad/s (not omega^2, not "
+    "Hz). dealii has no built-in modal solver; tutorial step-36 "
+    "uses SLEPc and reports the raw lambda. Signal: a 1D "
+    "cantilever-beam-bending modal analysis on the same mesh "
+    "gives 'first natural frequency = 247' in 4C (Hz, correct) "
+    "vs 'first eigenvalue = 2.41e6' in dolfinx-SLEPc (omega^2 in "
+    "rad^2/s^2, also correct, just unit-converted) vs '1553' in "
+    "FEBio (omega in rad/s, correct). All three are the same "
+    "physical frequency; users porting cross-backend often miss "
+    "the omega^2 / omega / Hz distinction and conclude one "
+    "backend is wrong by a factor of (2*pi)^2 ~ 39.5 or 2*pi ~ "
+    "6.28. Defense: always print BOTH omega^2 AND sqrt(omega^2)/"
+    "(2*pi) [Hz] in every backend's modal output; compare Hz "
+    "values, never raw eigenvalues."
+]
+
+_FREQUENCY_SIGNAL = (
+    "[Cross-Backend][Numerical] Cross-backend modal-analysis "
+    "discrepancies of (2*pi)^2 ~ 39.5 or 2*pi ~ 6.28 are NOT "
+    "physical errors — they are unit conventions (omega^2 in "
+    "rad^2/s^2 vs omega in rad/s vs f in Hz). Always convert to "
+    "Hz before comparing. SLEPc/PETSc/NGSolve/scipy return "
+    "omega^2; FEBio returns omega; 4C returns Hz."
+)
+
+
+_MESH_QUALITY_DESC = (
+    "Mesh-quality acceptance thresholds — aspect ratio, "
+    "skewness, Jacobian positivity, minimum dihedral angle — "
+    "differ across backends in both the default rejection "
+    "threshold AND in whether a bad element causes a hard "
+    "error vs a silent slow-down via solver ill-conditioning."
+)
+
+_MESH_QUALITY_PITFALLS = [
+    "[Cross-Backend][Mesh] Negative-Jacobian element rejection: "
+    "4C's DiscretizationReader explicitly rejects elements with "
+    "Jacobian determinant <= 0 at any Gauss point — abort with "
+    "'element X has negative Jacobian'. FEBio's element checker "
+    "also rejects negative Jacobian and refuses to proceed past "
+    "input parsing. Kratos's elements compute Jacobian on the "
+    "fly per assembly call and silently produce NaN in the "
+    "stiffness matrix when J<=0 (no upfront check); the LINEAR "
+    "SOLVER then reports 'matrix singular' or runs and returns "
+    "garbage. dolfinx's dolfinx.mesh.create_mesh validates "
+    "cell orientation at construction; a negative-Jacobian cell "
+    "raises RuntimeError 'Cell orientation is invalid'. NGSolve's "
+    "Netgen mesher generates only positive-Jacobian elements by "
+    "construction but READING an external bad mesh via "
+    "Mesh(filename) silently accepts negatives. dealii's GridIn "
+    "imports without geometric validation; the first assembly "
+    "fails. Signal: a Gmsh-exported mesh with one inverted "
+    "tetrahedron (common after CSG boolean operations near sharp "
+    "features) is rejected upfront by 4C/FEBio/dolfinx (clear "
+    "error message with element id) but loaded silently by "
+    "Kratos and NGSolve-from-file; the user discovers it only "
+    "when the SECOND solver run starts giving NaN residuals. "
+    "Defense: always run a mesh-validation pass (gmsh --check or "
+    "pyvista's mesh.compute_cell_quality()) BEFORE feeding any "
+    "backend; a single inverted element wastes hours when only "
+    "caught by 'matrix singular'.",
+
+    "[Cross-Backend][Mesh] Aspect-ratio / sliver-element "
+    "tolerance: 4C has no hard aspect-ratio rejection (silently "
+    "accepts slivers; solver may diverge on ill-conditioned "
+    "system). FEBio warns on aspect ratio > 100 but proceeds. "
+    "Kratos has no built-in check. dolfinx delegates to PETSc "
+    "linear-solver tolerance which silently struggles. NGSolve's "
+    "Netgen mesher avoids slivers by construction with default "
+    "quality threshold 0.3; users overriding `quad_dominated=True` "
+    "or `optsteps=0` can produce slivers. Signal: a 'good' "
+    "tetrahedral mesh from Gmsh with optimisation disabled "
+    "contains O(10) slivers; converged in 4C in 1000 GMRES "
+    "iterations (slow but works); diverged in Kratos AMGCL with "
+    "default settings; clean exit in NGSolve only because the "
+    "Netgen optimiser silently improved it on import. Defense: "
+    "always check max element aspect ratio (gmsh GUI tools menu) "
+    "before solving; if > 50, refine the mesh-generation "
+    "parameters BEFORE the solver inevitably has trouble."
+]
+
+_MESH_QUALITY_SIGNAL = (
+    "[Cross-Backend][Mesh] If a mesh 'works' in one backend but "
+    "produces 'matrix singular' / NaN residuals / silent "
+    "divergence in another, suspect (1) negative-Jacobian "
+    "elements silently accepted by Kratos/NGSolve-from-file but "
+    "rejected by 4C/FEBio/dolfinx, or (2) sliver elements with "
+    "aspect ratio > 50. Run gmsh --check before feeding any "
+    "backend."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -885,6 +1002,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _MATERIAL_ORIENTATION_DESC,
         "pitfalls": _MATERIAL_ORIENTATION_PITFALLS,
         "Signal": _MATERIAL_ORIENTATION_SIGNAL,
+    },
+    "frequency_unit_conventions": {
+        "description": _FREQUENCY_DESC,
+        "pitfalls": _FREQUENCY_PITFALLS,
+        "Signal": _FREQUENCY_SIGNAL,
+    },
+    "mesh_quality_thresholds": {
+        "description": _MESH_QUALITY_DESC,
+        "pitfalls": _MESH_QUALITY_PITFALLS,
+        "Signal": _MESH_QUALITY_SIGNAL,
     },
 }
 
