@@ -584,6 +584,123 @@ _INTEGRATION_ORDER_SIGNAL = (
 )
 
 
+_BOUNDARY_TAG_DESC = (
+    "Gmsh physical-group tags / boundary IDs are mesh metadata "
+    "that backends interpret differently. A `gmsh model.add_physical_"
+    "group(2, [10], tag=5)` in Python becomes a SURFACE id 5 in "
+    "the .msh file, but each backend then maps that to its own "
+    "internal boundary-id namespace with different fall-through "
+    "rules when a tag is missing."
+)
+
+_BOUNDARY_TAG_PITFALLS = [
+    "[Cross-Backend][Mesh] Boundary-id default fallthrough: "
+    "dolfinx's mesh.locate_entities_boundary(mesh, fdim, marker) "
+    "uses a USER-supplied lambda (no tag mapping at all — the "
+    "user must reconstruct facet IDs from coordinates); the "
+    "alternative read_from_msh path preserves Gmsh physical-"
+    "group tags on a mesh.MeshTags object that the user passes "
+    "to fem.dirichletbc(value, dofs, V). dealii's GridIn::read_"
+    "msh imports Gmsh tags as boundary_id() attributes on the "
+    "Triangulation's faces — directly usable by "
+    "VectorTools::interpolate_boundary_values. Kratos's "
+    "ModelPart loads sub-model-parts named after Gmsh physical "
+    "groups but the .mdpa user must HAND-EDIT the sub-model-"
+    "part section to expose them — Gmsh→Kratos converters don't "
+    "always preserve the physical-group name. 4C's --DESIGN "
+    "SURF DIRICH CONDITIONS block uses E (=design surface) "
+    "indices that must MATCH the .dat mesh's NSURF / DSURF "
+    "tags — the indices are 1-indexed in 4C but 0-indexed in "
+    "Gmsh, so a Gmsh-exported mesh needs a +1 shift on every "
+    "boundary id before 4C will accept it. FEBio .feb XML uses "
+    "<Surface name=...> blocks identified by NAME not by "
+    "numeric ID. Signal: SAME .msh file feeds dolfinx and 4C; "
+    "dolfinx applies Dirichlet on facets with tag=5 correctly; "
+    "4C applies Dirichlet on the WRONG surface because the 4C "
+    "input still references E=5 but the Gmsh→.dat converter "
+    "shifted the tag to E=6. Defense: when porting a Gmsh "
+    "mesh between backends, always print the per-facet tag "
+    "histogram in EACH backend's loader (count facets per "
+    "boundary_id) and compare; mismatch reveals the off-by-one "
+    "or naming bug.",
+]
+
+_BOUNDARY_TAG_SIGNAL = (
+    "[Cross-Backend][Mesh] If a Dirichlet boundary 'works' in "
+    "one backend and quietly applies to the wrong face in "
+    "another with the SAME mesh, the cause is 1-indexed vs "
+    "0-indexed boundary tag conventions (Gmsh 0 vs 4C 1) or a "
+    "sub-model-part name not preserved in the .mdpa converter. "
+    "Print per-facet tag histograms before applying any BC."
+)
+
+
+_PLASTICITY_RETURN_MAP_DESC = (
+    "Plasticity return-mapping algorithms — radial return / "
+    "cutting-plane / closest-point projection / Newton-on-yield "
+    "— differ across backends in (a) algorithm choice and (b) "
+    "default convergence criteria. Same J2 / Mohr-Coulomb / "
+    "Drucker-Prager material with default solver settings "
+    "produces slightly different stress paths in different "
+    "backends."
+)
+
+_PLASTICITY_RETURN_MAP_PITFALLS = [
+    "[Cross-Backend][Numerical] Return-mapping defaults for J2 "
+    "plasticity: 4C's MAT_PLASTIC_VONMISES uses radial-return "
+    "(closed-form for J2 + isotropic linear hardening, exact in "
+    "one step). Kratos's SmallStrainJ2Plasticity uses an "
+    "implicit Newton-on-yield-surface with tol=1e-6 by default. "
+    "FEBio's plastic-fluid and elastoplastic-isotropic-hardening "
+    "use radial-return but the convergence tol is rtol=1e-3 "
+    "(consistent with FEBio's looser Newton defaults). dolfinx "
+    "has no built-in plasticity — users implement custom return "
+    "maps via UFL+conditional or external libraries (dolfiny). "
+    "Signal: SAME uniaxial cyclic tension-compression test on "
+    "J2 + linear hardening, loaded past yield, produces matching "
+    "elastic branches but different residual plastic strain "
+    "after the first half-cycle: 4C and FEBio with radial-return "
+    "give the analytic value to 1e-12; Kratos with default "
+    "Newton-on-yield gives 1e-6 (its internal rtol). Defense: "
+    "use radial-return where the material law supports it "
+    "(linear hardening, isotropic only); for nonlinear "
+    "hardening or anisotropic yield, tighten the internal "
+    "return-map tol to 1e-10 explicitly in every backend.",
+
+    "[Cross-Backend][Numerical] Mohr-Coulomb tension cut-off: "
+    "kratos's MohrCoulombPlasticity has an OPTIONAL tension "
+    "cut-off enabled by setting `tension_cutoff_factor` > 0; "
+    "default is 0 (no cut-off, allowing negative principal "
+    "stresses past the apex). 4C's MAT_MohrCoulomb has tension "
+    "cut-off CONTROLLED via apex_smoothing_factor (default 0.1, "
+    "always active). FEBio's mohr-coulomb material uses an "
+    "exact apex return (no smoothing). dolfinx custom "
+    "implementations vary; the most common Mohr-Coulomb-with-"
+    "tension-cutoff template (e.g. dolfiny's geomechanics) has "
+    "no default and the user must set it. Signal: a triaxial "
+    "extension test at low confining pressure ported between "
+    "Kratos (default no cut-off, allows negative apex stresses) "
+    "and 4C (default smoothed cut-off at 0.1) gives the SAME "
+    "peak deviatoric stress on the compression side but "
+    "completely different unloading behaviour on the extension "
+    "side (Kratos returns to the apex along the hydrostatic "
+    "axis; 4C returns to a smoothed cone surface). Defense: "
+    "when validating cross-backend Mohr-Coulomb, ALWAYS specify "
+    "the tension cut-off and apex-smoothing factor explicitly "
+    "in every backend.",
+]
+
+_PLASTICITY_RETURN_MAP_SIGNAL = (
+    "[Cross-Backend][Numerical] If a cyclic plasticity test "
+    "matches on the elastic branch but residual plastic strains "
+    "differ across backends, the cause is return-map convergence "
+    "tolerance (Kratos default 1e-6 vs FEBio rtol=1e-3 vs 4C "
+    "exact radial-return). For Mohr-Coulomb / Drucker-Prager "
+    "explicitly set the apex / tension-cut-off treatment in "
+    "every backend's input."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -644,6 +761,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _INTEGRATION_ORDER_DESC,
         "pitfalls": _INTEGRATION_ORDER_PITFALLS,
         "Signal": _INTEGRATION_ORDER_SIGNAL,
+    },
+    "boundary_tag_semantics": {
+        "description": _BOUNDARY_TAG_DESC,
+        "pitfalls": _BOUNDARY_TAG_PITFALLS,
+        "Signal": _BOUNDARY_TAG_SIGNAL,
+    },
+    "plasticity_return_mapping": {
+        "description": _PLASTICITY_RETURN_MAP_DESC,
+        "pitfalls": _PLASTICITY_RETURN_MAP_PITFALLS,
+        "Signal": _PLASTICITY_RETURN_MAP_SIGNAL,
     },
 }
 
