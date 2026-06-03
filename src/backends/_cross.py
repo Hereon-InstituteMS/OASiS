@@ -1024,6 +1024,124 @@ _PERIODIC_BC_SIGNAL = (
 )
 
 
+_DAMPING_DESC = (
+    "Damping in transient analyses is specified through "
+    "fundamentally different mathematical forms — Rayleigh "
+    "(C = alpha*M + beta*K), structural / hysteretic damping "
+    "ratio xi, viscous coefficient c per element — and "
+    "backends differ in which form they use as 'damping' in "
+    "their input file. The SAME 'damping ratio = 0.05' "
+    "request can yield wildly different actual energy "
+    "dissipation across backends."
+)
+
+_DAMPING_PITFALLS = [
+    "[Cross-Backend][Physics] Damping specification: 4C's "
+    "structural_dynamics block accepts alpha (mass-proportional) "
+    "+ beta (stiffness-proportional) Rayleigh coefficients "
+    "directly: C = alpha*M + beta*K. NO default — must specify "
+    "both. Kratos's StructuralMechanicsApplication accepts "
+    "RAYLEIGH_ALPHA + RAYLEIGH_BETA on each element's material "
+    "parameters; if missing, treated as 0 (UNDAMPED silently). "
+    "FEBio's <rigid_body><damping> takes a viscous coefficient "
+    "per RB (not Rayleigh, not structural). NGSolve's "
+    "TimeIntegrationNewmark accepts gamma (algorithmic damping "
+    "via the gamma > 0.5 trick) but NOT physical Rayleigh; "
+    "physical damping must be added by the user as a separate "
+    "M-term in the bilinear form. dolfinx has no built-in "
+    "damping; user writes the Rayleigh expression in UFL. "
+    "dealii varies per tutorial. Signal: same modal analysis "
+    "with 'damping ratio xi = 0.05' specified in 4C "
+    "(translates to alpha = 2*xi*omega_1, beta = 2*xi/"
+    "omega_max for a mode pair) vs Kratos (interpreted as "
+    "Rayleigh alpha = 0.05 directly, beta = 0) gives different "
+    "decay envelopes — 4C correctly damps modes between "
+    "omega_1 and omega_max; Kratos's alpha=0.05 alone damps "
+    "ALL modes uniformly via the mass term, over-damping "
+    "high-frequency modes by orders of magnitude. Defense: "
+    "always specify damping as Rayleigh alpha + beta "
+    "explicitly; do NOT pass 'damping ratio' to a backend "
+    "without first converting to alpha + beta using the "
+    "two-mode formula alpha = 2*xi*om1*om2/(om1+om2), "
+    "beta = 2*xi/(om1+om2) for the frequency range of "
+    "interest.",
+]
+
+_DAMPING_SIGNAL = (
+    "[Cross-Backend][Physics] If a damped transient analysis "
+    "matches across backends at low frequency but diverges "
+    "wildly at high frequency, the cause is mass-proportional "
+    "Rayleigh damping (alpha*M) being applied uniformly to all "
+    "modes. Compute alpha + beta from a two-mode formula for "
+    "your target frequency range; never pass 'damping ratio' "
+    "as a raw alpha."
+)
+
+
+_TIMESTAMP_DESC = (
+    "Time-series output files differ across backends in (a) "
+    "whether the t=0 frame is written, (b) whether output is "
+    "captured at start-of-step or end-of-step (matters for "
+    "implicit methods where field is unknown at start), and "
+    "(c) the time-stamp metadata precision (single vs double "
+    "in some XDMF/VTK writers)."
+)
+
+_TIMESTAMP_PITFALLS = [
+    "[Cross-Backend][Output] t=0 frame inclusion: 4C's "
+    "STRUCTURAL_OUTPUT writes the initial-condition frame at "
+    "t=0 by default (controls via RESTART option). FEBio's "
+    "plotfile-must-include t=0 default writes t=0. Kratos's "
+    "VtkOutput skips the initial frame unless "
+    "output_initial_conditions=True is explicit. dolfinx's "
+    "VTXWriter writes only when the user calls vtx.write(t); "
+    "user-controlled — typical scripts forget to write t=0 "
+    "BEFORE the time loop. NGSolve vtk_output: same as "
+    "dolfinx — user-controlled. dealii data_out_stack: "
+    "user-controlled but every tutorial includes t=0. Signal: "
+    "ParaView animation of a 4C output (frame 0 = t=0, frames "
+    "1..N = computed steps) shows the initial geometry; same "
+    "problem in Kratos VtkOutput (frame 0 = t=dt, no t=0) "
+    "shows the post-first-step state as 'initial' — a "
+    "visualisation that misleads users into thinking the "
+    "initial condition was different. Defense: in Kratos / "
+    "dolfinx / NGSolve, explicitly write the t=0 frame before "
+    "the time loop starts.",
+
+    "[Cross-Backend][Output] Start-of-step vs end-of-step "
+    "field capture: implicit time integration computes the "
+    "field at t_{n+1} from the field at t_n. dolfinx, NGSolve, "
+    "skfem, dealii: the user calls write(t_{n+1}, u_{n+1}) "
+    "AFTER the solve — output is unambiguously at the "
+    "computed time. 4C's STRUCTURAL_OUTPUT defaults to "
+    "end-of-step (t_{n+1}, u_{n+1}). Kratos's process at the "
+    "default <ExecutionPoint>OnEndSolutionStep</ExecutionPoint>: "
+    "end-of-step. BUT Kratos's OnBeginSolutionStep writes "
+    "BEFORE the solve (t_{n+1}, u_n) — same time-stamp, "
+    "previous-step displacement. FEBio's logfile vs plotfile "
+    "differ: plotfile end-of-step, logfile may be configured "
+    "to either. Signal: a velocity / acceleration field "
+    "exported alongside displacement: in dolfinx these are "
+    "all evaluated at t_{n+1} using the Newmark update of u; "
+    "in a misconfigured Kratos pipeline (OnBeginSolutionStep) "
+    "the displacement is stale by one timestep relative to "
+    "the velocity, producing a phase lag artifact in ParaView "
+    "velocity-vs-displacement plots. Defense: in Kratos, "
+    "always use OnEndSolutionStep for field outputs; never "
+    "mix Begin and End on the same .vtu series.",
+]
+
+_TIMESTAMP_SIGNAL = (
+    "[Cross-Backend][Output] Cross-backend ParaView animations "
+    "where frame 0 shows the post-first-step state in one "
+    "backend but the initial condition in another are caused "
+    "by Kratos/dolfinx/NGSolve skipping the t=0 frame "
+    "(user-controlled). For phase-lag bugs in velocity-vs-"
+    "displacement plots, check Kratos's "
+    "OnBeginSolutionStep vs OnEndSolutionStep configuration."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -1124,6 +1242,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _PERIODIC_BC_DESC,
         "pitfalls": _PERIODIC_BC_PITFALLS,
         "Signal": _PERIODIC_BC_SIGNAL,
+    },
+    "damping_convention_defaults": {
+        "description": _DAMPING_DESC,
+        "pitfalls": _DAMPING_PITFALLS,
+        "Signal": _DAMPING_SIGNAL,
+    },
+    "timestamp_output_conventions": {
+        "description": _TIMESTAMP_DESC,
+        "pitfalls": _TIMESTAMP_PITFALLS,
+        "Signal": _TIMESTAMP_SIGNAL,
     },
 }
 
