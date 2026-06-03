@@ -1142,6 +1142,112 @@ _TIMESTAMP_SIGNAL = (
 )
 
 
+_INITIAL_CONDITION_DESC = (
+    "Initial-condition specification for transient analyses — "
+    "whether u(t=0) is supplied as a per-DOF array, a "
+    "Function/CoefficientFunction expression, or an analytic "
+    "lambda interpolated onto the mesh — differs across "
+    "backends in (a) the API surface, (b) the DEFAULT when "
+    "unspecified, and (c) the interpolation quality for "
+    "high-order spaces."
+)
+
+_INITIAL_CONDITION_PITFALLS = [
+    "[Cross-Backend][Physics] Initial-condition default: "
+    "dolfinx's u = fem.Function(V); u.x.array[:] = 0 is the "
+    "explicit zero-IC; an UN-INITIALISED Function returned "
+    "from fem.Function(V) has whatever garbage the PETSc Vec "
+    "allocator gave it (typically zeros but NOT GUARANTEED — "
+    "depends on PETSc build). NGSolve's GridFunction defaults "
+    "to zero (numerically zeroed in C++ ctor). Kratos's "
+    "ProcessInfo / nodal variables default to zero. 4C's "
+    "transient analyses default ICs to zero unless --INITIAL "
+    "CONDITIONS block is present. FEBio's <Initial> XML block "
+    "defaults to zero. dealii's Vector<double> ctor zero-"
+    "initialises. dolfinx Function INTERPOLATION of an "
+    "analytic IC: u.interpolate(lambda x: x[0]**2) for a P2 "
+    "FunctionSpace SAMPLES the lambda at the P2 nodal points "
+    "(degree-2 interpolation, exact for polynomials up to "
+    "deg 2). Kratos's process-based IC application sets only "
+    "nodal values (P1-equivalent, even when the element "
+    "supports higher order — internal DOFs default to zero). "
+    "Signal: ported transient hyperelastic problem with "
+    "u(t=0) = sin(pi*x)*sin(pi*y) on a P2 mesh: in dolfinx "
+    "the IC is captured to interpolation accuracy O(h^3); in "
+    "Kratos (when ported via a process that sets only "
+    "nodal values, leaving P2 internal DOFs at zero) the IC "
+    "is captured only to O(h^2) AND the internal DOFs that "
+    "should hold the polynomial peak are zero, producing a "
+    "kink-shaped IC field instead of the smooth sine. "
+    "Defense: when porting a non-trivial IC to a P>1 backend, "
+    "either (a) use the backend's true interpolation operator "
+    "(dolfinx u.interpolate; NGSolve gfu.Set; dealii "
+    "VectorTools::interpolate), or (b) confirm the resulting "
+    "IC matches the analytic expression at the cell centroid "
+    "(not just at vertices) before stepping in time.",
+]
+
+_INITIAL_CONDITION_SIGNAL = (
+    "[Cross-Backend][Physics] If a transient ported between "
+    "backends matches at t=dt but diverges from t=2*dt onward "
+    "even with identical solver settings, the cause is "
+    "almost always the initial condition was P1-interpolated "
+    "in one backend (Kratos process-based IC) vs truly "
+    "P-interpolated in another (dolfinx u.interpolate). "
+    "Validate IC at cell centroids, not just nodes."
+)
+
+
+_FRAME_OF_REFERENCE_DESC = (
+    "Boundary conditions and material orientations specified "
+    "in local frames (surface-normal, beam-tangent, "
+    "anisotropic principal axes) vs global Cartesian frames "
+    "have backend-specific transformation conventions. The "
+    "same 'roller constraint normal to the surface' produces "
+    "different physical BC in different backends if the "
+    "normal-direction computation differs."
+)
+
+_FRAME_OF_REFERENCE_PITFALLS = [
+    "[Cross-Backend][BC] Local-frame BC computation: 4C's "
+    "DBC condition with type='Normal' projects the prescribed "
+    "displacement onto the OUTWARD surface normal computed "
+    "from the element-face geometry at the START of the "
+    "analysis (reference configuration). FEBio's <Surface "
+    "load> normal pressure uses the CURRENT-configuration "
+    "normal (updated each Newton iteration for finite "
+    "deformation). Kratos's RollerConstraintProcess "
+    "constrains the DOF along a USER-supplied direction "
+    "vector (not auto-normal); if the user supplies (0,0,1) "
+    "for a curved surface, it constrains the global z-DOF "
+    "everywhere, NOT the local normal — wrong on curved "
+    "surfaces. dolfinx: no built-in roller; users compose "
+    "via locate_entities_boundary + a custom projection. "
+    "Signal: a curved-surface roller-supported plate ported "
+    "between 4C (auto reference normal) and Kratos (user "
+    "supplies (0,0,1)) gives matching results when the plate "
+    "is flat (global z IS the surface normal) but "
+    "diverges as the plate curves — Kratos still constrains "
+    "global z (wrong physics), 4C constrains true normal. "
+    "Defense: for curved-surface rollers in Kratos, "
+    "manually compute the per-node normal via "
+    "ComputeNodalNormalDivergenceProcess BEFORE applying "
+    "RollerConstraintProcess; never assume the user-supplied "
+    "direction is the local normal."
+]
+
+_FRAME_OF_REFERENCE_SIGNAL = (
+    "[Cross-Backend][BC] If a 'roller' or 'normal pressure' "
+    "BC produces matching results on flat geometry but "
+    "diverges on curved geometry across backends, the cause "
+    "is Kratos's user-supplied global-direction roller vs "
+    "4C's auto-computed reference-normal roller vs FEBio's "
+    "current-config normal pressure. Always verify the BC "
+    "by printing the per-node constraint direction on a "
+    "test point at the apex of the curvature."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -1252,6 +1358,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _TIMESTAMP_DESC,
         "pitfalls": _TIMESTAMP_PITFALLS,
         "Signal": _TIMESTAMP_SIGNAL,
+    },
+    "initial_condition_interpolation": {
+        "description": _INITIAL_CONDITION_DESC,
+        "pitfalls": _INITIAL_CONDITION_PITFALLS,
+        "Signal": _INITIAL_CONDITION_SIGNAL,
+    },
+    "frame_of_reference_bc": {
+        "description": _FRAME_OF_REFERENCE_DESC,
+        "pitfalls": _FRAME_OF_REFERENCE_PITFALLS,
+        "Signal": _FRAME_OF_REFERENCE_SIGNAL,
     },
 }
 
