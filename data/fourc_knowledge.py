@@ -321,6 +321,122 @@ FOURC_KNOWLEDGE = {
                     "cmake/setup_py4C.cmake 2026-06-03.)"
                 ),
             },
+            "cmake_test_setup_options": {
+                "description": (
+                    "Configure-time CMake options + derived "
+                    "constants defined in cmake/setup_tests.cmake "
+                    "— controls GoogleTest unit-test fetching, "
+                    "Google Benchmark micro-benchmark fetching, "
+                    "and the test-timeout scaling system."),
+                "options": {
+                    "FOUR_C_TEST_TIMEOUT_SCALE": (
+                        "STRING (integer-valued), default 4 when "
+                        "FOUR_C_BUILD_TYPE_UPPER==DEBUG else 1. "
+                        "Multiplier applied to all test timeouts. "
+                        "Silent 4× scaling in Debug builds — easy "
+                        "to miss when comparing CI durations "
+                        "between Debug and Release."),
+                    "FOUR_C_WITH_GOOGLETEST": (
+                        "bool, default ON. Toggles GoogleTest "
+                        "v1.15.2 FetchContent (pinned commit "
+                        "b514bdc898e2951020cbdca1304b75f5950d1f59) "
+                        "and the `unittests` custom target. The "
+                        "`full` target depends on `unittests`."),
+                    "FOUR_C_WITH_GOOGLE_BENCHMARK": (
+                        "bool, default OFF. Toggles Google "
+                        "Benchmark v1.9.2 FetchContent (pinned "
+                        "commit afa23b7699c17f1e26c88cbf95257b20d"
+                        "78d6247) and the `benchmarktests` custom "
+                        "target. Implicitly sets "
+                        "BENCHMARK_ENABLE_TESTING=OFF to skip "
+                        "google-benchmark's own internal tests."),
+                    "FOUR_C_ENABLE_FULL_BENCHMARK_TESTS": (
+                        "bool, default OFF, ONLY visible when "
+                        "FOUR_C_WITH_GOOGLE_BENCHMARK=ON. OFF "
+                        "means dry-run mode (10s timeout); ON "
+                        "means real benchmark execution (600s "
+                        "timeout × FOUR_C_TEST_TIMEOUT_SCALE)."),
+                    "FOUR_C_BENCHMARK_TESTS_COLLECTION_FILE": (
+                        "PATH, default ${PROJECT_BINARY_DIR}/"
+                        "benchmark_test_results.json. Output JSON "
+                        "where 4C aggregates benchmark results via "
+                        "four_c_collect_benchmark_test_results."),
+                    "FOUR_C_ENABLE_FULL_PERFORMANCE_TESTS": (
+                        "bool, default OFF. Switches performance "
+                        "tests between full and minimal execution. "
+                        "Distinct from FOUR_C_ENABLE_FULL_BENCHMARK_"
+                        "TESTS — performance tests are 4C-internal, "
+                        "benchmark tests use Google Benchmark."),
+                    "FOUR_C_PERFORMANCE_TESTS_COLLECTION_FILE": (
+                        "PATH, default ${PROJECT_BINARY_DIR}/"
+                        "performance_test_results.json."),
+                },
+                "derived_constants": {
+                    "FOUR_C_TEST_GLOBAL_TIMEOUT": (
+                        "120 * FOUR_C_TEST_TIMEOUT_SCALE — global "
+                        "ctest timeout floor."),
+                    "UNITTEST_TIMEOUT": (
+                        "10 * FOUR_C_TEST_TIMEOUT_SCALE — per-"
+                        "unit-test timeout (set when "
+                        "FOUR_C_WITH_GOOGLETEST=ON)."),
+                    "BENCHMARK_TEST_TIMEOUT": (
+                        "10 (dry-run) or 600 (full) * "
+                        "FOUR_C_TEST_TIMEOUT_SCALE."),
+                    "FOUR_C_INSTALL_PREFIX": (
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_"
+                        "DATADIR}/cmake/4C — where the install-"
+                        "test harness expects 4CConfig.cmake."),
+                },
+                "install_test_configure_files": (
+                    "Three .in templates configure_file'd at "
+                    "configure time into ${PROJECT_BINARY_DIR}/"
+                    "tests/install_test/: main.cpp, CMakeLists.txt, "
+                    "test_install.sh — used by CI to verify the "
+                    "installed 4CConfig.cmake works for downstream "
+                    "consumers."),
+                "Signal": (
+                    "[Integration] cmake/setup_tests.cmake "
+                    "FetchContent's GoogleTest at PINNED COMMIT "
+                    "b514bdc898e2951020cbdca1304b75f5950d1f59 "
+                    "(v1.15.2) and Google Benchmark at PINNED "
+                    "COMMIT afa23b7699c17f1e26c88cbf95257b20d78d6247 "
+                    "(v1.9.2). Two FATAL_ERROR guards catch "
+                    "TARGET-name clashes when 4C is embedded in a "
+                    "larger CMake project that has already pulled "
+                    "in either library: "
+                    "  if(TARGET gtest) → FATAL_ERROR 'A target "
+                    "<gtest> has already been included by another "
+                    "library. This is not supported.' "
+                    "  if(TARGET benchmark_main) → FATAL_ERROR 'A "
+                    "target <benchmark_main> has already been "
+                    "included by another library. This is not "
+                    "supported.' "
+                    "Workarounds when integrating 4C into an "
+                    "umbrella project: (a) set "
+                    "FOUR_C_WITH_GOOGLETEST=OFF and/or "
+                    "FOUR_C_WITH_GOOGLE_BENCHMARK=OFF to skip the "
+                    "fetch entirely (the parent project must then "
+                    "not link against 4C's unit-test executables); "
+                    "(b) override the FetchContent source via "
+                    "FETCHCONTENT_SOURCE_DIR_GOOGLETEST and "
+                    "FETCHCONTENT_SOURCE_DIR_GOOGLEBENCHMARK to "
+                    "point at the parent project's pre-included "
+                    "copies — note that the FATAL_ERROR fires "
+                    "BEFORE the FetchContent_MakeAvailable call, "
+                    "so source-dir override alone is not sufficient. "
+                    "[Performance] FOUR_C_TEST_TIMEOUT_SCALE "
+                    "defaults to 4 in DEBUG builds (line 8-12) "
+                    "vs 1 in Release/RelWithDebInfo. This silently "
+                    "quadruples ALL test timeouts (UNITTEST_TIMEOUT "
+                    "40s, GLOBAL_TIMEOUT 480s, BENCHMARK_TIMEOUT "
+                    "2400s in full-benchmark mode) when the user "
+                    "switches between Debug and Release without "
+                    "changing CMakeCache.txt. CI run-time diffs "
+                    "between Debug and Release jobs often surface "
+                    "this. (File walk cmake/setup_tests.cmake "
+                    "2026-06-03.)"
+                ),
+            },
             "cmake_install_export": {
                 "description": (
                     "Configure-time surfaces defined in "

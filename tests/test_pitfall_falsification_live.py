@@ -1662,6 +1662,91 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "py4C)", body,
             "py4C subdirectory inclusion changed.")
 
+    def test_fourc_cmake_test_setup_invariants(self) -> None:
+        """fourc::overview.cli_arguments.cmake_test_setup_options
+        [Integration]+[Performance]: confirm cmake/setup_tests.cmake
+        still has
+        (a) DEBUG vs non-DEBUG default for FOUR_C_TEST_TIMEOUT_SCALE
+            (4 vs 1) with that exact branching structure,
+        (b) Pinned GoogleTest commit b514bdc898e2951020cbdca1304b
+            75f5950d1f59 (v1.15.2),
+        (c) Pinned Google Benchmark commit afa23b7699c17f1e26c88cbf
+            95257b20d78d6247 (v1.9.2),
+        (d) Both FATAL_ERROR guards against pre-existing
+            TARGET gtest / TARGET benchmark_main,
+        (e) FOUR_C_TEST_GLOBAL_TIMEOUT = 120 * scale,
+            UNITTEST_TIMEOUT = 10 * scale,
+            BENCHMARK_TEST_TIMEOUT branches between 600 (full)
+            and 10 (dry-run).
+        (File walk cmake/setup_tests.cmake 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/cmake/"
+                 "setup_tests.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/cmake/setup_tests.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C setup_tests.cmake not found in {candidates}.")
+        body = src.read_text()
+        # (a) DEBUG → 4, else 1
+        self.assertIn(
+            'if(FOUR_C_BUILD_TYPE_UPPER STREQUAL "DEBUG")', body,
+            "DEBUG build-type gate for default timeout scale "
+            "changed.")
+        self.assertIn(
+            "set(_default_timeout_scale 4)", body,
+            "DEBUG branch no longer sets timeout scale 4.")
+        self.assertIn(
+            "set(_default_timeout_scale 1)", body,
+            "non-DEBUG branch no longer sets timeout scale 1.")
+        # (b) GoogleTest pinned commit
+        self.assertIn(
+            "b514bdc898e2951020cbdca1304b75f5950d1f59", body,
+            "GoogleTest pinned commit changed; "
+            "FetchContent target may now pull a different "
+            "version. Revisit edge (b) — the catalog claims "
+            "v1.15.2 at that exact commit.")
+        # (c) Google Benchmark pinned commit
+        self.assertIn(
+            "afa23b7699c17f1e26c88cbf95257b20d78d6247", body,
+            "Google Benchmark pinned commit changed; "
+            "FetchContent target may now pull a different "
+            "version. Revisit edge (c) — the catalog claims "
+            "v1.9.2 at that exact commit.")
+        # (d) TARGET name conflict FATAL_ERRORs
+        self.assertIn(
+            "if(TARGET gtest)", body,
+            "TARGET gtest pre-existence check missing.")
+        self.assertIn(
+            "A target <gtest> has already been included by "
+            "another library.", body,
+            "TARGET gtest FATAL_ERROR text changed.")
+        self.assertIn(
+            "if(TARGET benchmark_main)", body,
+            "TARGET benchmark_main pre-existence check missing.")
+        self.assertIn(
+            "A target <benchmark_main> has already been "
+            "included by another library.", body,
+            "TARGET benchmark_main FATAL_ERROR text changed.")
+        # (e) Derived timeout constants
+        self.assertIn(
+            'math(EXPR FOUR_C_TEST_GLOBAL_TIMEOUT "120*'
+            '${FOUR_C_TEST_TIMEOUT_SCALE}")', body,
+            "FOUR_C_TEST_GLOBAL_TIMEOUT formula changed.")
+        self.assertIn(
+            'math(EXPR UNITTEST_TIMEOUT "10*'
+            '${FOUR_C_TEST_TIMEOUT_SCALE}")', body,
+            "UNITTEST_TIMEOUT formula changed.")
+        self.assertIn(
+            "set(_benchmark_test_timeout 600)", body,
+            "Full-benchmark timeout default changed from 600s.")
+        self.assertIn(
+            "set(_benchmark_test_timeout 10)", body,
+            "Dry-run benchmark timeout default changed from 10s.")
+
     def test_fourc_post_processor_post_gid_dead_wrapper(
             self) -> None:
         """fourc::overview.post_processor_tool [Output] edge 12:
