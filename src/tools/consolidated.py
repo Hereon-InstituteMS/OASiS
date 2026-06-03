@@ -86,31 +86,375 @@ def _stub_template_tag(content: str, fmt: str) -> str:
 
 
 _PHYSICS_SYNONYMS = {
-    "magnetostatics": "maxwell", "electromagnetics": "maxwell", "em": "maxwell",
-    "magnetic": "maxwell", "eddy_current": "maxwell", "nedelec": "maxwell",
-    "thermal": "heat", "conduction": "heat", "temperature": "heat",
-    "elasticity": "linear_elasticity", "structural": "linear_elasticity",
-    "solid": "linear_elasticity", "mechanics": "linear_elasticity",
-    "cfd": "navier_stokes", "flow": "navier_stokes", "fluid_dynamics": "navier_stokes",
-    "ns": "navier_stokes", "incompressible": "navier_stokes",
-    "diffusion": "poisson", "laplace": "poisson", "scalar": "poisson",
-    "wave": "helmholtz", "acoustics": "helmholtz",
-    "nonlinear_elasticity": "hyperelasticity", "large_deformation": "hyperelasticity",
-    "neo_hookean": "hyperelasticity", "finite_strain": "hyperelasticity",
-    "vibration": "eigenvalue", "modal": "eigenvalue", "frequencies": "eigenvalue",
-    "transport": "convection_diffusion", "advection": "convection_diffusion",
-    "plate": "biharmonic", "kirchhoff": "biharmonic",
-    "peridynamics": "particle_pd", "pd": "particle_pd", "fracture": "particle_pd",
-    "sph": "particle_sph", "smoothed_particle": "particle_sph",
-    "thermo_structural": "thermal_structural", "thermomechanical": "thermal_structural",
-    "poroelasticity": "porous_media", "poro": "porous_media",
-    "consolidation": "porous_media", "terzaghi": "porous_media",
-    "biot": "porous_media", "geomechanics": "porous_media",
-    "plasticity": "plasticity", "elasto_plasticity": "plasticity",
-    "elastoplasticity": "plasticity", "yield": "plasticity",
-    "mohr_coulomb": "plasticity", "drucker_prager": "plasticity",
-    "von_mises": "plasticity", "j2_plasticity": "plasticity",
-    "soil_plasticity": "plasticity", "metal_plasticity": "plasticity",
+    # ── Heat / thermal conduction ──────────────────────────────────
+    # canonical key 'heat' exists in: fourc, fenics, ngsolve, kratos,
+    # dealii, dune, skfem, febio (all 8 backends)
+    "thermal": "heat",
+    "conduction": "heat",
+    "temperature": "heat",
+    "heat_transfer": "heat",
+    "heat_conduction": "heat",
+    "heat_flow": "heat",
+    "thermal_conduction": "heat",
+    "thermal_diffusion": "heat",
+    "fourier": "heat",
+    # transient flavour (canonical: heat_transient OR time_dependent_heat)
+    "unsteady_heat": "heat_transient",
+    "transient_heat": "heat_transient",
+    "time_heat": "heat_transient",
+    "dynamic_thermal": "heat_transient",
+    "transient_thermal": "heat_transient",
+    "time_dependent_thermal": "time_dependent_heat",
+
+    # ── Linear elasticity / small-strain mechanics ─────────────────
+    "elasticity": "linear_elasticity",
+    "structural": "linear_elasticity",
+    "structural_mechanics": "linear_elasticity",
+    "structural_2d": "linear_elasticity",
+    "structural_3d": "linear_elasticity",
+    "solid": "linear_elasticity",
+    "solid_mechanics": "linear_elasticity",
+    "mechanics": "linear_elasticity",
+    "small_strain": "linear_elasticity",
+    "hooke": "linear_elasticity",
+    "hookean": "linear_elasticity",
+    "linear_solid": "linear_elasticity",
+    "plane_strain": "linear_elasticity",
+    "plane_stress": "linear_elasticity",
+    "elastic": "linear_elasticity",
+    "fea": "linear_elasticity",
+    "statics": "linear_elasticity",
+    "elasticity_2d": "linear_elasticity",
+    "elasticity_3d": "linear_elasticity",
+
+    # ── Hyperelasticity / large-deformation solid ──────────────────
+    "nonlinear_elasticity": "hyperelasticity",
+    "large_deformation": "hyperelasticity",
+    "large_strain": "hyperelasticity",
+    "neo_hookean": "hyperelasticity",
+    "neohookean": "hyperelasticity",
+    "mooney_rivlin": "hyperelasticity",
+    "ogden": "hyperelasticity",
+    "finite_strain": "hyperelasticity",
+    "finite_deformation": "hyperelasticity",
+    "hyperelastic": "hyperelasticity",
+    "hyperelastic_solid": "hyperelasticity",
+    "geometric_nonlinearity": "hyperelasticity",
+    "nonlinear_solid": "hyperelasticity",
+
+    # ── Plasticity / elasto-plastic ────────────────────────────────
+    "elasto_plasticity": "plasticity",
+    "elastoplasticity": "plasticity",
+    "elasto_plastic": "plasticity",
+    "yield": "plasticity",
+    "yielding": "plasticity",
+    "mohr_coulomb": "plasticity",
+    "drucker_prager": "plasticity",
+    "von_mises": "plasticity",
+    "j2_plasticity": "plasticity",
+    "soil_plasticity": "plasticity",
+    "metal_plasticity": "plasticity",
+    "return_mapping": "plasticity",
+    "plastic_flow": "plasticity",
+
+    # ── Stokes (creeping / mixed) flow ─────────────────────────────
+    "stokes_flow": "stokes",
+    "creeping_flow": "stokes",
+    "mixed_stokes": "stokes",
+    "taylor_hood": "stokes",
+    "low_reynolds": "stokes",
+
+    # ── Navier-Stokes / CFD ────────────────────────────────────────
+    "cfd": "navier_stokes",
+    "flow": "navier_stokes",
+    "fluid_dynamics": "navier_stokes",
+    "ns": "navier_stokes",
+    "incompressible": "navier_stokes",
+    "incompressible_flow": "navier_stokes",
+    "viscous_flow": "navier_stokes",
+    "fluid_flow": "navier_stokes",
+    "fluid_mechanics": "navier_stokes",
+    "internal_flow": "navier_stokes",
+    "channel_flow": "navier_stokes",
+    "external_flow": "navier_stokes",
+    "laminar_flow": "navier_stokes",
+    # transient flavour
+    "transient_ns": "time_dependent_ns",
+    "unsteady_ns": "time_dependent_ns",
+    "unsteady_navier_stokes": "time_dependent_ns",
+    "vortex_shedding": "time_dependent_ns",
+
+    # ── Maxwell / electromagnetism ─────────────────────────────────
+    "magnetostatics": "maxwell",
+    "electromagnetics": "maxwell",
+    "em": "maxwell",
+    "magnetic": "maxwell",
+    "eddy_current": "maxwell",
+    "eddy_current_problem": "maxwell",
+    "nedelec": "maxwell",
+    "electromagnetic": "maxwell",
+    "h_curl": "maxwell",
+    "electric_field": "maxwell",
+    "magnetic_field": "maxwell",
+    "electrostatics": "maxwell",
+    "electrodynamics": "maxwell",
+
+    # ── Helmholtz / time-harmonic acoustics ────────────────────────
+    "acoustics": "helmholtz",
+    "acoustic": "helmholtz",
+    "sound": "helmholtz",
+    "frequency_domain": "helmholtz",
+    "time_harmonic": "helmholtz",
+    "scattering": "helmholtz",
+
+    # ── Wave equation (second-order, time-domain) ──────────────────
+    "wave_equation": "wave",
+    "second_order_wave": "wave",
+    "elastic_wave": "wave",
+    "transient_wave": "time_dependent_wave",
+    "unsteady_wave": "time_dependent_wave",
+
+    # ── Eigenvalue / modal analysis ────────────────────────────────
+    "vibration": "eigenvalue",
+    "modal": "eigenvalue",
+    "frequencies": "eigenvalue",
+    "modes": "eigenvalue",
+    "natural_frequencies": "eigenvalue",
+    "eigenmode": "eigenvalue",
+    "eigenfrequency": "eigenvalue",
+    "buckling": "eigenvalue",
+    "linear_buckling": "eigenvalue",
+
+    # ── Poisson / Laplace / scalar elliptic ────────────────────────
+    "diffusion": "poisson",
+    "laplace": "poisson",
+    "scalar": "poisson",
+    "scalar_pde": "poisson",
+    "steady_diffusion": "poisson",
+    "electrostatic_field": "poisson",
+    "elliptic": "poisson",
+
+    # ── Convection-diffusion / scalar transport ────────────────────
+    "transport": "convection_diffusion",
+    "advection": "convection_diffusion",
+    "advection_diffusion": "convection_diffusion",
+    "scalar_transport": "convection_diffusion",
+    "mass_transport": "convection_diffusion",
+    "contaminant_transport": "convection_diffusion",
+    "cd": "convection_diffusion",
+
+    # ── DG (discontinuous Galerkin) ────────────────────────────────
+    "discontinuous_galerkin": "dg_methods",
+    "dg": "dg_methods",
+    "ipdg": "dg_methods",
+    "sipg": "dg_methods",
+    "nipg": "dg_methods",
+    "interior_penalty": "dg_methods",
+
+    # ── Biharmonic / plate bending ─────────────────────────────────
+    "plate": "biharmonic",
+    "kirchhoff": "biharmonic",
+    "kirchhoff_love": "biharmonic",
+    "fourth_order": "biharmonic",
+    "bending": "biharmonic",
+    "kirchhoff_plate": "biharmonic",
+
+    # ── Adaptive refinement (dealii / skfem / dune) ────────────────
+    # canonical varies: adaptive_refinement (dealii), adaptive_poisson
+    # (skfem, dune), hp_adaptive (dealii). _fuzzy_match_physics routes
+    # the synonym only if it exists in this backend's catalog, so
+    # mapping to adaptive_refinement first is safe — fall-through
+    # picks the right one per backend.
+    "amr": "hp_adaptive",
+    "refinement": "hp_adaptive",
+    "adaptive": "hp_adaptive",
+    "h_refinement": "hp_adaptive",
+    "p_refinement": "hp_adaptive",
+    "hp_refinement": "hp_adaptive",
+    "hp": "hp_adaptive",
+    "error_estimator": "error_estimation",
+    "kelly_estimator": "error_estimation",
+    "kelly": "error_estimation",
+    "adaptive_mesh": "hp_adaptive",
+    "mesh_refinement": "hp_adaptive",
+
+    # ── Phase field / fracture / damage ────────────────────────────
+    "cahn_hilliard": "phase_field",
+    "allen_cahn": "phase_field",
+    "phase_field_fracture": "phase_field",
+    "brittle_fracture": "fracture",
+    "crack": "fracture",
+    "crack_propagation": "fracture",
+    "fracture_mechanics": "fracture",
+    "damage_mechanics": "damage",
+    "continuum_damage": "damage",
+
+    # ── Topology / shape optimization ──────────────────────────────
+    "topopt": "topology_optimization",
+    "topology": "topology_optimization",
+    "topology_opt": "topology_optimization",
+    "shape_opt": "shape_optimization",
+    "shape_optimisation": "shape_optimization",
+    "structural_optimization": "topology_optimization",
+    "compliance_minimization": "topology_optimization",
+
+    # ── Contact / friction ─────────────────────────────────────────
+    "friction": "contact",
+    "contact_mechanics": "contact",
+    "frictional_contact": "contact",
+    "hertz": "contact",
+    "mortar_contact": "contact",
+    "node_to_surface": "contact",
+    "surface_to_surface": "contact",
+
+    # ── FSI / TSI / multiphysics coupling ──────────────────────────
+    "fluid_structure": "fsi",
+    "fluid_structure_interaction": "fsi",
+    "thermo_structural": "thermal_structural",
+    "thermomechanical": "thermal_structural",
+    "multiphysics": "fsi",
+    "coupling": "fsi",
+    "thermal_solid_interaction": "tsi",
+    "structural_thermal_interaction": "tsi",
+    "soil_structure": "ssi",
+    "structure_soil_interaction": "ssi",
+
+    # ── Porous media / geomechanics ────────────────────────────────
+    "poroelasticity": "porous_media",
+    "poro": "porous_media",
+    "consolidation": "porous_media",
+    "terzaghi": "porous_media",
+    "biot": "porous_media",
+    "geomechanics": "porous_media",
+    "saturated_porous": "porous_media",
+    "unsaturated_porous": "porous_media",
+
+    # ── Particle methods: peridynamics, SPH, DEM, MPM ──────────────
+    "peridynamics": "particle_pd",
+    "pd": "particle_pd",
+    "bond_based": "particle_pd",
+    "state_based": "particle_pd",
+    "ordinary_state_based": "particle_pd",
+    "non_ordinary_state_based": "particle_pd",
+    "nosbpd": "particle_pd",
+    "sph": "particle_sph",
+    "smoothed_particle": "particle_sph",
+    "smoothed_particle_hydrodynamics": "particle_sph",
+    "discrete_element": "dem",
+    "discrete_element_method": "dem",
+    "granular": "dem",
+    "material_point": "mpm",
+    "material_point_method": "mpm",
+    "particle_in_cell": "mpm",
+    "pic": "mpm",
+    "lagrangian_particles": "particle_sph",
+
+    # ── Multiphase / free surface / VOF / level-set ────────────────
+    "two_phase": "multiphase",
+    "multi_phase": "multiphase",
+    "vof": "multiphase",
+    "volume_of_fluid": "multiphase",
+    "immiscible": "multiphase",
+    "interface": "multiphase",
+    "free_surface_flow": "free_surface",
+    "level_set_method": "level_set",
+    "droplet": "droplet_dynamics",
+
+    # ── Reaction-diffusion / chemical kinetics ─────────────────────
+    "rd": "reaction_diffusion",
+    "reaction_diffusion_system": "reaction_diffusion",
+    "fitzhugh_nagumo": "reaction_diffusion",
+    "gray_scott": "reaction_diffusion",
+    "schnakenberg": "reaction_diffusion",
+    "chemical_kinetics": "reaction_diffusion",
+
+    # ── Structural dynamics / transient solid ──────────────────────
+    "dynamics": "structural_dynamics",
+    "transient_structural": "structural_dynamics",
+    "dynamic_analysis": "structural_dynamics",
+    "time_domain_structural": "structural_dynamics",
+    "implicit_dynamics": "structural_dynamics",
+    "explicit_dynamics": "structural_dynamics",
+    "structural_transient": "structural_dynamics",
+
+    # ── Schrödinger / quantum ──────────────────────────────────────
+    "quantum": "schrodinger",
+    "quantum_mechanics": "schrodinger",
+    "wavefunction": "schrodinger",
+    "eigenstate": "schrodinger",
+
+    # ── MHD ────────────────────────────────────────────────────────
+    "magnetohydrodynamics": "mhd",
+    "magneto_hydrodynamics": "mhd",
+    "plasma": "mhd",
+
+    # ── Beams / shells / membranes ─────────────────────────────────
+    "beam": "beams",
+    "beam_element": "beams",
+    "timoshenko": "beams",
+    "euler_bernoulli": "beams",
+    "shell_element": "shell",
+    "kirchhoff_love_shell": "shell",
+    "reissner_mindlin": "shell",
+    "membrane_element": "membrane",
+
+    # ── Cardiac / cardiovascular ───────────────────────────────────
+    "cardiac": "cardiac_monodomain",
+    "electrophysiology": "cardiac_monodomain",
+    "monodomain": "cardiac_monodomain",
+    "bidomain": "cardiac_monodomain",
+    "cardiovascular": "cardiovascular0d",
+    "windkessel": "cardiovascular0d",
+    "lumped_parameter": "cardiovascular0d",
+    "0d_model": "cardiovascular0d",
+
+    # ── XFEM ───────────────────────────────────────────────────────
+    "extended_fem": "xfem_fluid",
+    "xfem": "xfem_fluid",
+    "level_set_fem": "xfem_fluid",
+    "embedded_interface": "xfem_fluid",
+
+    # ── Reduced-order / multiscale ─────────────────────────────────
+    "rom": "rom",
+    "reduced_order": "rom",
+    "reduced_order_modeling": "rom",
+    "pod": "rom",
+    "homogenization": "multiscale",
+    "fe_squared": "multiscale",
+    "fe2": "multiscale",
+
+    # ── Optimization ───────────────────────────────────────────────
+    "optimal_control": "optimal_control",
+    "adjoint": "optimal_control",
+    "inverse_problem": "optimal_control",
+
+    # ── Matrix-free / multigrid (solver-level not physics, but
+    #     dealii exposes them as physics keys) ─────────────────────
+    "matrix_free_fe": "matrix_free",
+    "geometric_multigrid": "multigrid",
+    "algebraic_multigrid": "multigrid",
+    "amg": "multigrid",
+    "gmg": "multigrid",
+
+    # ── HDG / HDivDiv / mixed methods ──────────────────────────────
+    "hdg": "hdivdiv",
+    "hybridizable_dg": "hdivdiv",
+    "hellinger_reissner": "hdivdiv",
+    "raviart_thomas": "mixed_poisson",
+    "rt": "mixed_poisson",
+    "bdm": "mixed_poisson",
+    "mixed_finite_element": "mixed_poisson",
+    "mixed_method": "mixed_poisson",
+    "h_div_conforming": "mixed_poisson",
+
+    # ── Hydraulics / shallow water ─────────────────────────────────
+    "shallow_water_equations": "shallow_water",
+    "saint_venant": "shallow_water",
+    "swe": "shallow_water",
+
+    # ── ALE ────────────────────────────────────────────────────────
+    "arbitrary_lagrangian_eulerian": "ale",
+    "moving_mesh": "ale",
 }
 
 

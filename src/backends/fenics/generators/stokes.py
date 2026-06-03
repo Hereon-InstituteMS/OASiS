@@ -63,6 +63,27 @@ KNOWLEDGE = {
         "Function in the XDMFFile output at rate ~h^2 instead of "
         "Taylor-Hood's ~h^3 for the same mesh refinement. (Audit "
         "2026-06-02.)",
+        "[Output] In dolfinx 0.10+, XDMFFile.write_function() "
+        "REJECTS Functions whose element degree exceeds the mesh "
+        "geometry degree (which is 1 for the default-order triangle "
+        "/ tetrahedron mesh from create_unit_square / create_box). "
+        "Writing a P2 velocity directly raises 'RuntimeError: "
+        "Degree of output Function must be same as mesh degree. "
+        "Maybe the Function needs to be interpolated?'. This blocks "
+        "the obvious Taylor-Hood output pattern: collapse(W.sub(0)) "
+        "and write the P2 sub-function. Fix: import dolfinx.io."
+        "VTXWriter (ADIOS2 backend) which supports arbitrary-degree "
+        "Functions natively, writes to a .bp directory ParaView "
+        "5.10+ reads directly. Usage: with VTXWriter(domain.comm, "
+        "'velocity.bp', [u_h]) as vtx: vtx.write(0.0). The .bp "
+        "extension is mandatory — it's a directory, not a file. "
+        "Alternative if you must use XDMF: interpolate the P2 "
+        "velocity to a P1 space first via fem.functionspace(domain, "
+        "('Lagrange', 1, (gdim,))) + Function.interpolate(u_h), "
+        "which loses the P2 fidelity but keeps a single .xdmf "
+        "output. (Audit 2026-06-03, follow-up to Layer F fix "
+        "task #114 that updated the template but not the pitfall "
+        "narrative; gap surfaced by Layer G audit.)",
     ],
 }
 
