@@ -89,8 +89,29 @@ KNOWLEDGE["_general"] = {
                 "FELogElemData names you see in .feb plot output). "
                 "Source: FEAMR/FEElementDataCriterion.cpp"),
             "tet-quality":       "FETetQualityCriterion",
-            "mean-ratio":        "FEMeanRatioQualityCriterion",
-            "scaled Jacobian":   "FEScaledJacobianQualityCriterion — SPACED-AND-CAMELCASE tag name",
+            "mean-ratio": (
+                "FEMeanRatioQualityCriterion — HYPHEN tag name. "
+                "Required child: <min_quality> (double, default 1.0 "
+                "= refines everything; mean-ratio metric ∈ [0,1] "
+                "with 1=perfect equilateral). Per-node formula: "
+                "MR = 3·det(J)^(2/3) / (|e0|² + |e1|² + |e2|²), "
+                "returns min over nodes. Element-shape gate "
+                "(GetElementValue): ONLY ET_TET4 / ET_HEX8 / "
+                "ET_PENTA6 — linear quads, higher-order elements "
+                "(ET_TET10, ET_HEX20, ...), and all 2D shells/beams "
+                "return false silently. Source: "
+                "FEAMR/FEElementQualityCriterion.cpp:35-127"),
+            "scaled Jacobian": (
+                "FEScaledJacobianQualityCriterion — SPACED-AND-"
+                "CAMELCASE tag name (outer); ADD_PARAMETER uses "
+                "UNDERSCORE \"min_quality\" inner form (default "
+                "1.0). Per-node formula: SJ = det(J) / "
+                "(|e0|·|e1|·|e2|), returns min over nodes (range "
+                "[-1, 1] with 1=perfect, near 0=bad, negative "
+                "=inverted element). Same element-shape gate as "
+                "mean-ratio: ONLY TET4/HEX8/PENTA6. Unsupported "
+                "shapes return false silently. Source: "
+                "FEAMR/FEElementQualityCriterion.cpp:131-194"),
         },
         "plot_variables": {
             "tet-quality":     ("FEPlotTetQuality — silently writes 0.0 for "
@@ -117,9 +138,22 @@ KNOWLEDGE["_general"] = {
             "state with zero stress everywhere), the function returns "
             "an EMPTY FEMeshAdaptorSelection and refinement is silently "
             "a no-op. Users probing the criterion before the first "
-            "solve see no refinement and no warning. (File walks "
+            "solve see no refinement and no warning. Two more quirks "
+            "in the 'mean-ratio' and 'scaled Jacobian' criteria "
+            "(FEElementQualityCriterion.cpp): (a) BOTH default "
+            "<min_quality> to 1.0 — since mean-ratio ∈ [0,1] and "
+            "scaled-Jacobian ∈ [-1,1] both peak at 1, users who omit "
+            "<min_quality> trigger refinement on every non-perfect "
+            "element (essentially the entire mesh on the first call). "
+            "(b) BOTH criterion classes silently SKIP elements whose "
+            "Shape() is not ET_TET4 / ET_HEX8 / ET_PENTA6 — "
+            "GetElementValue returns false. Higher-order solids "
+            "(ET_TET10, ET_HEX20), 2D shells, beams, etc. are "
+            "invisible to these criteria. Mixed meshes get partial "
+            "coverage with no warning. (File walks "
             "FEAMR/FEAMR.cpp 2026-06-02, "
-            "FEAMR/FEDomainErrorCriterion.cpp 2026-06-03.)"
+            "FEAMR/FEDomainErrorCriterion.cpp 2026-06-03, "
+            "FEAMR/FEElementQualityCriterion.cpp 2026-06-03.)"
         ),
     },
     "cmake_embedding": {

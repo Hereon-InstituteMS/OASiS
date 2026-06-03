@@ -659,6 +659,65 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"aliases; pitfall about silent aliases needs "
             f"revisit. Warnings: {[str(w.message) for w in dep]!r}")
 
+    def test_febio_element_quality_criterion_source_invariants(
+            self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input]:
+        confirm FEMeanRatioQualityCriterion + FEScaledJacobian
+        QualityCriterion still (a) BOTH register
+        ADD_PARAMETER(minQuality, "min_quality") with default
+        1.0, (b) BOTH gate GetElementValue on Shape() ∈
+        {ET_TET4, ET_HEX8, ET_PENTA6}, (c) implement
+        mean-ratio MR = 3·detJ^(2/3)/JF2 and scaled-Jacobian
+        SJ = detJ/(L0·L1·L2). (File walk
+        FEAMR/FEElementQualityCriterion.cpp 2026-06-03.)"""
+        from pathlib import Path
+        src = Path(__file__).resolve().parent.parent / (
+            "upstream_sources/febio/FEAMR/"
+            "FEElementQualityCriterion.cpp")
+        if not src.exists():
+            self.skipTest(
+                f"FEBio FEElementQualityCriterion.cpp not found "
+                f"in {src}.")
+        body = src.read_text()
+        # (a) Both classes register ADD_PARAMETER min_quality
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEMeanRatioQualityCriterion, "
+            "FEMeshAdaptorCriterion)", body,
+            "FEMeanRatioQualityCriterion FECORE_CLASS removed.")
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEScaledJacobianQualityCriterion, "
+            "FEMeshAdaptorCriterion)", body,
+            "FEScaledJacobianQualityCriterion FECORE_CLASS removed.")
+        # Both ADD_PARAMETER with the UNDERSCORE form
+        self.assertEqual(
+            body.count(
+                'ADD_PARAMETER(minQuality, "min_quality")'
+                '->setLongName("Minimum element quality")'),
+            2,
+            "Expected TWO ADD_PARAMETER lines for min_quality "
+            "(mean-ratio + scaled Jacobian) — count changed.")
+        # Both ctors default minQuality to 1.0
+        self.assertEqual(body.count("minQuality = 1.0;"), 2,
+                         "Both default-1.0 ctor lines must be "
+                         "present (refines-everything trap).")
+        # (b) Element-shape gate identical in both
+        gate = ('if ((el.Shape() != ET_TET4) && (el.Shape() != '
+                'ET_HEX8) && (el.Shape() != ET_PENTA6)) return false;')
+        self.assertEqual(
+            body.count(gate), 2,
+            "Element-shape gate (TET4/HEX8/PENTA6 only) line "
+            "count changed; pitfall about mixed-mesh silent skip "
+            "needs revisit.")
+        # (c) Formulas
+        # Mean-ratio: MR = 3.0 * pow(detJ, 2.0/3.0) / JF2
+        self.assertIn(
+            "double MR = 3.0 * pow(detJ, 2.0 / 3.0) / JF2;",
+            body, "Mean-ratio formula changed.")
+        # Scaled-Jacobian: SJ = detJ / (L[0] * L[1] * L[2])
+        self.assertIn(
+            "double SJ = detJ / (L[0] * L[1] * L[2]);",
+            body, "Scaled-Jacobian formula changed.")
+
     def test_febio_element_data_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]:
