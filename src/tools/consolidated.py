@@ -707,6 +707,17 @@ def register_consolidated_tools(mcp: FastMCP):
                   features). The content under the special "_general"
                   knowledge key — for dealii ~5 KB, fenics / ngsolve /
                   skfem / kratos / dune ~1-2 KB each. Needs solver=...
+                - "cross_backend" — collation pitfalls that surface ONLY
+                  when porting a problem between two backends (units
+                  conventions, Tet10/Hex20 node ordering, 'linear
+                  elastic' semantic drift across backends, Dirichlet
+                  strong-vs-penalty enforcement, restart file
+                  incompatibility, MPI launch idioms). Pass the
+                  optional `physics` arg as a topic filter
+                  (e.g. 'units', 'mesh', 'bc', 'restart', 'mpi') to
+                  narrow the response. These pitfalls belong to no
+                  single backend's catalog because they only fire on
+                  the delta between two.
             solver: Backend name (e.g. 'fenics', 'fourc', 'dealii', 'ngsolve')
             physics: Physics type (e.g. 'poisson', 'linear_elasticity', 'navier_stokes')
             signal: Optional substring to filter post-mortem
@@ -995,6 +1006,17 @@ def register_consolidated_tools(mcp: FastMCP):
                 return f"No hardware info for {solver}"
             return json.dumps(hw, indent=2)
 
+        elif topic == "cross_backend":
+            # Cross-backend collation pitfalls — failures that live
+            # in the delta between two backends both claiming to
+            # solve the same problem. See src/backends/_cross.py
+            # for content + rationale. The `physics` arg here is
+            # repurposed as a topic filter (e.g. 'units', 'mesh',
+            # 'bc', 'restart', 'mpi') to narrow the response.
+            from backends._cross import get_cross_backend_pitfalls
+            result = get_cross_backend_pitfalls(physics or signal or None)
+            return json.dumps(result, indent=2)
+
         else:
             # Topics list must match the docstring + dispatch
             # branches. Audit 2026-06-01: 'postmortems' was
@@ -1007,7 +1029,7 @@ def register_consolidated_tools(mcp: FastMCP):
                 "Usage: knowledge(topic, solver, physics, signal='')\n"
                 "Topics: physics, pitfalls, postmortems, materials, "
                 "overview, coupling, tsi, precice, input_guide, "
-                "solver_guidance, hardware"
+                "solver_guidance, hardware, cross_backend"
             )
 
     # ═══════════════════════════════════════════════════════════
