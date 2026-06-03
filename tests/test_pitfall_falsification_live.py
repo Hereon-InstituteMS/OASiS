@@ -935,6 +935,106 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "sites reduced below 2 — upstream may be adding "
             "diagnostic detail; revisit edge (n).")
 
+    def test_febio_hex_refine2d_source_invariants(self) -> None:
+        """febio::adaptive_mesh_refinement.hex_refine2d
+        [Validation]+[Mesh]: confirm FEHexRefine2D.cpp still has
+        (a) FECoreClass + ADD_PARAMETER/ADD_PROPERTY block for
+            FEHexRefine2D matching the registered slot
+            'hex_refine2d' in FEAMR/FEAMR.cpp,
+        (b) Init() checks mesh.IsType(ET_HEX8) with the same
+            error text as the 3D hex_refine (so log doesn't
+            disambiguate which adaptor failed),
+        (c) BuildSplitLists marks eligible elements with literal
+            value 1 (m_elemList[lid] = 1 / m_elemList.assign(NEL, 1)),
+        (d) The cap-enforcement loop is the BUGGY version —
+            i.e. its inner branch tests `m_elemList[i] == 0`
+            (which never matches 1-marked elements) rather than
+            the correct `>= 0` used by the 3D FEHexRefine.cpp,
+        (e) The XY-vs-non-XY face split detection uses literal
+            threshold fabs(n.z) < 0.999 (line 219).
+        (File walk FEAMR/FEHexRefine2D.cpp 2026-06-03.)"""
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent
+        candidates_2d = [
+            root / "upstream_sources/febio/FEAMR/FEHexRefine2D.cpp",
+            Path("/home/hermann/Schreibtisch/FEBioStudio-src/"
+                 "FEAMR/FEHexRefine2D.cpp"),
+        ]
+        candidates_3d = [
+            root / "upstream_sources/febio/FEAMR/FEHexRefine.cpp",
+        ]
+        candidates_reg = [
+            root / "upstream_sources/febio/FEAMR/FEAMR.cpp",
+        ]
+        src2 = next((p for p in candidates_2d if p.exists()), None)
+        src3 = next((p for p in candidates_3d if p.exists()), None)
+        srcR = next((p for p in candidates_reg if p.exists()), None)
+        if src2 is None or src3 is None or srcR is None:
+            self.skipTest(
+                f"FEBio hex_refine sources not found in {candidates_2d}/"
+                f"{candidates_3d}/{candidates_reg}.")
+        body2 = src2.read_text()
+        body3 = src3.read_text()
+        bodyR = srcR.read_text()
+        # (a) FECoreClass + parameter/property registration
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEHexRefine2D, FERefineMesh)",
+            body2,
+            "FEHexRefine2D FECoreClass block missing.")
+        self.assertIn(
+            'ADD_PARAMETER(m_elemRefine, "max_elem_refine");',
+            body2,
+            "max_elem_refine parameter not registered.")
+        self.assertIn(
+            'ADD_PROPERTY(m_criterion, "criterion");', body2,
+            "criterion property not registered.")
+        self.assertIn(
+            'ADD_PARAMETER(m_maxValue, "max_value");', body2,
+            "max_value parameter not registered.")
+        self.assertIn(
+            'REGISTER_FECORE_CLASS(FEHexRefine2D   , '
+            '"hex_refine2d");', bodyR,
+            "FEHexRefine2D no longer registered with slot "
+            "name 'hex_refine2d' in FEAMR.cpp.")
+        # (b) ET_HEX8 init check + same shared error text
+        self.assertIn(
+            "mesh.IsType(ET_HEX8) == false", body2,
+            "Init() ET_HEX8 check changed.")
+        self.assertIn(
+            'feLogError("Cannot apply hex refinement: Mesh '
+            'is not a HEX8 mesh.");', body2,
+            "Init() error text changed.")
+        # (c) Eligible elements marked with 1
+        self.assertIn(
+            "m_elemList[lid] = 1;", body2,
+            "Eligible element marker no longer literal 1; "
+            "the bug semantics in edge (d) may have shifted.")
+        self.assertIn(
+            "m_elemList.assign(NEL, 1);", body2,
+            "no-criterion fallback no longer assigns literal "
+            "1 to every element.")
+        # (d) The BUG: cap loop tests == 0 (never matches),
+        #     3D version uses >= 0 (correct).
+        # 2D buggy line
+        self.assertIn(
+            "if (m_elemList[i] == 0) {", body2,
+            "FEHexRefine2D cap-enforcement loop no longer "
+            "tests `m_elemList[i] == 0` — upstream may have "
+            "fixed the bug. Revisit Signal edge.")
+        # 3D correct line (proves the asymmetry)
+        self.assertIn(
+            "if (m_elemList[i] >= 0) {", body3,
+            "FEHexRefine.cpp (3D) cap-enforcement loop no "
+            "longer tests `m_elemList[i] >= 0` — the buggy/"
+            "correct asymmetry between 2D and 3D variants "
+            "may have collapsed.")
+        # (e) XY-plane detection threshold
+        self.assertIn(
+            "if (fabs(n.z) < 0.999)", body2,
+            "XY-plane face-normal threshold (0.999) changed; "
+            "users on rotated meshes may now see different "
+            "split behavior. Revisit Signal [Mesh] edge.")
+
     def test_febio_minmax_filter_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]

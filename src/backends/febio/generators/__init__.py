@@ -198,6 +198,95 @@ KNOWLEDGE["_general"] = {
                     "generic exception 'Error in FEHexRefine!' "
                     "(lines 108, 127) — no diagnostic detail."),
             },
+            "hex_refine2d (FEHexRefine2D)": {
+                "description": (
+                    "Anisotropic 2D-in-plane variant of hex_refine. "
+                    "Splits each selected HEX8 element into 4 smaller "
+                    "HEX8 sub-elements (1-to-4 split, NOT 1-to-8 like "
+                    "the 3D hex_refine), refining ONLY the in-plane "
+                    "XY directions while leaving the Z direction "
+                    "unchanged. Used to refine extruded 2D-like "
+                    "meshes (e.g. layered shells, plane-stress slabs "
+                    "represented as a single HEX8 layer) without "
+                    "exploding the through-thickness DOF count. "
+                    "Faces with normals near ±Z (|n.z| > 0.999) are "
+                    "split in 4; faces with normals NOT perpendicular "
+                    "to XY are split in 2. Source: "
+                    "FEAMR/FEHexRefine2D.cpp. Registered as "
+                    "FECoreClass 'hex_refine2d' in FEAMR/FEAMR.cpp:51."),
+                "parameters": {
+                    "max_elem_refine": (
+                        "int, default 0 = UNLIMITED. SAME parameter "
+                        "name as hex_refine, but with a real upstream "
+                        "bug in the cap logic — see Signal below."),
+                    "max_value": (
+                        "double, default 0.0. Threshold compared "
+                        "STRICTLY (selection[i].m_elemValue > "
+                        "m_maxValue). Same semantics as hex_refine."),
+                    "criterion": (
+                        "REQUIRED FEMeshAdaptorCriterion property; "
+                        "when omitted (nullptr), every HEX8 element "
+                        "is flagged for refinement (line 145: "
+                        "'just do'em all'). Same fall-back as "
+                        "hex_refine."),
+                },
+                "init_requirements": (
+                    "Init() checks mesh.IsType(ET_HEX8). Mixed "
+                    "meshes or non-HEX8 (HEX20, HEX27, TET, etc.) "
+                    "fail with feLogError('Cannot apply hex "
+                    "refinement: Mesh is not a HEX8 mesh.') — note "
+                    "the error text is shared with the 3D hex_refine, "
+                    "so it does not disambiguate which adaptor "
+                    "rejected the mesh."),
+                "Signal": (
+                    "[Validation] FEHexRefine2D::BuildSplitLists "
+                    "(lines 185-201) has a REAL UPSTREAM BUG in "
+                    "the max_elem_refine cap-enforcement loop: "
+                    "  if ((m_elemRefine > 0) && "
+                    "      (m_splitElems > m_elemRefine)) { "
+                    "    m_splitElems = 0; "
+                    "    for (int i = 0; i < m_elemList.size(); ++i){ "
+                    "      if (m_elemList[i] == 0) {                 "
+                    "// ← BUG: should be != -1 or >= 0 "
+                    "        ... "
+                    "      } "
+                    "    } "
+                    "    assert(m_splitElems == m_elemRefine); "
+                    "  } "
+                    "Elements eligible for refinement are marked "
+                    "with value 1 (line 138: m_elemList[lid] = 1; "
+                    "line 145: m_elemList.assign(NEL, 1) when no "
+                    "criterion). They are NEVER marked with 0. The "
+                    "cap-loop checks for 0 and so NEVER executes its "
+                    "body — m_splitElems stays at 0. Compare with "
+                    "the 3D FEHexRefine.cpp:205 which uses "
+                    "'if (m_elemList[i] >= 0)' — the correct "
+                    "condition. User-visible failure: when a user "
+                    "sets max_elem_refine=N to cap a step and the "
+                    "criterion flags MORE than N elements, the "
+                    "adaptor silently performs ZERO refinements in "
+                    "release builds (the post-loop "
+                    "'assert(m_splitElems == m_elemRefine)' aborts "
+                    "in debug builds with NDEBUG unset). Log line "
+                    "'\\t  Elements to refine: 0' is the only "
+                    "signal. Workaround until upstream fixes: leave "
+                    "max_elem_refine at the default 0 (unlimited) "
+                    "and pre-restrict the candidate set via a "
+                    "tight criterion. "
+                    "[Mesh] hex_refine2d splits HEX8 cells into 4 "
+                    "smaller HEX8 cells (in-plane only), so it "
+                    "expects a SINGLE-LAYER through-thickness mesh "
+                    "with face normals aligned to ±Z. The "
+                    "XY-vs-non-XY detection uses fabs(n.z) > 0.999 "
+                    "(line 219) — meshes whose 'layer' axis is "
+                    "rotated more than ~2.6° off the global Z axis "
+                    "fall through to the 'split in 2' branch and "
+                    "the refinement does not match the user's "
+                    "mental model. Pre-align meshes to Z before "
+                    "applying hex_refine2d. "
+                    "(File walk FEAMR/FEHexRefine2D.cpp 2026-06-03.)"
+                ),
+            },
         },
         "adaptor_criteria": {
             "max_variable":      "FEVariableCriterion — threshold on a field variable",
