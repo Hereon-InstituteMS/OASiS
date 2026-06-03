@@ -3366,6 +3366,105 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "text changed.")
 
     @_skip_no_skfem
+    def test_skfem_functional_elemental_returns_ndarray(
+            self) -> None:
+        """skfem::_general.form_base_class_extras edge (6): confirm
+        the API asymmetry between Form subclasses on .elemental():
+        (a) Functional.elemental(basis) returns a plain ndarray of
+            shape (n_elements,) — NOT COOData,
+        (b) BilinearForm.elemental(basis) returns a COOData,
+        (c) LinearForm.elemental(basis) returns a COOData,
+        (d) Functional(basis) (via Form.__call__) returns a scalar
+            float — not the per-element array,
+        (e) The override is ONLY on Functional (Form.elemental
+            inherited unchanged by Linear/Bilinear/TrilinearForm).
+        (File walk skfem/assembly/form/functional.py 2026-06-03.)"""
+        import numpy as np
+        import skfem as fem
+        from skfem.helpers import dot, grad
+        from skfem.assembly.form.coo_data import COOData
+        from skfem.assembly.form.form import Form
+        from skfem.assembly.form.functional import Functional
+        from skfem.assembly.form.linear_form import LinearForm
+        from skfem.assembly.form.bilinear_form import BilinearForm
+        from skfem.assembly.form.trilinear_form import TrilinearForm
+
+        m = fem.MeshTri().refined(1)
+        basis = fem.Basis(m, fem.ElementTriP1())
+
+        @fem.Functional
+        def volume(w):
+            return 1.0 + 0 * w.x[0]
+        @fem.LinearForm
+        def load(v, w):
+            return 1.0 * v
+        @fem.BilinearForm
+        def laplace(u, v, w):
+            return dot(grad(u), grad(v))
+
+        # (a) Functional.elemental → ndarray
+        f_el = volume.elemental(basis)
+        self.assertIsInstance(
+            f_el, np.ndarray,
+            "Functional.elemental(basis) no longer returns "
+            "ndarray; the override at functional.py:26 may have "
+            "been removed — revisit edge (6).")
+        self.assertEqual(
+            f_el.shape, (basis.nelems,),
+            "Functional.elemental return shape no longer "
+            "(n_elements,); the per-element scalar encoding "
+            "shifted.")
+        # (b) BilinearForm.elemental → COOData
+        b_el = laplace.elemental(basis)
+        self.assertIsInstance(
+            b_el, COOData,
+            "BilinearForm.elemental(basis) no longer returns "
+            "COOData; the base-class Form.elemental contract "
+            "may have shifted.")
+        # (c) LinearForm.elemental → COOData
+        l_el = load.elemental(basis)
+        self.assertIsInstance(
+            l_el, COOData,
+            "LinearForm.elemental(basis) no longer returns "
+            "COOData; the base-class Form.elemental contract "
+            "may have shifted.")
+        # (d) Functional(basis) raises AttributeError per the
+        # skfem 12.0.1 kernel/_kernel mismatch in Form.__call__
+        # line 71; .assemble(basis) is the workaround.
+        with self.assertRaises(AttributeError) as ctx:
+            _ = volume(basis)
+        self.assertIn(
+            "kernel", str(ctx.exception),
+            "Functional(basis) now succeeds OR raises a "
+            "different exception — the upstream Form.__call__ "
+            "self.kernel/self._kernel mismatch (edge 7) may "
+            "have been fixed. Revisit the catalog.")
+        # canonical workaround works
+        vol_total = volume.assemble(basis)
+        self.assertIsInstance(
+            vol_total, (float, np.floating),
+            "Functional.assemble(basis) no longer yields a "
+            "scalar float — the _assemble 1-element-data "
+            "encoding shifted.")
+        self.assertAlmostEqual(vol_total, 1.0, places=10)
+        # (e) Override is only on Functional
+        self.assertIsNot(
+            Functional.elemental, Form.elemental,
+            "Functional no longer overrides elemental — the "
+            "API asymmetry claim in edge (6) is invalidated.")
+        self.assertIs(
+            LinearForm.elemental, Form.elemental,
+            "LinearForm now overrides elemental; was inherited "
+            "from Form. Edge (6) claim of single-class override "
+            "needs revisit.")
+        self.assertIs(
+            BilinearForm.elemental, Form.elemental,
+            "BilinearForm now overrides elemental.")
+        self.assertIs(
+            TrilinearForm.elemental, Form.elemental,
+            "TrilinearForm now overrides elemental.")
+
+    @_skip_no_skfem
     def test_skfem_facet_basis_extras(self) -> None:
         """skfem::_general.facet_basis_extras [API]: confirm
         (a) FacetBasis(facets=None) restricts to boundary facets
