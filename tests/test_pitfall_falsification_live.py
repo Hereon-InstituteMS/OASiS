@@ -1327,6 +1327,70 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Check() no longer KRATOS_ERRORs on missing CROSS_AREA.")
 
     @_skip_no_skfem
+    def test_skfem_abstract_basis_extras(self) -> None:
+        """skfem::_general.abstract_basis_extras [API]: confirm
+        AbstractBasis still has the three documented edges:
+        (a) basis.get_dofs(dict) → DeprecationWarning citing
+        'Passing dict to get_dofs is deprecated'; (b) constructor
+        rejects mismatched mesh.refdom / elem.refdom with
+        ValueError('Incompatible Mesh and Element.'); (c) `b1 @
+        b2` builds CompositeBasis with equal_dofnum=True while
+        `b1 * b2` builds equal_dofnum=False. (File walk
+        skfem/assembly/basis/abstract_basis.py 2026-06-03.)"""
+        import warnings
+        import numpy as np
+        import skfem as fem
+        m = (fem.MeshTri().refined()
+             .with_boundaries({
+                "left": lambda x: np.isclose(x[0], 0),
+                "right": lambda x: np.isclose(x[0], 1),
+            }))
+        b = fem.CellBasis(m, fem.ElementTriP1())
+        # (a) get_dofs(dict) DeprecationWarning
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            _ = b.get_dofs(
+                {"left": lambda x: np.isclose(x[0], 0)})
+        dep = [w for w in ws
+               if issubclass(w.category, DeprecationWarning)]
+        self.assertEqual(
+            len(dep), 1,
+            f"get_dofs(dict) should emit exactly one "
+            f"DeprecationWarning; got: "
+            f"{[str(w.message) for w in dep]!r}")
+        self.assertIn(
+            "Passing dict to get_dofs is deprecated",
+            str(dep[0].message),
+            f"Deprecation message changed; got "
+            f"{dep[0].message!r}")
+        # (b) mesh.refdom != elem.refdom → ValueError
+        with self.assertRaises(ValueError) as cm:
+            fem.CellBasis(fem.MeshHex(), fem.ElementTriP1())
+        self.assertIn(
+            "Incompatible Mesh and Element",
+            str(cm.exception),
+            f"Mesh/Element refdom mismatch error message "
+            f"changed; got {cm.exception!r}")
+        # (c) @ vs * operator distinction
+        b2 = fem.CellBasis(m, fem.ElementTriP1())
+        cb_at = b @ b2
+        cb_mul = b * b2
+        self.assertEqual(
+            type(cb_at).__name__, "CompositeBasis",
+            "@ no longer builds CompositeBasis.")
+        self.assertEqual(
+            type(cb_mul).__name__, "CompositeBasis",
+            "* no longer builds CompositeBasis.")
+        self.assertTrue(
+            getattr(cb_at, "equal_dofnum", None) is True,
+            f"`b @ b` should have equal_dofnum=True; got "
+            f"{getattr(cb_at, 'equal_dofnum', None)!r}")
+        self.assertTrue(
+            getattr(cb_mul, "equal_dofnum", None) is False,
+            f"`b * b` should have equal_dofnum=False; got "
+            f"{getattr(cb_mul, 'equal_dofnum', None)!r}")
+
+    @_skip_no_skfem
     def test_skfem_dofs_view_deprecations_and_decompose_exit(
             self) -> None:
         """skfem::_general.dofs_view_extras [API]: confirm

@@ -73,6 +73,80 @@ KNOWLEDGE["_general"] = {
         "Mortar methods for domain decomposition (MortarFacetBasis)",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
+    "abstract_basis_extras": {
+        "description": (
+            "Less-publicized behaviors of AbstractBasis (and "
+            "consequently CellBasis / FacetBasis / "
+            "InteriorFacetBasis): operator overloads, "
+            "deprecation paths, error messages, and silent "
+            "fallbacks. Source: "
+            "skfem/assembly/basis/abstract_basis.py."),
+        "operator_overloads": {
+            "b1 @ b2": ("CompositeBasis(b1, b2, "
+                        "equal_dofnum=True) — DOF numbering "
+                        "is SHARED between the two bases; use "
+                        "this for coupled problems where both "
+                        "fields live on the same DOF indexing "
+                        "(e.g. Argyris-style high-order or "
+                        "mortar with matching DOFs)."),
+            "b1 * b2": ("CompositeBasis(b1, b2, "
+                        "equal_dofnum=False) — DOFs are "
+                        "INDEPENDENT; use this for standard "
+                        "Taylor-Hood / Mini-style mixed "
+                        "formulations where velocity and "
+                        "pressure have separate DOF tables."),
+        },
+        "Signal": (
+            "[API] Five less-publicized sharp edges in "
+            "AbstractBasis: "
+            "(1) basis.get_dofs(dict) — passing a `dict` of "
+            "named boundary lambdas was the pre-2023 idiom; "
+            "it now emits DeprecationWarning('Passing dict to "
+            "get_dofs is deprecated.'). Replacement: build "
+            "named boundaries on the mesh first via "
+            "`mesh.with_boundaries({'left': ..., 'right': "
+            "...})`, then call `basis.get_dofs({'left', "
+            "'right'})` with a SET (not dict) of boundary "
+            "names, or pass facets=... individually. "
+            "(2) Constructor enforces `mesh.refdom == "
+            "elem.refdom` — pairing e.g. MeshHex with "
+            "ElementTriP1 raises ValueError('Incompatible "
+            "Mesh and Element.') with no further hint. "
+            "Common confusion: ElementTri* works on tri "
+            "meshes only; for hex use ElementHex*, for tet "
+            "use ElementTet*. "
+            "(3) `b1 @ b2` is NOT the same as `b1 * b2` — "
+            "the matmul builds CompositeBasis with "
+            "equal_dofnum=True (shared DOF table), the "
+            "multiplication builds equal_dofnum=False "
+            "(independent DOF tables). Wrong operator on a "
+            "Taylor-Hood (velocity * pressure) gives a "
+            "singular mass-block; wrong operator on Argyris-"
+            "style (b1 @ b2) gives DOF-mismatch errors. "
+            "(4) Default integration order = 2 * "
+            "elem.maxdeg. For P1×P1 bilinear forms this is "
+            "exact, but user forms with cubic+ coefficients "
+            "(e.g. viscosity that's a P2 field times "
+            "gradient terms) are under-integrated silently. "
+            "Pass intorder=K explicitly to "
+            "CellBasis/FacetBasis when in doubt. "
+            "(5) Constructor's doflocs computation is "
+            "wrapped in `try / except Exception: "
+            "logger.warning('Unable to calculate global DOF "
+            "locations.')` — a BROAD catch that uses "
+            "logger.warning (not warnings.warn). Default "
+            "Python logger config swallows it; users see "
+            "the AttributeError on `basis.doflocs` "
+            "downstream with no clear cause. To force "
+            "stdout: `logging.basicConfig(level=logging."
+            "WARNING)` before constructing the basis, or "
+            "pass disable_doflocs=True to skip the "
+            "computation entirely (useful for large meshes "
+            "where doflocs is expensive). "
+            "(File walk skfem/assembly/basis/abstract_basis.py "
+            "2026-06-03.)"
+        ),
+    },
     "dofs_view_extras": {
         "description": (
             "Three quietly-deprecated or surprising behaviors in "
