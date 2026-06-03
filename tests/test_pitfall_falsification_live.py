@@ -3860,6 +3860,53 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "longer a scipy-convertible vector "
             "(COOData.todefault().)")
 
+    def test_skfem_autodiff_helpers_det_3d_typo(self) -> None:
+        """skfem::_general.autodiff_extras edge (5): confirm
+        the real upstream bug in skfem/autodiff/helpers.py
+        3D det branch (lines 88-99) — the middle cofactor term
+        has a stray double minus `- - A[1, 2] * A[2, 0]` that
+        Python parses as `+ A[1, 2] * A[2, 0]`.
+
+        Source-anchored — doesn't require JAX installed; asserts
+        the exact buggy substring is present. The probe will FAIL
+        when upstream fixes the typo, prompting catalog revision.
+        (File walk skfem/autodiff/helpers.py 2026-06-03.)"""
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent
+        candidates = [
+            root / "upstream_sources/skfem/skfem/autodiff/"
+                   "helpers.py",
+            Path("/home/hermann/Schreibtisch/Open-FEM-agent/"
+                 ".venv/lib/python3.12/site-packages/skfem/"
+                 "autodiff/helpers.py"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"skfem autodiff/helpers.py not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # Buggy two-line pattern: middle cofactor line ends with
+        # `... A[2, 2] -` and the next line starts with the
+        # stray `-` before `A[1, 2] * A[2, 0])`.
+        self.assertIn(
+            "- A[0, 1] * (A[1, 0] * A[2, 2] -\n",
+            body,
+            "Middle-cofactor opening line of 3D det no longer "
+            "ends with `- A[1, 0] * A[2, 2] -`; the typo edge "
+            "(5) may be fixed upstream.")
+        self.assertIn(
+            "- A[1, 2] * A[2, 0])", body,
+            "Next line no longer contains the stray `- A[1, 2]"
+            " * A[2, 0])`; the double-minus typo may be fixed. "
+            "Revisit catalog edge (5).")
+        # Sanity: 2D branch is correct (no stray double minus).
+        self.assertIn(
+            "detA = A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]",
+            body,
+            "2D det branch changed; revisit edge (5)'s scope "
+            "claim that only the 3D branch is buggy.")
+
     @_skip_no_skfem
     def test_skfem_facet_basis_extras(self) -> None:
         """skfem::_general.facet_basis_extras [API]: confirm
