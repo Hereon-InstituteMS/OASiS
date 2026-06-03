@@ -2250,6 +2250,137 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "with numbers of nodes in process properties", body,
             "Consistency-check KRATOS_ERROR text changed.")
 
+    def test_kratos_cablenet_empirical_spring_process_invariants(
+            self) -> None:
+        """kratos::cable_net [Validation]: confirm
+        EmpiricalSpringElementProcess header still has
+        (a) The 8-key default_parameters JSON including
+            displacement_data + force_data + polynomial_order,
+        (b) The misleading error-message bug: the
+            displacement_data.size() != force_data.size()
+            check (line 84) still emits the copy-pasted
+            'only two nodes for each spring allowed !' text
+            instead of an array-length-mismatch message,
+        (c) The constructor signature still takes
+            (ModelPart&, Parameters, const DoubleVector) —
+            the Python wrapper computes the fitted polynomial
+            via numpy.polyfit before this C++ ctor runs,
+        (d) The element dispatched is "EmpiricalSpringElement3D2N"
+            and the property set is
+            SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL,
+        (e) The Python wrapper at
+            python_scripts/empirical_spring_element_process.py
+            STILL calls polyfit BEFORE constructing the C++
+            process — so wrapper-using code hits a
+            numpy.polyfit length error long before the C++
+            check.
+        (File walk applications/CableNetApplication/
+        custom_processes/empirical_spring_element_process.h
+        2026-06-03.)"""
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent
+        h = root / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/custom_processes/"
+            "empirical_spring_element_process.h")
+        py = root / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/python_scripts/"
+            "empirical_spring_element_process.py")
+        if not h.exists():
+            self.skipTest(
+                f"Kratos empirical_spring_element_process.h not "
+                f"found at {h}.")
+        if not py.exists():
+            self.skipTest(
+                f"Kratos empirical_spring_element_process.py "
+                f"wrapper not found at {py}.")
+        h_body = h.read_text()
+        py_body = py.read_text()
+        # (a) 8-key default_parameters JSON
+        for key in ('"model_part_name"',
+                    '"computing_model_part_name"',
+                    '"node_ids"',
+                    '"element_id"',
+                    '"property_id"',
+                    '"displacement_data"',
+                    '"force_data"',
+                    '"polynomial_order"'):
+            self.assertIn(
+                key, h_body,
+                f"default_parameters JSON key {key} missing — "
+                f"schema may have drifted; revisit edge (a).")
+        # (b) Misleading error text still copy-pasted from the
+        #     node-count check.  Both the node-count check
+        #     message AND the displacement/force-length check
+        #     message must still be present, with the SAME
+        #     'two nodes for each spring' substring — the bug.
+        self.assertIn(
+            'KRATOS_ERROR_IF(mParameters["node_ids"].size()!=2)',
+            h_body,
+            "node_ids size-check line moved/changed.")
+        self.assertIn(
+            'KRATOS_ERROR_IF(mParameters["displacement_data"]'
+            '.size()!=mParameters["force_data"].size())',
+            h_body,
+            "displacement/force length-check line "
+            "moved/changed.")
+        # The misleading text appears (at least) twice — once on
+        # the right check, once on the wrong check.
+        self.assertGreaterEqual(
+            h_body.count("only two nodes for each spring "
+                         "allowed !"),
+            1,
+            "Misleading 'only two nodes for each spring allowed' "
+            "error string is gone — pitfall may be fixed "
+            "upstream; revisit edge (b).")
+        # (c) Constructor signature
+        self.assertIn(
+            "EmpiricalSpringElementProcess(ModelPart &rModelPart,",
+            h_body,
+            "C++ constructor signature changed.")
+        self.assertIn(
+            "Parameters InputParameters, const DoubleVector "
+            "FittedPolynomial)",
+            h_body,
+            "Third constructor arg (fitted polynomial) "
+            "removed/renamed.")
+        # (d) Element + property variable names
+        self.assertIn(
+            'KratosComponents<Element>::Get('
+            '"EmpiricalSpringElement3D2N")', h_body,
+            "Element dispatch name changed — "
+            "EmpiricalSpringElement3D2N may have been renamed.")
+        self.assertIn(
+            "SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL", h_body,
+            "Property variable name changed — pitfall on "
+            "polynomial-coefficient propagation must be "
+            "revisited.")
+        # (e) Python wrapper still uses numpy.polyfit BEFORE the
+        #     C++ ctor — so wrapper-path users hit polyfit's
+        #     error first, direct-C++ users hit the misleading
+        #     message.
+        self.assertIn(
+            "from numpy import polyfit", py_body,
+            "Python wrapper no longer imports numpy.polyfit; "
+            "the wrapper-path failure mode (polyfit raises on "
+            "mismatched lengths BEFORE C++ check) may have "
+            "changed.")
+        polyfit_idx = py_body.find("polyfit(")
+        ctor_idx = py_body.find(
+            "CableNetApplication.EmpiricalSpringElementProcess(")
+        self.assertGreater(
+            polyfit_idx, 0,
+            "polyfit() call missing from Python wrapper.")
+        self.assertGreater(
+            ctor_idx, 0,
+            "C++ ctor call missing from Python wrapper.")
+        self.assertLess(
+            polyfit_idx, ctor_idx,
+            "Wrapper no longer calls polyfit BEFORE the C++ "
+            "ctor — the documented two-path failure mode may "
+            "have collapsed; revisit edge (e).")
+
     def test_kratos_cablenet_apply_weak_sliding_process_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Performance]: confirm
