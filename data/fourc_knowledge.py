@@ -484,6 +484,54 @@ FOURC_KNOWLEDGE = {
                     "Both nodal_ and element_ prefixes applied via "
                     "stresskind dispatch."),
             },
+            "thermo_heatflux_filter_internals": {
+                "post_heatflux_heatfluxtype_enum": [
+                    "ndxyz",
+                    "cxyz",
+                    "cxyz_ndxyz",
+                ],
+                "post_heatflux_dispatch": {
+                    "ndxyz": "write_heatflux(..., nodebased)",
+                    "cxyz": "write_heatflux(..., elementbased)",
+                    "cxyz_ndxyz": (
+                        "write_heatflux(..., nodebased) then "
+                        "PostResult reset then write_heatflux("
+                        "..., elementbased) — dual write"),
+                },
+                "special_field_subclasses_in_file": [
+                    "WriteNodalHeatfluxStep (numdf-aware 1/2/3 "
+                    "components; uses Thermo::postproc_thermo_"
+                    "heatflux action via dis->evaluate; "
+                    "components averaged across adjoining elements "
+                    "via /adjele)",
+                    "WriteElementCenterHeatfluxStep (numdf-aware "
+                    "1/2/3 components; passes 'eleheatflux' "
+                    "vector to elements; FOUR_C_THROW if returned "
+                    "vector is nullptr)",
+                ],
+                "write_heatflux_groupname_vocab": [
+                    "gauss_initial_heatfluxes_xyz",
+                    "gauss_current_heatfluxes_xyz",
+                    "gauss_initial_tempgrad_xyz",
+                    "gauss_current_tempgrad_xyz",
+                ],
+                "element_action_routed": (
+                    "Thermo::postproc_thermo_heatflux — routed via "
+                    "Teuchos::ParameterList p.set<Thermo::Action>("
+                    "'action', ...). 'heatfluxtype' is passed AGAIN "
+                    "as a parameter string ('ndxyz' or 'cxyz') to "
+                    "tell the element which output shape to fill."),
+                "numdf_per_dim": (
+                    "WriteNodalHeatfluxStep + WriteElementCenter"
+                    "HeatfluxStep::numdf() return 1/2/3 from "
+                    "problem()->num_dim(). FOUR_C_THROW('Cannot "
+                    "handle dimension {}') for any other dim. "
+                    "Average is per-element-incidence (adjele = "
+                    "lnode->num_element() in the nodal averaging "
+                    "loop) — boundary nodes with fewer adjacent "
+                    "elements get the same /adjele divisor as "
+                    "interior nodes."),
+            },
             "Signal": (
                 "[Output] Six sharp edges in post_processor most users "
                 "hit at least once: "
@@ -560,6 +608,35 @@ FOURC_KNOWLEDGE = {
                 "(GL/EA/LOG/pl_GL/pl_EA) — users counting writes "
                 "from log lines see 'attempted N writes, got M' "
                 "without an error indicator. "
+                "(11) ThermoFilter::post_heatflux dispatches on a "
+                "3-VALUE heatfluxtype enum {'ndxyz', 'cxyz', "
+                "'cxyz_ndxyz'} — NO eigen variants. Three-tool "
+                "asymmetry users routinely confuse: "
+                "post_monitor accepts {'none', 'ndxyz'} (2 values, "
+                "tick #54); post_processor structure_stress accepts "
+                "{'ndxyz', 'cxyz', 'cxyz_ndxyz', 'nd123', 'c123', "
+                "'c123_nd123'} (6 values, edge 10); post_processor "
+                "thermo_heatflux accepts {'ndxyz', 'cxyz', "
+                "'cxyz_ndxyz'} (3 values, this edge). All three "
+                "tools share the literal 'ndxyz' / 'cxyz' tokens "
+                "but ONLY post_processor structure_stress accepts "
+                "'nd123' / 'c123' eigen variants. Unknown enum "
+                "values in thermo_heatflux trigger FOUR_C_THROW("
+                "'Unknown heatflux/tempgrad type'). The 4 "
+                "groupnames write_heatflux accepts are "
+                "{gauss_{initial,current}_{heatfluxes,tempgrad}_xyz} "
+                "and any other groupname FOUR_C_THROWs 'trying to "
+                "write something that is not a heatflux or a "
+                "temperature gradient'. The nodal-averaging loop "
+                "(WriteNodalHeatfluxStep::operator()) divides each "
+                "summed Gauss-point contribution by "
+                "lnode->num_element() — boundary nodes (fewer "
+                "adjacent elements) get the same divisor as "
+                "interior nodes, which means the implied "
+                "consistent-projection weights are wrong at the "
+                "domain boundary. Result: visualized boundary "
+                "heatfluxes are biased; the bias is largest for "
+                "coarse meshes. "
                 "(10) StructureFilter::post_stress dispatches on a "
                 "6-VALUE stresstype enum {'ndxyz', 'cxyz', "
                 "'cxyz_ndxyz', 'nd123', 'c123', 'c123_nd123'} — "
@@ -582,7 +659,8 @@ FOURC_KNOWLEDGE = {
                 "misleading for structure dispatch. "
                 "(File walks apps/post_processor/4C_post_processor.cpp + "
                 "4C_post_processor_single_field_writers.cpp + "
-                "4C_post_processor_structure_stress.cpp "
+                "4C_post_processor_structure_stress.cpp + "
+                "4C_post_processor_thermo_heatflux.cpp "
                 "2026-06-03.)"
             ),
         },

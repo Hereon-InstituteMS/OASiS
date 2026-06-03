@@ -1180,6 +1180,131 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "copy-paste-error pitfall fix may have landed "
             "upstream; revisit edge 10.")
 
+    def test_fourc_post_processor_thermo_heatflux_enum_invariants(
+            self) -> None:
+        """fourc::overview.post_processor_tool [Output] edge 11:
+        confirm 4C_post_processor_thermo_heatflux.cpp still
+        implements
+        (a) the 3-value heatfluxtype enum dispatch in post_heatflux:
+            {ndxyz, cxyz, cxyz_ndxyz},
+        (b) the FOUR_C_THROW('Unknown heatflux/tempgrad type')
+            default,
+        (c) the cxyz_ndxyz dual-write path (nodal + PostResult
+            reset + element-center),
+        (d) the 2 SpecialFieldInterface subclasses in this file
+            (WriteNodalHeatfluxStep + WriteElementCenterHeatfluxStep),
+        (e) write_heatflux groupname vocab = {gauss_initial_/
+            current_ × heatfluxes_/tempgrad_xyz} (4 values) +
+            FOUR_C_THROW 'trying to write something that is not a
+            heatflux or a temperature gradient' otherwise,
+        (f) the Thermo::postproc_thermo_heatflux action routing
+            via Teuchos::ParameterList,
+        (g) the per-dim numdf() dispatch (1/2/3) with FOUR_C_THROW
+            ('Cannot handle dimension {}') for any other dim,
+        (h) the boundary-naive nodal averaging via /adjele where
+            adjele = lnode->num_element().
+        (File walk apps/post_processor/
+        4C_post_processor_thermo_heatflux.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/apps/"
+                 "post_processor/"
+                 "4C_post_processor_thermo_heatflux.cpp"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/apps/post_processor/"
+                "4C_post_processor_thermo_heatflux.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C post_processor_thermo_heatflux source not "
+                f"found in {candidates}.")
+        body = src.read_text()
+        # (a) 3-value heatfluxtype enum literals
+        for tok in ('heatfluxtype == "ndxyz"',
+                    'heatfluxtype == "cxyz"',
+                    'heatfluxtype == "cxyz_ndxyz"'):
+            self.assertIn(
+                tok, body,
+                f"post_heatflux dispatch missing enum branch "
+                f"{tok!r}; pitfall edge 11 enum list needs "
+                f"revisit.")
+        # ensure NO eigen-variant heatfluxtype crept in
+        for absent in ('heatfluxtype == "nd123"',
+                       'heatfluxtype == "c123"',
+                       'heatfluxtype == "c123_nd123"'):
+            self.assertNotIn(
+                absent, body,
+                f"post_heatflux now accepts eigen-style {absent!r} "
+                f"— the documented 3-enum-asymmetry with "
+                f"structure_stress is out of date.")
+        # (b) Unknown heatflux/tempgrad type default throw
+        self.assertIn(
+            "Unknown heatflux/tempgrad type", body,
+            "post_heatflux FOUR_C_THROW 'Unknown heatflux/tempgrad "
+            "type' default changed.")
+        # (c) cxyz_ndxyz dual-write path: nodebased then
+        #     reset+elementbased
+        i_dual = body.find('heatfluxtype == "cxyz_ndxyz"')
+        self.assertGreater(
+            i_dual, 0, "cxyz_ndxyz branch not found.")
+        # The block ends with `}` followed by `else`; bound the
+        # search at the next dispatch arm or method close.
+        nxt = body.find("}  // ThermoFilter::post_heatflux",
+                        i_dual)
+        dual_block = body[i_dual:nxt if nxt > 0 else i_dual + 600]
+        self.assertIn(
+            "nodebased", dual_block,
+            "cxyz_ndxyz path should write nodebased first.")
+        self.assertIn(
+            "elementbased", dual_block,
+            "cxyz_ndxyz path should also write elementbased "
+            "after nodal — dual-write semantics changed.")
+        self.assertIn(
+            "PostResult resulteleheatflux = PostResult(field);",
+            dual_block,
+            "cxyz_ndxyz PostResult-reset line changed; pitfall "
+            "claim of two-result reads needs revisit.")
+        # (d) 2 SpecialFieldInterface subclasses present
+        for cls in ("struct WriteNodalHeatfluxStep",
+                    "struct WriteElementCenterHeatfluxStep"):
+            self.assertIn(
+                cls + " : SpecialFieldInterface", body,
+                f"{cls!r} declaration changed; pitfall edge 11 "
+                f"subclass list needs revisit.")
+        # (e) write_heatflux groupname vocab + throw
+        for gn in ('gauss_initial_heatfluxes_xyz',
+                   'gauss_current_heatfluxes_xyz',
+                   'gauss_initial_tempgrad_xyz',
+                   'gauss_current_tempgrad_xyz'):
+            self.assertIn(
+                f'groupname == "{gn}"', body,
+                f"write_heatflux groupname branch {gn!r} "
+                f"changed.")
+        self.assertIn(
+            "trying to write something that is not a heatflux or "
+            "a temperature gradient", body,
+            "write_heatflux unknown-groupname FOUR_C_THROW "
+            "changed.")
+        # (f) Thermo action routing via Teuchos::ParameterList
+        self.assertIn(
+            "Thermo::postproc_thermo_heatflux", body,
+            "Element-action token routed via ParameterList "
+            "changed.")
+        self.assertIn(
+            'p.set<Thermo::Action>("action", ', body,
+            "Teuchos::ParameterList action-set call signature "
+            "changed.")
+        # (g) numdf dispatch 1/2/3 with FOUR_C_THROW on other dims
+        self.assertIn(
+            "Cannot handle dimension", body,
+            "numdf() FOUR_C_THROW message changed.")
+        # (h) /adjele nodal averaging with lnode->num_element()
+        self.assertIn(
+            "const int adjele = lnode->num_element();", body,
+            "/adjele nodal averaging line changed; boundary-naive"
+            " averaging pitfall needs revisit.")
+
     def test_fourc_post_monitor_source_invariants(self) -> None:
         """fourc::overview.post_monitor_tool [Output]: confirm the
         upstream post_monitor source still implements (a) serial-
