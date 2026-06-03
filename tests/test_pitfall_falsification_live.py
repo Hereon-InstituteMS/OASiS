@@ -887,6 +887,86 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       "GIT_TAG path no longer goes through "
                       "get_latest_tag.sh.")
 
+    def test_kratos_cablenet_ring_element_source_invariants(
+            self) -> None:
+        """kratos::cable_net [Input]+[Numerical]: confirm
+        RingElement3D's documented quirks still hold in source:
+        (a) Check() ONLY validates Id()>=1, current length > 0,
+        and PointsNumber ∈ {3,4} — does NOT verify CROSS_AREA /
+        YOUNG_MODULUS / DENSITY exist on Properties; (b)
+        LinearStiffness() reads CROSS_AREA * YOUNG_MODULUS /
+        GetRefLength(); (c) CalculateLumpedMassVector assigns
+        the full `total_mass = A * L * rho` to EVERY DOF (not
+        divided by N_DOFs) — flagged in source as a 'fictitious
+        mass for the sliding nodes — needs improvement'; (d)
+        CalculateMassMatrix is unconditionally lumped (same
+        pattern as EmpiricalSpring). (File walk
+        ring_element_3D.cpp 2026-06-03.)"""
+        from pathlib import Path
+        src = Path(__file__).resolve().parent.parent / (
+            "upstream_sources/kratos/applications/"
+            "CableNetApplication/custom_elements/"
+            "ring_element_3D.cpp")
+        if not src.exists():
+            self.skipTest(
+                "Kratos CableNet ring_element_3D.cpp not cloned "
+                f"at {src}.")
+        body = src.read_text()
+        # (a) Check() restricted to {3, 4} nodes
+        self.assertIn(
+            "(GetGeometry().PointsNumber()==4) || "
+            "(GetGeometry().PointsNumber()==3)", body,
+            "RingElement3D Check() no longer restricts to 3 or "
+            "4 nodes.")
+        # Check() does NOT mention CROSS_AREA / YOUNG_MODULUS /
+        # DENSITY (gap pitfall would be invalidated if upstream
+        # added the check)
+        check_start = body.find(
+            "int RingElement3D::Check(")
+        check_end = body.find("return 0;", check_start)
+        self.assertGreater(check_start, 0)
+        self.assertGreater(check_end, check_start)
+        check_body = body[check_start:check_end]
+        for missing_var in (
+            "CROSS_AREA", "YOUNG_MODULUS", "DENSITY",
+        ):
+            self.assertNotIn(
+                missing_var, check_body,
+                f"Check() now references {missing_var} — the "
+                f"property-gap pitfall needs revisit.")
+        # (b) LinearStiffness formula
+        self.assertIn(
+            "GetProperties()[CROSS_AREA] * "
+            "this->GetProperties()[YOUNG_MODULUS] / "
+            "this->GetRefLength()", body,
+            "LinearStiffness formula changed.")
+        # (c) Lumped-mass per-DOF = total_mass
+        self.assertIn(
+            "rLumpedMassVector[index] = total_mass;", body,
+            "Lumped-mass per-DOF assignment changed — the "
+            "fictitious-mass pitfall may no longer apply.")
+        # The source comment that flags this as known-bad
+        self.assertIn(
+            "this function uses a fictiuous mass for the sliding "
+            "nodes", body,
+            "Source-level 'fictitious mass' comment changed; "
+            "pitfall description quoting it may need update.")
+        # (d) CalculateMassMatrix dispatches to LumpedMassVector
+        # (unconditional lumped, no consistent-mass branch)
+        mm_start = body.find(
+            "void RingElement3D::CalculateMassMatrix")
+        self.assertGreater(mm_start, 0)
+        mm_body = body[mm_start:mm_start + 1000]
+        self.assertIn("CalculateLumpedMassVector", mm_body,
+                      "CalculateMassMatrix no longer dispatches "
+                      "to LumpedMassVector — consistent-mass "
+                      "branch may now exist.")
+        self.assertNotIn(
+            "USE_CONSISTENT_MASS_MATRIX", mm_body,
+            "CalculateMassMatrix now references "
+            "USE_CONSISTENT_MASS_MATRIX — the 'always-lumped' "
+            "pitfall needs revisit.")
+
     def test_kratos_cablenet_empirical_spring_source_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Numerical]: confirm the
