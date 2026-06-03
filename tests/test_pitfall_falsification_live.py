@@ -1035,6 +1035,99 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "users on rotated meshes may now see different "
             "split behavior. Revisit Signal [Mesh] edge.")
 
+    def test_febio_mmg_remesh_source_invariants(self) -> None:
+        """febio::adaptive_mesh_refinement.mmg_remesh
+        [Integration]+[Mesh]: confirm FEMMGRemesh.cpp still has
+        (a) Registered as FECoreClass with slot 'mmg_remesh' and
+            inherits from FERefineMesh,
+        (b) 6 user-facing parameters with documented defaults
+            (min_element_size, hausdorff, gradation,
+            relative_size, mesh_coarsen, normalize_data),
+        (c) 2 properties (criterion required, size_function
+            optional at registration index 0),
+        (d) Entirely gated on #ifdef HAS_MMG — RefineMesh returns
+            false from the #else branch when MMG was not compiled
+            in (line 147),
+        (e) Init() only accepts mesh.IsType(ET_TET4) and SILENTLY
+            returns false on the wrong mesh type (no feLogError),
+        (f) Default m_transferMethod = TRANSFER_MLQ — uses
+            FELeastSquaresInterpolator under the hood.
+        (File walk FEAMR/FEMMGRemesh.cpp + FEMMGRemesh.h + the
+        REGISTER macro in FEAMR/FEAMR.cpp 2026-06-03.)"""
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent
+        candidates_cpp = [
+            root / "upstream_sources/febio/FEAMR/FEMMGRemesh.cpp",
+        ]
+        candidates_reg = [
+            root / "upstream_sources/febio/FEAMR/FEAMR.cpp",
+        ]
+        src = next((p for p in candidates_cpp if p.exists()), None)
+        reg = next((p for p in candidates_reg if p.exists()), None)
+        if src is None or reg is None:
+            self.skipTest(
+                f"FEBio FEMMGRemesh sources not found in "
+                f"{candidates_cpp}/{candidates_reg}.")
+        body = src.read_text()
+        bodyR = reg.read_text()
+        # (a) FECoreClass + REGISTER slot
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEMMGRemesh, FERefineMesh)", body,
+            "FEMMGRemesh FECoreClass block missing.")
+        self.assertIn(
+            'REGISTER_FECORE_CLASS(FEMMGRemesh     , '
+            '"mmg_remesh");', bodyR,
+            "FEMMGRemesh no longer registered with slot name "
+            "'mmg_remesh' in FEAMR.cpp.")
+        # (b) 6 parameters
+        for p in ("min_element_size", "hausdorff", "gradation",
+                  "relative_size", "mesh_coarsen",
+                  "normalize_data"):
+            self.assertIn(
+                f'"{p}"', body,
+                f"Parameter '{p}' missing from FECoreClass "
+                "block; the documented schema may have shifted.")
+        # (c) 2 properties: criterion (required), size_function
+        #     (optional, registration index 0)
+        self.assertIn(
+            'ADD_PROPERTY(m_criterion, "criterion");', body,
+            "criterion property registration changed.")
+        self.assertIn(
+            'ADD_PROPERTY(m_sfunc, "size_function", 0);', body,
+            "size_function property registration changed (the "
+            "literal index 0 marks it optional in FECore).")
+        # (d) HAS_MMG gate with #else return false
+        self.assertIn("#ifdef HAS_MMG", body,
+                      "HAS_MMG preprocessor gate removed.")
+        # Find the RefineMesh-internal else branch
+        idx_refine = body.find("bool FEMMGRemesh::RefineMesh()")
+        self.assertGreater(idx_refine, 0)
+        refine_block = body[idx_refine:idx_refine + 2000]
+        self.assertIn("#else\n\treturn false;\n#endif",
+                      refine_block,
+                      "RefineMesh #else return-false branch "
+                      "changed — users on FEBio-without-MMG "
+                      "may now see a different no-op behavior.")
+        # (e) Init() ET_TET4 only, silent fail
+        idx_init = body.find("bool FEMMGRemesh::Init()")
+        self.assertGreater(idx_init, 0)
+        init_block = body[idx_init:idx_init + 300]
+        self.assertIn("mesh.IsType(ET_TET4) == false", init_block,
+                      "Init() no longer gates on ET_TET4.")
+        self.assertNotIn("feLogError", init_block,
+                         "Init() now logs an error on wrong "
+                         "mesh type — silent-fail Signal edge "
+                         "(2) may need revisit.")
+        self.assertIn("return false;", init_block,
+                      "Init() no longer returns false on the "
+                      "wrong mesh type.")
+        # (f) m_transferMethod default
+        self.assertIn(
+            "m_transferMethod = TRANSFER_MLQ;", body,
+            "Default transfer method changed from TRANSFER_MLQ "
+            "— the FELeastSquaresInterpolator brute-force "
+            "fallback Signal edge (3) needs revisit.")
+
     def test_febio_minmax_filter_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]

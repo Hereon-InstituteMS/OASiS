@@ -287,6 +287,119 @@ KNOWLEDGE["_general"] = {
                     "(File walk FEAMR/FEHexRefine2D.cpp 2026-06-03.)"
                 ),
             },
+            "mmg_remesh (FEMMGRemesh)": {
+                "description": (
+                    "Adaptive TETRAHEDRAL remesher wrapping the "
+                    "external MMG3D library "
+                    "(https://www.mmgtools.org/). Inherits from "
+                    "FERefineMesh. Registered as 'mmg_remesh' "
+                    "(FEAMR/FEAMR.cpp:53). For each refinement "
+                    "step: builds an MMG metric from the user-"
+                    "supplied criterion + optional size_function, "
+                    "calls MMG3D_mmg3dlib to remesh, then "
+                    "transfers nodal/integration-point data from "
+                    "the old to the new mesh via a configurable "
+                    "interpolator (TRANSFER_SHAPE = "
+                    "FEMeshShapeInterpolator, TRANSFER_MLQ "
+                    "(default) = FELeastSquaresInterpolator)."),
+                "parameters": {
+                    "min_element_size": (
+                        "double, default 0.0. MMG3D_DPARAM_hmin — "
+                        "minimum allowed element edge length. "
+                        "0.0 lets MMG choose; set to a positive "
+                        "value to prevent over-refinement."),
+                    "hausdorff": (
+                        "double, default 0.01. MMG3D_DPARAM_hausd "
+                        "— maximum chordal deviation from curved "
+                        "boundaries during remeshing. Small "
+                        "values preserve curvature; large values "
+                        "let MMG flatten."),
+                    "gradation": (
+                        "double, default 1.3. MMG3D_DPARAM_hgrad "
+                        "— maximum allowed size-ratio between "
+                        "adjacent edges. 1.3 is MMG's default; "
+                        "values > 2.0 produce very anisotropic "
+                        "meshes."),
+                    "relative_size": (
+                        "bool, default true. Controls whether "
+                        "criterion values are interpreted as "
+                        "absolute target sizes or relative size "
+                        "multipliers."),
+                    "mesh_coarsen": (
+                        "bool, default false. Allow MMG to "
+                        "REMOVE elements (coarsen) where the "
+                        "criterion permits, not just refine."),
+                    "normalize_data": (
+                        "bool, default false. Normalize "
+                        "criterion values to [0, 1] before "
+                        "passing to MMG."),
+                },
+                "properties": {
+                    "criterion": (
+                        "REQUIRED FEMeshAdaptorCriterion. "
+                        "Without it, build_mmg_mesh asserts "
+                        "(release no-op) and returns false → "
+                        "RefineMesh fails silently."),
+                    "size_function": (
+                        "OPTIONAL FEFunction1D (registration "
+                        "index 0). Maps criterion value → target "
+                        "edge size. When omitted, MMG uses the "
+                        "raw criterion value."),
+                },
+                "init_requirements": (
+                    "Init() only accepts mesh.IsType(ET_TET4) — "
+                    "non-tet meshes (HEX8, prisms, mixed) "
+                    "SILENTLY return false without feLogError. "
+                    "Compare to FEHexRefine.cpp which DOES "
+                    "feLogError on the wrong element type. Users "
+                    "with a hex mesh wanting MMG-style remeshing "
+                    "must first convert to TET4 (or use a "
+                    "different refiner)."),
+                "Signal": (
+                    "[Integration]+[Mesh] Three real user-facing "
+                    "edges on mmg_remesh: "
+                    "(1) Build-time gate: the ENTIRE FEMMGRemesh "
+                    "implementation is wrapped in #ifdef HAS_MMG. "
+                    "If FEBio was compiled without MMG support, "
+                    "RefineMesh() returns false from line 147 "
+                    "(`#else return false; #endif`) and the "
+                    "constructor leaves the `mmg` member pointer "
+                    "uninitialized — NOT nullptr — so any "
+                    "downstream code path that touches `mmg->` "
+                    "without first checking HAS_MMG would segv. "
+                    "No log message tells the user 'FEBio "
+                    "without MMG cannot do mmg_remesh' — they "
+                    "see silent zero-refinement. Check the "
+                    "binary with `febio4 -info | grep MMG` or "
+                    "inspect the FEBio CMake config to confirm "
+                    "MMG was enabled at build time. "
+                    "(2) Mesh-type silent-fail: Init() returns "
+                    "false on non-TET4 meshes WITHOUT feLogError. "
+                    "Setup the same as hex_refine but on a hex "
+                    "mesh? Silent zero refinement. Workaround: "
+                    "always check the FEBio log after the first "
+                    "refinement step — 'Elements to refine: 0' "
+                    "or absence of the 'MMG remesh' log line is "
+                    "the only signal. "
+                    "(3) Default-data interpolator (m_transferMethod "
+                    "= TRANSFER_MLQ at line 85) uses "
+                    "FELeastSquaresInterpolator under the hood — "
+                    "which #160 flagged as having a commented-"
+                    "out KDTree.build (brute-force "
+                    "findNeirestNeighbors fallback) and "
+                    "non-fatal assert(M > 4) (potentially "
+                    "singular MLS matrix in release builds). For "
+                    "large remeshing steps with many nodes, the "
+                    "MLQ path is O(N²) per remesh; users wanting "
+                    "shape-function-based interpolation can hand-"
+                    "edit the source to set TRANSFER_SHAPE — but "
+                    "that path isn't a user-exposed parameter "
+                    "yet (m_transferMethod is hard-coded in the "
+                    "ctor). "
+                    "(File walk FEAMR/FEMMGRemesh.cpp + "
+                    "FEMMGRemesh.h 2026-06-03.)"
+                ),
+            },
         },
         "adaptor_criteria": {
             "max_variable":      "FEVariableCriterion — threshold on a field variable",
