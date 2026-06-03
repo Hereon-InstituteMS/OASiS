@@ -1519,6 +1519,82 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       "Still a MACRO not a FUNCTION — variable-"
                       "leak pitfall remains relevant.")
 
+    def test_dune_local_contribution_assembly_modes(self) -> None:
+        """dune::_general.local_contribution_assembly_modes [API]:
+        confirm the C++ header defines 4 LocalContribution aliases
+        but the Python dispatch accepts ONLY 'set' or 'add'.
+        Anchors:
+        (a) C++ header dune/fem/common/localcontribution.hh
+            declares all 4: AddLocalContribution,
+            AddScaledLocalContribution, SetLocalContribution,
+            SetSelectedLocalContribution,
+        (b) Python helper python/dune/fem/space/__init__.py
+            implements the 2-arm if/elif dispatch on assembly ==
+            'set' / 'add' and raises ValueError otherwise,
+        (c) the SetSelectedLocalContribution alias IS used inside
+            dune-fem's own auto-generated C++ at
+            python/dune/fem/utility/filteredgridview.py,
+            confirming the asymmetry is intentional (not just an
+            unused tag). (File walk dune/fem/common/
+        localcontribution.hh + python/dune/fem/space/__init__.py
+        2026-06-03.)"""
+        from pathlib import Path
+        roots = [Path("/home/hermann/Schreibtisch/dune-src/dune-fem"),
+                 Path(__file__).resolve().parent.parent / (
+                     "upstream_sources/dune/dune-fem")]
+        root = next((r for r in roots if r.exists()), None)
+        if root is None:
+            self.skipTest(f"dune-fem source not in {roots}.")
+        # (a) C++ header aliases
+        hpp = root / "dune/fem/common/localcontribution.hh"
+        if not hpp.exists():
+            self.skipTest(f"Missing {hpp}")
+        body = hpp.read_text()
+        for alias in ("AddLocalContribution",
+                      "AddScaledLocalContribution",
+                      "SetLocalContribution",
+                      "SetSelectedLocalContribution"):
+            self.assertIn(
+                f"using {alias} = LocalContribution<", body,
+                f"{alias} using-alias missing from "
+                f"localcontribution.hh — pitfall claim of 4 "
+                f"aliases needs revisit.")
+        # (b) Python 2-arm dispatch + ValueError
+        py = root / "python/dune/fem/space/__init__.py"
+        if not py.exists():
+            self.skipTest(f"Missing {py}")
+        pybody = py.read_text()
+        self.assertIn('if assembly == "set":', pybody,
+                      "localContribution 'set' arm changed; "
+                      "pitfall claim of 2-arm dispatch needs "
+                      "revisit.")
+        self.assertIn('elif assembly == "add":', pybody,
+                      "localContribution 'add' arm changed.")
+        self.assertIn(
+            'raise ValueError("assembly can only be `set` or '
+            '`add`")', pybody,
+            "ValueError message changed; pitfall claim out of "
+            "date.")
+        # Also: NO 'addScaled' or 'setSelected' branches in the
+        # Python dispatch (would falsify the asymmetry claim).
+        self.assertNotIn('"addScaled"', pybody,
+                         "Python dispatch now recognises "
+                         "'addScaled' — pitfall asymmetry claim "
+                         "out of date.")
+        self.assertNotIn('"setSelected"', pybody,
+                         "Python dispatch now recognises "
+                         "'setSelected' — pitfall asymmetry "
+                         "claim out of date.")
+        # (c) SetSelectedLocalContribution is used in code-gen
+        fgv = root / "python/dune/fem/utility/filteredgridview.py"
+        if fgv.exists():
+            self.assertIn("SetSelectedLocalContribution",
+                          fgv.read_text(),
+                          "SetSelectedLocalContribution no "
+                          "longer referenced in filteredgridview "
+                          "code-gen — 'used elsewhere' claim "
+                          "needs revisit.")
+
     def test_dealii_query_git_information_macro_invariants(
             self) -> None:
         """dealii::_general.cmake_user_macros [Output]: confirm

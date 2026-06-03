@@ -123,4 +123,52 @@ KNOWLEDGE["_general"] = {
             "walk dune-fem/cmake/modules/FemShort.cmake 2026-06-02.)"
         ),
     },
+    "local_contribution_assembly_modes": {
+        "description": (
+            "DiscreteFunction.localContribution(assembly) is the "
+            "user-facing handle for accumulating element-local "
+            "vector contributions into a global dune-fem "
+            "DiscreteFunction. Source: python/dune/fem/space/"
+            "__init__.py::localContribution()."),
+        "python_dispatch": {
+            "'set'": ("calls self.setLocalContribution() — wraps "
+                      "the C++ SetLocalContribution<DF> "
+                      "specialization (overwrite mode)"),
+            "'add'": ("calls self.addLocalContribution() — wraps "
+                      "the C++ AddLocalContribution<DF> "
+                      "specialization (accumulate mode)"),
+        },
+        "cpp_only_tags_not_python_reachable": [
+            "AddScaledLocalContribution<DF> — defined in "
+            "dune/fem/common/localcontribution.hh as a using-"
+            "alias for LocalContribution<DF, Assembly::AddScaled>",
+            "SetSelectedLocalContribution<DF> — same header, "
+            "Assembly::SetSelected; USED inside dune-fem's own "
+            "auto-generated C++ in python/dune/fem/utility/"
+            "filteredgridview.py but NOT routed via Python's "
+            "localContribution dispatch",
+        ],
+        "Signal": (
+            "[API] DiscreteFunction.localContribution(assembly) "
+            "accepts EXACTLY two string tags: 'set' and 'add'. "
+            "Anything else raises ValueError('assembly can only "
+            "be `set` or `add`') at python/dune/fem/space/"
+            "__init__.py:126. The C++ header dune/fem/common/"
+            "localcontribution.hh defines FOUR using-aliases — "
+            "AddLocalContribution, AddScaledLocalContribution, "
+            "SetLocalContribution, SetSelectedLocalContribution — "
+            "and the latter two ARE used elsewhere in dune-fem "
+            "(e.g. filteredgridview code-gen). Users reading C++ "
+            "tutorials or grepping the source for sample usage "
+            "may try df.localContribution('addScaled') or "
+            "df.localContribution('setSelected') expecting them "
+            "to work and instead hit the ValueError. The Python "
+            "binding intentionally surfaces only the two safe "
+            "tags; the other two are reachable only from within "
+            "C++ code embedded in JIT strings (passed via "
+            "algorithm.run / generate_method idioms). "
+            "(File walk dune/fem/common/localcontribution.hh + "
+            "python/dune/fem/space/__init__.py 2026-06-03.)"
+        ),
+    },
 }
