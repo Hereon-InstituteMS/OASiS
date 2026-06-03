@@ -3786,6 +3786,81 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "TrilinearForm now overrides elemental.")
 
     @_skip_no_skfem
+    def test_skfem_autodiff_extras(self) -> None:
+        """skfem::_general.autodiff_extras [Integration]+[API]:
+        confirm skfem.autodiff still has
+        (a) Import-time side effect: jax.config x64 flag is True
+            after `import skfem.autodiff`,
+        (b) JaxDiscreteField arithmetic strips gradient info
+            (__add__ returns plain jnp.ndarray, NOT a
+            JaxDiscreteField),
+        (c) JaxDiscreteField IS registered as a JAX pytree
+            (pytree flatten/unflatten round-trips),
+        (d) NonlinearForm.assemble returns
+            (scipy CSR, scipy CSR) — where the RHS came from
+            COOData.todefault, NOT a raw COOData.
+        (File walk skfem/autodiff/__init__.py 2026-06-03.)"""
+        try:
+            import jax  # noqa: F401
+        except ImportError:
+            self.skipTest("jax not installed; cannot probe "
+                          "skfem.autodiff.")
+        import skfem.autodiff as ad
+        from jax import config as jax_config
+        # (a) Import side effect — x64 enabled
+        self.assertTrue(
+            jax_config.read("jax_enable_x64"),
+            "skfem.autodiff import no longer flips jax_enable_x64 "
+            "to True — the documented process-wide precision "
+            "change (edge 1) may have been removed.")
+        # (b) Arithmetic strips gradient info
+        import jax.numpy as jnp
+        jdf1 = ad.JaxDiscreteField(
+            value=jnp.array([1.0, 2.0]),
+            grad=jnp.array([[0.5], [0.5]]),
+        )
+        jdf2 = ad.JaxDiscreteField(
+            value=jnp.array([3.0, 4.0]),
+            grad=jnp.array([[0.1], [0.1]]),
+        )
+        result = jdf1 + jdf2
+        self.assertNotIsInstance(
+            result, ad.JaxDiscreteField,
+            "JaxDiscreteField __add__ now preserves the "
+            "JaxDiscreteField wrapper — edge (2) gradient-"
+            "stripping claim is invalidated.")
+        # (c) PyTree registration
+        from jax.tree_util import tree_flatten, tree_unflatten
+        leaves, treedef = tree_flatten(jdf1)
+        roundtrip = tree_unflatten(treedef, leaves)
+        self.assertIsInstance(
+            roundtrip, ad.JaxDiscreteField,
+            "JaxDiscreteField pytree roundtrip no longer "
+            "reconstructs the same type — register_pytree_node "
+            "registration may have been removed.")
+        # (d) NonlinearForm.assemble dispatch shape
+        import skfem as fem
+        from skfem.helpers import dot, grad
+        import scipy.sparse as sp
+        m = fem.MeshTri().refined(1)
+        basis = fem.Basis(m, fem.ElementTriP1())
+
+        @ad.NonlinearForm
+        def laplace_residual(u, v, w):
+            return dot(grad(u), grad(v))
+
+        K, F = laplace_residual.assemble(basis)
+        self.assertTrue(
+            sp.issparse(K),
+            "NonlinearForm.assemble's first return is no "
+            "longer a scipy sparse matrix.")
+        self.assertTrue(
+            sp.issparse(F) or hasattr(F, '__array__'),
+            "NonlinearForm.assemble's second return is no "
+            "longer a scipy-convertible vector "
+            "(COOData.todefault().)")
+
+    @_skip_no_skfem
     def test_skfem_facet_basis_extras(self) -> None:
         """skfem::_general.facet_basis_extras [API]: confirm
         (a) FacetBasis(facets=None) restricts to boundary facets
