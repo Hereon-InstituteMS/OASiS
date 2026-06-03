@@ -606,6 +606,57 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"got: {[str(w.message) for w in dep_new]!r}")
         self.assertEqual(r_new.shape, (ib_p1.N,))
 
+    def test_dealii_query_git_information_macro_invariants(
+            self) -> None:
+        """dealii::_general.cmake_user_macros [Output]: confirm
+        DEAL_II_QUERY_GIT_INFORMATION still (a) sets the
+        UNPREFIXED variables GIT_BRANCH / GIT_REVISION /
+        GIT_SHORTREV / GIT_TAG (NO DEAL_II_GIT_* prefix by
+        default), (b) takes the prefix as ${ARGN}_, (c) has NO
+        GIT_TIMESTAMP variable, (d) silently no-ops when
+        ${CMAKE_SOURCE_DIR}/.git/HEAD is missing, (e) depends on
+        get_latest_tag.sh for GIT_TAG. The cmake_user_macros
+        pitfall about default-unprefixed naming and the missing
+        _TIMESTAMP claim are both anchored here. (File walk
+        macro_deal_ii_query_git_information.cmake 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/dealii-src/cmake/macros/"
+                 "macro_deal_ii_query_git_information.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/dealii/cmake/macros/"
+                "macro_deal_ii_query_git_information.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"deal.II source not cloned; checked {candidates}.")
+        body = src.read_text()
+        # (a) Default-unprefixed variable names
+        for var in ("GIT_BRANCH", "GIT_REVISION",
+                    "GIT_SHORTREV", "GIT_TAG"):
+            self.assertIn(f"${{_prefix}}{var}", body,
+                f"Macro no longer sets ${{_prefix}}{var}; "
+                f"DEAL_II_QUERY_GIT_INFORMATION pitfall needs revisit.")
+        # (b) prefix is ARGN-derived
+        self.assertIn('SET(_prefix "${ARGN}_")', body,
+                      "Macro prefix mechanism changed from ${ARGN}_.")
+        # (c) No GIT_TIMESTAMP anywhere — the catalog historically
+        # claimed _TIMESTAMP existed; confirm it does not.
+        self.assertNotIn("GIT_TIMESTAMP", body,
+                         "Macro now defines GIT_TIMESTAMP — catalog "
+                         "claim about its absence needs revisit.")
+        self.assertNotIn("GIT_COMMIT_DATE", body,
+                         "Macro now defines GIT_COMMIT_DATE.")
+        # (d) .git/HEAD existence is the gate for the entire body
+        self.assertIn("EXISTS ${CMAKE_SOURCE_DIR}/.git/HEAD", body,
+                      "The .git/HEAD-existence gate is gone — the "
+                      "silent no-op pitfall may no longer apply.")
+        # (e) GIT_TAG path goes through get_latest_tag.sh
+        self.assertIn("get_latest_tag.sh", body,
+                      "GIT_TAG path no longer goes through "
+                      "get_latest_tag.sh.")
+
     def test_kratos_cablenet_empirical_spring_source_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Numerical]: confirm the

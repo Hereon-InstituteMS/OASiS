@@ -971,6 +971,47 @@ GENERAL_KNOWLEDGE = {
                 "macro_deal_ii_pickup_tests.cmake 2026-06-03.)"
             ),
         },
-        "DEAL_II_QUERY_GIT_INFORMATION": "Set DEAL_II_GIT_BRANCH / _REVISION / _SHORTREV / _TIMESTAMP from .git metadata.",
+        "DEAL_II_QUERY_GIT_INFORMATION": {
+            "description": (
+                "Populate GIT_BRANCH / GIT_REVISION / GIT_SHORTREV / "
+                "GIT_TAG from the source dir's .git metadata. The "
+                "macro has an OPTIONAL positional PREFIX argument: "
+                "called as DEAL_II_QUERY_GIT_INFORMATION() variables "
+                "are unprefixed; called as "
+                "DEAL_II_QUERY_GIT_INFORMATION(MYAPP) they become "
+                "MYAPP_GIT_BRANCH etc. Source: "
+                "cmake/macros/macro_deal_ii_query_git_information.cmake."),
+            "Signal": (
+                "[Output] Four sharp edges users routinely hit with "
+                "DEAL_II_QUERY_GIT_INFORMATION: "
+                "(1) The default variables are UNPREFIXED — GIT_BRANCH, "
+                "GIT_REVISION, GIT_SHORTREV, GIT_TAG. There is NO "
+                "DEAL_II_GIT_* prefix unless the user explicitly "
+                "passes a prefix argument; the prefix is "
+                "${ARGN}_-style and lives in the macro body. "
+                "(2) The variable set is GIT_BRANCH / GIT_REVISION / "
+                "GIT_SHORTREV / GIT_TAG — there is NO GIT_TIMESTAMP "
+                "and NO GIT_COMMIT_DATE; older documentation that "
+                "claims a _TIMESTAMP slot is wrong. "
+                "(3) If ${CMAKE_SOURCE_DIR}/.git/HEAD doesn't exist "
+                "(tarball install, shallow CI checkout without .git/, "
+                "or downstream app embedded in a non-git workspace) "
+                "the macro is a SILENT NO-OP — no warning, no error, "
+                "all four variables remain unset. Subsequent "
+                "configure_file expansions on ${GIT_REVISION} produce "
+                "the empty string. "
+                "(4) GIT_TAG depends on the auxiliary shell script "
+                "${DEAL_II_SHARE_RELDIR}/scripts/get_latest_tag.sh; "
+                "if that script isn't on disk (some packagers strip "
+                "it), GIT_TAG is silently left unset with only a "
+                "MESSAGE(STATUS) line — easy to miss in CMake "
+                "configure noise. "
+                "(5) In detached-HEAD state `git symbolic-ref HEAD` "
+                "returns non-zero, so GIT_BRANCH is NOT populated "
+                "even though .git/HEAD exists — common in CI runs "
+                "that checkout a tag or specific commit. "
+                "(File walk macro_deal_ii_query_git_information.cmake "
+                "2026-06-03.)"),
+        },
     },
 }
