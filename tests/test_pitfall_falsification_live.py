@@ -948,6 +948,56 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Check() no longer KRATOS_ERRORs on missing CROSS_AREA.")
 
     @_skip_no_skfem
+    def test_skfem_dofs_view_deprecations_and_decompose_exit(
+            self) -> None:
+        """skfem::_general.dofs_view_extras [API]: confirm
+        (a) DofsView.__or__ emits DeprecationWarning citing
+        numpy.hstack; (b) DofsView.__add__ inherits the same
+        warning by forwarding to __or__; (c) Dofs._decompose still
+        SystemExits when called with nparts pre-set. (File walk
+        skfem/assembly/dofs.py 2026-06-03.)"""
+        import inspect
+        import warnings
+        import skfem as fem
+        m = fem.MeshTri().refined(2)
+        ib = fem.CellBasis(m, fem.ElementTriP1())
+        d1 = ib.get_dofs(lambda x: x[0] < 1e-9)
+        d2 = ib.get_dofs(lambda x: x[0] > 1 - 1e-9)
+        # (a) __or__ deprecation
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            _ = d1 | d2
+        dep = [w for w in ws
+               if issubclass(w.category, DeprecationWarning)]
+        self.assertEqual(
+            len(dep), 1,
+            f"DofsView.__or__ should emit exactly one "
+            f"DeprecationWarning; got: "
+            f"{[str(w.message) for w in dep]!r}")
+        self.assertIn(
+            "numpy.hstack", str(dep[0].message),
+            f"Deprecation message should cite numpy.hstack "
+            f"replacement; got {dep[0].message!r}")
+        # (b) __add__ inherits the same deprecation
+        with warnings.catch_warnings(record=True) as ws2:
+            warnings.simplefilter("always")
+            _ = d1 + d2
+        dep2 = [w for w in ws2
+                if issubclass(w.category, DeprecationWarning)]
+        self.assertEqual(
+            len(dep2), 1,
+            f"DofsView.__add__ should also emit DeprecationWarning "
+            f"(forwards to __or__); got "
+            f"{[str(w.message) for w in dep2]!r}")
+        # (c) _decompose SystemExit clause is still in source
+        src = inspect.getsource(fem.Dofs._decompose)
+        self.assertIn("SystemExit", src,
+                      "Dofs._decompose no longer raises SystemExit "
+                      "when nparts is set.")
+        self.assertIn("'nparts' has been set", src,
+                      "_decompose SystemExit message changed.")
+
+    @_skip_no_skfem
     def test_skfem_utils_init_bc_rejects_both_I_and_D(self) -> None:
         """skfem::_general.linear_system_utils [API]:
         enforce/condense/penalize use _init_bc which requires

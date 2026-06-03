@@ -73,6 +73,46 @@ KNOWLEDGE["_general"] = {
         "Mortar methods for domain decomposition (MortarFacetBasis)",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
+    "dofs_view_extras": {
+        "description": (
+            "Three quietly-deprecated or surprising behaviors in "
+            "skfem.assembly.Dofs / DofsView beyond the "
+            "documented 'DofsView is not subscriptable' (which is "
+            "already in the per-physics catalogs). Source: "
+            "skfem/assembly/dofs.py."),
+        "Signal": (
+            "[API] (1) DofsView.__or__ (the `dv1 | dv2` operator) "
+            "is decorated @deprecated('numpy.hstack') and emits "
+            "DeprecationWarning('__or__ is deprecated in favor of "
+            "numpy.hstack.'). DofsView.__add__ (the `dv1 + dv2` "
+            "operator) just calls __or__ and therefore inherits "
+            "the same deprecation — both old idioms for unioning "
+            "DofsView objects are on borrowed time. Replacement: "
+            "np.hstack([dv1.flatten(), dv2.flatten()]) followed "
+            "by np.unique (or np.union1d) for index-set semantics. "
+            "(2) DofsView.sort() with no `sorting` kwarg uses "
+            "`lambda x: sum(x)` — sorts DOFs by the SUM of their "
+            "spatial coordinates. On axis-aligned grids the sums "
+            "tie for symmetric points (e.g. (1,0) and (0,1) both "
+            "sum to 1) and argsort gives arbitrary tie-breaking. "
+            "For deterministic x-then-y ordering pass an explicit "
+            "key, e.g. sort(sorting=lambda x: x[0] * 1e6 + x[1]). "
+            "(3) Dofs.decompose(comm, cache=..., nparts=N) is a "
+            "decorator that, when nparts is non-None, calls METIS, "
+            "saves the decomposition to disk, and then raises "
+            "SystemExit(\"'nparts' has been set: decomposition was "
+            "saved to files and process terminated\") — the entire "
+            "Python process exits, NOT just the decorated "
+            "function. Documented but easy to miss; users wanting "
+            "to inspect the decomposition in the same script need "
+            "to omit nparts and let MPI handle the partition "
+            "live. Plus: _decompose imports `pymetis` lazily, so "
+            "missing pymetis raises ImportError at decompose-time "
+            "rather than at import-time — install gap not visible "
+            "until first decomposition call. "
+            "(File walk skfem/assembly/dofs.py 2026-06-03.)"
+        ),
+    },
     "assembly_module_asm_shorthand": {
         "description": (
             "skfem.assembly.asm(form, *bases) is a convenience "
