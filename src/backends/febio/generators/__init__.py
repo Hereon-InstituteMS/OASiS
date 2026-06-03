@@ -61,7 +61,23 @@ KNOWLEDGE["_general"] = {
         },
         "adaptor_criteria": {
             "max_variable":      "FEVariableCriterion — threshold on a field variable",
-            "element_selection": "FEElementSelectionCriterion",
+            "element_selection": (
+                "FEElementSelectionCriterion — UNDERSCORE tag "
+                "name. Required children: <element_list> (vector "
+                "of element IDs, 1-based, GetID() not "
+                "GetLocalID()) and <value> (double, default 1.0 "
+                "= refinement scale assigned to each matched "
+                "element). Iterates over active elements only "
+                "(el.isActive() gate; inactive/erased elements "
+                "silently skipped). LOOKUP IS O(N·M) per call: "
+                "for N total elements and M IDs in the list, a "
+                "linear scan runs N×M times — source comment "
+                "(FEAMR/FEElementSelectionCriterion.cpp:52) "
+                "explicitly says 'TODO: This is really slow. "
+                "Need to speed this up!'. Acceptable for "
+                "M ≤ ~100 on small meshes; becomes the dominant "
+                "cost for large meshes with long lists. Source: "
+                "FEAMR/FEElementSelectionCriterion.cpp"),
             "math":              "FEScaleAdaptorCriterion — math-expression scaling",
             "min-max filter":    "FEMinMaxFilterAdaptorCriterion — SPACED-AND-HYPHEN tag name",
             "relative error": (

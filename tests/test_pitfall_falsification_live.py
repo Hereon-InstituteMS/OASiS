@@ -718,6 +718,53 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "double SJ = detJ / (L[0] * L[1] * L[2]);",
             body, "Scaled-Jacobian formula changed.")
 
+    def test_febio_element_selection_criterion_source_invariants(
+            self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input]+[Performance]:
+        confirm FEElementSelectionCriterion (the 'element_selection'
+        FEAMR criterion) still (a) registers both <value> and
+        <element_list> via ADD_PARAMETER, (b) defaults m_value to
+        1.0 in the ctor, (c) gates on el.isActive(), (d) has the
+        O(N·M) linear-search loop with the upstream TODO comment
+        flagging it as 'really slow'. (File walk
+        FEAMR/FEElementSelectionCriterion.cpp 2026-06-03.)"""
+        from pathlib import Path
+        src = Path(__file__).resolve().parent.parent / (
+            "upstream_sources/febio/FEAMR/"
+            "FEElementSelectionCriterion.cpp")
+        if not src.exists():
+            self.skipTest(
+                f"FEBio FEElementSelectionCriterion.cpp not "
+                f"found in {src}.")
+        body = src.read_text()
+        # (a) FECORE_CLASS registration + both ADD_PARAMETER lines
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEElementSelectionCriterion, "
+            "FEMeshAdaptorCriterion)", body,
+            "FECORE_CLASS registration changed.")
+        self.assertIn(
+            'ADD_PARAMETER(m_value, "value");', body,
+            'Child <value> ADD_PARAMETER line changed.')
+        self.assertIn(
+            'ADD_PARAMETER(m_elemList, "element_list");', body,
+            'Child <element_list> ADD_PARAMETER line changed; '
+            'pitfall about UNDERSCORE child needs revisit.')
+        # (b) Default m_value = 1.0
+        self.assertIn("m_value = 1.0;", body,
+                      "m_value default initialization changed.")
+        # (c) el.isActive() gate
+        self.assertIn("if (el.isActive())", body,
+                      "Element-active gate changed; pitfall "
+                      "about silent skip on inactive elements "
+                      "needs revisit.")
+        # (d) O(N·M) loop + TODO comment flagging it as slow
+        self.assertIn(
+            "// TODO: This is really slow. Need to speed this "
+            "up!", body,
+            "Upstream TODO comment flagging O(N·M) lookup as "
+            "slow has been removed — performance pitfall claim "
+            "may no longer be source-grounded.")
+
     def test_febio_element_data_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]:
