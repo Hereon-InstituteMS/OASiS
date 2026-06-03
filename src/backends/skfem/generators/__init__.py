@@ -590,7 +590,67 @@ KNOWLEDGE["_general"] = {
             "InteriorBasis": "alias for CellBasis (no DeprecationWarning)",
             "ExteriorFacetBasis": ("alias for BoundaryFacetBasis "
                                    "(no DeprecationWarning)"),
+            "ElementVectorH1": (
+                "alias for ElementVector (skfem/element/"
+                "__init__.py:62) — no DeprecationWarning."),
+            "ElementTriDG": (
+                "alias for ElementDG (a generic DG wrapper); "
+                "ElementQuadDG / ElementHexDG / ElementTetDG "
+                "also all alias to the same ElementDG (lines "
+                "63-66 of skfem/element/__init__.py). The "
+                "per-shape names are kept for tutorial "
+                "compatibility — there's no shape-specific DG "
+                "class anymore."),
+            "ElementTriMini": (
+                "alias for ElementTriP1B (line 67). The Mini "
+                "element is just P1+bubble; the rename to P1B "
+                "reflects this."),
+            "ElementTriCCR": (
+                "alias for ElementTriP2B (line 68). Conforming "
+                "Crouzeix-Raviart is P2+bubble; the rename "
+                "reflects that."),
+            "ElementTriRT0 / ElementTetRT0 / ElementQuadRT0": (
+                "ALL alias to ElementTriRT1 / ElementTetRT1 / "
+                "ElementQuadRT1 respectively (lines 69-71). "
+                "WARNING: in classical FEM nomenclature RT0 "
+                "(lowest order, k=0) is conventionally DISTINCT "
+                "from RT1 (k=1). skfem's naming convention is "
+                "'k-th order = polynomial degree ≤ k', so what "
+                "FEM literature calls RT0 is skfem's RT1. The "
+                "alias means users with old skfem code using "
+                "the 'RT0' name still get the SAME class — but "
+                "users following standard FEM textbooks who "
+                "instantiate ElementTriRT0 expecting the "
+                "lowest-order element get exactly that (lucky "
+                "coincidence: skfem only ships ONE RT order "
+                "for triangles, the lowest one)."),
+            "ElementTetN0": (
+                "alias for ElementTetN1 (line 72). Same "
+                "Nédélec naming convention: skfem's 'N1' is "
+                "what textbooks call 'N0' (lowest-order edge "
+                "element)."),
         },
+        "boundary_element_map": (
+            "skfem.element.BOUNDARY_ELEMENT_MAP is the explicit "
+            "Dict[cell-Element, boundary-Element] for "
+            "FacetBasis dispatch — covers 13 cell types: "
+            "ElementTriP0/P1/P2 → ElementLineP0/P1/P2, "
+            "ElementQuad0/1/2 → ElementLineP0/P1/P2, "
+            "ElementTetP0/P1/P2 → ElementTriP0/P1/P2, "
+            "ElementHex0/1/2 → ElementQuad0/1/2, "
+            "ElementHex1DG → ElementQuad1. ANY OTHER cell "
+            "element (TriP3, TriP4, TriBDM1, TetN1, "
+            "QuadRT1, HexRT1, etc.) is NOT in the map — "
+            "FacetBasis attempting to derive a boundary "
+            "element for those types must be constructed by "
+            "passing the boundary element EXPLICITLY via "
+            "FacetBasis(basis_mesh, cell_elem, "
+            "facet_quadrature=..., facets=..., "
+            "**{'elem': boundary_elem}). Users who pass only "
+            "the cell element get a KeyError from "
+            "BOUNDARY_ELEMENT_MAP[ElementTriP3] on construction. "
+            "Source: skfem/element/__init__.py lines 45-59."
+        ),
         "Signal": (
             "[API] skfem.asm()'s auto-wrap based on "
             "form.__code__.co_argcount has TWO unguarded edge "

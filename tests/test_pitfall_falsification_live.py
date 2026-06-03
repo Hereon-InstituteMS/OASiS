@@ -3908,6 +3908,95 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "claim that only the 3D branch is buggy.")
 
     @_skip_no_skfem
+    def test_skfem_element_backwards_compat_aliases(self) -> None:
+        """skfem::_general.backwards_compat_aliases +
+        boundary_element_map: confirm
+        (a) ElementVectorH1 is the same class as ElementVector,
+        (b) ElementTriDG / ElementQuadDG / ElementHexDG /
+            ElementTetDG all alias the same ElementDG,
+        (c) ElementTriMini ≡ ElementTriP1B,
+            ElementTriCCR ≡ ElementTriP2B,
+        (d) ElementTriRT0 ≡ ElementTriRT1 (the naming-
+            convention deviation noted in the catalog),
+        (e) ElementTetN0 ≡ ElementTetN1,
+        (f) BOUNDARY_ELEMENT_MAP contains the documented
+            13-entry table and DOES NOT contain ElementTriP3.
+        (File walk skfem/element/__init__.py 2026-06-03.)"""
+        from skfem.element import (
+            BOUNDARY_ELEMENT_MAP,
+            ElementVector, ElementVectorH1,
+            ElementDG,
+            ElementTriDG, ElementQuadDG, ElementHexDG,
+            ElementTetDG,
+            ElementTriP1B, ElementTriP2B,
+            ElementTriMini, ElementTriCCR,
+            ElementTriRT0, ElementTriRT1,
+            ElementTetN0, ElementTetN1,
+            ElementTriP0, ElementTriP1, ElementTriP2,
+            ElementTriP3,
+            ElementLineP0, ElementLineP1, ElementLineP2,
+            ElementQuad0, ElementQuad1, ElementQuad2,
+            ElementTetP0, ElementTetP1, ElementTetP2,
+            ElementHex0, ElementHex1, ElementHex2,
+            ElementHex1DG,
+        )
+        # (a)
+        self.assertIs(
+            ElementVectorH1, ElementVector,
+            "ElementVectorH1 no longer aliases ElementVector.")
+        # (b)
+        for nm, cls in [("ElementTriDG", ElementTriDG),
+                        ("ElementQuadDG", ElementQuadDG),
+                        ("ElementHexDG", ElementHexDG),
+                        ("ElementTetDG", ElementTetDG)]:
+            self.assertIs(
+                cls, ElementDG,
+                f"{nm} no longer aliases ElementDG.")
+        # (c)
+        self.assertIs(
+            ElementTriMini, ElementTriP1B,
+            "ElementTriMini no longer aliases ElementTriP1B.")
+        self.assertIs(
+            ElementTriCCR, ElementTriP2B,
+            "ElementTriCCR no longer aliases ElementTriP2B.")
+        # (d)
+        self.assertIs(
+            ElementTriRT0, ElementTriRT1,
+            "ElementTriRT0 no longer aliases ElementTriRT1; "
+            "the RT0/RT1 naming-convention deviation may be "
+            "resolved upstream.")
+        # (e)
+        self.assertIs(
+            ElementTetN0, ElementTetN1,
+            "ElementTetN0 no longer aliases ElementTetN1.")
+        # (f) BOUNDARY_ELEMENT_MAP table
+        expected = {
+            ElementTriP0: ElementLineP0,
+            ElementTriP1: ElementLineP1,
+            ElementTriP2: ElementLineP2,
+            ElementQuad0: ElementLineP0,
+            ElementQuad1: ElementLineP1,
+            ElementQuad2: ElementLineP2,
+            ElementTetP0: ElementTriP0,
+            ElementTetP1: ElementTriP1,
+            ElementTetP2: ElementTriP2,
+            ElementHex0: ElementQuad0,
+            ElementHex1: ElementQuad1,
+            ElementHex2: ElementQuad2,
+            ElementHex1DG: ElementQuad1,
+        }
+        for k, v in expected.items():
+            self.assertIs(
+                BOUNDARY_ELEMENT_MAP.get(k), v,
+                f"BOUNDARY_ELEMENT_MAP[{k.__name__}] changed; "
+                f"expected {v.__name__}.")
+        # Documented gap: TriP3 is NOT in the map.
+        self.assertNotIn(
+            ElementTriP3, BOUNDARY_ELEMENT_MAP,
+            "BOUNDARY_ELEMENT_MAP now includes ElementTriP3 — "
+            "the documented 13-entry gap is closing.")
+
+    @_skip_no_skfem
     def test_skfem_facet_basis_extras(self) -> None:
         """skfem::_general.facet_basis_extras [API]: confirm
         (a) FacetBasis(facets=None) restricts to boundary facets
