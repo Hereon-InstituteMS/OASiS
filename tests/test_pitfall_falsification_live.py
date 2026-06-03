@@ -1954,6 +1954,108 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Capstan positive-direction friction-force update "
             "missing.")
 
+    def test_kratos_cablenet_apply_weak_sliding_process_invariants(
+            self) -> None:
+        """kratos::cable_net [Input]+[Performance]: confirm
+        ApplyWeakSlidingProcess header still has
+        (a) 6-key default_parameters JSON with the
+            `computing_model_part_name` key,
+        (b) the line that would use computing_model_part is
+            STILL COMMENTED OUT,
+        (c) FindNearestNeighbours uses brute-force O(N*M)
+            iteration with `distance = 1e12;` initialization
+            and the explicit '// better: std::numeric_limits<...>'
+            comment,
+        (d) the unused Bucket + KDTree typedefs are still
+            declared at lines 53-55 (dead KD-tree machinery),
+        (e) the slave-node-3 topology in CreateElements
+            (master nodes 0+1, slave at index 2) matches the
+            WeakSlidingElement3D3N hard-coded contract,
+        (f) no `int Check(...) override` is declared.
+        (File walk applications/CableNetApplication/
+        custom_processes/apply_weak_sliding_process.h
+        2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/kratos/applications/"
+                "CableNetApplication/custom_processes/"
+                "apply_weak_sliding_process.h"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"Kratos apply_weak_sliding_process.h not in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) 6-key default_parameters
+        for key in ('"model_part_name_slave"',
+                    '"model_part_name_master"',
+                    '"computing_model_part_name"',
+                    '"element_id"',
+                    '"property_id"',
+                    '"debug_info"'):
+            self.assertIn(
+                key, body,
+                f"default_parameters JSON key {key} missing.")
+        # (b) computing_model_part line commented out
+        self.assertIn(
+            '//ModelPart &computing_model_part', body,
+            "computing_model_part line is no longer commented "
+            "out — the phantom-parameter pitfall may be fixed; "
+            "revisit edge (a).")
+        # (c) Magic-infinity + comment
+        self.assertGreaterEqual(
+            body.count("distance = 1e12;"), 2,
+            "1e12 magic-infinity assignment no longer appears in "
+            "both nearest + second-nearest loops (once as 'double "
+            "distance = 1e12;' at line 148 and once as 'distance "
+            "= 1e12;' at line 163); revisit edge (c).")
+        self.assertGreaterEqual(
+            body.count("// better: std::numeric_limits<double>::"
+                       "max()"), 2,
+            "'// better: std::numeric_limits<double>::max()' "
+            "comments removed — author may have started fixing "
+            "the magic-1e12; revisit edge (c).")
+        # (d) Dead KDTree typedefs
+        self.assertIn(
+            "typedef Bucket< 3, NodeType, NodeVector, "
+            "NodeTypePointer, NodeIterator, "
+            "DoubleVectorIterator > BucketType;", body,
+            "KDTree Bucket typedef removed — may be wired up "
+            "for actual use now; revisit edge (b).")
+        self.assertIn(
+            "typedef Tree< KDTreePartition<BucketType> > KDTree;",
+            body, "KDTree typedef removed; revisit edge (b).")
+        # Also: confirm KDTree NEVER USED (no construction)
+        self.assertNotIn("KDTree kdtree", body)
+        self.assertNotIn("KDTree tree(", body)
+        self.assertNotIn("KDTree my_tree", body)
+        # (e) Slave-node-3 topology in CreateElements
+        self.assertIn(
+            "element_nodes[0] = master_model_part.pGetNode("
+            "neighbour_nodes[0]);", body,
+            "element_nodes[0] no longer assigned to master "
+            "node 0 — slave-node-3 topology contract may be "
+            "broken upstream; revisit edge (e).")
+        self.assertIn(
+            "element_nodes[1] = master_model_part.pGetNode("
+            "neighbour_nodes[1]);", body,
+            "element_nodes[1] no longer assigned to master "
+            "node 1; revisit edge (e).")
+        self.assertIn(
+            "element_nodes[2] = slave_model_part.pGetNode("
+            "node_i.Id());", body,
+            "element_nodes[2] no longer assigned to slave "
+            "node — topology contract violation; revisit "
+            "edge (e).")
+        # (f) No Check override
+        self.assertNotIn(
+            "int Check(", body,
+            "ApplyWeakSlidingProcess now has a Check() "
+            "override — the no-validation pitfall (edge d) "
+            "may be fixed; revisit.")
+
     def test_kratos_cablenet_line_3d_n_geometry_stub_invariants(
             self) -> None:
         """kratos::cable_net [API]+[Reference]: confirm Line3DN
