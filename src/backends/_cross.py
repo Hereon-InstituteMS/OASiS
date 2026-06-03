@@ -701,6 +701,110 @@ _PLASTICITY_RETURN_MAP_SIGNAL = (
 )
 
 
+_TURBULENCE_DESC = (
+    "Reynolds-Averaged Navier-Stokes (RANS) turbulence model "
+    "defaults differ in (a) wall treatment (wall-function vs "
+    "low-Re damping), (b) inlet turbulence-intensity defaults, "
+    "and (c) model-constant choices. The SAME k-epsilon "
+    "channel-flow problem can converge to qualitatively "
+    "different velocity profiles in two backends because the "
+    "wall-treatment default differs."
+)
+
+_TURBULENCE_PITFALLS = [
+    "[Cross-Backend][Physics] Turbulence wall treatment: 4C's "
+    "fluid_turbulence with TURBMODEL k-epsilon defaults to "
+    "STANDARD WALL FUNCTIONS (assumes y+ > 30 at the first "
+    "wall-adjacent cell centroid); a finer near-wall mesh "
+    "violates the wall-function assumption silently. Kratos's "
+    "FluidDynamicsApplication k-epsilon process defaults to "
+    "no-slip + ad-hoc damping (allows fine wall meshes, y+ < 1 "
+    "OK) but the damping constants differ from standard "
+    "Launder-Spalding. NGSolve and dolfinx have no built-in "
+    "RANS — users write custom UFL forms; OASIS (a fenics-"
+    "based RANS solver) defaults to standard wall functions. "
+    "FEBio has no fluid-turbulence support. Signal: SAME k-eps "
+    "channel-flow problem on the SAME mesh produces different "
+    "centerline velocity in 4C (wall-function, mesh too fine, "
+    "wall shear over-predicted by ~15%) vs Kratos (low-Re "
+    "damping, correct centerline) — the user assumed 4C's "
+    "default would 'just work' on a refined mesh. Defense: "
+    "report y+_max from each backend's first wall-cell on the "
+    "convergence print; if y+_max < 30, switch 4C from "
+    "WALL-FUNCTION to LOW-REYNOLDS (standard Launder-Sharma "
+    "k-eps), or coarsen the wall mesh.",
+
+    "[Cross-Backend][Physics] Inlet turbulence-intensity (TI) "
+    "defaults: 4C's INFLOW BC for k-epsilon defaults to TI=5% "
+    "and turbulent length scale Lt = 0.07*D_hydraulic. "
+    "Kratos's KEpsilonHighReProcess defaults to TI=1% and "
+    "Lt=0.01 (much smaller). dolfinx user-written RANS: no "
+    "default, user must set. Signal: SAME pipe-flow problem "
+    "with 'default turbulence inlet' shows turbulent kinetic "
+    "energy at the centerline ~25x higher in 4C vs Kratos at "
+    "x/D=10 — the 4C input never specified TI so 4C used 5%, "
+    "Kratos used 1%. Defense: always specify TI and Lt "
+    "EXPLICITLY in the inlet BC; never rely on the backend's "
+    "default."
+]
+
+_TURBULENCE_SIGNAL = (
+    "[Cross-Backend][Physics] RANS k-eps/k-omega/SST turbulence "
+    "results that disagree across backends on the SAME mesh + "
+    "SAME inlet usually fail on (1) wall treatment default "
+    "(wall-function vs low-Re) and (2) inlet TI default. State "
+    "both explicitly in every backend's input — defaults vary "
+    "by 5-25x."
+)
+
+
+_MATERIAL_ORIENTATION_DESC = (
+    "Anisotropic material orientation — fiber direction in "
+    "transverse isotropy, layup angle in laminated shells, "
+    "principal-axis frame in orthotropic elasticity — is "
+    "specified through different mechanisms in each backend "
+    "and the default fallback (when not specified) varies."
+)
+
+_MATERIAL_ORIENTATION_PITFALLS = [
+    "[Cross-Backend][Physics] Fiber-direction specification in "
+    "transversely-isotropic / orthotropic materials: 4C's "
+    "MAT_AAA_FIBER specifies the fiber direction via a "
+    "constant vector or a fiber-field input file (.fib) per "
+    "element. FEBio's <transversely_isotropic>...<fiber type='"
+    "vector'>1,0,0</fiber> specifies fibers either as element-"
+    "wise vectors or by referencing a coordinate-system node "
+    "set. Kratos's FiberReinforcedMaterial uses a "
+    "FIBER_DIRECTION_1 nodal/elemental variable set via a "
+    "process. dolfinx custom UFL: user defines a vector-valued "
+    "Function f and writes the constitutive law explicitly "
+    "(no default direction). dealii similarly user-supplied. "
+    "DEFAULT FALLBACK when fiber direction is unspecified: 4C "
+    "uses (1, 0, 0) global x; FEBio uses (1, 0, 0) global x; "
+    "Kratos returns an error 'FIBER_DIRECTION_1 not initialised "
+    "on element'. Signal: ported fiber-reinforced beam-bending "
+    "problem where the fiber should be along the beam axis but "
+    "the .feb / .dat input file forgot to specify it: 4C and "
+    "FEBio silently use global x (which COULDN'T match the "
+    "beam axis if the beam is oriented along y), giving "
+    "qualitatively wrong stiffness. Defense: ALWAYS specify "
+    "fiber direction explicitly (no defaults); verify with a "
+    "simple uniaxial tension along the fiber axis — the "
+    "stiffness should match the fiber-direction Young's "
+    "modulus, not the matrix modulus.",
+]
+
+_MATERIAL_ORIENTATION_SIGNAL = (
+    "[Cross-Backend][Physics] If an anisotropic-material "
+    "problem (transverse isotropy, orthotropy, laminated shell) "
+    "gives qualitatively wrong stiffness on a SAME-mesh "
+    "cross-backend port, the cause is almost always an "
+    "unspecified fiber/principal-axis direction. 4C/FEBio "
+    "silently fall back to global x; Kratos errors out. "
+    "Specify direction explicitly in every backend."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -771,6 +875,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _PLASTICITY_RETURN_MAP_DESC,
         "pitfalls": _PLASTICITY_RETURN_MAP_PITFALLS,
         "Signal": _PLASTICITY_RETURN_MAP_SIGNAL,
+    },
+    "turbulence_model_defaults": {
+        "description": _TURBULENCE_DESC,
+        "pitfalls": _TURBULENCE_PITFALLS,
+        "Signal": _TURBULENCE_SIGNAL,
+    },
+    "material_orientation_defaults": {
+        "description": _MATERIAL_ORIENTATION_DESC,
+        "pitfalls": _MATERIAL_ORIENTATION_PITFALLS,
+        "Signal": _MATERIAL_ORIENTATION_SIGNAL,
     },
 }
 
