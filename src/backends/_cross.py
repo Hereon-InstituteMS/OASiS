@@ -365,6 +365,107 @@ _TIME_INTEGRATION_SIGNAL = (
 )
 
 
+_TOLERANCE_DESC = (
+    "Newton and Krylov solver convergence-tolerance defaults differ "
+    "by orders of magnitude across backends. The SAME problem can "
+    "report 'converged in 4 iterations' in one backend and "
+    "'diverged after 50 iterations' in another not because the "
+    "physics differs but because the relative-tolerance default "
+    "happened to land at a different power of 10."
+)
+
+_TOLERANCE_PITFALLS = [
+    "[Cross-Backend][Numerical] Newton solver default tolerances: "
+    "dolfinx's NewtonSolver defaults to rtol=1e-9, atol=1e-10, "
+    "max_it=50 (very strict). NGSolve's solvers.Newton() defaults "
+    "to maxerr=1e-11 absolute. Kratos's "
+    "ResidualBasedNewtonRaphsonStrategy defaults to relative_tol="
+    "1e-4, absolute_tol=1e-9 (LOOSER on relative). 4C's default "
+    "via solver_params.yaml is rel_tol=1.0e-6, abs_tol=1.0e-12 "
+    "(moderate). FEBio's default Newton control is rtol=0.001 "
+    "(VERY loose by FEM standards — 0.1%). dealii has no global "
+    "default; each step-XX tutorial sets it locally, usually "
+    "1e-6 to 1e-8. Signal: ported nonlinear problem 'converges' "
+    "in FEBio (rtol 1e-3 reached easily) but the SAME tolerance "
+    "request fails in fenics where rtol must reach 1e-9 — and the "
+    "FEBio solution is actually still 6 orders of magnitude away "
+    "from the true Newton fixed point. Defense: when porting, "
+    "ALWAYS set rtol AND atol explicitly in every backend's input. "
+    "Use rtol=1e-8, atol=1e-10 as a portable cross-backend baseline "
+    "for production problems; rtol=1e-4 for fast smoke tests.",
+
+    "[Cross-Backend][Numerical] Krylov (CG / GMRES / BiCGStab) "
+    "default tolerances similarly differ. PETSc-backed solvers "
+    "(dolfinx, 4C via PETSc) default to ksp_rtol=1e-5, ksp_atol="
+    "1e-50 (essentially relative-only). NGSolve's CGSolver defaults "
+    "to tol=1e-12 absolute. scipy.sparse.linalg.cg (used by skfem) "
+    "defaults to rtol=1e-5, atol=0 (also relative-only). Kratos's "
+    "AMGCL/Trilinos defaults are application-specific; "
+    "TrilinosLinearSolver typically tol=1e-6. Signal: ported linear "
+    "problem solves to 'machine precision' in NGSolve but only to "
+    "1e-5 relative in PETSc-backed dolfinx, and a downstream "
+    "nonlinear Newton loop in dolfinx fails to converge because "
+    "the linear solve residual seeds the Newton residual at 1e-5 "
+    "instead of 1e-12. Defense: set ksp_rtol AND ksp_atol "
+    "explicitly when porting; tighten ksp_rtol BELOW the outer "
+    "Newton rtol by at least 2 orders of magnitude (Newton rtol="
+    "1e-8 → ksp_rtol=1e-10 minimum).",
+]
+
+_TOLERANCE_SIGNAL = (
+    "[Cross-Backend][Numerical] If a 'converged' nonlinear solution "
+    "in one backend reports a different final residual than the "
+    "same problem in another backend, check the default Newton/"
+    "Krylov tolerances FIRST. Same-name convergence ('converged') "
+    "carries different meanings: FEBio's rtol=1e-3 default is 10^6 "
+    "times looser than dolfinx's rtol=1e-9."
+)
+
+
+_CONTACT_FORMULATION_DESC = (
+    "Contact-mechanics enforcement methods differ across backends "
+    "in defaults AND in available options. The SAME contact problem "
+    "(Hertzian sphere-on-plane, frictional slide, multi-body "
+    "assembly) solved 'with default settings' in two backends "
+    "produces non-comparable results because the constraint "
+    "formulation is silently different."
+)
+
+_CONTACT_FORMULATION_PITFALLS = [
+    "[Cross-Backend][Physics] Contact constraint enforcement: "
+    "Kratos's ContactStructuralMechanicsApplication defaults to "
+    "PENALTY (penalty_factor adaptive, starts ~E*1e3); explicit "
+    "alternative is augmented_lagrange via the AugmentedLagrange "
+    "process. 4C's CONTACT block defaults to STRATEGY 'Lagrange' "
+    "(true Lagrange multipliers via mortar segmentation), with "
+    "PENALTY available via STRATEGY 'Penalty'. FEBio uses "
+    "AUGMENTED LAGRANGE by default for sliding interface "
+    "(augmented_lagrangian='1' is the .feb XML attribute); "
+    "switches to PENALTY when augmented_lagrangian='0'. dolfinx "
+    "has no built-in contact; users build it via custom Nitsche "
+    "or external library (Mirco, Conmech). NGSolve has hp-FEM "
+    "Nitsche contact via the contact-mechanics tutorial. Signal: "
+    "Hertzian sphere-on-plane test ported between Kratos (penalty) "
+    "and 4C (Lagrange) gives matching peak pressure but the "
+    "Kratos solution shows ~1e-3 penetration at the contact patch "
+    "(penalty residual) while 4C shows ~1e-12 (true Lagrange "
+    "satisfies zero-penetration to solver tolerance). Defense: "
+    "when validating cross-backend, ALWAYS use Lagrange or "
+    "augmented Lagrange — penalty's accuracy depends on a "
+    "user-set penalty factor that has no universal default. State "
+    "the formulation EXPLICITLY in the input.",
+]
+
+_CONTACT_FORMULATION_SIGNAL = (
+    "[Cross-Backend][Physics] If two backends agree on bulk "
+    "stress fields in a contact problem but disagree on the "
+    "contact-patch penetration depth by orders of magnitude, "
+    "the cause is penalty (one backend) vs Lagrange/augmented "
+    "Lagrange (the other). Force Lagrange or augmented Lagrange "
+    "explicitly when validating across backends."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -405,6 +506,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _TIME_INTEGRATION_DESC,
         "pitfalls": _TIME_INTEGRATION_PITFALLS,
         "Signal": _TIME_INTEGRATION_SIGNAL,
+    },
+    "solver_tolerance_defaults": {
+        "description": _TOLERANCE_DESC,
+        "pitfalls": _TOLERANCE_PITFALLS,
+        "Signal": _TOLERANCE_SIGNAL,
+    },
+    "contact_formulation_defaults": {
+        "description": _CONTACT_FORMULATION_DESC,
+        "pitfalls": _CONTACT_FORMULATION_PITFALLS,
+        "Signal": _CONTACT_FORMULATION_SIGNAL,
     },
 }
 
