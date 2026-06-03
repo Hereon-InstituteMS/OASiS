@@ -2791,6 +2791,107 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"{getattr(cb_mul, 'equal_dofnum', None)!r}")
 
     @_skip_no_skfem
+    def test_skfem_coo_data_extras(self) -> None:
+        """skfem::_general.coo_data_extras [API]: confirm
+        (a) COOData(...).solve(b) is a hand-rolled CG that
+            emits logger.warning('Iterative solver did not
+            converge.') (NOT raises) on max-iter exhaustion,
+        (b) COOData.__add__ between two COOData objects NULLS
+            local_shape and subsequent .tolocal() raises
+            NotImplementedError,
+        (c) COOData.__add__(0) (the sum() builtin's int(0) start)
+            returns self unchanged.
+        (File walk skfem/assembly/form/coo_data.py 2026-06-03.)"""
+        import io
+        import logging
+        import numpy as np
+        import skfem as fem
+        from skfem.helpers import dot, grad
+        # Build a tiny Poisson COOData
+        m = fem.MeshTri().refined(2)
+        basis = fem.Basis(m, fem.ElementTriP1())
+
+        @fem.BilinearForm
+        def laplace(u, v, w):
+            return dot(grad(u), grad(v))
+
+        @fem.LinearForm
+        def load(v, w):
+            return 1.0 * v
+
+        K_csr = laplace.assemble(basis)
+        f = load.assemble(basis)
+        # Build COOData explicitly via _assemble (which is the
+        # public path BilinearForm.assemble uses internally)
+        from skfem.assembly.form.coo_data import COOData
+        ind, data, shape, local_shape = laplace._assemble(basis)
+        K_coo = COOData(indices=ind, data=data, shape=shape,
+                        local_shape=local_shape)
+        # (a) .solve() on the COO — capture logger output. Run
+        # with VERY few iterations to force the no-converge
+        # branch.
+        D = basis.get_dofs().flatten()
+        b = np.zeros(K_csr.shape[0])
+        b[D] = 0.0
+        # Force no-converge by capping at 2 iterations (real
+        # Poisson needs many more); the warning should fire.
+        log = logging.getLogger(
+            "skfem.assembly.form.coo_data")
+        prev_level = log.level
+        prev_handlers = list(log.handlers)
+        buf = io.StringIO()
+        h = logging.StreamHandler(buf)
+        h.setLevel(logging.WARNING)
+        log.addHandler(h)
+        log.setLevel(logging.WARNING)
+        try:
+            # solve() ALWAYS raises NO exception even on
+            # divergence — assert it returns and the warning is
+            # in the captured log.
+            x = K_coo.solve(f, D=D, tol=1e-15, maxiters=2)
+            captured = buf.getvalue()
+        finally:
+            log.removeHandler(h)
+            log.setLevel(prev_level)
+            log.handlers = prev_handlers
+        self.assertIsNotNone(
+            x, "COOData.solve returned None — should always "
+            "return a vector (even on non-convergence).")
+        # The no-converge warning is DEAD CODE — the gate at
+        # line 240-241 reads `if k == maxiters:` but for
+        # `for k in range(maxiters)`, final k is maxiters-1.
+        # So the warning never fires even with logging
+        # captured at WARNING level. If this assertion ever
+        # FAILS (warning DID appear), upstream fixed the
+        # off-by-one and the catalog claim is out of date.
+        self.assertNotIn(
+            "Iterative solver did not converge", captured,
+            "COOData.solve NOW emits the no-converge warning "
+            "— the line 240 'if k == maxiters' off-by-one "
+            "appears to be fixed upstream; revisit edge (1) "
+            "and update from 'never fires' to 'silently-"
+            "swallowed-by-logger-config'.")
+        # (b) sum-of-COOData nulls local_shape
+        K_sum = K_coo + K_coo
+        self.assertIsNone(
+            K_sum.local_shape,
+            "COOData.__add__ between two COOData objects no "
+            "longer NULLS local_shape; edge (2) needs revisit.")
+        with self.assertRaises(NotImplementedError) as ctx:
+            K_sum.tolocal()
+        self.assertIn(
+            "Cannot build local matrices", str(ctx.exception),
+            "tolocal() exception message after local_shape=None "
+            "changed.")
+        # (c) sum() int(0) start
+        s = sum([K_coo, K_coo])  # noqa: typing
+        self.assertIsInstance(
+            s, COOData,
+            "sum() over COOData no longer yields a COOData — "
+            "the __add__(int) -> self short-circuit (line 81-82) "
+            "may be broken; revisit edge (2).")
+
+    @_skip_no_skfem
     def test_skfem_facet_basis_extras(self) -> None:
         """skfem::_general.facet_basis_extras [API]: confirm
         (a) FacetBasis(facets=None) restricts to boundary facets
