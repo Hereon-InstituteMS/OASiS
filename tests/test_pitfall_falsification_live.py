@@ -859,6 +859,82 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       body,
                       "Size-scale clamp formula changed.")
 
+    def test_febio_hex_refine_source_invariants(self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input]
+        edges (k)-(n): confirm FEAMR/FEHexRefine.cpp still
+        implements
+        (a) BEGIN_FECORE_CLASS(FEHexRefine, FERefineMesh) with
+            params max_elem_refine, max_value, and property
+            criterion,
+        (b) Init() rejects non-HEX8 meshes with
+            feLogError('Cannot apply hex refinement: Mesh is
+            not a HEX8 mesh.'),
+        (c) Missing-criterion 'just do'em all' fallback at
+            BuildSplitLists,
+        (d) STRICTLY-GREATER comparison `m_elemValue >
+            m_maxValue` (line 147),
+        (e) findNodeInMesh uses hardcoded tolerance 1e-12 and
+            both std::runtime_error('Error in FEHexRefine!')
+            sites are still generic.
+        (File walk FEAMR/FEHexRefine.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/febio/FEAMR/FEHexRefine.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"FEBio FEHexRefine.cpp not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) FECORE_CLASS + 2 ADD_PARAMETER + 1 ADD_PROPERTY
+        self.assertIn(
+            "BEGIN_FECORE_CLASS(FEHexRefine, FERefineMesh)",
+            body, "FECORE_CLASS registration changed.")
+        for tok in ('ADD_PARAMETER(m_elemRefine, "max_elem_refine")',
+                    'ADD_PARAMETER(m_maxValue, "max_value")',
+                    'ADD_PROPERTY(m_criterion, "criterion")'):
+            self.assertIn(
+                tok, body,
+                f"Parameter/property line {tok!r} changed; "
+                f"pitfall parameter list needs revisit.")
+        # (b) HEX8 gate
+        self.assertIn(
+            "if (mesh.IsType(ET_HEX8) == false)", body,
+            "Init() HEX8-only gate changed; non-HEX8-rejection "
+            "pitfall (edge k) needs revisit.")
+        self.assertIn(
+            "Cannot apply hex refinement: Mesh is not a HEX8 mesh",
+            body, "HEX8-rejection log message changed.")
+        # (c) Missing-criterion 'just do'em all' fallback
+        self.assertIn("// just do'em all", body,
+                      "Missing-criterion 'just do'em all' "
+                      "comment changed; revisit edge (l).")
+        self.assertIn(
+            "m_elemList.assign(NEL, 1);", body,
+            "Missing-criterion fallback `m_elemList.assign("
+            "NEL, 1)` line changed; revisit edge (l).")
+        # (d) STRICTLY-GREATER comparison
+        self.assertIn(
+            "if (selection[i].m_elemValue > m_maxValue)", body,
+            "max_value strict-greater comparison changed; "
+            "threshold pitfall (edge m) needs revisit.")
+        # (e) findNodeInMesh tolerance 1e-12 + generic runtime
+        #     errors
+        self.assertIn(
+            "int findNodeInMesh(FEMesh& mesh, const vec3d& r, "
+            "double tol = 1e-12)", body,
+            "findNodeInMesh tolerance signature changed; "
+            "coincident-node tolerance pitfall (edge n) needs "
+            "revisit.")
+        self.assertGreaterEqual(
+            body.count('throw std::runtime_error("Error in '
+                       'FEHexRefine!");'), 2,
+            "Generic 'Error in FEHexRefine!' runtime_error "
+            "sites reduced below 2 — upstream may be adding "
+            "diagnostic detail; revisit edge (n).")
+
     def test_febio_minmax_filter_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]

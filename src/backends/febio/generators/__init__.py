@@ -138,6 +138,66 @@ KNOWLEDGE["_general"] = {
                         "silently skipped — no log, no error."),
                 },
             },
+            "hex_refine (FEHexRefine)": {
+                "description": (
+                    "Subdivides each selected HEX8 element into 8 "
+                    "smaller HEX8 sub-elements (uniform 1-to-8 split) "
+                    "via FEAMR/FEHexRefine.cpp. Inherits from "
+                    "FERefineMesh. Hanging nodes at non-conforming "
+                    "interfaces get FELinearConstraint MPCs to tie "
+                    "them to parent-edge endpoints."),
+                "parameters": {
+                    "max_elem_refine": (
+                        "int, default 0 = UNLIMITED. Caps how many "
+                        "elements get refined per RefineMesh() call. "
+                        "When 0, every element matching the criterion "
+                        "threshold is refined. When >0 and the "
+                        "criterion-selected count exceeds the cap, "
+                        "BuildSplitLists trims the list "
+                        "deterministically (preserves first-N-matched)."),
+                    "max_value": (
+                        "double, default 0.0. Threshold compared "
+                        "STRICTLY (selection[i].m_elemValue > "
+                        "m_maxValue). Default 0.0 means any positive "
+                        "criterion value qualifies; with a value-"
+                        "returning criterion (e.g. 'min-max filter' in "
+                        "clamp=false mode or 'mean-ratio') the user "
+                        "sets this to the actual quality threshold. "
+                        "Negative values are accepted (refines even "
+                        "more aggressively)."),
+                    "criterion": (
+                        "REQUIRED FEMeshAdaptorCriterion property in "
+                        "any realistic use, but missing-criterion is "
+                        "NOT an error: when m_criterion == nullptr "
+                        "(BuildSplitLists line 155-159: 'just do'em "
+                        "all'), EVERY element gets flagged for "
+                        "refinement. Omitting <criterion> on a large "
+                        "mesh refines globally to 8N elements in one "
+                        "step — likely OOM."),
+                },
+                "init_requirements": (
+                    "Init() checks mesh.IsType(ET_HEX8). Mixed meshes "
+                    "or non-HEX8 element types (HEX20, HEX27, TET4, "
+                    "etc.) fail with feLogError('Cannot apply hex "
+                    "refinement: Mesh is not a HEX8 mesh.') and return "
+                    "false. For mixed meshes use FETetRefine or "
+                    "FEHexRefine2D in combination, or restrict the "
+                    "adaptor to a HEX8-only sub-domain via "
+                    "FEElementSet."),
+                "internal_algorithm_notes": (
+                    "RefineMesh(): BuildSplitLists → UpdateNewNodes → "
+                    "FindHangingNodes (assigns FELinearConstraint) → "
+                    "BuildNewDomains → recreate element sets / node "
+                    "sets / surfaces. Elements that already have "
+                    "hanging nodes (FENode::HANGING flag) are "
+                    "REJECTED from refinement (logged: 'Elements "
+                    "rejected: N'). Coincident-node detection in "
+                    "findNodeInMesh uses HARDCODED tolerance 1e-12 — "
+                    "meshes scaled to >1e6 length units may miss "
+                    "coincident-node merges. Two error sites use the "
+                    "generic exception 'Error in FEHexRefine!' "
+                    "(lines 108, 127) — no diagnostic detail."),
+            },
         },
         "adaptor_criteria": {
             "max_variable":      "FEVariableCriterion — threshold on a field variable",
@@ -307,12 +367,47 @@ KNOWLEDGE["_general"] = {
             "Three FECORE criterion / adaptor classes share this "
             "silent-no-op fault pattern, and they all consult the "
             "same nullable property field. "
+            "Four FEHexRefine edges users routinely hit on "
+            "hex AMR runs: "
+            "(k) Init() REJECTS non-HEX8 meshes with "
+            "feLogError('Cannot apply hex refinement: Mesh is "
+            "not a HEX8 mesh.'). Mixed meshes (HEX8 + TET4), "
+            "higher-order hex (HEX20, HEX27), and pure-tet/"
+            "wedge/pyramid all fail at Init time. Workaround: "
+            "restrict to a HEX8 element set via FEElementSet, "
+            "or pair with FETetRefine for mixed meshes. "
+            "(l) Missing <criterion> is NOT an error — when "
+            "m_criterion == nullptr, BuildSplitLists falls "
+            "through to 'just do'em all' (line 155-159) and "
+            "flags EVERY element for refinement. On a large "
+            "mesh this means 8× node count in one step — likely "
+            "OOM or extreme runtime. Always set <criterion>. "
+            "(m) Default <max_value> = 0.0 + STRICTLY-GREATER "
+            "comparison (line 147: 'm_elemValue > m_maxValue'). "
+            "Criterion values of exactly 0 are NOT refined. "
+            "With a quality-criterion that returns 0 for "
+            "'don't-refine', the default works; for thresholds "
+            "(e.g. relative-error 0.05) the user MUST set "
+            "<max_value> to the actual cutoff. "
+            "(n) Coincident-node detection in findNodeInMesh "
+            "uses HARDCODED tolerance 1e-12 (line 267 default "
+            "arg). Meshes scaled to length units > 1e6 may "
+            "miss coincident-node merges, leading to "
+            "duplicated mid-edge / face / element-center nodes. "
+            "Symptom: 'mesh refinement produced N more nodes "
+            "than expected' with no error. Plus two generic "
+            "std::runtime_error('Error in FEHexRefine!') sites "
+            "(lines 108, 127) with no diagnostic detail — when "
+            "they fire, the user has no information about "
+            "which sub-step (element-set recreation / surface "
+            "update) failed. "
             "(File walks "
             "FEAMR/FEAMR.cpp 2026-06-02, "
             "FEAMR/FEDomainErrorCriterion.cpp 2026-06-03, "
             "FEAMR/FEElementQualityCriterion.cpp 2026-06-03, "
             "FEAMR/FEErosionAdaptor.cpp 2026-06-03, "
-            "FEAMR/FEFilterAdaptorCriterion.cpp 2026-06-03.)"
+            "FEAMR/FEFilterAdaptorCriterion.cpp 2026-06-03, "
+            "FEAMR/FEHexRefine.cpp 2026-06-03.)"
         ),
     },
     "cmake_embedding": {
