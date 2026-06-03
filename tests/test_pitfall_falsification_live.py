@@ -470,30 +470,35 @@ class TestPitfallFalsificationLive(unittest.TestCase):
     @_skip_no_skfem
     def test_skfem_quadrature_norder_ceiling_with_typo_message(
             self) -> None:
-        """skfem::poisson [API]: get_quadrature_tri caps at order 15
-        (raises NotImplementedError with TYPO 'quadratureis' missing
-        space) and get_quadrature_tet caps at order 5 (proper
-        spacing). High-order tet elements requiring quadrature >5 fail
-        to assemble. (File walk skfem/quadrature.py 2026-06-02.)"""
+        """skfem::poisson [API]: get_quadrature_tri caps at order 19
+        on skfem 12.0.1 (raises NotImplementedError with TYPO
+        'quadratureis' missing space at order 20) and get_quadrature_tet
+        caps at order 8 (raises with proper spacing at order 10). Very
+        high-order tet elements requiring quadrature > 8 fail to
+        assemble. The TYPO + proper-spacing messages are the falsifying
+        signals — they persist across skfem upstream releases even as
+        the underlying tabulated orders grow. (File walk
+        skfem/quadrature.py + live re-probe 2026-06-04 against skfem
+        12.0.1; ceilings were 15 / 5 on the 11.x line.)"""
         from skfem.quadrature import (get_quadrature_tri,
                                        get_quadrature_tet)
-        # Order 15 OK for tri
-        X15, _ = get_quadrature_tri(15)
-        self.assertGreater(X15.shape[1], 0)
-        # Order 16 raises with TYPO message
+        # Order 19 OK for tri (was 15 on 11.x)
+        X19, _ = get_quadrature_tri(19)
+        self.assertGreater(X19.shape[1], 0)
+        # Order 20 raises with TYPO message
         with self.assertRaises(NotImplementedError) as cm_tri:
-            get_quadrature_tri(16)
+            get_quadrature_tri(20)
         self.assertIn(
             "quadratureis not implemented",
             str(cm_tri.exception),
             f"Expected TYPO 'quadratureis' (no space) in tri error; "
             f"got {str(cm_tri.exception)!r}.")
-        # Order 5 OK for tet
-        Xt5, _ = get_quadrature_tet(5)
-        self.assertGreater(Xt5.shape[1], 0)
-        # Order 6 raises (proper spacing)
+        # Order 8 OK for tet (was 5 on 11.x)
+        Xt8, _ = get_quadrature_tet(8)
+        self.assertGreater(Xt8.shape[1], 0)
+        # Order 10 raises (proper spacing)
         with self.assertRaises(NotImplementedError) as cm_tet:
-            get_quadrature_tet(6)
+            get_quadrature_tet(10)
         self.assertIn(
             "quadrature is not available",
             str(cm_tet.exception),

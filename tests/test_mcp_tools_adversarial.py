@@ -192,16 +192,33 @@ class TestKnowledgeAdversarial(unittest.TestCase):
             f"Got: {result[:200]}")
 
     def test_overview_empty_general_clean_message(self) -> None:
-        """fourc and febio have empty/error _general; the
-        branch must emit a self-explanatory message instead of
-        crashing or returning '{}'."""
+        """fourc has empty _general; the branch must emit a
+        self-explanatory message instead of crashing or
+        returning '{}'. (febio used to be on this list, but the
+        FEBio refactor passes populated febio _general with real
+        embedding/AMR content — verify by inverse: febio's
+        overview MUST now return substantive JSON.)"""
         knowledge = _get_tool("knowledge")
-        for solver in ("fourc", "febio"):
-            result = knowledge(topic="overview", solver=solver)
-            self.assertIn("No backend-level overview catalog", result,
-                f"overview for {solver} (which has empty "
-                f"_general) must emit a clear no-content "
-                f"message. Got: {result[:200]}")
+        # Direct branch: fourc _general still empty.
+        result_fourc = knowledge(topic="overview", solver="fourc")
+        self.assertIn("No backend-level overview catalog", result_fourc,
+            f"overview for fourc (empty _general) must emit a clear "
+            f"no-content message. Got: {result_fourc[:200]}")
+        # Inverse anchor: if a future refactor empties febio _general,
+        # this assertion fails first, prompting an update here AND in
+        # whichever generator was edited.
+        result_febio = knowledge(topic="overview", solver="febio")
+        self.assertNotIn("No backend-level overview catalog",
+                         result_febio,
+            "febio _general was populated by the FEBio refactor; "
+            "overview must now return substantive JSON, not the "
+            "empty-catalog message. If this fails, restore the "
+            "febio _general content or move febio back into the "
+            "empty-catalog loop.")
+        self.assertGreater(
+            len(result_febio), 5000,
+            f"febio overview should be substantial (>5k chars); "
+            f"got {len(result_febio)} chars.")
 
 
 class TestDeveloperAdversarial(unittest.TestCase):
