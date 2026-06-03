@@ -3193,6 +3193,94 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "may be broken; revisit edge (2).")
 
     @_skip_no_skfem
+    def test_skfem_form_base_class_extras(self) -> None:
+        """skfem::_general.form_base_class_extras [Reference]+[API]:
+        confirm Form (the parent of LinearForm / BilinearForm /
+        TrilinearForm / Functional) still has
+        (a) coo_data() is a silent backwards-compat alias for
+            elemental() — no DeprecationWarning, both return a
+            COOData with matching shape,
+        (b) FormExtraParams 'w' supports both w['key'] and w.key
+            attribute access with the literal AttributeError text
+            "Attribute '<key>' not found in 'w'.",
+        (c) Form.partial() preserves form.__name__ across the
+            functools.partial wrap,
+        (d) _normalize_asm_kwargs raises ValueError with the
+            literal 'Quadrature mismatch:' text when a
+            DiscreteField has the wrong quadrature dimension.
+        (File walk skfem/assembly/form/form.py 2026-06-03.)"""
+        import warnings
+        import numpy as np
+        import skfem as fem
+        from skfem.helpers import dot, grad
+        from skfem.assembly.form.form import (Form, FormExtraParams)
+        from skfem.assembly.form.coo_data import COOData
+
+        m = fem.MeshTri().refined(1)
+        basis = fem.Basis(m, fem.ElementTriP1())
+
+        @fem.BilinearForm
+        def laplace(u, v, w):
+            return dot(grad(u), grad(v))
+        # (a) coo_data alias — same return shape, no warning
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            via_coo_data = laplace.coo_data(basis)
+            via_elemental = laplace.elemental(basis)
+        self.assertIsInstance(
+            via_coo_data, COOData,
+            "Form.coo_data() no longer returns a COOData — "
+            "the backwards-compat alias edge (1) shifted.")
+        self.assertIsInstance(
+            via_elemental, COOData,
+            "Form.elemental() no longer returns a COOData.")
+        self.assertEqual(
+            via_coo_data.data.shape, via_elemental.data.shape,
+            "coo_data() and elemental() returned different "
+            "shapes — they are documented as aliases (line 87).")
+        self.assertFalse(
+            any(issubclass(w.category, DeprecationWarning)
+                for w in ws),
+            "Form.coo_data() now emits a DeprecationWarning — "
+            "the silent-alias claim (edge 1) is outdated; "
+            "revisit the catalog.")
+        # (b) FormExtraParams attribute access + error text
+        w = FormExtraParams({'mu': 1.5, 'lam': 2.0})
+        self.assertEqual(
+            w.mu, 1.5,
+            "FormExtraParams.attr access no longer maps to "
+            "['attr'] — edge (4) needs revisit.")
+        self.assertEqual(
+            w['lam'], 2.0,
+            "FormExtraParams dict access broken.")
+        with self.assertRaises(AttributeError) as ctx:
+            _ = w.does_not_exist
+        self.assertIn(
+            "Attribute 'does_not_exist' not found in 'w'.",
+            str(ctx.exception),
+            "FormExtraParams missing-attr error text changed; "
+            "users debugging typos rely on this string.")
+        # (c) Form.partial preserves __name__
+        partial_form = laplace.partial()  # no curry, just verify
+        self.assertEqual(
+            partial_form.form.__name__, 'laplace',
+            "Form.partial() no longer preserves form.__name__ "
+            "(line 47-50); logger.info messages will lose the "
+            "form name.")
+        # (d) _normalize_asm_kwargs Quadrature mismatch ValueError
+        from skfem.element import DiscreteField
+        # Build a DiscreteField with wrong number of quadrature points
+        nx = basis.X.shape[-1]
+        bad = DiscreteField(
+            value=np.zeros((basis.nelems, max(1, nx - 1))))
+        with self.assertRaises(ValueError) as ctx:
+            Form._normalize_asm_kwargs({'bad': bad}, basis)
+        self.assertIn(
+            "Quadrature mismatch:", str(ctx.exception),
+            "_normalize_asm_kwargs quadrature-mismatch ValueError "
+            "text changed.")
+
+    @_skip_no_skfem
     def test_skfem_facet_basis_extras(self) -> None:
         """skfem::_general.facet_basis_extras [API]: confirm
         (a) FacetBasis(facets=None) restricts to boundary facets
