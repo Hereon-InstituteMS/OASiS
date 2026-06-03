@@ -753,6 +753,77 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       body,
                       "Size-scale clamp formula changed.")
 
+    def test_fourc_single_field_writers_source_invariants(
+            self) -> None:
+        """fourc::overview.post_processor_tool [Output]: confirm
+        upstream single_field_writers.cpp still has the three
+        documented quirks: (a) FluidFilter hardcoded
+        `int num_levelsets = 20` driving phinp_0..phinp_19 loop;
+        (b) XFluidFilter `_smoothed` naming convention
+        (velocity_smoothed / pressure_smoothed); (c)
+        StructureFilter post_stress double-call pattern for
+        Cauchy AND 2PK + 5 strain types + ThermoFilter
+        current+initial heatflux/tempgrad pattern. (File walk
+        apps/post_processor/4C_post_processor_single_field_writers.cpp
+        2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/apps/"
+                 "post_processor/4C_post_processor_"
+                 "single_field_writers.cpp"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/apps/post_processor/"
+                "4C_post_processor_single_field_writers.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C single_field_writers source not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) Hardcoded num_levelsets = 20
+        self.assertIn(
+            "int num_levelsets = 20;", body,
+            "Hardcoded num_levelsets value changed — pitfall #7 "
+            "(20-phinp loop) needs revisit.")
+        self.assertIn(
+            'std::string name = "phinp_" + std::to_string(k);',
+            body,
+            "phinp_<k> generation loop changed.")
+        # (b) XFluidFilter _smoothed naming convention
+        self.assertIn(
+            'writer_->write_result(\n      '
+            '"velocity_smoothed", "velocity_smoothed",', body,
+            "XFluidFilter velocity_smoothed line changed.")
+        self.assertIn(
+            'writer_->write_result("pressure_smoothed", '
+            '"pressure_smoothed"', body,
+            "XFluidFilter pressure_smoothed line changed.")
+        # (c) StructureFilter double-call stress pattern
+        self.assertIn(
+            'post_stress("gauss_cauchy_stresses_xyz", '
+            'stresstype_);', body,
+            "StructureFilter Cauchy-stress post_stress line changed.")
+        self.assertIn(
+            'post_stress("gauss_2PK_stresses_xyz", stresstype_);',
+            body, "StructureFilter 2PK-stress post_stress line "
+            "changed; double-call pitfall may no longer hold.")
+        # 5 strain types
+        for s in ("gauss_GL_strains_xyz", "gauss_EA_strains_xyz",
+                  "gauss_LOG_strains_xyz", "gauss_pl_GL_strains_xyz",
+                  "gauss_pl_EA_strains_xyz"):
+            self.assertIn(f'post_stress("{s}", straintype_);', body,
+                          f"StructureFilter {s} post_stress line "
+                          f"missing.")
+        # ThermoFilter current+initial heatflux/tempgrad pattern
+        for s in ("gauss_current_heatfluxes_xyz",
+                  "gauss_initial_heatfluxes_xyz",
+                  "gauss_current_tempgrad_xyz",
+                  "gauss_initial_tempgrad_xyz"):
+            self.assertIn(f'post_heatflux("{s}"', body,
+                          f"ThermoFilter {s} post_heatflux line "
+                          f"missing.")
+
     def test_fourc_post_processor_source_invariants(self) -> None:
         """fourc::overview.post_processor_tool [Output]: confirm
         upstream still implements (a) case-sensitive --filter

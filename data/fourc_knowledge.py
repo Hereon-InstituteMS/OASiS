@@ -351,6 +351,73 @@ FOURC_KNOWLEDGE = {
                 "LubricationFilter",
                 "AnyFilter (ProblemType::none — write whatever vectors exist)",
             ],
+            "filter_result_tags_per_writer": {
+                "StructureFilter": (
+                    "~50 tags. Primary: displacement, prolongated_"
+                    "gauss_2PK_stresses_xyz, prolongated_gauss_GL_"
+                    "strains_xyz, material_displacement (if struct_"
+                    "mat_disp='yes'). Contact: activeset, contact"
+                    "owner, nor/tan contactstress, slave/master"
+                    "forces (+lm/g suffixes), interfacetraction, "
+                    "wear, poronopen_lambda. Spring/dashpot: gap, "
+                    "curnormals, springstress. Error norms: L2_norm, "
+                    "H1_norm, Energy_norm. 1D artery: one_d_artery_"
+                    "{pressure,flow,area}, forward/backward speed[0]. "
+                    "Reduced airway: pnp/p_nonlin, NodeIDs, radii, "
+                    "scatraO2np, PO2, dVO2, AcinarPO2, acini_vnp, "
+                    "qin_np/qout_np, x_np, open, p_extnp/n, generations, "
+                    "elemVolume[0]np, elemRadius_current. FSI: "
+                    "Add_Forces, fsilambda, fpilambda_ps/pf. Biofilm: "
+                    "str_growth_displ. Poro: porosity_p1. SSI: nodal_"
+                    "stresses_xyz. EHL: fluid_force, normal/tangential_"
+                    "contact, active, slip. Plus Gauss-point post-stress "
+                    "and rotation R."),
+                "FluidFilter": (
+                    "~40 tags. Primary: velnp (-> 'velocity'), pressure, "
+                    "scalar_field, residual. Averaged: averaged_pressure/"
+                    "velnp/scanp. Filtered: filteredvel, fsvelaf. ALE: "
+                    "dispnp, idispnfull, traction. Wall-shear: wss, "
+                    "wss_mean. XWall: xwall_enrvelnp, xwall_tauw, par_vel. "
+                    "FSI volume-constraint: Add_Forces. Poro: convel, "
+                    "gridv. Adjoint: adjoint_velnp/pressure. Meshfree: "
+                    "velatmeshfreenodes, pressureatmeshfreenodes. FSI "
+                    "Lagrange mul.: fsilambda. Biofilm: fld_growth_displ. "
+                    "HDG: velnp_hdg, pressure_hdg, tracevel_hdg. XFluid "
+                    "level-set: fluid_levelset_boundary + phinp_0..19."),
+                "XFluidFilter": (
+                    "5 tags ONLY (XFEM-specific naming): velocity_"
+                    "smoothed, pressure_smoothed, averaged_velnp, "
+                    "averaged_pressure, fsvelocity."),
+                "MortarFilter": (
+                    "8 tags: displacement, nor/tan contactstress, "
+                    "interface traction, slave/master forces (+nor/tan "
+                    "suffixes)."),
+                "InterfaceFilter": (
+                    "7 tags (interface-side FSI accessors): idispnp/n, "
+                    "ivelnp/n/nm, iaccn, itrueresnp."),
+                "AleFilter": (
+                    "3 tags: dispnp (-> 'displacement'), det_j, "
+                    "element_quality."),
+                "LubricationFilter": (
+                    "5 tags: prenp (-> 'pressure'), height, no_gap_DBC, "
+                    "dispnp, viscosity."),
+                "ThermoFilter": (
+                    "Primary: temperature (NOT 'tempnp'). Optional "
+                    "Gauss-point post: gauss_{current,initial}_heatfluxes_"
+                    "xyz → 'heatflux' (nodebased), gauss_{current,initial}_"
+                    "tempgrad_xyz → 'tempgrad' (nodebased). Plus "
+                    "displacement (TSI), and SLM-specific: phase, "
+                    "conductivity, capacity."),
+                "AnyFilter": (
+                    "Writes all dof + node + element results blindly "
+                    "(no tag whitelist)."),
+            },
+            "structure_filter_one_time_step_subset": (
+                "StructureFilter::write_all_results_one_time_step "
+                "(line 173) writes ONLY displacement + node results, "
+                "NOT the full ~50-tag set. Used for partial restart-"
+                "style writes. Users expecting stresses/strains/contact "
+                "tags from a per-step call get only displacement."),
             "Signal": (
                 "[Output] Six sharp edges in post_processor most users "
                 "hit at least once: "
@@ -395,7 +462,40 @@ FOURC_KNOWLEDGE = {
                 "This is the right escape hatch for ad-hoc field dumps "
                 "but offers no diagnostic if the discretization is "
                 "missing — user sees an empty .case. "
-                "(File walk apps/post_processor/4C_post_processor.cpp "
+                "(7) FluidFilter::write_all_results has a HARDCODED "
+                "`int num_levelsets = 20;` (line 271 of "
+                "single_field_writers.cpp) which unconditionally loops "
+                "writing phinp_0..phinp_19 from the XFluid level-set "
+                "store. Users with fewer than 20 level-sets get "
+                "silent no-ops for the missing tags; users with MORE "
+                "than 20 lose level-sets 20+ from .case output. "
+                "Recompile-only knob — no runtime override. "
+                "(8) XFluidFilter uses the `_smoothed` naming "
+                "convention (velocity_smoothed, pressure_smoothed) "
+                "for its 4-DOF-per-node fixed-size Paraview vectors, "
+                "NOT the raw XFEM runtime names ('velocity', "
+                "'pressure'). Source comment (line 286-294) "
+                "explains XFEM has changing DOF counts so restart "
+                "vectors and Paraview vectors are different sizes. "
+                "Users grepping a runtime XFEM .out for 'velocity' "
+                "see the raw name; users opening the post_processor "
+                ".case in ParaView see velocity_smoothed — and "
+                "looking for the wrong name gives 'field not found'. "
+                "(9) StructureFilter + ThermoFilter post-stress / "
+                "post-heatflux paths call BOTH alternatives "
+                "(gauss_cauchy_stresses_xyz AND gauss_2PK_stresses_xyz; "
+                "{current,initial}_heatfluxes / tempgrad pairs) even "
+                "though only ONE is present in the result archive at "
+                "a time. Comments at lines 142-159 / 362-379 spell "
+                "this out: 'only one function call to PostStress is "
+                "really postprocessing Gauss point stresses'. The "
+                "non-present tag's write_result is silently a no-op. "
+                "Plus 5 strain types are tried "
+                "(GL/EA/LOG/pl_GL/pl_EA) — users counting writes "
+                "from log lines see 'attempted N writes, got M' "
+                "without an error indicator. "
+                "(File walks apps/post_processor/4C_post_processor.cpp + "
+                "4C_post_processor_single_field_writers.cpp "
                 "2026-06-03.)"
             ),
         },
