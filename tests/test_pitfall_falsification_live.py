@@ -606,6 +606,59 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"got: {[str(w.message) for w in dep_new]!r}")
         self.assertEqual(r_new.shape, (ib_p1.N,))
 
+    @_skip_no_skfem
+    def test_skfem_asm_auto_wrap_edge_cases(self) -> None:
+        """skfem::_general.assembly_module_asm_shorthand [API]:
+        confirm skfem.asm()'s auto-wrap via
+        form.__code__.co_argcount still (a) raises IndexError on
+        nargs >= 5 (no bounds check), (b) silently wraps nargs==0
+        as TrilinearForm via Python negative indexing (visible
+        only at call time as TypeError), (c) InteriorBasis +
+        ExteriorFacetBasis are active no-warning aliases for
+        CellBasis + BoundaryFacetBasis. (File walk
+        skfem/assembly/__init__.py 2026-06-03.)"""
+        import warnings
+        import skfem as fem
+        m = fem.MeshTri()
+        b = fem.CellBasis(m, fem.ElementTriP1())
+        # (a) nargs=5 → IndexError
+        with self.assertRaises(IndexError) as cm:
+            fem.asm(lambda a, b, c, d, e: 0, b)
+        self.assertIn("list index out of range",
+                      str(cm.exception),
+                      "asm() no longer raises IndexError on "
+                      "nargs>=5 — wrapper-lookup behavior changed.")
+        # (b) nargs=0 → silently wraps as TrilinearForm; fails at
+        #     call time with TypeError about 0-arg lambda receiving
+        #     4 positional arguments. (Negative-indexing slip.)
+        with self.assertRaises(TypeError) as cm0:
+            fem.asm(lambda: 0, b)
+        msg = str(cm0.exception)
+        self.assertIn(
+            "takes 0 positional arguments but 4 were given", msg,
+            "asm() no longer wraps 0-arg lambda as TrilinearForm "
+            "(via -1 index slip) — pitfall #2 needs revisit; got "
+            f"TypeError: {msg!r}")
+        # (c) Backward-compat aliases
+        self.assertIs(fem.InteriorBasis, fem.CellBasis,
+                      "InteriorBasis is no longer an alias for "
+                      "CellBasis — pitfall needs revisit.")
+        self.assertIs(fem.ExteriorFacetBasis, fem.BoundaryFacetBasis,
+                      "ExteriorFacetBasis is no longer an alias "
+                      "for BoundaryFacetBasis.")
+        # And the aliases emit NO DeprecationWarning on import
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            _ = fem.InteriorBasis
+            _ = fem.ExteriorFacetBasis
+        dep = [w for w in ws
+               if issubclass(w.category, DeprecationWarning)]
+        self.assertEqual(
+            len(dep), 0,
+            f"DeprecationWarning now emitted for the legacy "
+            f"aliases; pitfall about silent aliases needs "
+            f"revisit. Warnings: {[str(w.message) for w in dep]!r}")
+
     def test_febio_domain_error_criterion_source_invariants(
             self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input]:

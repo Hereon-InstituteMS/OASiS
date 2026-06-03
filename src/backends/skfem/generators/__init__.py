@@ -73,6 +73,57 @@ KNOWLEDGE["_general"] = {
         "Mortar methods for domain decomposition (MortarFacetBasis)",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
+    "assembly_module_asm_shorthand": {
+        "description": (
+            "skfem.assembly.asm(form, *bases) is a convenience "
+            "shorthand around Form.assemble that auto-wraps bare "
+            "callables into the right form subclass by inspecting "
+            "form.__code__.co_argcount. Source: "
+            "skfem/assembly/__init__.py."),
+        "auto_wrap_table": {
+            1: "Functional   — (w,)",
+            2: "LinearForm   — (v, w)",
+            3: "BilinearForm — (u, v, w)",
+            4: "TrilinearForm — (u, v, w, p)",
+        },
+        "backwards_compat_aliases": {
+            "InteriorBasis": "alias for CellBasis (no DeprecationWarning)",
+            "ExteriorFacetBasis": ("alias for BoundaryFacetBasis "
+                                   "(no DeprecationWarning)"),
+        },
+        "Signal": (
+            "[API] skfem.asm()'s auto-wrap based on "
+            "form.__code__.co_argcount has TWO unguarded edge "
+            "cases at the wrapper-lookup site "
+            "[Functional, LinearForm, BilinearForm, "
+            "TrilinearForm][nargs - 1]: "
+            "(1) Bare-callable with nargs >= 5 raises "
+            "IndexError('list index out of range') instead of a "
+            "helpful error — common when a user adds an extra "
+            "positional arg by mistake or forgets to decorate "
+            "with @BilinearForm. "
+            "(2) Bare-callable with nargs == 0 SILENTLY wraps as "
+            "TrilinearForm via Python negative indexing "
+            "(nargs - 1 == -1 hits the last list element). The "
+            "wrap succeeds; the error comes at call time as "
+            "TypeError('<lambda>() takes 0 positional arguments "
+            "but 4 were given') — opaque because the user thinks "
+            "they passed a Functional. "
+            "Also: skfem.InteriorBasis and skfem.ExteriorFacetBasis "
+            "are still active aliases for CellBasis and "
+            "BoundaryFacetBasis with NO DeprecationWarning. "
+            "Tutorials and StackOverflow answers from <=2022 use "
+            "the old names interchangeably; new users see them "
+            "work without realizing they're shadows of the "
+            "modern names. Plus: skfem.asm uses an internal "
+            "_sum(blocks) reducer that asserts `not isinstance("
+            "out, int)` to catch the silent-zero case when the "
+            "assembly iterator is empty (no bases passed, or "
+            "empty product). AssertionError there means 'you "
+            "passed nothing assemblable', not a bug in skfem. "
+            "(File walk skfem/assembly/__init__.py 2026-06-03.)"
+        ),
+    },
     "linear_system_utils": {
         "description": (
             "skfem.utils linear-system entry points (enforce / "
