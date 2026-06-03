@@ -1842,6 +1842,67 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"{getattr(cb_mul, 'equal_dofnum', None)!r}")
 
     @_skip_no_skfem
+    def test_skfem_composite_basis_extras(self) -> None:
+        """skfem::_general.composite_basis_extras [API]: confirm
+        (a) CompositeBasis.get_dofs(*args, **kwargs) raises
+            NotImplementedError with NO message (bare raise),
+        (b) CompositeBasis rejects nested ElementComposite with
+            NotImplementedError('ElementComposite not supported.'),
+        (c) split() on an equal_dofnum=True CompositeBasis returns
+            the first sub-basis's full slice and an EMPTY array for
+            every subsequent sub-basis — confirming the split is
+            effectively unusable in shared-DOF mode. (File walk
+        skfem/assembly/basis/composite_basis.py 2026-06-03.)"""
+        import numpy as np
+        import skfem as fem
+        from skfem.assembly.basis.composite_basis import (
+            CompositeBasis)
+        from skfem.element import ElementComposite
+        m = fem.MeshTri()
+        # Match intorder so the qp-count gate doesn't fire first.
+        b1 = fem.Basis(m, fem.ElementTriP2(), intorder=4)
+        b2 = fem.Basis(m, fem.ElementTriP1(), intorder=4)
+        # (a) get_dofs bare NIE
+        cb = b1 * b2  # equal_dofnum=False
+        self.assertIsInstance(cb, CompositeBasis)
+        with self.assertRaises(NotImplementedError) as ctx:
+            cb.get_dofs()
+        self.assertEqual(
+            str(ctx.exception), "",
+            "CompositeBasis.get_dofs() now has a non-empty error "
+            "message — pitfall claim 'bare raise' needs revisit.")
+        # (b) Nested ElementComposite
+        b_comp = fem.Basis(
+            m, ElementComposite(fem.ElementTriP1(),
+                                fem.ElementTriP1()))
+        with self.assertRaises(NotImplementedError) as ctx:
+            CompositeBasis(b_comp, b2)
+        self.assertIn(
+            "ElementComposite not supported", str(ctx.exception),
+            "Nested-ElementComposite NIE message changed.")
+        # (c) equal_dofnum=True split() degenerate behavior
+        cb2 = b1 @ b2  # equal_dofnum=True
+        self.assertTrue(getattr(cb2, "equal_dofnum"),
+                        "`b1 @ b2` no longer produces equal_dofnum"
+                        "=True; matmul-overload contract broken.")
+        self.assertEqual(
+            cb2.N, b1.N,
+            "equal_dofnum=True CompositeBasis no longer reports "
+            "N == bases[0].N — split-degeneracy pitfall basis "
+            "changed.")
+        x = np.arange(cb2.N)
+        splits = cb2.split(x)
+        self.assertEqual(
+            splits[0][0].shape[0], b1.N,
+            "split()[0] no longer returns the full first sub-basis "
+            "slice on equal_dofnum=True.")
+        self.assertEqual(
+            splits[1][0].shape[0], 0,
+            "split()[1] is no longer empty on equal_dofnum=True — "
+            "shared-DOF degeneracy pitfall may be fixed; revisit "
+            "composite_basis_extras edge (3).")
+
+    @_skip_no_skfem
     def test_skfem_dofs_view_deprecations_and_decompose_exit(
             self) -> None:
         """skfem::_general.dofs_view_extras [API]: confirm

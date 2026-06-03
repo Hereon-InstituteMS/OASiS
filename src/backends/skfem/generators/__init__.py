@@ -189,6 +189,50 @@ KNOWLEDGE["_general"] = {
             "2026-06-03.)"
         ),
     },
+    "composite_basis_extras": {
+        "description": (
+            "CompositeBasis (built via b1 @ b2 / b1 * b2 or "
+            "constructed directly) has three pitfalls that fire "
+            "AFTER construction succeeds — none of which surface "
+            "in the operator-overload docstring. Source: "
+            "skfem/assembly/basis/composite_basis.py."),
+        "Signal": (
+            "[API] (1) CompositeBasis.get_dofs(*args, **kwargs) "
+            "is HARD-CODED to `raise NotImplementedError` with no "
+            "message at all. Users coming from CellBasis / "
+            "FacetBasis expecting `basis.get_dofs('left')` for "
+            "Dirichlet selection on a CompositeBasis get a naked "
+            "NotImplementedError with no hint. Workaround: call "
+            "get_dofs on each sub-basis individually and offset "
+            "by sum(sub_basis_i.N for i<k) when assembling the "
+            "global Dirichlet vector — or use the operator "
+            "splitting (basis.split(x)) to handle each field "
+            "separately. "
+            "(2) CompositeBasis(*bases) rejects nested "
+            "ElementComposite — line 21-23: `if isinstance("
+            "basis.elem, ElementComposite): raise "
+            "NotImplementedError('ElementComposite not "
+            "supported.')`. Common confusion: skfem offers TWO "
+            "stacking primitives — ElementComposite (combines "
+            "elements inside one Basis, e.g. P2-velocity + P1-"
+            "pressure grouped) and CompositeBasis (combines "
+            "multiple Basis objects). Nesting the former inside "
+            "the latter explodes. Pick one stacking layer. "
+            "(3) CompositeBasis.split(x) uses "
+            "np.cumsum([basis.N for basis in self.bases])[:-1] "
+            "regardless of equal_dofnum. When equal_dofnum=True "
+            "(operator b1 @ b2 — DOFs are SHARED, total N = "
+            "bases[0].N), the cumsum produces split points at "
+            "N0, 2*N0, ... but x has length N0, so split() "
+            "returns the first sub-basis's full slice and EMPTY "
+            "arrays for the rest. Use equal_dofnum=True only "
+            "with care: split() is effectively unusable in that "
+            "mode; access sub-fields via basis.bases[i] + "
+            "x[:bases[i].N] directly. "
+            "(File walk skfem/assembly/basis/composite_basis.py "
+            "2026-06-03.)"
+        ),
+    },
     "dofs_view_extras": {
         "description": (
             "Three quietly-deprecated or surprising behaviors in "
