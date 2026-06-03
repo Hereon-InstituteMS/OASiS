@@ -1589,6 +1589,98 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Capstan positive-direction friction-force update "
             "missing.")
 
+    def test_kratos_cablenet_weak_sliding_source_invariants(
+            self) -> None:
+        """kratos::cable_net [Input]+[Numerical]: confirm
+        WeakSlidingElement3D3N's 4 documented edges hold in
+        upstream source:
+        (a) Hard-coded slave-node-3 topology contract via the
+            header comment 'node 1,2 connect line to run on /
+            node 3 is slave node',
+        (b) Penalty stiffness alpha = Properties[YOUNG_MODULUS]
+            with the literal 'simplified \"spring stiffness\"'
+            source comment,
+        (c) Check() only validates nodecount + dimension + that
+            YOUNG_MODULUS > eps — NOT the role ordering,
+        (d) AddExplicitContribution<double> is overridden to a
+            no-op with the source comment 'overwriting base
+            class function to omit error msg / this element does
+            not contribute any mass or damping'.
+        (File walk applications/CableNetApplication/custom_elements/
+        weak_coupling_slide.cpp + .hpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates_cpp = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/kratos/applications/"
+                "CableNetApplication/custom_elements/"
+                "weak_coupling_slide.cpp"),
+        ]
+        candidates_hpp = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/kratos/applications/"
+                "CableNetApplication/custom_elements/"
+                "weak_coupling_slide.hpp"),
+        ]
+        src = next((p for p in candidates_cpp if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"Kratos weak_coupling_slide.cpp not found in "
+                f"{candidates_cpp}.")
+        body = src.read_text()
+        # (a) Slave-node-3 header comment
+        self.assertIn(
+            "//  node 1,2 connect line to run on", body,
+            "Header 'node 1,2 connect line to run on' comment "
+            "changed; slave-node topology contract pitfall "
+            "needs revisit.")
+        self.assertIn(
+            "//  node 3 is slave node", body,
+            "Header 'node 3 is slave node' comment changed; "
+            "slave-node topology contract pitfall needs "
+            "revisit.")
+        # (b) alpha = YOUNG_MODULUS + literal 'spring stiffness'
+        self.assertIn(
+            'const double alpha = GetProperties()[YOUNG_MODULUS]'
+            '; // simplified "spring stiffness"', body,
+            "alpha = YOUNG_MODULUS line + 'spring stiffness' "
+            "comment changed; pitfall edge (2) needs revisit.")
+        # (c) Check() validates YOUNG_MODULUS > limit
+        self.assertIn(
+            "GetProperties()[YOUNG_MODULUS] <= numerical_limit",
+            body,
+            "Check()'s YOUNG_MODULUS threshold test changed.")
+        self.assertIn(
+            "YOUNG_MODULUS not provided for this element", body,
+            "Missing-YOUNG_MODULUS KRATOS_ERROR message "
+            "changed.")
+        self.assertNotIn(
+            "CROSS_AREA", body,
+            "WeakSlidingElement3D3N now references CROSS_AREA — "
+            "pitfall (2)'s claim that YOUNG_MODULUS is the SOLE "
+            "spring-stiffness knob needs revisit.")
+        # (d) AddExplicitContribution<double> no-op comment
+        self.assertIn(
+            "overwriting base class function to omit error msg",
+            body,
+            "AddExplicitContribution no-op override comment "
+            "changed; pitfall edge (3) needs revisit.")
+        self.assertIn(
+            "this element does not contribute any mass or "
+            "damping", body,
+            "AddExplicitContribution no-op comment about mass/"
+            "damping changed.")
+        # Also: header msNumberOfNodes/msDimension constants
+        src_hpp = next((p for p in candidates_hpp if p.exists()),
+                       None)
+        if src_hpp is not None:
+            hpp = src_hpp.read_text()
+            self.assertIn(
+                "static constexpr int msNumberOfNodes = 3;", hpp,
+                "msNumberOfNodes constant changed.")
+            self.assertIn(
+                "static constexpr int msDimension = 3;", hpp,
+                "msDimension constant changed.")
+
     def test_kratos_cablenet_ring_element_source_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Numerical]: confirm
