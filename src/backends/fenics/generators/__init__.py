@@ -228,6 +228,72 @@ GENERAL_KNOWLEDGE = {
         "Mixed elements: arbitrary combinations via mixed_element()",
         "Checkpointing via adios4dolfinx",
     ],
+    "cross_mesh_interpolation": {
+        "description": (
+            "Non-matching-mesh interpolation: take a Function on "
+            "one mesh and evaluate it onto a Function on a "
+            "DIFFERENT mesh (e.g., tet→hex transfer, mesh "
+            "convergence studies on independent meshes, "
+            "decoupled multiphysics with separate meshes per "
+            "field). Source: "
+            "cpp/demo/interpolation_different_meshes/main.cpp + "
+            "Python wrappers dolfinx.fem.create_interpolation_data "
+            "and Function.interpolate_nonmatching."),
+        "python_api": {
+            "step_1_build_pointownership": (
+                "data = dolfinx.fem.create_interpolation_data("
+                "V_to, V_from, cells, padding=1e-14). V_to is "
+                "the TARGET FunctionSpace (the one receiving "
+                "values), V_from is the SOURCE. cells is the "
+                "INT32 array of TARGET mesh cell indices to "
+                "interpolate onto (typically all cells: "
+                "`np.arange(cell_map.size_local + "
+                "cell_map.num_ghosts, dtype=np.int32)`). "
+                "padding (default 1e-14) is the geometric "
+                "tolerance for point-in-cell ownership tests."),
+            "step_2_interpolate": (
+                "u_to.interpolate_nonmatching(u_from, cells, "
+                "interpolation_data=data). NOT u_to.interpolate("
+                "u_from) — regular interpolate only works for "
+                "same-mesh Function-to-Function transfer."),
+        },
+        "Signal": (
+            "[API] FOUR common failure modes in cross-mesh "
+            "interpolation: "
+            "(1) Calling Function.interpolate(u_other_mesh) "
+            "instead of Function.interpolate_nonmatching(u, "
+            "cells, data) — the regular path tries same-mesh "
+            "shape-function evaluation and silently produces "
+            "garbage (sometimes zeros, sometimes uninitialized "
+            "memory) when meshes differ. No clear error; the "
+            "interpolated Function looks plausibly-shaped but "
+            "values are wrong. "
+            "(2) The Python create_interpolation_data default "
+            "padding is 1e-14 (machine-eps-tight) while the "
+            "C++ interpolation-different-meshes demo uses 1e-8. "
+            "Points lying on the geometric boundary between "
+            "source cells fall outside any cell with the "
+            "Python default and get silently zeroed. For "
+            "near-coincident meshes (FSI fluid/solid interfaces, "
+            "h-refined target vs. coarser source) the 1e-8 "
+            "default from the C++ demo is safer; bump padding "
+            "explicitly to 1e-10..1e-8 for boundary points. "
+            "(3) The `cells` argument is the TARGET mesh's "
+            "cell indices, NOT the source's. Common mistake: "
+            "passing source-mesh cells gets you garbage "
+            "ownership data with cells reading data they "
+            "don't own. "
+            "(4) Argument order in create_interpolation_data "
+            "is (V_to, V_from, cells, padding) but the "
+            "Function.interpolate_nonmatching signature is "
+            "(u_from, cells, interpolation_data) — the FROM "
+            "and TO directions are SWAPPED across the two "
+            "calls. Reading the function names instead of the "
+            "kwargs leads to swapped data. "
+            "(File walk cpp/demo/interpolation_different_meshes/"
+            "main.cpp 2026-06-03.)"
+        ),
+    },
     "mixed_domain_assembly": {
         "description": (
             "Co-dimension-0 mixed assembly: assemble bilinear forms "

@@ -1129,6 +1129,62 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       "get_latest_tag.sh.")
 
     @_skip_no_dolfinx
+    def test_fenics_cross_mesh_interpolation_api_invariants(
+            self) -> None:
+        """fenics::_general.cross_mesh_interpolation [API]: confirm
+        the dolfinx Python API still has (a)
+        create_interpolation_data(V_to, V_from, cells, padding) — 4
+        positional args, padding default 1e-14; (b)
+        Function.interpolate_nonmatching(u0, cells,
+        interpolation_data) as a SEPARATE method from regular
+        interpolate; (c) regular Function.interpolate has no
+        interpolation_data kwarg (3 args: u0, cells0, cells1).
+        (File walk cpp/demo/interpolation_different_meshes/main.cpp
+        2026-06-03.)"""
+        import inspect
+        from dolfinx import fem
+        # (a) create_interpolation_data signature
+        sig_create = inspect.signature(fem.create_interpolation_data)
+        params = list(sig_create.parameters.keys())
+        self.assertEqual(
+            params[:4], ["V_to", "V_from", "cells", "padding"],
+            f"create_interpolation_data signature changed; got "
+            f"{params!r}")
+        padding_default = sig_create.parameters["padding"].default
+        self.assertAlmostEqual(
+            padding_default, 1e-14,
+            msg=f"Python create_interpolation_data padding "
+                f"default changed from 1e-14; got "
+                f"{padding_default}")
+        # (b) interpolate_nonmatching is a SEPARATE method
+        self.assertTrue(
+            hasattr(fem.Function, "interpolate_nonmatching"),
+            "Function.interpolate_nonmatching no longer exists "
+            "— pitfall about the separate cross-mesh method "
+            "needs revisit.")
+        sig_nm = inspect.signature(fem.Function.interpolate_nonmatching)
+        nm_params = list(sig_nm.parameters.keys())
+        self.assertEqual(
+            nm_params,
+            ["self", "u0", "cells", "interpolation_data"],
+            f"interpolate_nonmatching signature changed; got "
+            f"{nm_params!r}")
+        # (c) Regular interpolate has no interpolation_data kwarg
+        sig_reg = inspect.signature(fem.Function.interpolate)
+        reg_params = list(sig_reg.parameters.keys())
+        self.assertNotIn(
+            "interpolation_data", reg_params,
+            "Regular Function.interpolate now accepts "
+            "interpolation_data — the wrong-method pitfall "
+            "may no longer apply.")
+        # Should be (self, u0, cells0, cells1)
+        self.assertEqual(
+            reg_params,
+            ["self", "u0", "cells0", "cells1"],
+            f"Regular interpolate signature changed; got "
+            f"{reg_params!r}")
+
+    @_skip_no_dolfinx
     def test_fenics_maxwell_nedelec_to_dg_visualization_workaround(
             self) -> None:
         """fenics::maxwell [Output]: confirm the catalog's claim
