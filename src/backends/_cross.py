@@ -922,6 +922,108 @@ _MESH_QUALITY_SIGNAL = (
 )
 
 
+_STRESS_MEASURE_DESC = (
+    "Output stress fields can be reported as Cauchy (true) "
+    "stress sigma, 1st Piola-Kirchhoff PK1, 2nd Piola-Kirchhoff "
+    "PK2, or as engineering stress sigma_eng. All four agree "
+    "in the infinitesimal-strain limit but diverge at finite "
+    "strain. Backends differ in WHICH stress measure they "
+    "default to in output files."
+)
+
+_STRESS_MEASURE_PITFALLS = [
+    "[Cross-Backend][Output] Default stress-measure in output: "
+    "dolfinx writes whatever the user-projected stress UFL "
+    "expression evaluates to — typically the user writes "
+    "sigma = mu*(F*F.T - I) + lam*ln(J)*I (Cauchy in current "
+    "configuration). FEBio's <stress> output element writes "
+    "Cauchy stress sigma in the deformed configuration. 4C's "
+    "STRUCTURAL_OUTPUT element 'stress' option 'cauchy' writes "
+    "Cauchy; option 'pk2' writes PK2 in the reference config; "
+    "default is determined by KINEM (linear -> infinitesimal, "
+    "nonlinear -> PK2 unless overridden). Kratos's "
+    "ConstitutiveLaw::CalculateMaterialResponseCauchy returns "
+    "Cauchy by default but VonMisesStress nodal-value "
+    "calculation uses whatever the constitutive law's "
+    "STRESS_VECTOR contains (varies). NGSolve and skfem custom "
+    "UFL: user-controlled. dealii's data_out.add_data_vector "
+    "with the user's stress lambda — convention is whatever the "
+    "user computed. Signal: hyperelastic uniaxial tension at "
+    "10% stretch — Cauchy reports sigma = mu*(lambda^2 - 1/"
+    "lambda) ~ 0.21 mu; PK1 reports P11 = mu*(lambda - 1/"
+    "lambda^2) ~ 0.18 mu; PK2 reports S11 = mu*(1 - 1/"
+    "lambda^3) ~ 0.16 mu. All correct in their respective "
+    "configurations, all DIFFERENT numerical values for the "
+    "same physical state. Defense: explicitly name the stress "
+    "measure in every backend's output config; convert to "
+    "Cauchy for cross-backend comparison via sigma = (1/J)*F*"
+    "PK1 = (1/J)*F*PK2*F.T."
+]
+
+_STRESS_MEASURE_SIGNAL = (
+    "[Cross-Backend][Output] Cross-backend hyperelastic stress "
+    "values differing by ~10-20% at >5% strain are almost "
+    "always Cauchy-vs-PK1-vs-PK2 reporting differences, not "
+    "physical errors. The three measures coincide only at "
+    "infinitesimal strain. Always specify the stress measure "
+    "in every backend's output config."
+)
+
+
+_PERIODIC_BC_DESC = (
+    "Periodic boundary conditions — used for representative-"
+    "volume-element (RVE) homogenisation, periodic crystal "
+    "structures, and infinite-domain approximations — are "
+    "implemented via different constraint mechanisms across "
+    "backends with different accuracy and matrix-structure "
+    "implications."
+)
+
+_PERIODIC_BC_PITFALLS = [
+    "[Cross-Backend][BC] Periodic-BC implementation: dolfinx "
+    "uses dolfinx_mpc (a separate package, not core dolfinx) "
+    "via mpc.create_periodic_constraint_geometrical or "
+    "create_periodic_constraint_topological — true "
+    "MasterSlaveConstraint at the DOF level, exact periodicity "
+    "to solver precision. NGSolve uses the Periodic() wrapper "
+    "around any FESpace, which builds master-slave pairs at "
+    "construction time — exact periodicity. 4C uses --PERIODIC "
+    "BOUNDARY CONDITIONS block referencing pairs of design-"
+    "surfaces (master + slave); enforcement is via Lagrange "
+    "multipliers (exact). Kratos's "
+    "ApplyPeriodicConditionProcess uses a penalty-style "
+    "approach with penalty factor 1e30 default — approximate, "
+    "may show O(1/penalty) periodicity error in displacement "
+    "field. FEBio has NO built-in periodic BC — users "
+    "approximate via tied-pair contact (which is NOT periodic "
+    "in the constitutive sense). dealii's "
+    "DoFTools::make_periodicity_constraints builds an "
+    "AffineConstraints object with exact periodicity. Signal: "
+    "RVE-homogenisation problem on the SAME mesh: dolfinx-mpc / "
+    "4C / NGSolve give matching effective stiffness tensor; "
+    "Kratos's penalty-based periodic gives an effective "
+    "stiffness tensor with O(1e-3) symmetry violation (the "
+    "penalty residual breaks the major symmetry of C_ijkl); "
+    "FEBio's tied-pair approximation diverges because the "
+    "constraint is local-displacement-equality, not "
+    "displacement-equality-plus-strain-periodicity. Defense: "
+    "for production RVE work, use only dolfinx-mpc / 4C / "
+    "NGSolve / dealii. Avoid Kratos penalty-periodic unless "
+    "penalty_factor is tuned per problem AND symmetry is "
+    "post-symmetrised. FEBio is not suitable for periodic-RVE "
+    "homogenisation."
+]
+
+_PERIODIC_BC_SIGNAL = (
+    "[Cross-Backend][BC] If an RVE-homogenisation effective "
+    "stiffness tensor C_ijkl loses major symmetry (C_1122 != "
+    "C_2211) by O(1e-3) across cross-backend runs, the cause "
+    "is Kratos's penalty-based periodic enforcement. Switch "
+    "to dolfinx-mpc, 4C Lagrange periodic, or NGSolve Periodic "
+    "FESpace for true periodicity."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -1012,6 +1114,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _MESH_QUALITY_DESC,
         "pitfalls": _MESH_QUALITY_PITFALLS,
         "Signal": _MESH_QUALITY_SIGNAL,
+    },
+    "stress_measure_conventions": {
+        "description": _STRESS_MEASURE_DESC,
+        "pitfalls": _STRESS_MEASURE_PITFALLS,
+        "Signal": _STRESS_MEASURE_SIGNAL,
+    },
+    "periodic_bc_implementation": {
+        "description": _PERIODIC_BC_DESC,
+        "pitfalls": _PERIODIC_BC_PITFALLS,
+        "Signal": _PERIODIC_BC_SIGNAL,
     },
 }
 
