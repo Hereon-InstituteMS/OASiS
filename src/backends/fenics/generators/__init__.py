@@ -228,6 +228,50 @@ GENERAL_KNOWLEDGE = {
         "Mixed elements: arbitrary combinations via mixed_element()",
         "Checkpointing via adios4dolfinx",
     ],
+    "petsc_index_size_solver_compat": {
+        "description": (
+            "PETSc-direct-solver compatibility depends on the "
+            "PETSc index size: MUMPS works only with 32-bit "
+            "PetscInt (the default build), SuperLU_DIST is the "
+            "64-bit-PetscInt drop-in replacement. The C++ "
+            "mixed_poisson demo dispatches at compile time "
+            "(sizeof(PetscInt) == 4 ? 'mumps' : "
+            "'superlu_dist'); Python users hit the same wall at "
+            "runtime when their conda-forge build was compiled "
+            "with --with-64-bit-indices. Source: "
+            "cpp/demo/mixed_poisson/main.cpp:345-348."),
+        "Signal": (
+            "[Solver] dolfinx generators that hardcode "
+            "petsc_options={'pc_factor_mat_solver_type': "
+            "'mumps', ...} (used in fracture, "
+            "nearly_incompressible_elasticity, stokes_darcy, "
+            "hyperelasticity, helmholtz, reaction_diffusion, "
+            "mixed_poisson, and others) will FAIL on a PETSc "
+            "build with 64-bit indices "
+            "(--with-64-bit-indices, sizeof(PetscInt) == 8). "
+            "MUMPS does not support 64-bit indices and PETSc "
+            "raises a runtime error like "
+            "'PCFactor: matrix solver type mumps does not "
+            "support 64-bit integers' / "
+            "'MatSolverType for serial is not '. Diagnostic: "
+            "`python -c \"from petsc4py import PETSc; "
+            "print(PETSc.IntType)\"` returns int64 vs int32. "
+            "Workaround: switch to 'superlu_dist' (or "
+            "'pastix' / 'mkl_pardiso' if available) in "
+            "petsc_options, OR rebuild PETSc with the default "
+            "32-bit indices. The canonical compile-time "
+            "dispatch from the C++ mixed_poisson demo (line "
+            "345-348) is `sizeof(PetscInt) == 4 ? 'mumps' : "
+            "'superlu_dist'` — a runtime Python equivalent is "
+            "`'superlu_dist' if PETSc.IntType().itemsize == 8 "
+            "else 'mumps'`. Plus: 'mumps' requires the "
+            "PETSc build to have actually configured MUMPS "
+            "(--download-mumps); a 32-bit PETSc without "
+            "MUMPS gives 'Could not locate solver type mumps' "
+            "at runtime — separate failure mode. (File walk "
+            "cpp/demo/mixed_poisson/main.cpp 2026-06-03.)"
+        ),
+    },
     "cross_mesh_interpolation": {
         "description": (
             "Non-matching-mesh interpolation: take a Function on "

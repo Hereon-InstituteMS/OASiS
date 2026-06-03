@@ -1175,6 +1175,60 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       "GIT_TAG path no longer goes through "
                       "get_latest_tag.sh.")
 
+    def test_fenics_petsc_index_size_solver_dispatch_anchor(
+            self) -> None:
+        """fenics::_general.petsc_index_size_solver_compat
+        [Solver]: confirm the C++ mixed_poisson demo still
+        dispatches MUMPS vs SuperLU_DIST on PetscInt size, and
+        verify the dolfinx generators that hardcode mumps are
+        the ones flagged in the pitfall. The runtime Python
+        equivalent (PETSc.IntType()) is dolfinx-env-dependent;
+        only the source-side anchor is checked here. (File walk
+        cpp/demo/mixed_poisson/main.cpp 2026-06-03.)"""
+        from pathlib import Path
+        # Source anchor: C++ demo's compile-time dispatch
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fenics/cpp/demo/mixed_poisson/"
+                "main.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"fenics mixed_poisson main.cpp not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # Compile-time PetscInt dispatch literal
+        self.assertIn("if (sizeof(PetscInt) == 4)", body,
+                      "C++ demo PetscInt-size dispatch changed.")
+        self.assertIn(
+            'la::petsc::options::set("pc_factor_mat_solver_type", '
+            '"mumps");', body,
+            "32-bit branch no longer uses mumps; pitfall's "
+            "MUMPS-32 claim needs revisit.")
+        self.assertIn(
+            'la::petsc::options::set("pc_factor_mat_solver_type", '
+            '"superlu_dist");', body,
+            "64-bit branch no longer uses superlu_dist.")
+        # Catalog-side anchor: the listed generators that hardcode
+        # 'mumps' (per pitfall claim) — verify they all still do.
+        gen_root = (Path(__file__).resolve().parent.parent /
+                    "src/backends/fenics/generators")
+        for fname in ("fracture.py", "nearly_incompressible_elasticity.py",
+                      "stokes_darcy.py", "hyperelasticity.py",
+                      "helmholtz.py", "reaction_diffusion.py",
+                      "mixed_poisson.py"):
+            p = gen_root / fname
+            self.assertTrue(p.exists(),
+                            f"Generator {fname} missing from "
+                            f"src/backends/fenics/generators/")
+            content = p.read_text()
+            self.assertIn(
+                "mumps", content,
+                f"Generator {fname} no longer references "
+                f"'mumps' — petsc_index_size_solver_compat "
+                f"pitfall's generator list needs revisit.")
+
     @_skip_no_dolfinx
     def test_fenics_cross_mesh_interpolation_api_invariants(
             self) -> None:
