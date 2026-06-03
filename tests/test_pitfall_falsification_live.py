@@ -1490,6 +1490,54 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Check() no longer KRATOS_ERRORs on missing CROSS_AREA.")
 
     @_skip_no_skfem
+    def test_skfem_cell_basis_extras(self) -> None:
+        """skfem::_general.cell_basis_extras [API]: confirm
+        CellBasis still (a) raises NotImplementedError('Boundary
+        of subdomain not supported.') when .boundary() is called
+        on an elements=...-restricted basis; (b) raises BARE
+        NotImplementedError() (empty message) from
+        _base_tensor_order on ElementComposite; (c) refinterp
+        has the Nrefs-overrides-nrefs backcompat shim. (File
+        walk skfem/assembly/basis/cell_basis.py 2026-06-03.)"""
+        import inspect
+        import numpy as np
+        import skfem as fem
+        m = fem.MeshTri().refined()
+        # (a) Subdomain CellBasis.boundary() raises
+        b_sub = fem.CellBasis(
+            m, fem.ElementTriP1(),
+            elements=np.array([0, 1], dtype=np.int32))
+        with self.assertRaises(NotImplementedError) as cm:
+            b_sub.boundary()
+        self.assertIn(
+            "Boundary of subdomain not supported",
+            str(cm.exception),
+            f"Subdomain.boundary() error message changed; got "
+            f"{cm.exception!r}")
+        # (b) Composite-element _base_tensor_order raises bare
+        from skfem import ElementComposite
+        ec = ElementComposite(fem.ElementTriP1(),
+                              fem.ElementTriP2())
+        b_comp = fem.CellBasis(m, ec)
+        with self.assertRaises(NotImplementedError) as cm2:
+            _ = b_comp._base_tensor_order
+        self.assertEqual(
+            str(cm2.exception), "",
+            f"_base_tensor_order on Composite no longer raises "
+            f"a BARE NotImplementedError; got {cm2.exception!r}")
+        # (c) refinterp Nrefs backcompat shim
+        src = inspect.getsource(fem.CellBasis.refinterp)
+        self.assertIn(
+            "nrefs = Nrefs", src,
+            "refinterp no longer has the Nrefs-overrides-nrefs "
+            "backcompat shim — pitfall about Nrefs silently "
+            "winning needs revisit.")
+        self.assertIn(
+            "# for backwards compatibility", src,
+            "refinterp backcompat-shim comment moved or "
+            "removed.")
+
+    @_skip_no_skfem
     def test_skfem_abstract_basis_extras(self) -> None:
         """skfem::_general.abstract_basis_extras [API]: confirm
         AbstractBasis still has the three documented edges:

@@ -73,6 +73,48 @@ KNOWLEDGE["_general"] = {
         "Mortar methods for domain decomposition (MortarFacetBasis)",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
+    "cell_basis_extras": {
+        "description": (
+            "Less-publicized CellBasis surfaces beyond the "
+            "AbstractBasis-level pitfalls "
+            "([[abstract_basis_extras]]): subdomain restriction "
+            "via elements=, boundary projection, point-source / "
+            "interpolator dispatch, refinterp backcompat. "
+            "Source: skfem/assembly/basis/cell_basis.py."),
+        "Signal": (
+            "[API] Three CellBasis-specific sharp edges users "
+            "hit when going beyond the standard "
+            "CellBasis(mesh, elem) usage: "
+            "(1) basis.boundary() on a SUBDOMAIN-restricted "
+            "CellBasis (one constructed with elements=array) "
+            "raises NotImplementedError('Boundary of subdomain "
+            "not supported.'). The boundary() factory only "
+            "works on full-mesh bases. Workaround: build the "
+            "FacetBasis directly with "
+            "FacetBasis(m, e, facets=...) and a manually "
+            "filtered facet array (e.g. intersect "
+            "mesh.boundary_facets() with the facets adjacent "
+            "to elements). "
+            "(2) basis.probes(x) / basis.interpolator(y) "
+            "internally call _base_tensor_order which raises a "
+            "BARE NotImplementedError() (empty message) if the "
+            "element returns more than one component "
+            "(ElementComposite or ElementVector). Users on "
+            "Taylor-Hood / Mini / vector-valued bases hit a "
+            "naked NotImplementedError with no description; "
+            "they need to split via basis.split_bases() first "
+            "and probe/interpolate the scalar sub-bases. "
+            "(3) basis.refinterp(y, nrefs=K, Nrefs=N) has a "
+            "BACKCOMPAT shim: if both nrefs AND Nrefs are "
+            "passed, Nrefs SILENTLY wins ("
+            "`if Nrefs is not None: nrefs = Nrefs  # for "
+            "backwards compatibility`). Users mixing pre/post-"
+            "2022 idioms can get unexpected refinement levels. "
+            "The lowercase nrefs is the modern form. "
+            "(File walk skfem/assembly/basis/cell_basis.py "
+            "2026-06-03.)"
+        ),
+    },
     "abstract_basis_extras": {
         "description": (
             "Less-publicized behaviors of AbstractBasis (and "
