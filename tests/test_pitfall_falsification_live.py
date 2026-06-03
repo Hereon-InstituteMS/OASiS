@@ -2082,6 +2082,76 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"{getattr(cb_mul, 'equal_dofnum', None)!r}")
 
     @_skip_no_skfem
+    def test_skfem_facet_basis_extras(self) -> None:
+        """skfem::_general.facet_basis_extras [API]: confirm
+        (a) FacetBasis(facets=None) restricts to boundary facets
+            only (find aligns with mesh.f2t[1] == -1 count),
+        (b) FacetBasis on a 1D mesh produces mesh_parameters with
+            value np.array([0.]) — the SIP-penalty 'h' is 0,
+        (c) FacetBasis.trace is wrapped by @deprecated (has
+            __wrapped__ attribute),
+        (d) empty-facet construction emits a logger.warning
+            mentioning 'no facets' and produces a nelems=0 basis
+            with no exception. (File walk
+        skfem/assembly/basis/facet_basis.py 2026-06-03.)"""
+        import io
+        import logging
+        import numpy as np
+        import skfem as fem
+        # (a) default -> boundary facets only
+        m = fem.MeshTri().refined(2)
+        fb = fem.FacetBasis(m, fem.ElementTriP1())
+        n_boundary = int(np.sum(m.f2t[1] == -1))
+        self.assertEqual(
+            fb.nelems, n_boundary,
+            f"FacetBasis(facets=None) restricted to {fb.nelems} "
+            f"facets but boundary count is {n_boundary}; default-"
+            f"boundary-only invariant broken.")
+        # (b) mesh_parameters on 1D = np.array([0.])
+        m1 = fem.MeshLine()
+        fb1 = fem.FacetBasis(m1, fem.ElementLineP1())
+        mp = fb1.mesh_parameters()
+        np.testing.assert_array_equal(
+            np.asarray(mp.value), np.array([0.]),
+            "FacetBasis(MeshLine).mesh_parameters() no longer "
+            "returns np.array([0.]) — 1D h=0 silent-zero pitfall "
+            "claim out of date.")
+        # (c) trace is @deprecated -> has __wrapped__
+        self.assertTrue(
+            hasattr(fem.FacetBasis.trace, "__wrapped__"),
+            "FacetBasis.trace no longer carries @deprecated "
+            "marker (__wrapped__ attribute); pitfall edge (3) "
+            "needs revisit.")
+        # (d) empty facets -> logger.warning + nelems=0
+        log = logging.getLogger(
+            "skfem.assembly.basis.facet_basis")
+        prev_level = log.level
+        prev_handlers = list(log.handlers)
+        buf = io.StringIO()
+        h = logging.StreamHandler(buf)
+        h.setLevel(logging.WARNING)
+        log.addHandler(h)
+        log.setLevel(logging.WARNING)
+        try:
+            fb_e = fem.FacetBasis(
+                fem.MeshTri(), fem.ElementTriP1(),
+                facets=np.array([], dtype=np.int32))
+            captured = buf.getvalue()
+        finally:
+            log.removeHandler(h)
+            log.setLevel(prev_level)
+            # restore handlers (paranoia)
+            log.handlers = prev_handlers
+        self.assertIn("no facets", captured,
+                      "Empty-facet logger.warning text changed; "
+                      "pitfall edge (4) needs revisit.")
+        self.assertIn("Initializing", captured,
+                      "Empty-facet logger.warning prefix changed.")
+        self.assertEqual(
+            fb_e.nelems, 0,
+            "Empty-facet FacetBasis no longer reports nelems=0.")
+
+    @_skip_no_skfem
     def test_skfem_composite_basis_extras(self) -> None:
         """skfem::_general.composite_basis_extras [API]: confirm
         (a) CompositeBasis.get_dofs(*args, **kwargs) raises

@@ -189,6 +189,57 @@ KNOWLEDGE["_general"] = {
             "2026-06-03.)"
         ),
     },
+    "facet_basis_extras": {
+        "description": (
+            "FacetBasis pitfalls that fire AFTER construction "
+            "succeeds — none surface in the constructor docstring. "
+            "Source: skfem/assembly/basis/facet_basis.py."),
+        "Signal": (
+            "[API] Four under-publicized sharp edges in FacetBasis: "
+            "(1) `facets=None` (default) restricts the basis to "
+            "BOUNDARY facets only — line 78: `self.find = "
+            "np.nonzero(self.mesh.f2t[1] == -1)[0]`. Users wanting "
+            "to integrate over EVERY facet (boundary + interior) "
+            "must pass facets=np.arange(mesh.facets.shape[1]) "
+            "explicitly; default-constructed FacetBasis silently "
+            "skips interior facets, and DG/error-estimator forms "
+            "that need them lose contributions with no warning. "
+            "For interior-facet assembly use InteriorFacetBasis "
+            "instead. "
+            "(2) `mesh_parameters()` SPECIAL-CASES 1D meshes — "
+            "line 138: `np.array([0.])` when mesh.dim() == 1. "
+            "That means `h` in default_parameters() is 0.0 for "
+            "MeshLine, so any form using `h` for SIP-DG penalty "
+            "or h-norm error estimators silently evaluates the "
+            "penalty term to zero (or divides by zero, depending "
+            "on placement). For 1D problems compute the mesh "
+            "parameter manually from mesh.facets coordinates "
+            "instead of relying on the default `h`. "
+            "(3) `trace(x, projection, target_elem=None)` is "
+            "@deprecated('Basis.interpolator + Basis.project') and "
+            "only supports 4 mesh types: MeshTri / MeshQuad / "
+            "MeshTet / MeshHex. Other mesh types raise "
+            "NotImplementedError('Mesh type not supported.') from "
+            "the DEFAULT_TARGET lookup. The deprecation is silent "
+            "(no DeprecationWarning emitted in __init__ — only the "
+            "@deprecated decorator chain handles it). Modern path: "
+            "use basis.interpolator(y) to evaluate, then "
+            "basis.project(interp) onto the target basis. "
+            "(4) Empty-facet construction (e.g. facets=mesh."
+            "facets_satisfying(lambda x: False)) emits "
+            "`logger.warning('Initializing FacetBasis(...) with no "
+            "facets.')` at line 92 — NOT warnings.warn. Default "
+            "Python logger config swallows it; users with empty "
+            "facet selections see no console output and a "
+            "FacetBasis whose .nelems == 0 and whose subsequent "
+            ".dx / .basis arrays are empty. asm() on such a basis "
+            "returns a zero matrix without warning. To force "
+            "stdout: logging.basicConfig(level=logging.WARNING) "
+            "before construction. "
+            "(File walk skfem/assembly/basis/facet_basis.py "
+            "2026-06-03.)"
+        ),
+    },
     "composite_basis_extras": {
         "description": (
             "CompositeBasis (built via b1 @ b2 / b1 * b2 or "
