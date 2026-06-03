@@ -485,6 +485,60 @@ FOURC_KNOWLEDGE = {
                     "2026-06-03.)"
                 ),
             },
+            "cmake_dependency_configure_pattern": {
+                "description": (
+                    "Pattern shared by cmake/configure/configure_"
+                    "<Dep>.cmake files (one per external "
+                    "dependency: ArborX, Backtrace, Boost, "
+                    "CLI11, CLN, FFTW, HDF5, MIRCO, MPI, Qhull, "
+                    "Trilinos, VTK, ZLIB, gmsh, deal.II, "
+                    "magic_enum, pybind11, ryml). Each file "
+                    "controls HOW to obtain that dependency at "
+                    "configure time; the higher-level "
+                    "FOUR_C_WITH_<Dep> toggle (cmake_install_"
+                    "export.dependency_toggles_FOUR_C_WITH_*) "
+                    "controls WHETHER to use it at all."),
+                "shape": (
+                    "(1) Declares a FOUR_C_<DEP>_FIND_INSTALLED "
+                    "boolean option (default usually OFF) via "
+                    "four_c_process_global_option. "
+                    "(2) When ON: find_package(<Dep> HINTS "
+                    "${FOUR_C_<DEP>_ROOT}); FATAL_ERROR with a "
+                    "per-dep message if find fails. "
+                    "(3) When OFF: fetchcontent_declare/"
+                    "_makeavailable from a PINNED commit hash, "
+                    "then sets FOUR_C_<DEP>_ROOT to "
+                    "${CMAKE_INSTALL_PREFIX}. "
+                    "(4) four_c_remember_variable_for_install on "
+                    "both FOUR_C_<DEP>_FIND_INSTALLED + "
+                    "FOUR_C_<DEP>_ROOT so downstream consumers' "
+                    "4CConfig.cmake replays the same choice."),
+                "Signal": (
+                    "[Integration] Two-layer toggle structure to "
+                    "be aware of: FOUR_C_WITH_<Dep>=ON enables "
+                    "the dependency at all, then FOUR_C_<DEP>_"
+                    "FIND_INSTALLED=ON/OFF controls find-vs-fetch. "
+                    "Wanting to use a system-installed library "
+                    "but forgetting to set FIND_INSTALLED=ON "
+                    "silently triggers a fetch+build of a pinned "
+                    "vendored version, doubling configure time "
+                    "and producing two copies of the dep in the "
+                    "build tree. Pinned-commit fetch fallback "
+                    "uses fetchcontent_declare + "
+                    "fetchcontent_makeavailable; each dep's "
+                    "configure_<Dep>.cmake has its own "
+                    "GIT_REPOSITORY + GIT_TAG commit hash hard-"
+                    "coded (e.g. ArborX is pinned to "
+                    "f9244ba03904cc518a54d99e9f87bb42dc9ecaf3 = "
+                    "v2.0.1, ARBORX_ENABLE_MPI=ON unconditionally "
+                    "forced). To switch fetch source: override "
+                    "FETCHCONTENT_SOURCE_DIR_<dep> before "
+                    "fetchcontent_makeavailable. (File walk "
+                    "cmake/configure/configure_ArborX.cmake "
+                    "2026-06-03; pattern verified once, applies "
+                    "to all 18 configure_<Dep>.cmake files.)"
+                ),
+            },
             "cmake_install_export": {
                 "description": (
                     "Configure-time surfaces defined in "

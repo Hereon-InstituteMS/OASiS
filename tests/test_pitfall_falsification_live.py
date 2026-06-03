@@ -1717,6 +1717,73 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Failed to find any working linker.", body,
             "No-linker-found FATAL_ERROR text changed.")
 
+    def test_fourc_cmake_configure_arborx_pattern(self) -> None:
+        """fourc::overview.cli_arguments.cmake_dependency_configure_
+        pattern [Integration]: confirm cmake/configure/configure_
+        ArborX.cmake still embodies the shared pattern that the
+        Reference block documents:
+        (a) FOUR_C_ARBORX_FIND_INSTALLED option (default OFF),
+        (b) when ON: find_package(ArborX HINTS
+            ${FOUR_C_ARBORX_ROOT}) + FATAL_ERROR on miss,
+        (c) when OFF: fetchcontent_declare with pinned commit
+            f9244ba03904cc518a54d99e9f87bb42dc9ecaf3 (v2.0.1),
+        (d) ARBORX_ENABLE_MPI=ON unconditional set,
+        (e) four_c_remember_variable_for_install on both vars.
+        (File walk cmake/configure/configure_ArborX.cmake
+        2026-06-03; pattern applies to all 18 configure_<Dep>.cmake
+        files.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/cmake/"
+                 "configure/configure_ArborX.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/cmake/configure/"
+                "configure_ArborX.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C configure_ArborX.cmake not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) Option default OFF
+        self.assertIn(
+            "FOUR_C_ARBORX_FIND_INSTALLED", body,
+            "FOUR_C_ARBORX_FIND_INSTALLED option missing — "
+            "configure pattern may have shifted.")
+        self.assertIn(
+            'DEFAULT\n  OFF', body,
+            "Default flipped from OFF; user-visible behavior "
+            "may have changed.")
+        # (b) Installed-mode find_package + FATAL_ERROR
+        self.assertIn(
+            "find_package(ArborX HINTS ${FOUR_C_ARBORX_ROOT})",
+            body,
+            "find_package call signature for ArborX changed.")
+        self.assertIn(
+            "ArborX could not be found.", body,
+            "FATAL_ERROR text for missing ArborX changed.")
+        # (c) Fetch-mode pinned commit + URL
+        self.assertIn(
+            "https://github.com/arborx/ArborX.git", body,
+            "ArborX upstream URL changed.")
+        self.assertIn(
+            "f9244ba03904cc518a54d99e9f87bb42dc9ecaf3", body,
+            "ArborX pinned commit changed; pattern claim about "
+            "pinned-commit fetch fallback may need revisit.")
+        # (d) MPI override
+        self.assertIn(
+            'set(ARBORX_ENABLE_MPI "ON")', body,
+            "ARBORX_ENABLE_MPI unconditional override removed.")
+        # (e) install-remember
+        self.assertIn(
+            "four_c_remember_variable_for_install("
+            "FOUR_C_ARBORX_FIND_INSTALLED FOUR_C_ARBORX_ROOT)",
+            body,
+            "four_c_remember_variable_for_install for ArborX "
+            "vars removed; downstream consumers' 4CConfig.cmake "
+            "may no longer replay the find-vs-fetch choice.")
+
     def test_fourc_cmake_test_setup_invariants(self) -> None:
         """fourc::overview.cli_arguments.cmake_test_setup_options
         [Integration]+[Performance]: confirm cmake/setup_tests.cmake
