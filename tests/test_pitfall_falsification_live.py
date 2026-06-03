@@ -859,6 +859,86 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                       body,
                       "Size-scale clamp formula changed.")
 
+    def test_febio_minmax_filter_criterion_source_invariants(
+            self) -> None:
+        """febio::_general.adaptive_mesh_refinement [Input]
+        edges (h)-(j): confirm FEAMR/FEFilterAdaptorCriterion.cpp
+        still implements
+        (a) BEGIN_FECORE_CLASS(FEMinMaxFilterAdaptorCriterion,
+            FEMeshAdaptorCriterion) with 3 ADD_PARAMETERs
+            (m_min/'min', m_max/'max', m_clamp/'clamp') and 1
+            ADD_PROPERTY (m_data/'data'),
+        (b) m_min defaults to -1.0e37, m_max to +1.0e37, m_clamp
+            to true,
+        (c) GetElementValue + GetMaterialPointValue both
+            short-circuit `return false` when m_data == nullptr,
+        (d) the dual-mode body: when m_clamp is true, values are
+            clamped via `if (value < m_min) value = m_min;` +
+            `if (value > m_max) value = m_max;`; when false,
+            out-of-range values set b=false (rejection).
+        (File walk FEAMR/FEFilterAdaptorCriterion.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/febio/FEAMR/"
+                "FEFilterAdaptorCriterion.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"FEBio FEFilterAdaptorCriterion.cpp not found in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) FECORE_CLASS + 3 ADD_PARAMETER + 1 ADD_PROPERTY
+        self.assertIn(
+            'BEGIN_FECORE_CLASS(FEMinMaxFilterAdaptorCriterion, '
+            'FEMeshAdaptorCriterion)', body,
+            "FECORE_CLASS registration changed.")
+        for tok in ('ADD_PARAMETER(m_min, "min")',
+                    'ADD_PARAMETER(m_max, "max")',
+                    'ADD_PARAMETER(m_clamp, "clamp")',
+                    'ADD_PROPERTY(m_data, "data")'):
+            self.assertIn(
+                tok, body,
+                f"Parameter/property registration line {tok!r} "
+                f"changed; pitfall parameter list needs revisit.")
+        # (b) defaults: m_min=-1e37 / m_max=+1e37 / m_clamp=true
+        self.assertIn("m_min = -1.0e37;", body,
+                      "m_min default changed from -1e37; pitfall "
+                      "claim of silent-pass-through bound needs "
+                      "revisit.")
+        self.assertIn("m_max =  1.0e37;", body,
+                      "m_max default changed from +1e37; pitfall "
+                      "claim of silent-pass-through bound needs "
+                      "revisit.")
+        self.assertIn("m_clamp = true;", body,
+                      "m_clamp default changed from true; pitfall "
+                      "edge (i) needs revisit.")
+        # (c) Missing-data silent short-circuit in both methods
+        self.assertGreaterEqual(
+            body.count("if (m_data == nullptr) return false;"), 2,
+            "Missing-data short-circuit pattern no longer "
+            "present in both GetElementValue and "
+            "GetMaterialPointValue — pitfall edge (j) needs "
+            "revisit.")
+        # (d) Dual-mode: clamp branch + rejection branch
+        self.assertIn(
+            "if (m_clamp)", body,
+            "Dual-mode clamp/reject branching changed; pitfall "
+            "edge (i) needs revisit.")
+        self.assertIn(
+            "if (value < m_min) value = m_min;", body,
+            "min-clamp line changed; clamp-mode pitfall needs "
+            "revisit.")
+        self.assertIn(
+            "if (value > m_max) value = m_max;", body,
+            "max-clamp line changed.")
+        self.assertIn(
+            "else if ((value < m_min) || (value > m_max))",
+            body,
+            "Reject-branch condition changed; clamp=false "
+            "pitfall edge needs revisit.")
+
     def test_febio_erosion_adaptor_source_invariants(self) -> None:
         """febio::_general.adaptive_mesh_refinement [Input] FEErosion
         Adaptor edges (c)-(g): confirm
