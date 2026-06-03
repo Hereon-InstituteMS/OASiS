@@ -2113,6 +2113,93 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Capstan positive-direction friction-force update "
             "missing.")
 
+    def test_kratos_cablenet_edge_cable_element_process_invariants(
+            self) -> None:
+        """kratos::cable_net [Input]: confirm
+        EdgeCableElementProcess header still has
+        (a) 5-key default_parameters JSON including the
+            phantom `edge_sub_model_part_name`,
+        (b) The phantom key has no use site (not read in
+            CreateEdgeCableElement),
+        (c) 'cable' branch dispatches to SlidingCableElement3D3N,
+            'ring' branch dispatches to RingElement3D4N,
+        (d) Unknown element_type KRATOS_ERRORs with the
+            misleading 'not available for sliding process' text,
+        (e) Consistency check counts mrModelPart.Nodes().size()
+            (NOT a sub-model-part).
+        (File walk applications/CableNetApplication/
+        custom_processes/edge_cable_element_process.h
+        2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/kratos/applications/"
+                "CableNetApplication/custom_processes/"
+                "edge_cable_element_process.h"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"Kratos edge_cable_element_process.h not in "
+                f"{candidates}.")
+        body = src.read_text()
+        # (a) 5-key default_parameters
+        for key in ('"edge_sub_model_part_name"',
+                    '"element_type"',
+                    '"node_id_order"',
+                    '"element_id"',
+                    '"property_id"'):
+            self.assertIn(
+                key, body,
+                f"default_parameters JSON key {key} missing.")
+        # (b) edge_sub_model_part_name has no use site —
+        #     present only inside the JSON literal, never as a
+        #     mParameters[...] lookup
+        # We assert that the only occurrence is the JSON key
+        # (the entire substring above), not a code-side query.
+        self.assertEqual(
+            body.count('mParameters["edge_sub_model_part_name"]'),
+            0,
+            "edge_sub_model_part_name is now consulted in "
+            "code — phantom-param pitfall (edge c) may be "
+            "fixed; revisit.")
+        # (c) 'cable' → SlidingCableElement3D3N, 'ring' →
+        #     RingElement3D4N
+        self.assertIn(
+            'if (mParameters["element_type"].GetString() == '
+            '"cable")', body,
+            "element_type='cable' branch line changed.")
+        self.assertIn(
+            'KratosComponents<Element>::Get("SlidingCableElement'
+            '3D3N")', body,
+            "'cable' branch no longer dispatches to "
+            "SlidingCableElement3D3N; revisit edge (a).")
+        self.assertIn(
+            'else if (mParameters["element_type"].GetString() '
+            '== "ring")', body,
+            "element_type='ring' branch line changed.")
+        self.assertIn(
+            'KratosComponents<Element>::Get("RingElement3D4N")',
+            body, "'ring' branch no longer dispatches to "
+            "RingElement3D4N; revisit edge (a).")
+        # (d) Unknown element_type: misleading 'sliding process'
+        #     error text
+        self.assertIn(
+            'not available for sliding process', body,
+            "Unknown-element_type error text changed; the "
+            "misleading 'sliding process' message (edge a) may "
+            "be fixed upstream.")
+        # (e) Consistency check counts full mrModelPart, not
+        #     sub-model-part
+        self.assertIn(
+            "mrModelPart.Nodes().size()==number_nodes", body,
+            "Consistency check no longer compares "
+            "mrModelPart.Nodes().size() — revisit edge (b).")
+        self.assertIn(
+            "numbers of nodes in submodel part not consistent "
+            "with numbers of nodes in process properties", body,
+            "Consistency-check KRATOS_ERROR text changed.")
+
     def test_kratos_cablenet_apply_weak_sliding_process_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Performance]: confirm
