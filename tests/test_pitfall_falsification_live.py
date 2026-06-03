@@ -772,6 +772,70 @@ class TestPitfallFalsificationLive(unittest.TestCase):
                          "write_mon_stress_file — the dead-code "
                          "pitfall about stress/strain needs revisit.")
 
+    def test_dealii_setup_target_macro_invariants(self) -> None:
+        """dealii::_general.cmake_user_macros [Input]:
+        DEAL_II_SETUP_TARGET still has all five documented failure
+        modes anchored to literal source-line substrings: the
+        DEAL_II_PROJECT_CONFIG_INCLUDED FATAL_ERROR gate, the
+        DEBUG|RELEASE arg-validation FATAL_ERROR, the silent
+        DEBUG→RELEASE downgrade when DEAL_II_BUILD_TYPE lacks
+        Debug, the CMAKE_BUILD_TYPE-not-Debug-or-Release error,
+        and the OBJECT_LIBRARY link-interface skip. (File walk
+        macro_deal_ii_setup_target.cmake 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/dealii-src/cmake/macros/"
+                 "macro_deal_ii_setup_target.cmake"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/dealii/cmake/macros/"
+                "macro_deal_ii_setup_target.cmake"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"deal.II source not cloned; checked {candidates}.")
+        body = src.read_text()
+        # (1) DEAL_II_PROJECT_CONFIG_INCLUDED FATAL_ERROR gate
+        self.assertIn("IF(NOT DEAL_II_PROJECT_CONFIG_INCLUDED)",
+                      body, "Project-config gate removed.")
+        # CMake-source splits the FATAL_ERROR message across adjacent
+        # string literals; check each half independently.
+        self.assertIn(
+            "DEAL_II_SETUP_TARGET can only be called in external "
+            "projects after", body,
+            "Project-config FATAL_ERROR opening clause changed.")
+        self.assertIn(
+            "the inclusion of deal.IIConfig.cmake.", body,
+            "Project-config FATAL_ERROR continuation clause "
+            "changed.")
+        # (2) CMAKE_BUILD_TYPE != Debug/Release FATAL_ERROR
+        self.assertIn(
+            "DEAL_II_SETUP_TARGET cannot determine DEBUG, or "
+            "RELEASE flavor", body,
+            "Build-type FATAL_ERROR message opening changed.")
+        # (3) Silent DEBUG→RELEASE downgrade when deal.II lacks Debug
+        self.assertIn(
+            'IF("${_build}" STREQUAL "DEBUG" AND NOT '
+            'DEAL_II_BUILD_TYPE MATCHES "Debug")',
+            body,
+            "Silent DEBUG→RELEASE downgrade gate changed.")
+        self.assertIn('SET(_build "RELEASE")', body)
+        # (4) Invalid second arg FATAL_ERROR (also split across lines)
+        self.assertIn(
+            "DEAL_II_SETUP_TARGET called with invalid second "
+            "argument.", body,
+            "Invalid-arg FATAL_ERROR opening clause changed.")
+        self.assertIn(
+            "Valid arguments are (empty), DEBUG, or RELEASE",
+            body, "Invalid-arg FATAL_ERROR vocabulary changed.")
+        # (5) OBJECT_LIBRARY link-interface skip
+        self.assertIn('IF(NOT "${_type}" STREQUAL "OBJECT_LIBRARY")',
+                      body,
+                      "OBJECT_LIBRARY link-interface skip removed.")
+        self.assertIn("MACRO(DEAL_II_SETUP_TARGET", body,
+                      "Still a MACRO not a FUNCTION — variable-"
+                      "leak pitfall remains relevant.")
+
     def test_dealii_query_git_information_macro_invariants(
             self) -> None:
         """dealii::_general.cmake_user_macros [Output]: confirm

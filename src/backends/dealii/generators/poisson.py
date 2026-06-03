@@ -882,7 +882,67 @@ GENERAL_KNOWLEDGE = {
                 "2026-06-02.)"
             ),
         },
-        "DEAL_II_SETUP_TARGET":          "Apply deal.II's include dirs + libs to a target. Call AFTER add_executable.",
+        "DEAL_II_SETUP_TARGET": {
+            "signature": (
+                "DEAL_II_SETUP_TARGET(<target> [DEBUG|RELEASE])"),
+            "purpose": (
+                "Append deal.II's INCLUDE_DIRECTORIES, COMPILE_FLAGS, "
+                "LINK_FLAGS, COMPILE_DEFINITIONS, and link interface "
+                "to <target>. Must be called AFTER add_executable / "
+                "add_library on <target> and AFTER "
+                "find_package(deal.II). Source: "
+                "cmake/macros/macro_deal_ii_setup_target.cmake."),
+            "Signal": (
+                "[Input] DEAL_II_SETUP_TARGET has FIVE distinct "
+                "failure / silent-surprise modes users routinely hit: "
+                "(1) Called BEFORE find_package(deal.II) — "
+                "FATAL_ERROR with literal text "
+                "'DEAL_II_SETUP_TARGET can only be called in external "
+                "projects after the inclusion of deal.IIConfig.cmake. "
+                "It is not intended for internal use.' (gated on "
+                "DEAL_II_PROJECT_CONFIG_INCLUDED). "
+                "(2) CMAKE_BUILD_TYPE is set to something other than "
+                "'Debug' or 'Release' (e.g. RelWithDebInfo, "
+                "MinSizeRel, empty) and no explicit DEBUG|RELEASE arg "
+                "is passed — FATAL_ERROR 'DEAL_II_SETUP_TARGET cannot "
+                "determine DEBUG, or RELEASE flavor for target. "
+                "CMAKE_BUILD_TYPE \"<X>\" is neither equal to "
+                "\"Debug\", nor \"Release\"'. Common with Ninja "
+                "multi-config / Visual Studio defaults. Fix: set "
+                "CMAKE_BUILD_TYPE explicitly OR call "
+                "DEAL_II_SETUP_TARGET(<target> DEBUG|RELEASE). "
+                "(3) DANGEROUS SILENT DOWNGRADE: if user requests "
+                "DEBUG (via arg or CMAKE_BUILD_TYPE=Debug) but the "
+                "INSTALLED deal.II was built RELEASE-only "
+                "(DEAL_II_BUILD_TYPE doesn't contain 'Debug'), the "
+                "macro silently overrides `_build` to RELEASE without "
+                "any warning. The user's debug-flagged target links "
+                "against the optimized deal.II — Assert macros are "
+                "compiled out, the debugger steps through optimized "
+                "frames, and bug-hunters waste hours wondering why "
+                "DealiiAssert isn't firing. Fix: rebuild deal.II "
+                "with -DCMAKE_BUILD_TYPE=DebugRelease, or accept the "
+                "release build. "
+                "(4) Second arg is anything besides empty / DEBUG / "
+                "RELEASE — FATAL_ERROR 'invalid second argument. "
+                "Valid arguments are (empty), DEBUG, or RELEASE'. "
+                "Common: passing 'Debug' (lowercase d, capitalized "
+                "rest) thinking the macro is case-insensitive — it "
+                "isn't (string MATCHES is case-sensitive). "
+                "(5) Target is an OBJECT_LIBRARY — the link-"
+                "interface block (TARGET_LINK_LIBRARIES) is SKIPPED "
+                "silently (gated on `_type != OBJECT_LIBRARY`). The "
+                "object library compiles fine but linking it into "
+                "the final executable without explicitly "
+                "TARGET_LINK_LIBRARIES(<exe> ${DEAL_II_TARGET_<build>}) "
+                "yields undefined-symbol errors at link time. "
+                "Plus: this is a CMake MACRO (not FUNCTION), so "
+                "internal vars _build, _flags, _cuda_flags, "
+                "_cxx_flags LEAK into the caller scope and can "
+                "shadow user-set variables of the same names. "
+                "(File walk macro_deal_ii_setup_target.cmake "
+                "2026-06-03.)"),
+        },
         "DEAL_II_INVOKE_AUTOPILOT": {
             "signature": "DEAL_II_INVOKE_AUTOPILOT()",
             "purpose": (
