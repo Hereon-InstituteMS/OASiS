@@ -1954,6 +1954,100 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             "Capstan positive-direction friction-force update "
             "missing.")
 
+    def test_kratos_cablenet_line_3d_n_geometry_stub_invariants(
+            self) -> None:
+        """kratos::cable_net [API]+[Reference]: confirm Line3DN
+        is a stub geometry shared by the CableNet elements with
+        the following source invariants:
+        (a) The PointsNumber-validation check in the
+            PointsArrayType constructor is COMMENTED OUT,
+        (b) GetGeometryFamily and GetGeometryType overrides are
+            BOTH commented out (block at lines ~206-214),
+        (c) ShapeFunctionValue, ShapeFunctionsLocalGradients
+            (both overloads), and ShapeFunctionsIntegrationPointsGradients
+            ALL KRATOS_ERROR — and three of those messages contain
+            the typo 'arbitrarty',
+        (d) InverseOfJacobian(rResult, rPoint) KRATOS_ERRORs
+            'Jacobian is not square',
+        (e) EdgesNumber and FacesNumber both return 0.
+        (File walk applications/CableNetApplication/
+        custom_geometries/line_3d_n.h 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/kratos/applications/"
+                "CableNetApplication/custom_geometries/"
+                "line_3d_n.h"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"Kratos line_3d_n.h not found in {candidates}.")
+        body = src.read_text()
+        # (a) Commented-out PointsNumber check
+        self.assertIn(
+            "//if ( BaseType::PointsNumber() != 3 )", body,
+            "PointsNumber check is no longer commented out; "
+            "edge (1) of Line3DN pitfall may be fixed upstream.")
+        self.assertIn(
+            "//    KRATOS_ERROR << \"Invalid points number.",
+            body,
+            "Commented-out KRATOS_ERROR line for PointsNumber "
+            "check changed; revisit edge (1).")
+        # (b) Commented-out GetGeometryFamily + GetGeometryType
+        self.assertIn(
+            "/*     GeometryData::KratosGeometryFamily "
+            "GetGeometryFamily() const override", body,
+            "GetGeometryFamily override no longer commented out; "
+            "Line3DN may now report its true family — revisit "
+            "edge (2).")
+        self.assertIn(
+            "        return GeometryData::Kratos_Line3DN;\n"
+            "    } */", body,
+            "GetGeometryType return-Kratos_Line3DN block no "
+            "longer commented out; revisit edge (2).")
+        # (c) ShapeFunctionValue + 2 LocalGradients overloads
+        #     all KRATOS_ERROR with the 'arbitrarty' typo
+        self.assertEqual(
+            body.count("'ShapeFunctionValue' not available for "
+                       "arbitrarty noded line"), 1,
+            "ShapeFunctionValue 'arbitrarty' KRATOS_ERROR text "
+            "changed; revisit edge (3).")
+        self.assertEqual(
+            body.count("'ShapeFunctionsLocalGradients' not "
+                       "available for arbitrarty noded line"), 3,
+            "ShapeFunctionsLocalGradients 'arbitrarty' KRATOS_"
+            "ERROR text changed in one of the three overloads; "
+            "revisit edge (3).")
+        # And many other methods carry the same 'arbitrarty' typo
+        # (LumpingFactors, DomainSize, IsInside, Jacobian variants,
+        # PointsLocalCoordinates, ShapeFunctionsGradients,
+        # CalculateShapeFunctionsIntegrationPointsValues). Count
+        # the total typo occurrences as an aggregate gate.
+        self.assertGreaterEqual(
+            body.count("arbitrarty"), 10,
+            "Total 'arbitrarty' typo occurrences dropped below 10 "
+            "— upstream may have started fixing the typo; "
+            "revisit edge (3) coverage.")
+        # ShapeFunctionsIntegrationPointsGradients + InverseOfJacobian
+        # both use the 'Jacobian is not square' message
+        self.assertGreaterEqual(
+            body.count('"Jacobian is not square"'), 2,
+            "'Jacobian is not square' KRATOS_ERROR no longer "
+            "appears in both ShapeFunctionsIntegrationPointsGradients "
+            "and InverseOfJacobian; revisit edges (3)/(4).")
+        # (e) EdgesNumber() and FacesNumber() both return 0
+        self.assertIn(
+            "SizeType EdgesNumber() const override\n    {\n      "
+            "  return 0;\n    }", body,
+            "EdgesNumber() override no longer returns 0; "
+            "revisit edge (5).")
+        self.assertIn(
+            "SizeType FacesNumber() const override\n    {\n      "
+            "  return 0;\n    }", body,
+            "FacesNumber() override no longer returns 0; "
+            "revisit edge (5).")
+
     def test_kratos_cablenet_weak_sliding_source_invariants(
             self) -> None:
         """kratos::cable_net [Input]+[Numerical]: confirm
