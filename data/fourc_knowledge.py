@@ -218,6 +218,103 @@ FOURC_KNOWLEDGE = {
                 "the same convention. Source: update_io_identifiers() switch case."
             ),
         },
+        "post_monitor_tool": {
+            "description": (
+                "The standalone post_monitor CLI binary extracts time-history "
+                "of a single node into an ASCII .mon file. Source: "
+                "apps/post_monitor/4C_post_monitor.cpp main()."),
+            "cli_arguments": {
+                "--node": "Required int. Global node id whose history to dump.",
+                "--field": ("String, default 'fluid'. Selects which "
+                            "discretization the node belongs to. Valid "
+                            "vocabulary per ProblemType is hard-coded "
+                            "in the main() switch — see "
+                            "supported_field_per_problem below."),
+            },
+            "output_file_suffixes": {
+                ".mon": "primary fields per write_mon_file()",
+                ".stress.mon": "Cauchy + 2nd-PK stresses",
+                ".strain.mon": "Green-Lagrange / Euler-Almansi / Log strains",
+                ".plasticstrain.mon": "plastic GL / plastic EA strains",
+                ".heatflux.mon": "thermo current + initial heatfluxes (thermo only)",
+                ".tempgrad.mon": "thermo current + initial tempgrads (thermo only)",
+            },
+            "stresstype_straintype_heatfluxtype_enum": [
+                "none",
+                "ndxyz",
+            ],
+            "supported_field_per_problem": {
+                "fsi / fsi_redmodels": ["fluid", "structure"],
+                "structure / loma / fluid / fluid_redmodels / fps3i":
+                    ["scatra", "fluid", "structure"],
+                "ale": ["ale"],
+                "thermo": ["thermo"],
+                "red_airways": ["red_airway"],
+                "poroelast": ["fluid", "structure"],
+                "porofluid_pressure_based": ["porofluid"],
+                "porofluid_pressure_based_elast":
+                    ["structure", "porofluid"],
+                "porofluid_pressure_based_elast_scatra":
+                    ["structure", "porofluid", "scatra", "artery_scatra"],
+            },
+            "stress_strain_groupnames_at_write_time": {
+                "stress": ["gauss_cauchy_stresses_xyz", "gauss_2PK_stresses_xyz"],
+                "strain": ["gauss_GL_strains_xyz", "gauss_EA_strains_xyz",
+                           "gauss_LOG_strains_xyz"],
+                "plastic_strain": ["gauss_pl_GL_strains_xyz",
+                                   "gauss_pl_EA_strains_xyz"],
+                "heatflux": ["gauss_current_heatfluxes_xyz",
+                             "gauss_initial_heatfluxes_xyz"],
+                "tempgrad": ["gauss_initial_tempgrad_xyz",
+                             "gauss_current_tempgrad_xyz"],
+            },
+            "Signal": (
+                "[Output] Seven sharp edges users routinely hit running "
+                "post_monitor: "
+                "(1) SERIAL-ONLY tool. The source-file header comment says "
+                "'Works in seriell version only! Requires to read one "
+                "instance of the discretisation!!'; the body counts node "
+                "owners across all ranks and FOUR_C_THROW('Found more than "
+                "one owner of node {}: {}') if more than one rank owns the "
+                "node. Running with mpirun -n>1 errors out at the first "
+                "node lookup. "
+                "(2) The stresstype / straintype / heatfluxtype enum is "
+                "EXACTLY {'none', 'ndxyz'} — any other value (e.g. 'cxyz', "
+                "'averaged', '123') triggers FOUR_C_THROW('Cannot deal "
+                "with requested <kind> output type: {}'). Common confusion: "
+                "4C output formats elsewhere use 'cxyz' for cell-based, but "
+                "post_monitor accepts only the nodal 'ndxyz' form. "
+                "(3) FSI + --field=ale is explicitly REJECTED with "
+                "FOUR_C_THROW('There is no ALE output. Displacements of "
+                "fluid nodes can be printed.') — there's even a leftover "
+                "FsiAleMonWriter ctor call after the throw that is dead "
+                "code. Use --field=fluid to get the fluid-side ALE "
+                "displacements. "
+                "(4) ProblemType red_airways silently NO-OPS if "
+                "--field != 'red_airway'. The main() case has an if-check "
+                "and no else clause — wrong field value writes no .mon "
+                "file and prints no error. "
+                "(5) Stress / strain time-history is DEAD CODE in this "
+                "tool. write_mon_stress_file, write_mon_strain_file, "
+                "write_mon_pl_strain_file are defined on MonWriter but "
+                "main() never calls them — only thermo's heatflux and "
+                "tempgrad are auto-invoked. The .stress.mon / .strain.mon "
+                "files are produced only if the user calls the methods "
+                "programmatically, NOT from the CLI. "
+                "(6) CLI default --field=fluid is silently applied to "
+                "structural / thermo / scatra runs where it would be "
+                "rejected — easy oversight: the first FOUR_C_THROW the "
+                "user sees is 'Node {} does not belong to fluid field!' "
+                "even though they're running a structure problem. "
+                "(7) ProblemType gas_fsi / biofilm_fsi / thermo_fsi are "
+                "in the dispatch but throw FOUR_C_THROW('not implemented "
+                "yet') — the tool's coverage is narrower than the full "
+                "ProblemType set. Default unknown ProblemType triggers "
+                "FOUR_C_THROW('problem type {} not yet supported'). "
+                "(File walk apps/post_monitor/4C_post_monitor.cpp "
+                "2026-06-03.)"
+            ),
+        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════

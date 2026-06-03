@@ -606,6 +606,72 @@ class TestPitfallFalsificationLive(unittest.TestCase):
             f"got: {[str(w.message) for w in dep_new]!r}")
         self.assertEqual(r_new.shape, (ib_p1.N,))
 
+    def test_fourc_post_monitor_source_invariants(self) -> None:
+        """fourc::overview.post_monitor_tool [Output]: confirm the
+        upstream post_monitor source still implements (a) serial-
+        only enforcement via 'Found more than one owner of node',
+        (b) {'none','ndxyz'} stresstype/straintype/heatfluxtype
+        enum gate, (c) FSI+ALE explicit FOUR_C_THROW about
+        'There is no ALE output', (d) red_airways guarded by
+        if-check on infieldtype=='red_airway' with no else
+        branch, (e) thermo case auto-invokes heatflux+tempgrad
+        but not stress/strain. (File walk
+        apps/post_monitor/4C_post_monitor.cpp 2026-06-03.)"""
+        from pathlib import Path
+        candidates = [
+            Path("/home/hermann/Schreibtisch/4C-src/4C/apps/"
+                 "post_monitor/4C_post_monitor.cpp"),
+            Path(__file__).resolve().parent.parent / (
+                "upstream_sources/fourc/apps/post_monitor/"
+                "4C_post_monitor.cpp"),
+        ]
+        src = next((p for p in candidates if p.exists()), None)
+        if src is None:
+            self.skipTest(
+                f"4C post_monitor source not found in {candidates}.")
+        body = src.read_text()
+        # (a) Serial-only check
+        self.assertIn("Found more than one owner of node", body,
+                      "Serial-only enforcement was removed.")
+        # (b) stresstype enum gate
+        self.assertIn(
+            'stresstype != "none") and (stresstype != "ndxyz")',
+            body,
+            "stresstype enum gate changed; pitfall needs revisit.")
+        # straintype + heatfluxtype + tempgradtype variants
+        self.assertIn(
+            'heatfluxtype != "none") and (heatfluxtype != "ndxyz")',
+            body, "heatfluxtype enum gate changed.")
+        # (c) FSI+ALE explicit rejection
+        self.assertIn(
+            "There is no ALE output. Displacements of fluid nodes "
+            "can be printed.", body,
+            "FSI+ALE rejection message changed; pitfall #3 may no "
+            "longer apply.")
+        # (d) red_airways branch only handles 'red_airway' field —
+        # scope strictly to the red_airways case body (up to the
+        # NEXT `case Core::ProblemType::` sentinel).
+        i = body.find("case Core::ProblemType::red_airways:")
+        self.assertGreater(i, 0)
+        nxt = body.find("case Core::ProblemType::", i + 1)
+        ra = body[i:nxt] if nxt > 0 else body[i:i + 400]
+        self.assertIn('infieldtype == "red_airway"', ra,
+                      "red_airways branch no longer gates on "
+                      "infieldtype=='red_airway'.")
+        self.assertNotIn("else", ra,
+                         "red_airways branch grew an else clause "
+                         "— silent-no-op pitfall may no longer hold.")
+        # (e) thermo branch invokes heatflux+tempgrad, not stress/strain
+        j = body.find("case Core::ProblemType::thermo:")
+        self.assertGreater(j, 0)
+        thermo = body[j:j + 800]
+        self.assertIn("write_mon_heatflux_file", thermo)
+        self.assertIn("write_mon_tempgrad_file", thermo)
+        self.assertNotIn("write_mon_stress_file", thermo,
+                         "thermo branch now auto-invokes "
+                         "write_mon_stress_file — the dead-code "
+                         "pitfall about stress/strain needs revisit.")
+
     def test_dealii_query_git_information_macro_invariants(
             self) -> None:
         """dealii::_general.cmake_user_macros [Output]: confirm
