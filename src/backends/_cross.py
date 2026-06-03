@@ -466,6 +466,124 @@ _CONTACT_FORMULATION_SIGNAL = (
 )
 
 
+_OUTPUT_FORMAT_DESC = (
+    "Output file conventions — VTK / XDMF / ADIOS2 / .post.bin — "
+    "differ in (a) what each backend can write, (b) where it puts "
+    "DOFs (point-data on mesh nodes vs cell-data vs DG-style "
+    "per-element data), and (c) how high-order polynomial "
+    "discretisations are represented. ParaView opens all of them "
+    "but interprets the same field as different things."
+)
+
+_OUTPUT_FORMAT_PITFALLS = [
+    "[Cross-Backend][Output] Point-data vs cell-data: dolfinx's "
+    "VTXWriter and dolfinx.io.XDMFFile.write_function write "
+    "Lagrange P1 / P2 / etc. DOFs as POINT-DATA (one value per "
+    "mesh vertex, with high-order DOFs interpolated to vertices). "
+    "Kratos's VtkOutput writes NODAL_RESULTS as POINT-DATA too. "
+    "skfem's skfem.io.json or skfem-to-meshio writes element-by-"
+    "element output as CELL-DATA for DG fields. dealii's DataOut "
+    "with VTK output writes high-order polynomials by SUBDIVIDING "
+    "each element into a refined sub-mesh of P1 patches (so a P2 "
+    "field on 100 cells produces 400 sub-cells in the .vtu file) "
+    "— ParaView shows the smooth field correctly, but cell-count "
+    "differs from the simulation mesh. NGSolve's vtk_output "
+    "subdivides similarly (controlled by `subdivision=N` kwarg). "
+    "FEBio's .xplt is its own binary format and only ParaView via "
+    "the FEBio plugin reads it natively. Signal: a P2 stress field "
+    "ported to ParaView via fenics-XDMF (interpolated to vertices) "
+    "and via dealii-VTK (subdivided) shows the SAME peak value but "
+    "the dealii output reports 4-9x more cells, and a downstream "
+    "ParaView Calculator filter that iterates over cells produces "
+    "different integrated quantities. Defense: when cross-backend "
+    "post-processing in ParaView, force ALL outputs to a single "
+    "convention (subdivision=1 in dealii/NGSolve, P1-projection in "
+    "fenics) before any Filter / Calculator operation; or do the "
+    "post-processing on raw arrays via meshio/numpy, not in "
+    "ParaView.",
+
+    "[Cross-Backend][Output] XDMF vs .bp (ADIOS2) vs .vtu: dolfinx "
+    "0.10+ recommends VTXWriter -> .bp (ADIOS2 directory) for "
+    "high-order Lagrange Functions; XDMFFile.write_function "
+    "rejects P>1 with 'RuntimeError: Degree of output Function "
+    "must be same as mesh degree' (the standard P1-only XDMF "
+    "format). 4C writes XDMF natively for post-processing. Kratos "
+    "default GidOutput is GID-format binary (not XDMF, not VTU); "
+    "VtkOutput writes .vtu. NGSolve writes .vtu via vtk_output. "
+    "ParaView 5.10+ reads ALL of .bp/.xdmf/.vtu; ParaView <5.10 "
+    "reads .xdmf/.vtu only. Signal: a cross-backend workflow "
+    "where one stage writes .bp (dolfinx VTXWriter, the only "
+    "P>1-capable format) and another stage reads .xdmf via "
+    "meshio raises meshio.ReadError because meshio < 5 doesn't "
+    "speak .bp. Defense: pick ONE neutral exchange format for "
+    "cross-backend pipelines: .vtu (linearised, ParaView 5+ "
+    "reads), or interpolated-to-P1 XDMF. Reserve .bp for "
+    "dolfinx-only chains.",
+]
+
+_OUTPUT_FORMAT_SIGNAL = (
+    "[Cross-Backend][Output] If the same field-export pipeline "
+    "produces different integrated quantities in ParaView Filters "
+    "(min/max, integrate, surface-cell-count), the cause is "
+    "almost always cell-subdivision (dealii/NGSolve subdivide; "
+    "fenics/Kratos interpolate to vertices). Force "
+    "subdivision=1 / P1-projection on ALL backends before any "
+    "post-processing Filter."
+)
+
+
+_INTEGRATION_ORDER_DESC = (
+    "Gauss-quadrature order selection differs across backends. "
+    "The SAME polynomial-order element (P2 / Q2 / Hex8) may use "
+    "different default numbers of integration points in each "
+    "backend, leading to slightly different stress / strain-"
+    "energy values for the same physical problem."
+)
+
+_INTEGRATION_ORDER_PITFALLS = [
+    "[Cross-Backend][Numerical] Default Gauss integration order: "
+    "dolfinx selects quadrature degree automatically based on UFL "
+    "form analysis (estimate_total_polynomial_degree) UNLESS the "
+    "user passes form_compiler_options={'quadrature_degree': N} "
+    "or sets it on the dx measure (dx(metadata={'quadrature_"
+    "degree': N})); the auto-estimate may be CONSERVATIVE (over-"
+    "integrate) or INSUFFICIENT (under-integrate) depending on "
+    "nonlinearity. skfem's @BilinearForm uses Basis(... intorder="
+    "2*p) by default where p is the element order. NGSolve "
+    "Integrate() uses order = 2*deg(form) by default but accepts "
+    "order=N kwarg. dealii's QGauss<dim>(n) is explicit — n = "
+    "ceil((2*p+1)/2) is the standard textbook formula but every "
+    "tutorial sets it manually. Kratos's elements have HARD-CODED "
+    "integration rules per element type (Element3D8N uses 2x2x2 "
+    "= 8 points for full integration; reduced is via "
+    "Element3D8NReduced with 1 point). 4C uses GAUSSRULE keyword "
+    "in input: '2x2x2' / '3x3x3' / 'reduced'. FEBio uses solid "
+    "element 'gp_order' attribute. Signal: a hyperelastic P2 "
+    "compression test ported between fenics (auto quadrature) "
+    "and Kratos (fixed 2x2x2 for Element3D8N) reports slightly "
+    "different peak strain-energy because fenics auto-picked "
+    "quadrature degree 4 (over-integrated for cubic strain field) "
+    "while Kratos's 2x2x2 under-integrates the strain energy by "
+    "~0.1% (within engineering tolerance but visible in MMS "
+    "convergence studies as a stalled rate at fine mesh). "
+    "Defense: when validating cross-backend, explicitly set the "
+    "quadrature order to the same value in every backend; for "
+    "nonlinear elements use 2*p+1 minimum (where p is the shape-"
+    "function order), or 2*p+2 for hyperelastic to capture the "
+    "nonlinear strain-energy density.",
+]
+
+_INTEGRATION_ORDER_SIGNAL = (
+    "[Cross-Backend][Numerical] If an MMS convergence rate "
+    "stalls at the predicted theoretical order in one backend "
+    "but achieves super-convergence in another, suspect "
+    "integration order BEFORE suspecting the discretisation. "
+    "Fenics auto-quadrature can over-integrate (free super-"
+    "convergence) while Kratos's fixed Element3D8N rule "
+    "under-integrates."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -516,6 +634,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _CONTACT_FORMULATION_DESC,
         "pitfalls": _CONTACT_FORMULATION_PITFALLS,
         "Signal": _CONTACT_FORMULATION_SIGNAL,
+    },
+    "output_format_conventions": {
+        "description": _OUTPUT_FORMAT_DESC,
+        "pitfalls": _OUTPUT_FORMAT_PITFALLS,
+        "Signal": _OUTPUT_FORMAT_SIGNAL,
+    },
+    "integration_order_defaults": {
+        "description": _INTEGRATION_ORDER_DESC,
+        "pitfalls": _INTEGRATION_ORDER_PITFALLS,
+        "Signal": _INTEGRATION_ORDER_SIGNAL,
     },
 }
 
