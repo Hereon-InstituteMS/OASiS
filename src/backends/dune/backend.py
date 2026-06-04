@@ -24,7 +24,7 @@ from core.backend import (
 from core.registry import register_backend
 from .generators import GENERATORS, KNOWLEDGE
 
-logger = logging.getLogger("open-fem-agent.dune")
+logger = logging.getLogger("oasis.dune")
 
 
 class DuneBackend(SolverBackend):

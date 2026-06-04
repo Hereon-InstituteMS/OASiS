@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate publication-quality figures for the Open FEM Agent paper.
+Generate publication-quality figures for the OASiS paper.
 
 Figures:
 1. Architecture diagram (text-based, convert to TikZ)
@@ -88,7 +88,7 @@ def plot_convergence():
 def generate_architecture_tikz():
     """Generate TikZ code for architecture diagram."""
     tikz = r"""
-% Open FEM Agent Architecture Diagram
+% OASiS Architecture Diagram
 % Compile with: pdflatex -shell-escape architecture.tex
 \documentclass[border=10pt]{standalone}
 \usepackage{tikz}
@@ -124,7 +124,7 @@ def generate_architecture_tikz():
 % MCP Server
 \node[box, fill=mcpgold!15, draw=mcpgold, minimum width=9cm, minimum height=2.5cm,
       below=1cm of llm] (mcp) {};
-\node[above=0.1cm] at (mcp.north) {\textbf{Open FEM Agent (MCP Server)}};
+\node[above=0.1cm] at (mcp.north) {\textbf{OASiS (MCP Server)}};
 \node[font=\sffamily\scriptsize, text=gray] at (mcp.center)
     {35 tools $\cdot$ 133 pitfalls $\cdot$ 34 materials $\cdot$ cross-solver validation};
 

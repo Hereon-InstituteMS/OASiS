@@ -18,7 +18,7 @@ import tempfile
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
-logger = logging.getLogger("open-fem-agent.mesh")
+logger = logging.getLogger("oasis.mesh")
 
 _MESH_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "meshes"
 

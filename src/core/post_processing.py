@@ -13,7 +13,7 @@ from typing import Optional
 
 import numpy as np
 
-logger = logging.getLogger("open-fem-agent.postprocess")
+logger = logging.getLogger("oasis.postprocess")
 
 
 @dataclass

@@ -21,7 +21,7 @@ from core.backend import (
 )
 from core.registry import register_backend
 
-logger = logging.getLogger("open-fem-agent.fourc")
+logger = logging.getLogger("oasis.fourc")
 
 # Path resolution
 FOURC_ROOT = Path(os.environ["FOURC_ROOT"]) if os.environ.get("FOURC_ROOT") else None
@@ -42,7 +42,7 @@ def _find_fourc_binary() -> Optional[Path]:
 
 
 def _get_generators():
-    """Import the 4C generators — self-contained in open-fem-agent."""
+    """Import the 4C generators — self-contained in oasis."""
     # The generators package is at backends/fourc/generators/ (copied from 4c-ai-interface)
     from backends.fourc.generators import get_generator, list_generators
     return get_generator, list_generators
@@ -63,7 +63,7 @@ class FourcBackend(SolverBackend):
         # Check that local generators are present (self-contained)
         local_gen = Path(__file__).parent / "generators" / "__init__.py"
         if not local_gen.exists():
-            return BackendStatus.MISCONFIGURED, "4C generators not found in open-fem-agent"
+            return BackendStatus.MISCONFIGURED, "4C generators not found in oasis"
         return BackendStatus.AVAILABLE, f"4C at {binary}"
 
     def input_format(self) -> InputFormat:

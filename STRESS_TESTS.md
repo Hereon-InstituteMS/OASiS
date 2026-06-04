@@ -1,4 +1,4 @@
-# Open FEM Agent — Stress Tests
+# OASiS — Stress Tests
 
 These tests verify the agent's ability to set up, run, and validate simulations across all backends. Each test exposes different capabilities and potential gaps. Findings from each test should be used to improve the **general-purpose** infrastructure — not to fine-tune for specific examples.
 
@@ -146,7 +146,7 @@ Set up a simple fluid-structure interaction problem in Kratos using the CoSimula
 
 ## How to Use These Tests
 
-1. Run each prompt in a **fresh interactive Claude terminal** (`cd /path/to/open-fem-agent && claude`)
+1. Run each prompt in a **fresh interactive Claude terminal** (`cd /path/to/oasis && claude`)
 2. Let the agent work through the sub-agent workflow (research → setup → critic → execution)
 3. Note what works and what fails
 4. After the test completes, ask the agent these debrief questions:

@@ -9,7 +9,7 @@ steps, etc. based on the physics of each specific problem.
 import logging
 from typing import Optional
 
-logger = logging.getLogger("open-fem-agent.quality")
+logger = logging.getLogger("oasis.quality")
 
 
 def check_time_step(

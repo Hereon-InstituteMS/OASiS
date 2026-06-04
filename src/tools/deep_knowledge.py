@@ -3,7 +3,7 @@ MCP tools for deep, comprehensive domain knowledge across ALL backends.
 
 This is the brain of the agent — it knows weak forms, material libraries,
 solver configurations, pitfalls, element catalogs, and best practices for
-every supported FEM code. This is what makes Open FEM Agent genuinely useful
+every supported FEM code. This is what makes OASiS genuinely useful
 compared to a generic LLM.
 """
 

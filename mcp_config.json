@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "open-fem-agent": {
+    "oasis": {
       "command": "python",
       "args": ["-m", "server"],
       "cwd": "${workspaceFolder}/src",

@@ -24,7 +24,7 @@ from core.backend import (
 from core.registry import register_backend
 from .generators import GENERATORS, KNOWLEDGE
 
-logger = logging.getLogger("open-fem-agent.skfem")
+logger = logging.getLogger("oasis.skfem")
 
 
 class SkfemBackend(SolverBackend):

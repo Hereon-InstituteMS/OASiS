@@ -24,7 +24,7 @@ from core.backend import (
 )
 from core.registry import register_backend
 
-logger = logging.getLogger("open-fem-agent.febio")
+logger = logging.getLogger("oasis.febio")
 
 
 def _find_febio_binary() -> Optional[Path]:
