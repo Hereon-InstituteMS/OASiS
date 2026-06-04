@@ -30,7 +30,7 @@ _REPO = "KratosMultiphysics/Kratos"
 _BRANCH = os.environ.get("KRATOS_BRANCH", "master")
 _API_BASE = f"https://api.github.com/repos/{_REPO}"
 
-_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "open-fem-agent" / "kratos-source"
+_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "oasis" / "kratos-source"
 _CACHE_TTL_SECONDS = 24 * 3600
 
 

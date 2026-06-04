@@ -26,7 +26,7 @@ from core.backend import (
 )
 from core.registry import register_backend
 
-logger = logging.getLogger("open-fem-agent.dealii")
+logger = logging.getLogger("oasis.dealii")
 
 
 def _find_dealii() -> Optional[Path]:

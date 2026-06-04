@@ -4,8 +4,8 @@ Python envs live.
 Three layers, last-wins:
 
   1. Built-in defaults (hardcoded scan roots)
-  2. Global config:       ~/.config/open-fem-agent/sources.json
-  3. Repo config:         <repo>/.open-fem-agent.json
+  2. Global config:       ~/.config/oasis/sources.json
+  3. Repo config:         <repo>/.oasis.json
   4. Session config:      $OFA_SOURCE_CONFIG=/path/to/file.json  (env var)
   5. Direct env-var pins: $OFA_<BACKEND>_SOURCE / _BUILD / _PYTHON_ENV
                           $OFA_EXTRA_SOURCE_PATHS  (colon-separated)
@@ -42,8 +42,8 @@ from typing import Optional
 
 
 _REPO = Path(__file__).resolve().parent.parent.parent
-_GLOBAL_CONFIG_PATH = Path.home() / ".config" / "open-fem-agent" / "sources.json"
-_REPO_CONFIG_PATH = _REPO / ".open-fem-agent.json"
+_GLOBAL_CONFIG_PATH = Path.home() / ".config" / "oasis" / "sources.json"
+_REPO_CONFIG_PATH = _REPO / ".oasis.json"
 _ENV_CONFIG_VAR = "OFA_SOURCE_CONFIG"
 _EXTRA_PATHS_VAR = "OFA_EXTRA_SOURCE_PATHS"
 

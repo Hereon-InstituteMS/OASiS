@@ -24,7 +24,7 @@ from core.backend import (
 from core.registry import register_backend
 from .generators import GENERATORS, KNOWLEDGE
 
-logger = logging.getLogger("open-fem-agent.dune")
+logger = logging.getLogger("oasis.dune")
 
 
 class DuneBackend(SolverBackend):
@@ -39,7 +39,7 @@ class DuneBackend(SolverBackend):
         # DUNE-fem is heavy enough that users typically install it
         # into a dedicated conda env (ofa-dune is the convention
         # mirroring ofa-fenicsx / ofa-dealii). The MCP server runs
-        # in the open-fem-agent .venv which usually does NOT have
+        # in the oasis .venv which usually does NOT have
         # dune.fem.
         #
         # Search order (priority lowest-first):

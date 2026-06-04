@@ -1,28 +1,36 @@
-# Open FEM Agent
+<p align="center">
+  <img src="logo/logo_w_text.png" alt="OASiS — open-source multi-physics and multi-code framework for verified computer simulations" width="640"/>
+</p>
+
+# OASiS
+
+**O**pen-source **A**gent for **Si**mulation across multiple FEM **S**olvers — an open-source multi-physics and multi-code framework for verified computer simulations.
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20388035.svg)](https://doi.org/10.5281/zenodo.20388035)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An open-source **Model Context Protocol (MCP) server** that connects AI coding agents to **seven independent finite element codes** (FEniCSx, deal.II, 4C Multiphysics, NGSolve, scikit-fem, Kratos Multiphysics, DUNE-fem). Any MCP-compatible AI tool (Claude Code, Cursor, Windsurf, GitHub Copilot) can **operate** solvers, **couple** them across codes, and **develop** new solver capabilities — all through one protocol.
+OASiS is a **Model Context Protocol (MCP) server** that connects AI coding agents to **eight independent finite element codes** (FEniCSx, deal.II, 4C Multiphysics, NGSolve, scikit-fem, Kratos Multiphysics, DUNE-fem, FEBio). Any MCP-compatible AI tool (Claude Code, Cursor, Windsurf, GitHub Copilot) can **operate** solvers, **couple** them across codes, **develop** new solver capabilities, and **verify** simulation correctness — all through one protocol.
 
 ## Key Numbers
 
 | Metric | Value |
 |--------|-------|
-| FEM backends | **7 working** (FEniCSx, deal.II, 4C, NGSolve, scikit-fem, Kratos, DUNE-fem) |
+| FEM backends | **8 working** (FEniCSx, deal.II, 4C, NGSolve, scikit-fem, Kratos, DUNE-fem, FEBio) |
 | MCP tools | **13** consolidated tools |
-| Physics types | **180** across all backends |
+| Physics types | **180+** across all backends |
 | Coupling modes | **7** (heat DD, Poisson DD, one-way TSI, two-way TSI, relaxation study, L-bracket, preCICE) |
 | Supported solver pairs | **20** for domain decomposition (any Python solver + any backend) |
-| Tests | **209 passed** |
+| Tests | **400+ passing** |
 | E2E stress tests | **24 completed** (24 pass) |
+| Cross-backend collation topics | **26** topics, **45+** pitfalls (the actual differentiator) |
+| Signal: retrieval-anchor coverage | **100%** across all 8 backends |
 
 ## Quick Start
 
 ### 1. Clone and install
 
 ```bash
-git clone <repo-url> && cd open-fem-agent
+git clone https://github.com/Hereon-InstituteMS/OASiS.git && cd OASiS
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
@@ -42,6 +50,9 @@ conda create -n fenics -c conda-forge fenics-dolfinx
 sudo apt install libdeal.ii-dev   # Ubuntu/Debian
 
 # 4C Multiphysics (build from source — see 4C documentation)
+
+# FEBio (binary download)
+# https://febio.org/downloads/  — set FEBIO_BINARY env var or place in PATH
 ```
 
 ### 3. Connect to your AI tool
@@ -52,7 +63,7 @@ The MCP server runs as a stdio process. Each AI tool has its own way to register
 
 ```bash
 # From the project root:
-claude mcp add open-fem-agent \
+claude mcp add oasis \
   .venv/bin/python -- -m server \
   -e PYTHONPATH=src \
   -e PYVISTA_OFF_SCREEN=true
@@ -63,7 +74,7 @@ Or manually create `.claude/settings.json` in the project directory:
 ```json
 {
   "mcpServers": {
-    "open-fem-agent": {
+    "oasis": {
       "type": "stdio",
       "command": ".venv/bin/python",
       "args": ["-m", "server"],
@@ -80,10 +91,10 @@ Or manually create `.claude/settings.json` in the project directory:
 **Cursor**:
 
 Go to Settings > MCP Servers > Add Server, then enter:
-- Name: `open-fem-agent`
-- Command: `/path/to/open-fem-agent/.venv/bin/python`
+- Name: `oasis`
+- Command: `/path/to/OASiS/.venv/bin/python`
 - Args: `-m server`
-- Working directory: `/path/to/open-fem-agent/src`
+- Working directory: `/path/to/OASiS/src`
 - Environment: `PYTHONPATH=src`, `PYVISTA_OFF_SCREEN=true`
 
 **Windsurf**:
@@ -91,10 +102,10 @@ Go to Settings > MCP Servers > Add Server, then enter:
 Add to your Windsurf MCP configuration (Settings > MCP):
 ```json
 {
-  "open-fem-agent": {
-    "command": "/path/to/open-fem-agent/.venv/bin/python",
+  "oasis": {
+    "command": "/path/to/OASiS/.venv/bin/python",
     "args": ["-m", "server"],
-    "cwd": "/path/to/open-fem-agent/src",
+    "cwd": "/path/to/OASiS/src",
     "env": { "PYTHONPATH": "src", "PYVISTA_OFF_SCREEN": "true" }
   }
 }
@@ -137,18 +148,19 @@ Solver backends are auto-detected from pip/conda installations. For compiled sol
 | `KRATOS_ROOT` | Kratos source | `/home/user/Kratos` |
 | `DUNE_ROOT` | DUNE-fem source | `/home/user/dune-fem` |
 | `SKFEM_ROOT` | scikit-fem source | `/home/user/scikit-fem` |
+| `FEBIO_BINARY` | FEBio binary | `/home/user/febio4/bin/febio4` |
 
 When a `*_ROOT` variable is set, the agent can browse, modify, and rebuild the solver source code (developer mode).
 
 ## Architecture
 
 ```
-User --> AI Agent (any MCP client) --> MCP Protocol --> Open FEM Agent
+User --> AI Agent (any MCP client) --> MCP Protocol --> OASiS
                                                           |
-                  +-------------+-------------+-----------+--------+--------+--------+
-                  |             |             |           |        |        |        |
-               FEniCSx      deal.II        4C        NGSolve  skfem    Kratos   DUNE
-              (Python)       (C++)       (YAML)     (Python) (Python) (JSON)  (Python)
+   +-------------+---------+------+--------+--------+--------+--------+-------+
+   |             |         |      |        |        |        |        |       |
+FEniCSx     deal.II      4C   NGSolve   skfem   Kratos    DUNE    FEBio
+(Python)     (C++)    (YAML) (Python) (Python) (JSON)   (Python)  (XML)
 ```
 
 ## Three Modes of Operation
@@ -169,7 +181,7 @@ When a solver lacks a needed feature, the agent can read source code, implement 
 | `prepare_simulation` | Knowledge + examples + template in ONE call |
 | `run_simulation` | Execute Python-based solvers (FEniCS, NGSolve, scikit-fem, DUNE) |
 | `run_with_generator` | Generate input + run compiled solvers (4C, deal.II, Kratos) |
-| `knowledge` | Physics knowledge, pitfalls, materials, coupling docs |
+| `knowledge` | Physics knowledge, pitfalls, materials, coupling docs, cross-backend collation |
 | `discover` | List solvers, check availability, capabilities matrix |
 | `examples` | Real test files and templates from solver test suites |
 | `coupled_solve` | Cross-solver domain decomposition (20 solver pair combinations) |
@@ -178,6 +190,24 @@ When a solver lacks a needed feature, the agent can read source code, implement 
 | `generate_mesh` | Gmsh mesh generation (L-domain, plate with hole, channel) |
 | `developer` | Source architecture, file browsing, extension points |
 | `session_insights` | Review session patterns, contribute knowledge back |
+| `reload_catalog` | Hot-reload backend catalogs without restarting the MCP server |
+
+## The Cross-Backend Differentiator
+
+OASiS ships **26 cross-backend collation topics** with **45+ pitfalls** that describe gotchas at the *delta* between two or more solvers — content that has no equivalent in any individual solver's docs:
+
+- units, element node ordering, linear-elastic semantics, Dirichlet BC enforcement
+- restart/checkpoint compatibility, MPI launch idioms, element-type naming
+- time-integration defaults, solver-tolerance defaults, contact formulation defaults
+- output-format conventions, integration-order defaults, boundary-tag semantics
+- plasticity return-mapping, turbulence model defaults, material orientation
+- frequency-unit conventions, mesh-quality thresholds, stress-measure conventions
+- periodic-BC implementation, damping-convention defaults, timestamp output
+- initial-condition interpolation, frame-of-reference BC
+- **linear-solver defaults** (direct vs iterative dispatch, GMRES restart, tolerance scaling)
+- **nonlinear convergence criteria** (relative vs absolute, energy-norm, line-search, failure-signal paths)
+
+Reach via `knowledge(topic='cross_backend')` or filter by physics: `knowledge(topic='cross_backend', physics='units')`.
 
 ## Tested Benchmarks
 
@@ -234,7 +264,7 @@ These benchmarks have been run as end-to-end stress tests with a fresh AI agent.
 
 ## Contributing
 
-We welcome contributions that improve the **general-purpose** capabilities of the Open FEM Agent. The key principle:
+We welcome contributions that improve the **general-purpose** capabilities of OASiS. The key principle:
 
 **Every improvement must benefit ALL simulations, not be fine-tuned for specific examples.**
 
@@ -288,11 +318,12 @@ MIT
 
 ## Citation
 
-If you use Open FEM Agent in your research, please cite:
+If you use OASiS in your research, please cite:
 
 ```bibtex
-@article{openfem2026,
-  title={Open FEM Agent: An Open-Source Multi-Solver MCP Server for LLM-Driven Finite Element Simulation},
+@article{oasis2026,
+  title={OASiS: an open-source multi-physics and multi-code framework for verified computer simulations},
+  author={Hermann, Alexander and Shojaei, Arman and Scheider, Ingo and Cyron, Christian},
   year={2026},
 }
 ```

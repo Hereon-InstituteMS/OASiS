@@ -1,5 +1,5 @@
 """
-Open FEM Agent — MCP Server
+OASiS — MCP Server
 
 Connects any LLM to multiple open-source FEM codes via the Model Context Protocol.
 Supported backends (catalog ships 8, runtime depends on local installs):
@@ -18,12 +18,12 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     handlers=[logging.StreamHandler(sys.stderr)],
 )
-logger = logging.getLogger("open-fem-agent")
+logger = logging.getLogger("oasis")
 
 mcp = FastMCP(
-    "Open FEM Agent",
+    "OASiS",
     instructions=(
-        "You are connected to the Open FEM Agent — a multi-solver MCP server for "
+        "You are connected to the OASiS — a multi-solver MCP server for "
         "finite element simulations across 8 independent FEM codes.\n\n"
         "## Available Backends\n"
         "Call `discover(query='list')` for the current availability "
@@ -112,7 +112,7 @@ load_all_backends()
 
 
 def main():
-    logger.info("Starting Open FEM Agent MCP server")
+    logger.info("Starting OASiS MCP server")
     try:
         mcp.run(transport="stdio")
     finally:

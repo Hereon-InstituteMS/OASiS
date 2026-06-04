@@ -1,5 +1,5 @@
 """
-Consolidated MCP tools for the Open FEM Agent.
+Consolidated MCP tools for the OASiS.
 
 Reduces 48 tools → ~12 tools by combining related functionality.
 Fewer tools = faster schema loading = faster agent response.
@@ -2176,7 +2176,7 @@ def register_consolidated_tools(mcp: FastMCP):
         on each, and re-runs load_all_backends() so the registry
         re-binds the backend objects to the refreshed module
         attributes. After the call, the very next
-        mcp__open-fem-agent__knowledge call returns the on-disk
+        mcp__oasis__knowledge call returns the on-disk
         catalog without having to restart Claude Code.
 
         Returns a one-line summary of which modules were

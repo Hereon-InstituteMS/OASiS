@@ -25,7 +25,7 @@ _REPO = "4C-multiphysics/4C"
 _BRANCH = os.environ.get("FOURC_BRANCH", "main")
 _RAW_BASE = f"https://raw.githubusercontent.com/{_REPO}/{_BRANCH}"
 
-_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "open-fem-agent" / "fourc-source"
+_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "oasis" / "fourc-source"
 _CACHE_TTL_SECONDS = 24 * 3600
 
 

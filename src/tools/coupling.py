@@ -23,7 +23,7 @@ from core.field_transfer import (
     interpolate_to_points,
 )
 
-logger = logging.getLogger("open-fem-agent.coupling")
+logger = logging.getLogger("oasis.coupling")
 
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
 

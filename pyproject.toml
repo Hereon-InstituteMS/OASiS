@@ -1,11 +1,11 @@
 [project]
-name = "open-fem-agent"
+name = "oasis-mcp"
 version = "0.2.0"
-description = "Open-source MCP server connecting LLMs to 8 FEM codes for AI-driven simulation, coupling, and solver development"
+description = "OASiS — an open-source multi-physics and multi-code framework for verified computer simulations. MCP server connecting LLMs to 8 FEM codes for AI-driven simulation, coupling, and solver development."
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Open FEM Agent Contributors"},
+    {name = "OASiS Contributors"},
 ]
 keywords = ["fem", "mcp", "simulation", "multiphysics", "coupling", "ai-agent"]
 classifiers = [

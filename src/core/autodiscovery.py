@@ -26,7 +26,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-logger = logging.getLogger("open-fem-agent.autodiscovery")
+logger = logging.getLogger("oasis.autodiscovery")
 
 CONFIG_PATH = Path(__file__).parent.parent.parent / "data" / "discovered_config.json"
 

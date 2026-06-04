@@ -28,7 +28,7 @@ from core.backend import (
 from core.registry import register_backend
 from .generators import GENERATORS, KNOWLEDGE
 
-logger = logging.getLogger("open-fem-agent.kratos")
+logger = logging.getLogger("oasis.kratos")
 
 
 class KratosBackend(SolverBackend):
