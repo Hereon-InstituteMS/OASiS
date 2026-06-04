@@ -223,7 +223,7 @@ async def benchmark_hyperelasticity():
 
 
 async def main():
-    print("Open FEM Agent — Full Benchmark Suite")
+    print("OASiS — Full Benchmark Suite")
     print(f"{'='*60}")
 
     load_all_backends()

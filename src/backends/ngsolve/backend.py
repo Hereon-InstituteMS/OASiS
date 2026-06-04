@@ -22,7 +22,7 @@ from core.backend import (
 from core.registry import register_backend
 from .generators import GENERATORS, KNOWLEDGE
 
-logger = logging.getLogger("open-fem-agent.ngsolve")
+logger = logging.getLogger("oasis.ngsolve")
 
 
 def _find_ngsolve_python() -> Optional[Path]:

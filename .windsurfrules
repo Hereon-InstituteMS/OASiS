@@ -1,4 +1,4 @@
-# Open FEM Agent — Project Instructions
+# OASiS — Project Instructions
 
 ## How to Handle Complex Simulation Tasks
 

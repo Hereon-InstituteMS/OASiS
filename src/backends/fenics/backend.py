@@ -22,7 +22,7 @@ from core.backend import (
 )
 from core.registry import register_backend
 
-logger = logging.getLogger("open-fem-agent.fenics")
+logger = logging.getLogger("oasis.fenics")
 
 # Conda environment with dolfinx
 _CONDA_PREFIX = os.environ.get("FENICS_CONDA_PREFIX", "")

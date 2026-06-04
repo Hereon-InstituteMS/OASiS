@@ -13,7 +13,7 @@ from typing import Optional
 
 from .backend import SolverBackend, BackendStatus
 
-logger = logging.getLogger("open-fem-agent.registry")
+logger = logging.getLogger("oasis.registry")
 
 # Global registry
 _backends: dict[str, SolverBackend] = {}

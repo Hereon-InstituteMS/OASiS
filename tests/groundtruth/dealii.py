@@ -12,7 +12,7 @@ This module is a second instance of the *source-grep* probe family
 (``$DEALII_ROOT``) -> on-disk cache -> network.  Returns ``None`` if
 both local and network are unavailable so the test skips gracefully.
 
-The cache lives at ``$XDG_CACHE_HOME/open-fem-agent/dealii-source/``
+The cache lives at ``$XDG_CACHE_HOME/oasis/dealii-source/``
 with a 24h TTL.  Headers are tiny so the full enumeration of
 ``FE_*`` classes is roughly half a megabyte over the wire on a cold
 cache; subsequent runs within 24h are essentially free.
@@ -35,7 +35,7 @@ _BRANCH = os.environ.get("DEALII_BRANCH", "master")
 _RAW_BASE = f"https://raw.githubusercontent.com/{_REPO}/{_BRANCH}"
 _API_BASE = f"https://api.github.com/repos/{_REPO}"
 
-_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "open-fem-agent" / "dealii-source"
+_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "oasis" / "dealii-source"
 _CACHE_TTL_SECONDS = 24 * 3600
 
 # The MCP catalog only references concrete finite-element classes

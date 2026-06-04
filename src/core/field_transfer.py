@@ -14,7 +14,7 @@ from typing import Optional
 
 import numpy as np
 
-logger = logging.getLogger("open-fem-agent.field_transfer")
+logger = logging.getLogger("oasis.field_transfer")
 
 
 @dataclass

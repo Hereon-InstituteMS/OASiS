@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Open FEM Agent: A Multi-Solver MCP Server for LLM-Driven Computational Mechanics"
+title: "OASiS: an open-source multi-physics and multi-code framework for verified computer simulations"
 message: "If you use this software, please cite it using the metadata in this file."
 type: software
 authors:
@@ -19,19 +19,20 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.20388035
     description: "Zenodo archive of v1.0.0"
-repository-code: "https://github.com/Hereon-InstituteMS/Open-FEM-agent"
-url: "https://github.com/Hereon-InstituteMS/Open-FEM-agent"
+repository-code: "https://github.com/Hereon-InstituteMS/OASiS"
+url: "https://github.com/Hereon-InstituteMS/OASiS"
 doi: 10.5281/zenodo.20388035
 abstract: >-
-  Open FEM Agent is an open-source Model Context Protocol (MCP) server
-  that connects general-purpose LLM coding agents to seven independently
+  OASiS is an open-source Model Context Protocol (MCP) server
+  that connects general-purpose LLM coding agents to eight independently
   developed finite element solvers (FEniCSx, deal.II, 4C Multiphysics,
-  NGSolve, scikit-fem, Kratos Multiphysics, DUNE-fem). It exposes a
+  NGSolve, scikit-fem, Kratos Multiphysics, DUNE-fem, FEBio). It exposes a
   small set of shared tools for solver discovery, simulation
   preparation, mesh generation, run execution, multi-solver coupling,
   in-place solver development, and visualisation. A curated pitfall
-  knowledge base and a mandatory critic-sub-agent workflow are used
-  to verify simulations before they run.
+  knowledge base, 26 cross-backend collation topics, and a mandatory
+  critic-sub-agent workflow are used to verify simulations before
+  they run.
 keywords:
   - finite element method
   - model context protocol
@@ -39,10 +40,12 @@ keywords:
   - computational mechanics
   - multi-physics
   - scientific computing
+  - verified simulation
   - fenics
   - dealii
   - ngsolve
   - kratos
+  - febio
 license: MIT
 version: "1.0.0"
 date-released: "2026-05-26"

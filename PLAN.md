@@ -1,4 +1,4 @@
-# Open FEM Agent — Master Plan
+# OASiS — Master Plan
 
 **Updated:** 2026-03-16 (comprehensive knowledge overhaul)
 
@@ -91,7 +91,7 @@ Each backend must support source code modification:
 ## Architecture
 
 ```
-User → LLM (Claude, GPT, etc.) → MCP Protocol → Open FEM Agent
+User → LLM (Claude, GPT, etc.) → MCP Protocol → OASiS
                                                     │
                     ┌───────────────────────────────┤
                     │         │         │         │         │         │         │
@@ -112,7 +112,7 @@ Each backend provides:
 
 ## Competitive Position
 
-| Feature | MCP-SIM | FeaGPT | MooseAgent | **Open FEM Agent** |
+| Feature | MCP-SIM | FeaGPT | MooseAgent | **OASiS** |
 |---------|---------|--------|------------|-------------------|
 | Real FEM solvers | No | Yes (1) | Yes (1) | **Yes (7+)** |
 | Multi-solver | No | No | No | **Yes (7 backends)** |

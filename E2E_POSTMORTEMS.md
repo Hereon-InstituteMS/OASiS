@@ -1,6 +1,6 @@
 # E2E Stress Test Post-Mortems
 
-Collected from 24 end-to-end stress tests run with fresh Claude Code agents using the Open FEM Agent MCP server. Each test used the exact prompt from STRESS_TESTS.md with no additional guidance.
+Collected from 24 end-to-end stress tests run with fresh Claude Code agents using the OASiS MCP server. Each test used the exact prompt from STRESS_TESTS.md with no additional guidance.
 
 ---
 

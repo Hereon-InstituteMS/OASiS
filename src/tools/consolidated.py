@@ -1,5 +1,5 @@
 """
-Consolidated MCP tools for the Open FEM Agent.
+Consolidated MCP tools for the OASiS.
 
 Reduces 48 tools → ~12 tools by combining related functionality.
 Fewer tools = faster schema loading = faster agent response.

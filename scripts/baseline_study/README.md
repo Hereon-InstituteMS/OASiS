@@ -1,6 +1,6 @@
 # Token-Savings Baseline Study
 
-Compares Open FEM Agent MCP vs bare LLM (Claude Code without MCP) across 6 tasks of increasing difficulty.
+Compares OASiS MCP vs bare LLM (Claude Code without MCP) across 6 tasks of increasing difficulty.
 
 ## How to run
 
@@ -8,14 +8,14 @@ Compares Open FEM Agent MCP vs bare LLM (Claude Code without MCP) across 6 tasks
 
 **With MCP** (normal setup):
 ```bash
-cd /path/to/open-fem-agent
+cd /path/to/oasis
 claude  # MCP auto-connects
 # Give the prompt from prompts.json, let it work, save session
 ```
 
 **Without MCP** (remove MCP from Claude Code settings first):
 ```bash
-cd /path/to/open-fem-agent
+cd /path/to/oasis
 claude  # No MCP connected
 # Give the exact same prompt, let it work, save session
 ```
