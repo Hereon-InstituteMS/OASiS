@@ -1,6 +1,6 @@
 [project]
 name = "oasis-mcp"
-version = "0.2.0"
+version = "1.1.0"
 description = "OASiS — an open-source multi-physics and multi-code framework for verified computer simulations. MCP server connecting LLMs to 8 FEM codes for AI-driven simulation, coupling, and solver development."
 requires-python = ">=3.10"
 license = {text = "MIT"}

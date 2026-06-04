@@ -21,7 +21,7 @@ identifiers:
     description: "Zenodo archive of v1.0.0"
 repository-code: "https://github.com/Hereon-InstituteMS/OASiS"
 url: "https://github.com/Hereon-InstituteMS/OASiS"
-doi: 10.5281/zenodo.20388035
+doi: 10.5281/zenodo.20388035  # v1.0.0 — will be replaced with the v1.1.0 DOI once Zenodo mints it
 abstract: >-
   OASiS is an open-source Model Context Protocol (MCP) server
   that connects general-purpose LLM coding agents to eight independently
@@ -47,5 +47,5 @@ keywords:
   - kratos
   - febio
 license: MIT
-version: "1.0.0"
-date-released: "2026-05-26"
+version: "1.1.0"
+date-released: "2026-06-04"
