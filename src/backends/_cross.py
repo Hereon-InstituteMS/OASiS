@@ -1248,6 +1248,190 @@ _FRAME_OF_REFERENCE_SIGNAL = (
 )
 
 
+_LINEAR_SOLVER_DESC = (
+    "Default linear-solver choice, tolerance, iteration cap, "
+    "GMRES restart parameter, and direct-solver dispatch path "
+    "all differ across backends. Same matrix, same RHS, same "
+    "user-stated target precision — different wall-time, "
+    "convergence behaviour, or silent fallback solver "
+    "depending on which backend's default fires."
+)
+_LINEAR_SOLVER_PITFALLS = [
+    "[Cross-Backend][Solver] Default linear solver dispatch: "
+    "fenics/dolfinx's LinearProblem(...).solve() routes "
+    "through PETSc KSP with `ksp_type=preonly` + "
+    "`pc_type=lu` (MUMPS) for small problems but flips to a "
+    "GMRES iterative path with no preconditioner if you "
+    "construct the PETSc.Mat by hand and call KSPSolve "
+    "directly. skfem's solve(K, b) hits scipy.sparse.linalg."
+    "spsolve (SuperLU direct, single-threaded). For a "
+    "50k-DOF Poisson problem fenics LinearProblem takes ~3 "
+    "s and skfem solve(K,b) takes ~5 s; for 5M-DOF fenics "
+    "needs PETScOptions ksp_type=cg + pc_type=hypre to "
+    "stay competitive, while skfem requires an explicit "
+    "pyamg / petsc4py dispatch (scipy spsolve runs out of "
+    "memory). Never trust 'the default linear solver' — "
+    "print PETSc.Options() in fenics and inspect "
+    "type(K) / scipy version in skfem before benchmarking.",
+    "[Cross-Backend][Solver] GMRES restart parameter: PETSc "
+    "(used by fenics/dolfinx, dealii, kratos for some "
+    "configs) defaults to restart=30 — the Krylov subspace "
+    "is rebuilt every 30 iterations. NGSolve's CGSolver / "
+    "GMRESSolver does NOT auto-restart; its 'maxit' "
+    "parameter is the total iteration cap and divergence on "
+    "indefinite systems is silent until the cap fires. The "
+    "same matrix can converge in 12 iters under PETSc / "
+    "GMRES(30) but stall at 199/200 under NGSolve's non-"
+    "restarted GMRES because the Krylov basis becomes "
+    "linearly dependent — symptom: 'iter residual' "
+    "plateaus around iteration 50 and never drops. Fix: "
+    "pass restart=30 explicitly to NGSolve's GMRES, or "
+    "wrap NGSolve's iterative loop with manual restart.",
+    "[Cross-Backend][Solver] Direct-solver dispatch path: "
+    "dealii's SolverDirect(SolverControl) wraps UMFPACK by "
+    "default, while 4C's <SOLVER ID=\"1\"> with "
+    "TYPE_OF_SOLVER \"UMFPACK\" requires the LSEAux library "
+    "to be linked at build time — if it isn't, 4C silently "
+    "falls back to a sequential direct solver (Spooles or "
+    "Pardiso depending on build flags). For a 100k-DOF "
+    "problem dealii's UMFPACK runs single-threaded at ~30 s "
+    "while 4C's Pardiso fallback hits 6 s on the same "
+    "hardware. Don't compare solver wall-times across "
+    "these two without checking each binary's linked-"
+    "solver list (`ldd <fourc_binary> | grep -E "
+    "'pardiso|spooles|mumps|umfpack'`, and read dealii's "
+    "DEAL_II_WITH_UMFPACK / DEAL_II_WITH_MUMPS cmake "
+    "summary).",
+    "[Cross-Backend][Solver] Tolerance scaling convention: "
+    "fenics/dolfinx's PETSc KSP rtol defaults to 1e-5 (the "
+    "PETSc default), while NGSolve's bf.Assemble + "
+    "Inverse(inverse=\"...\") for iterative paths uses "
+    "tol=1e-12 for direct paths and 1e-6 for CG. Kratos's "
+    "LinearSolversApplication GMRES has 'tolerance: 1e-7' "
+    "in the typical SettingsConstructor. A user copying "
+    "solver settings from a fenics tutorial (rtol=1e-5) "
+    "into a dealii SolverControl(...) call gets 5x faster "
+    "but lower-precision solves than the dealii tutorial "
+    "defaults assume. Always set tolerance explicitly in "
+    "the script; never inherit it silently.",
+    "[Cross-Backend][Solver] Iterative-solver iteration "
+    "cap default: dealii's SolverControl(max_iters, "
+    "tolerance) requires explicit max_iters with no "
+    "default — omitting it raises a constructor error. "
+    "PETSc-based (fenics, kratos default) uses 10000 as the "
+    "KSP maxits default. skfem's pyamg.solve has "
+    "maxiter=300 by default. For an ill-conditioned 1M-DOF "
+    "problem fenics spins for 10000 iterations (~minutes) "
+    "before reporting failure, while skfem fails fast at "
+    "300 — same problem, opposite failure modes. Symptom "
+    "in fenics: 'PETSc KSP DIVERGED_ITS' after a long "
+    "wall-time; symptom in skfem: pyamg.solve returns with "
+    "residual ~1e-3 and no exception (you have to inspect "
+    "the residual histories yourself).",
+]
+_LINEAR_SOLVER_SIGNAL = (
+    "[Cross-Backend][Solver] Same matrix, same RHS, same "
+    "target precision — wildly different wall-time, "
+    "convergence behaviour, or silent fallback to a different "
+    "direct solver (e.g. fenics MUMPS vs dealii UMFPACK vs "
+    "4C Spooles/Pardiso). Diagnose at runtime by printing "
+    "the actual KSP type, preconditioner, restart, "
+    "tolerance, maxits, AND linked direct-solver library "
+    "(`ksp_view` in fenics, `solver.print()` in dealii, "
+    "`ldd` on the fourc binary) BEFORE drawing conclusions "
+    "about which backend is 'faster' or 'more accurate' on "
+    "the same problem."
+)
+
+
+_NONLINEAR_CONVERGENCE_DESC = (
+    "Newton/Picard nonlinear iterations use different "
+    "convergence criteria across backends: relative residual "
+    "vs absolute residual vs energy norm vs displacement "
+    "increment, with or without line search, with different "
+    "failure-reporting paths (exception vs tuple-flag vs "
+    "exit-code). Same physics, same mesh, the word "
+    "'converged' means different things."
+)
+_NONLINEAR_CONVERGENCE_PITFALLS = [
+    "[Cross-Backend][Solver] Newton convergence criterion: "
+    "fenics/dolfinx's NewtonSolver checks ||F(u)|| absolute "
+    "(residual_norm < tol, default 1e-10) AND ||du|| / "
+    "||u|| relative (default 1e-9) — both must hold. "
+    "dealii's hand-coded Newton (step-15 pattern) typically "
+    "uses ||F(u)|| / ||F(u_0)|| relative residual only. 4C's "
+    "NLNSOL_TYPE = 'Full Newton' with NORM_INC = 'Abs' or "
+    "'Rel' toggles between the two for the increment norm, "
+    "with a separate NORM_RES for the residual. A 'converged' "
+    "model in fenics (both criteria at 1e-10) may report "
+    "'iter 30: residual=1e-4, not converged' in 4C if "
+    "NORM_RES is 'Rel' and TOLINC = 1e-12 — different "
+    "criterion entirely.",
+    "[Cross-Backend][Solver] Energy-norm convergence: "
+    "NGSolve's Newton (ngsolve.solvers.Newton) checks "
+    "'energy norm' du.dot(K * du) below tol_energy as one "
+    "of its convergence criteria, whereas FEBio's BFGS / "
+    "Quasi-Newton uses 'E_tol' = ratio of incremental "
+    "energy to initial energy. For a plasticity problem "
+    "where the residual is hard to reduce but the energy "
+    "stagnates, NGSolve declares convergence early and "
+    "FEBio iterates further — same problem, different "
+    "'converged' answer. Workaround: always print residual, "
+    "increment, AND energy per iteration, and pick the "
+    "criterion explicitly rather than relying on the "
+    "'default'.",
+    "[Cross-Backend][Solver] Initial-residual zero-load "
+    "trap: dealii Newton steppers commonly compute the "
+    "'initial residual' at iteration 0 with Dirichlet BCs "
+    "applied but ZERO loading — yielding ||F_0|| near "
+    "machine epsilon. The relative criterion ||F_k|| / "
+    "||F_0|| then needs to drop by 10 orders of magnitude "
+    "to reach rtol=1e-9 — impossible. fenics's NewtonSolver "
+    "guards this with an absolute_tolerance fallback; "
+    "dealii's hand-coded steppers usually don't. Symptom: "
+    "Newton stalls at iter 3-5 with residual ~1e-8 in "
+    "dealii, while fenics's NewtonSolver reports converged "
+    "at the same residual.",
+    "[Cross-Backend][Solver] Line-search defaults: "
+    "fenics/dolfinx's PETSc SNES has line-search='basic' "
+    "default (no actual line search, just a damped step). "
+    "kratos's ResidualBasedNewtonRaphsonStrategy with "
+    "line_search: true uses a backtracking line search. "
+    "dealii's SolverNewton::solve has no line search built "
+    "in — you implement it. For a buckling problem near "
+    "the bifurcation point, fenics's 'basic' SNES can jump "
+    "past the bifurcation and Newton diverges in one step; "
+    "kratos's backtracking carries through smoothly. Fix: "
+    "set line_search='bt' in PETSc SNES options, or set "
+    "fenics's SNES to bt explicitly.",
+    "[Cross-Backend][Solver] Convergence-failure signal "
+    "path: NGSolve's Newton raises a Python exception on "
+    "max-iter-exceeded by default; FEBio writes 'Solution "
+    "failed to converge' to the .log and exits with code 1 "
+    "(no Python-level signal in any wrapper); "
+    "fenics/dolfinx's NewtonSolver returns a tuple "
+    "(n_iters, converged_bool) without raising. A script "
+    "looping over load steps in fenics will silently "
+    "continue with stale displacement after a failed step "
+    "unless the user checks converged_bool; the same "
+    "script crashes immediately in NGSolve; in FEBio there "
+    "is no Python-level signal at all (the binary process "
+    "exits before any Python wrapper sees it).",
+]
+_NONLINEAR_CONVERGENCE_SIGNAL = (
+    "[Cross-Backend][Solver] 'Converged' means different "
+    "things across backends — print all of (||F||, ||du||, "
+    "||du||/||u||, energy) per iter, set tolerances "
+    "absolutely (not relative-only) to avoid the zero-load "
+    "trap, and on convergence FAILURE be sure your script "
+    "handles each backend's specific signal: Python "
+    "exception (NGSolve), tuple-flag (fenics), process "
+    "exit-code (FEBio), KratosError (kratos), or dealii's "
+    "ExcSolverFailure. A missing exception does NOT mean "
+    "convergence."
+)
+
+
 CROSS_BACKEND_PITFALLS = {
     "units": {
         "description": _UNITS_DESC,
@@ -1368,6 +1552,16 @@ CROSS_BACKEND_PITFALLS = {
         "description": _FRAME_OF_REFERENCE_DESC,
         "pitfalls": _FRAME_OF_REFERENCE_PITFALLS,
         "Signal": _FRAME_OF_REFERENCE_SIGNAL,
+    },
+    "linear_solver_defaults": {
+        "description": _LINEAR_SOLVER_DESC,
+        "pitfalls": _LINEAR_SOLVER_PITFALLS,
+        "Signal": _LINEAR_SOLVER_SIGNAL,
+    },
+    "nonlinear_convergence_criteria": {
+        "description": _NONLINEAR_CONVERGENCE_DESC,
+        "pitfalls": _NONLINEAR_CONVERGENCE_PITFALLS,
+        "Signal": _NONLINEAR_CONVERGENCE_SIGNAL,
     },
 }
 
