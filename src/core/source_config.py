@@ -43,6 +43,15 @@ from typing import Optional
 
 _REPO = Path(__file__).resolve().parent.parent.parent
 _GLOBAL_CONFIG_PATH = Path.home() / ".config" / "oasis" / "sources.json"
+# Pre-rebrand location (project renamed Open-FEM-agent -> OASiS
+# 2026-06-04). The rename sed moved this constant to ~/.config/oasis/
+# but existing installs keep their config at the old path — without a
+# fallback the rename silently orphans a working setup (found
+# 2026-06-12: setup_status() showed every backend pathless although
+# ~/.config/open-fem-agent/sources.json was fully populated). Readers
+# fall back to the legacy path; writers always use the NEW path.
+_LEGACY_GLOBAL_CONFIG_PATH = (Path.home() / ".config" / "open-fem-agent"
+                              / "sources.json")
 _REPO_CONFIG_PATH = _REPO / ".oasis.json"
 _ENV_CONFIG_VAR = "OFA_SOURCE_CONFIG"
 _EXTRA_PATHS_VAR = "OFA_EXTRA_SOURCE_PATHS"
@@ -98,10 +107,16 @@ def load() -> SourceConfig:
 
     # Layer 1: built-in defaults — none (defaults live in source_discovery).
 
-    # Layer 2: global config
+    # Layer 2: global config (new path first, legacy pre-rebrand
+    # path as fallback so existing installs keep working)
     raw = _load_json(_GLOBAL_CONFIG_PATH)
     if raw:
         _merge_into(cfg, raw, f"global:{_GLOBAL_CONFIG_PATH}")
+    else:
+        raw = _load_json(_LEGACY_GLOBAL_CONFIG_PATH)
+        if raw:
+            _merge_into(cfg, raw,
+                        f"global-legacy:{_LEGACY_GLOBAL_CONFIG_PATH}")
 
     # Layer 3: repo config
     raw = _load_json(_REPO_CONFIG_PATH)
