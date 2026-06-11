@@ -616,12 +616,29 @@ class FourcBackend(SolverBackend):
             matched_poisson_input, matched_heat_input,
             matched_elasticity_input, matched_poisson_3d_input,
             matched_l_domain_poisson_input,
+            matched_heat_transient_input,
+            matched_elasticity_genalpha_input,
+            matched_elasticity_3d_nonlinear_input,
         )
         key = f"{physics}_{variant}"
+
+        def _elasticity(p):
+            return matched_elasticity_input(
+                nx=p.get("nx", 40), ny=p.get("ny", 4),
+                E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
+                lx=p.get("lx", 10.0), ly=p.get("ly", 1.0))
+
         inline_generators = {
             "poisson_2d": lambda p: matched_poisson_input(
                 nx=p.get("nx", 32), ny=p.get("ny", 32)),
             "poisson_poisson_2d": lambda p: matched_poisson_input(
+                nx=p.get("nx", 32), ny=p.get("ny", 32)),
+            # scalar_transport is the catalog umbrella for the same
+            # physics — route its concrete variants to the proven
+            # matched inputs instead of the placeholder generator
+            # templates (probe 2026-06-12: those abort in 4C's
+            # MatchTree with un-substituted <...> placeholders).
+            "scalar_transport_poisson_2d": lambda p: matched_poisson_input(
                 nx=p.get("nx", 32), ny=p.get("ny", 32)),
             "heat_2d": lambda p: matched_heat_input(
                 nx=p.get("nx", 32), ny=p.get("ny", 32),
@@ -633,14 +650,37 @@ class FourcBackend(SolverBackend):
                 nx=p.get("nx", 32), ny=p.get("ny", 32),
                 T_left=p.get("T_left", 100.0),
                 T_right=p.get("T_right", 0.0)),
-            "linear_elasticity_linear_2d": lambda p: matched_elasticity_input(
-                nx=p.get("nx", 40), ny=p.get("ny", 4),
-                E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
-                lx=p.get("lx", 10.0), ly=p.get("ly", 1.0)),
-            "linear_elasticity_2d": lambda p: matched_elasticity_input(
-                nx=p.get("nx", 40), ny=p.get("ny", 4),
-                E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
-                lx=p.get("lx", 10.0), ly=p.get("ly", 1.0)),
+            "scalar_transport_heat_transient_2d":
+                lambda p: matched_heat_transient_input(
+                    nx=p.get("nx", 16), ny=p.get("ny", 16),
+                    T_left=p.get("T_left", 100.0),
+                    T_right=p.get("T_right", 0.0),
+                    numstep=p.get("numstep", 10),
+                    timestep=p.get("timestep", 0.01)),
+            "heat_heat_transient_2d":
+                lambda p: matched_heat_transient_input(
+                    nx=p.get("nx", 16), ny=p.get("ny", 16),
+                    T_left=p.get("T_left", 100.0),
+                    T_right=p.get("T_right", 0.0),
+                    numstep=p.get("numstep", 10),
+                    timestep=p.get("timestep", 0.01)),
+            "linear_elasticity_linear_2d": _elasticity,
+            "linear_elasticity_2d": _elasticity,
+            # solid_mechanics is the structural umbrella physics;
+            # its linear_2d variant is the same cantilever the
+            # linear_elasticity row uses (probe 2026-06-12).
+            "solid_mechanics_linear_2d": _elasticity,
+            "solid_mechanics_nonlinear_3d":
+                lambda p: matched_elasticity_3d_nonlinear_input(
+                    n=p.get("n", 4),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3)),
+            "structural_dynamics_genalpha_2d":
+                lambda p: matched_elasticity_genalpha_input(
+                    nx=p.get("nx", 20), ny=p.get("ny", 4),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
+                    dens=p.get("dens", 1.0),
+                    numstep=p.get("numstep", 10),
+                    timestep=p.get("timestep", 0.05)),
             "poisson_3d": lambda p: matched_poisson_3d_input(n=p.get("n", 8)),
             "poisson_poisson_3d": lambda p: matched_poisson_3d_input(n=p.get("n", 8)),
             "poisson_l_domain": lambda p: matched_l_domain_poisson_input(

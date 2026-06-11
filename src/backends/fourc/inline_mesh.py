@@ -1055,3 +1055,242 @@ DESIGN SURF DIRICH CONDITIONS:
         yaml += f'  - "NODE {nid} DSURFACE 2"\n'
 
     return yaml
+
+
+def matched_heat_transient_input(nx: int = 16, ny: int = 16,
+                                 T_left: float = 100.0,
+                                 T_right: float = 0.0,
+                                 numstep: int = 10,
+                                 timestep: float = 0.01,
+                                 theta: float = 0.66) -> str:
+    """Transient heat conduction on [0,1]^2 with One-Step-Theta.
+
+    Same setup as matched_heat_input (T_left / T_right Dirichlet ends)
+    but integrates the parabolic problem for `numstep` steps from a
+    zero initial field, so the catalog's heat_transient_2d variant is
+    actually transient instead of routing to the stationary solve.
+    Small default mesh (16x16) keeps the run < 5 s.
+    """
+    mesh = generate_quad4_rectangle(nx, ny, element_section="TRANSPORT",
+                                     element_type="TRANSP QUAD4",
+                                     element_suffix="MAT 1 TYPE Std")
+
+    yaml = f'''TITLE:
+  - "Transient heat conduction — One-Step-Theta"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Scalar_Transport"
+SCALAR TRANSPORT DYNAMIC:
+  TIMEINTEGR: "One_Step_Theta"
+  THETA: {theta}
+  SOLVERTYPE: "linear_full"
+  VELOCITYFIELD: "zero"
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {numstep * timestep}
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "direct"
+MATERIALS:
+  - MAT: 1
+    MAT_scatra:
+      DIFFUSIVITY: 1.0
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_left}]
+    FUNCT: [0]
+  - E: 2
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_right}]
+    FUNCT: [0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'TRANSPORT ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in mesh["left_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    for nid in mesh["right_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 2"\n'
+
+    return yaml
+
+
+def matched_elasticity_genalpha_input(nx: int = 20, ny: int = 4,
+                                      E: float = 1000.0, nu: float = 0.3,
+                                      dens: float = 1.0,
+                                      numstep: int = 10,
+                                      timestep: float = 0.05,
+                                      lx: float = 10.0,
+                                      ly: float = 1.0) -> str:
+    """Transient cantilever under sudden tip-side body load, GenAlpha.
+
+    Same cantilever geometry as matched_elasticity_input, but
+    DYNAMICTYPE GenAlpha with non-zero density so the structural
+    inertia matters — the catalog's structural_dynamics/genalpha_2d
+    variant gets a real transient instead of the placeholder
+    template (which aborted in 4C's MatchTree, probe 2026-06-12).
+    """
+    mesh = generate_quad4_rectangle(nx, ny, lx=lx, ly=ly,
+                                     element_section="STRUCTURE",
+                                     element_type="SOLID QUAD4",
+                                     element_suffix="MAT 1 KINEM linear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
+
+    yaml = f'''TITLE:
+  - "Cantilever {lx}x{ly} transient — GenAlpha"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "GenAlpha"
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {numstep * timestep}
+  TOLDISP: 1e-8
+  TOLRES: 1e-8
+  MAXITER: 20
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "direct"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: {dens}
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+'''
+
+    yaml += 'DESIGN POINT DIRICH CONDITIONS:\n'
+    for i in range(len(mesh["left_nodes"])):
+        yaml += f'''  - E: {i+1}
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+'''
+
+    yaml += '''DESIGN SURF NEUMANN CONDITIONS:
+  - E: 1
+    NUMDOF: 6
+    ONOFF: [0, 1, 0, 0, 0, 0]
+    VAL: [0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0, 0, 0, 0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    yaml += 'DNODE-NODE TOPOLOGY:\n'
+    for i, nid in enumerate(mesh["left_nodes"]):
+        yaml += f'  - "NODE {nid} DNODE {i+1}"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in mesh["all_nodes"]:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+
+    return yaml
+
+
+def matched_elasticity_3d_nonlinear_input(n: int = 4,
+                                          E: float = 1000.0,
+                                          nu: float = 0.3,
+                                          load: float = -10.0) -> str:
+    """3D unit-cube compression, St. Venant-Kirchhoff, KINEM nonlinear.
+
+    Left face (x=0) fully fixed, right face (x=1) loaded in -y.
+    Small n^3 HEX8 mesh so the nonlinear Newton solve completes in
+    seconds. Gives the catalog's solid_mechanics/nonlinear_3d
+    variant a real finite-strain solve instead of the placeholder
+    template (probe 2026-06-12: MatchTree abort).
+    """
+    mesh = generate_hex8_cube(n, n, n,
+                              element_section="STRUCTURE",
+                              element_type="SOLID HEX8",
+                              element_suffix="MAT 1 KINEM nonlinear")
+
+    # Face node sets from the structured grid
+    grid = mesh["node_grid"]
+    left_face = sorted(nid for (i, j, k), nid in grid.items() if i == 0)
+    right_face = sorted(nid for (i, j, k), nid in grid.items() if i == n)
+
+    yaml = f'''TITLE:
+  - "3D cube nonlinear elasticity — finite strain"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1e-8
+  TOLRES: 1e-8
+  MAXITER: 20
+  LINEAR_SOLVER: 1
+  PREDICT: TangDis
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "direct"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: 0.0
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 6
+    ONOFF: [0, 1, 0, 0, 0, 0]
+    VAL: [0.0, {load}, 0.0, 0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0, 0, 0, 0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in left_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
