@@ -452,12 +452,39 @@ async def main():
     elapsed = time.time() - t_start
     print(f"\ntotal elapsed: {elapsed:.1f}s")
 
-    (results_dir / "templates.json").write_text(
-        json.dumps([asdict(r) for r in results], indent=2, default=str)
-    )
-    md = render_markdown(results)
+    # Merge with prior rows instead of clobbering: a per-backend run
+    # (--backend fourc) used to overwrite the WHOLE templates.json,
+    # silently destroying every other backend's most recent probe
+    # results (bitten twice 2026-06-12: a fourc run erased the dealii
+    # rows that had just taken 6.5 minutes to compile). Rows are keyed
+    # by (backend, key); rows re-probed in THIS run replace their old
+    # version, all other backends' rows survive.
+    json_path = results_dir / "templates.json"
+    new_rows = [asdict(r) for r in results]
+    merged: dict[tuple, dict] = {}
+    if json_path.exists():
+        try:
+            for row in json.loads(json_path.read_text()):
+                merged[(row.get("backend"), row.get("key"))] = row
+        except (json.JSONDecodeError, TypeError):
+            pass  # corrupt prior file — start fresh
+    for row in new_rows:
+        merged[(row["backend"], row["key"])] = row
+    all_rows = sorted(merged.values(),
+                      key=lambda r: (r["backend"], r["key"]))
+    json_path.write_text(json.dumps(all_rows, indent=2, default=str))
+    # Markdown table renders the full merged picture, not just this
+    # run's slice.
+    from dataclasses import fields as dc_fields
+    field_names = {f.name for f in dc_fields(Result)}
+    merged_results = [
+        Result(**{k: v for k, v in row.items() if k in field_names})
+        for row in all_rows
+    ]
+    md = render_markdown(merged_results)
     (results_dir / "templates.md").write_text(md)
-    print(f"JSON: {results_dir / 'templates.json'}")
+    print(f"JSON: {json_path}  ({len(new_rows)} probed this run, "
+          f"{len(all_rows)} total rows after merge)")
     print(f"  MD: {results_dir / 'templates.md'}")
 
     # ── final one-line summary
