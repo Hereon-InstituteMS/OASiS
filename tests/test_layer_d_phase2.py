@@ -96,6 +96,133 @@ def _extract_peak(kind: str, work_dir: Path, stdout_text: str) -> float:
     raise ValueError(kind)
 
 
+class TestLayerDPhase2Elasticity(unittest.TestCase):
+    """Cross-backend cantilever: resolution-ALIGNED templates agree.
+
+    Problem (the matched cantilever every backend's linear-elasticity
+    template parameterizes): [0,10]x[0,1] plane-strain beam, E=1000,
+    nu=0.3, fixed at x=0, unit downward surface load. Aligned params
+    nx=80, ny=8 (dealii: refinements=5 on the same geometry).
+
+    Observed 2026-06-12:
+        skfem   -13.6044605666   (Q1 80x8)
+        fourc   -13.6044605667   (SOLID QUAD4 80x8)
+        ngsolve -13.3708         (P1 tris — 1.7% softer mesh)
+        dealii  -13.2276         (410 DoFs — coarser, -2.8%)
+
+    Two assertion tiers:
+      * skfem vs fourc: SAME mesh, SAME element — agreement to 1e-6
+        relative. Two unrelated codebases (Python scipy assembly vs
+        4C C++) reproducing each other to 10 significant digits is
+        the strongest cross-code verification statement in this
+        suite; any constitutive/assembly drift in either template
+        breaks it instantly.
+      * all pairs: <= 4% (covers the legitimate P1-vs-Q1 and
+        coarseness differences of ngsolve / dealii defaults).
+
+    fenics is EXCLUDED deliberately: its 2d elasticity template is
+    plane STRESS (softer by ~(1-nu^2)) — a genuine cross-backend
+    semantic divergence users should know about; comparing it here
+    would mix problems.
+    """
+
+    PARAMS = {"nx": 80, "ny": 8, "E": 1000.0, "nu": 0.3,
+              "lx": 10.0, "ly": 1.0}
+    EL_CASES = [
+        ("skfem",   "linear_elasticity", "2d", "summary_uy", None),
+        ("ngsolve", "linear_elasticity", "2d", "summary_uy", None),
+        ("fourc",   "linear_elasticity", "linear_2d", "vtu_vec_uy", None),
+        ("dealii",  "linear_elasticity", "2d", "vtu_scalar:uy",
+         {"refinements": 5, "E": 1000.0, "nu": 0.3,
+          "lx": 10.0, "ly": 1.0}),
+    ]
+    REL_TOL_PAIRWISE = 0.04
+    REL_TOL_TWIN = 1e-6  # skfem vs fourc, identical discretization
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from core.registry import load_all_backends, get_backend
+        from core.backend import BackendStatus
+        load_all_backends()
+        cls.tips: dict[str, float] = {}
+        cls.skipped: dict[str, str] = {}
+        for be_name, physics, variant, kind, override in cls.EL_CASES:
+            b = get_backend(be_name)
+            if b is None:
+                cls.skipped[be_name] = "not registered"
+                continue
+            try:
+                status, detail = b.check_availability()
+                if status != BackendStatus.AVAILABLE:
+                    cls.skipped[be_name] = f"{status.name}: {detail}"
+                    continue
+                params = override if override is not None else cls.PARAMS
+                content = b.generate_input(physics, variant, dict(params))
+                wd = Path(tempfile.mkdtemp(prefix=f"layerd2el_{be_name}_"))
+                job = asyncio.run(b.run(content, wd, np=1, timeout=300))
+                rc = getattr(job, "return_code", None)
+                if rc != 0:
+                    cls.skipped[be_name] = f"run rc={rc}"
+                    continue
+                cls.tips[be_name] = cls._extract_tip(kind, wd)
+            except Exception as e:  # noqa: BLE001
+                cls.skipped[be_name] = f"{type(e).__name__}: {e}"
+
+    @staticmethod
+    def _extract_tip(kind: str, work_dir: Path) -> float:
+        if kind == "summary_uy":
+            summaries = sorted(work_dir.rglob("results_summary.json"))
+            assert summaries, f"no results_summary.json in {work_dir}"
+            return float(json.loads(summaries[-1].read_text())
+                         ["max_displacement_y"])
+        import meshio
+        vtus = sorted(p for p in work_dir.rglob("*.vtu")
+                      if "pvtu" not in p.name)
+        assert vtus, f"no .vtu in {work_dir}"
+        m = meshio.read(vtus[-1])
+        if kind.startswith("vtu_scalar:"):
+            field = kind.split(":", 1)[1]
+            return float(m.point_data[field].min())
+        if kind == "vtu_vec_uy":
+            for key, val in m.point_data.items():
+                if "displacement" in key.lower() and val.ndim == 2:
+                    return float(val[:, 1].min())
+            raise AssertionError(
+                f"no vector displacement field in {list(m.point_data)}")
+        raise ValueError(kind)
+
+    def test_quorum(self) -> None:
+        self.assertGreaterEqual(
+            len(self.tips), 3,
+            f"only {sorted(self.tips)}; skipped: {self.skipped}")
+
+    def test_twin_pair_identical_discretization(self) -> None:
+        """skfem and fourc share mesh AND element: 1e-6 agreement."""
+        if "skfem" not in self.tips or "fourc" not in self.tips:
+            self.skipTest(f"twin pair unavailable: {self.skipped}")
+        a, b = self.tips["skfem"], self.tips["fourc"]
+        rel = abs(a - b) / max(abs(a), abs(b))
+        self.assertLess(
+            rel, self.REL_TOL_TWIN,
+            f"skfem={a!r} vs fourc={b!r} differ {rel:.2e} on an "
+            f"IDENTICAL discretization — one of the two cantilever "
+            f"templates changed its physics (constitutive law, BC, "
+            f"load, or plane assumption).")
+
+    def test_pairwise_agreement(self) -> None:
+        if len(self.tips) < 2:
+            self.skipTest("need >=2 backends")
+        items = sorted(self.tips.items())
+        for i, (be_a, ta) in enumerate(items):
+            for be_b, tb in items[i + 1:]:
+                with self.subTest(pair=f"{be_a} vs {be_b}"):
+                    rel = abs(ta - tb) / max(abs(ta), abs(tb))
+                    self.assertLess(
+                        rel, self.REL_TOL_PAIRWISE,
+                        f"{be_a}={ta:.4f} vs {be_b}={tb:.4f} "
+                        f"diverge {rel:.2%}.")
+
+
 class TestLayerDPhase2CatalogConsistency(unittest.TestCase):
     """All available backends agree on the canonical Poisson peak."""
 
