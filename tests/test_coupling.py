@@ -361,6 +361,27 @@ class TestCoupledSolveIntegration:
         ))
         assert "Converged" in result, f"FEniCS↔FEniCS Poisson did not converge:\n{result}"
 
+    def test_ngsolve_ngsolve_poisson_dd(self, setup_backends):
+        """NGSolve↔NGSolve Poisson DD — pins the NGSolve subdomain generator
+        (missing return, wrong Dirichlet flags, broken vertex iteration,
+        interface_data.json schema)."""
+        from tools.coupling import _poisson_domain_decomposition
+        from core.registry import get_backend
+
+        ngsolve = get_backend("ngsolve")
+        if not ngsolve:
+            pytest.skip("NGSolve required")
+        status, _ = ngsolve.check_availability()
+        if status.value != "available":
+            pytest.skip("NGSolve not available")
+
+        result = _run_async(_poisson_domain_decomposition(
+            ngsolve, ngsolve, nx=8, ny=8,
+            max_iter=40, tol=1e-5, relaxation=0.5,
+            params={"source": 1.0},
+        ))
+        assert "Converged" in result, f"NGSolve↔NGSolve Poisson did not converge:\n{result}"
+
     def test_oneway_tsi(self, setup_backends):
         """One-way TSI: FEniCS thermal → 4C structural via native TSI."""
         from tools.coupling import _oneway_thermal_structural

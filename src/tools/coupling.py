@@ -466,30 +466,43 @@ def _ngsolve_heat_subdomain_script(
 ) -> str:
     """Generate NGSolve script for a subdomain heat/Poisson problem."""
     iface_x = x_max if interface_side == "right" else x_min
-    neumann_x = x_min if neumann_side == "left" else x_max
 
+    # Dirichlet flags: ONLY the boundaries actually constrained.
+    # (top/bottom must stay natural to match the FEniCS subdomain scripts.)
+    dir_parts = []
+    if T_left is not None:
+        dir_parts.append("left")
+    if T_right is not None:
+        dir_parts.append("right")
+    if T_interface is not None and interface_side not in dir_parts:
+        dir_parts.append(interface_side)
+    dirichlet_flags = "|".join(dir_parts)
+
+    # Set Dirichlet values by direct vertex-dof assignment (order-1 H1:
+    # dof i corresponds to vertex i). gfu.Set(definedon=...) zeroes all
+    # other dofs, so consecutive Set calls would wipe earlier BCs.
     bc_lines = []
     if T_left is not None:
-        bc_lines.append(f'gfu.Set({T_left}, definedon=mesh.Boundaries("left"))')
+        bc_lines.append(f"""
+for _i, _v in enumerate(mesh.vertices):
+    if abs(_v.point[0] - {x_min}) < 1e-10:
+        gfu.vec[_i] = {T_left}""")
     if T_right is not None:
-        bc_lines.append(f'gfu.Set({T_right}, definedon=mesh.Boundaries("right"))')
+        bc_lines.append(f"""
+for _i, _v in enumerate(mesh.vertices):
+    if abs(_v.point[0] - {x_max}) < 1e-10:
+        gfu.vec[_i] = {T_right}""")
 
     iface_bc = ""
     if T_interface is not None:
         y_vals = np.linspace(y_min, y_max, ny + 1).tolist()
         iface_bc = f"""
-# Interface Dirichlet BC
-_iface_y = {repr(y_vals)}
-_iface_T = {repr(T_interface)}
-from scipy.interpolate import interp1d
-_ifunc = interp1d(_iface_y, _iface_T, fill_value='extrapolate')
-gfu.Set(CoefficientFunction(0), definedon=mesh.Boundaries("{interface_side}"))
-# Manual DOF setting at interface
-_coords = np.array([mesh.vertices[v].point for v in mesh.vertices])
-for i in range(len(_coords)):
-    _x, _y = _coords[i][0], _coords[i][1]
-    if abs(_x - {iface_x}) < 1e-10:
-        gfu.vec[i] = float(_ifunc(_y))
+# Interface Dirichlet BC (from coupled solver)
+_iface_y = np.array({repr(y_vals)})
+_iface_T = np.array({repr(list(T_interface))})
+for _i, _v in enumerate(mesh.vertices):
+    if abs(_v.point[0] - {iface_x}) < 1e-10:
+        gfu.vec[_i] = float(np.interp(_v.point[1], _iface_y, _iface_T))
 """
 
     neumann_code = ""
@@ -502,18 +515,17 @@ f += {neumann_flux} * v * ds(definedon=mesh.Boundaries("{neumann_side}"))
     flux_code = ""
     if compute_flux:
         flux_code = f"""
-# Compute interface flux via finite difference
+# Compute interface flux q = -k * dT/dn via one-sided finite difference
 import json as _json
 _iface_nodes = []
-for v_id in mesh.vertices:
-    pt = mesh.vertices[v_id].point
-    if abs(pt[0] - {iface_x}) < 1e-10:
-        _iface_nodes.append((pt[1], float(gfu(mesh({iface_x}, pt[1])))))
+for _v in mesh.vertices:
+    _pt = _v.point
+    if abs(_pt[0] - {iface_x}) < 1e-10:
+        _iface_nodes.append((_pt[1], float(gfu(mesh({iface_x}, _pt[1])))))
 _iface_nodes.sort()
 _iy = [p[0] for p in _iface_nodes]
 _iT = [p[1] for p in _iface_nodes]
 
-# Flux: q = -k * dT/dn
 _flux = []
 _sign = {"1.0" if interface_side == "right" else "-1.0"}
 _h = ({x_max} - {x_min}) / {nx}
@@ -523,10 +535,16 @@ for _yi, _Ti in zip(_iy, _iT):
     _q = -{conductivity} * (_Ti - _Tnear) / (_sign * _h)
     _flux.append(_q)
 
-_data = {{"coordinates": _iy, "values": _iT, "normal_fluxes": _flux}}
+_data = {{
+    "field_name": "temperature",
+    "n_points": len(_iy),
+    "coordinates": [[{iface_x}, _yi, 0.0] for _yi in _iy],
+    "values": _iT,
+    "normal_fluxes": _flux,
+}}
 with open("interface_data.json", "w") as _fout:
-    _json.dump(_data, _fout)
-print(f"Interface flux: mean={{np.mean(_flux):.6f}}")
+    _json.dump(_data, _fout, indent=2)
+print(f"Interface flux: {{len(_iy)}} nodes, mean={{np.mean(_flux):.6f}}")
 """
 
     # Build script via string concatenation to avoid f-string nesting issues
@@ -543,7 +561,7 @@ geo.AddRectangle(({x_min}, {y_min}), ({x_max}, {y_max}),
                  bcs=["bottom", "right", "top", "left"])
 mesh = Mesh(geo.GenerateMesh(maxh={maxh:.6f}))
 
-V = H1(mesh, order=1, dirichlet="left|right|top|bottom")
+V = H1(mesh, order=1, dirichlet="{dirichlet_flags}")
 u, v = V.TnT()
 a = BilinearForm({conductivity} * grad(u) * grad(v) * dx).Assemble()
 f = LinearForm({source} * v * dx)
@@ -556,12 +574,15 @@ gfu = GridFunction(V)
 
 r = f.vec.CreateVector()
 r.data = f.vec - a.mat * gfu.vec
-for name in ["pardiso", "mumps", "umfpack"]:
+inv = None
+for name in ["pardiso", "umfpack", "sparsecholesky", "mumps"]:
     try:
         inv = a.mat.Inverse(V.FreeDofs(), name)
         break
-    except:
+    except Exception:
         pass
+if inv is None:
+    raise RuntimeError("No sparse direct solver available in NGSolve")
 gfu.vec.data += inv * r
 
 {flux_code}
@@ -575,6 +596,7 @@ T = np.array([float(gfu(mesh(x, y)))
 print(f"Subdomain [{x_min},{x_max}]: min(T)={{T.min():.6f}}, max(T)={{T.max():.6f}}")
 print(f"DOFs: {{V.ndof}}")
 '''
+    return script
 
 
 def _skfem_heat_subdomain_script(
