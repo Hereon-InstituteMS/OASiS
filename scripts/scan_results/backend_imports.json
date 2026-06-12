@@ -5,14 +5,39 @@
     "core_importable": true,
     "core_error": "",
     "available_apps": [
+      "CoSimulationApplication",
+      "CompressiblePotentialFlowApplication",
       "ConstitutiveLawsApplication",
+      "ContactStructuralMechanicsApplication",
+      "ConvectionDiffusionApplication",
       "DEMApplication",
       "FluidDynamicsApplication",
+      "GeoMechanicsApplication",
+      "IgaApplication",
       "MPMApplication",
       "MappingApplication",
+      "OptimizationApplication",
+      "RANSApplication",
+      "ShallowWaterApplication",
       "StructuralMechanicsApplication"
     ],
     "physics_available": [
+      {
+        "physics": "compressible_flow",
+        "app": "CompressiblePotentialFlowApplication"
+      },
+      {
+        "physics": "compressible_potential",
+        "app": "CompressiblePotentialFlowApplication"
+      },
+      {
+        "physics": "contact",
+        "app": "ContactStructuralMechanicsApplication"
+      },
+      {
+        "physics": "cosimulation",
+        "app": "CoSimulationApplication"
+      },
       {
         "physics": "dem",
         "app": "DEMApplication"
@@ -42,6 +67,22 @@
         "app": "MappingApplication"
       },
       {
+        "physics": "geomechanics",
+        "app": "GeoMechanicsApplication"
+      },
+      {
+        "physics": "heat",
+        "app": "ConvectionDiffusionApplication"
+      },
+      {
+        "physics": "heat_transient",
+        "app": "ConvectionDiffusionApplication"
+      },
+      {
+        "physics": "iga",
+        "app": "IgaApplication"
+      },
+      {
         "physics": "linear_elasticity",
         "app": "StructuralMechanicsApplication"
       },
@@ -50,8 +91,24 @@
         "app": "MPMApplication"
       },
       {
+        "physics": "optimization",
+        "app": "OptimizationApplication"
+      },
+      {
         "physics": "plasticity",
         "app": "ConstitutiveLawsApplication"
+      },
+      {
+        "physics": "poromechanics",
+        "app": "GeoMechanicsApplication"
+      },
+      {
+        "physics": "rans",
+        "app": "RANSApplication"
+      },
+      {
+        "physics": "shallow_water",
+        "app": "ShallowWaterApplication"
       },
       {
         "physics": "structural_dynamics",
@@ -76,44 +133,8 @@
         "app": "ChimeraApplication"
       },
       {
-        "physics": "compressible_flow",
-        "app": "CompressiblePotentialFlowApplication"
-      },
-      {
-        "physics": "compressible_potential",
-        "app": "CompressiblePotentialFlowApplication"
-      },
-      {
-        "physics": "contact",
-        "app": "ContactStructuralMechanicsApplication"
-      },
-      {
-        "physics": "cosimulation",
-        "app": "CoSimulationApplication"
-      },
-      {
         "physics": "fem_to_dem",
         "app": "FemToDemApplication"
-      },
-      {
-        "physics": "geomechanics",
-        "app": "GeoMechanicsApplication"
-      },
-      {
-        "physics": "heat",
-        "app": "ConvectionDiffusionApplication"
-      },
-      {
-        "physics": "heat_transient",
-        "app": "ConvectionDiffusionApplication"
-      },
-      {
-        "physics": "iga",
-        "app": "IgaApplication"
-      },
-      {
-        "physics": "optimization",
-        "app": "OptimizationApplication"
       },
       {
         "physics": "pfem",
@@ -124,20 +145,8 @@
         "app": "PfemFluidDynamicsApplication"
       },
       {
-        "physics": "poromechanics",
-        "app": "GeoMechanicsApplication"
-      },
-      {
-        "physics": "rans",
-        "app": "RANSApplication"
-      },
-      {
         "physics": "rom",
         "app": "RomApplication"
-      },
-      {
-        "physics": "shallow_water",
-        "app": "ShallowWaterApplication"
       },
       {
         "physics": "shape_optimization",
@@ -186,8 +195,8 @@
     "error": ""
   },
   "summary": {
-    "kratos_physics_available": 14,
-    "kratos_physics_unreachable": 19,
+    "kratos_physics_available": 26,
+    "kratos_physics_unreachable": 7,
     "skfem_importable": true,
     "ngsolve_importable": true,
     "fenics_importable": true,

@@ -1356,12 +1356,14 @@
     "catalog_topics": [
       "adaptive_poisson",
       "biharmonic",
+      "contact",
       "convection_diffusion",
       "dg_methods",
       "eigenvalue",
       "heat",
       "heat_transient",
       "helmholtz",
+      "hydraulic_resistance",
       "hyperelasticity",
       "linear_elasticity",
       "mixed_poisson",
@@ -1376,9 +1378,7 @@
       "wave"
     ],
     "gap_upstream_not_in_catalog": [
-      "contact",
       "curved_elements",
-      "hydraulic_resistance",
       "mixed_methods",
       "operator_splitting",
       "p2_meshes",
@@ -1394,7 +1394,7 @@
       "reaction_diffusion",
       "time_dependent"
     ],
-    "coverage_pct": 59.3
+    "coverage_pct": 66.7
   },
   "kratos": {
     "demo_dirs": [],

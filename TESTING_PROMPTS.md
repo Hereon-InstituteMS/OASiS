@@ -135,7 +135,9 @@ Honesty constraint: if a pair cannot work (e.g. an output format the field-trans
 
 Each run commits + pushes on `layer-a/kratos-source-scanner` and leaves a `REPORT.md`/`FINDINGS.md` in its scratch directory. Come back to the main session and we synthesize: probe scores before/after, which catalog claims changed, and what flows into the next release (v1.2.0 with the full catalog).
 
-## Current baseline (2026-06-12, for before/after comparison)
+## Baseline history
+
+### 2026-06-12 morning (when these runs were written)
 
 | metric | value |
 |---|---|
@@ -148,3 +150,19 @@ Each run commits + pushes on `layer-a/kratos-source-scanner` and leaves a `REPOR
 | Template probe: fourc | 9/46 run (→ Run 2) |
 | setup_backend status | 6/8 backends available (dune, febio missing → Run 1) |
 | Coupling pairs validated | 8/20 (→ Run 5) |
+
+### 2026-06-12 evening (after Runs 1-3 + main-session batches)
+
+| metric | value | delta |
+|---|---|---|
+| Test sweep | 515+ passed / 0 failed | +101 tests |
+| Template probe: skfem | 25/25 run | — |
+| Template probe: ngsolve | 29/29 run | — |
+| Template probe: fenics | 35/35 run | — |
+| Template probe: kratos | 7 real solves replaced import-stubs (Run 3) | ✓ |
+| Template probe: dealii | **38/39 run** (39th = parallel_poisson, impossible on conda builds by design, clean #error) | +9 |
+| Template probe: fourc | **25/46 run + 21 honest stubs** (Run 2 + main session) | +16 routed |
+| setup_backend | shipped + Run-1 honesty fixes (no fabricated verifies) | NEW |
+| Layer D phase 2 | 5-backend Poisson + 4-backend cantilever consistency gates; skfem↔4C twin pair pinned at 1e-6 (observed 1e-10) | NEW |
+| Coupling pairs validated | 8/20 (Run 5 still pending) | — |
+| Runs still open | Run 4 (macOS), Run 5 (coupling) | |
