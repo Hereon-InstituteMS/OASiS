@@ -19,6 +19,34 @@ _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
 FOURC_ROOT = Path(os.environ.get("FOURC_ROOT", ""))
 _jobs: dict = {}
 
+# HOE ablation toggle (MCP_NO_PITFALL_DB condition): when set, every
+# knowledge surface strips pitfall-DB content so the agent operates as
+# if the component were absent. "Pitfall DB" covers, in spirit:
+#   - per-backend pitfall lists (incl. their Signal: failure anchors)
+#   - general input-format pitfalls
+#   - post-mortem records (the Signal-retrieval audit trail)
+#   - the cross-backend collation catalog (backends/_cross.py)
+# Off by default; never affects normal MCP usage.
+_ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
+
+_PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
+                 "general_pitfalls", "common_pitfalls")
+
+
+def _strip_pitfalls(obj):
+    """Recursively remove pitfall-DB keys from nested dicts/lists.
+
+    No-op when _ABLATE_PITFALLS is False.
+    """
+    if not _ABLATE_PITFALLS:
+        return obj
+    if isinstance(obj, dict):
+        return {k: _strip_pitfalls(v) for k, v in obj.items()
+                if k not in _PITFALL_KEYS}
+    if isinstance(obj, list):
+        return [_strip_pitfalls(x) for x in obj]
+    return obj
+
 
 async def _run_with_progress(ctx: Context, coro, message_prefix: str = "Running"):
     """Run a coroutine while sending periodic MCP progress keepalives.
@@ -735,6 +763,7 @@ def register_consolidated_tools(mcp: FastMCP):
             k = backend.get_knowledge(physics)
             if not k:
                 return f"No knowledge for '{physics}' in {solver}"
+            k = _strip_pitfalls(k)
             result = json.dumps(k, indent=2, default=str)
             # Append real test file references
             from tools.knowledge import _find_reference_test_files
@@ -755,7 +784,8 @@ def register_consolidated_tools(mcp: FastMCP):
             # it has a Signal: to match. Agent can fetch the full
             # record explicitly via
             # `knowledge(topic="postmortems", solver=..., signal=...)`.
-            postmortems = _load_matching_postmortems(solver, physics, "")
+            postmortems = ([] if _ABLATE_PITFALLS
+                           else _load_matching_postmortems(solver, physics, ""))
             if postmortems:
                 breadcrumbs = [
                     {"id": pm.get("id", "?"),
@@ -774,6 +804,10 @@ def register_consolidated_tools(mcp: FastMCP):
             return result
 
         elif topic == "postmortems":
+            if _ABLATE_PITFALLS:
+                return ("No post-mortems found. data/postmortems/*.json is "
+                        "the canonical store; absence here means the failure "
+                        "mode has not yet been audited.")
             postmortems = _load_matching_postmortems(solver, physics, signal)
             if not postmortems:
                 what = ", ".join(
@@ -788,6 +822,10 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps(postmortems, indent=2)
 
         elif topic == "pitfalls" and solver:
+            # Ablation: when OFA_DISABLE_PITFALLS=1, refuse to surface
+            # pitfalls so the agent has no shortcut to known-bug knowledge.
+            if _ABLATE_PITFALLS:
+                return f"No pitfalls available for {solver}"
             # Backend is the source of truth for pitfalls (Table-1
             # promoted, post-execution-critic-actionable). The
             # deep_knowledge fallback was inverted historically —
@@ -1013,6 +1051,8 @@ def register_consolidated_tools(mcp: FastMCP):
             # for content + rationale. The `physics` arg here is
             # repurposed as a topic filter (e.g. 'units', 'mesh',
             # 'bc', 'restart', 'mpi') to narrow the response.
+            if _ABLATE_PITFALLS:
+                return "No cross-backend collation entries available."
             from backends._cross import get_cross_backend_pitfalls
             result = get_cross_backend_pitfalls(physics or signal or None)
             return json.dumps(result, indent=2)
@@ -1908,7 +1948,7 @@ def register_consolidated_tools(mcp: FastMCP):
         # to the LLM client; every Layer F fix landed but never
         # reached the prepare_simulation surface that's meant to
         # teach the agent.
-        k = backend.get_knowledge(matched_physics)
+        k = _strip_pitfalls(backend.get_knowledge(matched_physics))
         if k:
             pitfalls_separate = None
             json_payload = k
@@ -1939,7 +1979,7 @@ def register_consolidated_tools(mcp: FastMCP):
 
         # 1b. General input-format pitfalls (ExodusII IDs, FUNCT syntax, etc.)
         # These apply to ALL physics in this solver, not just the current one
-        general_k = backend.get_knowledge("input_format")
+        general_k = _strip_pitfalls(backend.get_knowledge("input_format"))
         if isinstance(general_k, dict):
             gp = general_k.get("general_pitfalls")
             if gp:
