@@ -1294,3 +1294,466 @@ DESIGN SURF NEUMANN CONDITIONS:
         yaml += f'  - "NODE {nid} DSURFACE 2"\n'
 
     return yaml
+
+
+def matched_ale_2d_input(nx: int = 16, ny: int = 16,
+                         E: float = 1.0, nu: float = 0.3,
+                         dens: float = 1.0,
+                         numstep: int = 10,
+                         timestep: float = 0.001,
+                         shear: float = 0.25) -> str:
+    """Pure 2D ALE mesh motion on [0,1]² (catalog row ale/ale_2d).
+
+    Bottom edge fixed, top edge sheared in x by a time-ramp FUNCT
+    (reaches `shear` at MAXTIME); interior follows the
+    laplace_material mesh-motion PDE. Mirrors the self-contained
+    ale2d_laplace_*.4C.yaml regression inputs (ALE2 QUAD4 elements,
+    MAT_Struct_StVenantKirchhoff pseudo-material, UMFPACK) but with
+    an inline structured grid and DLINE boundary conditions instead
+    of the two-element point-condition setup. Small default mesh
+    keeps the run well under 30 s.
+    """
+    mesh = generate_quad4_rectangle(nx, ny, element_section="ALE",
+                                     element_type="ALE2 QUAD4",
+                                     element_suffix="MAT 1")
+    maxtime = f"{numstep * timestep:g}"
+
+    yaml = f'''TITLE:
+  - "2D ALE mesh motion (laplace_material) — sheared top edge"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Ale"
+ALE DYNAMIC:
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime}
+  ALE_TYPE: laplace_material
+  RESULTSEVERY: 1
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: {dens}
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t/{maxtime}"
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 2
+    ONOFF: [1, 1]
+    VAL: [0.0, 0.0]
+    FUNCT: [0, 0]
+  - E: 2
+    NUMDOF: 2
+    ONOFF: [1, 1]
+    VAL: [{shear}, 0.0]
+    FUNCT: [1, 0]
+'''
+
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in mesh["bottom_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    for nid in mesh["top_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 2"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'ALE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_level_set_advection_input(nx: int = 16, ny: int = 16,
+                                      numstep: int = 10,
+                                      timestep: float = 0.01,
+                                      radius: float = 0.25) -> str:
+    """Level-set advection on [0,1]²: signed-distance circle
+    phi0 = sqrt((x-0.5)^2+(y-0.5)^2) - radius advected by a rigid
+    rotation velocity field about the domain center.
+
+    Uses PROBLEMTYPE Level_Set with TRANSP HEX8 / TYPE Ls elements on a
+    one-element-thick pseudo-2D layer, following the corpus pattern
+    (levelset_gaussian_hill_pbc, levelset_zalesaks_disc_*): LEVEL-SET
+    CONTROL time loop, VELOCITYFIELD "function" + VELFUNCNO,
+    INITIALFIELD field_by_function, MAT_scatra with zero diffusivity.
+    HEX8 (not QUAD4) is required: 4C's level-set zero-isosurface
+    capture (4C_levelset_intersection_utils.cpp) only supports
+    hex8/hex20/hex27 cells and aborts on QUAD4.
+
+    The signed-distance field is shifted by +1.0 so it has no zero
+    crossing inside the domain: builds without Qhull abort in
+    Cut::TetMesh::call_q_hull when the zero isosurface cuts a hex.
+    The corpus uses the identical workaround (levelset_gaussian_hill
+    title: "shifted by +1.0 not to run into cut troubles"). The
+    circular interface is thus the phi = 1 isoline; the advection
+    dynamics are unchanged.
+    """
+    nx = max(2, min(int(nx), 32))
+    ny = max(2, min(int(ny), 32))
+    numstep = max(1, int(numstep))
+    timestep = float(timestep)
+    radius = float(radius)
+    maxtime = numstep * timestep
+
+    mesh = generate_hex8_cube(nx, ny, 1, lz=1.0 / nx,
+                              element_section="TRANSPORT",
+                              element_type="TRANSP HEX8",
+                              element_suffix="MAT 1 TYPE Ls")
+
+    yaml = f'''TITLE:
+  - "Level-set advection on [0,1]² — signed-distance circle in rigid rotation"
+PROBLEM TYPE:
+  PROBLEMTYPE: "Level_Set"
+LEVEL-SET CONTROL:
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep}
+  MAXTIME: {maxtime}
+SCALAR TRANSPORT DYNAMIC:
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep}
+  MAXTIME: {maxtime}
+  MATID: 1
+  VELOCITYFIELD: "function"
+  VELFUNCNO: 1
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 2
+  LINEAR_SOLVER: 1
+SCALAR TRANSPORT DYNAMIC/STABILIZATION:
+  DEFINITION_TAU: "Taylor_Hughes_Zarins"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Sca_Tra_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_scatra:
+      DIFFUSIVITY: 0.0
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "-(y-0.5)"
+  - COMPONENT: 1
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "(x-0.5)"
+  - COMPONENT: 2
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+FUNCT2:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "sqrt((x-0.5)^2+(y-0.5)^2)-{radius}+1.0"
+DESIGN SURF DIRICH CONDITIONS: []
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'TRANSPORT ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in mesh["all_nodes"]:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+
+    return yaml
+
+def matched_nernst_planck_3d_input(n: int = 4,
+                                   c_left: float = 2.0, c_right: float = 1.0,
+                                   d_cation: float = 2.0, d_anion: float = 1.0,
+                                   numstep: int = 10, timestep: float = 0.001) -> str:
+    """Nernst-Planck binary electrolyte on [0,1]³ (4C Electrochemistry).
+
+    Two ionic species (MAT_ion, valences +1/-1) plus electric potential
+    closed by the electroneutrality condition (ELCH CONTROL EQUPOT "ENC",
+    element TYPE ElchNP — syntax matched to the 4C regression corpus,
+    e.g. elch_Kwok_Wu_BDF2.4C.yaml). The cation concentration is fixed on
+    the x=0 / x=1 faces (c_left / c_right); the anion follows from the
+    ENC constraint there. Pinning BOTH species would make the nodal ENC
+    row (the potential dof's equation, z1*c1 + z2*c2 = 0) an exact linear
+    combination of the two Dirichlet identity rows — a singular Jacobian
+    (first Newton update explodes). All other faces are insulated, and
+    the potential is grounded at a single corner node (required gauge
+    fixing for the ENC formulation). Unequal diffusivities
+    establish a liquid-junction potential. The initial field is the linear
+    electroneutral profile c = c_left + (c_right - c_left)*x, phi = 0.
+    TEMPERATURE 11604.506 K makes F/(R*T) = 1 (corpus convention).
+    Transient one-step-theta with nonlinear solver, a few fast steps.
+    """
+    mesh = generate_hex8_cube(n, n, n, element_section="TRANSPORT",
+                              element_type="TRANSP HEX8",
+                              element_suffix="MAT 3 TYPE ElchNP")
+    ng = mesh["node_grid"]
+    left_face = sorted(ng[(0, j, k)] for j in range(n + 1) for k in range(n + 1))
+    right_face = sorted(ng[(n, j, k)] for j in range(n + 1) for k in range(n + 1))
+    maxtime = numstep * timestep
+
+    yaml = f'''TITLE:
+  - "Nernst-Planck binary electrolyte on [0,1]³ — inline-mesh benchmark"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Electrochemistry"
+SCALAR TRANSPORT DYNAMIC:
+  SOLVERTYPE: "nonlinear"
+  TIMEINTEGR: "One_Step_Theta"
+  THETA: 1.0
+  MAXTIME: {maxtime}
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep}
+  MATID: 3
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 1
+  LINEAR_SOLVER: 1
+SCALAR TRANSPORT DYNAMIC/NONLINEAR:
+  ITEMAX: 20
+  CONVTOL: 1e-08
+SCALAR TRANSPORT DYNAMIC/STABILIZATION:
+  STABTYPE: "no_stabilization"
+ELCH CONTROL:
+  TEMPERATURE: 11604.506
+  EQUPOT: "ENC"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Sca_Tra_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_ion:
+      DIFFUSIVITY: {d_cation}
+      VALENCE: 1
+  - MAT: 2
+    MAT_ion:
+      DIFFUSIVITY: {d_anion}
+      VALENCE: -1
+  - MAT: 3
+    MAT_matlist:
+      LOCAL: false
+      NUMMAT: 2
+      MATIDS: [1, 2]
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{c_left}+({c_right}-{c_left})*x"
+  - COMPONENT: 1
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{c_left}+({c_right}-{c_left})*x"
+  - COMPONENT: 2
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+DESIGN POINT DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 0, 0]
+    VAL: [{c_left}, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [1, 0, 0]
+    VAL: [{c_right}, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'TRANSPORT ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    # Potential ground at one corner node (on the x=0 face)
+    yaml += 'DNODE-NODE TOPOLOGY:\n'
+    yaml += f'  - "NODE {ng[(0, 0, 0)]} DNODE 1"\n'
+
+    # Concentration Dirichlet faces: x=0 -> DSURFACE 1, x=1 -> DSURFACE 2
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in left_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
+
+
+def matched_low_mach_heated_channel_input(
+    nx: int = 32, ny: int = 8,
+    lx: float = 4.0, ly: float = 1.0,
+    u_max: float = 0.3,
+    T_in: float = 293.0, T_wall: float = 350.0,
+    numstep: int = 5, timestep: float = 0.1,
+) -> str:
+    """Low-Mach variable-density 2D heated channel (PROBLEMTYPE
+    Low_Mach_Number_Flow).
+
+    Channel [0,lx]x[0,ly]: parabolic inlet velocity (peak u_max) with
+    cold inlet temperature T_in, heated bottom wall (thermal Dirichlet
+    T_wall, inlet corner excluded), no-slip top/bottom walls, natural
+    outflow at x=lx. FLUID QUAD4 elements with MAT_sutherland; the
+    temperature equation runs on a TRANSP discretization cloned via
+    CLONING MATERIAL MAP — section combination mirrors the working
+    corpus case loma_2d_heated_chan_30x100.4C.yaml, with Belos/MueLu
+    solvers replaced by self-contained UMFPACK (no XML files).
+
+    Replaces the placeholder low_mach generator template (probe
+    2026-06-12: literal <...> scalars + external Exodus mesh ->
+    MatchTree abort).
+
+    VTU note: 4C's fluid runtime writer packs nodal dofs assuming 3D
+    (3 velocity dofs + pressure 4th), so for this 2D case the
+    "velocity" point array carries (vx, vy, p) — the pressure rides in
+    the z-component. A standalone PRESSURE array would be all-NaN in
+    2D, so it is not requested.
+    """
+    mesh = generate_quad4_rectangle(
+        nx, ny, lx, ly,
+        element_section="FLUID",
+        element_type="FLUID QUAD4",
+        element_suffix="MAT 1 NA Euler",
+    )
+
+    # Parabolic profile vanishing at both walls so the inlet velocity
+    # Dirichlet is consistent with no-slip at the shared corner nodes.
+    profile = f"{4.0 * u_max / (ly * ly):.10g}*y*({ly:.10g}-y)"
+    maxtime = numstep * timestep
+
+    yaml = f'''TITLE:
+  - "Low-Mach 2D heated channel {nx}x{ny} — self-contained inline mesh"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Low_Mach_Number_Flow"
+FLUID DYNAMIC:
+  PHYSICAL_TYPE: "Loma"
+  LINEAR_SOLVER: 1
+  TIMEINTEGR: "Af_Gen_Alpha"
+  INITIALFIELD: "field_by_function"
+  STARTFUNCNO: 2
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep}
+  MAXTIME: {maxtime}
+  ITEMAX: 10
+  ALPHA_M: 0.83333333333333
+  ALPHA_F: 0.66666666666666
+  GAMMA: 0.66666666666666
+FLUID DYNAMIC/NONLINEAR SOLVER TOLERANCES:
+  TOL_VEL_RES: 1e-06
+  TOL_VEL_INC: 1e-06
+  TOL_PRES_RES: 1e-06
+  TOL_PRES_INC: 1e-06
+SCALAR TRANSPORT DYNAMIC:
+  SOLVERTYPE: "nonlinear"
+  TIMEINTEGR: "Gen_Alpha"
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep}
+  MAXTIME: {maxtime}
+  ALPHA_M: 0.83333333333333
+  ALPHA_F: 0.66666666666666
+  GAMMA: 0.66666666666666
+  MATID: 1
+  VELOCITYFIELD: "Navier_Stokes"
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 3
+  LINEAR_SOLVER: 2
+SCALAR TRANSPORT DYNAMIC/NONLINEAR:
+  ITEMAX: 10
+  CONVTOL: 1e-06
+LOMA CONTROL:
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep}
+  MAXTIME: {maxtime}
+  ITEMAX: 1
+  CONVTOL: 0.0001
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Fluid_Solver"
+SOLVER 2:
+  SOLVER: "UMFPACK"
+  NAME: "Sca_Tra_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_sutherland:
+      REFVISC: 0.01178
+      REFTEMP: 293
+      SUTHTEMP: 110.4
+      SHC: 1004.5
+      PRANUM: 1
+      THERMPRESS: 98100
+      GASCON: 287
+CLONING MATERIAL MAP:
+  - SRC_FIELD: "fluid"
+    SRC_MAT: 1
+    TAR_FIELD: "scatra"
+    TAR_MAT: 1
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{profile}"
+FUNCT2:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{profile}"
+  - COMPONENT: 1
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+  - COMPONENT: 2
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+FUNCT3:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{T_in:.10g}"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/FLUID:
+  OUTPUT_FLUID: true
+  VELOCITY: true
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 3
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [1, 0, 0]
+    FUNCT: [1, 0, 0]
+DESIGN LINE TRANSPORT DIRICH CONDITIONS:
+  - E: 3
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_in:.10g}]
+    FUNCT: [0]
+  - E: 4
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_wall:.10g}]
+    FUNCT: [0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'FLUID ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    # DLINE 1 = bottom wall (no-slip), DLINE 2 = top wall (no-slip),
+    # DLINE 3 = inlet (x=0), DLINE 4 = heated part of bottom wall
+    # (inlet corner excluded so the cold-inlet and hot-wall thermal
+    # Dirichlet conditions never disagree on a shared node).
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in mesh["bottom_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    for nid in mesh["top_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 2"\n'
+    for nid in mesh["left_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 3"\n'
+    for nid in mesh["bottom_nodes"][1:]:
+        yaml += f'  - "NODE {nid} DLINE 4"\n'
+
+    return yaml

@@ -619,6 +619,10 @@ class FourcBackend(SolverBackend):
             matched_heat_transient_input,
             matched_elasticity_genalpha_input,
             matched_elasticity_3d_nonlinear_input,
+            matched_level_set_advection_input,
+            matched_ale_2d_input,
+            matched_nernst_planck_3d_input,
+            matched_low_mach_heated_channel_input,
         )
         key = f"{physics}_{variant}"
 
@@ -681,10 +685,61 @@ class FourcBackend(SolverBackend):
                     dens=p.get("dens", 1.0),
                     numstep=p.get("numstep", 10),
                     timestep=p.get("timestep", 0.05)),
+            # low_mach/heated_channel_2d fell through to the generator
+            # template with <placeholder> scalars + an external Exodus
+            # mesh (probe 2026-06-12: MatchTree abort). Route to the
+            # self-contained inline heated-channel Loma input.
+            "low_mach_heated_channel_2d":
+                lambda p: matched_low_mach_heated_channel_input(
+                    nx=min(int(p.get("nx", 32)), 64),
+                    ny=min(int(p.get("ny", 8)), 32),
+                    u_max=p.get("u_max", 0.3),
+                    T_in=p.get("T_in", 293.0),
+                    T_wall=p.get("T_wall", 350.0),
+                    numstep=p.get("numstep", 5),
+                    timestep=p.get("timestep", 0.1)),
             "poisson_3d": lambda p: matched_poisson_3d_input(n=p.get("n", 8)),
             "poisson_poisson_3d": lambda p: matched_poisson_3d_input(n=p.get("n", 8)),
             "poisson_l_domain": lambda p: matched_l_domain_poisson_input(
                 n=p.get("n", 16)),
+            # electrochemistry/nernst_planck_3d previously fell through
+            # to the generator template with <placeholder> scalars + an
+            # external Exodus mesh reference (probe 2026-06-12:
+            # MatchTree abort). Route to the self-contained inline-mesh
+            # Nernst-Planck input. Resolution uses "n" (not nx/ny/nz)
+            # so the probe's nz=16 cannot inflate the 3-species
+            # nonlinear 3D solve.
+            "electrochemistry_nernst_planck_3d":
+                lambda p: matched_nernst_planck_3d_input(
+                    n=p.get("n", 4),
+                    c_left=p.get("c_left", 2.0),
+                    c_right=p.get("c_right", 1.0),
+                    d_cation=p.get("d_cation", 2.0),
+                    d_anion=p.get("d_anion", 1.0),
+                    numstep=p.get("numstep", 10),
+                    timestep=p.get("dt", 0.001)),
+            # ale/ale_2d previously fell through to the generator
+            # template with <placeholder> scalars + external Exodus
+            # mesh (probe 2026-06-12: MatchTree abort). Inline 2D
+            # mesh-motion problem instead.
+            "ale_ale_2d": lambda p: matched_ale_2d_input(
+                nx=min(int(p.get("nx", 16)), 32),
+                ny=min(int(p.get("ny", 16)), 32),
+                E=p.get("E", 1.0), nu=p.get("nu", 0.3),
+                dens=p.get("rho", 1.0),
+                numstep=max(1, round(p.get("T_end", 0.01)
+                                     / p.get("dt", 0.001))),
+                timestep=p.get("dt", 0.001)),
+            # level_set/advection_2d previously fell through to the
+            # placeholder generator template (literal <...> scalars +
+            # external Exodus mesh → 4C MatchTree abort, probe
+            # 2026-06-12). Route to the self-contained inline input.
+            "level_set_advection_2d":
+                lambda p: matched_level_set_advection_input(
+                    nx=p.get("nx", 16), ny=p.get("ny", 16),
+                    numstep=p.get("numstep", 10),
+                    timestep=p.get("timestep", 0.01),
+                    radius=p.get("radius", 0.25)),
         }
         gen = inline_generators.get(key)
         if gen is None:
