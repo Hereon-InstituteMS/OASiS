@@ -382,6 +382,26 @@ class TestCoupledSolveIntegration:
         ))
         assert "Converged" in result, f"NGSolve↔NGSolve Poisson did not converge:\n{result}"
 
+    def test_skfem_skfem_poisson_dd(self, setup_backends):
+        """scikit-fem↔scikit-fem Poisson DD — pins the skfem flux generator
+        (interface_data.json schema: missing field_name, 1-D coordinates)."""
+        from tools.coupling import _poisson_domain_decomposition
+        from core.registry import get_backend
+
+        skfem = get_backend("skfem")
+        if not skfem:
+            pytest.skip("scikit-fem required")
+        status, _ = skfem.check_availability()
+        if status.value != "available":
+            pytest.skip("scikit-fem not available")
+
+        result = _run_async(_poisson_domain_decomposition(
+            skfem, skfem, nx=8, ny=8,
+            max_iter=40, tol=1e-5, relaxation=0.5,
+            params={"source": 1.0},
+        ))
+        assert "Converged" in result, f"skfem↔skfem Poisson did not converge:\n{result}"
+
     def test_oneway_tsi(self, setup_backends):
         """One-way TSI: FEniCS thermal → 4C structural via native TSI."""
         from tools.coupling import _oneway_thermal_structural

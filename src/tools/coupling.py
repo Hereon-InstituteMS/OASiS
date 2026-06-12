@@ -691,7 +691,10 @@ for _Ti, _Tn in zip(_T_iface, _T_near_sorted):
     _q = -{conductivity} * (_Ti - _Tn) / (_sign * _h)
     _flux.append(float(_q))
 
-_data = {{"coordinates": _coords_y.tolist(), "values": _T_iface.tolist(),
+_data = {{"field_name": "temperature",
+          "n_points": int(len(_coords_y)),
+          "coordinates": [[{iface_x}, float(_y)] for _y in _coords_y],
+          "values": _T_iface.tolist(),
           "normal_fluxes": _flux}}
 with open("interface_data.json", "w") as _fout:
     _json.dump(_data, _fout)
