@@ -97,6 +97,11 @@ int main()
                                   fe_collection,
                                   q_collection);
 
+  // Declared OUTSIDE the cycle loop: the final DataOut block after
+  // the loop reads it — an in-loop declaration leaves 'solution'
+  // out of scope there (compile error caught by probe 2026-06-12).
+  Vector<double> solution;
+
   for (unsigned int cycle = 0; cycle < {n_cycles}; ++cycle)
     {{
       // Distribute DOFs with current hp assignment
@@ -118,7 +123,7 @@ int main()
       sparsity_pattern.copy_from(dsp);
 
       SparseMatrix<double> system_matrix(sparsity_pattern);
-      Vector<double> solution(dof_handler.n_dofs());
+      solution.reinit(dof_handler.n_dofs());
       Vector<double> system_rhs(dof_handler.n_dofs());
 
       // Assembly with hp quadrature
@@ -193,11 +198,16 @@ int main()
                                                        estimated_error,
                                                        0.3, 0.03);
 
-      // hp decision: smooth cells get p-refinement, rough cells get h-refinement
-      hp::Refinement::p_adaptivity_from_reference(dof_handler,
-                                                    smoothness,
-                                                    smoothness,
-                                                    0.5, 0.5);
+      // hp decision: smooth cells get p-refinement, rough cells get
+      // h-refinement. p_adaptivity_from_relative_threshold takes the
+      // refine/coarsen FRACTIONS as plain doubles;
+      // p_adaptivity_from_reference instead wants ComparisonFunction
+      // objects in those positions — passing 0.5 there fails to
+      // compile ('invalid initialization of reference of type
+      // ComparisonFunction<float>& from expression of type double').
+      hp::Refinement::p_adaptivity_from_relative_threshold(dof_handler,
+                                                            smoothness,
+                                                            0.5, 0.5);
 
       // Combine h and p decisions
       hp::Refinement::choose_p_over_h(dof_handler);

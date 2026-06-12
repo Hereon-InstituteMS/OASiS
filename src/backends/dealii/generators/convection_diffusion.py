@@ -56,7 +56,11 @@ int main() {{
   Vector<double> system_rhs(dof_handler.n_dofs());
 
   const double eps = {eps};
-  const Tensor<1, dim> beta({{{{1.0, 0.5}}}});
+  // Element-wise init: Tensor's array constructor is explicit, so
+  // brace-list construction fails to compile (deal.II 9.3.x).
+  Tensor<1, dim> beta;
+  beta[0] = 1.0;
+  beta[1] = 0.5;
 
   QGauss<dim> quadrature(2);
   FEValues<dim> fe_values(fe, quadrature,

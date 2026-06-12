@@ -22,7 +22,8 @@ def _stokes_2d(params: dict) -> str:
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 #include <deal.II/dofs/dof_renumbering.h>
-#include <deal.II/lac/sparse_direct.h>
+#include <deal.II/lac/solver_minres.h>
+#include <deal.II/lac/precondition.h>
 #include <deal.II/lac/block_sparse_matrix.h>
 #include <deal.II/lac/block_vector.h>
 #include <deal.II/lac/block_sparsity_pattern.h>
@@ -47,16 +48,27 @@ public:
 int main() {{
   const int dim = 2;
   Triangulation<dim> tria;
-  GridGenerator::hyper_cube(tria, 0, 1);
+  // colorize=true assigns face boundary_ids 0..3 (left,right,bottom,top)
+  // so the lid BC can target ONLY the top face — with a single id the
+  // template degenerated to all-zero BCs and a trivial zero solution.
+  GridGenerator::hyper_cube(tria, 0, 1, /*colorize=*/true);
   tria.refine_global({refinements});
 
   FESystem<dim> fe(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1); // Q2 velocity + Q1 pressure
   DoFHandler<dim> dof_handler(tria);
   dof_handler.distribute_dofs(fe);
-  DoFRenumbering::component_wise(dof_handler);
+
+  // Group ALL velocity components into block 0, pressure into block 1
+  // (the step-22 pattern). component_wise(dof_handler) WITHOUT the
+  // block_component argument renumbers by COMPONENT (dim+1 groups:
+  // ux, uy, p) while count_dofs_per_fe_block then reports per-FE-base
+  // blocks — the mismatched block sizes segfault during assembly.
+  std::vector<unsigned int> block_component(dim + 1, 0);
+  block_component[dim] = 1;
+  DoFRenumbering::component_wise(dof_handler, block_component);
 
   const std::vector<types::global_dof_index> dofs_per_block =
-    DoFTools::count_dofs_per_fe_block(dof_handler);
+    DoFTools::count_dofs_per_fe_block(dof_handler, block_component);
   std::cout << "DOFs: " << dof_handler.n_dofs()
             << " (vel=" << dofs_per_block[0] << ", pres=" << dofs_per_block[1] << ")" << std::endl;
 
@@ -115,17 +127,38 @@ int main() {{
     }}
   }}
 
-  // BCs: lid velocity on top, no-slip elsewhere
+  // BCs: lid velocity u=(1,0) on the top face (id 3), no-slip on the
+  // other three. Constrain VELOCITY components only — interpolating a
+  // ZeroFunction(dim+1) without the component mask also pins every
+  // boundary pressure DoF, which is wrong physics.
+  const FEValuesExtractors::Vector velocities_bc(0);
   std::map<types::global_dof_index, double> boundary_values;
-  VectorTools::interpolate_boundary_values(dof_handler, 0,
-    Functions::ZeroFunction<dim>(dim + 1), boundary_values);
-  // Override top boundary with lid velocity
-  // (boundary_id 0 for hyper_cube is all faces — in practice you'd set per-face)
+  for (const auto face_id : {{0, 1, 2}})
+    VectorTools::interpolate_boundary_values(dof_handler, face_id,
+      Functions::ZeroFunction<dim>(dim + 1), boundary_values,
+      fe.component_mask(velocities_bc));
+  VectorTools::interpolate_boundary_values(dof_handler, 3,
+    LidVelocity<dim>(), boundary_values,
+    fe.component_mask(velocities_bc));
+  // Pin ONE pressure DoF: with velocity Dirichlet on the whole
+  // boundary, pressure is only defined up to a constant and the
+  // saddle-point matrix is singular without this.
+  boundary_values[dofs_per_block[0]] = 0.0;
   MatrixTools::apply_boundary_values(boundary_values, system_matrix, solution, system_rhs);
 
-  SparseDirectUMFPACK A_direct;
-  A_direct.initialize(system_matrix);
-  A_direct.vmult(solution, system_rhs);
+  // Solve with MinRes (symmetric indefinite saddle-point system).
+  // SparseDirectUMFPACK is the obvious direct choice but conda-forge
+  // deal.II ships WITHOUT UMFPACK (config.h '#undef
+  // DEAL_II_WITH_UMFPACK') — the class compiles, then throws
+  // ExcNeedsUMFPACK at runtime in sparse_direct.cc. MinRes with the
+  // identity preconditioner is slow but portable; for production use
+  // the step-22 block Schur preconditioner.
+  SolverControl solver_control(20000, 1e-8 * system_rhs.l2_norm());
+  SolverMinRes<BlockVector<double>> solver(solver_control);
+  PreconditionIdentity preconditioner;
+  solver.solve(system_matrix, solution, system_rhs, preconditioner);
+  std::cout << "MinRes converged in " << solver_control.last_step()
+            << " iterations" << std::endl;
 
   std::cout << "Stokes solved, max velocity: " << solution.block(0).linfty_norm() << std::endl;
 

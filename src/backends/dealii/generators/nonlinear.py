@@ -52,8 +52,16 @@ int main() {{
   DoFHandler<dim> dof_handler(tria);
   dof_handler.distribute_dofs(fe);
 
+  // ZERO constraints for the NEWTON UPDATE (step-15 pattern): the
+  // initial guess already satisfies the inhomogeneous boundary
+  // values, so every Newton increment must vanish on the boundary.
+  // Using the inhomogeneous BC constraints here re-adds the boundary
+  // sine each step — the boundary value grows without bound, the
+  // surface gradients blow up, the Jacobian degenerates, and the
+  // inner CG throws NoConvergence (probe 2026-06-12).
   AffineConstraints<double> constraints;
-  VectorTools::interpolate_boundary_values(dof_handler, 0, BoundaryValues<dim>(), constraints);
+  VectorTools::interpolate_boundary_values(dof_handler, 0,
+    Functions::ZeroFunction<dim>(), constraints);
   constraints.close();
 
   DynamicSparsityPattern dsp(dof_handler.n_dofs());
@@ -73,7 +81,7 @@ int main() {{
   const unsigned int dpc = fe.n_dofs_per_cell();
 
   // Newton iterations
-  for (unsigned int newton_step = 0; newton_step < 20; ++newton_step) {{
+  for (unsigned int newton_step = 0; newton_step < 100; ++newton_step) {{
     system_matrix = 0;
     system_rhs = 0;
 
@@ -107,7 +115,12 @@ int main() {{
                                              system_matrix, system_rhs);
     }}
 
-    SolverControl sc(1000, 1e-12);
+    // Inner tolerance RELATIVE to the residual norm (the step-15
+    // pattern). An absolute 1e-12 tolerance threw
+    // SolverControl::NoConvergence on the first Newton steps, where
+    // the residual is O(1) and CG cannot reach 1e-12 absolute within
+    // the iteration cap (probe 2026-06-12).
+    SolverControl sc(2000, 1e-6 * system_rhs.l2_norm());
     SolverCG<Vector<double>> solver(sc);
     PreconditionSSOR<SparseMatrix<double>> preconditioner;
     preconditioner.initialize(system_matrix, 1.2);
@@ -115,10 +128,15 @@ int main() {{
     solver.solve(system_matrix, newton_update, system_rhs, preconditioner);
     constraints.distribute(newton_update);
 
-    solution += newton_update;
+    // Damped update with alpha = 0.1 — the step-15 value for this
+    // exact problem (same sine boundary values). alpha = 0.5 was
+    // observed to DIVERGE here: the residual rose 0.70 -> 0.96 over
+    // four steps before the Jacobian lost definiteness and the inner
+    // CG threw NoConvergence (probe 2026-06-12).
+    solution.add(0.1, newton_update);
     double residual = system_rhs.l2_norm();
     std::cout << "Newton step " << newton_step << ": residual = " << residual << std::endl;
-    if (residual < 1e-8) break;
+    if (residual < 1e-6) break;
   }}
 
   DataOut<dim> data_out;

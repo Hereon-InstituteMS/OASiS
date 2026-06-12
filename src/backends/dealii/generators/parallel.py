@@ -24,6 +24,16 @@ def _parallel_poisson_2d(params: dict) -> str:
 #include <deal.II/base/mpi.h>
 #include <deal.II/lac/generic_linear_algebra.h>
 
+// Hard precondition with ONE actionable diagnostic instead of 200
+// lines of template errors from inside generic_linear_algebra.h:
+// conda-forge deal.II builds ship WITHOUT MPI and WITHOUT PETSc in
+// every version (config.h: '#undef DEAL_II_WITH_MPI' / '..._PETSC',
+// verified 9.1.1 + 9.3.2 on 2026-06-12), so the step-40 distributed
+// pattern cannot compile there at all.
+#if !defined(DEAL_II_WITH_MPI) || !defined(DEAL_II_WITH_PETSC)
+#  error "parallel_poisson_2d requires a deal.II build with MPI + PETSc (+ p4est). conda-forge deal.II ships without them - use the serial poisson_2d template instead, or build deal.II from source with -DDEAL_II_WITH_MPI=ON -DDEAL_II_WITH_PETSC=ON."
+#endif
+
 // Choose LA backend: PETSc or Trilinos
 namespace LA
 {{

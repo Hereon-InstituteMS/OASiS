@@ -46,7 +46,9 @@ class InitialDisplacement : public Function<dim>
 public:
   double value(const Point<dim> &p, const unsigned int) const override
   {{
-    const double r2 = (p - Point<dim>(0.5, 0.5)).square();
+    // norm_square(), not square(): Tensor<1,dim> has no member
+    // named square — Point's difference decays to a Tensor.
+    const double r2 = (p - Point<dim>(0.5, 0.5)).norm_square();
     return std::exp(-100.0 * r2);
   }}
 }};
