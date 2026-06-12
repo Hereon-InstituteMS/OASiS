@@ -1757,3 +1757,1425 @@ DESIGN LINE TRANSPORT DIRICH CONDITIONS:
         yaml += f'  - "NODE {nid} DLINE 4"\n'
 
     return yaml
+
+
+def matched_porofluid_single_phase_3d_input(
+    n: int = 4,
+    permeability: float = 1.0,
+    viscosity: float = 0.01,
+    density: float = 1.0,
+    bulk_modulus: float = 100.0,
+    p_in: float = 1.0,
+    p_out: float = 0.0,
+    p_init: float = 0.1,
+    numstep: int = 10,
+    timestep: float = 0.01,
+) -> str:
+    """Single-phase Darcy flow through a unit cube (porofluid_pressure_based).
+
+    Pressure-driven flow: p = p_in on the inlet face (x=0), p = p_out on
+    the outlet face (x=1), uniform initial pressure p_init.  Single fluid
+    phase via the full 4C material hierarchy (MAT_FluidPoroMultiPhase ->
+    MAT_FluidPoroSinglePhase -> DofPressure/PhaseLawConstraint/density/
+    viscosity/rel-permeability laws), matching the corpus single-phase
+    setup in porofluid_pressure_based_elast_3D_hex27.4C.yaml.
+
+    Element lines follow the corpus convention for the porofluid field:
+    "FLUID ELEMENTS" section with "POROFLUIDMULTIPHASE HEX8 ... MAT 1"
+    (no TYPE suffix) — the old generator template used
+    "TRANSPORT ELEMENTS" + "TYPE PoroFluidMultiPhase", which 4C's input
+    matcher rejects (MPI_Abort).
+    """
+    n = max(2, int(n))
+    mesh = generate_hex8_cube(
+        n, n, n,
+        element_section="FLUID",
+        element_type="POROFLUIDMULTIPHASE HEX8",
+        element_suffix="MAT 1",
+    )
+    ng = mesh["node_grid"]
+    inlet_nodes = sorted(ng[(0, j, k)] for j in range(n + 1) for k in range(n + 1))
+    outlet_nodes = sorted(ng[(n, j, k)] for j in range(n + 1) for k in range(n + 1))
+
+    total_time = numstep * timestep
+
+    yaml = f'''TITLE:
+  - "Single-phase Darcy flow through a 3D porous unit cube"
+PROBLEM TYPE:
+  PROBLEMTYPE: "porofluid_pressure_based"
+DISCRETISATION:
+  NUMSTRUCDIS: 0
+  NUMALEDIS: 0
+  NUMTHERMDIS: 0
+porofluid_dynamic:
+  total_simulation_time: {total_time}
+  time_integration:
+    number_of_time_steps: {numstep}
+    time_step_size: {timestep}
+    theta: 1
+  nonlinear_solver:
+    linear_solver_id: 1
+  output:
+    porosity: false
+  initial_condition:
+    type: by_function
+    function_id: 1
+  flux_reconstruction:
+    active: true
+    solver_id: 1
+IO:
+  VERBOSITY: "Minimal"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "porofluid_solver"
+MATERIALS:
+  - MAT: 1
+    MAT_FluidPoroMultiPhase:
+      LOCAL: false
+      PERMEABILITY: {permeability}
+      NUMMAT: 1
+      MATIDS: [10]
+      NUMFLUIDPHASES_IN_MULTIPHASEPORESPACE: 1
+  - MAT: 10
+    MAT_FluidPoroSinglePhase:
+      DENSITYLAWID: 103
+      DENSITY: {density}
+      RELPERMEABILITYLAWID: 105
+      VISCOSITY_LAW_ID: 104
+      DOFTYPEID: 101
+  - MAT: 101
+    MAT_FluidPoroSinglePhaseDofPressure:
+      PHASELAWID: 102
+  - MAT: 102
+    MAT_PhaseLawConstraint: {{}}
+  - MAT: 103
+    MAT_PoroDensityLawExp:
+      BULKMODULUS: {bulk_modulus}
+  - MAT: 104
+    MAT_FluidPoroViscosityLawConstant:
+      VALUE: {viscosity}
+  - MAT: 105
+    MAT_FluidPoroRelPermeabilityLawConstant:
+      VALUE: 1.0
+  - MAT: 2
+    MAT_StructPoro:
+      MATID: 501
+      POROLAWID: 502
+      INITPOROSITY: 0.4
+  - MAT: 501
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: 10
+      NUE: 0.35
+      DENS: 0.1
+  - MAT: 502
+    MAT_PoroLawDensityDependent:
+      DENSITYLAWID: 503
+  - MAT: 503
+    MAT_PoroDensityLawExp:
+      BULKMODULUS: 100
+CLONING MATERIAL MAP:
+  - SRC_FIELD: "porofluid"
+    SRC_MAT: 1
+    TAR_FIELD: "structure"
+    TAR_MAT: 2
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{p_init}"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{p_in}]
+    FUNCT: [0]
+  - E: 2
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{p_out}]
+    FUNCT: [0]
+RESULT DESCRIPTION:
+  - POROFLUIDMULTIPHASE:
+      DIS: "porofluid"
+      NODE: {inlet_nodes[0]}
+      QUANTITY: "phi1"
+      VALUE: {p_in}
+      TOLERANCE: 1e-06
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'FLUID ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in inlet_nodes:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in outlet_nodes:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
+
+
+def matched_tsi_monolithic_3d_input(
+    nx: int = 4, ny: int = 4, nz: int = 4,
+    lx: float = 1.0, ly: float = 1.0, lz: float = 1.0,
+    E: float = 200e3, nu: float = 0.3, alpha: float = 12e-6,
+    T_left: float = 100.0, T_right: float = 0.0, T_ref: float = 0.0,
+    conductivity: float = 1.0, capacity: float = 1.0,
+    density: float = 1.0,
+    numstep: int = 10, timestep: float = 0.001,
+) -> str:
+    """Generate 4C TSI monolithic input: thermal expansion of a heated beam.
+
+    3D beam [0,lx]x[0,ly]x[0,lz] with SOLIDSCATRA HEX8 elements.
+    Thermal BCs: T_left on x=0, T_right on x=lx, insulated elsewhere.
+    Structural BCs: Fix x=0 face (u=0).
+
+    Fully MONOLITHIC two-way coupling (COUPALGO tsi_monolithic): the
+    structural and thermal residuals are assembled into one block
+    system and solved together each Newton step. Layout follows the 4C
+    corpus example tsi_lincompression_monolithic_mergeTSImatrix.4C.yaml:
+    OneStepTheta (THETA=1) dynamics in both fields, the TSI block
+    matrix merged (MERGE_TSI_BLOCK_MATRIX) so the direct UMFPACK
+    solver (SOLVER 3) can handle the coupled system without the
+    Belos/Teko block-preconditioner XML files.
+    """
+    mesh = generate_hex8_cube(
+        nx, ny, nz, lx, ly, lz,
+        element_section="STRUCTURE",
+        element_type="SOLIDSCATRA HEX8",
+        element_suffix="MAT 1 KINEM linear TYPE Undefined",
+    )
+    ng = mesh["node_grid"]
+
+    # Face node sets for boundary conditions
+    left_face = sorted({ng[(0, j, k)] for j in range(ny + 1) for k in range(nz + 1)})
+    right_face = sorted({ng[(nx, j, k)] for j in range(ny + 1) for k in range(nz + 1)})
+
+    maxtime = numstep * timestep
+
+    # Temperature function expression for INITIALFIELD
+    t_expr = f"{T_left} + ({T_right} - {T_left}) * x / {lx}"
+
+    yaml = f'''TITLE:
+  - "TSI monolithic 3D: thermal expansion of a heated beam (two-way coupling)"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo_Structure_Interaction"
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "OneStepTheta"
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime}
+  TOLDISP: 1e-8
+  TOLRES: 1e-6
+  MAXITER: 20
+  LINEAR_SOLVER: 2
+STRUCTURAL DYNAMIC/ONESTEPTHETA:
+  THETA: 1
+THERMAL DYNAMIC:
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 1
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime}
+  TOLTEMP: 1e-7
+  TOLRES: 1e-6
+  LINEAR_SOLVER: 1
+THERMAL DYNAMIC/ONESTEPTHETA:
+  THETA: 1
+TSI DYNAMIC:
+  COUPALGO: "tsi_monolithic"
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime}
+  TIMESTEP: {timestep}
+  ITEMAX: 20
+TSI DYNAMIC/MONOLITHIC:
+  CONVTOL: 1e-6
+  TOLINC: 1e-6
+  NORM_RESF: "Rel"
+  LINEAR_SOLVER: 3
+  MERGE_TSI_BLOCK_MATRIX: true
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermal_Solver"
+SOLVER 2:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+SOLVER 3:
+  SOLVER: "UMFPACK"
+  NAME: "TSI_Monolithic_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_ThermoStVenantK:
+      YOUNGNUM: 1
+      YOUNG: [{E}]
+      NUE: {nu}
+      DENS: {density}
+      THEXPANS: {alpha}
+      INITTEMP: {T_ref}
+      THERMOMAT: 2
+  - MAT: 2
+    MAT_Fourier:
+      CAPA: {capacity}
+      CONDUCT:
+        constant: [{conductivity}]
+CLONING MATERIAL MAP:
+  - SRC_FIELD: "structure"
+    SRC_MAT: 1
+    TAR_FIELD: "thermo"
+    TAR_MAT: 2
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{t_expr}"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+DESIGN SURF THERMO DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_left}]
+    FUNCT: [0]
+  - E: 2
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_right}]
+    FUNCT: [0]
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+'''
+
+    # Node coordinates
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    # Surface topology: DSURFACE 1 = left face, DSURFACE 2 = right face
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in left_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
+
+
+# ── Beam line meshes (BEAM3R cantilevers) ──────────────────────────────
+
+
+def generate_beam_line_mesh(n_elem: int, length: float = 10.0,
+                            order: int = 1) -> dict:
+    """Straight beam centerline along the x-axis from 0 to ``length``.
+
+    order=1 -> LINE2 connectivity (n1, n2); n_elem+1 nodes.
+    order=2 -> LINE3 connectivity in the 4C convention
+               (endpoint1, endpoint2, midpoint); 2*n_elem+1 nodes.
+
+    Returns dict with "nodes" ('NODE id COORD x y z' strings),
+    "connectivity" (list of node-id tuples) and "n_nodes".
+    """
+    n_elem = max(1, int(n_elem))
+    order = 2 if int(order) == 2 else 1
+    n_nodes = order * n_elem + 1
+    dx = float(length) / (n_nodes - 1)
+    nodes = [f"NODE {i + 1} COORD {i * dx:.10g} 0.0 0.0"
+             for i in range(n_nodes)]
+    connectivity = []
+    for e in range(n_elem):
+        if order == 1:
+            connectivity.append((e + 1, e + 2))
+        else:
+            # LINE3: endpoint1, endpoint2, midpoint (NOT sequential)
+            connectivity.append((2 * e + 1, 2 * e + 3, 2 * e + 2))
+    return {"nodes": nodes, "connectivity": connectivity,
+            "n_nodes": n_nodes}
+
+
+def matched_beam_cantilever_static_input(
+    n_elem: int = 10,
+    length: float = 10.0,
+    radius: float = 0.1,
+    E: float = 1.0e7,
+    nu: float = 0.3,
+    load_factor: float = 1.0,
+    numstep: int = 5,
+) -> str:
+    """Static cantilever: 10 BEAM3R LINE2 elements, clamped at x=0,
+    transverse tip force F_z at x=L, ramped over ``numstep`` load
+    steps (Statics + TangDis predictor).
+
+    Circular cross-section of radius r: A = pi r^2,
+    I_yy = I_zz = pi r^4 / 4, J = pi r^4 / 2, shear correction 6/7.
+
+    The tip force is chosen so that the LINEAR tip deflection
+    F L^3 / (3 E I) equals ``load_factor`` — i.e. the load scales
+    with E, so a probe overriding E (e.g. E=1000) converges exactly
+    like the default E=1e7 case.
+
+    Element/material syntax mirrors the working corpus case
+    beam3r_line2_static_test2.4C.yaml (plain BEAM3R LINE2, 6 TRIADS
+    values, NUMDOF 6, MAT_BeamReissnerElastHyper with SHEARMOD).
+    Replaces the placeholder beams generator template (probe
+    2026-06-12: literal <...> scalars -> 4C MatchTree abort).
+    """
+    import math
+
+    n_elem = max(1, int(n_elem))
+    numstep = max(1, int(numstep))
+    G = E / (2.0 * (1.0 + nu))
+    A = math.pi * radius ** 2
+    I = math.pi * radius ** 4 / 4.0
+    J = 2.0 * I
+    shearcorr = 6.0 / 7.0
+    tip_force = load_factor * 3.0 * E * I / length ** 3
+    timestep = 1.0 / numstep
+
+    mesh = generate_beam_line_mesh(n_elem, length, order=1)
+    n_nodes = mesh["n_nodes"]
+
+    yaml = f'''TITLE:
+  - "Static cantilever beam — {n_elem} BEAM3R LINE2 elements, tip force"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+IO:
+  VERBOSITY: "Standard"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/BEAMS:
+  OUTPUT_BEAMS: true
+  DISPLACEMENT: true
+  STRAINS_GAUSSPOINT: true
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  PREDICT: "TangDis"
+  TIMESTEP: {timestep:.10g}
+  NUMSTEP: {numstep}
+  MAXTIME: 1
+  TOLRES: 1e-06
+  TOLDISP: 1e-08
+  MAXITER: 25
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_BeamReissnerElastHyper:
+      YOUNG: {E:.10g}
+      SHEARMOD: {G:.10g}
+      DENS: 1.0
+      CROSSAREA: {A:.10g}
+      SHEARCORR: {shearcorr:.10g}
+      MOMINPOL: {J:.10g}
+      MOMIN2: {I:.10g}
+      MOMIN3: {I:.10g}
+DESIGN POINT DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 6
+    ONOFF: [1, 1, 1, 1, 1, 1]
+    VAL: [0, 0, 0, 0, 0, 0]
+    FUNCT: [0, 0, 0, 0, 0, 0]
+DESIGN POINT NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 6
+    ONOFF: [0, 0, 1, 0, 0, 0]
+    VAL: [0, 0, {tip_force:.10g}, 0, 0, 0]
+    FUNCT: [0, 0, 1, 0, 0, 0]
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_TIME: "t"
+DNODE-NODE TOPOLOGY:
+  - "NODE 1 DNODE 1"
+  - "NODE {n_nodes} DNODE 2"
+DLINE-NODE TOPOLOGY:
+'''
+    for nid in range(1, n_nodes + 1):
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for eid, (n1, n2) in enumerate(mesh["connectivity"], start=1):
+        yaml += (f'  - "{eid} BEAM3R LINE2 {n1} {n2} MAT 1 '
+                 f'TRIADS 0 0 0 0 0 0"\n')
+
+    return yaml
+
+
+def matched_beam_cantilever_dynamic_input(
+    n_elem: int = 10,
+    length: float = 10.0,
+    radius: float = 0.1,
+    E: float = 1.0e7,
+    nu: float = 0.3,
+    dens: float = 1.0,
+    moment_factor: float = 0.2,
+    numstep: int = 5,
+    timestep: float = 0.01,
+    rho_inf: float = 0.9,
+) -> str:
+    """Dynamic cantilever: 10 BEAM3R LINE3 elements with Hermite
+    centerline interpolation (9 DOFs/node), clamped at x=0, bending
+    moment M_y at the tip ramped linearly over the run,
+    GenAlphaLieGroup time integration (MASSLIN rotations, RHO_INF).
+
+    Circular cross-section of radius r (A = pi r^2,
+    I = pi r^4 / 4, J = pi r^4 / 2). The tip moment is chosen so the
+    static tip rotation M L / (E I) equals ``moment_factor`` radians
+    (linear tip deflection M L^2 / (2 E I) = moment_factor * L / 2) —
+    the load scales with E, so a probe overriding E (e.g. E=1000)
+    behaves like the default E=1e7 case.
+
+    Element/integrator syntax mirrors the working corpus case
+    beam3r_herm2line3_genalpha_liegroup_lineload_dynamic.4C.yaml
+    (LINE3 connectivity endpoint1-endpoint2-midpoint, 9 TRIADS
+    values + HERMITE_CENTERLINE true, NUMDOF 9 conditions).
+    Replaces the placeholder beams generator template (probe
+    2026-06-12: literal <...> scalars -> 4C MatchTree abort).
+    """
+    import math
+
+    n_elem = max(1, int(n_elem))
+    numstep = max(2, int(numstep))
+    G = E / (2.0 * (1.0 + nu))
+    A = math.pi * radius ** 2
+    I = math.pi * radius ** 4 / 4.0
+    J = 2.0 * I
+    shearcorr = 6.0 / 7.0
+    tip_moment = moment_factor * E * I / length
+    maxtime = numstep * timestep
+
+    mesh = generate_beam_line_mesh(n_elem, length, order=2)
+    n_nodes = mesh["n_nodes"]
+
+    yaml = f'''TITLE:
+  - "Dynamic cantilever beam — {n_elem} BEAM3R HERM2LINE3 elements, tip moment"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+IO:
+  VERBOSITY: "Standard"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/BEAMS:
+  OUTPUT_BEAMS: true
+  DISPLACEMENT: true
+  TRIAD_VISUALIZATIONPOINT: true
+  STRAINS_GAUSSPOINT: true
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "GenAlphaLieGroup"
+  TIMESTEP: {timestep:.10g}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime:.10g}
+  TOLRES: 1e-06
+  TOLDISP: 1e-09
+  MAXITER: 80
+  MASSLIN: "rotations"
+  LINEAR_SOLVER: 1
+STRUCTURAL DYNAMIC/GENALPHA:
+  RHO_INF: {rho_inf:.10g}
+STRUCT NOX/Printing:
+  Inner Iteration: false
+  Outer Iteration StatusTest: false
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_BeamReissnerElastHyper:
+      YOUNG: {E:.10g}
+      SHEARMOD: {G:.10g}
+      DENS: {dens:.10g}
+      CROSSAREA: {A:.10g}
+      SHEARCORR: {shearcorr:.10g}
+      MOMINPOL: {J:.10g}
+      MOMIN2: {I:.10g}
+      MOMIN3: {I:.10g}
+DESIGN POINT DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 9
+    ONOFF: [1, 1, 1, 1, 1, 1, 0, 0, 0]
+    VAL: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    FUNCT: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+DESIGN POINT NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 9
+    ONOFF: [0, 0, 0, 0, 1, 0, 0, 0, 0]
+    VAL: [0, 0, 0, 0, {tip_moment:.10g}, 0, 0, 0, 0]
+    FUNCT: [0, 0, 0, 0, 1, 0, 0, 0, 0]
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_TIME: "t/{maxtime:.10g}"
+DNODE-NODE TOPOLOGY:
+  - "NODE 1 DNODE 1"
+  - "NODE {n_nodes} DNODE 2"
+DLINE-NODE TOPOLOGY:
+'''
+    for nid in range(1, n_nodes + 1):
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for eid, (n1, n2, nmid) in enumerate(mesh["connectivity"], start=1):
+        yaml += (f'  - "{eid} BEAM3R LINE3 {n1} {n2} {nmid} MAT 1 '
+                 f'TRIADS 0 0 0 0 0 0 0 0 0 HERMITE_CENTERLINE true"\n')
+
+    return yaml
+
+
+def matched_thermo_2d_input(nx: int = 16, ny: int = 16,
+                            T_left: float = 100.0, T_right: float = 0.0,
+                            conductivity: float = 1.0,
+                            capacity: float = 1.0) -> str:
+    """Pure-thermal (PROBLEMTYPE "Thermo") 2D steady heat conduction.
+
+    [0,1]^2 QUAD4 mesh with THERMO QUAD4 elements + MAT_Fourier,
+    T_left on x=0, T_right on x=1, insulated top/bottom. Steady state
+    (THERMAL DYNAMIC -> DYNAMICTYPE Statics), so the exact solution is
+    the linear profile T(x) = T_left + (T_right - T_left) * x.
+    Self-contained: inline NODE COORDS, no external mesh files.
+    """
+    mesh = generate_quad4_rectangle(nx, ny,
+                                    element_section="THERMO",
+                                    element_type="THERMO QUAD4",
+                                    element_suffix="MAT 1")
+
+    yaml = f'''TITLE:
+  - "Pure thermal 2D steady conduction - inline mesh benchmark"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo"
+THERMAL DYNAMIC:
+  DYNAMICTYPE: Statics
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermal_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Fourier:
+      CAPA: {capacity}
+      CONDUCT:
+        constant: [{conductivity}]
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_left}]
+    FUNCT: [0]
+  - E: 2
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_right}]
+    FUNCT: [0]
+'''
+
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in mesh["left_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    for nid in mesh["right_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 2"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'THERMO ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_thermo_3d_input(n: int = 6,
+                            T_left: float = 100.0, T_right: float = 0.0,
+                            conductivity: float = 1.0,
+                            capacity: float = 1.0,
+                            numstep: int = 5,
+                            timestep: float = 0.1) -> str:
+    """Pure-thermal (PROBLEMTYPE "Thermo") 3D transient heat conduction.
+
+    Unit cube [0,1]^3 with n x n x n THERMO HEX8 elements + MAT_Fourier.
+    T_left on the x=0 face, T_right on the x=1 face, insulated elsewhere;
+    zero initial field, one-step-theta time integration for a few steps.
+    Resolution is the single parameter "n" (NOT nx/ny/nz) so a generic
+    parameter sweep cannot inflate the 3D mesh. Self-contained: inline
+    NODE COORDS, no external mesh files.
+    """
+    mesh = generate_hex8_cube(n, n, n,
+                              element_section="THERMO",
+                              element_type="THERMO HEX8",
+                              element_suffix="MAT 1")
+    ng = mesh["node_grid"]
+    left_face = sorted({ng[(0, j, k)] for j in range(n + 1)
+                        for k in range(n + 1)})
+    right_face = sorted({ng[(n, j, k)] for j in range(n + 1)
+                         for k in range(n + 1)})
+
+    maxtime = numstep * timestep
+
+    yaml = f'''TITLE:
+  - "Pure thermal 3D transient conduction - inline mesh benchmark"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo"
+THERMAL DYNAMIC:
+  DYNAMICTYPE: OneStepTheta
+  INITIALFIELD: "zero_field"
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime}
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermal_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Fourier:
+      CAPA: {capacity}
+      CONDUCT:
+        constant: [{conductivity}]
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_left}]
+    FUNCT: [0]
+  - E: 2
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [{T_right}]
+    FUNCT: [0]
+'''
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in left_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'THERMO ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_lubrication_slider_bearing_input(nx: int = 16, ny: int = 1) -> str:
+    """2-D slider bearing (Reynolds equation) — self-contained inline mesh.
+
+    Ports the authoritative 4C corpus case
+    tests/input_files/lubrication_sb_2d.4C.yaml into an inline-mesh
+    generator so the catalog row lubrication/slider_bearing_2d runs
+    without the external Exodus file the placeholder generator
+    template emitted (which aborted 4C's MatchTree, probe 2026-06-12).
+
+    PURE_LUB Reynolds solve on a thin converging film: lower surface
+    moves at constant velocity (FUNCT2 VELOCITYFIELD), the linear
+    film height h(x) is prescribed (FUNCT3 HEIGHTFEILD), and the
+    pressure is pinned to 0 (Dirichlet) at the inlet (x=-15) and
+    outlet (x=+15) line. The domain spans x in [-15,15] so the
+    corpus height/velocity expressions stay physical; LUBRICATION
+    QUAD4 elements (2-D surface elements in the film plane) carry
+    MAT_lubrication with MAT_lubrication_law_constant viscosity.
+    Mesh is a single strip (default 16x1) so the run is < 30 s.
+
+    NB: the corpus uses SOLVER "Superlu"; this build's Superlu
+    segfaults at the first Reynolds linear solve (the corpus file
+    itself crashes with it), so we pin SOLVER 3 to UMFPACK — the
+    same direct solver every other working inline input uses here.
+    Verified live: rc=0 in ~0.5 s (2026-06-12).
+    """
+    # x in [-15, 15], thin strip in y. The corpus uses a single row of
+    # 8 LUBRICATION QUAD4 elements over this span; we keep that layout
+    # (nx columns, ny rows) but emit a clean structured grid.
+    nx = max(2, int(nx))
+    ny = max(1, int(ny))
+    lx = 30.0
+    ly = 5.0
+    x0 = -15.0
+    y0 = -2.5
+    mesh = generate_quad4_rectangle(
+        nx, ny, lx=lx, ly=ly,
+        element_section="LUBRICATION",
+        element_type="LUBRICATION QUAD4",
+        element_suffix="MAT 3",
+    )
+    # Shift the generated [0,lx]x[0,ly] grid into [-15,15]x[-2.5,2.5]
+    # so the corpus FUNCTs (which reference x) stay valid.
+    shifted_nodes = []
+    for nd in mesh["nodes"]:
+        # "NODE id COORD x y z"
+        parts = nd.split()
+        nid = parts[1]
+        x = float(parts[3]) + x0
+        y = float(parts[4]) + y0
+        shifted_nodes.append(f'NODE {nid} COORD {x:.10e} {y:.10e} 0.0000000000e+00')
+
+    # Pressure Dirichlet line = inlet (left, x=-15) + outlet (right, x=+15)
+    dirich_nodes = sorted(set(mesh["left_nodes"]) | set(mesh["right_nodes"]))
+
+    yaml = '''TITLE:
+  - "2-D slider bearing (Reynolds equation) — inline-mesh benchmark"
+  - "Ported from 4C corpus lubrication_sb_2d.4C.yaml"
+PROBLEM TYPE:
+  PROBLEMTYPE: "Lubrication"
+DISCRETISATION:
+  NUMSTRUCDIS: 0
+  NUMALEDIS: 0
+  NUMTHERMDIS: 0
+IO:
+  STRUCT_DISP: false
+LUBRICATION DYNAMIC:
+  MAXTIME: 1
+  NUMSTEP: 5
+  TIMESTEP: 1e-05
+  CALCERRORNO: 0
+  VELOCITYFIELD: "function"
+  VELFUNCNO: 2
+  HEIGHTFEILD: "function"
+  HFUNCNO: 3
+  LINEAR_SOLVER: 3
+  CONVTOL: 1e-06
+  PENALTY_CAVITATION: 1e+08
+  ROUGHNESS_STD_DEVIATION: 0.001
+  PURE_LUB: true
+SOLVER 3:
+  SOLVER: "UMFPACK"
+  NAME: "Direct_Solver"
+MATERIALS:
+  - MAT: 3
+    MAT_lubrication:
+      LUBRICATIONLAWID: 30
+      DENSITY: 1
+  - MAT: 30
+    MAT_lubrication_law_constant:
+      VISCOSITY: 5e-07
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+FUNCT2:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "20000"
+  - COMPONENT: 1
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+  - COMPONENT: 2
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+FUNCT3:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "(0.045)-(x*0.5e-3)"
+  - COMPONENT: 1
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+  - COMPONENT: 2
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [0]
+    FUNCT: [0]
+'''
+
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in dirich_nodes:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in shifted_nodes:
+        yaml += f'  - "{nd}"\n'
+
+    yaml += 'LUBRICATION ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_mixture_3d_input(n: int = 4,
+                             E: float = 1000.0,
+                             nu: float = 0.3,
+                             density: float = 0.1,
+                             load: float = 5.0) -> str:
+    """3D unit-cube under tension with a MAT_Mixture material.
+
+    Routes the catalog's mixture/mixture_3d row (previously a one-line
+    comment template that failed validate_input — "Input is not a YAML
+    dictionary", probe 2026-06-12). Builds a self-contained inline HEX8
+    cube whose single material is the 4C Mixture toolbox:
+
+        MAT_Mixture
+          -> MIX_Rule_Simple (one constituent, MASSFRAC [1.0])
+          -> MIX_Constituent_ElastHyper
+          -> ELAST_CoupLogNeoHooke (MODE "YN": C1=E, C2=nu)
+
+    The block mirrors mixture_elast_hyper.4C.yaml / mixture_solid_material
+    .4C.yaml in the 4C corpus but with a single isotropic NeoHooke
+    constituent so there is no fibre direction to set (the mass
+    fractions sum to 1, as the mixture rule requires). KINEM nonlinear
+    finite-strain SOLID HEX8 elements, Statics, UMFPACK.
+
+    Left face (x=0) fully fixed, right face (x=n's lx) pulled in +x by a
+    surface Neumann traction `load`. The traction scales modestly with
+    the probe's E=1000 so the single static Newton step converges.
+    Resolution keyed off `n` (NOT nx/ny/nz) so the probe's nz=16 cannot
+    inflate the cube; capped small for a < 40 s run.
+    """
+    mesh = generate_hex8_cube(n, n, n,
+                              element_section="STRUCTURE",
+                              element_type="SOLID HEX8",
+                              element_suffix="MAT 1 KINEM nonlinear")
+
+    grid = mesh["node_grid"]
+    left_face = sorted(nid for (i, j, k), nid in grid.items() if i == 0)
+    right_face = sorted(nid for (i, j, k), nid in grid.items() if i == n)
+
+    yaml = f'''TITLE:
+  - "3D cube tension — MAT_Mixture (single NeoHooke constituent)"
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+PROBLEM SIZE:
+  DIM: 3
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1e-8
+  TOLRES: 1e-8
+  MAXITER: 25
+  LINEAR_SOLVER: 1
+  PREDICT: TangDis
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "direct"
+MATERIALS:
+  - MAT: 1
+    MAT_Mixture:
+      MATIDMIXTURERULE: 10
+      MATIDSCONST: [11]
+  - MAT: 10
+    MIX_Rule_Simple:
+      DENS: {density}
+      MASSFRAC:
+        constant: [1.0]
+  - MAT: 11
+    MIX_Constituent_ElastHyper:
+      NUMMAT: 1
+      MATIDS: [101]
+  - MAT: 101
+    ELAST_CoupLogNeoHooke:
+      MODE: "YN"
+      C1: {E}
+      C2: {nu}
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 6
+    ONOFF: [1, 0, 0, 0, 0, 0]
+    VAL: [{load}, 0.0, 0.0, 0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0, 0, 0, 0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in left_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
+
+
+def matched_constraint_3d_input(n: int = 4,
+                                E: float = 1000.0,
+                                nu: float = 0.3,
+                                load: float = 5.0) -> str:
+    """3D cube with a multi-point coupling constraint (DESIGN POINT
+    COUPLING CONDITIONS) tying a set of nodes to move identically.
+
+    Routes the catalog's constraint/constraint_3d row (previously a
+    one-line comment template that failed validate_input — "Input is not
+    a YAML dictionary", probe 2026-06-12). Builds a self-contained
+    inline HEX8 cube (St. Venant-Kirchhoff, Statics, UMFPACK) and adds a
+    real constraint: a DESIGN POINT COUPLING CONDITION that gathers the
+    free-face (x=lx) nodes into one design point set and couples their
+    y- and z-displacements so the loaded face translates rigidly in the
+    transverse directions — a linear multi-point constraint enforced
+    directly by 4C (mirrors sohex8_distributed-pointcoupling.4C.yaml in
+    the corpus, the DESIGN POINT COUPLING CONDITIONS / DNODE-NODE
+    pattern, on a structured cube).
+
+    Left face (x=0) fully fixed, right face (x=lx) pulled in +x by a
+    surface Neumann traction `load` scaling modestly with E so the
+    single static Newton step converges at the probe's E=1000.
+    Resolution keyed off `n` (NOT nx/ny/nz) so the probe's nz=16 cannot
+    inflate the cube; capped small for a < 40 s run.
+    """
+    mesh = generate_hex8_cube(n, n, n,
+                              element_section="STRUCTURE",
+                              element_type="SOLID HEX8",
+                              element_suffix="MAT 1 KINEM nonlinear")
+
+    grid = mesh["node_grid"]
+    left_face = sorted(nid for (i, j, k), nid in grid.items() if i == 0)
+    right_face = sorted(nid for (i, j, k), nid in grid.items() if i == n)
+
+    yaml = f'''TITLE:
+  - "3D cube — multi-point coupling constraint on loaded face"
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+PROBLEM SIZE:
+  DIM: 3
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1e-8
+  TOLRES: 1e-8
+  MAXITER: 25
+  LINEAR_SOLVER: 1
+  PREDICT: TangDis
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "direct"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: 0.0
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 6
+    ONOFF: [1, 0, 0, 0, 0, 0]
+    VAL: [{load}, 0.0, 0.0, 0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0, 0, 0, 0]
+DESIGN POINT COUPLING CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [0, 1, 1]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    # Couple the loaded-face nodes into one design point set: their
+    # y/z displacements are tied together (the MPC).
+    yaml += 'DNODE-NODE TOPOLOGY:\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DNODE 1"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in left_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in right_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
+
+
+def matched_membrane_2d_input(nx: int = 8, ny: int = 8,
+                              lx: float = 1.0, ly: float = 1.0,
+                              E: float = 1000.0, nu: float = 0.3,
+                              thick: float = 0.01,
+                              stretch: float = 0.1) -> str:
+    """Flat MEMBRANE4 QUAD4 patch under a prescribed uniaxial stretch.
+
+    Self-contained inline-mesh structural membrane (PROBLEMTYPE
+    "Structure"), modelled on tests/input_files/membrane_patch_new_struct
+    .4C.yaml. Membranes carry NO bending stiffness, so an unconstrained
+    membrane under a traction load has a singular stiffness matrix
+    (zero-eigenvalue out-of-plane modes - the membrane.py pitfalls call
+    this out). The corpus patch avoids this by prescribing the FULL
+    displacement field of every node via Dirichlet conditions: a uniaxial
+    stretch in x (u_x = stretch * x) plus zero y/z. That makes the solve
+    unconditionally well-posed (no free DOFs left to buckle), so it
+    converges at any E. The membrane material is MAT_Membrane_ElastHyper
+    wrapping an ELAST_IsoNeoHooke (MUE = E / (2*(1+nu))), element token
+    "MEMBRANE4 QUAD4 ... KINEM nonlinear THICK <t> STRESS_STRAIN
+    plane_stress" copied from the corpus element line.
+
+    Parameters are capped (nx,ny <= 16) so a generic sweep cannot inflate
+    the mesh; runtime is well under 30 s.
+    """
+    nx = max(1, min(int(nx), 16))
+    ny = max(1, min(int(ny), 16))
+    mue = E / (2.0 * (1.0 + nu))
+
+    mesh = generate_quad4_rectangle(
+        nx, ny, lx=lx, ly=ly,
+        element_section="STRUCTURE",
+        element_type="MEMBRANE4 QUAD4",
+        element_suffix=f"MAT 1 KINEM nonlinear THICK {thick} "
+                       f"STRESS_STRAIN plane_stress")
+
+    maxtime = 1.0
+    # NB: no "PROBLEM SIZE: DIM:" section — MEMBRANE4 elements are
+    # surface elements embedded in 3D ambient space (the corpus
+    # membrane_patch_new_struct.4C.yaml omits PROBLEM SIZE too).
+    # Forcing DIM: 2 makes 4C SIGFPE in initialize_elements().
+    yaml = f"""TITLE:
+  - "Membrane patch {lx}x{ly} - prescribed uniaxial stretch (inline mesh)"
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+IO:
+  STRUCT_STRESS: "Cauchy"
+  STRUCT_STRAIN: "GL"
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "OneStepTheta"
+  TIMESTEP: 0.1
+  NUMSTEP: 10
+  MAXTIME: {maxtime}
+  TOLDISP: 1e-9
+  TOLRES: 1e-9
+  MAXITER: 25
+  LOADLIN: true
+  LINEAR_SOLVER: 1
+STRUCTURAL DYNAMIC/ONESTEPTHETA:
+  THETA: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Membrane_ElastHyper:
+      NUMMAT: 1
+      MATIDS: [2]
+      DENS: 1
+  - MAT: 2
+    ELAST_IsoNeoHooke:
+      MUE:
+        constant: {mue}
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "a*x"
+  - COMPONENT: 1
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+  - COMPONENT: 2
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "0.0"
+  - VARIABLE: 0
+    NAME: "a"
+    TYPE: "multifunction"
+    NUMPOINTS: 2
+    TIMES: [0, {maxtime}]
+    DESCRIPTION: ["{stretch}*t"]
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [1, 1, 1]
+    FUNCT: [1, 1, 1]
+"""
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in mesh["all_nodes"]:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_shell_3d_input(nx: int = 8, ny: int = 4,
+                           lx: float = 1.0, ly: float = 0.5,
+                           E: float = 1000.0, nu: float = 0.3,
+                           thick: float = 0.05,
+                           load: "float | None" = None) -> str:
+    """Flat SHELL7P QUAD4 clamped cantilever under transverse pressure.
+
+    Self-contained inline-mesh structural shell (PROBLEMTYPE
+    "Structure"). The SHELL7P element + material/BC pattern is copied
+    from tests/input_files/shell7p_spring_dashpot.4C.yaml: element token
+    "SHELL7P QUAD4 ... MAT 1 THICK <t> EAS N_7 N_7 N_4 N_4 N_4 SDC 1.0
+    USE_ANS true", material MAT_ElastHyper wrapping ELAST_CoupNeoHooke,
+    and a DESIGN SURF NEUMANN orthopressure load. The shell lies in the
+    z=0 plane (a flat QUAD4 patch); the left edge (x=0) is fully clamped
+    (all 6 shell DOFs) and a transverse orthopressure is applied to the
+    surface, producing a bending cantilever.
+
+    SHELL7P carries bending stiffness, so unlike the membrane it is
+    well-posed under a traction load once one edge is clamped. The load
+    is scaled with E (load = E*5e-5 by default) so the deflection stays
+    moderate and Newton converges at the probe E=1000. nx,ny are capped
+    (<=16) for a sub-30 s runtime.
+    """
+    nx = max(1, min(int(nx), 16))
+    ny = max(1, min(int(ny), 16))
+    if load is None:
+        load = E * 5.0e-5
+
+    mesh = generate_quad4_rectangle(
+        nx, ny, lx=lx, ly=ly,
+        element_section="STRUCTURE",
+        element_type="SHELL7P QUAD4",
+        element_suffix=f"MAT 1 THICK {thick} EAS N_7 N_7 N_4 N_4 N_4 "
+                       f"SDC 1.0 USE_ANS true")
+
+    left_nodes = mesh["left_nodes"]
+
+    yaml = f"""TITLE:
+  - "Shell7p clamped cantilever {lx}x{ly} - transverse pressure (inline mesh)"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+IO:
+  STRUCT_STRESS: "Cauchy"
+  STRUCT_STRAIN: "GL"
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 0.1
+  NUMSTEP: 10
+  MAXTIME: 1.0
+  TOLDISP: 1e-9
+  TOLRES: 1e-9
+  MAXITER: 25
+  LOADLIN: true
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_ElastHyper:
+      NUMMAT: 1
+      MATIDS: [2]
+      DENS: 0
+  - MAT: 2
+    ELAST_CoupNeoHooke:
+      YOUNG: {E}
+      NUE: {nu}
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 6
+    ONOFF: [1, 1, 1, 1, 1, 1]
+    VAL: [0, 0, 0, 0, 0, 0]
+    FUNCT: [0, 0, 0, 0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 1
+    NUMDOF: 6
+    ONOFF: [0, 0, 1, 0, 0, 0]
+    VAL: [0, 0, {load}, 0, 0, 0]
+    FUNCT: [0, 0, 1, 0, 0, 0]
+    TYPE: "orthopressure"
+"""
+
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in left_nodes:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in mesh["all_nodes"]:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_cardiovascular0d_windkessel_input(
+    n: int = 2,
+    E: float = 10.0, nu: float = 0.3, density: float = 2e-6,
+    C: float = 1.5, R_p: float = 5.0, Z_c: float = 0.0,
+    L: float = 0.0, p_ref: float = 0.0, p_0: float = 10.0,
+    pressure: float = 1.0, numstep: int = 3, timestep: float = 0.1,
+) -> str:
+    """0-D cardiovascular 4-element Windkessel coupled to a 3-D solid.
+
+    Ports tests/input_files/cardiovascular0d_4elementwindkessel_structure_direct_stat.4C.yaml:
+    a structural HEX8 cube (StVenantKirchhoff) whose x=lx face is closed off
+    against a lumped-parameter 4-element Windkessel model (C, R_p, Z_c, L)
+    via DESIGN SURF CARDIOVASCULAR 0D 4-ELEMENT WINDKESSEL + 0D-STRUCTURE
+    COUPLING conditions. The cavity volume seen by the 0D model is integrated
+    over that surface (DESIGN SURFACE VOLUME MONITOR 3D). The x=0 face is
+    clamped; a small orthopressure (FUNCT 15*t) on the coupled face drives a
+    cavity-volume change so the monolithic 0D-3D system is genuinely exercised.
+
+    Self-contained: inline NODE COORDS, no external mesh and no external NOX
+    "Status Test" XML - omitting STRUCT NOX/Status Test makes 4C build the
+    convergence test from STRUCTURAL DYNAMIC TOLDISP/TOLRES (including the
+    Cardiovascular0D quantity), see structure_new_nln_solver_factory.cpp.
+    Statics integrator (the simplest of the corpus _stat/_ost/_genalpha set).
+    Resolution is the single param "n" (NOT nx/ny/nz) so a parameter sweep
+    cannot inflate the monolithic 0D-3D solve.
+    """
+    n = max(1, min(int(n), 4))
+    mesh = generate_hex8_cube(
+        n, n, n, lx=10.0, ly=10.0, lz=10.0,
+        element_section="STRUCTURE",
+        element_type="SOLID HEX8",
+        element_suffix="MAT 1 KINEM nonlinear")
+    ng = mesh["node_grid"]
+    # x=0 face: clamped Dirichlet.   x=lx face: 0D-windkessel-coupled cavity.
+    fixed_face = sorted({ng[(0, j, k)] for j in range(n + 1)
+                         for k in range(n + 1)})
+    coupled_face = sorted({ng[(n, j, k)] for j in range(n + 1)
+                           for k in range(n + 1)})
+
+    maxtime = numstep * timestep
+
+    yaml = f'''TITLE:
+  - "0D 4-element Windkessel coupled to a 3D solid - inline mesh benchmark"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+IO:
+  STRUCT_STRESS: "Cauchy"
+  STRUCT_STRAIN: "GL"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+CARDIOVASCULAR 0D-STRUCTURE COUPLING:
+  TOL_CARDVASC0D_RES: 1e-06
+  TIMINT_THETA: 1
+  LINEAR_COUPLED_SOLVER: 1
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  PRESTRESSTIME: {maxtime + timestep + 0.001}
+  TIMESTEP: {timestep}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime}
+  M_DAMP: 0
+  K_DAMP: 0.0001
+  TOLDISP: 1e-07
+  TOLRES: 1e-05
+  MAXITER: 500
+  LOADLIN: true
+  LINEAR_SOLVER: 1
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: {density}
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{pressure * 15.0}*t"
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 6
+    ONOFF: [1, 0, 0, 0, 0, 0]
+    VAL: [-1, 0, 0, 0, 0, 0]
+    FUNCT: [1, 0, 0, 0, 0, 0]
+    TYPE: "orthopressure"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+DESIGN SURFACE VOLUME MONITOR 3D:
+  - E: 2
+    ConditionID: 1
+DESIGN SURF CARDIOVASCULAR 0D 4-ELEMENT WINDKESSEL CONDITIONS:
+  - E: 2
+    id: 0
+    C: {C}
+    R_p: {R_p}
+    Z_c: {Z_c}
+    L: {L}
+    p_ref: {p_ref}
+    p_0: {p_0}
+DESIGN SURF CARDIOVASCULAR 0D-STRUCTURE COUPLING CONDITIONS:
+  - E: 2
+    coupling_id: 0
+'''
+
+    # DSURFACE 1 = clamped face (E:1), DSURFACE 2 = windkessel face (E:2).
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in fixed_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    for nid in coupled_face:
+        yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml

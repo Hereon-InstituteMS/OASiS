@@ -42,19 +42,45 @@ _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO / "src"))
 
 
-# Templates that are intentionally one-line comment stubs at the
-# time of writing. Each entry is (backend, physics, variant).
-# Drop from here once the stub is replaced by a real template.
+# Templates that are intentionally reference stubs (no runnable
+# inline template) at the time of writing. Each entry is
+# (backend, physics, variant). Drop from here once the stub is
+# replaced by a real template; add here when a new physics ships
+# as a stub (and confirm prepare_simulation tags it ⚠ STUB).
+#
+# 2026-06-12 (task #29): membrane / shell / thermo_2d /
+# thermo_3d / mixture / constraint / cardiovascular0d were
+# REMOVED — they were one-line comment stubs but are now routed
+# to self-contained inline-mesh inputs that run rc=0 on the 4C
+# binary (see tests/test_fourc_inline_*). The deep-multiphysics
+# rows below were ADDED — they return honest reference stubs via
+# FourcBackend._reference_stub_template because they genuinely
+# need a case-specific mesh (often two meshes), a second input
+# file, patient-derived 1-D topology, an explicit particle cloud,
+# a wall-resolved periodic mesh, or a build feature this 4C lacks
+# (xfem cut needs Qhull). See tests/test_fourc_reference_stubs.py.
 STUB_TEMPLATES = {
-    ("fourc", "membrane", "membrane_2d"),
-    ("fourc", "shell", "shell_3d"),
-    ("fourc", "thermo", "thermo_2d"),
-    ("fourc", "thermo", "thermo_3d"),
-    ("fourc", "mixture", "mixture_3d"),
-    ("fourc", "constraint", "constraint_3d"),
     ("fourc", "brownian_dynamics", "brownian_3d"),
-    ("fourc", "cardiovascular0d", "windkessel_3d"),
     ("fourc", "fluid_turbulence", "les_channel_3d"),
+    ("fourc", "fsi_xfem", "xfem_fsi_3d"),
+    ("fourc", "xfem_fluid", "xfem_3d"),
+    ("fourc", "fs3i", "fs3i_3d"),
+    ("fourc", "fpsi", "monolithic_3d"),
+    ("fourc", "ehl", "ehl_3d"),
+    ("fourc", "fbi", "penalty_3d"),
+    ("fourc", "pasi", "dem_impact_3d"),
+    ("fourc", "ssi", "monolithic_elch_3d"),
+    ("fourc", "ssti", "monolithic_3d"),
+    ("fourc", "sti", "monolithic_3d"),
+    ("fourc", "cardiac_monodomain", "monodomain_3d"),
+    ("fourc", "arterial_network", "single_artery_1d"),
+    ("fourc", "reduced_airways", "airways_1d"),
+    ("fourc", "reduced_lung", "lung_1d"),
+    ("fourc", "multiscale", "fe2_3d"),
+    ("fourc", "beam_interaction", "beam_contact_3d"),
+    ("fourc", "beam_interaction", "beam_solid_meshtying_3d"),
+    ("fourc", "particle_pd", "plate_2d"),
+    ("fourc", "particle_sph", "poiseuille_2d"),
 }
 
 

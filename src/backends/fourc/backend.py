@@ -349,6 +349,23 @@ class FourcBackend(SolverBackend):
         except ValueError:
             pass
 
+        # Honest reference stub BEFORE the generator fallback. Deep
+        # multiphysics rows (xfem, fs3i, fpsi, ehl, fbi, pasi, ssi/
+        # ssti/sti, cardiac_monodomain, arterial/airway/lung 1-D,
+        # multiscale fe2, beam_interaction, particle_pd/sph, LES,
+        # brownian) DO have a generator template, but it is a
+        # placeholder full of literal <...> scalars + external mesh
+        # references that aborts 4C in MatchTree (probe 2026-06-12).
+        # A documented stub the user can read beats a guaranteed
+        # MPI_Abort, so the stub catalog takes precedence over the
+        # broken placeholder. The stub omits MATERIALS on purpose:
+        # validate_input() flags it as non-runnable, so the probe
+        # never reports it as a completed run — it is honestly
+        # "documented, not runnable".
+        stub = self._reference_stub_template(physics, variant)
+        if stub is not None:
+            return stub
+
         # Fallback: try generator-based templates
         try:
             get_gen, _ = _get_generators()
@@ -529,6 +546,459 @@ class FourcBackend(SolverBackend):
                              "Slow load ramp same as "
                              "terzaghi_2d"],
             },
+            # ── Deep multiphysics rows that genuinely need a
+            #    case-specific mesh (often TWO meshes), a second
+            #    input file, patient-derived topology, an explicit
+            #    particle cloud, or a build feature this 4C lacks.
+            #    A generic inline QUAD4/HEX8 mesh cannot carry them,
+            #    so they are honest reference stubs instead of a
+            #    guaranteed MPI_Abort from the placeholder template
+            #    (probe 2026-06-12).
+            ("fsi_xfem", "xfem_fsi_3d"): {
+                "problemtype": "Fluid_Structure_Interaction_XFEM",
+                "summary": ("XFEM fluid-structure interaction: a "
+                            "structure is immersed in a fixed "
+                            "background fluid mesh; the interface "
+                            "is captured by XFEM enrichment with "
+                            "Nitsche coupling (no ALE)."),
+                "needs": ["TWO meshes: a background fluid HEX8 "
+                          "block + a separate immersed structure "
+                          "HEX8 body (cannot be one inline grid)",
+                          "XFLUID DYNAMIC + XFLUID DYNAMIC/GHOST "
+                          "PENALTY sections with a Nitsche "
+                          "penalty parameter",
+                          "STRUCTURAL DYNAMIC (GenAlpha) + FLUID "
+                          "DYNAMIC (Np_Gen_Alpha) + two solvers"],
+                "pitfalls": ["BUILD LIMITATION: this 4C build "
+                             "appears to lack Qhull — the Cut "
+                             "library's tessellation backend. "
+                             "Interface cutting aborts in "
+                             "Cut::TetMesh::call_q_hull (observed "
+                             "for level-set on this build). "
+                             "Rebuild 4C with Qhull enabled before "
+                             "expecting XFEM cut cases to run.",
+                             "Nitsche penalty too small → unstable "
+                             "interface traction; too large → "
+                             "ill-conditioned system"],
+            },
+            ("xfem_fluid", "xfem_3d"): {
+                "problemtype": "Fluid_XFEM",
+                "summary": ("XFEM fluid with an embedded interface "
+                            "(void, obstacle, or two-phase) on a "
+                            "non-conforming background mesh; "
+                            "Nitsche coupling enforces interface "
+                            "conditions weakly."),
+                "needs": ["A background fluid HEX8 mesh PLUS a "
+                          "separate cutter mesh or level-set "
+                          "function defining the interface",
+                          "XFLUID DYNAMIC + XFLUID DYNAMIC/GHOST "
+                          "PENALTY sections",
+                          "MAT_fluid + appropriate stabilisation"],
+                "pitfalls": ["BUILD LIMITATION: this 4C build "
+                             "appears to lack Qhull (Cut-library "
+                             "tessellation). A cut element aborts "
+                             "in Cut::TetMesh::call_q_hull "
+                             "(observed for level-set here). "
+                             "Rebuild with Qhull before running "
+                             "XFEM cut cases.",
+                             "Ghost-penalty factor controls "
+                             "stability of small cut fractions"],
+            },
+            ("fs3i", "fs3i_3d"): {
+                "problemtype": ("Fluid_Porous_Structure_Scalar_"
+                                "Scalar_Interaction"),
+                "summary": ("FS3I: 5-field coupling — fluid + "
+                            "structure + ALE + a fluid-side scalar "
+                            "+ a structure-side scalar (e.g. drug "
+                            "mass transfer through a vessel wall)."),
+                "needs": ["Separate fluid and structure HEX8 "
+                          "meshes sharing a matched FSI interface "
+                          "(two node sets) — not a single grid",
+                          "STRUCTURAL + FLUID + ALE + FSI DYNAMIC + "
+                          "two SCALAR TRANSPORT fields with S2I "
+                          "interface coupling",
+                          "Monolithic or partitioned FSI solver "
+                          "block with shape derivatives"],
+                "pitfalls": ["Interface meshes must be conforming "
+                             "(matching nodes) or a mortar "
+                             "projection is required",
+                             "Scalar interface permeability sets "
+                             "the transfer rate — easy to make "
+                             "the transport trivially zero"],
+            },
+            ("fpsi", "monolithic_3d"): {
+                "problemtype": "Fluid_Porous_Structure_Interaction",
+                "summary": ("FPSI: free Navier-Stokes fluid over a "
+                            "deformable Biot porous bed, monolithic "
+                            "coupling, with ALE tracking the free-"
+                            "fluid boundary."),
+                "needs": ["TWO meshes: a free-fluid HEX8 domain and "
+                          "a porous HEX8 domain sharing the FPSI "
+                          "interface (fluid-side + poro-side node "
+                          "sets)",
+                          "FLUID + POROELASTICITY + ALE + FPSI "
+                          "DYNAMIC sections",
+                          "MAT_FluidPoro skeleton + pore-fluid "
+                          "materials on the porous block"],
+                "pitfalls": ["Beavers-Joseph-Saffman interface "
+                             "condition parameters strongly affect "
+                             "the slip velocity",
+                             "Monolithic FPSI needs a block "
+                             "preconditioner tuned per field — the "
+                             "default may not converge"],
+            },
+            ("ehl", "ehl_3d"): {
+                "problemtype": "Elastohydrodynamic_Lubrication",
+                "summary": ("Elastohydrodynamic lubrication: a 2-D "
+                            "Reynolds lubrication film coupled to a "
+                            "3-D elastic body — film pressure "
+                            "deforms the body, which changes the "
+                            "film geometry."),
+                "needs": ["TWO meshes of different dimension: a 2-D "
+                          "QUAD4 lubrication film + a 3-D HEX8 "
+                          "elastic body whose contact surface "
+                          "receives the film pressure",
+                          "STRUCTURAL DYNAMIC + LUBRICATION DYNAMIC "
+                          "+ EHL DYNAMIC coupling sections",
+                          "MAT_lubrication + a structural material"],
+                "pitfalls": ["The film-to-surface projection "
+                             "(matching or mortar) must be set up "
+                             "per geometry",
+                             "Cavitation handling in the Reynolds "
+                             "solver is needed for diverging gaps"],
+            },
+            ("fbi", "penalty_3d"): {
+                "problemtype": "Fluid_Beam_Interaction",
+                "summary": ("Fluid-beam interaction: a flexible "
+                            "beam immersed in a 3-D fluid channel, "
+                            "coupled by a penalty drag term."),
+                "needs": ["TWO meshes: a fluid HEX8 channel + a "
+                          "separate beam LINE2 mesh embedded in it",
+                          "FBI DYNAMIC (penalty parameter) + "
+                          "STRUCTURAL + FLUID DYNAMIC + a BINNING "
+                          "STRATEGY for the beam-fluid search",
+                          "MAT_BeamReissnerElastHyper + MAT_fluid"],
+                "pitfalls": ["Penalty parameter trades coupling "
+                             "accuracy against conditioning",
+                             "BIN_SIZE_LOWER_BOUND must cover the "
+                             "beam-fluid search radius or pairs are "
+                             "missed"],
+            },
+            ("pasi", "dem_impact_3d"): {
+                "problemtype": "Particle_Structure_Interaction",
+                "summary": ("Particle-structure interaction: DEM "
+                            "granular particles impact a deformable "
+                            "structural plate via Hertz contact."),
+                "needs": ["A structural HEX8 plate mesh PLUS an "
+                          "explicit cloud of DEM particles (a "
+                          "PARTICLES section with per-particle "
+                          "positions, radii, phases)",
+                          "PARTICLE DYNAMIC (INTERACTION DEM) + "
+                          "PASI DYNAMIC + STRUCTURAL DYNAMIC + a "
+                          "BINNING STRATEGY with the domain box",
+                          "MAT_ParticleMaterialDEM + a structural "
+                          "material"],
+                "pitfalls": ["Explicit DEM time step must satisfy "
+                             "the Rayleigh/contact-stiffness CFL or "
+                             "it explodes",
+                             "DOMAINBOUNDINGBOX must enclose all "
+                             "particle motion"],
+            },
+            ("ssi", "monolithic_elch_3d"): {
+                "problemtype": "Structure_Scalar_Interaction",
+                "summary": ("Monolithic structure-scalar (electro"
+                            "chemistry) interaction: two electrode "
+                            "blocks with a scatra-scatra interface "
+                            "(S2I) using Butler-Volmer kinetics; "
+                            "lithium intercalation swells the "
+                            "structure."),
+                "needs": ["A mesh with TWO electrode blocks sharing "
+                          "an S2I interface (matching node sets on "
+                          "each side) — not a single block",
+                          "SSI CONTROL (COUPALGO ssi_Monolithic, "
+                          "SCATRATIMINTTYPE Elch) + SCALAR "
+                          "TRANSPORT/S2I COUPLING + ELCH CONTROL",
+                          "SOLIDSCATRA elements + electrode/"
+                          "electrolyte materials with kinetics"],
+                "pitfalls": ["S2I requires matching (or mortar) "
+                             "interface meshes; mismatched nodes "
+                             "silently drop the coupling",
+                             "Butler-Volmer exchange current "
+                             "density sets the interface "
+                             "overpotential — easy to stall"],
+            },
+            ("ssti", "monolithic_3d"): {
+                "problemtype": "Structure_Scalar_Thermo_Interaction",
+                "summary": ("Monolithic structure-scalar-thermo "
+                            "interaction: structural mechanics + "
+                            "electrochemical scalar transport + "
+                            "thermal field, with S2I interface "
+                            "coupling and thermal expansion."),
+                "needs": ["A multi-block electrode mesh with an S2I "
+                          "interface (as for ssi) plus a cloned "
+                          "thermal field",
+                          "SSI CONTROL + TSI DYNAMIC + SCALAR "
+                          "TRANSPORT + THERMAL DYNAMIC monolithic "
+                          "sub-couplings",
+                          "SOLIDSCATRA elements + electrode + "
+                          "Fourier materials via mesh cloning"],
+                "pitfalls": ["Three coupled fields: the monolithic "
+                             "block preconditioner must be tuned or "
+                             "Newton stalls",
+                             "Same S2I matching-mesh requirement as "
+                             "ssi"],
+            },
+            ("sti", "monolithic_3d"): {
+                "problemtype": "Scalar_Thermo_Interaction",
+                "summary": ("Monolithic scalar-thermo interaction: "
+                            "coupled scalar transport and thermal "
+                            "fields with the Soret effect (thermo"
+                            "diffusion) and reaction heat sources."),
+                "needs": ["A single HEX8 domain is enough, BUT the "
+                          "scatra field must be cloned to a thermo "
+                          "field with matching DOFs and the Soret "
+                          "coupling material set up",
+                          "STI DYNAMIC (COUPALGO sti_Monolithic) + "
+                          "SCALAR TRANSPORT + THERMAL DYNAMIC + the "
+                          "monolithic solver block",
+                          "MAT_soret (couples concentration and "
+                          "temperature) + MAT_Fourier + MAT_scatra"],
+                "pitfalls": ["The Soret coefficient links the two "
+                             "fields; with it zero the problem "
+                             "decouples and the 'interaction' is "
+                             "meaningless",
+                             "Initial fields for both temperature "
+                             "and concentration must be consistent"],
+            },
+            ("cardiac_monodomain", "monodomain_3d"): {
+                "problemtype": "Cardiac_Monodomain",
+                "summary": ("Cardiac electrophysiology: action-"
+                            "potential propagation through a tissue "
+                            "slab via the monodomain reaction-"
+                            "diffusion equation with an ionic cell "
+                            "model."),
+                "needs": ["A tissue HEX8/TET4 mesh WITH per-element "
+                          "fiber directions (anisotropic "
+                          "conductivity) — fibers are case-specific",
+                          "SCALAR TRANSPORT DYNAMIC (nonlinear, "
+                          "monodomain) + a stimulation Neumann "
+                          "condition with a pulse function",
+                          "MAT_myocard with an ionic cell MODEL "
+                          "(e.g. TenTusscher, MinimalModel) and "
+                          "DIFF1/2/3 fiber/sheet/normal conduction"],
+                "pitfalls": ["Mesh must resolve the depolarisation "
+                             "wavefront (~0.2 mm) or conduction "
+                             "velocity is wrong",
+                             "Ionic model + time step must match "
+                             "(stiff models need small dt)"],
+            },
+            ("arterial_network", "single_artery_1d"): {
+                "problemtype": "ArterialNetwork",
+                "summary": ("1-D arterial pulse-wave propagation: a "
+                            "compliant artery with a prescribed "
+                            "inlet flow and a 3-element Windkessel "
+                            "(RCR) outlet."),
+                "needs": ["A 1-D ARTERY line mesh (NODE COORDS + "
+                          "ARTERY LINE2 elements) — the network "
+                          "topology is case-specific",
+                          "ARTERIAL DYNAMIC + an inflow waveform "
+                          "FUNCT + DESIGN POINT WINDKESSEL "
+                          "CONDITIONS at the outlet",
+                          "MAT_cnst_art (wall Young, thickness, "
+                          "reference area, blood density/"
+                          "viscosity)"],
+                "pitfalls": ["Windkessel R/C values set the "
+                             "reflection coefficient — wrong values "
+                             "give nonphysical pressure",
+                             "Time step must resolve the pulse "
+                             "wave-speed CFL along the segment"],
+            },
+            ("reduced_airways", "airways_1d"): {
+                "problemtype": "ReducedDimensionalAirWays",
+                "summary": ("1-D reduced-dimensional airway tree: a "
+                            "branching network of compliant airway "
+                            "segments from trachea to terminal "
+                            "bronchioles, terminating in acinar "
+                            "compartments."),
+                "needs": ["An airway-tree line mesh (REDAIRWAY "
+                          "LINE2 elements) with physiologically "
+                          "ordered branching — derived per patient, "
+                          "not generic",
+                          "REDUCED DIMENSIONAL AIRWAYS DYNAMIC + "
+                          "ACINUS sub-section + a tracheal pressure "
+                          "(breathing) waveform",
+                          "MAT_redairway_material (proximal + "
+                          "distal) + MAT_redairway_acinus_material"],
+                "pitfalls": ["Tree topology must follow a Horsfield/"
+                             "Strahler ordering or the resistance "
+                             "network is unphysical",
+                             "Acinar compliance varies with disease "
+                             "(emphysema, fibrosis, ARDS)"],
+            },
+            ("reduced_lung", "lung_1d"): {
+                "problemtype": "ReducedLung",
+                "summary": ("Reduced-dimensional lung: a 1-D airway "
+                            "tree coupled to 0-D alveolar acini and "
+                            "optionally a 3-D parenchyma."),
+                "needs": ["A patient-derived 1-D airway tree (NODE "
+                          "COORDS + ARTERY/REDAIRWAY elements) plus "
+                          "per-acinus compliance distribution",
+                          "REDUCED DIMENSIONAL AIRWAYS DYNAMIC and "
+                          "the 1D-0D (or 3D-0D mortar) coupling "
+                          "setup",
+                          "Airway wall + acinar materials"],
+                "pitfalls": ["1D-0D coupling matches flow/pressure "
+                             "at outlets — inconsistent units stall "
+                             "the solve",
+                             "Tree must be physiologically "
+                             "reasonable (see reduced_airways)"],
+            },
+            ("multiscale", "fe2_3d"): {
+                "problemtype": "Structure",
+                "summary": ("FE^2 computational homogenisation: each "
+                            "macro Gauss point evaluates its "
+                            "constitutive response by solving a "
+                            "micro-scale RVE boundary-value "
+                            "problem."),
+                "needs": ["TWO input files: this MACRO file PLUS a "
+                          "separate MICRO RVE input file referenced "
+                          "by MICRO_INPUT_FILE",
+                          "MAT_Struct_Multiscale on the macro mesh "
+                          "(points to the micro file + micro solver "
+                          "id)",
+                          "A macro structural mesh + the full RVE "
+                          "definition (mesh, material, periodic "
+                          "BCs) in the micro file"],
+                "pitfalls": ["The RVE must be large enough to be a "
+                             "representative volume or the "
+                             "homogenised response is mesh-"
+                             "dependent",
+                             "FE^2 is expensive: one micro solve per "
+                             "macro Gauss point per Newton step"],
+            },
+            ("beam_interaction", "beam_contact_3d"): {
+                "problemtype": "Structure",
+                "summary": ("Beam-to-beam contact: two or more beams "
+                            "interacting via penalty contact "
+                            "(crossing, sliding)."),
+                "needs": ["A mesh with TWO (or more) separate beam "
+                          "LINE2 element blocks positioned to come "
+                          "into contact",
+                          "BEAM INTERACTION (STRATEGY beam_to_beam_"
+                          "contact) + BEAM TO BEAM CONTACT penalty "
+                          "+ a BINNING STRATEGY",
+                          "MAT_BeamReissnerElastHyper per beam"],
+                "pitfalls": ["SEARCH_RADIUS / BIN_SIZE_LOWER_BOUND "
+                             "must cover the closest approach or "
+                             "contact pairs are missed",
+                             "Penalty parameter trades penetration "
+                             "against conditioning"],
+            },
+            ("beam_interaction", "beam_solid_meshtying_3d"): {
+                "problemtype": "Structure",
+                "summary": ("Beam-to-solid volume meshtying: a beam "
+                            "embedded in a solid block as a "
+                            "reinforcement, coupled by penalty or "
+                            "mortar volume meshtying."),
+                "needs": ["TWO overlapping meshes: a solid HEX8 "
+                          "block + a beam LINE2 mesh threaded "
+                          "through its interior",
+                          "BEAM INTERACTION (STRATEGY beam_to_solid_"
+                          "volume_meshtying) + the meshtying penalty "
+                          "+ Gauss-point settings + a BINNING "
+                          "STRATEGY",
+                          "Beam material + solid material"],
+                "pitfalls": ["GAUSS_POINTS on the beam controls "
+                             "coupling accuracy vs. cost",
+                             "Beam must actually lie inside the "
+                             "solid volume or no pairs are found"],
+            },
+            ("particle_pd", "plate_2d"): {
+                "problemtype": "Particle",
+                "summary": ("2-D peridynamics: a pre-cracked plate "
+                            "fragmenting under a prescribed boundary "
+                            "velocity, with bond-based PD "
+                            "interaction."),
+                "needs": ["An explicit particle cloud (a PARTICLES "
+                          "section listing every PD point position "
+                          "+ phase) — generated by a meshing "
+                          "script, not an inline grid helper",
+                          "PARTICLE DYNAMIC/SPH and PARTICLE "
+                          "DYNAMIC/PD sub-sections (the SPH block is "
+                          "required even for pure PD) + a BINNING "
+                          "STRATEGY",
+                          "MAT_ParticlePD (Young, critical stretch) "
+                          "+ MAT_ParticleSPHBoundary"],
+                "pitfalls": ["INITIALPARTICLESPACING must match the "
+                             "PD grid spacing and the horizon "
+                             "(typically 3·dx)",
+                             "Explicit time step from the CFL: dt < "
+                             "0.5·dx/sqrt(E/rho)"],
+            },
+            ("particle_sph", "poiseuille_2d"): {
+                "problemtype": "Particle",
+                "summary": ("2-D SPH Poiseuille flow: pressure-"
+                            "driven flow between parallel plates "
+                            "developing the parabolic profile."),
+                "needs": ["An explicit SPH particle cloud (a "
+                          "PARTICLES section with fluid + boundary "
+                          "particle positions) generated by a "
+                          "script — not an inline FE grid",
+                          "PARTICLE DYNAMIC (INTERACTION SPH) + "
+                          "PARTICLE DYNAMIC/SPH (kernel, spacing) + "
+                          "a driving body force + a BINNING "
+                          "STRATEGY",
+                          "MAT_ParticleSPHFluid + "
+                          "MAT_ParticleSPHBoundary"],
+                "pitfalls": ["INITRADIUS must equal the kernel "
+                             "support (≈3·dx for a quintic spline)",
+                             "Bulk modulus sets the artificial "
+                             "speed of sound; too low over-"
+                             "compresses the fluid"],
+            },
+            ("fluid_turbulence", "les_channel_3d"): {
+                "problemtype": "Fluid",
+                "summary": ("Large-eddy simulation of turbulent "
+                            "channel flow with a sub-grid model and "
+                            "periodic streamwise/spanwise "
+                            "directions."),
+                "needs": ["A wall-resolved 3-D HEX8 channel mesh "
+                          "graded to the wall (y+ ~ 1) with periodic "
+                          "boundary surfaces — a coarse inline grid "
+                          "is not a meaningful LES",
+                          "FLUID DYNAMIC with a TURBULENCE MODEL "
+                          "section (e.g. Smagorinsky/dynamic) + "
+                          "periodic boundary conditions + turbulence "
+                          "statistics sampling",
+                          "MAT_fluid at the target Reynolds number"],
+                "pitfalls": ["LES on an under-resolved mesh is "
+                             "physically meaningless — it 'runs' but "
+                             "the statistics are wrong",
+                             "Needs a long sampling time to "
+                             "converge mean/Reynolds-stress "
+                             "profiles"],
+            },
+            ("brownian_dynamics", "brownian_3d"): {
+                "problemtype": "Structure",
+                "summary": ("Brownian dynamics of semiflexible "
+                            "polymer filaments: BEAM3R beams under "
+                            "thermal-fluctuation (stochastic) "
+                            "forcing, optionally with crosslinking."),
+                "needs": ["A beam LINE2/LINE3 filament mesh inside a "
+                          "periodic box + a BROWNIAN DYNAMICS "
+                          "section (thermal energy KT, damping, "
+                          "seed)",
+                          "STRUCTURAL DYNAMIC with a stochastic "
+                          "(statmech) integrator + a BINNING "
+                          "STRATEGY for crosslinker search",
+                          "MAT_BeamReissnerElastHyper with the "
+                          "filament cross-section"],
+                "pitfalls": ["The stochastic time step couples to "
+                             "KT and damping — too large loses the "
+                             "fluctuation-dissipation balance",
+                             "Results are statistical: a single "
+                             "short run is not representative"],
+            },
         }
         spec = stubs.get((physics, variant))
         if spec is None:
@@ -623,6 +1093,18 @@ class FourcBackend(SolverBackend):
             matched_ale_2d_input,
             matched_nernst_planck_3d_input,
             matched_low_mach_heated_channel_input,
+            matched_porofluid_single_phase_3d_input,
+            matched_tsi_monolithic_3d_input,
+            matched_beam_cantilever_static_input,
+            matched_beam_cantilever_dynamic_input,
+            matched_thermo_2d_input,
+            matched_thermo_3d_input,
+            matched_lubrication_slider_bearing_input,
+            matched_mixture_3d_input,
+            matched_constraint_3d_input,
+            matched_membrane_2d_input,
+            matched_shell_3d_input,
+            matched_cardiovascular0d_windkessel_input,
         )
         key = f"{physics}_{variant}"
 
@@ -740,6 +1222,160 @@ class FourcBackend(SolverBackend):
                     numstep=p.get("numstep", 10),
                     timestep=p.get("timestep", 0.01),
                     radius=p.get("radius", 0.25)),
+            # porous_media/single_phase_3d previously used the generator
+            # template with "TRANSPORT ELEMENTS" + a "TYPE
+            # PoroFluidMultiPhase" element suffix that 4C's input
+            # matcher rejects (probe 2026-06-12: MPI_Abort). Route to
+            # the corpus-matched inline input (FLUID ELEMENTS /
+            # POROFLUIDMULTIPHASE HEX8 ... MAT 1). Resolution uses "n"
+            # (not nx/ny/nz) so the probe's nz=16 cannot inflate the
+            # 3D mesh.
+            "porous_media_single_phase_3d":
+                lambda p: matched_porofluid_single_phase_3d_input(
+                    n=p.get("n", 4),
+                    permeability=p.get("kappa", 1.0),
+                    viscosity=p.get("mu", 0.01),
+                    density=p.get("rho", 1.0),
+                    numstep=p.get("numstep", 10),
+                    timestep=p.get("timestep", 0.01)),
+            # tsi/monolithic_3d previously fell through to the generator
+            # template with <placeholder> scalars + external Exodus mesh
+            # (probe 2026-06-12: MatchTree abort). Route to the inline
+            # SOLIDSCATRA cube with genuinely MONOLITHIC two-way coupling
+            # (COUPALGO tsi_monolithic, merged TSI block matrix +
+            # UMFPACK). Mesh capped at 8^3: the probe passes nx=ny=nz=16
+            # and a 16^3 monolithic SOLIDSCATRA solve is too big.
+            "tsi_monolithic_3d":
+                lambda p: matched_tsi_monolithic_3d_input(
+                    nx=min(int(p.get("nx", 4)), 8),
+                    ny=min(int(p.get("ny", 4)), 8),
+                    nz=min(int(p.get("nz", 4)), 8),
+                    E=p.get("E", 200e3), nu=p.get("nu", 0.3),
+                    density=p.get("rho", 1.0),
+                    conductivity=p.get("kappa", 1.0),
+                    numstep=max(1, round(p.get("T_end", 0.01)
+                                         / p.get("dt", 0.001))),
+                    timestep=p.get("dt", 0.001)),
+            # beams/cantilever_* previously fell through to the
+            # generator templates with <placeholder> scalars (probe
+            # 2026-06-12: MatchTree abort). Route to corpus-matched
+            # inline BEAM3R cantilevers; the tip load scales with E,
+            # so the probe's E=1000 override converges like the
+            # default E=1e7.
+            "beams_cantilever_static":
+                lambda p: matched_beam_cantilever_static_input(
+                    n_elem=p.get("n_elem", 10),
+                    length=p.get("length", 10.0),
+                    radius=p.get("radius", 0.1),
+                    E=p.get("E", 1.0e7), nu=p.get("nu", 0.3),
+                    load_factor=p.get("load_factor", 1.0),
+                    numstep=p.get("numstep", 5)),
+            "beams_cantilever_dynamic":
+                lambda p: matched_beam_cantilever_dynamic_input(
+                    n_elem=p.get("n_elem", 10),
+                    length=p.get("length", 10.0),
+                    radius=p.get("radius", 0.1),
+                    E=p.get("E", 1.0e7), nu=p.get("nu", 0.3),
+                    dens=p.get("rho", 1.0),
+                    moment_factor=p.get("moment_factor", 0.2),
+                    numstep=p.get("numstep", 5),
+                    timestep=p.get("timestep", 0.01)),
+            # thermo/thermo_2d + thermo/thermo_3d previously fell
+            # through to a one-line comment template ("# Thermal
+            # template ...") that is not even a YAML dict, so
+            # validate_input failed before the run stage (probe
+            # 2026-06-12). Route to genuine PROBLEMTYPE "Thermo"
+            # inline-mesh inputs (THERMO QUAD4/HEX8 + MAT_Fourier).
+            # The 3D row keys resolution off "n" (NOT nx/ny/nz) so
+            # the probe's nz=16 cannot inflate the cube mesh.
+            "thermo_thermo_2d": lambda p: matched_thermo_2d_input(
+                nx=min(int(p.get("nx", 16)), 32),
+                ny=min(int(p.get("ny", 16)), 32),
+                T_left=p.get("T_left", 100.0),
+                T_right=p.get("T_right", 0.0),
+                conductivity=p.get("kappa", 1.0)),
+            "thermo_thermo_3d": lambda p: matched_thermo_3d_input(
+                n=min(int(p.get("n", 6)), 8),
+                T_left=p.get("T_left", 100.0),
+                T_right=p.get("T_right", 0.0),
+                conductivity=p.get("kappa", 1.0),
+                capacity=p.get("capacity", 1.0),
+                numstep=max(1, min(20, round(p.get("T_end", 0.5)
+                                             / p.get("dt", 0.1)))),
+                timestep=p.get("dt", 0.1)),
+            # Lubrication (Reynolds eq.) slider bearing: the placeholder
+            # generator template emitted literal <...> scalars + an
+            # external Exodus mesh, aborting 4C's MatchTree (probe
+            # 2026-06-12). Route to the inline-mesh port of the corpus
+            # case lubrication_sb_2d.4C.yaml (PURE_LUB, LUBRICATION
+            # QUAD4, MAT_lubrication). Mesh capped small for < 30 s.
+            "lubrication_slider_bearing_2d":
+                lambda p: matched_lubrication_slider_bearing_input(
+                    nx=min(int(p.get("nx", 16)), 32),
+                    ny=min(int(p.get("ny", 1)), 4)),
+            # mixture/mixture_3d previously returned a one-line comment
+            # ("# Mixture template ...") — not a YAML dict, so
+            # validate_input failed with "Input is not a YAML
+            # dictionary" before the run stage (probe 2026-06-12). Route
+            # to a self-contained inline HEX8 cube whose material is the
+            # 4C Mixture toolbox (MAT_Mixture -> MIX_Rule_Simple ->
+            # MIX_Constituent_ElastHyper -> ELAST_CoupLogNeoHooke).
+            # Resolution keyed off "n" (NOT nx/ny/nz) so the probe's
+            # nz=16 cannot inflate the cube.
+            "mixture_mixture_3d": lambda p: matched_mixture_3d_input(
+                n=min(int(p.get("n", 4)), 6),
+                E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
+                density=p.get("rho", 0.1)),
+            # constraint/constraint_3d previously returned a one-line
+            # comment ("# Constraint template ...") — not a YAML dict, so
+            # validate_input failed with "Input is not a YAML
+            # dictionary" before the run stage (probe 2026-06-12). Route
+            # to a self-contained inline HEX8 cube with a real
+            # DESIGN POINT COUPLING CONDITION (multi-point coupling) that
+            # ties the loaded face's transverse DOFs together.
+            # Resolution keyed off "n" (NOT nx/ny/nz) so the probe's
+            # nz=16 cannot inflate the cube.
+            "constraint_constraint_3d":
+                lambda p: matched_constraint_3d_input(
+                    n=min(int(p.get("n", 4)), 6),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3)),
+            # membrane/membrane_2d + shell/shell_3d previously returned a
+            # one-line comment from generators/membrane.py & shell.py
+            # ("# Membrane template ...", "# Shell template ...") — not a
+            # YAML dict, so validate_input failed with "Input is not a
+            # YAML dictionary" before the run stage (probe 2026-06-12).
+            # Route to self-contained inline structural inputs: a flat
+            # MEMBRANE4 QUAD4 patch under a prescribed uniaxial stretch
+            # (membranes are singular without prestress / full Dirichlet),
+            # and a flat SHELL7P QUAD4 clamped cantilever under transverse
+            # orthopressure. nx,ny capped <=16 for sub-30 s runtime; the
+            # shell load scales with E so Newton converges at probe E.
+            "membrane_membrane_2d":
+                lambda p: matched_membrane_2d_input(
+                    nx=min(int(p.get("nx", 8)), 16),
+                    ny=min(int(p.get("ny", 8)), 16),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3)),
+            "shell_shell_3d":
+                lambda p: matched_shell_3d_input(
+                    nx=min(int(p.get("nx", 8)), 16),
+                    ny=min(int(p.get("ny", 4)), 16),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3)),
+            # cardiovascular0d/windkessel_3d previously fell through to a
+            # one-line comment generator template that is not even a YAML
+            # dict, so validate_input failed before the run stage (probe
+            # 2026-06-12). Route to the corpus-matched inline 0D-3D input:
+            # a structural HEX8 cube coupled to a 4-element Windkessel via
+            # DESIGN SURF CARDIOVASCULAR 0D conditions. Resolution keys off
+            # "n" (NOT nx/ny/nz) so the probe's nz=16 cannot inflate the
+            # monolithic 0D-3D solve; n is capped <=4 inside the helper.
+            "cardiovascular0d_windkessel_3d":
+                lambda p: matched_cardiovascular0d_windkessel_input(
+                    n=min(int(p.get("n", 2)), 4),
+                    E=p.get("E", 10.0), nu=p.get("nu", 0.3),
+                    density=p.get("rho", 2e-6),
+                    numstep=max(1, min(10, round(p.get("T_end", 0.3)
+                                                 / p.get("dt", 0.1)))),
+                    timestep=p.get("dt", 0.1)),
         }
         gen = inline_generators.get(key)
         if gen is None:
