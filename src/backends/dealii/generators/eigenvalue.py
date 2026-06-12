@@ -1,6 +1,14 @@
 """Eigenvalue problem templates for deal.II.
 
-Based on deal.II tutorial step-36 (SLEPc eigenvalue solver).
+Solves the step-36 problem (-laplacian(u) = lambda*u on the unit
+square) but WITHOUT SLEPc: conda-forge deal.II builds ship with
+neither PETSc nor SLEPc in ANY version (checked 9.1.1 and 9.3.2,
+2026-06-12), so the original SLEPcWrappers template could never
+compile for the most common install route. The template instead
+uses deflated inverse power iteration on deal.II's built-in serial
+SparseMatrix + SolverCG — compiles on every deal.II build, and the
+result is verifiable against the analytic spectrum
+lambda_mn = pi^2 (m^2 + n^2): 2pi^2, 5pi^2 (x2), 8pi^2, 10pi^2 (x2).
 """
 
 
@@ -9,40 +17,46 @@ def _eigenvalue_2d(params: dict) -> str:
     refinements = params.get("refinements", 5)
     n_eigenvalues = params.get("n_eigenvalues", 5)
     return f'''\
-/* Eigenvalue problem: Laplacian on unit square — deal.II (step-36 inspired)
- * Find lambda, u such that: -laplacian(u) = lambda * u
- * Uses SLEPc for the generalized eigenvalue problem A*x = lambda*M*x.
+/* Eigenvalue problem: Laplacian on unit square — deal.II
+ * Find lambda, u such that: -laplacian(u) = lambda * u, u = 0 on boundary.
  *
- * NOTE: Requires deal.II compiled with PETSc + SLEPc support.
- * Compile with: cmake -DDEAL_II_WITH_PETSC=ON -DDEAL_II_WITH_SLEPC=ON
+ * Solver: deflated INVERSE POWER ITERATION on the generalized problem
+ * K x = lambda M x using deal.II's built-in serial linear algebra —
+ * no PETSc / SLEPc required (conda-forge deal.II ships without them).
+ * Each iteration solves K y = M x with CG + SSOR, M-normalizes, and
+ * M-orthogonalizes against already-converged modes (deflation).
+ *
+ * Verification: exact eigenvalues are lambda_mn = pi^2 (m^2 + n^2);
+ * the smallest is 2 pi^2 ~ 19.7392 (FE values converge from above).
  */
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/dofs/dof_tools.h>
-#include <deal.II/lac/petsc_sparse_matrix.h>
-#include <deal.II/lac/petsc_vector.h>
-#include <deal.II/lac/slepc_solver.h>
+#include <deal.II/lac/sparse_matrix.h>
+#include <deal.II/lac/sparsity_pattern.h>
 #include <deal.II/lac/dynamic_sparsity_pattern.h>
-#include <deal.II/numerics/matrix_tools.h>
+#include <deal.II/lac/vector.h>
+#include <deal.II/lac/full_matrix.h>
+#include <deal.II/lac/solver_cg.h>
+#include <deal.II/lac/solver_control.h>
+#include <deal.II/lac/precondition.h>
+#include <deal.II/lac/affine_constraints.h>
 #include <deal.II/numerics/vector_tools.h>
 #include <deal.II/numerics/data_out.h>
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/function.h>
-#include <deal.II/base/utilities.h>
-#include <deal.II/base/index_set.h>
 #include <deal.II/fe/fe_values.h>
-#include <deal.II/lac/affine_constraints.h>
+#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 using namespace dealii;
 
-int main(int argc, char **argv)
+int main()
 {{
-  Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
-
   const int dim = 2;
   Triangulation<dim> triangulation;
   GridGenerator::hyper_cube(triangulation, 0, 1);
@@ -61,20 +75,16 @@ int main(int argc, char **argv)
     Functions::ZeroFunction<dim>(), constraints);
   constraints.close();
 
-  // Sparsity
   DynamicSparsityPattern dsp(n_dofs);
   DoFTools::make_sparsity_pattern(dof_handler, dsp, constraints, false);
+  SparsityPattern sparsity;
+  sparsity.copy_from(dsp);
 
-  // PETSc matrices
-  IndexSet locally_owned(n_dofs);
-  locally_owned.add_range(0, n_dofs);
+  SparseMatrix<double> stiffness_matrix(sparsity);
+  SparseMatrix<double> mass_matrix(sparsity);
 
-  PETScWrappers::SparseMatrix stiffness_matrix;
-  stiffness_matrix.reinit(locally_owned, locally_owned, dsp, MPI_COMM_WORLD);
-  PETScWrappers::SparseMatrix mass_matrix;
-  mass_matrix.reinit(locally_owned, locally_owned, dsp, MPI_COMM_WORLD);
-
-  // Assemble stiffness and mass matrices
+  // Assemble stiffness and mass matrices with constraints distributed
+  // to BOTH (otherwise Dirichlet DoFs produce spurious modes).
   QGauss<dim> quadrature(fe.degree + 1);
   FEValues<dim> fe_values(fe, quadrature,
     update_values | update_gradients | update_JxW_values);
@@ -107,31 +117,83 @@ int main(int argc, char **argv)
       constraints.distribute_local_to_global(cell_mass, local_dof_indices, mass_matrix);
     }}
 
-  stiffness_matrix.compress(VectorOperation::add);
-  mass_matrix.compress(VectorOperation::add);
+  // Push the spurious constrained-DoF modes to the TOP of the
+  // spectrum: K_ii = 1 (distribute_local_to_global already set a
+  // positive diagonal) and M_ii = tiny  =>  lambda_spurious ~ 1e12,
+  // far above the physical low modes we iterate towards.
+  for (unsigned int i = 0; i < n_dofs; ++i)
+    if (constraints.is_constrained(i))
+      {{
+        stiffness_matrix.set(i, i, 1.0);
+        mass_matrix.set(i, i, 1e-12);
+      }}
 
-  // Solve eigenvalue problem with SLEPc
+  // Deflated inverse power iteration
   const unsigned int n_eigenvalues = {n_eigenvalues};
-  std::vector<PETScWrappers::MPI::Vector> eigenvectors(n_eigenvalues);
-  for (auto &v : eigenvectors)
-    v.reinit(locally_owned, MPI_COMM_WORLD);
-  std::vector<double> eigenvalues(n_eigenvalues);
+  std::vector<Vector<double>> eigenvectors;
+  std::vector<double> eigenvalues;
 
-  SLEPcWrappers::SolverKrylovSchur eigensolver(SolverControl(5000, 1e-10));
-  eigensolver.set_which_eigenpairs(EigenvalueAlgorithmData::smallest_magnitude);
-  eigensolver.solve(stiffness_matrix, mass_matrix, eigenvalues, eigenvectors, n_eigenvalues);
+  PreconditionSSOR<SparseMatrix<double>> preconditioner;
+  preconditioner.initialize(stiffness_matrix, 1.2);
 
-  std::cout << "Eigenvalues found:" << std::endl;
+  for (unsigned int k = 0; k < n_eigenvalues; ++k)
+    {{
+      Vector<double> x(n_dofs), y(n_dofs), Mx(n_dofs);
+      // deterministic non-trivial start vector
+      for (unsigned int i = 0; i < n_dofs; ++i)
+        x[i] = 1.0 + 0.3 * std::sin(1.0 + 7.0 * (k + 1) * i);
+      constraints.set_zero(x);
+
+      double lambda = 0.0, lambda_old = -1.0;
+      for (unsigned int iter = 0; iter < 500; ++iter)
+        {{
+          // M-orthogonalize against converged modes (deflation)
+          for (const auto &v : eigenvectors)
+            {{
+              mass_matrix.vmult(Mx, v);
+              const double proj = x * Mx;
+              x.add(-proj, v);
+            }}
+          // M-normalize
+          mass_matrix.vmult(Mx, x);
+          x /= std::sqrt(x * Mx);
+
+          // y = K^{{-1}} M x
+          mass_matrix.vmult(Mx, x);
+          SolverControl inner_control(2000, 1e-12 * Mx.l2_norm());
+          SolverCG<Vector<double>> cg(inner_control);
+          cg.solve(stiffness_matrix, y, Mx, preconditioner);
+          constraints.set_zero(y);
+
+          // Rayleigh quotient  lambda = (y'Ky)/(y'My)
+          stiffness_matrix.vmult(Mx, y);
+          const double yKy = y * Mx;
+          mass_matrix.vmult(Mx, y);
+          const double yMy = y * Mx;
+          lambda = yKy / yMy;
+
+          x = y;
+          if (std::abs(lambda - lambda_old) < 1e-9 * std::abs(lambda))
+            break;
+          lambda_old = lambda;
+        }}
+
+      // store M-normalized eigenvector
+      mass_matrix.vmult(Mx, x);
+      x /= std::sqrt(x * Mx);
+      eigenvectors.push_back(x);
+      eigenvalues.push_back(lambda);
+    }}
+
+  std::cout << "Eigenvalues found (analytic: 2pi^2=19.7392, 5pi^2=49.348 x2, 8pi^2=78.957):"
+            << std::endl;
   for (unsigned int i = 0; i < eigenvalues.size(); ++i)
     std::cout << "  lambda_" << i << " = " << eigenvalues[i] << std::endl;
 
-  // Output first eigenvector
+  // Output first eigenmode
   DataOut<dim> data_out;
   data_out.attach_dof_handler(dof_handler);
-  Vector<double> eigenvector_local(n_dofs);
-  for (unsigned int i = 0; i < n_dofs; ++i)
-    eigenvector_local[i] = eigenvectors[0][i];
-  data_out.add_data_vector(eigenvector_local, "eigenmode_0");
+  data_out.add_data_vector(eigenvectors[0], "eigenmode_0");
   data_out.build_patches();
 
   std::ofstream output("result.vtu");
@@ -145,10 +207,17 @@ int main(int argc, char **argv)
 # ── Knowledge ────────────────────────────────────────────────────────────
 
 KNOWLEDGE = {
-    "description": "Eigenvalue problems via SLEPc: -laplacian(u) = lambda*u (step-36 inspired)",
+    "description": ("Eigenvalue problems: -laplacian(u) = lambda*u "
+                    "(step-36 problem). The catalog template uses "
+                    "deflated inverse power iteration on built-in "
+                    "serial linear algebra (no PETSc/SLEPc needed); "
+                    "SLEPc Krylov-Schur is the production path on "
+                    "builds that have it."),
     "tutorial_steps": ["step-36 (SLEPc eigenvalue problem)"],
     "function_space": "FE_Q<dim>(1)",
-    "solver": "SLEPc Krylov-Schur (default), Arnoldi, Lanczos, LOBPCG",
+    "solver": ("Template: deflated inverse power iteration "
+               "(CG + SSOR inner solves). With SLEPc available: "
+               "Krylov-Schur (default), Arnoldi, Lanczos, LOBPCG"),
     "elements": {
         "FE_Q":
             "degree=1 for Laplace eigenproblems on a unit square / "
@@ -190,10 +259,35 @@ KNOWLEDGE = {
         "PETScWrappers::PreconditionICC        — incomplete Cholesky for symmetric shift solves",
     ],
     "pitfalls": [
-        "[Integration] Requires deal.II compiled with PETSc + SLEPc "
-        "support. A vanilla conda install without SLEPc cannot link "
-        "the SLEPc::SolverKrylovSchur symbol. Signal: link error "
-        "'undefined reference to SLEPc::SolverBase::SolverBase'.",
+        "[Integration] conda-forge deal.II ships WITHOUT PETSc and "
+        "WITHOUT SLEPc in every version (verified on 9.1.1 and 9.3.2, "
+        "2026-06-12: config.h has '#undef DEAL_II_WITH_PETSC' and "
+        "'#undef DEAL_II_WITH_SLEPC'). SLEPcWrappers code cannot even "
+        "compile there — the slepc_solver.h include fails before any "
+        "link step. Use the catalog template's deflated inverse power "
+        "iteration (built-in SparseMatrix + SolverCG, works on every "
+        "build) or compile deal.II from source with "
+        "-DDEAL_II_WITH_PETSC=ON -DDEAL_II_WITH_SLEPC=ON for the "
+        "SLEPc path. Signal: 'fatal error: "
+        "deal.II/lac/slepc_solver.h: No such file or directory' at "
+        "compile time on a conda install.",
+        "[Numerical] Inverse-power-iteration deflation must "
+        "orthogonalize in the M-inner product (x -= (x' M v_j) v_j "
+        "with M-normalized v_j), NOT the Euclidean one — K x = "
+        "lambda M x eigenvectors are M-orthogonal, not "
+        "l2-orthogonal. Euclidean deflation re-converges to the "
+        "previous mode. Signal: lambda_1 returned equal to lambda_0 "
+        "(~2 pi^2 twice) instead of the analytic 5 pi^2, and the "
+        "degenerate 5 pi^2 pair never appears.",
+        "[Numerical] Constrained (Dirichlet) DoFs in the generalized "
+        "problem create spurious eigenpairs at K_ii / M_ii. Push them "
+        "to the TOP of the spectrum (set K_ii = 1, M_ii ~ 1e-12 -> "
+        "lambda_spurious ~ 1e12) so smallest-mode iteration never "
+        "sees them. Leaving M_ii = O(h^2) from assembly puts the "
+        "spurious modes at O(1) — right in the physical range. "
+        "Signal: smallest 'eigenvalue' found is ~1.0 on the unit "
+        "square instead of 2 pi^2 ~ 19.74, one such mode per "
+        "boundary DoF.",
         "[Physics] Generalized eigenvalue is A*x = lambda*M*x where "
         "A = stiffness and M = mass. Using the standard eigenvalue "
         "form (no mass matrix) gives WRONG eigenvalues — Laplace "

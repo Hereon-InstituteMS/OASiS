@@ -66,6 +66,25 @@ def _find_dealii() -> Optional[Path]:
                 or (p / "lib" / "cmake" / "deal.II").is_dir())
 
     # 2 + 3. Conda envs (deal.II often lives in a dedicated env).
+    # When several envs contain deal.II, prefer the HIGHEST version:
+    # iterdir() order is arbitrary, and on this machine an old
+    # ofa-dealii (9.1.1, serial, missing fe_interface_values.h /
+    # hp/refinement.h / count_dofs_per_fe_block) used to shadow the
+    # newer ofa-dealii-93 (9.3.2) depending on directory order —
+    # 10 of 39 catalog templates failed to compile purely from
+    # losing that race (probe 2026-06-12).
+    def _dealii_version_of(root: Path) -> tuple:
+        cfg = root / "include" / "deal.II" / "base" / "config.h"
+        try:
+            for line in cfg.read_text().splitlines():
+                if "DEAL_II_PACKAGE_VERSION" in line and '"' in line:
+                    ver = line.split('"')[1]
+                    return tuple(int(x) for x in ver.split(".")[:3])
+        except (OSError, ValueError):
+            pass
+        return (0, 0, 0)
+
+    candidates: list[Path] = []
     for conda_base in (Path.home() / "miniconda3" / "envs",
                        Path.home() / "anaconda3" / "envs",
                        Path.home() / "miniforge3" / "envs"):
@@ -73,7 +92,9 @@ def _find_dealii() -> Optional[Path]:
             continue
         for env_dir in conda_base.iterdir():
             if _looks_like_dealii_root(env_dir):
-                return env_dir
+                candidates.append(env_dir)
+    if candidates:
+        return max(candidates, key=_dealii_version_of)
 
     # 4. User-source dirs (in case the user built from source).
     for sub in ("dealii", "deal.II", "src/dealii", "src/deal.II",

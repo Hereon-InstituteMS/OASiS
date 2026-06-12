@@ -276,24 +276,24 @@ def discover_backends() -> list[ProbeResult]:
         ],
     )
     if not dealii_result.found:
-        for conda_base in (
-                Path.home() / "miniconda3" / "envs",
-                Path.home() / "anaconda3" / "envs",
-                Path.home() / "miniforge3" / "envs"):
-            if not conda_base.is_dir():
-                continue
-            for env_dir in conda_base.iterdir():
-                if ((env_dir / "include" / "deal.II").is_dir() or
-                        (env_dir / "share" / "deal.II" / "cmake").is_dir() or
-                        (env_dir / "lib" / "cmake" / "deal.II").is_dir()):
-                    dealii_result = ProbeResult(
-                        backend="dealii", found=True,
-                        confidence="definite",
-                        location=str(env_dir),
-                        details={"source": f"conda:{env_dir.name}"})
-                    break
-            if dealii_result.found:
-                break
+        # Defer to the dealii backend's own resolver — it is the
+        # single source of truth and, since 2026-06-12, picks the
+        # HIGHEST-version env when several conda envs contain
+        # deal.II. The inline scan this replaces returned the first
+        # env in directory order, so a stale 9.1.1 env could shadow
+        # a newer 9.3.2 one and the saved discovered_config.json
+        # then pinned every compile to the old headers.
+        try:
+            from backends.dealii.backend import _find_dealii
+            root = _find_dealii()
+            if root is not None:
+                dealii_result = ProbeResult(
+                    backend="dealii", found=True,
+                    confidence="definite",
+                    location=str(root),
+                    details={"source": f"resolver:{root.name}"})
+        except ImportError:
+            pass
     results.append(dealii_result)
 
     # Check for source roots (developer mode)

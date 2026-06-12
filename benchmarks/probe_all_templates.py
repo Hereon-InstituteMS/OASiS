@@ -54,8 +54,23 @@ sys.path.insert(0, str(REPO_ROOT / "data"))
 # ── env discovery ────────────────────────────────────────────────────────
 def _discover_env():
     home = Path.home()
-    dealii_env_root = home / "miniconda3/envs/ofa-dealii"
-    if "DEAL_II_DIR" not in os.environ:
+    # Resolve deal.II via the backend's own version-aware resolver
+    # instead of a hardcoded env name. The old hardcoded
+    # ~/miniconda3/envs/ofa-dealii kept pinning every compile to a
+    # stale 9.1.1 env even after a newer 9.3.2 env existed and the
+    # backend itself had moved on (probe 2026-06-12: 10 templates
+    # "failed" purely from compiling against the old headers the
+    # probe forced via DEAL_II_DIR/CMAKE_PREFIX_PATH).
+    dealii_env_root = None
+    try:
+        from backends.dealii.backend import _find_dealii
+        dealii_env_root = _find_dealii()
+    except ImportError:
+        pass
+    if dealii_env_root is None:
+        fallback = home / "miniconda3/envs/ofa-dealii"
+        dealii_env_root = fallback if fallback.is_dir() else None
+    if "DEAL_II_DIR" not in os.environ and dealii_env_root is not None:
         for c in [
             dealii_env_root / "lib/cmake/deal.II",
             Path("/usr/lib/x86_64-linux-gnu/cmake/deal.II"),
@@ -63,7 +78,7 @@ def _discover_env():
             if c.is_dir():
                 os.environ["DEAL_II_DIR"] = str(c)
                 break
-    if dealii_env_root.is_dir():
+    if dealii_env_root is not None and dealii_env_root.is_dir():
         existing = os.environ.get("CMAKE_PREFIX_PATH", "")
         prefix_parts = [p for p in existing.split(os.pathsep) if p]
         if str(dealii_env_root) not in prefix_parts:
