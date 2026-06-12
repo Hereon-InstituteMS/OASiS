@@ -34,10 +34,60 @@ class ConstraintGenerator(BaseGenerator):
                 "DESIGN LINE MPC NORMAL COMPONENT CONDITIONS",
             ],
             "pitfalls": [
-                "Constraint equations must be linearly independent",
-                "Penalty parameter affects both accuracy and conditioning",
-                "Mortar coupling requires integration on the interface",
-                "Periodic BCs: master and slave surfaces must match geometrically",
+                (
+                    "[Numerical] Constraint equations must be "
+                    "LINEARLY INDEPENDENT. Signal: linearly-"
+                    "dependent rows in the constraint matrix "
+                    "C produce a singular saddle-point "
+                    "system [K C^T; C 0] — direct LU "
+                    "reports 'zero pivot in Schur "
+                    "complement'. Verify with rank(C) = "
+                    "n_constraints; remove duplicates. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Penalty parameter affects "
+                    "both ACCURACY and CONDITIONING. Signal: "
+                    "in DESIGN ... MULTIPNT CONSTRAINT or a "
+                    "PENALTY-method CONSTRAINT BLOCK, "
+                    "PENALTY_PARAMETER too small (alpha < "
+                    "100*K_typical) lets the constraint "
+                    "drift; too large (alpha > "
+                    "1e6*K_typical) makes cond(K + "
+                    "alpha*C^T*C) > 1e15 and the Trilinos "
+                    "iterative solver stagnates. Sweet "
+                    "spot: alpha ~ 1e3 - 1e5 times "
+                    "stiffness diagonal; switch to "
+                    "STRATEGY: lagrange for exact "
+                    "enforcement. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Mortar coupling requires "
+                    "INTEGRATION on the interface — the "
+                    "coupling integrals over master and "
+                    "slave segments must be evaluated. "
+                    "Signal: missing INTEGRATION on the "
+                    "mortar side produces an incorrect "
+                    "coupling matrix; the multiplier "
+                    "system is rank-deficient and the "
+                    "interface jumps stay non-zero. Use "
+                    "INTPOINTS_MORTAR appropriate to "
+                    "element order. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] Periodic BCs: master and slave "
+                    "surfaces must MATCH GEOMETRICALLY "
+                    "(same shape, opposite location). "
+                    "Signal: a periodic pair where the "
+                    "slave is rotated or non-uniformly "
+                    "spaced relative to the master gives "
+                    "wrong node-to-node mapping — periodic "
+                    "BC enforcement fails or creates "
+                    "spurious gaps. Verify "
+                    "max|x_slave - x_master + L*e_per| < "
+                    "tol (where e_per is the period "
+                    "direction). (Audit 2026-06-02.)"
+                ),
             ],
         }
 

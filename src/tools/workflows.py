@@ -64,14 +64,40 @@ def register_workflow_tools(mcp: FastMCP):
             avail = [p.name for p in backend.supported_physics()]
             return f"Module '{module}' not found in {solver}. Available: {', '.join(avail)}"
 
-        # Get deep knowledge
-        from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE, _FEBIO_KNOWLEDGE
+        # Pitfalls must come from the BACKEND (Table-1 promoted
+        # source of truth). Supplementary fields (description,
+        # weak_form, problem_type, materials, etc.) can come from
+        # deep_knowledge.py. This stops the previous bug where
+        # `module_knowledge` returned the prose deep_knowledge
+        # pitfalls instead of the Table-1 ones the agent gets
+        # via `prepare_simulation` — same backend, two answers.
+        from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE
+        # `febio` was removed 2026-06-02 — the febio backend's own
+        # generators carry the canonical 16-physics catalog; the
+        # 4-key deep_knowledge.py shim was shadowing it.
         knowledge_map = {
             "fourc": _4C_KNOWLEDGE, "fenics": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE,
+            "dealii": _DEALII_KNOWLEDGE,
         }
-        db = knowledge_map.get(solver.lower(), {})
-        knowledge = db.get(module.lower(), {})
+        deep_db = knowledge_map.get(solver.lower(), {})
+        deep_knowledge = deep_db.get(module.lower(), {})
+
+        # Backend-served (Table-1) view — overlays pitfalls.
+        backend_knowledge = {}
+        try:
+            backend_knowledge = backend.get_knowledge(module.lower())
+            if not isinstance(backend_knowledge, dict):
+                backend_knowledge = {}
+        except Exception:
+            backend_knowledge = {}
+
+        # Merge: deep_knowledge for supplementary fields, backend
+        # for pitfalls (the Table-1 source of truth) and any
+        # fields the backend explicitly provides.
+        knowledge = dict(deep_knowledge)
+        for k, v in backend_knowledge.items():
+            if k == "pitfalls" or k not in knowledge:
+                knowledge[k] = v
 
         lines = [f"# {physics_match.description}"]
         lines.append(f"**Solver:** {backend.display_name()}")
@@ -111,7 +137,7 @@ def register_workflow_tools(mcp: FastMCP):
                 lines.append(f"\n**Available templates:** {', '.join(knowledge['variants'])}")
 
         lines.append(f"\nUse `generate_input('{solver}', '{module}', '<variant>')` to get a working template.")
-        lines.append(f"Use `get_deep_knowledge('{solver}', '{module}')` for the full knowledge dump.")
+        lines.append(f"Use `knowledge('physics', solver='{solver}', physics='{module}')` for the full knowledge dump.")
 
         return "\n".join(lines)
 
@@ -280,16 +306,31 @@ def register_workflow_tools(mcp: FastMCP):
         if solver.lower() in ("fourc", "4c"):
             return _query_4c_docs(topic)
         else:
-            # For other solvers, search our knowledge base
-            from tools.deep_knowledge import _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE, _FEBIO_KNOWLEDGE
-            knowledge_map = {"fenics": _FENICS_KNOWLEDGE, "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE}
+            # For other solvers, search our knowledge base.
+            # Pitfalls are sourced from the backend (Table-1
+            # promoted) — deep_knowledge supplies supplementary
+            # fields (weak_form, problem_type, materials, ...).
+            from tools.deep_knowledge import _FENICS_KNOWLEDGE, _DEALII_KNOWLEDGE
+            # `febio` removed 2026-06-02 — the febio backend's own
+            # generators carry the canonical 16-physics catalog.
+            knowledge_map = {"fenics": _FENICS_KNOWLEDGE, "dealii": _DEALII_KNOWLEDGE}
             db = knowledge_map.get(solver.lower())
             if not db:
                 return f"Unknown solver: {solver}"
+            backend_obj = get_backend(solver.lower())
 
             topic_lower = topic.lower()
             results = []
             for key, k in db.items():
+                # Overlay backend pitfalls (Table-1 source) if
+                # the backend exposes them for this physics.
+                if backend_obj is not None:
+                    try:
+                        bk = backend_obj.get_knowledge(key)
+                        if isinstance(bk, dict) and "pitfalls" in bk:
+                            k = {**k, "pitfalls": bk["pitfalls"]}
+                    except Exception:
+                        pass
                 k_str = json.dumps(k, default=str).lower()
                 if topic_lower in k_str:
                     results.append(f"## {key}\n{json.dumps(k, indent=2, default=str)}")

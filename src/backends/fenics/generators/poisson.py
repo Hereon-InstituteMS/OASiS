@@ -10,9 +10,9 @@ KNOWLEDGE = {
     "function_space": "Lagrange order 1 or 2",
     "solver": {"ksp_type": "preonly/cg", "pc_type": "lu/hypre"},
     "pitfalls": [
-        "Ensure boundary facets are created: domain.topology.create_connectivity(fdim, tdim)",
-        "Use default_scalar_type for constants to match PETSc build",
-        "VTXWriter only works with Lagrange elements",
+        "[API] In recent dolfinx, domain.topology.create_connectivity(fdim, tdim) is no longer required as a manual step before locate_entities_boundary / locate_dofs_topological — the connectivity is built lazily on first need. Calling it eagerly is harmless and is the safer default in tutorial code, but its ABSENCE no longer triggers an exception. Signal: in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns the correct dof indices without that step. (Verified empirically 2026-06-01 — locate_entities_boundary + locate_dofs_topological both succeed without an explicit create_connectivity call.)",
+        "[API] Use dolfinx.default_scalar_type for Constants and Function arrays so the dtype matches the underlying PETSc build (float64 if PETSc is real, complex128 if PETSc is complex). Signal: passing a Python float into a complex-PETSc Function raises TypeError in fem.form / fem.assemble_matrix when the form expects complex coefficients; passing 0j into a real-PETSc Function raises ValueError 'cannot convert complex to float'.",
+        "[API] VTXWriter (ADIOS2 backend) supports only Lagrange / DG element families. Writing a Function defined on Nedelec or BDM raises RuntimeError. Signal: VTXWriter.write raises RuntimeError 'Cannot interpolate function ... to the VTX output basis' or 'ADIOS2 VTX only supports Lagrange elements'.",
     ],
     "materials": {"kappa": {"range": [0.001, 1e6], "unit": "W/(m*K) or dimensionless"}},
 }

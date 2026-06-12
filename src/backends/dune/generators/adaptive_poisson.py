@@ -85,12 +85,79 @@ KNOWLEDGE = {
         "spaces": "lagrange(gridView, order=k) on adaptiveLeafGridView",
         "mesh": "ALUGrid (pip install dune-alugrid) for local h-refinement",
         "pitfalls": [
-            "ALUGrid supports true local refinement; structuredGrid only global refinement",
-            "Error estimator: eta_K^2 = h_K^2 * ||f+Delta(u)||^2 + h_K * ||[grad(u).n]||^2",
-            "After refinement: space.update() and uh.interpolate(uh) to project solution",
-            "Doerfler marking: refine smallest set of elements capturing theta fraction of error",
-            "For coarsening: mark elements with small error indicator",
-            "Nested iteration: use coarse grid solution as initial guess on fine grid",
+            (
+                "[API] ALUGrid supports TRUE LOCAL "
+                "refinement; structuredGrid (YaspGrid) "
+                "supports only GLOBAL refinement. Signal: "
+                "calling gridView.mark(elem, refine) on a "
+                "structuredGrid raises 'grid does not "
+                "support local refinement' or silently "
+                "refines globally; for adaptivity, "
+                "switch to alucubeGrid or alusimplexGrid. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Error estimator: eta_K^2 = "
+                "h_K^2 * ||f + Δu||^2 + h_K * ||[grad(u)·"
+                "n]||^2. Signal: omitting the jump term "
+                "[grad(u).n] across facets under-estimates "
+                "the error in irregular meshes by 5-30%; "
+                "the residual-only estimator misses jumps "
+                "that signal under-resolved interior "
+                "layers. Use the full residual + jump "
+                "estimator for reliable adaptivity. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[API] After refinement: call space."
+                "update() AND uh.interpolate(uh) to "
+                "project the solution onto the new mesh. "
+                "Signal: forgetting space.update() leaves "
+                "the function on the OLD space — "
+                "subsequent assembly fails with "
+                "'function and space mismatch'; "
+                "forgetting interpolate() leaves uh "
+                "as the initial guess on the refined "
+                "regions instead of using the prior "
+                "solution. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Doerfler marking: refine the "
+                "SMALLEST set of elements that captures "
+                "theta fraction (typical 0.25-0.5) of "
+                "total error. Signal: when running on "
+                "alugrid via the dune.fem mark/adapt "
+                "loop, theta < 0.1 refines too few "
+                "elements per pass (slow convergence to "
+                "target tolerance); theta > 0.7 refines "
+                "almost-uniformly (defeats the adaptive "
+                "benefit). 0.3 is a common default. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For COARSENING: mark elements "
+                "with SMALL error indicator. Signal: a "
+                "moving-front problem with monotonic "
+                "refinement-only accumulates elements; "
+                "after the front passes, those refined "
+                "regions are over-resolved. Mark elements "
+                "with eta_K < theta_coarse * max(eta) for "
+                "coarsening (typical theta_coarse ~ 0.01-"
+                "0.05). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Nested iteration: use coarse-"
+                "grid solution as initial guess on the "
+                "fine alugrid. Signal: starting the "
+                "dune.fem galerkin scheme Newton from "
+                "zero on the fine lagrange space for a "
+                "nonlinear problem takes 5-10 iterations; "
+                "starting from the interpolated coarse "
+                "solution converges in 1-2 iterations "
+                "because the initial guess is already in "
+                "the convergence basin. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 }

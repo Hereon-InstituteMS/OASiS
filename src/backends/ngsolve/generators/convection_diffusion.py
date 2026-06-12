@@ -58,11 +58,55 @@ KNOWLEDGE = {
         "spaces": "L2(mesh, order=k, dgjumps=True) for DG",
         "solver": "Direct (DG systems are block-diagonal per element for explicit)",
         "pitfalls": [
-            "MUST set dgjumps=True on L2 space to allocate coupling entries",
-            "u.Other() accesses neighboring element value",
-            "dx(skeleton=True) for interior facet integrals",
-            "IfPos(b*n, u, u.Other()) for upwind flux selection",
-            "Penalty parameter: alpha*order^2/h for interior penalty DG",
+            (
+                "[API] MUST set dgjumps=True on L2 space to "
+                "allocate coupling entries. Signal: assembling "
+                "a skeleton integrand against an L2 space "
+                "without dgjumps=True raises "
+                "`SparseMatrixDynamic: row not allocated` or "
+                "the assembled matrix has zero entries on "
+                "facet couplings; solution then equals the "
+                "pure-volume problem with no DG penalty. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[API] u.Other() accesses neighboring element "
+                "value. Signal: forgetting .Other() in a "
+                "skeleton form gives `u - u = 0` integrands "
+                "everywhere — the jump term vanishes and the "
+                "DG scheme reduces to a discontinuous "
+                "polynomial fit per element with no inter-"
+                "element coupling. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] dx(skeleton=True) for interior facet "
+                "integrals. Signal: omitting skeleton=True "
+                "for a jump integrand raises "
+                "`SymbolicBFI: u.Other() outside skeleton "
+                "context` at form construction, or silently "
+                "integrates against bulk dx — assembled "
+                "matrix lacks facet contributions. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] IfPos(b*n, u, u.Other()) for "
+                "upwind flux selection. Signal: swapping the "
+                "arguments — IfPos(b*n, u.Other(), u) — gives "
+                "DOWNWIND advection that is unconditionally "
+                "unstable; concentration field develops "
+                "oscillations growing geometrically in the "
+                "advection direction. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty parameter: alpha*order^2/h "
+                "for interior penalty DG. Signal: alpha too "
+                "small gives coercivity loss — solution norm "
+                "diverges with mesh refinement, or LU pivots "
+                "approach zero; alpha too large gives "
+                "cond(K)>1e14 and CG stalls. Rule of thumb: "
+                "alpha = 4 * order^2 for symmetric interior "
+                "penalty. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }

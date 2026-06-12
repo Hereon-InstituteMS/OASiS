@@ -40,20 +40,68 @@ KNOWLEDGE = {
             "interface": ["UPwSmallStrainInterfaceElement2D4N", "UPwSmallStrainInterfaceElement3D6N",
                           "UPwSmallStrainInterfaceElement3D8N"],
         },
-        "constitutive_laws": ["LinearElastic2DPlaneStrain", "LinearElastic3DLaw",
-                              "ModifiedCamClay", "MohrCoulomb", "DruckerPrager",
-                              "SmallStrainUDSM2DPlaneStrainLaw", "SmallStrainUDSM3DLaw"],
+        # Real registered names from KratosGeoMechanicsApplication
+        # 10.4.2 binary scan (libKratosGeoMechanicsCore.so).
+        # CAVEAT: ModifiedCamClay and DruckerPrager were in the
+        # prior catalog but DO NOT exist as registered laws in
+        # GeoMechanicsApplication at all — see pitfall #0.
+        "constitutive_laws": [
+            "GeoLinearElasticPlaneStrain2DLaw",
+            "GeoIncrementalLinearElastic3DLaw",
+            "GeoIncrementalLinearElasticInterfaceLaw",
+            "LinearElastic2DInterfaceLaw",
+            "LinearElastic3DInterfaceLaw",
+            "GeoMohrCoulombWithTensionCutOff2D",
+            "GeoMohrCoulombWithTensionCutOff3D",
+            "SmallStrainUDSM2DPlaneStrainLaw",
+            "SmallStrainUDSM3DLaw",
+            "SmallStrainUDSM2DInterfaceLaw",
+            "SmallStrainUDSM3DInterfaceLaw",
+            "TrussBackboneConstitutiveLaw",
+        ],
         "solver_types": ["U-Pw (displacement-water pressure coupled)",
                          "Pw (groundwater flow only)", "U (structural only)"],
         "analysis_types": ["consolidation", "groundwater_flow", "slope_stability",
                            "excavation_staged", "dam_safety"],
         "pitfalls": [
-            "U-Pw elements require both DISPLACEMENT and WATER_PRESSURE DOFs",
-            "Gravity loading via body_force_per_unit_mass: [0, -9.81, 0]",
-            "Initial stress state often needed via K0 procedure",
-            "Time stepping critical for consolidation (geometric progression recommended)",
-            "Material parameters: use effective stress parameters, not total stress",
-        ],
+                        '[API] Kratos GeoMechanicsApplication 10.4.2 '
+                        'has the following CL families (verified via '
+                        'binary scan of libKratosGeoMechanicsCore.so): '
+                        'Geo-prefixed LinearElastic + Mohr-Coulomb-with-'
+                        'tension-cutoff variants, UDSM (user-defined soil '
+                        'model) variants, plus 2D/3D Interface laws and '
+                        'TrussBackboneConstitutiveLaw. NOTABLY ABSENT: '
+                        'no ModifiedCamClay anywhere; no DruckerPrager '
+                        'anywhere. The prior catalog listed both as '
+                        'available — they were never registered in this '
+                        'Application. Real Mohr-Coulomb is '
+                        '"GeoMohrCoulombWithTensionCutOff2D" (or 3D), '
+                        'NOT plain "MohrCoulomb". Linear elastic is '
+                        '"GeoLinearElasticPlaneStrain2DLaw" / '
+                        '"GeoIncrementalLinearElastic3DLaw", NOT '
+                        '"LinearElastic2DPlaneStrain" / '
+                        '"LinearElastic3DLaw". Signal: in '
+                        'ProjectParameters.json or MaterialsFile, '
+                        'constitutive_law.name = "ModifiedCamClay" '
+                        'raises RuntimeError "Trying to add a non '
+                        'registered ConstitutiveLaw" at AnalysisStage.'
+                        'Initialize; same for DruckerPrager, MohrCoulomb '
+                        '(without "WithTensionCutOff2D"), LinearElastic2'
+                        'DPlaneStrain, LinearElastic3DLaw. (Verified '
+                        'empirically 2026-06-01 — Tier-2 fixture '
+                        'geomechanics_cl_naming in scripts/tier2_fixtures'
+                        '/kratos/.)',
+                        '[Physics] U-Pw elements require both DISPLACEMENT and WATER_PRESSURE DOFs '
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
+                        '[Numerical] Gravity loading via body_force_per_unit_mass: [0, -9.81, 0] '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Initial stress state often needed via K0 procedure '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Time stepping critical for consolidation (geometric progression recommended) '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Integration] Material parameters: use effective stress parameters, not total stress '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                    ],
     },
 }
 

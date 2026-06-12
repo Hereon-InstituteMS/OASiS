@@ -35,9 +35,15 @@ class SolidMechanicsGenerator(BaseGenerator):
                 "(KINEM: nonlinear, Newton-Raphson iteration).  "
                 "The PROBLEM TYPE is 'Structure', the dynamics section is "
                 "'STRUCTURAL DYNAMIC', and geometry goes into "
-                "'STRUCTURE GEOMETRY'.  2D problems use the WALL element "
-                "category with STRESS_STRAIN plane_strain or plane_stress; "
-                "3D problems use the SOLID category."
+                "'STRUCTURE GEOMETRY'.  In 4C 2026.3 BOTH 2D "
+                "and 3D problems use the SOLID eletype "
+                "(e.g. 'SOLID QUAD4' in 2D with "
+                "'PLANE_ASSUMPTION plane_strain' / 'plane_stress'; "
+                "'SOLID HEX8' in 3D, no PLANE_ASSUMPTION). The "
+                "legacy 'WALL' / 'THICK' / 'STRESS_STRAIN' "
+                "keywords were renamed to 'SOLID' / 'THICKNESS' "
+                "/ 'PLANE_ASSUMPTION' — writing the legacy form "
+                "raises 'Unknown type WALL of finite element'."
             ),
             "required_sections": [
                 "PROBLEM TYPE",
@@ -333,41 +339,92 @@ class SolidMechanicsGenerator(BaseGenerator):
             ],
             "pitfalls": [
                 (
-                    "KINEM must match the physical assumption.  Using "
-                    "'KINEM: linear' with a hyperelastic material (Neo-Hookean, "
-                    "Mooney-Rivlin) is WRONG and produces meaningless results."
+                    "[Numerical] KINEM must match the physical assumption.  "
+                    "Using 'KINEM: linear' with a hyperelastic material "
+                    "(Neo-Hookean, Mooney-Rivlin) is WRONG and produces "
+                    "meaningless results. Signal: deflection / strain "
+                    "results stay linear with load and disagree sharply "
+                    "with the equivalent KINEM: nonlinear run for the same "
+                    "geometry — typical divergence ~40% at large strain. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "For truly linear problems set MAXITER: 1.  4C will waste "
-                    "time iterating if MAXITER > 1 because the solution is "
-                    "already converged after one step."
+                    "[Performance] For truly linear problems set MAXITER: 1. "
+                    " 4C will waste time iterating if MAXITER > 1 because "
+                    "the solution is already converged after one step. "
+                    "Signal: NOX convergence log shows residual already "
+                    "below TOLRES at iteration 1 yet a second Newton step "
+                    "is taken on every time step. (Audit 2026-06-02.)"
                 ),
                 (
-                    "DENS (density) is only needed for dynamics or body-force "
-                    "loads (gravity).  For quasi-static problems without gravity "
-                    "it can be omitted, but it is MANDATORY for structural dynamics."
+                    "[Input] DENS (density) is only needed for dynamics or "
+                    "body-force loads (gravity).  For quasi-static problems "
+                    "without gravity it can be omitted, but it is MANDATORY "
+                    "for structural dynamics. Signal: a transient run with "
+                    "DYNAMICTYPE: GenAlpha aborts with `mass matrix needs "
+                    "DENS in material X` or produces all-zero displacements "
+                    "with no inertia effect. (Audit 2026-06-02.)"
                 ),
                 (
-                    "HEX8 elements suffer from volumetric and shear locking in "
-                    "bending-dominated or nearly-incompressible problems.  "
-                    "Use TECH: eas_full or TECH: fbar to mitigate locking, or "
-                    "use higher-order elements (HEX27, TET10)."
+                    "[Numerical] HEX8 elements suffer from "
+                    "volumetric and shear locking in "
+                    "bending-dominated or nearly-"
+                    "incompressible problems. Use TECH: "
+                    "eas_full or TECH: fbar on the SOLID "
+                    "MAT_ElastHyper element, or use "
+                    "higher-order elements (HEX27, TET10). "
+                    "Signal: deflection in a cantilever / "
+                    "plate-bending benchmark (with "
+                    "PROBLEMTYPE: Structure and "
+                    "STRUCTURAL DYNAMIC: Statics) is much "
+                    "smaller than analytical (often "
+                    "10-100x too stiff), or Poisson ratio "
+                    "nu approaching 0.5 makes the response "
+                    "approach rigid. (Audit 2026-06-02.)"
                 ),
                 (
-                    "2D structural elements use the WALL element category (not "
-                    "SOLID).  They require THICK and STRESS_STRAIN parameters: "
-                    "'THICK 1.0 STRESS_STRAIN plane_strain' or 'plane_stress'.  "
-                    "In ELEMENT_BLOCKS with Exodus meshes, use the WALL: sub-key "
-                    "instead of SOLID: for 2D."
+                    "[API] In 4C 2026.3 BOTH 2D and 3D "
+                    "structural elements use the SOLID eletype "
+                    "factory. 2D elements (SOLID QUAD4 / TRI3 "
+                    "etc.) require THICKNESS and "
+                    "PLANE_ASSUMPTION: 'THICKNESS 1.0 "
+                    "PLANE_ASSUMPTION plane_strain' or "
+                    "'plane_stress'. Signal: writing the "
+                    "legacy 'WALL' category + 'THICK' / "
+                    "'STRESS_STRAIN' keywords raises 'Unknown "
+                    "type WALL of finite element' from "
+                    "parobjectfactory.cpp:153 at problem setup. "
+                    "In ELEMENT_BLOCKS with Exodus meshes use "
+                    "the SOLID: sub-key for both 2D and 3D. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "Neumann conditions for structures have NUMDOF: 6 (3 forces "
-                    "+ 3 moments in 3D) or NUMDOF: 6 in 2D (2 forces + 1 moment "
-                    "+ 3 unused).  The first entries are force components."
+                    "[Input] Neumann conditions for structures "
+                    "have NUMDOF: 6 (3 forces + 3 moments in "
+                    "3D) or NUMDOF: 6 in 2D (2 forces + 1 "
+                    "moment + 3 unused). The first entries "
+                    "are force components. Signal: NUMDOF: 3 "
+                    "on a structural Neumann silently drops "
+                    "the moment components — applied "
+                    "concentrated moments are zero, but no "
+                    "error message; the displacement field "
+                    "looks like a force-only result. Use "
+                    "NUMDOF: 6 even when only forces are "
+                    "needed and zero the moment slots. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "INT_STRATEGY: Standard is the default and works for most "
-                    "problems.  Only change to 'Old' for legacy compatibility."
+                    "[Input] INT_STRATEGY: Standard is the "
+                    "default and works for most problems. Only "
+                    "change to 'Old' for legacy compatibility. "
+                    "Signal: explicitly setting INT_STRATEGY: "
+                    "Old in a new problem can disable modern "
+                    "FSI hooks or contact accelerations — the "
+                    "simulation runs but features added since "
+                    "the rewrite (e.g. specific contact "
+                    "formulations) are unavailable. Default "
+                    "(omit) is the safe choice. (Audit "
+                    "2026-06-02.)"
                 ),
             ],
             "typical_experiments": [
@@ -375,7 +432,7 @@ class SolidMechanicsGenerator(BaseGenerator):
                     "name": "cantilever_2d",
                     "description": (
                         "2D cantilever beam under tip load.  Fixed left edge, "
-                        "point or line load on right edge.  Uses WALL QUAD4 "
+                        "point or line load on right edge.  Uses SOLID QUAD4 "
                         "elements with plane_strain, MAT_Struct_StVenantKirchhoff, "
                         "KINEM: linear, MAXITER: 1."
                     ),
@@ -399,7 +456,7 @@ class SolidMechanicsGenerator(BaseGenerator):
         "linear_2d": """\
 # FORMAT TEMPLATE — 2D linear elasticity (plane strain)
 # All numerical values are placeholders — determine from your specific problem.
-# Check 4C test files (browse_solver_tests) for reference setups.
+# Check 4C test files via examples(keyword, solver='fourc', action='search') for reference setups.
 TITLE:
   - "Linear elastic 2D — plane strain"
 PROBLEM SIZE:
@@ -542,7 +599,7 @@ STRUCTURE GEOMETRY:
             {
                 "name": "linear_2d",
                 "description": (
-                    "Linear elastic 2D cantilever with plane strain, WALL QUAD4 "
+                    "Linear elastic 2D cantilever with plane strain, SOLID QUAD4 "
                     "elements, St. Venant-Kirchhoff material, tip load."
                 ),
             },

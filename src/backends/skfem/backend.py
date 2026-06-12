@@ -169,6 +169,48 @@ class SkfemBackend(SolverBackend):
                 element_types=["Q1-quad"],
                 template_variants=["2d"],
             ),
+            PhysicsCapability(
+                name="wave",
+                description="2D scalar wave equation u_tt - c^2 Δu = 0 with explicit central-difference time integration and lumped mass (no per-step linear solve)",
+                spatial_dims=[2],
+                element_types=["Q1-quad"],
+                template_variants=["2d"],
+            ),
+            PhysicsCapability(
+                name="adaptive_poisson",
+                description="h-adaptive Poisson with Babuška-Rheinboldt residual estimator on L-shape (canonical re-entrant-corner test)",
+                spatial_dims=[2],
+                element_types=["P1-tri"],
+                template_variants=["2d"],
+            ),
+            PhysicsCapability(
+                name="point_source",
+                description="Poisson with Dirac-delta point source — discrete RHS is N_i(x0) (Kronecker e_node for mesh-coincident source). Matches scikit-fem ex17 + ex38.",
+                spatial_dims=[2],
+                element_types=["P1-tri"],
+                template_variants=["2d"],
+            ),
+            PhysicsCapability(
+                name="schrodinger",
+                description="1D stationary Schrödinger eigenvalue problem -½ψ'' + V(x)ψ = Eψ. Default quantum harmonic oscillator V=½x² with analytic E_n = n+½. Matches scikit-fem ex39.",
+                spatial_dims=[1],
+                element_types=["P1-line"],
+                template_variants=["1d"],
+            ),
+            PhysicsCapability(
+                name="contact",
+                description="Linearized frictionless contact between a 2D elastic block and a rigid foundation, via Picard iteration on the active set. Matches scikit-fem ex04.",
+                spatial_dims=[2],
+                element_types=["P1-tri"],
+                template_variants=["2d"],
+            ),
+            PhysicsCapability(
+                name="hydraulic_resistance",
+                description="Stokes flow through a 2D rectangular channel; computes resistance R=ΔP/Q against the Poiseuille closed-form 12μL/H³. Matches scikit-fem ex29.",
+                spatial_dims=[2],
+                element_types=["Taylor-Hood (P2-P1) tri"],
+                template_variants=["2d"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:

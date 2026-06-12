@@ -123,15 +123,86 @@ with open("results_summary.json", "w") as _f:
 
 KNOWLEDGE = {
     "linear_elasticity": {
-        "description": "Linear elasticity (plane strain/stress, 3D) with VectorH1",
-        "spaces": "VectorH1 (NOT H1 with dim parameter — that creates CompoundFESpace)",
-        "solver": "Direct for small, CG+AMG for large. Preconditioners: bddc, multigrid",
+        "description": (
+            "Linear elasticity (plane strain/stress, 3D). Both "
+            "VectorH1(mesh, order=k) and H1(mesh, order=k, dim=d) "
+            "are valid vector spaces and give identical solve "
+            "results; they differ only in memory layout (see "
+            "pitfall #0)."
+        ),
+        "spaces": (
+            "VectorH1 (flat layout: ndof = d*scalar_ndof, dim=1) "
+            "OR H1 with dim parameter (block layout: "
+            "ndof = scalar_ndof, dim=d). Same ProxyFunction shape "
+            "from TnT(); operationally equivalent."
+        ),
+        "solver": (
+            "Direct for small, CG+AMG for large. Preconditioners: "
+            "bddc, multigrid."
+        ),
         "pitfalls": [
-            "Use VectorH1(mesh, order=2, dirichlet='fix'), NOT H1(mesh, dim=2)",
-            "Body forces: CoefficientFunction((fx, fy)) for 2D, (fx, fy, fz) for 3D",
-            "Evaluation: gfu.components[i](mesh(x,y)) for component-wise point values",
-            "Stress tensor: use MatrixValued(H1(mesh, order=k), symmetric=True) for visualization",
-            "Plane strain: use standard Lame parameters. Plane stress: modify lambda",
+            "[API] VectorH1(mesh, order=k) and H1(mesh, order=k, "
+            "dim=d) BOTH produce a valid d-dimensional vector "
+            "FESpace for elasticity — neither is wrong. They "
+            "differ only in layout: VectorH1 has dim=1 and "
+            "ndof = d * scalar_ndof (flat); H1(dim=d) has dim=d "
+            "and ndof = scalar_ndof (block). TnT() returns "
+            "ProxyFunction with .dim == d in both cases, and "
+            "Grad(u).dims == (d, d). An assembled BilinearForm "
+            "of InnerProduct(Stress(u), Strain(v))*dx on either "
+            "space gives the same solve to ~1e-16 relative "
+            "norm. Signal: type(VectorH1(...)).__name__ == "
+            "'VectorH1', type(H1(..., dim=d)).__name__ == 'H1' "
+            "(NOT 'CompoundFESpace'); norm of gfu.vec matches "
+            "between the two formulations. (Verified empirically "
+            "2026-06-01 — Tier-2 fixture vector_h1_vs_h1_dim2_"
+            "equivalence in scripts/tier2_fixtures/ngsolve/. "
+            "Catalog-drift correction: the previous claim "
+            "'NOT H1(dim=2)' was false.)",
+            "[Syntax] Body forces are constructed with "
+            "CoefficientFunction taking a Python tuple shaped to "
+            "match the vector FESpace: "
+            "CoefficientFunction((fx, fy)) for 2D, "
+            "CoefficientFunction((fx, fy, fz)) for 3D. A mismatch "
+            "(e.g. scalar fx for a VectorH1 space) raises a "
+            "shape mismatch from the assembly routine. Signal: "
+            "BilinearForm/LinearForm.Assemble() raises with "
+            "'dimensions do not match' or similar from the C++ "
+            "kernel. (Catalog claim inherited; not separately "
+            "Tier-2 falsified this iteration.)",
+            "[API] gfu.components on a VectorH1 GridFunction "
+            "returns a tuple of ComponentGridFunction views (NOT "
+            "a list, NOT direct vector slices). Each component "
+            "i is callable as gfu.components[i](mesh(x,y)) for "
+            "pointwise evaluation of the i-th displacement "
+            "component. Signal: type(gfu.components).__name__ "
+            "== 'tuple' and type(gfu.components[0]).__name__ == "
+            "'ComponentGridFunction'. (Verified empirically "
+            "2026-06-01 — same Tier-2 fixture as #0.)",
+            "[API] Stress visualization uses MatrixValued(H1(mesh, "
+            "order=k), symmetric=True). The 'symmetric=True' "
+            "kwarg packs only the upper triangle into the dof "
+            "vector (ndof reduced from d^2*scalar_ndof to "
+            "d*(d+1)/2*scalar_ndof). Without symmetric=True the "
+            "MatrixValued space has the full d^2 storage. "
+            "Signal: type(MatrixValued(...)).__name__ == "
+            "'MatrixValued'; ndof differs by a factor of "
+            "d^2/(d*(d+1)/2) between symmetric=False and "
+            "symmetric=True. (Verified empirically 2026-06-01 — "
+            "for 2D: ndof_full=32, ndof_sym=24 with scalar_ndof=8.)",
+            "[Physics] For plane strain use the standard 3D Lame "
+            "parameters lambda = E*nu / ((1+nu)*(1-2*nu)) and "
+            "mu = E / (2*(1+nu)). For plane stress, lambda is "
+            "modified to lambda* = 2*lambda*mu / (lambda + 2*mu) "
+            "(or equivalently use the 2D-compatible derivation "
+            "from E and nu). Mixing the two silently introduces "
+            "a Poisson-ratio-dependent error in the deflection "
+            "scaling. Signal: gfu.components[1] tip evaluation on "
+            "a VectorH1 cantilever solve produced by the Stress "
+            "operator with plane-strain lambda differs from the "
+            "plane-stress lambda formulation by a factor on the "
+            "order of 1/(1-nu^2). (Advisory pitfall — not "
+            "empirically falsified this iteration.)",
         ],
     },
 }

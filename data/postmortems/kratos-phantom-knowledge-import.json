@@ -1,0 +1,22 @@
+{
+  "id": "kratos-phantom-knowledge-import",
+  "date": "2026-06-02",
+  "backend": "kratos",
+  "physics": "_all",
+  "surface_symptom": "data/kratos_knowledge.py contains 1500+ lines of cross-application Kratos infrastructure documentation (KRATOS_APPLICATIONS, STRUCTURAL_MECHANICS, FLUID_DYNAMICS, FSI, GEOMECHANICS, DEM, CONSTITUTIVE_LAWS, ...) but none of it was reaching the LLM. knowledge(solver='kratos', physics='...') only returned the generator-level KNOWLEDGE from backends.kratos.generators, and the rich data/kratos_knowledge.py material — written specifically to be the deep-knowledge catalog the agent retrieves at planning time — was 100% dead code. The agent had no way to discover Kratos's per-application architecture (which application provides which element / which solver), and post-execution critics could not match against application-level Signal: clauses that lived in the data file.",
+  "root_cause": "src/backends/kratos/backend.py get_knowledge() executed:\n  from kratos_knowledge import KRATOS_KNOWLEDGE as deep_knowledge\n  if physics in deep_knowledge: return deep_knowledge[physics]\nBut data/kratos_knowledge.py was NEVER refactored to export a unified `KRATOS_KNOWLEDGE` dict — it only exports per-application top-level constants (KRATOS_APPLICATIONS, STRUCTURAL_MECHANICS, etc.). The `from ... import KRATOS_KNOWLEDGE` therefore always raised ImportError, the bare `except ImportError: pass` swallowed it, and the lookup quietly fell through to the generator KNOWLEDGE only. There was no test gate that asserted what knowledge a backend actually surfaces — the prior alignment audit (catalog vs scan) only checked the generator catalog. Silent phantom imports inside backend code are invisible to every other layer in the matrix.",
+  "categories": ["API", "Integration"],
+  "pitfall_db_entries": [
+    "[API] Source-of-truth ordering for kratos get_knowledge(): backends.kratos.generators.KNOWLEDGE is the ONLY per-physics catalog. data/kratos_knowledge.py exports per-application constants (KRATOS_APPLICATIONS, STRUCTURAL_MECHANICS, FLUID_DYNAMICS, FSI, ...) NOT a flat KRATOS_KNOWLEDGE dict, so it cannot be consulted by name. Signal: tests/test_kratos_source_of_truth.py::test_no_phantom_kratos_knowledge_export FAILS the moment a developer re-introduces a flat-dict import in backend.py without also adding the corresponding `KRATOS_KNOWLEDGE` symbol to kratos_knowledge.py — the gate prevents silent phantom-import dead code from coming back.",
+    "[Integration] If you need cross-application knowledge access at runtime (e.g. 'which constitutive laws does Kratos GeoMechanics ship?'), do NOT re-introduce a flat KRATOS_KNOWLEDGE wrapper. The right plumbing is an explicit MCP surface like knowledge('kratos_application', solver='kratos', application='StructuralMechanicsApplication') that consumes the existing per-app top-level constants. Signal: a post-mortem audit shows a backend's get_knowledge silently catches ImportError on a sibling data module — review whether the lookup is dead code (silent failure) or whether the data module should expose a different shape."
+  ],
+  "agent_detection_after_fix": "Two regression gates land with the fix:\n  1. tests/test_kratos_source_of_truth.py — asserts (a) every kratos supported_physics() returns non-empty get_knowledge() — i.e. no silent {} fallback; (b) data/kratos_knowledge.py MUST NOT define a top-level `KRATOS_KNOWLEDGE` symbol unless backend.py is updated in the same change to actually consume it.\n  2. tests/test_all_backends_knowledge_complete.py — universal gate across all 8 backends × all supported_physics, asserts every (backend, physics) pair yields non-empty knowledge. Catches any future silent-{} fallback at the entire-tree level.\nBoth gates run under the repo .venv pytest sweep and would have caught this bug the moment the original phantom import was introduced.",
+  "source_refs": [
+    "commit d7aefb0 — kratos+dealii: pin per-backend source-of-truth + kill kratos phantom import",
+    "commit 8a98821 — Universal regression: no backend may silently return empty knowledge",
+    "src/backends/kratos/backend.py:233 — get_knowledge cleanup",
+    "tests/test_kratos_source_of_truth.py — new regression gate",
+    "tests/test_all_backends_knowledge_complete.py — universal coverage",
+    "task #46 — Pitfall-DB-first discipline"
+  ]
+}

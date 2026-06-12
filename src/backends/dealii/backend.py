@@ -30,32 +30,101 @@ logger = logging.getLogger("oasis.dealii")
 
 
 def _find_dealii() -> Optional[Path]:
-    """Locate deal.ii installation."""
-    # Check DEAL_II_DIR env var
-    env_dir = os.environ.get("DEAL_II_DIR")
-    if env_dir and Path(env_dir).is_dir():
-        return Path(env_dir)
+    """Locate a deal.II installation root.
 
-    # Check common locations
-    candidates = [
-        Path("/usr/share/doc/libdeal.ii-doc/examples"),
-        Path("/usr/lib/x86_64-linux-gnu/cmake/deal.II"),
-        Path("/usr/share/cmake/deal.II"),
-        Path("/opt/dealii"),
-        Path.home() / "dealii",
-    ]
-    for c in candidates:
-        if c.is_dir():
-            return c.parent if "cmake" in str(c) else c
+    Discovery order (first hit wins):
+      1. ``DEAL_II_DIR`` env variable (explicit override).
+      2. ``DEALII_ROOT`` env variable (alternate spelling).
+      3. Conda envs at ``~/miniconda3/envs/*`` and
+         ``~/anaconda3/envs/*`` that contain ``include/deal.II/``.
+      4. User-source dirs: ``~/dealii``, ``~/deal.II``,
+         ``~/Schreibtisch/dealii``, ``~/Schreibtisch/deal.II``,
+         ``~/src/dealii``, ``~/src/deal.II``.
+      5. System paths: ``/opt/dealii``,
+         ``/usr/lib/x86_64-linux-gnu/cmake/deal.II``,
+         ``/usr/share/cmake/deal.II``.
+      6. ``cmake --find-package`` for system-installed deal.II.
 
-    # Check if deal.II cmake config is findable
+    Returns the install ROOT (the path that contains
+    ``include/deal.II/`` or ``share/deal.II/cmake/``). Callers
+    pass this to ``find_package(deal.II HINTS ...)``.
+    """
+    # 1. Explicit env override
+    for env_var in ("DEAL_II_DIR", "DEALII_ROOT"):
+        env_dir = os.environ.get(env_var)
+        if env_dir and Path(env_dir).is_dir():
+            return Path(env_dir)
+
+    def _looks_like_dealii_root(p: Path) -> bool:
+        """A path is a deal.II install root if it has either
+        include/deal.II/ headers or share/deal.II/cmake/ macros
+        or lib/cmake/deal.II/ config."""
+        if not p.is_dir():
+            return False
+        return ((p / "include" / "deal.II").is_dir()
+                or (p / "share" / "deal.II" / "cmake").is_dir()
+                or (p / "lib" / "cmake" / "deal.II").is_dir())
+
+    # 2 + 3. Conda envs (deal.II often lives in a dedicated env).
+    # When several envs contain deal.II, prefer the HIGHEST version:
+    # iterdir() order is arbitrary, and on this machine an old
+    # ofa-dealii (9.1.1, serial, missing fe_interface_values.h /
+    # hp/refinement.h / count_dofs_per_fe_block) used to shadow the
+    # newer ofa-dealii-93 (9.3.2) depending on directory order —
+    # 10 of 39 catalog templates failed to compile purely from
+    # losing that race (probe 2026-06-12).
+    def _dealii_version_of(root: Path) -> tuple:
+        cfg = root / "include" / "deal.II" / "base" / "config.h"
+        try:
+            for line in cfg.read_text().splitlines():
+                if "DEAL_II_PACKAGE_VERSION" in line and '"' in line:
+                    ver = line.split('"')[1]
+                    return tuple(int(x) for x in ver.split(".")[:3])
+        except (OSError, ValueError):
+            pass
+        return (0, 0, 0)
+
+    candidates: list[Path] = []
+    for conda_base in (Path.home() / "miniconda3" / "envs",
+                       Path.home() / "anaconda3" / "envs",
+                       Path.home() / "miniforge3" / "envs"):
+        if not conda_base.is_dir():
+            continue
+        for env_dir in conda_base.iterdir():
+            if _looks_like_dealii_root(env_dir):
+                candidates.append(env_dir)
+    if candidates:
+        return max(candidates, key=_dealii_version_of)
+
+    # 4. User-source dirs (in case the user built from source).
+    for sub in ("dealii", "deal.II", "src/dealii", "src/deal.II",
+                "Schreibtisch/dealii", "Schreibtisch/deal.II"):
+        candidate = Path.home() / sub
+        if _looks_like_dealii_root(candidate):
+            return candidate
+        # Also try common build-subdir layouts.
+        for build_sub in ("install", "build/install"):
+            inner = candidate / build_sub
+            if _looks_like_dealii_root(inner):
+                return inner
+
+    # 5. System paths.
+    for cand in (Path("/opt/dealii"), Path("/opt/deal.II"),
+                 Path("/usr/local/dealii"),
+                 Path("/usr/local/deal.II"),
+                 Path("/usr")):
+        if _looks_like_dealii_root(cand):
+            return cand
+
+    # 6. CMake fall-back.
     cmake = shutil.which("cmake")
     if cmake:
         import subprocess
         try:
             r = subprocess.run(
-                [cmake, "--find-package", "-DNAME=deal.II", "-DCOMPILER_ID=GNU",
-                 "-DLANGUAGE=CXX", "-DMODE=COMPILE"],
+                [cmake, "--find-package", "-DNAME=deal.II",
+                 "-DCOMPILER_ID=GNU", "-DLANGUAGE=CXX",
+                 "-DMODE=COMPILE"],
                 capture_output=True, text=True, timeout=10
             )
             if r.returncode == 0:
@@ -261,10 +330,55 @@ class DealiiBackend(SolverBackend):
                               ["FE_Q + FE_DGQ"], ["2d"]),
             PhysicsCapability("optimal_control", "Automatic differentiation / optimal control (step-72)", [2, 3],
                               ["Q1"], ["2d"]),
+            # ── 2026-06-01: three _DEALII_KNOWLEDGE keys had
+            #    detailed pitfalls but no PhysicsCapability entry,
+            #    so users browsing discover never saw them.
+            #    Catalog content is distinct from the nearby
+            #    similarly-named entries (dg_advection_reaction /
+            #    obstacle_problem / hyperelasticity) — keep both
+            #    surfaces. Closes task #69.
+            PhysicsCapability(
+                "advection_dg",
+                "Pure DG advection (step-9, step-12). Distinct "
+                "from dg_advection_reaction (step-12, step-39) — "
+                "advection_dg covers step-9 transport without "
+                "reaction term. DoFTools::make_flux_sparsity_"
+                "pattern required for face coupling.",
+                [2], ["FE_DGQ"], ["2d"]),
+            PhysicsCapability(
+                "contact",
+                "Contact / variational inequalities (step-41, "
+                "step-42). Active-set strategy. Related to "
+                "obstacle_problem (the dealii backend's primary "
+                "name for this class) — distinct deep_knowledge "
+                "entry kept for active-set-strategy specifics.",
+                [2, 3], ["Q1", "Q2"], ["2d"]),
+            PhysicsCapability(
+                "nonlinear_elasticity",
+                "Nonlinear solid mechanics (step-44). Neo-"
+                "Hookean three-field (u, p, J) formulation for "
+                "quasi-incompressible materials. Distinct from "
+                "hyperelasticity (broader catalog) — this entry "
+                "focuses on the step-44 three-field method.",
+                [3], ["Q1", "Q2"], ["3d"]),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
-        # Try deep knowledge first
+        # Resolution order (2026-06-01 audit closes task #69):
+        #
+        #   1. data/dealii_knowledge.py:DEALII_KNOWLEDGE — the
+        #      course-level catalog (overview/tutorials/etc.).
+        #      Usually does NOT hold per-physics keys, but some
+        #      entries do live here.
+        #   2. generator-embedded KNOWLEDGE — the primary 96-pitfall
+        #      source-of-truth that the dealii Tier-2 fixtures
+        #      were built against. This is the catalog the
+        #      cross-backend signal-verification test scores
+        #      against.
+        #   3. tools.deep_knowledge._DEALII_KNOWLEDGE — fallback
+        #      ONLY for keys NOT in either of the above. This is
+        #      where {advection_dg, contact, nonlinear_elasticity}
+        #      live; without this fallback they were orphaned.
         try:
             import sys
             data_dir = str(Path(__file__).resolve().parents[3] / "data")
@@ -275,9 +389,21 @@ class DealiiBackend(SolverBackend):
                 return deep[physics]
         except ImportError:
             pass
-        # Fall back to generator-embedded knowledge
+        # Primary fallback: generator-embedded knowledge.
         from backends.dealii.generators import get_knowledge
-        return get_knowledge(physics)
+        gen_k = get_knowledge(physics)
+        if isinstance(gen_k, dict) and gen_k.get("pitfalls"):
+            return gen_k
+        # Last fallback: tools.deep_knowledge per-physics catalog,
+        # for entries (advection_dg / contact / nonlinear_
+        # elasticity) that ONLY live in _DEALII_KNOWLEDGE.
+        try:
+            from tools.deep_knowledge import _DEALII_KNOWLEDGE
+            if physics in _DEALII_KNOWLEDGE:
+                return _DEALII_KNOWLEDGE[physics]
+        except ImportError:
+            pass
+        return gen_k
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
         from backends.dealii.generators import get_template
@@ -416,6 +542,26 @@ def _generate_cmakelists(target_name: str) -> str:
                 break
         if not extra_hints and Path(dealii_root).is_dir():
             extra_hints = f" {dealii_root}"
+
+    # Fall back to whatever _find_dealii() returns (conda env,
+    # /usr, /opt, etc.). Without this, cmake aborts with
+    # "Could not find a package configuration file provided by
+    # 'deal.II' (requested version 9.0)" on conda-forge installs
+    # where the binary isn't on PATH and DEALII_ROOT isn't set
+    # — discover('list') correctly reports deal.II AVAILABLE
+    # (the dealii backend's check_availability walks conda envs)
+    # but the cmake configure step doesn't see the env's
+    # lib/cmake/deal.II dir. Audit 2026-06-01.
+    if not extra_hints:
+        discovered = _find_dealii()
+        if discovered is not None:
+            # Prefer the lib/cmake/deal.II sub-path if present —
+            # find_package picks up the Config file from there.
+            cmake_cfg = discovered / "lib" / "cmake" / "deal.II"
+            if (cmake_cfg / "deal.IIConfig.cmake").exists():
+                extra_hints = f" {cmake_cfg}"
+            else:
+                extra_hints = f" {discovered}"
 
     # Honour CC/CXX from the environment so that conda-forge deal.II
     # packages (whose deal.IIConfig.cmake bakes in a feedstock-only

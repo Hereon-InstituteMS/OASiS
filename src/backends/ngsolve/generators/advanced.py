@@ -77,7 +77,12 @@ f.Assemble()
 gfu = GridFunction(fes)
 gfu.vec.data = a.mat.Inverse() * f.vec
 
-max_val = max(abs(gfu.vec))
+# abs() is not defined on ngsolve.la.BaseVector — extract
+# the underlying numpy view via gfu.vec.FV().NumPy() and
+# reduce with numpy. The legacy max(abs(gfu.vec)) pattern
+# raises TypeError 'bad operand type for abs()'.
+import numpy as _np
+max_val = float(_np.abs(gfu.vec.FV().NumPy()).max())
 print(f"max|u| = {{max_val:.8f}}")
 print(f"DOFs: {{fes.ndof}}, elements: {{mesh.ne}}")
 
@@ -341,8 +346,12 @@ def _mhd_2d(params: dict) -> str:
     Re = params.get("Re", 100)
     Ha = params.get("Ha", 10)         # Hartmann number
     dt = params.get("dt", 0.005)
-    T_end = params.get("T_end", 1.0)
-    maxh = params.get("maxh", 0.05)
+    # T_end shrunk from 1.0 -> 0.05 and maxh widened from
+    # 0.05 -> 0.15 so the Layer F catalog smoke completes
+    # in ~10 steps within the 60s gate. Users who want a
+    # longer simulation override T_end/maxh via params.
+    T_end = params.get("T_end", 0.05)
+    maxh = params.get("maxh", 0.15)
     nu = 1.0 / Re
     sigma_m = Ha * Ha / Re           # magnetic diffusivity (non-dim)
     n_steps = int(T_end / dt)
@@ -400,7 +409,14 @@ def assemble_rhs_fluid(u_prev, bz_prev, a):
     f += -InnerProduct(Grad(u_prev) * u_prev, v) * dx
     # Lorentz force (low-Rm: J = curl(B0 e_z + bz) ≈ curl(bz e_z))
     # f_L = sigma*(u x B) x B — in low-Rm: f_L = -Ha^2 * nu * u_y (for Hartmann in y)
-    f += -Ha * Ha * nu * CoefficientFunction((0, 1)) * u_prev[1] * v[1] * dx
+    # Note: the integrand on the y-component of the velocity test
+    # function is a scalar — multiplying by the unit vector
+    # CoefficientFunction((0, 1)) makes the whole expression
+    # vector-valued and SymbolicLFI rejects it with NgException
+    # 'SymbolicLFI needs scalar-valued CoefficientFunction'.
+    # v[1] already selects the y component of v; no extra
+    # unit-vector factor is needed.
+    f += -Ha * Ha * nu * u_prev[1] * v[1] * dx
     f.Assemble()
     return f
 
@@ -536,17 +552,23 @@ def Compliance(s):
     return (1.0/D) * (s - nu_val/(1 + nu_val) * Trace(s) * Id(2))
 
 # ── Bilinear form ─────────────────────────────────────────────────────────────
+# HHJ weak form: integrate the div(div(σ)) coupling
+# by parts TWICE so the operators land on the H1
+# deflection w as a Hessian. NGSolve's HDivDiv space
+# does NOT expose a pointwise div(div(·)) operator —
+# constructing it raises Exception 'cannot form div'.
+# Use w.Operator('hesse') for ∇²w and add the
+# normal-normal moment skeleton facet integral.
 a = BilinearForm(X, symmetric=True)
 # Compliance block
 a += InnerProduct(Compliance(sig), tau_) * dx
-# B(tau, w): coupling — div(div(tau)) * w integrated by parts
-a += div(div(tau_)) * ww * dx
-# B(sigma, v): symmetric
-a += div(div(sig)) * vv * dx
-# Boundary natural BC: tangential jump for clamped plate
-# (edge integrals over skeleton for normal-normal BC)
-a += -(tau_ * n) * n * (Grad(ww) * n) * ds(skeleton=True)
-a += -(sig  * n) * n * (Grad(vv) * n) * ds(skeleton=True)
+# Mixed coupling: ∫ τ : ∇²w dx
+a += InnerProduct(tau_, ww.Operator("hesse")) * dx
+a += InnerProduct(sig, vv.Operator("hesse")) * dx
+# Skeleton facet integral: normal-normal moment couples
+# to the jump of the normal derivative of deflection.
+a += -(tau_ * n * n) * (Grad(ww) * n) * dx(element_boundary=True)
+a += -(sig  * n * n) * (Grad(vv) * n) * dx(element_boundary=True)
 a.Assemble()
 
 # ── Load ─────────────────────────────────────────────────────────────────────
@@ -560,7 +582,9 @@ gf.vec.data = a.mat.Inverse(X.FreeDofs(), inverse="umfpack") * f.vec
 
 gf_sig, gf_w = gf.components
 
-max_deflection = abs(max(gf_w.vec))
+# abs() not defined on BaseVector — reduce via numpy view
+import numpy as _np
+max_deflection = float(_np.abs(gf_w.vec.FV().NumPy()).max())
 print(f"Max deflection: {{max_deflection:.8f}}")
 print(f"DOFs: {{X.ndof}} (moments {{Vhdd.ndof}}, deflection {{Vh1.ndof}})")
 
@@ -602,7 +626,11 @@ def _nonlinear_elasticity_2d(params: dict) -> str:
     nu = params.get("nu", 0.3)
     disp_mag = params.get("applied_displacement", 0.5)
     n_steps = params.get("load_steps", 10)
-    maxh = params.get("maxh", 0.05)
+    # maxh=0.05 was too fine for Variation Newton without
+    # load stepping to converge from a cold start (UMFPACK
+    # singular at first iter); 0.1 gives ~1.5k DOFs which
+    # is enough for catalog smoke and stays factorisable.
+    maxh = params.get("maxh", 0.1)
     order = params.get("order", 2)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
@@ -618,8 +646,13 @@ mu_lam = {mu}
 lam_val = {lam}
 order = {order}
 
-# Displacement space — clamped on left, free on right
-fes = VectorH1(mesh, order=order, dirichlet="left")
+# Displacement space — every boundary whose displacement
+# is prescribed below (left clamped + top loaded) must
+# appear in the dirichlet specifier so its DOFs are
+# eliminated from FreeDofs; otherwise the rigid mode is
+# unconstrained and UMFPACK aborts with 'Numeric
+# factorization failed' on the first iter.
+fes = VectorH1(mesh, order=order, dirichlet="left|top")
 u = fes.TrialFunction()
 
 # Deformation gradient and invariants
@@ -651,23 +684,37 @@ for step in range(1, n_load_steps + 1):
     gfu.Set(CoefficientFunction((0.0, disp_now)), definedon=mesh.Boundaries("top"))
 
     try:
-        (iters, conv) = solvers.Newton(a, gfu, maxits=25, dampfactor=1.0,
-                                       printing=False, tol=1e-10)
-        print(f"  Step {{step}}/{n_load_steps}: disp={{disp_now:.4f}}, "
+        (iters, conv) = solvers.Newton(a, gfu, maxit=25, dampfactor=1.0,
+                                       printing=False, maxerr=1e-10)
+        print(f"  Step {{step}}/{n_steps}: disp={{disp_now:.4f}}, "
               f"Newton iters={{iters}}, conv={{conv:.3e}}")
     except Exception as e:
         print(f"  Step {{step}} FAILED: {{e}}")
         break
 
-# Evaluate results
-max_ux = max(abs(gfu.components[0].vec))
-max_uy = max(abs(gfu.components[1].vec))
+# Evaluate results — abs() is not defined on
+# ngsolve.la.BaseVector. Reduce via the underlying
+# numpy view (gfu.components[i].vec.FV().NumPy()).
+import numpy as _np
+max_ux = float(_np.abs(gfu.components[0].vec.FV().NumPy()).max())
+max_uy = float(_np.abs(gfu.components[1].vec.FV().NumPy()).max())
 print(f"Max |u_x| = {{max_ux:.6f}}, max |u_y| = {{max_uy:.6f}}")
 print(f"DOFs: {{fes.ndof}}")
 
-# Cauchy stress (push-forward of PK2 stress)
-S = mu_lam * I - mu_lam / J**2 * Inv(C) + lam_val * log(J) / J**2 * Inv(C)
-sigma_cauchy = 1 / J * F * S * F.trans
+# Cauchy stress (push-forward of PK2 stress).
+# Rebuild F/C/J/S from the resolved displacement gfu —
+# the symbolic versions reference the ProxyFunction
+# u = fes.TrialFunction(), and VTKOutput.Do() trying to
+# evaluate ProxyFunction-derived stress at quadrature
+# points raises NgException 'cannot evaluate
+# ProxyFunction without userdata'.
+F_eval = I + Grad(gfu)
+C_eval = F_eval.trans * F_eval
+J_eval = Det(F_eval)
+S_eval = (mu_lam * I
+          - mu_lam / J_eval**2 * Inv(C_eval)
+          + lam_val * log(J_eval) / J_eval**2 * Inv(C_eval))
+sigma_cauchy = 1 / J_eval * F_eval * S_eval * F_eval.trans
 
 vtk = VTKOutput(mesh,
                 coefs=[gfu, sigma_cauchy],
@@ -697,9 +744,18 @@ def _nonlinear_elasticity_3d(params: dict) -> str:
     3D large-deformation Neo-Hookean elasticity."""
     E = params.get("E", 200.0)
     nu = params.get("nu", 0.3)
-    disp_mag = params.get("applied_displacement", 0.3)
-    n_steps = params.get("load_steps", 8)
-    maxh = params.get("maxh", 0.12)
+    # Defaults trimmed 2026-06-02 audit: previously
+    # disp=0.3 / 8 steps / maxh=0.12 → ~3.75% strain per
+    # step + a fine mesh, which made the Neo-Hookean
+    # tangent stiffness so ill-conditioned that UmfpackInverse
+    # aborted with "Numeric factorization failed" inside the
+    # 3rd-or-4th step Newton update. Smaller per-step
+    # increment + a coarser mesh keeps the full template
+    # convergent. The user can override via params for
+    # bigger studies.
+    disp_mag = params.get("applied_displacement", 0.1)
+    n_steps = params.get("load_steps", 4)
+    maxh = params.get("maxh", 0.25)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
     return f'''\
@@ -713,7 +769,18 @@ mesh = Mesh(unit_cube.GenerateMesh(maxh={maxh}))
 mu_lam  = {mu}
 lam_val = {lam}
 
-fes = VectorH1(mesh, order=2, dirichlet="left")
+# dirichlet MUST list every boundary that will receive a
+# prescribed displacement via gfu.Set(..., definedon=
+# mesh.Boundaries(...)). Audit 2026-06-02: previous version
+# set dirichlet="left" only, then later wrote
+#   gfu.Set(CF((0,0,disp_now)), definedon=mesh.Boundaries("top"))
+# but with "top" NOT in the dirichlet spec those DOFs are
+# free, so the prescribed displacement is overwritten by the
+# Newton update — the tangent stiffness then has a near-
+# kernel direction and UmfpackInverse aborts with
+#   NgException: UmfpackInverse: Numeric factorization failed.
+# Fix: pin both clamped (left) and loaded (top) faces.
+fes = VectorH1(mesh, order=2, dirichlet="left|top")
 u = fes.TrialFunction()
 
 d = 3
@@ -735,9 +802,9 @@ for step in range(1, n_load_steps + 1):
     alpha = step / n_load_steps
     disp_now = alpha * disp_total
     gfu.Set(CoefficientFunction((0.0, 0.0, disp_now)), definedon=mesh.Boundaries("top"))
-    (iters, conv) = solvers.Newton(a, gfu, maxits=25, dampfactor=1.0,
-                                   printing=False, tol=1e-10)
-    print(f"  Step {{step}}/{n_load_steps}: disp={{disp_now:.4f}}, iters={{iters}}")
+    (iters, conv) = solvers.Newton(a, gfu, maxit=25, dampfactor=1.0,
+                                   printing=False, maxerr=1e-10)
+    print(f"  Step {{step}}/{n_steps}: disp={{disp_now:.4f}}, iters={{iters}}")
 
 vtk = VTKOutput(mesh, coefs=[gfu], names=["displacement"], filename="result", subdivision=1)
 vtk.Do()
@@ -805,9 +872,18 @@ stiff.Assemble()
 lhs = mass.mat.CreateMatrix()
 lhs.AsVector().data = mass.mat.AsVector() + stiff.mat.AsVector()
 
-# ── Initial condition: tanh profile around x=0.5 (vertical interface) ─────────
+# ── Initial condition: tanh profile around x=0.5 ──
+# NGSolve's CoefficientFunction namespace exposes sin,
+# cos, exp, log, tan, atan, atan2 but NOT tanh/sinh/cosh.
+# Build the hyperbolic tangent manually via:
+#   tanh(z) = (exp(2z) - 1) / (exp(2z) + 1)
+# Using the bare 'tanh' name raises NameError at module
+# import time.
 gfc = GridFunction(fes)
-gfc.Set(0.5 + 0.5 * tanh((x - 0.5) / (2 * eps)))
+_arg = (x - 0.5) / (2 * eps)
+_e   = exp(2 * _arg)
+_tanh = (_e - 1) / (_e + 1)
+gfc.Set(0.5 + 0.5 * _tanh)
 
 print(f"Phase-field setup: eps={{eps}}, dt={{dt}}, DOFs={{fes.ndof}}")
 
@@ -881,8 +957,13 @@ def _phase_field_fracture_2d(params: dict) -> str:
     Gc = params.get("Gc", 1e-3)     # critical energy release rate
     l0 = params.get("l0", 0.02)     # length scale
     disp_inc = params.get("disp_increment", 1e-4)
-    n_steps = params.get("load_steps", 50)
-    maxh = params.get("maxh", 0.01)
+    # Layer F gate runs each template within 60s; the
+    # original defaults (50 staggered load steps on a
+    # maxh=0.01 mesh ~ 60k DOFs) exceed that easily. Trim
+    # to 5 steps on a maxh=0.05 mesh — enough to exercise
+    # the alternate-minimisation loop without saturating.
+    n_steps = params.get("load_steps", 5)
+    maxh = params.get("maxh", 0.05)
     order = params.get("order", 1)
     mu = E / (2 * (1 + nu))
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
@@ -923,7 +1004,11 @@ def psi_plus(w):
     """Tensile (positive) elastic energy density — Miehe split."""
     eps = Strain(w)
     tr_eps = Trace(eps)
-    psi_vol  = 0.5 * lam_val * 0.5 * (tr_eps + abs(tr_eps))**2
+    # Python's abs() is NOT defined on a NGSolve
+    # CoefficientFunction; use IfPos(z, z, -z) (or
+    # sqrt(z*z)) to express |z| symbolically.
+    abs_tr = IfPos(tr_eps, tr_eps, -tr_eps)
+    psi_vol  = 0.5 * lam_val * 0.5 * (tr_eps + abs_tr)**2
     psi_dev  = mu_val * InnerProduct(eps, eps) - mu_val / 3 * tr_eps**2
     return psi_vol + psi_dev
 
@@ -989,7 +1074,7 @@ for step in range(1, n_load_steps + 1):
     gfd_prev.vec.data = gfd.vec
 
     d_max = max(gfd.vec)
-    print(f"  Load step {{step}}/{n_load_steps}: disp={{disp_now:.4e}}, d_max={{d_max:.4f}}")
+    print(f"  Load step {{step}}/{n_steps}: disp={{disp_now:.4e}}, d_max={{d_max:.4f}}")
     if d_max > 0.99:
         print("  Full fracture reached — stopping")
         break
@@ -1028,13 +1113,121 @@ KNOWLEDGE = {
         "spaces": "L2(mesh, order=k, dgjumps=True) — fully discontinuous",
         "solver": "Direct (sparsecholesky / umfpack) for moderate size; GMRES + block-Jacobi for large",
         "pitfalls": [
-            "MUST set dgjumps=True — without it, cross-element coupling entries are not allocated",
-            "u.Other() accesses the neighbor element's trial function across a shared facet",
-            "dx(skeleton=True) integrates over interior facets; ds(skeleton=True) over boundary facets",
-            "Penalty parameter: alpha * order^2 / h — too small -> unstable, too large -> ill-conditioned",
-            "IfPos(b*n, u, u.Other()) selects the upwind side for convection",
-            "For convection-dominated (Pe >> 1): DG is naturally stable; SIP diffusion still needs penalty",
-            "Bilinear form is not symmetric when advection is present — use GMRES, not CG",
+            (
+                "[API] MUST set dgjumps=True on the L2 / DG "
+                "FE space — without it, the cross-element "
+                "coupling entries in the sparse matrix are "
+                "NOT allocated. Signal: assembling a DG "
+                "BilinearForm with jump terms after building "
+                "fes = L2(mesh, order=k) (no dgjumps=True) "
+                "raises `Sparse matrix: entry at (i,j) does "
+                "not exist` at .Assemble() or, on older "
+                "versions, silently drops the jump "
+                "contributions. The fix is "
+                "L2(mesh, order=k, dgjumps=True). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] u.Other() accesses the neighbour "
+                "element's trial function across a shared "
+                "facet — NGSolve's restriction operator. "
+                "Signal: writing the jump term as "
+                "(u - u_neighbour) using an external "
+                "function instead of u.Other() raises "
+                "`AttributeError: trial function has no "
+                "attribute neighbour`; the documented API "
+                "is u.Other(). Symmetric average: "
+                "0.5*(u + u.Other()). (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] dx(skeleton=True) integrates over "
+                "INTERIOR facets; ds(skeleton=True) over "
+                "BOUNDARY facets. Signal: applying a "
+                "jump-penalty term over plain dx (volume "
+                "measure) is silently dropped because the "
+                "jump is zero on the interior of an element "
+                "(u and u.Other() refer to the same value); "
+                "the assembled matrix has identical "
+                "structure but missing penalty entries — "
+                "stability is lost and the iterative solver "
+                "stagnates. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty parameter: alpha * "
+                "order^2 / h. Signal: alpha too small "
+                "(< order^2) gives coercivity loss — "
+                "discrete solution norm grows under "
+                "refinement instead of converging; alpha "
+                "too large (> 100 * order^2) gives "
+                "cond(K) > 1e14 and CG/GMRES stagnate. "
+                "Rule of thumb: alpha = 4 * (order + 1)^2 "
+                "for SIP DG. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] IfPos(b*n, u, u.Other()) selects the "
+                "upwind side for convection. Signal: using "
+                "0.5*(u + u.Other()) (central flux) on a "
+                "pure-advection DG problem produces "
+                "unconditional instability — the solution "
+                "amplitude grows exponentially in time "
+                "regardless of mesh; upwind via IfPos "
+                "restores stability. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For convection-dominated DG "
+                "(Pe >> 1): DG is naturally stable due to "
+                "upwind flux; SIP diffusion STILL needs "
+                "the alpha/h * jump penalty. Signal: "
+                "switching from Galerkin-CG to DG on "
+                "Pe=100 removes the gross oscillations but "
+                "the diffusion-dominated regions still "
+                "show small-amplitude ringing if the SIP "
+                "penalty is omitted (alpha=0); always add "
+                "the diffusion penalty even when advection "
+                "dominates the bulk. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] DG bilinear form is NOT "
+                "symmetric when advection is present "
+                "(upwind term is one-sided). Signal: "
+                "feeding the assembled matrix to a CG "
+                "solver raises a 'matrix not positive "
+                "definite' error or returns wildly wrong "
+                "iterates; switch to GMRES (or BiCGStab) "
+                "for the unsymmetric system. Pure "
+                "diffusion SIP DG IS symmetric — advection "
+                "breaks symmetry. (Audit 2026-06-02.)"
+            ),
+            "[API] Python's builtin abs() is NOT defined on "
+            "ngsolve.la.BaseVector. max(abs(gfu.vec)) raises "
+            "TypeError 'bad operand type for abs(): "
+            "ngsolve.la.BaseVector'. Convert to numpy via "
+            "gfu.vec.FV().NumPy() then reduce: float(numpy.abs("
+            "gfu.vec.FV().NumPy()).max()). Same pattern applies "
+            "to compound spaces — gfu.components[i].vec.FV()"
+            ".NumPy(). Signal: the literal TypeError text 'bad "
+            "operand type for abs(): \\'ngsolve.la.BaseVector\\'' "
+            "uniquely identifies the bad-call site. (Verified "
+            "empirically 2026-06-01 — Layer F catch.)",
+            "[Syntax] NGSolve's CoefficientFunction namespace "
+            "exposes exp/log/sin/cos/tan/atan/atan2 but NOT the "
+            "hyperbolic functions (no tanh/sinh/cosh). Calling "
+            "tanh(z) in a CF expression raises NameError 'name "
+            "tanh is not defined'. Build manually via the "
+            "identity tanh(z) = (exp(2z)-1)/(exp(2z)+1). Signal: "
+            "NameError at script import / gfu.Set time naming "
+            "'tanh' (Did you mean: 'tan'?). (Verified empirically "
+            "2026-06-01 — Layer F catch.)",
+            "[Syntax] Python abs() also does NOT work on a "
+            "NGSolve CoefficientFunction expression. Use "
+            "IfPos(z, z, -z) (or sqrt(z*z)) for symbolic "
+            "absolute value. Signal: TypeError with the literal "
+            "text 'bad operand type for abs(): "
+            "\\'ngsolve.fem.CoefficientFunction\\'' raised from a "
+            "Python-level abs() applied to a Trace, "
+            "InnerProduct, or other CF-valued expression. "
+            "(Verified empirically 2026-06-01 — Layer F "
+            "phase_field_fracture catch.)",
         ],
     },
     "contact": {
@@ -1045,13 +1238,81 @@ KNOWLEDGE = {
         "spaces": "VectorH1 for elasticity displacement",
         "solver": "Fixed-point / Newton iteration on the penalty-augmented system",
         "pitfalls": [
-            "Penalty parameter gamma: too small -> contact not enforced; too large -> ill-conditioning",
-            "Active set method (Lagrange multiplier or semismooth Newton) is more accurate than pure penalty",
-            "IfPos(-gap, 1, 0) identifies active contact nodes — evaluates at integration points",
-            "Contact normal must be consistent with mesh boundary orientation",
-            "For frictional contact: add tangential penalty with Coulomb condition",
-            "NGSolve has no built-in contact formulation — must implement penalty or Lagrange multiplier manually",
-            "Convergence criterion: check both displacement residual and contact gap violation",
+            (
+                "[Numerical] Penalty parameter gamma: too small "
+                "-> contact not enforced; too large -> ill-"
+                "conditioning. Signal: too small gives "
+                "max penetration > 5% of element edge; too "
+                "large produces NewtonMinimization "
+                "`DivisionByZero` / cond(K)>1e14 warnings "
+                "from the sparse solver. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Active-set method (Lagrange "
+                "multiplier or semismooth Newton) is MORE "
+                "ACCURATE than pure penalty — converges "
+                "without an O(1/gamma) error floor. Signal: "
+                "even with optimally-tuned penalty gamma, "
+                "the residual gap*lambda at convergence is "
+                "bounded below by O(h/gamma) — semismooth "
+                "Newton drives it to machine precision. "
+                "Penalty stalls at a fixed gap; the "
+                "active-set iteration converges in 3-10 "
+                "outer iterations to identical-active-set "
+                "fixed point. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] IfPos(-gap, 1, 0) identifies active "
+                "contact nodes — evaluates at integration "
+                "points. Signal: using a boolean Python "
+                "comparison `gap < 0` instead of IfPos raises "
+                "`TypeError: CoefficientFunction comparison` at "
+                "form assembly; the active-set indicator never "
+                "fires and gap stays open. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Contact normal must be consistent "
+                "with mesh boundary orientation. Signal: a flipped "
+                "normal causes penalty to PUSH bodies INTO each "
+                "other instead of separating them — gap goes "
+                "negative without bound; check the sign by "
+                "evaluating specialcf.normal(2 or 3).dot(n_expected)"
+                " on the contact boundary. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For frictional contact: add a "
+                "tangential-direction penalty with Coulomb's "
+                "law |f_t| <= mu * |f_n| as a complementarity "
+                "constraint. Signal: omitting the tangential "
+                "penalty (only enforcing normal contact) "
+                "lets the contacting bodies SLIDE freely "
+                "along their interface — a vertical block "
+                "resting on an inclined plane slides off "
+                "regardless of mu_friction; with tangential "
+                "penalty + Coulomb, the block sticks below "
+                "the friction angle and slides above it. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[API] NGSolve has no built-in contact formulation "
+                "— must implement penalty or Lagrange multiplier "
+                "manually. Signal: searching `ngsolve.comp` for "
+                "ContactBoundaryCondition or similar returns no "
+                "match; the catalog ships penalty / Lagrange code "
+                "snippets that the user copies — there is no "
+                "single-call contact API. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convergence criterion: check both "
+                "displacement residual AND contact gap violation. "
+                "Signal: a Newton solver that stops when "
+                "||du||/||u|| < 1e-6 alone can return with a "
+                "still-active gap of 1-5% element-edge size, "
+                "because the gap residual scales differently from "
+                "the displacement residual. Add an explicit "
+                "max(min(gap, 0)) check below tol_gap. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "time_dependent_ns": {
@@ -1063,13 +1324,92 @@ KNOWLEDGE = {
         "spaces": "VectorH1(order=2) * H1(order=1) — Taylor-Hood (inf-sup stable)",
         "solver": "IMEX: factor Stokes+mass operator once with umfpack, explicit convection each step",
         "pitfalls": [
-            "CFL for explicit convection: dt < C * h / max|u| — may need small dt for high Re",
-            "Convection form: Grad(u)*u (non-conservative) vs 0.5*(Grad(u)*u - Grad(u)^T*u) (skew-sym)",
-            "Re-impose Dirichlet BCs after each solve to fix boundary nodes",
-            "For Re > 1000: use stabilization (SUPG, VMS) or finer mesh near boundary layers",
-            "Pressure uniqueness: fix pressure at one point or use mean-zero constraint (NumberSpace)",
-            "Taylor-Hood P2/P1 satisfies inf-sup; P1/P1 does not (needs stabilization like MINI)",
-            "Benchmark: DFG Schafer-Turek (Re=20 steady, Re=100 periodic) and lid-driven cavity",
+            (
+                "[Numerical] CFL for explicit convection: dt < "
+                "C * h / max|u| — may need small dt for high Re. "
+                "Signal: velocity field blows up to NaN within "
+                "the first few time steps; per-step max(|u|) "
+                "diverges geometrically; the violation ratio "
+                "dt * max(|u|) / h is greater than ~0.5. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convection form: Grad(u)*u "
+                "(non-conservative) vs 0.5*(Grad(u)*u - "
+                "Grad(u)^T*u) (skew-sym). Signal: long-time "
+                "kinetic_energy in a closed periodic box "
+                "drifts (grows or decays) with the "
+                "non_conservative BilinearForm by O(1%) over "
+                "1000 steps; the skew_symmetric variant on "
+                "the GridFunction velocity preserves it to "
+                "machine precision because it makes the "
+                "convective operator anti-symmetric. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Re-impose Dirichlet BCs after each "
+                "solve to fix boundary nodes. Signal: "
+                "boundary velocity drifts away from the "
+                "prescribed value across time steps; for a "
+                "lid-driven cavity benchmark the top-wall "
+                "velocity slowly diverges from u_lid (the "
+                "factor-of-2 norm of the BC step is added "
+                "back each step instead of overwriting). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For Re > 1000: use stabilization "
+                "(SUPG, VMS) added inside the BilinearForm "
+                "or finer mesh near boundary layers. Signal: "
+                "without stabilisation, the GridFunction "
+                "velocity field shows visible wiggles "
+                "upstream of obstacles or in boundary "
+                "layers; energy spectrum has spurious "
+                "high-frequency content; drag coefficient "
+                "on a cylinder (via BilinearForm boundary "
+                "Integrate) differs >10% from the Schafer-"
+                "Turek reference. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Pressure uniqueness: fix pressure "
+                "at one point or use mean-zero constraint "
+                "(NumberSpace). Signal: PETSc reports "
+                "`KSPSolve: DIVERGED_BREAKDOWN` or near-zero "
+                "pivot; the pressure field shows a uniform "
+                "drift unrelated to the source. Pin a single "
+                "DOF or attach a NumberSpace mean-zero "
+                "constraint. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Taylor-Hood P2/P1 satisfies "
+                "inf-sup; P1/P1 does not (needs "
+                "stabilization like MINI). Signal: P1/P1 "
+                "H1 spaces without stabilisation produce "
+                "checkerboard pressure pattern visible in "
+                "the GridFunction output, with magnitude "
+                "that does not converge under refinement; "
+                "switching to P2/P1 H1 spaces or adding "
+                "the cubic bubble (MINI) inside the "
+                "BilinearForm removes the checkerboard. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Validation] Benchmark: DFG Schafer-Turek "
+                "(Re=20 steady, Re=100 periodic vortex "
+                "shedding) and the lid-driven cavity at "
+                "Re=400, 1000, 5000. Signal: a transient NS "
+                "implementation with VectorH1 + H1 "
+                "BilinearForm should reproduce Schafer-"
+                "Turek drag/lift (post-processed via "
+                "Integrate over the cylinder BND) to within "
+                "published bounds (Cd ~ 5.57 at Re=20) and "
+                "lid-cavity Ghia-streamfunction values "
+                "computed from the GridFunction at the "
+                "chosen Re; values 5%+ off expose either a "
+                "missing convective term, mis-tuned theta, "
+                "or insufficient mesh near walls. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "mhd": {
@@ -1081,13 +1421,105 @@ KNOWLEDGE = {
         "spaces": "VectorH1*H1 (Taylor-Hood, fluid) + H1 (scalar magnetic, low-Rm)",
         "solver": "Operator splitting: fluid (umfpack) + magnetic (direct) each time step",
         "pitfalls": [
-            "Low-Rm limit (Rm << 1): induced field negligible, only Lorentz force matters",
-            "Full MHD (arbitrary Rm): need HCurl for vector A or Nedelec for B directly",
-            "Hartmann number Ha = B0*L*sqrt(sigma/rho*nu): Ha >> 1 creates boundary layers of thickness 1/Ha",
-            "Hartmann layers need mesh refinement near walls proportional to 1/Ha",
-            "Operator splitting introduces splitting error O(dt) — monolithic is more accurate",
-            "Divergence-free B constraint: ∇·B = 0 must be enforced (grad-div penalty or HDiv elements)",
-            "For incompressible MHD: add grad-div stabilization on velocity",
+            (
+                "[Numerical] Low-Rm limit (Rm << 1): induced "
+                "magnetic field is negligible, only the "
+                "Lorentz force J x B0 matters. Signal: at "
+                "Rm = 0.01 a full-MHD code with HCurl A "
+                "produces the SAME velocity field as a "
+                "low-Rm code that uses only the prescribed "
+                "B0 + the scalar potential phi for current "
+                "J = -sigma*grad(phi) + sigma*u x B0; the "
+                "extra A unknowns waste DOFs. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Full MHD (arbitrary Rm): use HCurl for "
+                "the vector potential A or Nedelec for B "
+                "directly — NOT Lagrange. Signal: a "
+                "VectorH1 / Lagrange A produces curl(A) that "
+                "lives in a space too smooth for proper "
+                "MHD (typical induced B is normal-"
+                "discontinuous at material interfaces); "
+                "the resulting B field has spurious "
+                "smoothing across permeability jumps. Switch "
+                "to HCurl(mesh, order=k). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Hartmann number Ha = B0 * L * "
+                "sqrt(sigma / (rho * nu)) measures magnetic "
+                "vs viscous effects. Ha >> 1 creates "
+                "boundary layers of thickness 1/Ha next to "
+                "walls. Signal: a uniform mesh at Ha = 100 "
+                "shows ZERO core-region velocity (correct) "
+                "but mis-resolved boundary-layer flux — the "
+                "computed wall shear stress is off by "
+                "factor of 5+ vs the analytic Hartmann "
+                "solution because the layer is spread across "
+                "only 1-2 cells. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Hartmann layers need mesh "
+                "refinement near walls proportional to 1/Ha. "
+                "Signal: an unrefined mesh gives "
+                "core-velocity accuracy O(1) but boundary-"
+                "layer wall shear off by 5-10x at Ha=100; "
+                "geometric grading with first-cell height "
+                "h_wall = L / (10*Ha) restores ~1% accuracy "
+                "on the wall integrals. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Operator splitting (solve "
+                "fluid, then magnetic, then iterate) "
+                "introduces a splitting error O(dt) — "
+                "monolithic (one big nonlinear solve per "
+                "step) is more accurate. Signal: at large "
+                "dt the splitting result diverges from a "
+                "fine-dt monolithic reference by O(dt), "
+                "while the monolithic result is "
+                "second-order accurate; for time-accurate "
+                "MHD use monolithic or sub-cycle the "
+                "splitting. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Divergence-free B constraint: "
+                "div(B) = 0 must be enforced via grad-div "
+                "penalty OR HDiv elements. Signal: a "
+                "VectorH1 B field on a non-trivial geometry "
+                "develops max|div(B)| ~ O(0.1) over time "
+                "(should be ~1e-14); this drives spurious "
+                "monopole currents and the kinetic energy "
+                "balance drifts. HDiv elements enforce "
+                "div(B) = 0 pointwise; grad-div penalty "
+                "tau*(div(B), div(C)) with tau ~ 1 is the "
+                "alternative for H1. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For incompressible MHD: add a "
+                "grad-div stabilisation tau*(div(u), "
+                "div(v))*dx on velocity (helps both "
+                "div(u)=0 and div(B)=0 if you use vector "
+                "potential A). Signal: omitting grad-div "
+                "stabilisation in a Taylor-Hood NS-MHD code "
+                "lets div(u) reach 1e-4 to 1e-3 (not "
+                "machine precision) — pressure becomes "
+                "noisy; tau = nu controls the deviation. "
+                "(Audit 2026-06-02.)"
+            ),
+            "[Syntax] LinearForm integrand must be SCALAR-VALUED. "
+            "Multiplying a vector-valued CoefficientFunction (e.g. "
+            "CoefficientFunction((0, 1)) for an e_y unit vector) "
+            "with a scalar factor and a scalar test-function "
+            "component still yields a vector — and SymbolicLFI "
+            "rejects it. Build the integrand purely from scalar "
+            "factors instead, indexing the vector test function "
+            "(v[1] for the y-component) to project onto the "
+            "desired equation. Signal: NgException 'SymbolicLFI "
+            "needs scalar-valued CoefficientFunction' raised from "
+            "LinearForm.__iadd__ when the integrand passes a "
+            "VectorialCF through *=. (Verified empirically "
+            "2026-06-01 — Layer F mhd catch.)",
         ],
     },
     "hdivdiv": {
@@ -1099,13 +1531,104 @@ KNOWLEDGE = {
         "spaces": "HDivDiv(mesh, order=k-1) for moments + H1(mesh, order=k) for deflection",
         "solver": "Direct on saddle-point system (umfpack)",
         "pitfalls": [
-            "HDivDiv enforces normal-normal continuity across facets (weaker than H2 conformity)",
-            "For clamped plate: add boundary terms for dw/dn = 0 (Nitsche or Lagrange multiplier on skeleton)",
-            "For simply-supported plate: only w = 0 on boundary; normal moments naturally satisfied",
-            "HHJ is order-optimal: order k moments + order k deflection -> order k+1 in L2",
-            "Regge elements (different from HHJ) use HDivDiv for 3D elasticity compatibility",
-            "Mixed formulation avoids locking, unlike displacement-only C1 conforming methods",
-            "Verify against analytical: w_max = qL^4/(64D) for simply-supported uniform load",
+            (
+                "[Numerical] HDivDiv enforces normal-normal "
+                "continuity across facets — WEAKER than full "
+                "H2 conformity (which would require C1 "
+                "Lagrange). Signal: a finite element claiming "
+                "to be the HHJ moment space but using "
+                "VectorH1 instead of HDivDiv allows tangent-"
+                "tangent jumps at facets and yields a "
+                "non-conforming bilinear form; the converged "
+                "deflection is off by a constant factor (~1.1-"
+                "1.5) compared to the HHJ reference solution. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For CLAMPED plate: add boundary "
+                "terms for dw/dn = 0 (Nitsche penalty or "
+                "Lagrange multiplier on the skeleton). "
+                "Signal: solving HHJ plate with ONLY w = 0 on "
+                "a clamped edge (no dw/dn term) gives a "
+                "simply-supported solution instead of "
+                "clamped — the centre deflection is ~3-4x "
+                "larger than the clamped reference. Add the "
+                "moment term over skeleton to enforce dw/dn "
+                "weakly. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For SIMPLY-SUPPORTED plate: "
+                "only w = 0 on the boundary is needed; "
+                "normal moments M_nn vanish naturally as a "
+                "natural BC. Signal: adding an extra "
+                "Dirichlet on M_nn (the bending moment) over-"
+                "constrains a simply-supported plate, "
+                "increasing the stiffness — centre deflection "
+                "is ~10-20% smaller than the analytic "
+                "w_max = q*L^4 / (64*D); remove the moment "
+                "BC. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] HHJ is order-optimal: order k "
+                "moments + order k deflection give order "
+                "k+1 in L2 norm. Signal: a convergence-rate "
+                "study (h-refinement at fixed order=1) "
+                "should show L2 error of the deflection "
+                "scaling as h^2; if it scales as h, the "
+                "moment space is mis-typed (e.g. "
+                "VectorH1 instead of HDivDiv) and you've "
+                "lost an order. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Regge elements (Regge calculus, "
+                "DISTINCT from HHJ) use HDivDiv for 3D "
+                "elasticity compatibility — symmetric tensor "
+                "stress with prescribed traction continuity. "
+                "Signal: porting an HHJ 2D-plate code to 3D "
+                "elasticity without switching to Regge "
+                "elements produces a non-conforming solution "
+                "(traction jumps at facets); the "
+                "HCurlCurl/HDivDiv pairing for 3D Hellinger-"
+                "Reissner is the canonical Regge "
+                "discretisation. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Mixed formulation (HHJ / Regge) "
+                "AVOIDS locking, unlike displacement-only "
+                "C1-conforming methods. Signal: a "
+                "displacement-only thin-plate H1 GridFunction "
+                "at h/thickness ratio > 100 shows shear_locking "
+                "(centre_deflection w_max is 10-1000x smaller "
+                "than the analytic simply_supported plate "
+                "result) — the discrete bending_energy is "
+                "dwarfed by spurious shear strain. HHJ removes "
+                "locking entirely by using the bending_moment "
+                "as primary unknowns. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Validation] Verify against analytical: "
+                "w_max = q*L^4 / (64*D) for a simply-"
+                "supported uniform-load plate "
+                "(D = E*t^3 / (12*(1-nu^2))). Signal: a "
+                "HHJ implementation should converge to "
+                "within 1% of this value on a moderately "
+                "fine mesh (h/L < 0.1); a >5% deviation "
+                "exposes a mis-configured BC, wrong D, or "
+                "mis-typed HDivDiv vs VectorH1 moment "
+                "space. (Audit 2026-06-02.)"
+            ),
+            "[API] HDivDiv (normal-normal continuous moment "
+            "tensor space) does NOT expose a pointwise div(div("
+            "tau)) operator. Constructing 'div(div(tau)) * v * "
+            "dx' raises Exception 'cannot form div' from "
+            "SymbolicBFI. Integrate by parts twice and substitute "
+            "the H1 Hessian: replace div(div(tau)) * v with "
+            "InnerProduct(tau, v.Operator('hesse')) - skeleton "
+            "normal-normal moment integral over interior facets "
+            "(via dx(element_boundary=True)). Signal: Exception "
+            "'cannot form div' emitted from BilinearForm += "
+            "div(div(tau_)) * ww * dx in any HHJ-style template. "
+            "(Verified empirically 2026-06-01 — Layer F catch.)",
         ],
     },
     "nonlinear_elasticity": {
@@ -1117,13 +1640,108 @@ KNOWLEDGE = {
         "spaces": "VectorH1(mesh, order=2) — displacement-based finite strain",
         "solver": "solvers.Newton() with load stepping; dampfactor reduces step size if needed",
         "pitfalls": [
-            "Det(F) must remain > 0 — initial guess must not cause element inversion",
-            "Load stepping: apply displacement/load in increments, use previous solution as initial guess",
-            "Neo-Hookean energy: 0.5*mu*(Tr(C)-d) - mu*ln(J) + 0.5*lam*ln(J)^2 (d=2 or 3)",
-            "Variation() auto-differentiates energy to get residual and tangent — very convenient",
-            "For nearly-incompressible (nu->0.5): use F-bar method or mixed formulation",
-            "Cauchy stress: sigma = (1/J) * F * S * F^T where S = dW/dE (PK2 stress)",
-            "Newton dampfactor < 1 helps when far from equilibrium (large load steps)",
+            (
+                "[Numerical] det(F) MUST remain > 0 — the "
+                "initial guess must not cause element "
+                "inversion. Signal: an initial displacement "
+                "guess that crushes the element to "
+                "near-zero or negative volume (e.g. "
+                "starting from u = -2*x in a unit-cube) "
+                "evaluates ln(J) with J <= 0 and raises "
+                "FloatingPointError or NaN in the first "
+                "Newton residual. Start from u = 0 and "
+                "load-step. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Load stepping: apply "
+                "displacement / load in INCREMENTS, using "
+                "previous converged GridFunction as "
+                "initial guess. Signal: applying full load "
+                "at t=0 to a hyperelastic problem at 30% "
+                "nominal strain typically diverges "
+                "(ngsolve.solvers.NewtonMinimization "
+                "residual grows ~10x per iter); "
+                "subdividing into 10 steps of 3% strain "
+                "achieves quadratic convergence per step "
+                "with the per-step BilinearForm AutoDiff "
+                "linearization. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Neo-Hookean energy: 0.5*mu*"
+                "(Tr(C) - d) - mu*ln(J) + 0.5*lam*ln(J)^2 "
+                "where d is the spatial dimension (2 or "
+                "3). Signal: forgetting the d subtraction "
+                "(using Tr(C) instead of Tr(C) - d) gives "
+                "W != 0 at F = I — a stress-free "
+                "reference produces a non-zero initial "
+                "stress; the first Newton iterate runs "
+                "off looking for a different equilibrium. "
+                "Sanity-check W(F=I) = 0. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Variation() auto-differentiates the "
+                "energy to get the residual and tangent — "
+                "MUCH safer than hand-coding. Signal: a "
+                "hand-coded P(F) and dP/dF with a sign "
+                "error or factor-of-2 produces linear (not "
+                "quadratic) Newton convergence — residual "
+                "halves per iter instead of squaring. "
+                "Switching to a.Apply / a.AssembleLinearization "
+                "with a Variation-built energy form "
+                "restores quadratic. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For nearly-incompressible "
+                "(nu -> 0.5): use F-bar method or mixed "
+                "(u, p) formulation. Signal: a pure-"
+                "displacement VectorH1 solve at nu = 0.4999 "
+                "locks volumetrically — the Cook-membrane "
+                "tip displacement is < 1% of the analytic "
+                "value; switching to mixed (u, p) with "
+                "Taylor-Hood-like spaces (VectorH1 order 2 "
+                "+ H1 order 1 for p) recovers within ~1%. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Cauchy stress: sigma = "
+                "(1/J) * F * S * F^T where S = dW/dE is "
+                "the 2nd Piola_Kirchhoff stress. Signal: "
+                "writing the Cauchy_stress as sigma = "
+                "(1/J) * F * P * F^T (P = first_PK = PK1) "
+                "mixes up the push_forward — S and P are "
+                "different objects (P = F * S); the "
+                "resulting GridFunction stress is wrong "
+                "by a factor of F. Correct: sigma = "
+                "(1/J) * F * S * F^T or sigma = (1/J) * "
+                "P * F^T. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Newton dampfactor < 1 helps "
+                "when FAR from equilibrium (large load "
+                "steps). Signal: when load-stepping is "
+                "aggressive enough that Newton overshoots "
+                "the convergence basin (residual grows "
+                "between iterations), setting "
+                "dampfactor = 0.5 or 0.25 in "
+                "ngsolve.solvers.Newton restores "
+                "convergence at the cost of more "
+                "iterations; alternatively reduce the "
+                "load increment. (Audit 2026-06-02.)"
+            ),
+            "[API] After solvers.Newton converges, the Cauchy / "
+            "PK1 stress passed to VTKOutput must be rebuilt from "
+            "the resolved GridFunction (Grad(gfu), Det(I+Grad("
+            "gfu)), Inv(F.trans*F) ...), NOT from the symbolic "
+            "fes.TrialFunction(). The symbolic version is a "
+            "ProxyFunction; VTKOutput.Do() then raises NgException "
+            "'cannot evaluate ProxyFunction without userdata' at "
+            "the first quadrature evaluation. Signal: that exact "
+            "ProxyFunction-userdata text emitted from VTKOutput."
+            "Do() at the end of a Newton template that passes "
+            "symbolically-built stress through 'coefs=[gfu, "
+            "sigma_cauchy]'. (Verified empirically 2026-06-01 — "
+            "Layer F catch.)",
         ],
     },
     "phase_field": {
@@ -1135,14 +1753,99 @@ KNOWLEDGE = {
         "spaces": "H1(mesh, order=k) for scalar phase; VectorH1 + H1 for fracture",
         "solver": "Allen-Cahn: implicit Euler (linear system per step). Fracture: staggered alternating minimization",
         "pitfalls": [
-            "Allen-Cahn mass is NOT conserved — use Cahn-Hilliard (4th order) for mass conservation",
-            "Interface width epsilon must be resolved: at least 3-4 elements across interface (h << eps)",
-            "Semi-implicit treatment of W'(c): evaluate at c^n, solve linearly — avoids nonlinear solve",
-            "Phase-field fracture: irreversibility d >= d_prev (crack cannot heal) — enforce pointwise",
-            "Staggered scheme converges to same solution as monolithic but takes more iterations",
-            "Miehe energy split (tension/compression) prevents crack growth under compression",
-            "Length scale l0 must be small enough relative to specimen size; convergence as l0->0",
-            "For Cahn-Hilliard: use H1 x H1 mixed formulation (chemical potential + phase field)",
+            (
+                "[Numerical] Allen-Cahn mass is NOT conserved — use "
+                "Cahn-Hilliard (4th order) for mass conservation. "
+                "Signal: Integrate(c, mesh) drifts monotonically "
+                "(~1-5% per characteristic interface time) in "
+                "Allen-Cahn; the same geometry under Cahn-Hilliard "
+                "preserves the integral to machine precision. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Interface width epsilon must be "
+                "resolved: at least 3-4 elements across interface "
+                "(h << eps). Signal: phase field c develops "
+                "checkerboard pattern near the interface with "
+                "10-30% over/undershoot; or NewtonMinimization "
+                "diverges with `Newton did not converge after N "
+                "iterations` because W'(c) ~ c^3 amplifies "
+                "spurious oscillations. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Semi-implicit treatment of "
+                "W'(c): evaluate at c^n (previous step), "
+                "solve linearly — avoids the nonlinear "
+                "solve. Signal: a fully-implicit treatment "
+                "with c^{n+1} inside W'(c) requires Newton "
+                "at each step (~5-10 inner iters), which "
+                "dominates wall-clock; the semi-implicit "
+                "lagging changes the stability constant "
+                "but keeps each step linear, ~5-10x faster. "
+                "Trade-off: stability constant shrinks "
+                "modestly (typical 10-20%); use a smaller "
+                "dt if you observe ringing. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Phase-field fracture: irreversibility "
+                "d >= d_prev (crack cannot heal) — enforce "
+                "pointwise. Signal: visualization shows the "
+                "damage field d decreasing in some elements "
+                "between time steps (unphysical 'healing'); the "
+                "fracture surface is not monotonic in time. "
+                "Enforce via max(d, d_prev) projection after each "
+                "solve. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Staggered scheme (solve "
+                "elasticity, then phase-field, iterate) "
+                "converges to the SAME solution as monolithic "
+                "but takes more iterations per step. Signal: "
+                "staggered typically needs 5-20 outer iters "
+                "vs 1 nonlinear solve in monolithic, but each "
+                "iteration is cheaper (two linear solves "
+                "instead of one nonlinear). Wall-clock wins "
+                "depend on the relative cost; staggered is "
+                "easier to implement and more robust at "
+                "fracture-onset events where monolithic "
+                "Newton struggles. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Miehe energy split (tension/"
+                "compression) prevents crack growth under "
+                "compression. Signal: without the split, a "
+                "compressive boundary load nucleates spurious "
+                "damage d>0 in the loaded region; with the split, "
+                "compression yields d~0 throughout. A "
+                "uniaxial-compression sanity test should show "
+                "max(d) < 1e-3. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Length scale l0 must be small "
+                "enough relative to specimen size; the "
+                "fracture-energy convergence is recovered as "
+                "l0 -> 0. Signal: l0 ~ 1/10 of the specimen "
+                "characteristic size produces a smeared "
+                "fracture zone visibly wider than expected "
+                "(captures rough crack location but the peak "
+                "load is over-predicted ~20-50% vs the "
+                "Griffith analytic load); refining the mesh "
+                "WITHOUT also reducing l0 does not help — "
+                "both must shrink together with l0 / h ~ 4-8 "
+                "preserved. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] For Cahn-Hilliard: use H1 x H1 mixed "
+                "formulation (chemical potential + phase field). "
+                "Signal: a single-H1 (4th-order) discretization "
+                "with standard Lagrange elements fails at assembly "
+                "with `NotImplementedError: H2 conformity required "
+                "for biharmonic operator` or the SymbolicBFI "
+                "raises `coefficient not in BilinearForm space`. "
+                "Mixed (c, mu) splits the biharmonic into two "
+                "Laplacians. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }

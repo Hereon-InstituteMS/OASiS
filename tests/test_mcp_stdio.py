@@ -216,3 +216,76 @@ def test_run_simulation_skfem_poisson_round_trip(tmp_path):
         f"run_simulation did not reference any .vtu artefact; "
         f"got: {r['text'][:400]}"
     )
+
+
+def test_knowledge_physics_returns_aligned_structure_over_stdio():
+    """End-to-end MCP-stdio test of the catalog → registry →
+    backend → knowledge path.
+
+    Closes the alignment gap the round-3 critic flagged: prior
+    alignment checks went through ``backend.get_knowledge`` via
+    direct Python, which exercises the catalog-loading internals
+    but not the JSON-RPC framing + tool dispatch. This test
+    drives ``knowledge(topic='physics', solver='dealii',
+    physics='poisson')`` through the real stdio transport and
+    asserts the SAME structural invariants the direct probe
+    verified:
+
+      * resolved ``elements`` list with canonical fields
+        (name + header + math_space + semantics + applicability)
+      * ``pitfalls`` entries with the [Category] prefix and the
+        Signal: clause
+      * a ``Post-mortem breadcrumbs`` section (not the full
+        records — the breadcrumbs-only contract from the
+        round-2 critic)
+
+    If any of these break, the failure is in the MCP-stdio
+    framing or the tool decorator chain, not in the catalog.
+    """
+    try:
+        r = asyncio.run(_call_tool_async(
+            "knowledge",
+            {"topic": "physics", "solver": "dealii",
+             "physics": "poisson"},
+        ))
+    except ModuleNotFoundError as e:
+        pytest.skip(f"mcp client SDK not importable: {e}")
+
+    assert not r["isError"], (
+        f"knowledge(topic='physics') raised over stdio: "
+        f"{r['text'][:300]}"
+    )
+    text = r["text"]
+
+    # Structural assertions on the JSON payload — the agent sees
+    # exactly this text on stdout.
+    assert '"elements"' in text, (
+        "MCP-stdio response missing structured `elements` key — "
+        "catalog refactor didn't reach the agent surface")
+    assert '"math_space"' in text, (
+        "MCP-stdio response missing canonical `math_space` field "
+        "on the element entries — element-catalog resolution "
+        "broken upstream of the stdio dispatch")
+    assert '"applicability"' in text, (
+        "MCP-stdio response missing per-physics `applicability` "
+        "field — the join with the canonical layer didn't run")
+    assert '"pitfalls"' in text, (
+        "MCP-stdio response missing `pitfalls` key")
+    # Table-1 prefix and Signal: clause should both appear.
+    assert "[Syntax]" in text or "[Physics]" in text \
+        or "[Numerical]" in text, (
+        "MCP-stdio response has pitfalls but none carry the "
+        "Table-1 [Category] prefix — pitfall promotion didn't "
+        "reach the agent")
+    assert "Signal:" in text, (
+        "MCP-stdio response has pitfalls but none carry a "
+        "Signal: clause — the operationally-verifiable claim "
+        "is missing from the agent-facing output")
+    # Breadcrumbs (not full records) — verifies the round-2 fix.
+    assert "Post-mortem breadcrumbs" in text, (
+        "MCP-stdio response is missing the post-mortem "
+        "breadcrumbs section — auto-inclusion path broken")
+    assert "surface_symptom" not in text, (
+        "MCP-stdio response leaked full post-mortem content at "
+        "plan time — breadcrumbs-only contract broken; this is "
+        "the round-2 critic's risk #3")

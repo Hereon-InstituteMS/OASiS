@@ -1,0 +1,22 @@
+{
+  "id": "dealii-stokes-mixed-elements",
+  "date": "2026-05-31",
+  "backend": "dealii",
+  "physics": "stokes",
+  "surface_symptom": "The deal.II stokes catalog entry described the function space (Taylor-Hood Q2/Q1) and a few solver pitfalls in prose, but did not enumerate alternative inf-sup-stable element pairs. An agent asked to solve a momentum-conservation-sensitive problem (e.g. groundwater flow, where exactly-divergence-free velocity matters) would not see the H(div) FE_RaviartThomas/FE_DGQ option — and the catalog gave no hint that equal-order pairs are inf-sup unstable and produce checkerboard pressure. The Schäfer-Turek mesh (channel_with_cylinder) was also unmentioned despite being the paper-quality reference benchmark for low-Re flow.",
+  "root_cause": "Stokes is a saddle-point problem and the element-pair choice IS the physics — different pairs give correct results with different conservation, accuracy, and cost characteristics. The catalog treated function_space as a single string rather than a menu, so the agent could not retrieve the trade-off space.",
+  "categories": ["Numerical", "Physics", "Syntax", "Integration"],
+  "pitfall_db_entries": [
+    "[Numerical] Inf-sup (Ladyzhenskaya-Babuška-Brezzi) stability is REQUIRED. Equal-order pairs (Q1/Q1, Q2/Q2) are NOT inf-sup stable — they look like they converge in 1D tests but produce checkerboard pressure modes in 2D. Use Taylor-Hood (Q_{p+1}/Q_p), MINI (Q1+bubble/Q1), RT/DGQ or BDM/DGP. Signal: pressure field has a regular high-frequency checkerboard pattern superimposed on the smooth solution.",
+    "[Physics] FE_RaviartThomas-based H(div) velocity pairs produce EXACTLY divergence-free velocity at the discrete level. If comparing against a Q2/Q1 result where div(u) ≈ 1e-3, the RT/DGQ result will report div(u) ≈ 1e-15. Signal: post-processing 'is my solver more accurate?' — yes, but only on mass conservation; other error metrics scale as usual.",
+    "[Integration] channel_with_cylinder is the Schäfer-Turek benchmark — set the cylinder centre to (0.2, 0.2) and the channel size to (2.2 × 0.41) to match the published lift/drag values. Signal: reported C_D differs from the Schäfer-Turek table by 10+%."
+  ],
+  "agent_detection_after_fix": "prepare_simulation(solver='dealii', physics='stokes') now returns a structured `elements` menu of 8 inf-sup-stable element pairs (Taylor-Hood Q_{p+1}/Q_p, MINI, RT/DGQ, BDM/DGP, P1NC/P0, Bernardi-Raugel, plus FE_Nothing for inactive subdomains), each annotated with conservation and cost characteristics. The pre-execution critic gate retrieves the LBB stability pitfall when the agent's plan picks an equal-order pair, and the post-execution critic matches against the `Signal: checkerboard pattern` clause when reading pressure-field stats. The Schäfer-Turek pitfall entry includes the exact (0.2, 0.2) / (2.2 × 0.41) geometry so the lift/drag comparison is not silently off-spec.",
+  "source_refs": [
+    "branch layer-a/kratos-source-scanner — commit adding deal.II stokes catalog structure",
+    "scripts/scan_results/diffs/dealii.json (before this encoding pass)",
+    "deal.II step-22 (basic), step-55 (parallel), step-56 (GMG)",
+    "Schäfer, M. and Turek, S. (1996) — 'Benchmark Computations of Laminar Flow Around a Cylinder'",
+    "task #33 — Encode discovered upstream capabilities into MCP catalog"
+  ]
+}

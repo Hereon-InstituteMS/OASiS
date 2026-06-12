@@ -6,7 +6,7 @@ For any non-trivial simulation task, break the work into sub-agents:
 
 1. **Research agent**: Search online for the specific problem — find literature values, validated setups, correct parameters. Report findings.
 
-2. **Setup agent**: Using the research findings, build the input files. Use `get_example_inputs()` to study real test files from the solver's test suite. Use `run_with_generator()` for simulations that need programmatic mesh/particle generation.
+2. **Setup agent**: Using the research findings, build the input files. Use `examples(keyword=..., solver=...)` to study real test files from the solver's test suite. Use `run_with_generator()` for simulations that need programmatic mesh/particle generation.
 
 3. **Critic agent**: Independently review the setup. Check every parameter against what the research agent found. Verify units, discretization, boundary conditions, material properties. Search online to validate. If the simulation fails after multiple attempts with the chosen solver, consider whether an alternative solver might be more suitable — `prepare_simulation` shows what alternatives exist. Report any issues.
 

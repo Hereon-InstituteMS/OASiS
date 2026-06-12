@@ -45,10 +45,55 @@ KNOWLEDGE = {
         "solver": "GMRES with diagonal preconditioner (non-symmetric system)",
         "elements": "ElementQuad1 (SUPG), ElementTriDG(ElementTriP1()) for DG",
         "pitfalls": [
-            "Custom BilinearForm: access u.grad, v.grad for gradients",
-            "For DG: use InteriorFacetBasis for jump terms",
-            "Periodic mesh: example 42 shows advection on periodic domain",
-            "High Peclet: use DG or increase mesh resolution",
+            (
+                "[API] Custom BilinearForm: access u.grad, "
+                "v.grad for gradients. Signal: writing "
+                "`grad(u)` instead of `u.grad` inside a "
+                "BilinearForm decorator raises "
+                "`NameError: grad is not defined`; the "
+                "scikit-fem BilinearForm convention exposes "
+                "the gradient as the .grad attribute on the "
+                "test/trial argument, not as a free "
+                "function. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] For DG: use InteriorFacetBasis for "
+                "jump terms. Signal: building a jump form "
+                "on a plain Basis raises `AttributeError: "
+                "'Basis' has no attribute 'normals'` or "
+                "yields zero matrix entries on facets. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Periodic mesh: example 42 shows "
+                "advection on a periodic domain via the "
+                "Mesh.periodic(mesh, ix, ix0) classmethod "
+                "available on every concrete mesh subclass "
+                "(MeshTri, MeshQuad, etc.). Signal: "
+                "building a regular MeshTri / MeshQuad "
+                "without periodic wrapping and expecting "
+                "outflow = inflow gives an open-boundary "
+                "system; the upstream concentration drains "
+                "via free Neumann BC and the downstream "
+                "face piles up. The periodic classmethod "
+                "identifies left/right (and top/bottom) "
+                "facet DOFs (ix and ix0 are the paired DoF "
+                "index arrays) so they share the same "
+                "column in the system matrix. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] High Peclet: use DG or "
+                "increase mesh resolution. Signal: standard "
+                "CG on Pe > ~10 develops oscillations "
+                "upstream of sharp source/sink locations in "
+                "the BilinearForm-assembled CG solution "
+                "(asm + condense pipeline) that do not damp "
+                "under MeshTri refinement of the advection-"
+                "aligned direction; SUPG or ElementTriDG "
+                "stabilisation removes them. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 }

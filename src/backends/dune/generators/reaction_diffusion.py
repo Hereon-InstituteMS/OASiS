@@ -56,9 +56,42 @@ KNOWLEDGE = {
         "description": "Reaction-diffusion (Fisher-KPP and other reaction-diffusion systems)",
         "solver": "Implicit Euler time-stepping with Newton linearization",
         "pitfalls": [
-            "Nonlinear reaction term linearized by DUNE's Newton solver automatically",
-            "For stiff reactions: use implicit time stepping (backward Euler or DIRK)",
-            "Multi-component systems (e.g., spiral waves): require 2+ coupled fields",
+            (
+                "[API] Nonlinear reaction term is "
+                "AUTOMATICALLY linearised by the dune.fem "
+                "galerkin scheme's internal Newton solver. "
+                "Signal: writing the form with explicit "
+                "u^n+1 inside R(u) (e.g. R(u) = u*(1-u)) "
+                "is accepted by the dune.fem lagrange-"
+                "space galerkin scheme; UFL automatic "
+                "differentiation builds the Jacobian and "
+                "Newton iterates per time step. Manual "
+                "linearisation is not needed. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] For STIFF reactions: use "
+                "IMPLICIT time stepping (backward Euler or "
+                "DIRK). Signal: explicit time stepping at "
+                "dt > 2/lambda_max (where lambda_max ~ "
+                "reaction rate) gives NaN within ~10 "
+                "steps; for Da > 100 the explicit dt is "
+                "infeasibly small. Switch to BE or "
+                "DIRK22/SDIRK22 via the time-stepper "
+                "selection. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Multi-component systems (e.g. "
+                "spiral waves) require 2+ COUPLED fields. "
+                "Signal: a Schnakenberg / Gray-Scott "
+                "implementation written as a single "
+                "scalar problem ignores the cross-"
+                "diffusion; use lagrange(gridView, order=k"
+                ", dimRange=2) for a 2-species mixed "
+                "space, with the reaction terms coupling "
+                "the components inside the UFL form. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 }

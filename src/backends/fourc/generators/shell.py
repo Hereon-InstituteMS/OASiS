@@ -33,11 +33,69 @@ class ShellGenerator(BaseGenerator):
             "materials": ["MAT_Struct_StVenantKirchhoff", "MAT_ElastHyper",
                           "MAT_Struct_MicroMaterial (multiscale)"],
             "pitfalls": [
-                "Kirchhoff shells need C1 continuity — use NURBS or DKT formulation",
-                "Reissner-Mindlin shells can lock for thin shells — use reduced integration",
-                "THICK parameter is the shell thickness",
-                "Director vector must be specified or auto-computed from element normal",
-                "Shell elements produce both in-plane forces and bending moments",
+                (
+                    "[Numerical] Kirchhoff shells need C1 "
+                    "continuity — use NURBS or DKT "
+                    "(Discrete Kirchhoff Triangle) "
+                    "formulation. Signal: declaring a C0 "
+                    "SHELL KIRCHHOFF QUAD4 / TRI3 with "
+                    "MAT_Struct_StVenantKirchhoff produces "
+                    "wrong deflection by ~30-50% on plate "
+                    "bending; the shear strain that the C0 "
+                    "element cannot suppress contaminates "
+                    "the bending energy. Switch to "
+                    "SHELL_KL_NURBS or a DKT element. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Reissner-Mindlin shells can "
+                    "LOCK for thin shells — use REDUCED "
+                    "integration. Signal: a thin-plate "
+                    "test (t/L < 0.01) with full "
+                    "integration gives centre deflection "
+                    "10-100x smaller than analytic; reduced "
+                    "integration (1 Gauss point in shear "
+                    "terms) recovers correct deflection. "
+                    "Alternative: MITC family or assumed-"
+                    "strain methods. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] THICK parameter is the SHELL "
+                    "THICKNESS. Signal: omitting THICK uses "
+                    "the default (often 1.0) which silently "
+                    "scales bending stiffness as t^3 — "
+                    "wrong by orders of magnitude for "
+                    "typical thin-shell problems. Always "
+                    "specify THICK explicitly to the "
+                    "physical shell thickness. (Audit "
+                    "2026-06-02.)"
+                ),
+                (
+                    "[Input] Director vector must be "
+                    "SPECIFIED or auto-computed from "
+                    "element normal. Signal: a curved-"
+                    "shell mesh with auto-computed "
+                    "directors aligned only with element "
+                    "normals (not the smooth surface "
+                    "normal) gives discontinuous director "
+                    "field across element edges — visible "
+                    "wrinkles in the deformed shape. Use "
+                    "smoothed nodal directors for curved "
+                    "geometry. (Audit 2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Shell elements produce "
+                    "BOTH in-plane forces (N_xx, N_yy, "
+                    "N_xy) AND bending moments (M_xx, M_yy, "
+                    "M_xy). Signal: visualising only sigma "
+                    "(in-plane stress) misses the bending "
+                    "contribution — through-thickness "
+                    "stress sigma(z) varies from -6*M/t^2 "
+                    "at one face to +6*M/t^2 at the other. "
+                    "Output both N and M tensors via "
+                    "STRESS_STRAIN and verify both for "
+                    "validation. (Audit 2026-06-02.)"
+                ),
             ],
         }
 

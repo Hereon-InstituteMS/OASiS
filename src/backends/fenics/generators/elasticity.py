@@ -10,20 +10,89 @@ KNOWLEDGE = {
     "function_space": "Vector Lagrange order 1, shape=(gdim,)",
     "solver": {"ksp_type": "cg", "pc_type": "gamg"},
     "pitfalls": [
-        "Vector function space: ('Lagrange', 1, (gdim,))",
-        "Dirichlet BC needs np.zeros(gdim) not scalar 0",
-        "Plane strain vs plane stress: adjust lambda accordingly",
-        "XDMFFile cannot write functions on P2 (order 2) meshes. Use VTKFile "
-        "instead, or interpolate to a P1 function before writing to XDMF.",
-        "For imported CAD geometry (IGES/STEP): use gmsh.model.getEntities() "
-        "and getBoundingBox() to identify surface tags for physical group "
-        "assignment. There is no automatic surface-to-BC mapping.",
-        "Coordinate-dependent surface tractions (e.g., torsion loads) require "
-        "computing the scaling factor from a surface integral: "
-        "q = M / integral(|r| ds) where r is position relative to the axis.",
-        "Mesh element order (gmsh Tet10) and FE polynomial degree (P2) are "
-        "independent. A P2 space on a Tet10 mesh gives isoparametric elements. "
-        "A P1 space on a Tet10 mesh uses curved geometry but linear interpolation.",
+        "[Syntax] Vector function space for elasticity in dolfinx "
+        "is created with ('Lagrange', 1, (gdim,)) — the trailing "
+        "shape tuple marks it as a vector-valued FE. Passing a "
+        "plain ('Lagrange', 1) gives a SCALAR space and the "
+        "weak form inner(sigma(u), epsilon(v)) fails at form "
+        "construction time when ufl.sym(ufl.grad(u)) is called "
+        "on the scalar trial function. Signal: ufl.sym raises "
+        "ValueError 'Symmetric part of tensor with rank != 2 is "
+        "undefined.' inside the form definition, before "
+        "dolfinx.fem.form / assemble is reached. "
+        "(Verified empirically 2026-06-01 — the prior catalog "
+        "wording 'Invalid ranks' / 'expected rank 1 trial "
+        "function' does not match current dolfinx output.)",
+        "[Syntax] Dirichlet BC value for a vector-valued elasticity "
+        "space must be np.array([0.0]*gdim, dtype=default_scalar_type) "
+        "— not scalar 0. dolfinx broadcasts the BC value against "
+        "the function space shape; a scalar passed to a vector "
+        "space raises ValueError. Signal: numpy raises ValueError "
+        "'could not broadcast input array from shape () into "
+        "shape (gdim,)' when dirichletbc is constructed with a "
+        "scalar value on a vector space.",
+        "[Physics] Plane strain vs plane stress: adjust the Lame "
+        "lambda accordingly. Plane stress uses lambda_star = "
+        "2*lambda*mu/(lambda+2*mu); using plane strain lambda for "
+        "a thin plate gives a stiffness ~30% too high (Poisson "
+        "contraction is suppressed). Signal: the dolfinx "
+        "VectorFunctionSpace tip deflection of the plane_strain "
+        "Function differs from the analytic plane_stress reference "
+        "by a factor (1-nu) at nu=0.3.",
+        "[API] XDMFFile requires the Function degree to match "
+        "the underlying mesh degree. A P2 Function on a P1 mesh "
+        "(the common case) cannot be written directly — interpolate "
+        "to a matching-degree space, or use VTKFile / VTXWriter. "
+        "Signal: XDMFFile.write_function raises RuntimeError "
+        "'Degree of output Function must be same as mesh degree. "
+        "Maybe the Function needs to be interpolated?'. "
+        "(Verified empirically 2026-06-01 — the prior catalog "
+        "wording 'XDMF mesh must be P1' does not appear in "
+        "current dolfinx output.)",
+        "[Integration] For imported CAD geometry (IGES/STEP): use "
+        "gmsh.model.getEntities() and getBoundingBox() to identify "
+        "surface tags for physical group assignment. There is no "
+        "automatic surface-to-BC mapping. Signal: dolfinx.io.gmshio "
+        "reads the mesh but mesh.topology.dim returns 3 with no "
+        "tagged facets; subsequent locate_dofs_topological on a "
+        "facet tag returns an empty array.",
+        "[Numerical] Coordinate-dependent surface tractions (e.g., "
+        "torsion loads) require computing the scaling factor from "
+        "a surface integral: q = M / integral(|r| ds) where r is "
+        "the position relative to the axis. Naively applying q = "
+        "M/A (uniform) gives a uniform shear that violates "
+        "moment-vs-arm balance. Signal: a dolfinx ds-integrated "
+        "reaction moment of the resulting Function differs from "
+        "applied M by 20-40% on a thick beam with torsion BC.",
+        "[Syntax] Mesh element order (gmsh Tet10) and FE "
+        "polynomial degree (P2) are independent. A P2 space on a "
+        "Tet10 mesh gives true isoparametric elements; a P1 space "
+        "on Tet10 uses curved geometry but linear interpolation. "
+        "Mismatched expectations are a common subtle bug. Signal: "
+        "the assembled L2 error (dolfinx.fem.assemble_scalar"
+        "(dolfinx.fem.form(ufl.inner(u_h-u_exact, u_h-u_exact)"
+        "*ufl.dx))) against a manufactured solution shows slope "
+        "1 across mesh refinements where slope 2 is expected, "
+        "because dolfinx.fem.functionspace was called with "
+        "('Lagrange', 1) while the user thought ('Lagrange', 2) "
+        "was active. (Note 2026-06-02: dolfin's ufl.errornorm "
+        "helper does not exist in dolfinx — assemble the inner-"
+        "product form manually as shown.)",
+        "[Numerical] Near-incompressible (nu > 0.49) requires a "
+        "mixed-formulation (Taylor-Hood or three-field) to avoid "
+        "volumetric locking. Pure displacement P1 or P2 at "
+        "nu=0.4999 has displacement underestimated by orders of "
+        "magnitude. Signal: the dolfinx VectorFunctionSpace tip "
+        "deflection at nu=0.4999 is 1e-3 of the true value; "
+        "switching to a Taylor_Hood mixed_P2_P1 MixedElement "
+        "recovers the analytic deflection to within 1%.",
+        "[API] dolfinx.fem.FunctionSpace rejects element family "
+        "names other than the registered basix families. Passing "
+        "an arbitrary string like 'P1' or 'CG' that was valid in "
+        "old DOLFIN raises ValueError. Signal: "
+        "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises "
+        "ValueError 'Unknown element family CG' — the basix-era "
+        "name is 'Lagrange', not 'CG' or 'P1'.",
     ],
     "materials": {
         "E": {"range": [1.0, 1e12], "unit": "Pa"},

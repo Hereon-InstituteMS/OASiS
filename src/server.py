@@ -2,7 +2,10 @@
 OASiS — MCP Server
 
 Connects any LLM to multiple open-source FEM codes via the Model Context Protocol.
-Supported backends: 4C, FEniCSx (dolfinx), deal.II, (FEBio planned).
+Supported backends (catalog ships 8, runtime depends on local installs):
+4C Multiphysics, FEniCSx (dolfinx), deal.II, NGSolve, scikit-fem, Kratos
+Multiphysics, DUNE-fem, FEBio. Call `discover(query='list')` after start-up
+for the current availability and per-backend install hints.
 """
 
 import sys
@@ -22,15 +25,20 @@ mcp = FastMCP(
     instructions=(
         "You are connected to the OASiS — a multi-solver MCP server for "
         "finite element simulations across 8 independent FEM codes.\n\n"
-        "## Available Backends (7 working)\n"
+        "## Available Backends\n"
+        "Call `discover(query='list')` for the current availability "
+        "status on this install. The catalog ships generators for "
+        "8 backends (FEniCSx, deal.II, 4C, NGSolve, scikit-fem, "
+        "Kratos, DUNE-fem, FEBio); typical conda-forge installs "
+        "have 5-7 actually available.\n"
         "- **FEniCSx (dolfinx)**: Python. Rapid prototyping, UFL weak forms, Gmsh meshing, NS, hyperelasticity.\n"
         "- **deal.II**: C++. Adaptive refinement (hp-FEM), matrix-free, parallel (MPI+GPU), 97 tutorials.\n"
         "- **4C Multiphysics**: C++/YAML. FSI, TSI, contact, beams, particles (SPH/DEM/PD), cardiovascular.\n"
         "- **NGSolve**: Python. Maxwell, Helmholtz, DG/HDG, high-order, eigenvalues, symbolic PDE.\n"
         "- **scikit-fem**: Pure Python. Assembly-level control, 50+ element types, Stokes, biharmonic.\n"
-        "- **Kratos Multiphysics**: Python/JSON. 54 applications, structural, fluid, FSI, DEM, MPM, CoSimulation.\n"
-        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, VEM, h/p-adaptivity.\n"
-        "- **FEBio**: XML. Biomechanics (not currently installed).\n\n"
+        "- **Kratos Multiphysics**: Python/JSON. Structural, fluid, FSI, DEM, MPM, CoSimulation (39 catalog physics rows on this install).\n"
+        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, VEM, h/p-adaptivity (install: `conda create -n ofa-dune -c conda-forge dune-fem` — the conda-forge channel is the supported path, not PyPI).\n"
+        "- **FEBio**: XML. Biomechanics (biphasic / multiphasic tissue, active contraction). Install the binary from https://febio.org/downloads/ or set the FEBIO_BINARY env var.\n\n"
         "## Workflow\n"
         "1. Understand the physics the user wants to solve\n"
         "2. `prepare_simulation(solver, physics)` — get knowledge + real test files + template "
@@ -43,7 +51,8 @@ mcp = FastMCP(
         "Other tools: `knowledge(topic, solver, physics)`, `discover(query)`, "
         "`examples(keyword, solver)`, `developer(action, solver)`, `generate_mesh(geometry)`\n\n"
         "## Key Principles\n"
-        "- Always study real test files before writing input — use get_example_inputs()\n"
+        "- Always study real test files before writing input — use "
+        "`examples(keyword, solver, action='search')`\n"
         "- Break complex tasks into steps. For each step:\n"
         "  1. Plan what you will do\n"
         "  2. Execute it\n"
@@ -78,8 +87,12 @@ mcp = FastMCP(
         "- `coupled_solve(problem, solver_a, solver_b)` — DN domain decomposition, TSI, etc.\n"
         "- `transfer_field(source_vtu, field, interface_coord)` — extract & transfer fields\n\n"
         "## Developer Mode\n"
-        "- `get_solver_architecture(solver)` — source locations, build system, extension points\n"
-        "- `browse_solver_tests(solver, keyword)` — browse real test files\n"
+        "- `developer(action='architecture', solver=...)` — source "
+        "locations, build system, extension points\n"
+        "- `developer(action='files', solver=..., keyword=...)` — "
+        "browse real source files\n"
+        "- `examples(keyword, solver, action='search')` — browse "
+        "real test files / demos\n"
         "- The agent can read, modify, and extend solver source code.\n\n"
         "## Session Knowledge\n"
         "After completing a simulation workflow, especially one that involved "

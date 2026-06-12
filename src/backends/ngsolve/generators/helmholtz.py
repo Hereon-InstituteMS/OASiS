@@ -21,7 +21,7 @@ geo.SetMaterial(1, "pml")
 geo.SetMaterial(2, "inner")
 mesh = Mesh(geo.GenerateMesh(maxh={maxh}))
 
-mesh.SetPML(pml.Radial(rad=0.7, alpha=2j), definedon="pml")
+mesh.SetPML(pml.Radial(origin=(0, 0), rad=0.7, alpha=2j), definedon="pml")
 
 fes = H1(mesh, order={order}, complex=True, dirichlet="outer")
 u, v = fes.TnT()
@@ -51,11 +51,73 @@ KNOWLEDGE = {
         "spaces": "H1(mesh, order=k, complex=True) — MUST use complex=True",
         "solver": "Direct for moderate k. For large k, use GMRES with multigrid",
         "pitfalls": [
-            "complex=True flag required on FESpace",
-            "PML: mesh.SetPML(pml.Radial(rad=r, alpha=a_j)) where alpha is imaginary",
-            "PML alpha too small -> reflections; too large -> numerical instability",
-            "Resolution: ~10 DOFs per wavelength (order p, h < lambda/(2p))",
-            "For eigenvalues/resonances: ArnoldiSolver with shift-invert",
+            "[Syntax] complex=True flag required on FESpace for any "
+            "Helmholtz form that carries a complex coefficient "
+            "(absorbing BC, PML, time-harmonic source). Without it, "
+            "the BilinearForm with a 1j*k*u*v*dx term hits the "
+            "same ScaleCF check that maxwell#3 trips on. Signal: "
+            "NgException 'real Evaluate called for complex ScaleCF "
+            "in Assemble BilinearForm \"biform_from_py\"' from "
+            "BilinearForm.Assemble. (Verified empirically "
+            "2026-06-01 — identical wording to the maxwell#3 case; "
+            "the catch site is the BFI assembler.)",
+            "[API] pml.Radial REQUIRES an 'origin' positional "
+            "argument (the center of the PML region). Real "
+            "signature: pml.Radial(origin, rad=1, alpha=1j). The "
+            "earlier catalog template called pml.Radial(rad=0.7, "
+            "alpha=2j) without origin. Use origin=(0, 0) for 2-D "
+            "centered PML or origin=(0, 0, 0) for 3-D. "
+            "Signal: pml.Radial(rad=..., alpha=...) without "
+            "origin raises 'TypeError: Radial(): incompatible "
+            "function arguments' at the call site, BEFORE "
+            "mesh.SetPML is reached. (Verified empirically "
+            "against NGSolve 6.2.2604 2026-06-01.)",
+            "[Numerical] PML setup uses mesh.SetPML(pml.Radial("
+            "origin=(0,0), rad=r, alpha=a_j)) where alpha is IMAGINARY "
+            "(complex-valued). A real-only alpha passed to "
+            "pml.Radial becomes a lossy real boundary that "
+            "reflects the outgoing wave. Signal: Integrate of "
+            "GridFunction L2Norm in the bulk region does NOT "
+            "monotonically decrease as the radius r of "
+            "mesh.SetPML is increased; the post-processed field "
+            "shows standing-wave fringes characteristic of "
+            "reflection from the inner edge of pml.Radial. "
+            "(Catalog claim inherited — not yet empirically "
+            "verified on a running PML simulation.)",
+            "[Numerical] mesh.SetPML(pml.Radial(rad, alpha)) "
+            "alpha magnitude must be tuned: too small → outgoing "
+            "wave is partially reflected from the pml.Radial "
+            "interface; too large → high local wavenumber inside "
+            "the PML makes the BilinearForm.Assemble + "
+            "UmfpackInverse linear solve ill-conditioned. "
+            "Practical starting range alpha = 1.0..5.0 (imaginary "
+            "part). Signal: Integrate of GridFunction L2Norm "
+            "outside pml.Radial vs alpha forms a U-curve with "
+            "the minimum near alpha=1.0..5.0; outside that range "
+            "the inner-boundary GridFunction value is O(0.1) of "
+            "the source. (Catalog claim inherited — not yet "
+            "empirically verified.)",
+            "[Numerical] Resolution rule of thumb: ~10 DOFs per "
+            "wavelength minimum, i.e. order p, h < lambda/(2p). "
+            "Insufficient resolution makes the Helmholtz pollution "
+            "effect dominate. Signal: phase error of the "
+            "post-processed solution grows as O(k^(p+1) h^(2p+1)); "
+            "for k > 100, h < lambda/10 is not enough at p=1, and "
+            "the L2 error against an analytic plane wave plateaus "
+            "around 10% regardless of further refinement. (Catalog "
+            "claim inherited — not yet empirically verified at this "
+            "magnitude.)",
+            "[API] For eigenvalues / cavity resonances: use "
+            "ArnoldiSolver with shift-invert; the shift should be "
+            "near the expected eigenvalue (k^2_estimate from "
+            "analytic cavity formula). shift=0 raises NgException "
+            "'UmfpackInverse: Numeric factorization failed. UMFPACK "
+            "... WARNING: matrix is singular' on operators with a "
+            "non-empty null space (same family as maxwell#5). "
+            "Signal: NgException with 'UmfpackInverse' + 'matrix "
+            "is singular' from ArnoldiSolver when shift=0. "
+            "(Verified empirically 2026-06-01 — same pattern as "
+            "maxwell#5.)",
         ],
     },
 }

@@ -81,10 +81,57 @@ KNOWLEDGE = {
         "elements": "ElementVector(ElementQuad1()) or ElementVector(ElementTriP1())",
         "built_in_forms": "linear_elasticity, linear_stress (from skfem.models.elasticity)",
         "pitfalls": [
-            "Use ElementVector(ElementQuad1()) for vector problems, NOT ElementQuad1() alone",
-            "lame_parameters(E, nu) computes lambda and mu from engineering constants",
-            "linear_elasticity(lam, mu) returns a BilinearForm directly",
-            "For eigenvalue problems (vibration): use eigsh(K, M=M, k=n, sigma=0)",
+            "[Syntax] Vector elasticity uses ElementVector("
+            "ElementQuad1()) (or ElementVector(ElementTriP1())) "
+            "— wrap the scalar element in ElementVector. Using "
+            "ElementQuad1() alone gives a SCALAR space; "
+            "elasticity-form integrands such as inner(sigma(u), "
+            "epsilon(v)) then fail dimensions. Signal: "
+            "Basis(mesh, ElementVector(ElementQuad1())).Nbfun "
+            "is exactly 2× Basis(mesh, ElementQuad1()).Nbfun "
+            "(8 vs 4 in 2D); using the scalar basis in an "
+            "elasticity assembly raises shape-mismatch from skfem "
+            "or numpy. (Verified empirically 2026-06-01: "
+            "vector_Nbfun=8, scalar_Nbfun=4 for ElementQuad1.)",
+            "[API] skfem.models.elasticity.lame_parameters(E, nu) "
+            "returns (lam, mu) computed from engineering "
+            "constants via the standard formulas lam = "
+            "E*nu/((1+nu)*(1-2*nu)) and mu = E/(2*(1+nu)). "
+            "Signal: lame_parameters(E, nu) numerically equals "
+            "the analytic (lam, mu) within float64 precision; "
+            "math.isclose returns True on both. (Verified "
+            "empirically 2026-06-01.)",
+            "[API] skfem.models.elasticity.linear_elasticity("
+            "lam, mu) returns a BilinearForm directly, ready "
+            "for asm(). The result IS callable as a form (not "
+            "an integrand); pass it to skfem.asm(form, basis) "
+            "to assemble the stiffness matrix. Signal: "
+            "type(linear_elasticity(lam, mu)) is "
+            "skfem.assembly.form.BilinearForm; asm() returns "
+            "a scipy.sparse matrix of shape (basis.N, basis.N). "
+            "(Claim inherited — not yet empirically separated.)",
+            "[Numerical] For eigenvalue (vibration) problems: "
+            "use scipy.sparse.linalg.eigsh(K, M=M, k=n, sigma=0). "
+            "sigma=0 (shift) targets the LOWEST eigenmodes; "
+            "without sigma, eigsh defaults to highest. Signal: "
+            "eigsh with sigma=0 returns the first n vibration "
+            "modes (ordered by frequency); omitting sigma "
+            "returns the largest singular values, which for a "
+            "structural stiffness K are unrelated to physical "
+            "vibration modes. (Claim inherited — not yet "
+            "empirically separated.)",
+            "[API] Boundary identification by name (e.g., "
+            "basis.get_dofs(elements='left')) requires that the "
+            "mesh has had subdomains and boundaries TAGGED "
+            "explicitly. A bare mesh created by MeshTri() / "
+            "MeshQuad() carries no tags by default — querying "
+            "with an unknown tag raises ValueError 'Boundary "
+            "\\'left\\' not found' (catch via try/except, or "
+            "use skfem.Mesh.with_boundaries to tag first). "
+            "Signal: get_dofs(elements='left') with no tagging "
+            "raises ValueError mentioning the missing tag "
+            "name. (Verified empirically — see "
+            "boundary_not_tagged Tier-2 fixture.)",
         ],
     },
 }

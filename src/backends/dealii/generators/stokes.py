@@ -22,7 +22,8 @@ def _stokes_2d(params: dict) -> str:
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 #include <deal.II/dofs/dof_renumbering.h>
-#include <deal.II/lac/sparse_direct.h>
+#include <deal.II/lac/solver_minres.h>
+#include <deal.II/lac/precondition.h>
 #include <deal.II/lac/block_sparse_matrix.h>
 #include <deal.II/lac/block_vector.h>
 #include <deal.II/lac/block_sparsity_pattern.h>
@@ -47,16 +48,27 @@ public:
 int main() {{
   const int dim = 2;
   Triangulation<dim> tria;
-  GridGenerator::hyper_cube(tria, 0, 1);
+  // colorize=true assigns face boundary_ids 0..3 (left,right,bottom,top)
+  // so the lid BC can target ONLY the top face — with a single id the
+  // template degenerated to all-zero BCs and a trivial zero solution.
+  GridGenerator::hyper_cube(tria, 0, 1, /*colorize=*/true);
   tria.refine_global({refinements});
 
   FESystem<dim> fe(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1); // Q2 velocity + Q1 pressure
   DoFHandler<dim> dof_handler(tria);
   dof_handler.distribute_dofs(fe);
-  DoFRenumbering::component_wise(dof_handler);
+
+  // Group ALL velocity components into block 0, pressure into block 1
+  // (the step-22 pattern). component_wise(dof_handler) WITHOUT the
+  // block_component argument renumbers by COMPONENT (dim+1 groups:
+  // ux, uy, p) while count_dofs_per_fe_block then reports per-FE-base
+  // blocks — the mismatched block sizes segfault during assembly.
+  std::vector<unsigned int> block_component(dim + 1, 0);
+  block_component[dim] = 1;
+  DoFRenumbering::component_wise(dof_handler, block_component);
 
   const std::vector<types::global_dof_index> dofs_per_block =
-    DoFTools::count_dofs_per_fe_block(dof_handler);
+    DoFTools::count_dofs_per_fe_block(dof_handler, block_component);
   std::cout << "DOFs: " << dof_handler.n_dofs()
             << " (vel=" << dofs_per_block[0] << ", pres=" << dofs_per_block[1] << ")" << std::endl;
 
@@ -115,17 +127,38 @@ int main() {{
     }}
   }}
 
-  // BCs: lid velocity on top, no-slip elsewhere
+  // BCs: lid velocity u=(1,0) on the top face (id 3), no-slip on the
+  // other three. Constrain VELOCITY components only — interpolating a
+  // ZeroFunction(dim+1) without the component mask also pins every
+  // boundary pressure DoF, which is wrong physics.
+  const FEValuesExtractors::Vector velocities_bc(0);
   std::map<types::global_dof_index, double> boundary_values;
-  VectorTools::interpolate_boundary_values(dof_handler, 0,
-    Functions::ZeroFunction<dim>(dim + 1), boundary_values);
-  // Override top boundary with lid velocity
-  // (boundary_id 0 for hyper_cube is all faces — in practice you'd set per-face)
+  for (const auto face_id : {{0, 1, 2}})
+    VectorTools::interpolate_boundary_values(dof_handler, face_id,
+      Functions::ZeroFunction<dim>(dim + 1), boundary_values,
+      fe.component_mask(velocities_bc));
+  VectorTools::interpolate_boundary_values(dof_handler, 3,
+    LidVelocity<dim>(), boundary_values,
+    fe.component_mask(velocities_bc));
+  // Pin ONE pressure DoF: with velocity Dirichlet on the whole
+  // boundary, pressure is only defined up to a constant and the
+  // saddle-point matrix is singular without this.
+  boundary_values[dofs_per_block[0]] = 0.0;
   MatrixTools::apply_boundary_values(boundary_values, system_matrix, solution, system_rhs);
 
-  SparseDirectUMFPACK A_direct;
-  A_direct.initialize(system_matrix);
-  A_direct.vmult(solution, system_rhs);
+  // Solve with MinRes (symmetric indefinite saddle-point system).
+  // SparseDirectUMFPACK is the obvious direct choice but conda-forge
+  // deal.II ships WITHOUT UMFPACK (config.h '#undef
+  // DEAL_II_WITH_UMFPACK') — the class compiles, then throws
+  // ExcNeedsUMFPACK at runtime in sparse_direct.cc. MinRes with the
+  // identity preconditioner is slow but portable; for production use
+  // the step-22 block Schur preconditioner.
+  SolverControl solver_control(20000, 1e-8 * system_rhs.l2_norm());
+  SolverMinRes<BlockVector<double>> solver(solver_control);
+  PreconditionIdentity preconditioner;
+  solver.solve(system_matrix, solution, system_rhs, preconditioner);
+  std::cout << "MinRes converged in " << solver_control.last_step()
+            << " iterations" << std::endl;
 
   std::cout << "Stokes solved, max velocity: " << solution.block(0).linfty_norm() << std::endl;
 
@@ -155,10 +188,142 @@ KNOWLEDGE = {
     "function_space": "FESystem<dim>(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1) — Taylor-Hood Q2/Q1",
     "solver": "Block Schur complement: A*u = f - B^T*p, then S*p = B*A^{-1}*f - g",
     "block_system": "GMRES with Schur complement preconditioner, or direct UMFPACK for small",
+    # ── Structured catalog (post-canonical-element refactor).
+    #    Each per-physics applicability note focuses on the inf-sup
+    #    stability + conservation tradeoff specific to Stokes; the
+    #    canonical class semantics live in element_catalog.
+    "elements": {
+        "FESystem":
+            "Block-vector wrapper for ALL Stokes pairs. Most "
+            "common shape: FESystem<dim>(FE_Q<dim>(p+1), dim, "
+            "FE_Q<dim>(p), 1) for Taylor-Hood. The 'dim' "
+            "velocity components + 1 pressure component are then "
+            "block-renumbered via DoFRenumbering::component_wise.",
+        "FE_Q":
+            "Used twice in Taylor-Hood: degree p+1 for velocity, "
+            "degree p for pressure. Q2/Q1 (p=1) is the canonical "
+            "low-Re default. Q1/Q1 (equal-order) is NOT inf-sup "
+            "stable and produces checkerboard pressure unless "
+            "stabilised (SUPG / GLS / VMS).",
+        "FE_Q_Bubbles":
+            "Velocity component of the MINI element (paired with "
+            "FE_DGP pressure). Inf-sup stable at p=1, cheaper "
+            "than Taylor-Hood Q2/Q1 in DoF count.",
+        "FE_RaviartThomas":
+            "Velocity component of the RT/DGQ H(div) mixed pair. "
+            "Produces EXACTLY divergence-free discrete velocity — "
+            "the right choice when conservation matters (Darcy, "
+            "groundwater, geophysical flow).",
+        "FE_BDM":
+            "Brezzi-Douglas-Marini velocity for the BDM/DGP pair. "
+            "Fewer DoFs per cell than FE_RaviartThomas at the "
+            "same polynomial order; same divergence-free property.",
+        "FE_RannacherTurek":
+            "Velocity component of the P1NC/P0 pair (paired with "
+            "FE_DGQ(0)). Inf-sup stable on quads, cheap, no "
+            "Taylor-Hood h^2 bubble — useful when DoF budget is "
+            "tight.",
+        "FE_BernardiRaugel":
+            "Vector Lagrange + edge bubbles. Inf-sup stable when "
+            "paired with piecewise-constant pressure; competitive "
+            "with Taylor-Hood at low p.",
+        "FE_DGP":
+            "Pressure component of MINI / RT/DGP / BDM/DGP. "
+            "Discontinuous monomial basis; one degree less than "
+            "the velocity (so pair FE_Q_Bubbles(1) + FE_DGP(0), "
+            "RT(k) + DGP(k), BDM(k) + DGP(k-1)).",
+        "FE_DGQ":
+            "Pressure component of RT/DGQ pair, or of fully-DG "
+            "Stokes. Tensor-product DG; pair RT(k)+DGQ(k) for "
+            "exactly-div-free.",
+        "FE_Nothing":
+            "Use inside FESystem on subdomains where flow is "
+            "suppressed (solid inclusions in FSI, ALE-frozen "
+            "regions).",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Driven-cavity Stokes benchmark; reference values Ghia et al. (1982).",
+        "channel_with_cylinder": "Schäfer-Turek benchmark — cylinder at (0.2, 0.2) in (2.2 × 0.41) channel. Reference lift/drag at Re=20/100.",
+        "hyper_rectangle": "Generic channel domain — inflow left, outflow right.",
+        "hyper_L": "Backward-facing step; classic recirculating-flow test.",
+        "subdivided_hyper_rectangle": "Anisotropic refinement (taller in y than long in x) for boundary-layer resolution.",
+        "hyper_cube_with_cylindrical_hole": "Flow around a cylinder; vortex-shedding at Re > 47.",
+        "cheese": "Domain with holes — multiscale / porous-flow demo.",
+    },
+    "solvers": [
+        "SolverGMRES<>                — the canonical choice; Stokes is indefinite so SolverCG WILL fail.",
+        "SolverMinRes<>               — symmetric indefinite; preferable to GMRES when a symmetric Schur preconditioner is used.",
+        "SolverFGMRES<>               — flexible GMRES; needed when the inner preconditioner is itself an iterative solver (e.g. Schur complement built from an AMG-preconditioned CG on the velocity block).",
+        "TrilinosWrappers::SolverDirect (UMFPACK / KLU) — direct for small problems; useful as a reference truth when iterative chains start producing wrong answers.",
+    ],
+    "preconditioners": [
+        "BlockSchurPreconditioner (step-22 §) — the textbook approach; A_inv via inner CG on the velocity block, S_inv via the pressure mass matrix scaled by 1/viscosity.",
+        "PreconditionAMG / BoomerAMG on the velocity block — TrilinosWrappers; needed to scale beyond ~10^5 DoFs.",
+        "Vanka smoother for the FULL block system in geometric multigrid (step-56) — point Jacobi DOES NOT work because the saddle-point structure has zero diagonal in the pressure block.",
+    ],
     "pitfalls": [
-        "System is INDEFINITE — cannot use CG, use GMRES/MinRes/direct",
-        "Block structure: use DoFRenumbering::component_wise + BlockSparseMatrix",
-        "Pressure is determined up to a constant (pure Neumann → pin one DOF)",
-        "For GMG: Vanka-type smoothers needed (step-56), not point Jacobi",
+        "[Numerical] System is INDEFINITE — cannot use SolverCG, use "
+        "SolverGMRES / SolverMinRes / a direct solver. Signal: "
+        "SolverCG reports 'breakdown' on iteration 2-3 with a "
+        "negative inner product, before the iterative residual has "
+        "dropped at all.",
+        "[Syntax] Block structure: use "
+        "DoFRenumbering::component_wise + BlockSparseMatrix. Without "
+        "the renumbering the velocity and pressure DoFs are "
+        "interleaved and the BlockSparseMatrix indexing is wrong. "
+        "Signal: assembly succeeds but on the assembled "
+        "BlockSparseMatrix system, block(1, 1).frobenius_norm() "
+        "(the pressure block) is NON-ZERO when it should be zero "
+        "for a saddle-point Stokes system; the DoFHandler's "
+        "BlockInfo from get_block_info() reports block sizes in "
+        "the wrong proportion (e.g. (n, n) instead of (dim*n, n)).",
+        "[Physics] Pressure is determined up to a constant for pure "
+        "Neumann (closed-cavity) problems — pin one DoF or add a "
+        "zero-mean constraint via AffineConstraints. Signal: "
+        "`solution.block(1).linfty_norm()` (the pressure block) "
+        "drifts to >1e10 magnitude across iterations while "
+        "`solution.block(0).l2_norm()` (velocity) converges "
+        "normally; SolverGMRES iteration count grows each outer "
+        "step as the null space pollutes the Krylov basis.",
+        "[Numerical] For geometric multigrid: Vanka-type smoothers "
+        "needed (step-56), NOT point Jacobi. Point Jacobi diverges "
+        "on saddle-point systems because the pressure block has "
+        "zero diagonal. Signal: MGSmootherRelaxation with point "
+        "Jacobi — SolverGMRES residual norm stagnates at ~1e-2 "
+        "after the first V-cycle and refuses to drop further, even "
+        "though SparseDirectUMFPACK on the same matrix converges "
+        "to machine precision; SolverControl::last_step() reports "
+        "max_iterations reached.",
+        "[Numerical] Inf-sup (Ladyzhenskaya-Babuška-Brezzi) stability "
+        "is REQUIRED. Equal-order pairs (Q1/Q1, Q2/Q2) are NOT "
+        "inf-sup stable — they look like they converge in 1D tests "
+        "but produce checkerboard pressure modes in 2D. Use "
+        "Taylor-Hood (Q_{p+1}/Q_p), MINI (Q1+bubble/Q1), "
+        "RT/DGQ or BDM/DGP. Signal: DataOut output for the "
+        "BlockVector pressure component shows a regular "
+        "high-frequency checkerboard pattern superimposed on the "
+        "smooth solution; VectorTools::point_value evaluated at "
+        "adjacent cell centroids alternates sign with O(1) "
+        "magnitude.",
+        "[Physics] FE_RaviartThomas-based H(div) velocity pairs "
+        "produce EXACTLY divergence-free velocity at the discrete "
+        "level — this is correct, not a bug. If the user is "
+        "comparing against a Q2/Q1 result where div(u) ≈ 1e-3, the "
+        "RT/DGQ result will report div(u) ≈ 1e-15. Signal: "
+        "`VectorTools::integrate_difference` for div(u) returns "
+        "values at machine epsilon (1e-15 to 1e-14) with FE_"
+        "RaviartThomas — orders of magnitude smaller than the "
+        "1e-3 to 1e-5 typical of FE_Q Taylor-Hood at the same h. "
+        "This is the expected H(div) behaviour, not a bug.",
+        "[Integration] channel_with_cylinder is the Schäfer-Turek "
+        "benchmark — set the cylinder centre to (0.2, 0.2) and the "
+        "channel size to (2.2 × 0.41) to match the published "
+        "lift/drag values; off-by-one on these dimensions makes "
+        "the reference values not match. Signal: computed drag "
+        "coefficient C_D from VectorTools::compute_mean_value or "
+        "user-side post-processing differs from the Schäfer-Turek "
+        "1996 reference (Re=20: C_D ≈ 5.58, Re=100: C_D ≈ 3.22) by "
+        "more than 10%; the mismatch is systematic across "
+        "Triangulation::refine_global, not noise.",
     ],
 }

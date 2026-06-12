@@ -1,0 +1,23 @@
+{
+  "id": "dealii-elasticity-catalog-structure",
+  "date": "2026-05-31",
+  "backend": "dealii",
+  "physics": "linear_elasticity",
+  "surface_symptom": "The deal.II linear_elasticity catalog entry described the physics in prose (function_space string, pitfall strings) but did not enumerate the relevant FE classes or GridGenerator functions under structured `elements` / `mesh_generators` keys. The Layer A→B catalog-vs-scan diff (2026-05-31) surfaced 26 truly-missing element classes and 32 truly-missing mesh generators for deal.II overall, and 7 entries (FE_DGP, FE_DGQ, FE_Q, FE_RaviartThomas, hyper_cube, hyper_rectangle, subdivided_hyper_rectangle) that the catalog *mentioned* in pitfall prose but did not lift into a structured key — meaning the agent calling `prepare_simulation(solver='dealii', physics='linear_elasticity')` saw scattered references rather than a clean element/mesh menu. Worst-case consequence: the agent picks FE_Q(1) for a nearly-incompressible problem and hits volumetric locking silently, because FE_RannacherTurek and FE_Q_Bubbles are nowhere mentioned.",
+  "root_cause": "The deal.II catalog was written one-physics-at-a-time from the corresponding step-* tutorial, so each entry mentioned only the FE class that tutorial happened to use (FE_Q for step-8). The structured-element-menu pattern that Kratos's catalog uses for `linear_elasticity.elements.{2D,3D,shells,beams}` was never applied to deal.II — every deal.II physics has only `function_space` (a single string) and `pitfalls`. The catalog-vs-scan diff is the first cross-cutting check that surfaces this asymmetry.",
+  "categories": ["Physics", "API", "Numerical", "Syntax", "Integration"],
+  "pitfall_db_entries": [
+    "[Numerical] FE_Q<dim>(1) (linear elements) locks in nearly-incompressible elasticity (Poisson ratio nu close to 0.5). Use FE_Q<dim>(2) (quadratic), FE_RannacherTurek<dim>() (P1-NC), or a mixed displacement-pressure formulation with FE_Q+FE_DGQ for pressure. Signal: tip deflection on a compressible beam converges with refinement, but converges to the wrong value as nu → 0.5 (volumetric locking).",
+    "[API] FE_Nothing<dim>() inside an FESystem on a subdomain where displacement should be inactive does NOT skip assembly on those cells — it just makes the DoF count zero there. You still need to mark the cells with a manifold ID or a hp::DoFHandler<dim> active_fe_index switch. Signal: assembly enters cells you thought were 'off' and accumulates garbage into the rhs.",
+    "[Numerical] Use SolverCG only when the stiffness matrix is symmetric positive-definite. Adding a Dirichlet penalty (rather than constraining the DoFs) keeps it SPD; using asymmetric face stabilisation or a Nitsche-style boundary term breaks symmetry — switch to SolverGMRES. Signal: SolverCG reports 'breakdown' or stalls at 1e-2 residual reduction."
+  ],
+  "agent_detection_after_fix": "The agent now retrieves a structured `elements` menu via prepare_simulation(solver='dealii', physics='linear_elasticity') listing FE_Q with degree advice + alternative elements (FE_Q_Bubbles, FE_Q_Hierarchical, FE_RannacherTurek, FE_Nothing) each with a one-line physics-relevant rationale; a structured `mesh_generators` menu listing 9 GridGenerator functions; and structured `solvers` + `preconditioners` menus. Pre-execution critic gate retrieves these and the new pitfalls (locking, FE_Nothing semantics, SolverCG SPD requirement) when the agent's plan touches deal.II elasticity. Catalog-vs-scan diff coverage_gap for the elements bucket drops from 30 → ~22 after this commit (the 8 newly-listed elements + the 3 already-uncategorised FE_Q/FE_DGP/FE_DGQ).",
+  "source_refs": [
+    "branch layer-a/kratos-source-scanner — commit adding diff_catalog_vs_scan.py",
+    "scripts/scan_results/diffs/dealii.json (before this encoding pass)",
+    "Open-FEM-Agent §3.2 / Table 1 (Syntax / Physics / Numerical / API / Integration)",
+    "task #33 — Encode discovered upstream capabilities into MCP catalog",
+    "task #46 — Pitfall-DB-first merge discipline (every fix ships pitfall entry + post-mortem)",
+    "deal.II step-8 (basic LE), step-18 (quasi-static), and the upstream `fe_rannacher_turek.h` for the locking-free choice"
+  ]
+}

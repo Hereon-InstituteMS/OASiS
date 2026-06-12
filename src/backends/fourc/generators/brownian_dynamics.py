@@ -31,10 +31,55 @@ class BrownianDynamicsGenerator(BaseGenerator):
             "applications": ["actin network mechanics", "collagen fiber networks",
                              "polymer rheology", "cytoskeleton modeling"],
             "pitfalls": [
-                "Time step must be small relative to Brownian relaxation time",
-                "Temperature parameter controls fluctuation magnitude",
-                "Cross-link stiffness affects network response dramatically",
-                "Periodic boundary conditions typically needed for RVE analysis",
+                (
+                    "[Numerical] Time step must be SMALL "
+                    "relative to Brownian relaxation time "
+                    "tau_B = ksi / kBT. Signal: dt > tau_B / "
+                    "10 gives a discrete random walk that "
+                    "looks correlated (consecutive "
+                    "fluctuations in same direction) "
+                    "rather than diffusive; mean-square "
+                    "displacement scales as t instead of "
+                    "t^1.0 on the right scale. (Audit "
+                    "2026-06-02.)"
+                ),
+                (
+                    "[Input] Temperature parameter (kBT) "
+                    "controls the FLUCTUATION MAGNITUDE in "
+                    "the Langevin noise term. Signal: kBT "
+                    "= 0 reduces Brownian dynamics to "
+                    "deterministic (no thermal "
+                    "fluctuations); too-large kBT "
+                    "produces unphysical filament "
+                    "stretching beyond bond extension. "
+                    "Use kBT = 4.14e-21 J at 300 K for "
+                    "physiological systems. (Audit "
+                    "2026-06-02.)"
+                ),
+                (
+                    "[Numerical] Cross-link stiffness "
+                    "dramatically affects network "
+                    "response. Signal: k_xl too small "
+                    "lets the network deform like a "
+                    "viscous fluid (no elastic plateau); "
+                    "too large makes the network rigid "
+                    "and locks Brownian fluctuations to "
+                    "zero. Typical actin-network range: "
+                    "k_xl in [0.1, 10] * k_bend / L_p. "
+                    "(Audit 2026-06-02.)"
+                ),
+                (
+                    "[Input] Periodic boundary conditions "
+                    "typically needed for RVE analysis "
+                    "of network rheology. Signal: a "
+                    "FREE-boundary RVE produces "
+                    "non-physical edge effects — "
+                    "fibres near the boundary have "
+                    "fewer neighbours and the average "
+                    "stress is wrong by 5-20%. Use "
+                    "DESIGN PERIODIC CONDITIONS for the "
+                    "RVE faces. (Audit 2026-06-02.)"
+                ),
             ],
         }
 

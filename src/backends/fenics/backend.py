@@ -228,6 +228,85 @@ _PHYSICS_CAPABILITIES = [
         element_types=["triangle"],
         template_variants=["2d"],
     ),
+    # ── 2026-06-01: helmholtz + maxwell have detailed
+    #    deep_knowledge entries but were not in the
+    #    capabilities list, so users browsing discover(physics
+    #    fenics) couldn't see them. Knowledge-tool fetch
+    #    worked (deep_knowledge fallback), but discover did
+    #    not list them. Exposing them here closes the gap.
+    PhysicsCapability(
+        name="helmholtz",
+        description=(
+            "Helmholtz equation: -laplacian(u) - k^2*u = f. "
+            "Acoustic / optical wave propagation. Indefinite "
+            "system — GMRES or direct, NOT CG. May be complex-"
+            "valued; needs PETSc compiled with "
+            "--with-scalar-type=complex."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="maxwell",
+        description=(
+            "Maxwell's equations (curl-curl). Requires H(curl) "
+            "(Nedelec / N1curl, basix.ElementFamily.N1E) "
+            "elements for tangential continuity. Complex-valued "
+            "forms need a complex-PETSc build."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="nearly_incompressible_elasticity",
+        description=(
+            "Nearly-incompressible elasticity (Poisson ratio "
+            "approaching 0.5). Standard primal P1/P2 locks; "
+            "needs mixed (u, p) Taylor-Hood / MINI or a "
+            "displacement-pressure split with stable element "
+            "pair (otherwise volumetric locking)."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="fracture",
+        description=(
+            "Phase-field fracture mechanics. Coupled "
+            "displacement / damage formulation with a diffuse "
+            "crack representation (no remeshing). Extensions: "
+            "PhaseFieldX library."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="stokes_darcy",
+        description=(
+            "Coupled Stokes-Darcy for free fluid / porous "
+            "medium interaction. Beavers-Joseph-Saffman "
+            "interface conditions."
+        ),
+        spatial_dims=[2, 3],
+        element_types=["triangle", "tetrahedron"],
+        template_variants=["2d"],
+    ),
+    PhysicsCapability(
+        name="matrix_free_poisson",
+        description=(
+            "Matrix-free conjugate-gradient Poisson solver. "
+            "Builds A as a callable action_A(x, y) via "
+            "ufl.action(a, ui) — no global sparse assembly. "
+            "Mirrors dolfinx demo_poisson_matrix_free.py."
+        ),
+        spatial_dims=[2],
+        element_types=["Lagrange"],
+        template_variants=["2d"],
+    ),
 ]
 
 
@@ -375,7 +454,29 @@ class FenicsBackend(SolverBackend):
         except Exception:
             pass
 
-        # Try comprehensive deep knowledge first (from tools/deep_knowledge.py)
+        # ─────────────────────────────────────────────────────────
+        # Source-of-truth ordering (fenics-only, audit 2026-06-02):
+        #   1. src/tools/deep_knowledge.py — CANONICAL for the 17
+        #      physics covered there (hyperelasticity, stokes, poisson,
+        #      heat, helmholtz, eigenvalue, reaction_diffusion,
+        #      convection_diffusion, navier_stokes, cahn_hilliard,
+        #      biharmonic, fracture, nearly_incompressible_elasticity,
+        #      maxwell, stokes_darcy, thermal_structural, contact).
+        #      verify_signal_clauses + the pitfall-DB audit gate read
+        #      from HERE; the matching KNOWLEDGE dicts in
+        #      src/backends/fenics/generators/*.py for these physics
+        #      are DEAD CODE and may have drifted — do NOT edit them
+        #      and expect a behaviour change.
+        #   2. Generator-level KNOWLEDGE — canonical for the 6
+        #      exposed physics NOT in deep_knowledge.py
+        #      (mixed_poisson, dg_methods, multiphase,
+        #      time_dependent_heat, nonlinear_pde, magnetostatics).
+        #      These DO surface via prepare_simulation/knowledge.
+        #      The elasticity generator file also has its own
+        #      KNOWLEDGE but is shared-implementation code for the
+        #      `linear_elasticity` template (which itself lives in
+        #      deep_knowledge.py), so it is NOT canonical.
+        # ─────────────────────────────────────────────────────────
         try:
             from tools.deep_knowledge import get_deep_fenics_knowledge
             deep = get_deep_fenics_knowledge(physics)
@@ -386,7 +487,9 @@ class FenicsBackend(SolverBackend):
         except (ImportError, Exception):
             pass
 
-        # Fall back to generator-level knowledge
+        # Fall back to generator-level knowledge (canonical for the
+        # 7 physics listed in the comment above; dead code for the
+        # 17 deep_knowledge.py-covered physics).
         from .generators import get_knowledge as gen_knowledge, GENERAL_KNOWLEDGE
         try:
             return gen_knowledge(physics)

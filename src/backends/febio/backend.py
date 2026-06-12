@@ -23,6 +23,7 @@ from core.backend import (
     PhysicsCapability, JobHandle,
 )
 from core.registry import register_backend
+from .generators import GENERATORS as _TEMPLATES, KNOWLEDGE as _FEBIO_KNOWLEDGE
 
 logger = logging.getLogger("oasis.febio")
 
@@ -109,6 +110,115 @@ class FebioBackend(SolverBackend):
                 element_types=["hex8"],
                 template_variants=["3d_bar"],
             ),
+            PhysicsCapability(
+                name="multiphasic",
+                description=("Biphasic poroelasticity + solute transport "
+                             "(charged-hydrated cartilage, electrolyte "
+                             "diffusion, drug delivery)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_diffusion"],
+            ),
+            PhysicsCapability(
+                name="fluid",
+                description=("Incompressible Newtonian fluid via FEBio's "
+                             "pressure-velocity fluid solver "
+                             "(cardiovascular CFD)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_channel"],
+            ),
+            PhysicsCapability(
+                name="fluid_fsi",
+                description=("Strongly-coupled monolithic FSI "
+                             "(arterial wall hemodynamics, cardiac "
+                             "chamber dynamics, valve modeling)"),
+                spatial_dims=[3],
+                element_types=["hex8"],
+                template_variants=["3d_block"],
+            ),
+            PhysicsCapability(
+                name="rigid_body",
+                description=("Rigid-body material (impactors, fixtures, "
+                             "articulating joints, contact prescription)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_pushdown"],
+            ),
+            PhysicsCapability(
+                name="viscoelasticity",
+                description=("Prony-series viscoelastic stress relaxation / "
+                             "creep response (cartilage, ligament, tendon)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_stress_relax"],
+            ),
+            PhysicsCapability(
+                name="plasticity",
+                description=("Rate-independent plasticity (J2 / Hill / "
+                             "user-curve hardening) — cortical bone, "
+                             "metal implants, surgical tools"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_uniaxial"],
+            ),
+            PhysicsCapability(
+                name="fiber_reinforced",
+                description=("Anisotropic fiber-reinforced hyperelasticity "
+                             "(HGO, transversely isotropic) — arterial "
+                             "wall, ligament, tendon, myocardium"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_hgo"],
+            ),
+            PhysicsCapability(
+                name="active_contraction",
+                description=("Active contractile fibers on a passive "
+                             "elastic base (cardiac chamber, skeletal "
+                             "muscle, peristalsis)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_fiber"],
+            ),
+            PhysicsCapability(
+                name="biphasic_fsi",
+                description=("Coupled biphasic tissue + free-fluid FSI "
+                             "(blood-tissue perfusion, drug elution, "
+                             "cartilage-synovial fluid)"),
+                spatial_dims=[3],
+                element_types=["hex8"],
+                template_variants=["3d_block"],
+            ),
+            PhysicsCapability(
+                name="polar_fluid",
+                description=("Micropolar (Cosserat) fluid with "
+                             "independent micro-rotation DOFs "
+                             "(blood-rheology, polymer suspensions, "
+                             "near-wall turbulence corrections)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_channel"],
+            ),
+            PhysicsCapability(
+                name="damage",
+                description=("Continuum damage mechanics — progressive "
+                             "stiffness degradation under repeated "
+                             "loading (tissue tearing, cartilage "
+                             "wear, elastomer fatigue)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_cycle"],
+            ),
+            PhysicsCapability(
+                name="growth_remodeling",
+                description=("Multiplicative growth-and-remodeling "
+                             "F = F_e * F_g (vascular adaptation, "
+                             "tissue scaffolds, muscle hypertrophy, "
+                             "tumor mechanobiology)"),
+                spatial_dims=[3],
+                element_types=["hex8", "tet4"],
+                template_variants=["3d_isotropic"],
+            ),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
@@ -185,131 +295,6 @@ class FebioBackend(SolverBackend):
             results.extend(job.work_dir.rglob(ext))
         return sorted(results)
 
-
-# ─── Templates ───────────────────────────────────────────────────────────
-
-
-def _elasticity_3d_cube(params: dict) -> str:
-    E = params.get("E", 1000.0)
-    nu = params.get("nu", 0.3)
-    return f'''\
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<febio_spec version="4.0">
-  <Module type="solid"/>
-  <Control>
-    <analysis>STATIC</analysis>
-    <time_steps>1</time_steps>
-    <step_size>1.0</step_size>
-    <solver type="solid">
-      <symmetric_stiffness>symmetric</symmetric_stiffness>
-      <equation_scheme>staggered</equation_scheme>
-    </solver>
-  </Control>
-  <Globals>
-    <Constants>
-      <T>0</T>
-      <R>0</R>
-      <Fc>0</Fc>
-    </Constants>
-  </Globals>
-  <Material>
-    <material id="1" type="isotropic elastic">
-      <density>1.0</density>
-      <E>{E}</E>
-      <v>{nu}</v>
-    </material>
-  </Material>
-  <Mesh>
-    <Nodes name="Object1">
-      <node id="1">0,0,0</node>
-      <node id="2">1,0,0</node>
-      <node id="3">1,1,0</node>
-      <node id="4">0,1,0</node>
-      <node id="5">0,0,1</node>
-      <node id="6">1,0,1</node>
-      <node id="7">1,1,1</node>
-      <node id="8">0,1,1</node>
-    </Nodes>
-    <Elements type="hex8" mat="1" name="Part1">
-      <elem id="1">1,2,3,4,5,6,7,8</elem>
-    </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="load_top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
-  </Mesh>
-  <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
-  </MeshDomains>
-  <Boundary>
-    <bc name="fix" type="zero displacement" node_set="fix_bottom">
-      <x_dof>1</x_dof>
-      <y_dof>1</y_dof>
-      <z_dof>1</z_dof>
-    </bc>
-    <bc name="load" type="prescribed displacement" node_set="load_top">
-      <dof>z</dof>
-      <value lc="1">-0.1</value>
-    </bc>
-  </Boundary>
-  <LoadData>
-    <load_controller id="1" type="loadcurve">
-      <interpolate>LINEAR</interpolate>
-      <extend>CONSTANT</extend>
-      <points>
-        <pt>0,0</pt>
-        <pt>1,1</pt>
-      </points>
-    </load_controller>
-  </LoadData>
-  <Output>
-    <plotfile type="febio">
-      <var type="displacement"/>
-      <var type="stress"/>
-    </plotfile>
-  </Output>
-</febio_spec>
-'''
-
-
-_TEMPLATES = {
-    "linear_elasticity_3d_cube": _elasticity_3d_cube,
-}
-
-
-_FEBIO_KNOWLEDGE = {
-    "linear_elasticity": {
-        "description": "Linear elasticity with FEBio — isotropic elastic material",
-        "input_format": "FEBio XML (.feb), version 4.0",
-        "solver": "Newton-Raphson with direct linear solver",
-        "materials": {
-            "isotropic elastic": {"E": "Young's modulus (Pa)", "v": "Poisson's ratio"},
-            "neo-Hookean": {"E": "Young's modulus", "v": "Poisson's ratio"},
-            "Mooney-Rivlin": {"c1": "material constant 1", "c2": "material constant 2"},
-        },
-        "pitfalls": [
-            "FEBio uses lowercase 'v' for Poisson's ratio (not 'nu')",
-            "Element connectivity is 1-indexed",
-            "MeshDomains section required in v4.0 (links domain to material)",
-            "LoadData section with load_controller needed for prescribed BCs",
-        ],
-    },
-    "hyperelasticity": {
-        "description": "Nonlinear hyperelasticity with FEBio — Neo-Hookean, Mooney-Rivlin",
-        "materials": {
-            "neo-Hookean": {"E": "Young's modulus", "v": "Poisson's ratio"},
-            "Mooney-Rivlin": {"c1": "1st Mooney-Rivlin constant", "c2": "2nd constant",
-                              "k": "bulk modulus"},
-        },
-        "pitfalls": [
-            "Use 'STATIC' analysis for quasi-static loading",
-            "Large deformations require proper step size control",
-            "Convergence issues: reduce step size or use line search",
-        ],
-    },
-}
 
 
 def register():

@@ -13,12 +13,17 @@ from ngsolve import *
 from netgen.csg import *
 import json, math
 
-# Geometry with material region — set for your problem
+# Geometry with material region — set for your problem.
+# netgen.csg.CSGeometry.Add does NOT accept a 'mat=' kwarg
+# (signature: Add(solid, bcmod=[], maxh=..., col=(), ...)).
+# Attach material names by calling .mat('name') on the
+# Solid itself BEFORE passing it to Add — see pitfall on
+# CSG material tagging below.
 geo = CSGeometry()
 outer = OrthoBrick(Pnt(-1,-1,-1), Pnt(1,1,1)).bc("outer")
 inner = OrthoBrick(Pnt(-0.3,-0.3,-0.3), Pnt(0.3,0.3,0.3))
-geo.Add(outer - inner)
-geo.Add(inner, mat="source")
+geo.Add((outer - inner).mat("air"))
+geo.Add(inner.mat("source"))
 mesh = Mesh(geo.GenerateMesh(maxh={maxh}))
 
 fes = HCurl(mesh, order={order}, dirichlet="outer", nograds=True)
@@ -55,20 +60,118 @@ KNOWLEDGE = {
         "spaces": "HCurl(mesh, order=k, nograds=True) — tangential continuity",
         "solver": "Direct for small. HCurlAMG preconditioner for large systems",
         "pitfalls": [
-            "For SOURCE problems (magnetostatics): use nograds=True to remove "
-            "gradient kernel, plus 1e-8*u*v*dx regularization.",
-            "For EIGENVALUE problems: do NOT use nograds=True — it degrades accuracy "
-            "by 1-3% and causes eigenvalues to converge from below. Instead, use the "
-            "full HCurl space with ArnoldiSolver(shift=<near expected eigenvalue>). "
-            "Set shift near the center of the expected eigenvalue range.",
-            "B = curl(A) — magnetic field is the curl of the vector potential",
-            "Complex-valued for time-harmonic: HCurl(mesh, complex=True)",
-            "3D only — 2D Maxwell reduces to scalar Helmholtz",
-            "ArnoldiSolver shift: set near expected eigenvalue range, not near zero. "
-            "Estimate lowest eigenvalue analytically first (e.g., k^2 ~ (pi/L)^2 "
-            "for cavity). shift=0.5*k^2_expected works well.",
-            "Eigenvalue solvers return complex values even for real-symmetric problems — "
-            "take .real before comparison.",
+            "[API] netgen.csg.CSGeometry.Add does NOT accept a "
+            "'mat=' keyword argument — its signature is Add(solid, "
+            "bcmod=[], maxh=..., col=(), transparent=False, "
+            "layer=1). Calling geo.Add(solid, mat='source') raises "
+            "TypeError 'Invoked with: <CSGeometry>, <Solid>; "
+            "kwargs: mat=...'. Attach material names by chaining "
+            ".mat('name') on the Solid BEFORE passing it to Add: "
+            "geo.Add(inner.mat('source')); geo.Add((outer - "
+            "inner).mat('air')). Signal: TypeError from "
+            "netgen.libngpy._csg.CSGeometry.Add showing the "
+            "'mat=' kwarg in the message. (Verified empirically "
+            "2026-06-01 — Layer F catch.)",
+            "[Numerical] For SOURCE problems (magnetostatics): use "
+            "HCurl(..., nograds=True) to remove the gradient kernel, "
+            "plus a 1e-8*u*v*dx regularisation. Signal: without "
+            "nograds (and without regularisation), BilinearForm."
+            "Assemble succeeds but BilinearForm.mat.Inverse raises "
+            "NgException 'UmfpackInverse: Numeric factorization "
+            "failed. UMFPACK ... WARNING: matrix is singular' "
+            "because the gradient kernel of HCurl is in the null "
+            "space of curl-curl. (Verified empirically 2026-06-01 "
+            "— the singular-matrix text is real but it is wrapped "
+            "by UmfpackInverse, not emitted as a bare 'matrix is "
+            "singular' / 'pivot too small' message as prior catalog "
+            "text suggested.)",
+            "[Numerical] For EIGENVALUE problems: do NOT use "
+            "nograds=True — it degrades accuracy and causes "
+            "eigenvalues to converge FROM BELOW. Use the full "
+            "HCurl space with ArnoldiSolver(shift=<near expected "
+            "eigenvalue>). Signal: ArnoldiSolver eigenvalues "
+            "computed with nograds=True are systematically "
+            "smaller than analytic cavity eigenvalues "
+            "(k^2 = (m*pi/Lx)^2 + (n*pi/Ly)^2) by several percent "
+            "(empirically ~7% at order=2, maxh=0.3); without "
+            "nograds the same eigenvalues converge from above and "
+            "agree with analytic within ~0.5%. (Verified "
+            "empirically 2026-06-01 — the from-below direction "
+            "is correct; the magnitude in prior catalog text "
+            "'1-3%' was understated for typical coarse meshes.)",
+            "[Physics] B = curl(A) — magnetic field is the curl of "
+            "the vector potential. Forgetting the curl gives B == A "
+            "(vector potential treated as field) and Tesla units "
+            "off by order(curl) ~ 1/L. Signal: the post-processed "
+            "max_B of the HCurl GridFunction is on the order of "
+            "the prescribed Dirichlet value of the A "
+            "CoefficientFunction directly (no curl spatial "
+            "derivative taken).",
+            "[Syntax] Complex-valued for time-harmonic: HCurl("
+            "mesh, complex=True). On a real HCurl (complex=False) "
+            "space, adding a BilinearForm integrator with an "
+            "explicit complex coefficient (e.g. 1j*curl(u)*"
+            "curl(v)*dx) raises NgException at BilinearForm."
+            "Assemble. Signal: NgException with text 'real "
+            "Evaluate called for complex ScaleCF' from 'Assemble "
+            "BilinearForm'. (Verified empirically 2026-06-01 — "
+            "prior catalog wording 'complex values cannot be "
+            "assigned to a real FESpace' does not appear in "
+            "NGSolve 6.2; the actual emitted string is the "
+            "ScaleCF one above.)",
+            "[Physics] 3D only — 2D Maxwell reduces to scalar "
+            "Helmholtz, NOT to vector HCurl. Defining HCurl(mesh) "
+            "on a 2D mesh produces a 1-component space and "
+            "curl(u) is a scalar, not a vector. Signal: in 2D, "
+            "fes.dim == 1 (scalar) instead of 2 (vector) on an "
+            "HCurl space, and BilinearForm += curl(u)*curl(v)*dx "
+            "assembles a scalar Helmholtz operator without "
+            "warning.",
+            "[Numerical] ArnoldiSolver shift: set near expected "
+            "eigenvalue range, not near zero. Estimate the lowest "
+            "eigenvalue analytically first (k^2 ~ (pi/L)^2 for "
+            "cavity); shift=0.5*k^2_expected works well. Signal: "
+            "ArnoldiSolver with shift=0.0 on a curl-curl matrix "
+            "raises NgException 'UmfpackInverse: Numeric "
+            "factorization failed. UMFPACK ... WARNING: matrix "
+            "is singular' BEFORE returning any eigenvalues — the "
+            "shifted operator A - 0*M = A has the gradient kernel "
+            "in its null space, so the direct factorisation of "
+            "the shift-and-invert system fails. With a small "
+            "non-zero shift away from physical spectrum, the "
+            "solver runs but returns eigenvalues clustered near "
+            "the shift, missing the physical modes. (Verified "
+            "empirically 2026-06-01 — the prior catalog wording "
+            "'returns eigenvalues near 0' was wrong; the real "
+            "failure is the factorisation error before any "
+            "eigenvalue is returned.)",
+            "[API] Eigenvalue solvers return complex values even "
+            "for real-symmetric problems — take .real before "
+            "comparison. Signal: numpy.array(ArnoldiSolver result) "
+            "has dtype complex128; comparing to analytic real "
+            "eigenvalues without .real raises TypeError or "
+            "produces nan from complex>real.",
+            "[Syntax] HCurl is for vector fields with tangential "
+            "continuity. Calling curl(u) on an H1 scalar space "
+            "raises NgException('Operator \"curl\" does not exist "
+            "for H1HighOrderFESpace'). Signal: NgException with "
+            "literal text 'curl' and 'H1HighOrderFESpace' is the "
+            "BFI compile-time error a beginner hits when copying "
+            "code between scalar (Poisson) and vector (Maxwell) "
+            "formulations.",
+            "[Syntax] BilinearForm composing grad(u)*grad(v)*dx "
+            "(scalar Poisson form) on an HCurl space raises "
+            "NgException because grad() is not defined on HCurl. "
+            "Signal: NgException emitted by SymbolicBFI about "
+            "'grad' / 'HCurl' / 'scalar-valued'; the user gets "
+            "an immediate compile-time error when trying to "
+            "reuse the Poisson assembly on a Maxwell space.",
+            "[API] LinearForm += f*v*dx where f is a 3-vector "
+            "and v is a scalar (H1) test function is a vector-"
+            "source on a scalar form. Signal: NgException about "
+            "SymbolicLFI requiring 'scalar-valued' integrand; "
+            "the same JJ vector that works on HCurl test "
+            "functions raises immediately on H1 test functions.",
         ],
     },
 }

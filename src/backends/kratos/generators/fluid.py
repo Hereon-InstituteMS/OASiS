@@ -43,12 +43,17 @@ KNOWLEDGE = {
         },
         "turbulence": "k-epsilon, k-omega SST via RANSApplication",
         "pitfalls": [
-            "VELOCITY (vector) and PRESSURE (scalar) are the primary variables",
-            "Materials in FluidMaterials.json: DENSITY, DYNAMIC_VISCOSITY",
-            "Wall BCs: no-slip (VELOCITY=0), Navier slip, wall law",
-            "Inlet: impose VELOCITY vector, Outlet: impose PRESSURE=0",
-            "For free surface: add DISTANCE variable (level-set signed distance)",
-        ],
+                        '[API] VELOCITY (vector) and PRESSURE (scalar) are the primary fluid variables — both must be added to the ModelPart via AddNodalSolutionStepVariable BEFORE any Node is created. '
+                        "Signal: RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: VELOCITY' from kratos/containers/variables_list_data_value_container at the first GetSolutionStepValue / SetSolutionStepValue on the node. (Verified empirically 2026-06-01 — the prior wording 'not found in variables list of ModelPart' is rearranged; the real text says 'variables list doesn't have this variable' and originates in the container code, not the VMS InitializeSolutionStep.)",
+                        '[Integration] Materials defined in FluidMaterials.json with DENSITY and DYNAMIC_VISCOSITY. Forgetting either key leaves the constitutive call returning zero stress. '
+                        'Signal: the FluidDynamicsApplication solver converges to a zero PRESSURE field with uniform VELOCITY equal to the inlet BC (no momentum balance enforced) — VMS / QSVMS reports residual < tol despite trivial flow.',
+                        '[Physics] Wall BCs are mutually exclusive: no-slip (VELOCITY = 0), Navier slip (tangential traction), or wall-law (log-law for high Re). Mixing them on the same boundary applies the LAST one written in the JSON. '
+                        'Signal: integrated wall shear stress disagrees with analytic Couette/Poiseuille by an order of magnitude.',
+                        '[Physics] Inlet: impose VELOCITY vector; Outlet: impose PRESSURE = 0. Reversing them (pressure inlet, velocity outlet) over-determines pressure and gives the wrong mass flux. '
+                        "Signal: integrated mass flow rate computed from VELOCITY on the outlet SubModelPart is 0 or oscillates around 0; navier_stokes_solver_vmsmonolithic ResidualBasedBlockBuilderAndSolver reports the pressure residual stalling near the inlet face.",
+                        '[Numerical] For free-surface (TwoFluid solver): the DISTANCE variable (level-set signed distance) must be initialised before the first solve and re-distanced every step. Skipping the re-initialisation drifts the interface. '
+                        'Signal: DISTANCE field develops spurious zero-crossings inside the bulk fluid; post-processed phase indicator shows artefacts.',
+                    ],
     },
 }
 

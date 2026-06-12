@@ -6,15 +6,47 @@ Variants: 3d
 
 KNOWLEDGE = {
     "description": "Nonlinear hyperelasticity (Neo-Hookean) with large deformation",
-    "weak_form": "\u03b4\u03a0(u;v) = 0, \u03a0 = \u222b(\u03bc/2)(I_C-3) - \u03bc*ln(J) + (\u03bb/2)(ln(J))\u00b2 dx",
+    "weak_form": "δΠ(u;v) = 0, Π = ∫(μ/2)(I_C-3) - μ*ln(J) + (λ/2)(ln(J))² dx",
     "function_space": "Vector Lagrange order 1, geometry-nonlinear",
     "solver": "Newton iteration with LU direct solve (SNES newtonls)",
     "pitfalls": [
-        "F = I + grad(u), C = F^T F, J = det(F)",
-        "Neo-Hookean stored energy must be positive-definite",
-        "Large load steps may cause Newton divergence — use load stepping",
-        "Locking for nu\u21920.5: use mixed u-p formulations or reduced integration",
-        "In dolfinx 0.9+: use NonlinearProblem + NewtonSolver or PETSc SNES",
+        "[Numerical] Large-deformation kinematics: F = Id + grad(u), "
+        "C = F^T * F, J = det(F). Use ufl.Identity, ufl.grad, "
+        "ufl.det. Signal: writing the dolfinx Form with F = grad(u) "
+        "(missing the Identity) produces zero deformation in the "
+        "reference configuration — the VectorH1 Function output "
+        "in the XDMFFile shows zero stress under any load. (Audit "
+        "2026-06-02.)",
+        "[Numerical] Neo-Hookean stored energy psi must be positive-"
+        "definite (psi >= 0 with equality only at F = Id). A wrong "
+        "sign on the volumetric (lambda/2)*(ln(J))^2 term or "
+        "(mu/2)*(I_C - 3) makes the energy non-convex. Signal: the "
+        "dolfinx NonlinearProblem NewtonSolver oscillates without "
+        "converging, or the residual ratio stays > 0.5 across "
+        "iterations; checking dolfinx.fem.assemble_scalar(psi*dx) "
+        "shows negative energy at small loads. (Audit 2026-06-02.)",
+        "[Numerical] Large load steps cause NewtonSolver divergence "
+        "in dolfinx — use load stepping (ramp the dirichletbc or "
+        "fem.Constant body force through N substeps). Signal: a "
+        "single-step solve at full load reports NoConvergence after "
+        "MAX_IT; switching to a for-loop over t in [0,1] with the "
+        "dirichletbc value scaled by t recovers monotonic "
+        "convergence at each substep. (Audit 2026-06-02.)",
+        "[Numerical] Volumetric locking for nu → 0.5 (near-"
+        "incompressible). Use a mixed (u, p) MixedElement with "
+        "Taylor_Hood spaces, or reduced integration. Signal: a "
+        "pure-displacement dolfinx VectorH1 Function at nu=0.4999 "
+        "shows tip_deflection at ~1e-3 of analytic; switching to a "
+        "basix.ufl.mixed_element([P2_vec, P1]) recovers within ~1%. "
+        "(Audit 2026-06-02.)",
+        "[API] In dolfinx 0.9+ the nonlinear solve uses "
+        "dolfinx.fem.petsc.NonlinearProblem + NewtonSolver, or the "
+        "PETSc SNES API directly. Old dolfin nonlinear_variational "
+        "patterns are removed. Signal: a script using "
+        "NonlinearVariationalProblem raises ImportError 'No module "
+        "named dolfinx.fem.NonlinearVariationalProblem'; the "
+        "correct call is `from dolfinx.fem.petsc import "
+        "NonlinearProblem`. (Audit 2026-06-02.)",
     ],
 }
 

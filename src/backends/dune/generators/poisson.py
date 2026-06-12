@@ -52,13 +52,81 @@ KNOWLEDGE = {
         "spaces": "lagrange(gridView, order=k) — Lagrange any order",
         "mesh": "structuredGrid (YaspGrid), ALUGrid (adaptive), Gmsh import",
         "pitfalls": [
-            "DUNE uses UFL (same as FEniCS) — weak forms are interchangeable",
-            "First run triggers JIT compilation of C++ code — can take 30-60s",
-            "Subsequent runs use cached compiled code — much faster",
-            "Use dune.ufl.DirichletBC (not dolfinx DirichletBC)",
-            "VTK output: gridView.writeVTK('name', pointdata={'field': uh})",
-            "structuredGrid creates quad elements, not triangles",
-            "Constant(value) needs domain in newer UFL — use scalar directly: 1.0 * v * dx",
+            (
+                "[API] DUNE-fem uses UFL — same syntax as "
+                "FEniCS/dolfinx. Weak forms are largely "
+                "interchangeable. Signal: a UFL form that "
+                "compiles cleanly in dolfinx will also "
+                "compile in DUNE-fem, but the FUNCTION SPACE "
+                "construction differs: dune.fem.space.lagrange("
+                "gridView, order=k) vs dolfinx.fem."
+                "functionspace(domain, ('Lagrange', k)). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] First DUNE-fem run triggers "
+                "JIT compilation of C++ code — 30-60s "
+                "overhead. Signal: a 'simple' Poisson "
+                "solve takes a minute on first run but "
+                "milliseconds on the second; ~/.dune/dune-"
+                "py/python/dune/generated/ holds the cache. "
+                "Time profilers expose the JIT phase as "
+                "module compilation. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] Subsequent runs use CACHED "
+                "compiled code — much faster. Signal: "
+                "deleting ~/.dune/dune-py/ forces full "
+                "recompile and resets the 30-60s overhead. "
+                "If you change the UFL form text (even "
+                "trivially), it triggers a recompile on "
+                "first invocation of the new form. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Use dune.ufl.DirichletBC (NOT "
+                "dolfinx.fem.dirichletbc). Signal: "
+                "importing DirichletBC from dolfinx in a "
+                "DUNE-fem script raises ImportError or "
+                "wrong-signature TypeError — the DUNE "
+                "constructor takes (space, value), not the "
+                "dolfinx (V, value, dofs) triple. Use "
+                "from dune.ufl import DirichletBC. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] VTK output: gridView.writeVTK('name', "
+                "pointdata={'field': uh}). Signal: writing "
+                "with the dolfinx io.VTXWriter / XDMFFile "
+                "API fails — dune.grid gridView has its own "
+                "writeVTK method (NOT dolfinx). The galerkin "
+                "lagrange space's GridFunction is written "
+                "via gridView.writeVTK; outputs .vtu "
+                "directly readable in ParaView. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] structuredGrid creates QUAD "
+                "elements, NOT triangles. Signal: a "
+                "trial form that assumes triangular "
+                "topology (e.g. relies on barycentric "
+                "coordinates) compiles but the assembled "
+                "matrix has wrong sparsity — quad "
+                "elements have 4-node stencil vs 3-node "
+                "for tri. For triangles, use Gmsh import "
+                "or dune.alugrid. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Constant(value) needs a domain in "
+                "newer UFL — use scalar literal directly: "
+                "1.0 * v * dx. Signal: writing "
+                "Constant(1.0) * v * dx without "
+                "Constant(domain, 1.0) raises 'Constant "
+                "requires domain' from UFL; the simplest "
+                "fix is scalar arithmetic — Python "
+                "scalars are accepted by UFL operator "
+                "overloading. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }

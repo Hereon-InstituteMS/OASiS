@@ -52,3 +52,8 @@ papers/.env
 .quarantine_*
 benchmarks/probe_results/work/
 scripts/scan_results/work/
+
+# Cloned upstream backend sources (large, machine-local)
+upstream_sources/
+data/source_discovery_cache.json
+data/build_logs/

@@ -119,20 +119,42 @@ KNOWLEDGE = {
             ),
         },
         "pitfalls": [
-            "TrilinosApplication is not published on PyPI; to get it you "
-            "must build Kratos from source with `-DTRILINOS_APPLICATION=ON` "
-            "against an MPI-built Trilinos.  MetisApplication does have a "
-            "PyPI wheel (KratosMetisApplication), but it is only useful in "
-            "an MPI-parallel run.",
-            "MappingApplication and MeshMovingApplication are *required* "
-            "(not optional) for partitioned FSI even if not named explicitly "
-            "in the user-facing JSON — `FSIApplication`'s "
-            "`partitioned_fsi_base_solver.py` imports both at runtime.",
-            "For new analyses prefer StructuralMechanicsApplication and "
-            "ContactStructuralMechanicsApplication over the older "
-            "SolidMechanicsApplication / ContactMechanicsApplication paths; "
-            "the current Kratos generators target the modern apps.",
-        ],
+                        '[Integration] TrilinosApplication is not published on PyPI; to get it you must build Kratos from source with `-DTRILINOS_APPLICATION=ON` against an MPI-built Trilinos.  MetisApplication does have a PyPI wheel (KratosMetisApplication), but it is only useful in an MPI-parallel run. '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        "[Integration] MappingApplication and MeshMovingApplication are *required* (not optional) for partitioned FSI even if not named explicitly in the user-facing JSON — `FSIApplication`'s `partitioned_fsi_base_solver.py` imports both at runtime. "
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] For new analyses prefer StructuralMechanicsApplication and ContactStructuralMechanicsApplication over the older SolidMechanicsApplication / ContactMechanicsApplication paths; the current Kratos generators target the modern apps. '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[API] MappingApplication.MapperFactory is DEPRECATED (moved to KratosMultiphysics core in Kratos 10.x). Calling MAP.MapperFactory.CreateMapper still works in 10.4 but prints a deprecation warning: "[WARNING] DEPRECATION-Warning; MappingApplication: The \\"MapperFactory\\" was moved to the Core! (used for \\"CreateMapper\\")". New code should use `KratosMultiphysics.MapperFactory.CreateMapper(origin, destination, params)` directly. '
+                        "Signal: KratosMultiphysics emits the literal string 'DEPRECATION-Warning' + 'MapperFactory' + 'moved to the Core' on stderr at the call site. (Verified empirically 2026-06-01.)",
+                        '[API] DEM is always 3D internally: the MDPA must reference SphericParticle3D even for problems posed in a 2D plane. There is NO SphericParticle2D element registered; attempting ModelPart.CreateNewElement("SphericParticle2D", ...) raises RuntimeError "Element \\"SphericParticle2D\\" is not registered!" listing the available DEM element types. '
+                        "Signal: RuntimeError 'Element \"SphericParticle2D\" is not registered!' or 'Maybe you need to import the application where it is defined?' when an agent generates a 2D DEM template with the literal 2D element name. (Verified empirically 2026-06-01.)",
+                        '[Integration] BOTH KratosContactStructuralMechanicsApplication (modern) AND the legacy KratosContactMechanicsApplication / KratosSolidMechanicsApplication are NOT published on PyPI. There is no pip-only path to Contact physics in Kratos 10.x. Building Kratos from source with `-DCONTACT_STRUCTURAL_MECHANICS_APPLICATION=ON` is the only option. '
+                        "Signal: pip install reports 'ERROR: Could not find a version that satisfies the requirement KratosContactStructuralMechanicsApplication'; python import raises ModuleNotFoundError 'No module named KratosMultiphysics.ContactStructuralMechanicsApplication' (or '...ContactMechanicsApplication' on the legacy fallback path). (Verified empirically 2026-06-01 — both modern and legacy contact apps absent from PyPI; the legacy-fallback hint in prior catalog text was misleading.)",
+                        "[API] Source-of-truth ordering for kratos "
+                        "get_knowledge(): backends.kratos.generators."
+                        "KNOWLEDGE is the ONLY per-physics catalog "
+                        "consumed by KratosMultiphysics-using clients "
+                        "(the catalog drives every MainKratos.py / "
+                        "ProjectParameters.json the MCP emits). "
+                        "data/kratos_knowledge.py exports per-"
+                        "application constants (KRATOS_APPLICATIONS, "
+                        "STRUCTURAL_MECHANICS, FLUID_DYNAMICS, FSI, "
+                        "GEOMECHANICS, DEM, ...) and NOT a unified "
+                        "KRATOS_KNOWLEDGE dict — so importing it "
+                        "by-name will fail. Signal: a KratosMultiphysics "
+                        "backend whose get_knowledge wraps `from "
+                        "kratos_knowledge import KRATOS_KNOWLEDGE` in "
+                        "try/except ImportError silently runs the "
+                        "fallback branch — the import raises "
+                        "ImportError 'cannot import name "
+                        "KRATOS_KNOWLEDGE from kratos_knowledge' and "
+                        "the dead-code ModelPart-/Variable-level "
+                        "knowledge lookup is invisible until you add "
+                        "an alignment test. (Removed in 2026-06-02 "
+                        "audit; gated by tests/test_kratos_source_"
+                        "of_truth.py.)",
+                    ],
     },
 }
 

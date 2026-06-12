@@ -82,7 +82,13 @@ max_val = u.max()
 print(f"max(u) = {{max_val:.10f}}")
 
 import meshio
-cells = [("quad", m.t.T)]
+# MeshTri.t.T has shape (n_cells, 3) — triangles, not quads.
+# Declaring 'quad' here makes meshio reject the array with
+# WriteError 'Unexpected cells array shape (n, 3) for quad
+# cells. Expected shape [:, 4]'. Same class of typo fixed
+# in _poisson_3d (hexahedron); this 2d_tri row was missed
+# until the 2026-06-02 Layer-F coverage audit.
+cells = [("triangle", m.t.T)]
 points = np.column_stack([m.p.T, np.zeros(m.p.shape[1])]) if m.p.shape[0] == 2 else m.p.T
 mio = meshio.Mesh(points, cells, point_data={{"phi": u}})
 mio.write("result.vtu")
@@ -119,8 +125,13 @@ u = solve(*condense(K, f, D=D))
 print(f"3D Poisson max(u) = {{u.max():.10f}}")
 
 import meshio
-cells = [("quad", m.t.T)]
-points = np.column_stack([m.p.T, np.zeros(m.p.shape[1])]) if m.p.shape[0] == 2 else m.p.T
+# MeshHex has 8-node hexahedra (m.t.T shape (n_cells, 8)).
+# Declaring 'quad' here would make meshio reject the array
+# with WriteError 'Unexpected cells array shape (n, 8) for
+# quad cells. Expected shape [:, 4]'. The correct meshio
+# cell type for a 3D Hex1 mesh is 'hexahedron'.
+cells = [("hexahedron", m.t.T)]
+points = m.p.T
 mio = meshio.Mesh(points, cells, point_data={{"phi": u}})
 mio.write("result.vtu")
 
@@ -133,15 +144,115 @@ with open("results_summary.json", "w") as _f:
 KNOWLEDGE = {
     "poisson": {
         "description": "Poisson with scikit-fem (pure Python assembly)",
-        "solver": "scipy.sparse.linalg.spsolve (direct) or eigsh (eigenvalue)",
-        "elements": "ElementTriP1/P2/P3, ElementQuad1/2, ElementTetP1/P2, ElementHex1/2",
-        "built_in_forms": "laplace, unit_load (from skfem.models.poisson)",
+        "solver": (
+            "scipy.sparse.linalg.spsolve (direct) or eigsh "
+            "(eigenvalue). scikit-fem assembles; you choose "
+            "the solver."
+        ),
+        "elements": (
+            "ElementTriP1/P2/P3, ElementQuad1/2, ElementTetP1/P2, "
+            "ElementHex1/2"
+        ),
+        "built_in_forms": (
+            "laplace, unit_load (from skfem.models.poisson)"
+        ),
         "pitfalls": [
-            "scikit-fem is an ASSEMBLY library — you control the solve",
-            "Boundary DOFs: ib.get_dofs().flatten() for all, ib.get_dofs('left') for named",
-            "VTU output: meshio.Mesh(points, cells, point_data).write('result.vtu')",
-            "solve() and condense() handle Dirichlet elimination",
-            "For v12+: to_meshio removed — use meshio.Mesh() directly",
+            "[Syntax] When exporting a MeshHex (8-node hexahedron) "
+            "solution via meshio, the cells tuple MUST declare "
+            "'hexahedron' as the cell type, NOT 'quad'. Each row of "
+            "m.t.T has 8 vertex indices for a Hex1 mesh; declaring "
+            "'quad' makes meshio reject the array because quads "
+            "expect 4 vertices. Signal: meshio._exceptions."
+            "WriteError 'Unexpected cells array shape (n, 8) for "
+            "quad cells. Expected shape [:, 4].' emitted from "
+            "mio.write(...). Same pattern: MeshTet -> 'tetra', "
+            "MeshLine -> 'line'. (Verified empirically 2026-06-01 "
+            "— Layer F poisson_3d catch.)",
+            "[API] scikit-fem is an ASSEMBLY library — laplace/"
+            "unit_load build the K matrix and load vector, then "
+            "you call solve(*condense(K, f, D=D)) yourself. "
+            "There is no SolverInterface, no LinearProblem, no "
+            "internal KSP wrapper. K is a scipy.sparse.csr_"
+            "matrix; spsolve/factorized/scipy.sparse.linalg.cg "
+            "are the canonical ways to handle it. Signal: "
+            "K.shape and type(K).__name__ are visible "
+            "scipy.sparse types; switching solver is "
+            "single-line replacement at the user level. "
+            "(Catalog claim inherited; not separately Tier-2 "
+            "falsified this iteration.)",
+            "[API] basis.get_dofs(name) only works on a mesh "
+            "where m.boundaries contains the name — and "
+            "m.boundaries is None on a freshly constructed "
+            "MeshTri / MeshQuad / MeshHex etc. Names must be "
+            "registered up-front via "
+            "m = m.with_boundaries({'left': lambda x: "
+            "np.abs(x[0])<1e-10, ...}). Without that, "
+            "basis.get_dofs('left') raises "
+            "ValueError(\"Boundary 'left' not found.\"). "
+            "Signal: m.boundaries is None on a fresh mesh; "
+            "basis.get_dofs('left') raises the named "
+            "ValueError; after with_boundaries({'left': f}) "
+            "the call returns a DofsView whose flatten() length "
+            "matches the number of edge nodes (5 for a 5x5 "
+            "ElementQuad1 mesh's left edge). (Verified "
+            "empirically 2026-06-01 — Tier-2 fixture "
+            "poisson_get_dofs_named_boundary in scripts/"
+            "tier2_fixtures/skfem/.)",
+            "[API] VTU output in scikit-fem 12.x is via "
+            "skfem.io.meshio.to_meshio(mesh, point_data=...) — "
+            "the function is NOT removed in v12+, it has only "
+            "been removed from the TOP-LEVEL skfem namespace. "
+            "(hasattr(skfem, 'to_meshio') is False; "
+            "hasattr(skfem.io.meshio, 'to_meshio') is True.) "
+            "skfem.io.meshio.to_meshio handles cell-type "
+            "translation correctly (quad -> 'quad', etc.) and "
+            "the resulting meshio.Mesh writes via "
+            ".write('result.vtu'). Signal: import path "
+            "skfem.io.meshio.to_meshio resolves; "
+            "to_meshio(mesh).cells[0].type matches the source "
+            "mesh element ('quad' for MeshQuad). (Catalog-drift "
+            "correction verified empirically 2026-06-01 — same "
+            "Tier-2 fixture as #1.)",
+            "[API] Dirichlet elimination is handled by passing "
+            "the constrained DOFs to condense(K, f, D=D); "
+            "solve(*condense(K, f, D=D)) returns the full "
+            "solution vector (with the eliminated DOFs already "
+            "filled). The D argument expects a flat int array of "
+            "DOF indices (basis.get_dofs(...).flatten()). For "
+            "non-homogeneous BCs use condense(K, f, D=D, x=g) "
+            "where g is the full-length BC vector. Signal: "
+            "condense's call signature accepts D as positional or "
+            "keyword; passing a DofsView object (instead of "
+            ".flatten()) silently produces wrong results because "
+            "DofsView is iterable but not array-like. (Catalog "
+            "claim inherited; not separately Tier-2 falsified "
+            "this iteration.)",
+            "[API] Element catalog by cell type: ElementTriP1/P2/"
+            "P3 for triangles, ElementQuad1/Quad2 for quads, "
+            "ElementTetP1/P2 for tetrahedra, ElementHex1/Hex2 "
+            "for hexahedra. Plus ElementTriRT0 / ElementTriMini "
+            "/ ElementTetMini / etc. for mixed methods. Signal: "
+            "skfem.ElementTriP1, skfem.ElementQuad1, "
+            "skfem.ElementHex1 are all attributes; "
+            "type(ElementTriP1()).__bases__ shows the Element "
+            "ABC. (Catalog claim inherited; not separately "
+            "Tier-2 falsified this iteration.)",
+            "[API] skfem.quadrature.get_quadrature has a hard "
+            "norder ceiling per reference domain: TRIANGLE order "
+            "<= 19, TETRAHEDRON order <= 8 (on skfem 12.0.1; "
+            "earlier 11.x lines capped at 15 / 5 respectively). "
+            "Tabulated rules stop there; orders above raise "
+            "NotImplementedError. Triangle's message has a "
+            "TYPO — 'The requested order of quadratureis not "
+            "implemented!' (literal 'quadratureis' with missing "
+            "space) — tet's message is 'The requested order of "
+            "quadrature is not available.' Real consequence: "
+            "very-high-order tet elements that need quadrature "
+            "2k > 8 fail to assemble. Signal: in skfem 12.0.1, "
+            "get_quadrature_tri(20) raises with the typo'd "
+            "message; get_quadrature_tet(10) raises with the "
+            "correct-spacing message. (File walk "
+            "skfem/quadrature.py + live re-probe 2026-06-04.)",
         ],
     },
 }

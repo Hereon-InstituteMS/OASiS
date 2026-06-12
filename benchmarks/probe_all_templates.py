@@ -54,8 +54,23 @@ sys.path.insert(0, str(REPO_ROOT / "data"))
 # ── env discovery ────────────────────────────────────────────────────────
 def _discover_env():
     home = Path.home()
-    dealii_env_root = home / "miniconda3/envs/ofa-dealii"
-    if "DEAL_II_DIR" not in os.environ:
+    # Resolve deal.II via the backend's own version-aware resolver
+    # instead of a hardcoded env name. The old hardcoded
+    # ~/miniconda3/envs/ofa-dealii kept pinning every compile to a
+    # stale 9.1.1 env even after a newer 9.3.2 env existed and the
+    # backend itself had moved on (probe 2026-06-12: 10 templates
+    # "failed" purely from compiling against the old headers the
+    # probe forced via DEAL_II_DIR/CMAKE_PREFIX_PATH).
+    dealii_env_root = None
+    try:
+        from backends.dealii.backend import _find_dealii
+        dealii_env_root = _find_dealii()
+    except ImportError:
+        pass
+    if dealii_env_root is None:
+        fallback = home / "miniconda3/envs/ofa-dealii"
+        dealii_env_root = fallback if fallback.is_dir() else None
+    if "DEAL_II_DIR" not in os.environ and dealii_env_root is not None:
         for c in [
             dealii_env_root / "lib/cmake/deal.II",
             Path("/usr/lib/x86_64-linux-gnu/cmake/deal.II"),
@@ -63,7 +78,7 @@ def _discover_env():
             if c.is_dir():
                 os.environ["DEAL_II_DIR"] = str(c)
                 break
-    if dealii_env_root.is_dir():
+    if dealii_env_root is not None and dealii_env_root.is_dir():
         existing = os.environ.get("CMAKE_PREFIX_PATH", "")
         prefix_parts = [p for p in existing.split(os.pathsep) if p]
         if str(dealii_env_root) not in prefix_parts:
@@ -452,12 +467,39 @@ async def main():
     elapsed = time.time() - t_start
     print(f"\ntotal elapsed: {elapsed:.1f}s")
 
-    (results_dir / "templates.json").write_text(
-        json.dumps([asdict(r) for r in results], indent=2, default=str)
-    )
-    md = render_markdown(results)
+    # Merge with prior rows instead of clobbering: a per-backend run
+    # (--backend fourc) used to overwrite the WHOLE templates.json,
+    # silently destroying every other backend's most recent probe
+    # results (bitten twice 2026-06-12: a fourc run erased the dealii
+    # rows that had just taken 6.5 minutes to compile). Rows are keyed
+    # by (backend, key); rows re-probed in THIS run replace their old
+    # version, all other backends' rows survive.
+    json_path = results_dir / "templates.json"
+    new_rows = [asdict(r) for r in results]
+    merged: dict[tuple, dict] = {}
+    if json_path.exists():
+        try:
+            for row in json.loads(json_path.read_text()):
+                merged[(row.get("backend"), row.get("key"))] = row
+        except (json.JSONDecodeError, TypeError):
+            pass  # corrupt prior file — start fresh
+    for row in new_rows:
+        merged[(row["backend"], row["key"])] = row
+    all_rows = sorted(merged.values(),
+                      key=lambda r: (r["backend"], r["key"]))
+    json_path.write_text(json.dumps(all_rows, indent=2, default=str))
+    # Markdown table renders the full merged picture, not just this
+    # run's slice.
+    from dataclasses import fields as dc_fields
+    field_names = {f.name for f in dc_fields(Result)}
+    merged_results = [
+        Result(**{k: v for k, v in row.items() if k in field_names})
+        for row in all_rows
+    ]
+    md = render_markdown(merged_results)
     (results_dir / "templates.md").write_text(md)
-    print(f"JSON: {results_dir / 'templates.json'}")
+    print(f"JSON: {json_path}  ({len(new_rows)} probed this run, "
+          f"{len(all_rows)} total rows after merge)")
     print(f"  MD: {results_dir / 'templates.md'}")
 
     # ── final one-line summary

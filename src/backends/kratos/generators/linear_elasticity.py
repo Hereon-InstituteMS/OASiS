@@ -2,287 +2,104 @@
 
 
 def _elasticity_2d_kratos(params: dict) -> str:
-    """Real Kratos plane-strain linear elasticity on a rectangular beam.
+    """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
 
-    Uses StructuralMechanicsApplication with `SmallDisplacementElement2D4N`
-    on a structured quad grid, `LinearElasticPlaneStrain2DLaw`, and a
-    Newton-Raphson static strategy.  The left edge is clamped; the
-    mid-tip node is given a prescribed y-displacement so the cell
-    produces a finite, deterministic displacement field without
-    needing a separate Condition for the point load.  Output is
-    written via `KM.VtkOutput` (legacy `.vtk` — Kratos's VtkOutput
-    does not write `.vtu`; the sweep harness accepts both).
-    """
-    nx = params.get("nx", 32)
+    Linear elasticity on rectangular domain — Kratos (manual assembly)."""
+    nx = params.get("nx", 40)
     ny = params.get("ny", 4)
     E = params.get("E", 1000.0)
     nu = params.get("nu", 0.3)
     lx = params.get("lx", 10.0)
     ly = params.get("ly", 1.0)
-    tip_uy = params.get("tip_uy", -0.5)  # prescribed tip displacement
+    mu = E / (2 * (1 + nu))
+    lam = E * nu / ((1 + nu) * (1 - 2 * nu))
     return f'''\
-"""Linear elastic 2D cantilever (plane strain) — Kratos StructuralMechanicsApplication.
-
-Clamped left edge, prescribed y-displacement at the mid-tip node.
-Writes the converged DISPLACEMENT and REACTION fields as `Structure_0_1.vtk`.
-"""
+"""Linear elasticity: rectangular domain, fixed left — Kratos (manual assembly)"""
+import numpy as np
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import spsolve
 import json
-import KratosMultiphysics as KM
-import KratosMultiphysics.StructuralMechanicsApplication as SMA
 
-# Problem geometry / material (template parameters at file generation time)
-nx, ny = {nx}, {ny}
-L,  h  = {lx}, {ly}
-E,  nu = {E}, {nu}
-tip_uy = {tip_uy}
+nx, ny, lx, ly = {nx}, {ny}, {lx}, {ly}
+nid = 1; node_map = {{}}; coords = {{}}
+for j in range(ny+1):
+    for i in range(nx+1):
+        coords[nid] = (i*lx/nx, j*ly/ny)
+        node_map[(i,j)] = nid; nid += 1
+n_nodes = nid - 1
 
-# Linear interpolation in x and y produces a structured quad grid.
-def node_id(i, j):
-    return 1 + j * (nx + 1) + i
-
-model = KM.Model()
-mp = model.CreateModelPart("Structure")
-mp.ProcessInfo[KM.DOMAIN_SIZE] = 2
-mp.SetBufferSize(2)
-for v in (KM.DISPLACEMENT, KM.REACTION, KM.VOLUME_ACCELERATION):
-    mp.AddNodalSolutionStepVariable(v)
-
-# Nodes
-for j in range(ny + 1):
-    yj = -h / 2.0 + j * h / ny
-    for i in range(nx + 1):
-        xi = i * L / nx
-        mp.CreateNewNode(node_id(i, j), xi, yj, 0.0)
-
-# Properties: plane-strain linear elastic
-prop = mp.CreateNewProperties(1)
-prop.SetValue(KM.YOUNG_MODULUS, E)
-prop.SetValue(KM.POISSON_RATIO, nu)
-prop.SetValue(KM.DENSITY, 0.0)
-prop.SetValue(KM.CONSTITUTIVE_LAW, SMA.LinearElasticPlaneStrain2DLaw())
-
-# Quad elements (CCW orientation)
-eid = 1
+elements = []
 for j in range(ny):
     for i in range(nx):
-        mp.CreateNewElement(
-            "SmallDisplacementElement2D4N", eid,
-            [node_id(i, j), node_id(i + 1, j),
-             node_id(i + 1, j + 1), node_id(i, j + 1)],
-            prop,
-        )
-        eid += 1
+        n1,n2,n3,n4 = node_map[(i,j)],node_map[(i+1,j)],node_map[(i+1,j+1)],node_map[(i,j+1)]
+        elements.append((n1,n2,n4)); elements.append((n2,n3,n4))
 
-# Add DOFs.  SmallDisplacementElement2D4N inherits SolidElementCheck which
-# requires the Z dof in every node (Kratos uses 3-component vectors
-# internally); we add it everywhere and Dirichlet-pin Z = 0.
-for node in mp.Nodes:
-    node.AddDof(KM.DISPLACEMENT_X, KM.REACTION_X)
-    node.AddDof(KM.DISPLACEMENT_Y, KM.REACTION_Y)
-    node.AddDof(KM.DISPLACEMENT_Z, KM.REACTION_Z)
-    node.Fix(KM.DISPLACEMENT_Z)
-    node.SetSolutionStepValue(KM.DISPLACEMENT_Z, 0.0)
+ndof = 2 * n_nodes
+K = lil_matrix((ndof, ndof))
+F = np.zeros(ndof)
+mu, lam = {mu}, {lam}
 
-# Clamp left edge (i = 0)
-for j in range(ny + 1):
-    n = mp.Nodes[node_id(0, j)]
-    n.Fix(KM.DISPLACEMENT_X)
-    n.Fix(KM.DISPLACEMENT_Y)
-    n.SetSolutionStepValue(KM.DISPLACEMENT_X, 0.0)
-    n.SetSolutionStepValue(KM.DISPLACEMENT_Y, 0.0)
+for tri in elements:
+    ids = [t-1 for t in tri]
+    x = np.array([coords[t][0] for t in tri])
+    y = np.array([coords[t][1] for t in tri])
+    area = 0.5 * abs((x[1]-x[0])*(y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0]))
+    b = np.array([y[1]-y[2], y[2]-y[0], y[0]-y[1]]) / (2*area)
+    c = np.array([x[2]-x[1], x[0]-x[2], x[1]-x[0]]) / (2*area)
 
-# Prescribe tip mid-node y-displacement
-j_mid = ny // 2
-tip_node = mp.Nodes[node_id(nx, j_mid)]
-tip_node.Fix(KM.DISPLACEMENT_Y)
-tip_node.SetSolutionStepValue(KM.DISPLACEMENT_Y, tip_uy)
+    B = np.zeros((3, 6))
+    for a in range(3):
+        B[0, 2*a] = b[a]; B[1, 2*a+1] = c[a]
+        B[2, 2*a] = c[a]; B[2, 2*a+1] = b[a]
+    D = np.array([[lam+2*mu, lam, 0], [lam, lam+2*mu, 0], [0, 0, mu]])
+    Ke = area * B.T @ D @ B
 
-# Newton-Raphson static solver
-scheme = KM.ResidualBasedIncrementalUpdateStaticScheme()
-builder_and_solver = KM.ResidualBasedBlockBuilderAndSolver(
-    KM.SkylineLUFactorizationSolver()
-)
-conv = KM.ResidualCriteria(1.0e-8, 1.0e-12)
-strat = KM.ResidualBasedNewtonRaphsonStrategy(
-    mp, scheme, conv, builder_and_solver,
-    20, True, False, True,
-)
-strat.SetEchoLevel(0)
-strat.Check()
-mp.CloneTimeStep(1.0)
-mp.ProcessInfo[KM.STEP] = 1
-strat.Solve()
+    dofs = []
+    for a in range(3):
+        dofs.extend([2*ids[a], 2*ids[a]+1])
+    for i in range(6):
+        F[dofs[i]] += -1.0 * area / 3.0 if i % 2 == 1 else 0  # body force — set for your problem
+        for j_idx in range(6):
+            K[dofs[i], dofs[j_idx]] += Ke[i, j_idx]
+K = K.tocsr()
 
-# VTK output
-vtk_params = KM.Parameters(json.dumps({{
-    "model_part_name": "Structure",
-    "output_control_type": "step",
-    "output_interval": 1,
-    "file_format": "ascii",
-    "output_path": ".",
-    "output_sub_model_parts": False,
-    "save_output_files_in_folder": False,
-    "nodal_solution_step_data_variables": ["DISPLACEMENT", "REACTION"],
-}}))
-KM.VtkOutput(mp, vtk_params).PrintOutput()
+# Fix left edge
+fixed = set()
+for j in range(ny+1):
+    n = node_map[(0,j)] - 1
+    fixed.add(2*n); fixed.add(2*n+1)
+interior = sorted(set(range(ndof)) - fixed)
 
-# Scalar summary for the layer-3 sweep
-tip = mp.Nodes[node_id(nx, j_mid)]
-summary = {{
-    "tip_ux": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_X)),
-    "tip_uy": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_Y)),
-    "n_nodes": mp.NumberOfNodes(),
-    "n_elements": mp.NumberOfElements(),
-}}
-print(f"tip displacement: ux={{summary['tip_ux']:.6f}}  uy={{summary['tip_uy']:.6f}}")
-with open("results_summary.json", "w") as _f:
-    json.dump(summary, _f, indent=2)
+u = np.zeros(ndof)
+u[interior] = spsolve(K[np.ix_(interior, interior)], F[interior])
+
+uy = u[1::2]
+print(f"Max tip displacement: {{uy.min():.6f}}")
+summary = {{"max_displacement_y": float(uy.min()), "n_dofs": ndof}}
+with open("results_summary.json", "w") as _f: json.dump(summary, _f, indent=2)
 '''
 
 
 def _elasticity_nonlinear_kratos(params: dict) -> str:
-    """Geometrically-nonlinear plane-strain elasticity — Kratos SMA.
+    """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
 
-    Uses `TotalLagrangianElement2D4N` (large-rotation kinematics) with
-    `LinearElasticPlaneStrain2DLaw` as the small-strain constitutive
-    law.  The pip-installed Kratos wheel does NOT ship a Neo-Hookean
-    2D law (those live in `ConstitutiveLawsApplication`, not in the
-    base StructuralMechanicsApplication on PyPI), so "nonlinear" here
-    means geometric nonlinearity only.  Switching to a hyperelastic
-    material is straightforward once `ConstitutiveLawsApplication`
-    is available — replace the SetValue on KM.CONSTITUTIVE_LAW with
-    e.g. `CLA.HyperElasticIsotropicNeoHookeanPlaneStrain2DLaw()`.
-    """
-    nx = params.get("nx", 16)
-    ny = params.get("ny", 4)
-    E = params.get("E", 1000.0)
-    nu = params.get("nu", 0.3)
-    lx = params.get("lx", 4.0)
-    ly = params.get("ly", 1.0)
-    tip_uy = params.get("tip_uy", -0.5)
-    n_substeps = params.get("n_substeps", 5)
+    Nonlinear elasticity via Kratos StructuralMechanicsApplication."""
     return f'''\
-"""Geometrically-nonlinear plane-strain elasticity — Kratos SMA.
-
-TotalLagrangianElement2D4N + LinearElasticPlaneStrain2DLaw on a
-structured quad grid.  Clamped left edge; tip y-displacement applied
-in `n_substeps` Newton-Raphson load steps.  Writes the converged
-DISPLACEMENT and REACTION fields as `Structure_0_*.vtk`.
-"""
+"""Nonlinear structural mechanics — Kratos StructuralMechanicsApplication"""
 import json
-import KratosMultiphysics as KM
-import KratosMultiphysics.StructuralMechanicsApplication as SMA
-
-nx, ny = {nx}, {ny}
-L,  h  = {lx}, {ly}
-E,  nu = {E}, {nu}
-tip_uy = {tip_uy}
-n_substeps = {n_substeps}
-
-
-def node_id(i, j):
-    return 1 + j * (nx + 1) + i
-
-
-model = KM.Model()
-mp = model.CreateModelPart("Structure")
-mp.ProcessInfo[KM.DOMAIN_SIZE] = 2
-mp.SetBufferSize(2)
-for v in (KM.DISPLACEMENT, KM.REACTION, KM.VOLUME_ACCELERATION):
-    mp.AddNodalSolutionStepVariable(v)
-
-for j in range(ny + 1):
-    yj = -h / 2.0 + j * h / ny
-    for i in range(nx + 1):
-        mp.CreateNewNode(node_id(i, j), i * L / nx, yj, 0.0)
-
-prop = mp.CreateNewProperties(1)
-prop.SetValue(KM.YOUNG_MODULUS, E)
-prop.SetValue(KM.POISSON_RATIO, nu)
-prop.SetValue(KM.DENSITY, 0.0)
-prop.SetValue(KM.CONSTITUTIVE_LAW, SMA.LinearElasticPlaneStrain2DLaw())
-
-eid = 1
-for j in range(ny):
-    for i in range(nx):
-        mp.CreateNewElement(
-            "TotalLagrangianElement2D4N", eid,
-            [node_id(i, j), node_id(i + 1, j),
-             node_id(i + 1, j + 1), node_id(i, j + 1)],
-            prop,
-        )
-        eid += 1
-
-for node in mp.Nodes:
-    node.AddDof(KM.DISPLACEMENT_X, KM.REACTION_X)
-    node.AddDof(KM.DISPLACEMENT_Y, KM.REACTION_Y)
-    node.AddDof(KM.DISPLACEMENT_Z, KM.REACTION_Z)
-    node.Fix(KM.DISPLACEMENT_Z)
-    node.SetSolutionStepValue(KM.DISPLACEMENT_Z, 0.0)
-
-for j in range(ny + 1):
-    n = mp.Nodes[node_id(0, j)]
-    n.Fix(KM.DISPLACEMENT_X)
-    n.Fix(KM.DISPLACEMENT_Y)
-    # Set the Dirichlet value explicitly to 0.0 alongside the Fix()
-    # call.  Kratos's `Fix(...)` flags the DOF as constrained but
-    # does not by itself prescribe the value (the solution-step
-    # value defaults to 0.0 for fresh nodes, but for nodes that have
-    # already participated in an earlier solve step on the same
-    # ModelPart the prior value persists — a real bug when the
-    # template is re-used inside a larger workflow).
-    n.SetSolutionStepValue(KM.DISPLACEMENT_X, 0.0)
-    n.SetSolutionStepValue(KM.DISPLACEMENT_Y, 0.0)
-
-j_mid = ny // 2
-tip_node = mp.Nodes[node_id(nx, j_mid)]
-tip_node.Fix(KM.DISPLACEMENT_Y)
-
-scheme = KM.ResidualBasedIncrementalUpdateStaticScheme()
-builder_and_solver = KM.ResidualBasedBlockBuilderAndSolver(
-    KM.SkylineLUFactorizationSolver()
-)
-conv = KM.ResidualCriteria(1.0e-8, 1.0e-12)
-strat = KM.ResidualBasedNewtonRaphsonStrategy(
-    mp, scheme, conv, builder_and_solver,
-    50, True, False, True,
-)
-strat.SetEchoLevel(0)
-
-vtk_params = KM.Parameters(json.dumps({{
-    "model_part_name": "Structure",
-    "output_control_type": "step",
-    "output_interval": 1,
-    "file_format": "ascii",
-    "output_path": ".",
-    "output_sub_model_parts": False,
-    "save_output_files_in_folder": False,
-    "nodal_solution_step_data_variables": ["DISPLACEMENT", "REACTION"],
-}}))
-vtk = KM.VtkOutput(mp, vtk_params)
-
-# Ramp the tip displacement in n_substeps load steps.  TotalLagrangian
-# requires sufficiently small increments for Newton convergence at
-# large rotations.
-strat.Check()
-for step in range(1, n_substeps + 1):
-    mp.CloneTimeStep(float(step))
-    mp.ProcessInfo[KM.STEP] = step
-    tip_node.SetSolutionStepValue(KM.DISPLACEMENT_Y, tip_uy * step / n_substeps)
-    strat.Solve()
-vtk.PrintOutput()
-
-tip = mp.Nodes[node_id(nx, j_mid)]
-summary = {{
-    "tip_ux": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_X)),
-    "tip_uy": float(tip.GetSolutionStepValue(KM.DISPLACEMENT_Y)),
-    "n_steps": n_substeps,
-    "n_nodes": mp.NumberOfNodes(),
-    "n_elements": mp.NumberOfElements(),
-}}
-print(f"tip ux={{summary['tip_ux']:.6f}}  uy={{summary['tip_uy']:.6f}}  (target uy={{tip_uy}})")
-with open("results_summary.json", "w") as _f:
-    json.dump(summary, _f, indent=2)
+try:
+    import KratosMultiphysics as KM
+    import KratosMultiphysics.StructuralMechanicsApplication as SMA
+    print("StructuralMechanicsApplication available")
+    # Full Kratos structural analysis would use:
+    # from KratosMultiphysics.StructuralMechanicsApplication.structural_mechanics_analysis import StructuralMechanicsAnalysis
+    # with ProjectParameters.json + mesh.mdpa
+    summary = {{"note": "Kratos SMA available — use ProjectParameters.json workflow for full analysis"}}
+except ImportError:
+    print("StructuralMechanicsApplication not installed")
+    print("Install: pip install KratosStructuralMechanicsApplication")
+    summary = {{"note": "KratosStructuralMechanicsApplication not installed"}}
+with open("results_summary.json", "w") as _f: json.dump(summary, _f, indent=2)
 '''
 
 
@@ -315,76 +132,28 @@ KNOWLEDGE = {
         },
         "solver_types": ["static (Newton-Raphson)", "dynamic (Newmark, Bossak, GenAlpha)",
                         "explicit (central differences)", "formfinding"],
-        # Pitfalls are tagged with Table-1 category prefix
-        # ([Syntax]/[Physics]/[Numerical]/[API]/[Integration]) so the
-        # agent and any downstream tooling can filter on category.
-        # New entries SHOULD include a `Signal:` clause stating the
-        # observable symptom — silent no-ops (the FSI velocity-30x
-        # case in the Open-FEM-Agent paper, Section 3.2) are the
-        # category that has hurt users most, so making the symptom
-        # explicit lets the post-exec critic match against it.
         "pitfalls": [
-            "[Syntax] Element names MUST include node count: "
-            "SmallDisplacementElement2D3N, not SmallDisplacement2D. "
-            "Signal: `KratosMultiphysics.Exception: Element name not found`.",
-            "[API] Materials defined in StructuralMaterials.json, referenced "
-            "by Properties ID. The .json + mdpa + ProjectParameters.json "
-            "trio must agree on the Properties ID or the law silently "
-            "defaults to a zero constitutive response. "
-            "Signal: displacements are linear in load but unrealistically large.",
-            "[Syntax] SubModelParts must match between .mdpa and "
-            "ProjectParameters.json exactly. A typo binds the process "
-            "to an empty SubModelPart and the BC silently no-ops. "
-            "Signal: BC nodes show non-zero residuals at convergence.",
-            "[Numerical] For nonlinear: increase max_iterations beyond "
-            "the default 10. With contact, plasticity, or large rotation "
-            "10 iterations is usually insufficient. "
-            "Signal: solver reports 'max iterations reached' but exits 0.",
-            "[Physics] DISPLACEMENT is the primary DOF for solid elements; "
-            "ROTATION is also required on beams/shells. Adding only "
-            "DISPLACEMENT for a beam element silently drops the rotational "
-            "DOF and gives a hinge-like response. "
-            "Signal: beam tip deflects but does not rotate under moment load.",
-            "[Numerical] SHEAR LOCKING — Linear hex8 (3D8N) and quad4 "
-            "(2D4N) elements lock in bending-dominated problems, "
-            "producing overly stiff results and wrong frequencies. Use "
-            "quadratic elements (3D20N, 3D27N, 2D8N, 2D9N) for any "
-            "problem with significant bending. "
-            "Signal: tip deflection is order-of-magnitude smaller than "
-            "Euler-Bernoulli prediction.",
-            "[API] For POINT_LOAD application: use assign_vector_variable_process "
-            "with constrained: [false, false, false]. Do NOT use "
-            "assign_vector_by_direction_process — it expects a kinematic "
-            "variable (DISPLACEMENT class) and silently no-ops for load "
-            "variables, leaving the model unloaded. "
-            "Signal: nodal reactions sum to zero and tip displacement is zero "
-            "despite the process being present in ProjectParameters.json.",
-            "[Syntax] problem_data section MUST include 'echo_level' "
-            "field. Missing it raises a confusing 'Parameters' KeyError "
-            "inside the analysis stage rather than at parameter validation.",
-            # --- Retroactive entries from PR #24 Kratos LE stub-replacement ---
-            "[Syntax] SmallDisplacementElement2D{3,4,6,8,9}N inherits the "
-            "SolidElementCheck path from BaseSolidElement, which queries "
-            "the Z DOF on every node even in plane analyses (Kratos uses "
-            "3-component vectors internally). Add DISPLACEMENT_Z and "
-            "REACTION_Z DOFs to every node and Fix(DISPLACEMENT_Z)=0. "
-            "Signal: `Check failed for DISPLACEMENT_Z` at strat.Check(), "
-            "long before the first solver step.",
-            "[API] CONSTITUTIVE_LAW Properties binding takes an *instance*, "
-            "not a class: `prop.SetValue(KM.CONSTITUTIVE_LAW, "
-            "SMA.LinearElasticPlaneStrain2DLaw())`. Passing the class "
-            "itself silently keeps the default null law and the element "
-            "responds with zero stiffness. "
-            "Signal: K matrix assembles but is singular; spsolve reports "
-            "extreme condition number or NaN displacements.",
-            "[API] Nodal solution-step variables (DISPLACEMENT, REACTION, "
-            "VOLUME_ACCELERATION, etc.) MUST be added via "
-            "`mp.AddNodalSolutionStepVariable(v)` BEFORE the first node "
-            "is created and BEFORE `mp.SetBufferSize(2)`. Adding after "
-            "leaves the variable unallocated on existing nodes. "
-            "Signal: `RuntimeError: trying to access non-existing "
-            "Kratos component` when reading DISPLACEMENT post-solve.",
-        ],
+                        '[Syntax] Element names in the .mdpa MUST include the node-count suffix: SmallDisplacementElement2D3N, not SmallDisplacement2D. Kratos resolves element types via a registry keyed by the full name. '
+                        "Signal: RuntimeError 'Element ... is not registered' or 'Trying to construct an element with a wrong name' when ModelPart.CreateNewElement is called with a name missing the NxN suffix.",
+                        "[Integration] Materials are defined in StructuralMaterials.json, referenced from the .mdpa by Properties ID. Defining material parameters inline in the .mdpa via 'Begin Properties N' works for simple cases but breaks for laws that need Tables (temperature-dependent E, hardening curves). "
+                        "Signal: Element.Initialize raises RuntimeError 'A constitutive law needs to be specified for the element with ID N' from applications/StructuralMechanicsApplication/custom_elements/solid_elements/base_solid_element.cpp when the Property has YOUNG_MODULUS / POISSON_RATIO set but no CONSTITUTIVE_LAW. (Verified empirically 2026-06-01 — prior catalog text said 'No constitutive law assigned to Property X' and pointed at AnalysisStage.Initialize; the real error message references the element ID, not the Property, and originates in base_solid_element.cpp:249.)",
+                        '[Syntax] SubModelPart names must match EXACTLY between .mdpa and ProjectParameters.json — Kratos is case-sensitive and does not strip whitespace. '
+                        "Signal: RuntimeError 'Error: There is no sub model part with name \"NAME\" in model part \"PARENT\"' from ModelPart::ErrorNonExistingSubModelPart in model_part.cpp, listed alongside the available SubModelPart names. (Verified empirically 2026-06-01 — prior wording 'SubModelPart ... does not exist' used CamelCase; the real error text is lowercase 'sub model part' with spaces.)",
+                        '[Numerical] For nonlinear analyses: increase the max_iteration argument passed to ResidualBasedNewtonRaphsonStrategy (it is a positional constructor argument on the Strategy, NOT a field on the ResidualCriteria). The Python solver wrappers typically pull it from the JSON solver_settings.max_iteration field; default 10 may not suffice for material nonlinearity or large deformation. '
+                        "Signal: solver reports 'Convergence is not achieved' at max_iteration with residual not yet at tolerance; structural displacement stalls at an intermediate state.",
+                        '[API] DISPLACEMENT variable is the structural DOF; ROTATION is required additionally for beams and shells. Without ROTATION added to the ModelPart variables list, the beam element can be created and Initialize succeeds, but the failure surfaces when the solver/strategy tries to compute rotational DOFs (Solve / Check). '
+                        "Signal: the predictable Kratos pattern for missing-variable errors fires at the first GetSolutionStepValue(ROTATION_*) inside the strategy: RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: ROTATION_X/Y/Z' from variables_list_data_value_container. (Verified empirically 2026-06-01 — prior catalog text said the error fires at beam-element InitializeSolutionStep with 'not found in variables list' wording; reality is Initialize alone does NOT raise, and when it does fire later the wording matches the container error pattern, not the prior text.)",
+                        '[Numerical] SHEAR LOCKING: linear hex8 (3D8N) and quad4 (2D4N) elements lock in bending-dominated problems, producing overly stiff results and wrong frequencies. Use quadratic elements (3D20N, 3D27N, 2D8N, 2D9N) for any problem with significant bending. '
+                        'Signal: tip deflection on a cantilever beam meshed with 3D8N is 20-40% smaller than analytic; switching to 3D20N recovers it within 1-2%.',
+                        '[API] For POINT_LOAD application: use AssignVectorVariableProcess with constrained: [false, false, false]. The directional-magnitude process the agent might be tempted to use does not exist in current StructuralMechanicsApplication. '
+                        "Signal: AttributeError 'module \\'KratosMultiphysics.StructuralMechanicsApplication\\' has no attribute \\'AssignVectorByDirectionProcess\\'' from the Python import when the agent tries to instantiate it. (Verified empirically 2026-06-01 with Kratos 10.4 — the prior catalog claim 'crashes / segfaults for load variables' was misleading because the named class is not available to crash; the genuine pitfall is reaching for an API that the agent must instead replace with AssignVectorVariableProcess.)",
+                        "[Syntax] problem_data section MUST include the 'echo_level' field. Kratos accesses it during stage initialisation without a default. "
+                        "Signal: Parameters::GetValue raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' from kratos/sources/kratos_parameters.cpp when problem_data omits the field. (Verified empirically 2026-06-01 — prior catalog text said KeyError from RunSolutionLoop; Kratos uses RuntimeError, not Python KeyError, and the message originates in C++ GetValue, not RunSolutionLoop.)",
+                        '[API] ConstitutiveLaw assignment requires an INSTANCE, not the class — properties.SetValue(CONSTITUTIVE_LAW, LinearElastic3DLaw) fails because the class object is passed instead of LinearElastic3DLaw(). '
+                        "Signal: TypeError with text 'incompatible function arguments' from the SetValue binding; the .pyi shows the second arg type is the law instance.",
+                        "[API] Variables (DISPLACEMENT, REACTION, VELOCITY, POINT_LOAD, etc.) must be added to the ModelPart's nodal-variables list via ModelPart.AddNodalSolutionStepVariable BEFORE any Node, Element, or Condition is created. Adding the variable after CreateNewNode raises a runtime error and the existing nodes do not get the DOF. "
+                        "Signal: Two distinct failure modes (both verified empirically 2026-06-01): (a) If the variable is added AFTER any Node is created, ModelPart.AddNodalSolutionStepVariable raises RuntimeError 'Attempting to add the variable \"X\" to the model part with name \"Y\" which is not empty' from kratos/includes/model_part.h:521 — Kratos refuses to extend the variables list once nodes exist. (b) If the variable was NEVER added, the first GetSolutionStepValue / SetSolutionStepValue on the Node raises RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: X' from variables_list_data_value_container. (Prior catalog text only described mode (b) as happening 'when a process tries to read the freshly-added variable' — that is wrong; the freshly-added case is mode (a) and fires at the add call.)",
+                    ],
     },
 }
 

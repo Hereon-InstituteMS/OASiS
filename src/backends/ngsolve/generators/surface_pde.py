@@ -21,24 +21,39 @@ mesh.Curve({order})
 
 print(f"Surface mesh: {{mesh.ne}} elements, {{mesh.nv}} vertices")
 
-# H1 space on the surface manifold
-fes = H1(mesh, order={order}, dirichlet="")
-u, v = fes.TnT()
-
-# Laplace-Beltrami: surface gradient on the manifold
-# NGSolve automatically restricts grad to the tangent plane on surface meshes
-a = BilinearForm(grad(u) * grad(v) * ds).Assemble()
-
-# Source term on the surface — set for your problem
-# Use spherical harmonics Y_2^0 as forcing: f = 6*z^2 - 2 (eigenfunction)
-f_expr = 6 * z * z - 2
-f = LinearForm(f_expr * v * ds).Assemble()
-
-# Pin one DOF to fix the constant (Laplace-Beltrami has kernel = constants)
-fes_constrained = H1(mesh, order={order})
+# H1 space on the SURFACE (boundary of the volume mesh).
+# definedon=mesh.Boundaries(".*") restricts the FE space to
+# the spherical surface; without it, H1 lives on the full
+# volume and the boundary integrals below would mix trace
+# DOFs with interior DOFs.
+# Audit 2026-06-02: prior version used H1(mesh, order=...,
+# dirichlet="") on the volume mesh and then assembled
+# `grad(u) * grad(v) * ds`. NGSolve raised
+#   NgException: Trialfunction does not support BND-forms,
+#               maybe a Trace() operator is missing, type=grad
+# Fix: restrict the space to the surface AND wrap each
+# trial/test occurrence with .Trace() so the BND integral
+# typechecks. See Joachim Schöberl's surface-FEM example
+# in iFEM lecture notes (definedon + .Trace() pattern).
+fes_constrained = H1(mesh, order={order},
+                      definedon=mesh.Boundaries(".*"))
 u_c, v_c = fes_constrained.TnT()
-a_c = BilinearForm(grad(u_c) * grad(v_c) * ds + 1e-8 * u_c * v_c * ds).Assemble()
-f_c = LinearForm(f_expr * v_c * ds).Assemble()
+
+a_c = BilinearForm(fes_constrained)
+a_c += (grad(u_c).Trace() * grad(v_c).Trace()
+         + 1e-8 * u_c.Trace() * v_c.Trace()) * ds
+a_c.Assemble()
+
+# Source term on the surface — set for your problem.
+# Use spherical harmonics Y_2^0 as forcing: f = 6*z^2 - 2
+# (eigenfunction of -Δ_S on the unit sphere). Integral over
+# the sphere is 0, so the residual has no constant mode and
+# the 1e-8 regulariser is just a safety net to keep the
+# matrix non-singular.
+f_expr = 6 * z * z - 2
+f_c = LinearForm(fes_constrained)
+f_c += f_expr * v_c.Trace() * ds
+f_c.Assemble()
 
 gfu = GridFunction(fes_constrained)
 gfu.vec.data = a_c.mat.Inverse(fes_constrained.FreeDofs()) * f_c.vec
@@ -73,12 +88,75 @@ KNOWLEDGE = {
         "solver": "Direct or iterative — standard solvers work on surface meshes",
         "mesh": "OCC surfaces (Sphere, Cylinder, STEP import), mesh.Curve(order) for geometry approximation",
         "pitfalls": [
-            "Use ds (surface measure) instead of dx (volume) for surface integrals",
-            "grad on surface mesh automatically gives tangential (surface) gradient",
-            "Laplace-Beltrami has kernel = constants; pin one DOF or add regularization",
-            "mesh.Curve(order) improves geometry approximation for curved surfaces",
-            "For evolving surfaces: use deformation mapping + ALE approach",
-            "Surface meshes from OCC: Sphere, Cylinder, or any STEP/BREP surface",
+            (
+                "[API] Use ds (surface measure) instead of dx "
+                "(volume) for surface integrals. Signal: using "
+                "dx on a surface mesh gives zero integral or "
+                "raises `mesh dim mismatch in BilinearForm` — "
+                "the volume measure has no support on a "
+                "(d-1)-manifold. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] grad on a surface mesh AUTOMATICALLY "
+                "produces the TANGENTIAL (surface) gradient — "
+                "no explicit projection needed. Signal: "
+                "manually projecting grad(u) onto the surface "
+                "tangent plane via (I - n n^T) * grad(u) "
+                "applies the projection TWICE (NGSolve already "
+                "did it for you) and yields a numerically "
+                "near-identical answer but at 2x the cost; "
+                "verify by checking that |grad(u) . n| at a "
+                "surface point is already ~1e-15. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Laplace-Beltrami has kernel = "
+                "constants; pin one DOF or add regularization. "
+                "Signal: solver returns `KSPSolve: "
+                "DIVERGED_BREAKDOWN` or near-zero pivot; the "
+                "computed solution u contains an arbitrary "
+                "additive constant. Pin u(p0) = 0 at one DOF or "
+                "add eps*u to the operator with eps ~ 1e-8. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] mesh.Curve(order) improves geometry "
+                "approximation for curved surfaces. Signal: on a "
+                "Sphere mesh without Curve(3), the area integral "
+                "of 1*ds differs from 4*pi*R^2 by ~2-5% (linear "
+                "facet approximation); with mesh.Curve(3) the "
+                "area converges to within ~1e-4 of the exact "
+                "value. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For evolving surfaces (moving "
+                "membranes, growth): use a deformation mapping "
+                "+ ALE approach with mesh.SetDeformation. "
+                "Signal: re-meshing every step (creating new "
+                "OCC geometry per time step) loses solution "
+                "continuity — the per-DOF solution from step "
+                "N doesn't transfer cleanly to step N+1 and "
+                "you see ~1-3% loss of L^2 norm per step "
+                "(spurious dissipation). ALE keeps the same "
+                "DOFs but deforms the mesh and resolves "
+                "transport on the moved geometry. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Surface meshes from OCC: Sphere(), "
+                "Cylinder(), or any imported STEP/BREP "
+                "surface via OCCGeometry(...). Signal: "
+                "loading a STEP file with a mix of "
+                "volumetric solids and surface patches "
+                "without selecting only the .faces leads to "
+                "a 3D mesh being constructed instead of a "
+                "surface mesh — Mesh.dim returns 3 instead "
+                "of 2, and subsequent ds integrations span "
+                "the volume boundary, not the intended "
+                "surface. Use OCC.Glue(faces) or "
+                "geo.faces[i] to select surfaces. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 }

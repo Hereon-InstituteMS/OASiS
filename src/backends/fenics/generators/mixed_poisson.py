@@ -10,13 +10,79 @@ KNOWLEDGE = {
     "function_space": "RT(k) for flux + DG(k-1) for pressure (inf-sup stable pair)",
     "solver": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"},
     "pitfalls": [
-        "System is INDEFINITE (saddle point): use direct solver or block preconditioner",
-        "RT(k) + DG(k-1): inf-sup stable, locally conservative (exact div)",
-        "BDM(k) + DG(k-1): alternative H(div) pair with full polynomial",
-        "Essential BC is on sigma.n (normal flux), NOT on pressure",
-        "Pressure determined up to a constant if only normal flux BCs",
-        "For heterogeneous permeability: weight the (sigma, tau) term by K^{-1}",
-        "Use basix.ufl.element('RT', cell, k) for Raviart-Thomas in dolfinx",
+        (
+            "[Numerical] System is INDEFINITE (saddle point): use "
+            "direct solver or block preconditioner. Signal: "
+            "PETSc CG/GMRES reports `DIVERGED_INDEFINITE_PC` or "
+            "stagnates with residual ~1.0 (no decrease); LU "
+            "succeeds where iterative fails — switch to a "
+            "fieldsplit / Schur-complement preconditioner for "
+            "scale. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] RT(k) + DG(k-1): inf-sup stable, locally "
+            "conservative (exact div). Signal: when mixing "
+            "non-inf-sup-stable pairs (e.g. RT(k) + DG(k)), "
+            "the discrete LBB constant collapses with mesh "
+            "refinement — pressure norm grows like O(h^-1) "
+            "instead of converging, and the divergence error "
+            "fails to reach machine precision. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Numerical] BDM(k) + DG(k-1) is an alternative "
+            "H(div) pair with FULL polynomial space — RT(k) is "
+            "the subset with vanishing-divergence boundary "
+            "terms. Signal: BDM gives the same div-conforming "
+            "stability as RT but adds DOFs (~ 2x for k=1 in "
+            "2D); preferred if higher-order convergence in the "
+            "flux variable is needed (BDM is order k+1 in "
+            "L^2 vs RT's order k). Choosing BDM for k=1 with "
+            "DG(0) pressure but expecting RT-like flux "
+            "convergence under-uses the richer space and "
+            "yields the same convergence rate as RT but at "
+            "higher cost — pick by convergence target, not "
+            "stability. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Essential BC is on sigma.n (normal flux), NOT "
+            "on pressure. Signal: applying a dolfinx DirichletBC "
+            "on the pressure DOFs at an inflow surface (instead "
+            "of on the flux) gives wildly wrong pressure profile "
+            "and ZERO normal flux at that surface; mass balance "
+            "is violated by an O(1) factor. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Pressure determined up to a constant if "
+            "only normal flux BCs. Signal: solver reports a "
+            "near-zero pivot or singular system "
+            "(`KSPSolve: DIVERGED_BREAKDOWN`); add a pressure "
+            "pinning DOF or use a nullspace removal to restore "
+            "uniqueness. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] For heterogeneous permeability K(x): "
+            "weight the (sigma, tau) bilinear-form term by "
+            "K^{-1}(x), giving (K^{-1}*sigma, tau)*dx. Signal: "
+            "if the K^{-1} weighting is omitted in a layered "
+            "domain (e.g. K = 1e-12 in one half, 1e-6 in the "
+            "other), the discrete flux is continuous across "
+            "the layer boundary instead of jumping by the "
+            "permeability contrast; mass-balance error at the "
+            "interface is O(1). The correct weak form has "
+            "K^{-1} on the velocity term, not just on the "
+            "Darcy-law sigma = -K * grad(p) post-processing. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Use basix.ufl.element('RT', cell, k) for "
+            "Raviart-Thomas in dolfinx. Signal: passing a "
+            "legacy fenics-style string like 'RT' to "
+            "FunctionSpace gives `AttributeError: module "
+            "'dolfinx.fem' has no attribute 'FiniteElement'` or "
+            "an obscure cpp-side `unknown element family` "
+            "error from basix. (Audit 2026-06-02.)"
+        ),
     ],
     "materials": {
         "permeability": {"range": [1e-15, 1.0], "unit": "m^2 (Darcy permeability)"},

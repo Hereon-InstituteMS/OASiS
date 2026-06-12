@@ -7,15 +7,83 @@ Variants: 2d
 KNOWLEDGE = {
     "description": "Stokes flow with Taylor-Hood P2/P1 or MINI element",
     "weak_form": "nu*(grad(u),grad(v))*dx + div(v)*p*dx + div(u)*q*dx = (f,v)*dx",
-    "function_space": "Mixed: VectorElement('Lagrange',cell,2) + FiniteElement('Lagrange',cell,1)",
+    "function_space": (
+        "Mixed (basix.ufl 0.10+): "
+        "P2 = basix.ufl.element('Lagrange', domain.basix_cell(), 2, shape=(domain.geometry.dim,)); "
+        "P1 = basix.ufl.element('Lagrange', domain.basix_cell(), 1); "
+        "TH = basix.ufl.mixed_element([P2, P1]); W = fem.functionspace(domain, TH)"
+    ),
     "solver": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"},
     "pitfalls": [
-        "System is INDEFINITE — use direct (MUMPS) or block preconditioner, NOT CG",
-        "Mixed element: P2 = ufl.VectorElement('Lagrange', cell, 2), P1 = ufl.FiniteElement('Lagrange', cell, 1)",
-        "TH = ufl.MixedElement([P2, P1]), W = fem.functionspace(domain, TH)",
-        "Non-homogeneous Dirichlet: collapse sub-space, create Function, interpolate, then dirichletbc",
-        "Pressure determined up to constant — pin one DOF or ensure outflow BC",
-        "MINI element: P1+bubble for velocity, P1 for pressure (simpler but less accurate)",
+        "[Numerical] Saddle-point Stokes system is INDEFINITE — "
+        "use a direct solver (MUMPS via PETScKrylovSolver+preonly+LU) "
+        "or a block preconditioner (Schur complement), NEVER CG. "
+        "Signal: running PETScKrylovSolver with ksp_type='cg' on a "
+        "Taylor-Hood Stokes problem reports DIVERGED_INDEFINITE_PC or "
+        "stalls at residual ~1e0 within ~10 iterations. (Audit "
+        "2026-06-02.)",
+        "[API] Mixed-element construction in dolfinx 0.10+ uses "
+        "basix.ufl, NOT ufl: P2 = basix.ufl.element('Lagrange', "
+        "domain.basix_cell(), 2, shape=(domain.geometry.dim,)); "
+        "P1 = basix.ufl.element('Lagrange', domain.basix_cell(), 1); "
+        "TH = basix.ufl.mixed_element([P2, P1]). The pre-2024 "
+        "form 'ufl.VectorElement / ufl.FiniteElement / "
+        "ufl.MixedElement' was REMOVED — those names no longer "
+        "exist as attributes of the ufl module (verified against "
+        "ufl 2025.2.1 / dolfinx 0.10.0, 2026-06-01). Signal: "
+        "running a stokes script using ufl.VectorElement raises "
+        "AttributeError: module 'ufl' has no attribute "
+        "'VectorElement'.",
+        "[API] Build the FunctionSpace from the mixed_element via "
+        "W = fem.functionspace(domain, TH) where TH = "
+        "basix.ufl.mixed_element([P2, P1]). Passing the bare element "
+        "tuple as kwarg is wrong. Signal: fem.functionspace(domain, "
+        "(P2, P1)) raises TypeError 'expected basix.ufl element or "
+        "tuple (family, degree)'. (Audit 2026-06-02.)",
+        "[API] Non-homogeneous Dirichlet BCs on the velocity sub-"
+        "space: collapse_subspace from W, create a Function on the "
+        "collapsed space, interpolate the desired profile, then call "
+        "fem.dirichletbc. Signal: passing a scalar value to "
+        "fem.dirichletbc on a sub of a VectorH1 raises "
+        "RuntimeError 'Value shape must match function space'; the "
+        "fix is W0, dofs = W.sub(0).collapse() + interpolate. "
+        "(Audit 2026-06-02.)",
+        "[Numerical] Pressure is determined only up to a constant "
+        "for enclosed flows — pin one DOF via fem.dirichletbc on a "
+        "single pressure node, or ensure an outflow boundary takes "
+        "the role of pressure datum. Signal: a closed-cavity Stokes "
+        "solve without pressure pin reports KSPSolve "
+        "DIVERGED_BREAKDOWN with near-zero pivot, or the resulting "
+        "pressure Function in the XDMFFile has a huge additive "
+        "offset (drifts O(1e6) between runs). (Audit 2026-06-02.)",
+        "[Numerical] MINI element (P1+bubble for velocity, P1 for "
+        "pressure) is an inf-sup-stable alternative to Taylor-Hood, "
+        "simpler implementation but less accurate. Signal: an MMS "
+        "convergence study with MINI shows L2-error of the velocity "
+        "Function in the XDMFFile output at rate ~h^2 instead of "
+        "Taylor-Hood's ~h^3 for the same mesh refinement. (Audit "
+        "2026-06-02.)",
+        "[Output] In dolfinx 0.10+, XDMFFile.write_function() "
+        "REJECTS Functions whose element degree exceeds the mesh "
+        "geometry degree (which is 1 for the default-order triangle "
+        "/ tetrahedron mesh from create_unit_square / create_box). "
+        "Writing a P2 velocity directly raises 'RuntimeError: "
+        "Degree of output Function must be same as mesh degree. "
+        "Maybe the Function needs to be interpolated?'. This blocks "
+        "the obvious Taylor-Hood output pattern: collapse(W.sub(0)) "
+        "and write the P2 sub-function. Fix: import dolfinx.io."
+        "VTXWriter (ADIOS2 backend) which supports arbitrary-degree "
+        "Functions natively, writes to a .bp directory ParaView "
+        "5.10+ reads directly. Usage: with VTXWriter(domain.comm, "
+        "'velocity.bp', [u_h]) as vtx: vtx.write(0.0). The .bp "
+        "extension is mandatory — it's a directory, not a file. "
+        "Alternative if you must use XDMF: interpolate the P2 "
+        "velocity to a P1 space first via fem.functionspace(domain, "
+        "('Lagrange', 1, (gdim,))) + Function.interpolate(u_h), "
+        "which loses the P2 fidelity but keeps a single .xdmf "
+        "output. (Audit 2026-06-03, follow-up to Layer F fix "
+        "task #114 that updated the template but not the pitfall "
+        "narrative; gap surfaced by Layer G audit.)",
     ],
 }
 
@@ -46,6 +114,7 @@ def _stokes_2d(params: dict) -> str:
 from mpi4py import MPI
 from dolfinx import mesh, fem, default_scalar_type
 from dolfinx.fem.petsc import LinearProblem
+import basix.ufl
 import ufl
 import numpy as np
 
@@ -55,10 +124,10 @@ tdim = domain.topology.dim
 fdim = tdim - 1
 domain.topology.create_connectivity(fdim, tdim)
 
-# Taylor-Hood: P2 velocity + P1 pressure
-P2 = ufl.VectorElement("Lagrange", domain.ufl_cell(), 2)
-P1 = ufl.FiniteElement("Lagrange", domain.ufl_cell(), 1)
-TH = ufl.MixedElement([P2, P1])
+# Taylor-Hood: P2 velocity + P1 pressure (basix.ufl, dolfinx 0.10+)
+P2 = basix.ufl.element("Lagrange", domain.basix_cell(), 2, shape=(gdim,))
+P1 = basix.ufl.element("Lagrange", domain.basix_cell(), 1)
+TH = basix.ufl.mixed_element([P2, P1])
 W = fem.functionspace(domain, TH)
 
 # BCs: set velocity on boundaries (adjust for your problem)
@@ -93,13 +162,20 @@ p_h = wh.sub(1).collapse()
 u_h.name = "velocity"
 p_h.name = "pressure"
 
-from dolfinx.io import XDMFFile
-with XDMFFile(domain.comm, "velocity.xdmf", "w") as xdmf:
-    xdmf.write_mesh(domain)
-    xdmf.write_function(u_h)
-with XDMFFile(domain.comm, "pressure.xdmf", "w") as xdmf:
-    xdmf.write_mesh(domain)
-    xdmf.write_function(p_h)
+# IMPORTANT: in dolfinx 0.10 XDMFFile.write_function REQUIRES
+# the output Function's element degree to match the mesh
+# degree (which is 1 for the default triangle mesh). Writing
+# a P2 velocity directly raises:
+#   RuntimeError: Degree of output Function must be same as
+#   mesh degree. Maybe the Function needs to be interpolated?
+# VTXWriter (ADIOS2 backend) supports arbitrary-degree
+# Functions natively. Use it for the Taylor-Hood mixed
+# solution.
+from dolfinx.io import VTXWriter
+with VTXWriter(domain.comm, "velocity.bp", [u_h]) as vtx:
+    vtx.write(0.0)
+with VTXWriter(domain.comm, "pressure.bp", [p_h]) as vtx:
+    vtx.write(0.0)
 
 print(f"Stokes: DOFs={{W.dofmap.index_map.size_global}}")
 print("Stokes solve complete.")

@@ -249,9 +249,24 @@ def discover_backends() -> list[ProbeResult]:
             "~/4c/build/4C",
             "/opt/4c/build/4C",
             "/opt/4C/build/4C",
+            # ── Non-standard source-tree builds (verified
+            #    empirically 2026-06-01 on the development
+            #    machine — keep these last so canonical
+            #    locations win). ──
+            "~/Schreibtisch/4C-src/4C/build/4C",
+            "~/4C-src/4C/build/4C",
         ],
     ))
-    results.append(_probe_binary(
+    # deal.II is often installed via conda-forge (env layout
+    # ~/miniconda3/envs/<env>/include/deal.II/), but the
+    # _probe_binary helper only walks hardcoded paths. Probe
+    # conda envs directly here so the rediscover_backends
+    # surface stays in sync with the dealii backend's own
+    # check_availability (which already finds conda envs).
+    # Audit 2026-06-01: discover('list') showed dealii
+    # available while rediscover_backends listed it as
+    # 'Not found' — the two LLM-facing tools disagreed.
+    dealii_result = _probe_binary(
         "dealii", "dealii",
         search_patterns=[
             "/usr/share/deal.II",
@@ -259,11 +274,33 @@ def discover_backends() -> list[ProbeResult]:
             "~/dealii/build",
             "~/deal.II/build",
         ],
-    ))
+    )
+    if not dealii_result.found:
+        # Defer to the dealii backend's own resolver — it is the
+        # single source of truth and, since 2026-06-12, picks the
+        # HIGHEST-version env when several conda envs contain
+        # deal.II. The inline scan this replaces returned the first
+        # env in directory order, so a stale 9.1.1 env could shadow
+        # a newer 9.3.2 one and the saved discovered_config.json
+        # then pinned every compile to the old headers.
+        try:
+            from backends.dealii.backend import _find_dealii
+            root = _find_dealii()
+            if root is not None:
+                dealii_result = ProbeResult(
+                    backend="dealii", found=True,
+                    confidence="definite",
+                    location=str(root),
+                    details={"source": f"resolver:{root.name}"})
+        except ImportError:
+            pass
+    results.append(dealii_result)
 
     # Check for source roots (developer mode)
     source_roots = {
-        "fourc": ("FOURC_ROOT", ["~/4C", "/opt/4C"]),
+        "fourc": ("FOURC_ROOT", ["~/4C", "/opt/4C",
+                                 "~/Schreibtisch/4C-src/4C",
+                                 "~/4C-src/4C"]),
         "fenics": ("FENICS_ROOT", ["~/dolfinx", "~/fenics"]),
         "dealii": ("DEALII_ROOT", ["~/dealii", "/opt/dealii"]),
         "ngsolve": ("NGSOLVE_ROOT", ["~/ngsolve"]),

@@ -219,7 +219,7 @@ class FSIGenerator(BaseGenerator):
             },
             "valid_2d_elements": {
                 "FLUID": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
-                "WALL (structure)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
+                "SOLID (structure)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
                 "notes": (
                     "QUAD4 is most commonly used and best validated for FSI.  "
                     "TRI3 works but is less accurate for pressure.  "
@@ -388,12 +388,11 @@ class FSIGenerator(BaseGenerator):
               FILE: "fsi_2d.e"
               ELEMENT_BLOCKS:
                 - ID: 1
-                  WALL:
+                  SOLID:
                     QUAD4:
                       MAT: 2
                       KINEM: nonlinear
-                      EAS: none
-                      THICK: <wall_thickness>
+                      THICKNESS: <wall_thickness>
                       STRESS_STRAIN: plane_strain
                       GP: [2, 2]
 

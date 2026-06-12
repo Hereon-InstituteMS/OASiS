@@ -23,7 +23,9 @@ def _dg_transport_2d(params: dict) -> str:
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/lac/dynamic_sparsity_pattern.h>
 #include <deal.II/lac/solver_richardson.h>
+#include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/precondition.h>
+#include <deal.II/lac/precondition_block.h>
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_refinement.h>
@@ -40,6 +42,20 @@ def _dg_transport_2d(params: dict) -> str:
 #include <iostream>
 
 using namespace dealii;
+
+// deal.II 9.4 renamed the FEInterfaceValues shape accessors:
+//   9.3.x:  fe_iv.jump(i, q)               fe_iv.average(i, q)
+//   9.4+:   fe_iv.jump_in_shape_values(i,q) fe_iv.average_of_shape_values(i,q)
+// Map the new names onto the old ones on 9.3 so the same template
+// compiles on both lines (conda-forge currently ships 9.3.2).
+#if !DEAL_II_VERSION_GTE(9, 4, 0)
+#  define jump_in_shape_values jump
+#  define average_of_shape_values average
+// NOTE: do NOT blanket-#define normal_vector -> normal here:
+// FEFaceValues::normal_vector exists on 9.3 already; only
+// FEInterfaceValues lacks it. The interface call site below uses
+// an inline version guard instead.
+#endif
 
 // Advection velocity field — set for your problem
 template <int dim>
@@ -228,8 +244,18 @@ int main()
 
     for (unsigned int q = 0; q < fe_iv.n_quadrature_points; ++q)
       {{
-        const auto   beta_q    = beta<dim>(fe_iv.quadrature_point(q));
+        // get_quadrature_points()[q], not quadrature_point(q): the
+        // per-point accessor on FEInterfaceValues only exists since
+        // deal.II 9.4; the vector accessor is available on 9.3 too.
+        const auto   beta_q    = beta<dim>(fe_iv.get_quadrature_points()[q]);
+        // FEInterfaceValues gained normal_vector(q) only in 9.4;
+        // 9.3 calls it normal(q). (FEFaceValues::normal_vector
+        // exists on both, so no blanket rename is possible.)
+#if DEAL_II_VERSION_GTE(9, 4, 0)
         const double beta_dot_n = beta_q * fe_iv.normal_vector(q);
+#else
+        const double beta_dot_n = beta_q * fe_iv.normal(q);
+#endif
 
         for (unsigned int i = 0; i < n_interface_dofs; ++i)
           for (unsigned int j = 0; j < n_interface_dofs; ++j)
@@ -284,9 +310,15 @@ int main()
                          boundary_worker,
                          face_worker);
 
-  // Solve
-  SolverControl            solver_control(1000, 1e-12);
-  SolverRichardson<Vector<double>> solver(solver_control);
+  // Solve with GMRES: the DG advection matrix is non-symmetric, and
+  // plain Richardson iteration with BlockSSOR was observed to throw
+  // SolverControl::NoConvergence on it (probe 2026-06-12) — its
+  // convergence requires the preconditioned spectrum inside the unit
+  // disk, which the upwind flux does not guarantee. GMRES with the
+  // same block preconditioner is the robust choice. Tolerance is
+  // RELATIVE to the rhs norm (absolute 1e-12 is unreachable noise).
+  SolverControl            solver_control(2000, 1e-10 * system_rhs.l2_norm());
+  SolverGMRES<Vector<double>> solver(solver_control);
   PreconditionBlockSSOR<SparseMatrix<double>> preconditioner;
   preconditioner.initialize(system_matrix, fe.n_dofs_per_cell());
   solver.solve(system_matrix, solution, system_rhs, preconditioner);
@@ -323,12 +355,61 @@ KNOWLEDGE = {
         "central": "Average flux (not stable for advection-dominated)",
     },
     "pitfalls": [
-        "DG requires flux sparsity pattern: DoFTools::make_flux_sparsity_pattern",
-        "FEInterfaceValues needed for face integrals (jump/average operators)",
-        "MeshWorker::mesh_loop simplifies cell/face/boundary assembly",
-        "Block SSOR preconditioner: PreconditionBlockSSOR with block_size = dofs_per_cell",
-        "For higher order DG: use FE_DGQHermite for better matrix-free performance",
-        "No continuity constraints needed (no hanging node constraints for DG)",
-        "Inflow BCs: weakly enforced via numerical flux on boundary faces",
+        "[Syntax] DG requires flux sparsity pattern: "
+        "DoFTools::make_flux_sparsity_pattern. The standard "
+        "make_sparsity_pattern misses the off-cell face-coupling "
+        "entries. Signal: assembly raises ExcMessage('matrix entry "
+        "at i,j does not exist in sparsity pattern') when the "
+        "FEInterfaceValues face term writes into the off-cell "
+        "block; or, if the assembly succeeds via ExcInvalidIterator, "
+        "DataOut shows the DG solution with continuous-Galerkin-"
+        "like behaviour at faces because face coupling was dropped.",
+        "[Syntax] FEInterfaceValues needed for face integrals "
+        "(jump/average operators on cell interfaces). Using "
+        "FEValues alone produces only cell-interior contributions. "
+        "Signal: SolverGMRES converges but DataOut shows a smooth "
+        "(non-DG) solution; jump-across-face values from "
+        "VectorTools::integrate_difference vs reference are "
+        "1e-8 (effectively zero) where they should be O(1) for "
+        "upwind DG. (Note: the real dealii function is "
+        "integrate_difference, NOT interpolate_difference; "
+        "the latter does not exist in numerics/vector_tools.h.)",
+        "[API] MeshWorker::mesh_loop simplifies cell / face / "
+        "boundary assembly — without it, the user re-implements "
+        "the dispatch logic and typically forgets the periodic-"
+        "face case. Signal: assembly compiles and runs but the "
+        "global system is non-symmetric AND inconsistent on "
+        "periodic boundaries (if any); DataOut shows the solution "
+        "with kinks at periodic-face nodes.",
+        "[Numerical] PreconditionBlockSSOR with block_size = "
+        "dofs_per_cell is the right DG preconditioner — point "
+        "Jacobi or scalar SSOR ignore the per-cell block "
+        "structure of the DG mass matrix. Signal: SolverGMRES "
+        "with PreconditionJacobi reports SolverControl::"
+        "last_step() growing linearly with n_cells; switching "
+        "to PreconditionBlockSSOR drops iteration count by 10x.",
+        "[Numerical] For higher-order DG: FE_DGQHermite gives "
+        "better matrix-free performance than FE_DGQ because the "
+        "Hermite-like basis preserves face-value continuity, "
+        "reducing the cross-face stencil weight. Signal: "
+        "MatrixFree::cell_loop wall-time per iteration with "
+        "FE_DGQ(6) is 2-3x larger than with FE_DGQHermite(6) at "
+        "the same n_dofs.",
+        "[Physics] No continuity constraints needed (DG has no "
+        "hanging-node constraints), but you DO need to track "
+        "non-conforming face DoFs explicitly when refining. "
+        "Signal: AffineConstraints::distribute on a DG solution "
+        "is a no-op (constraints.size() == 0); attempting to "
+        "apply hanging-node constraints raises ExcMessage('DG "
+        "discretisation has no hanging-node constraints').",
+        "[Physics] Inflow BCs: weakly enforced via numerical "
+        "flux on boundary faces (NOT via AffineConstraints — DG "
+        "has none). Setting Dirichlet values strongly is a "
+        "common bug for users coming from CG. Signal: "
+        "VectorTools::interpolate_boundary_values on a DG FE "
+        "raises ExcMessage('strong boundary conditions not "
+        "supported for DG'); or, if silently ignored, DataOut "
+        "shows the prescribed Dirichlet value NOT appearing at "
+        "the inflow boundary.",
     ],
 }

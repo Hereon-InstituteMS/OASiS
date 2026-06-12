@@ -202,23 +202,94 @@ class KratosBackend(SolverBackend):
                               ["VMS2D3N"], ["2d"]),
             PhysicsCapability("optimization", "General optimization: gradient-based, adjoint, multi-objective", [2, 3],
                               ["Generic"], ["2d"]),
+            # ── 2026-06-01 (task #70): _auxiliary_overview in
+            #    src/backends/kratos/generators/auxiliary_applications.py
+            #    holds 6 substantive integration / API / numerical
+            #    pitfalls about Kratos infrastructure apps
+            #    (TrilinosApplication PyPI gap, MappingApplication
+            #    FSI requirement, MapperFactory deprecation, DEM
+            #    3D-only, contact apps PyPI absence). The leading
+            #    underscore in the key historically kept this out
+            #    of supported_physics; expose it now as
+            #    'auxiliary_overview' so users browsing
+            #    discover(physics, kratos) see the meta-catalog.
+            PhysicsCapability(
+                "auxiliary_overview",
+                "[Reference] Kratos auxiliary applications "
+                "(TrilinosApplication, MetisApplication, "
+                "MappingApplication, MeshMovingApplication, "
+                "HDF5Application, ...) — infrastructure that "
+                "other Kratos analyses depend on. Catalog "
+                "contains PyPI-publication status, deprecation "
+                "notes, and FSI hidden-dependency warnings. "
+                "Not a PDE physics — this is a meta-reference "
+                "entry; the underlying KNOWLEDGE key is "
+                "'_auxiliary_overview' (with the leading "
+                "underscore preserved for backward "
+                "compatibility).",
+                [2, 3], ["N/A — meta-reference"], ["N/A"]),
         ]
 
     def get_knowledge(self, physics: str) -> dict:
-        # Try deep knowledge first
-        try:
-            import sys
-            data_dir = str(Path(__file__).resolve().parents[3] / "data")
-            if data_dir not in sys.path:
-                sys.path.insert(0, data_dir)
-            from kratos_knowledge import KRATOS_KNOWLEDGE as deep_knowledge
-            if physics in deep_knowledge:
-                return deep_knowledge[physics]
-        except ImportError:
-            pass
+        # Alias: PhysicsCapability surfaces 'auxiliary_overview'
+        # (no leading underscore) but the on-disk KNOWLEDGE key
+        # is '_auxiliary_overview'. Map back here so the public
+        # name resolves.
+        if physics == "auxiliary_overview":
+            physics = "_auxiliary_overview"
+        # Source-of-truth (audit 2026-06-02):
+        # The kratos catalog has exactly ONE per-physics
+        # source: backends.kratos.generators.KNOWLEDGE. A
+        # previous version of this method tried
+        # `from kratos_knowledge import KRATOS_KNOWLEDGE` —
+        # but data/kratos_knowledge.py exports per-application
+        # constants (KRATOS_APPLICATIONS, STRUCTURAL_MECHANICS,
+        # FLUID_DYNAMICS, FSI, ...) and NOT a unified
+        # `KRATOS_KNOWLEDGE` dict, so the import always raised
+        # ImportError and the lookup was silent dead code.
+        # Removed in 2026-06-02 audit; if cross-application
+        # catalog access is needed in future, plumb it through
+        # explicitly (e.g. a knowledge('kratos_application',
+        # 'StructuralMechanicsApplication') surface) rather
+        # than re-introducing a phantom flat-dict import.
         return KNOWLEDGE.get(physics, {})
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
+        # Meta-reference physics: catalog declares
+        # 'auxiliary_overview' so it appears in discover() and
+        # knowledge() surfaces, but it has no PDE template —
+        # it's a documentation entry for Kratos infrastructure
+        # apps (TrilinosApplication, MetisApplication, etc.).
+        # Return a commentary script that points to the
+        # underlying KNOWLEDGE key. Without this early-return,
+        # calling generate_input('auxiliary_overview', 'N/A',
+        # {}) would raise ValueError.
+        if physics == "auxiliary_overview" or variant == "N/A":
+            return (
+                '"""Kratos auxiliary_overview — meta-reference"""\n'
+                '# This is NOT a runnable Kratos analysis script.\n'
+                '# The catalog advertises auxiliary_overview so '
+                'it appears in\n'
+                '# discover() and knowledge() results — it '
+                'documents Kratos\n'
+                '# infrastructure applications (TrilinosApplication,\n'
+                '# MetisApplication, MappingApplication, '
+                'MeshMovingApplication,\n'
+                '# HDF5Application, ...) and their hidden FSI '
+                'dependencies.\n'
+                '#\n'
+                '# Use knowledge(kratos, auxiliary_overview) for the\n'
+                '# full reference. For a runnable Kratos analysis '
+                'pick a\n'
+                '# concrete physics: poisson, linear_elasticity, '
+                'heat, fluid,\n'
+                '# fsi, contact, mpm, dem, geomechanics, '
+                'cosimulation, ...\n'
+                'import KratosMultiphysics  # placeholder — see '
+                'comment above\n'
+                'print("auxiliary_overview is a meta-reference; '
+                'see knowledge() output")\n'
+            )
         key = f"{physics}_{variant}"
         gen = GENERATORS.get(key)
         if not gen:

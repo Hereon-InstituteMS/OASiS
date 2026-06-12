@@ -69,4 +69,22 @@ KNOWLEDGE["_general"] = {
         "iterative": "AMGCL (built-in, configurable smoother/krylov/coarsening)",
         "trilinos": "AztecOO, Amesos, ML, MueLu (MPI parallel)",
     },
+    "application_loader_pattern": {
+        "description": (
+            "Every Kratos application X ships a Python loader stub at "
+            "applications/X/X.py that follows a 5-line uniform pattern: "
+            "(1) from KratosMultiphysics import _ImportApplication, "
+            "(2) imports its dependency applications (e.g. CableNet imports "
+            "StructuralMechanics), (3) from KratosX import * (the C++ "
+            "binding wheel), (4) application = KratosX(), "
+            "(5) _ImportApplication(application, 'KratosX'). Users "
+            "trigger this by `import KratosMultiphysics.X` — the loader "
+            "loads the dependency apps FIRST. Signal: importing an app "
+            "whose dependency wasn't built (minimal/custom Kratos build) "
+            "fails opaquely on the inner `import "
+            "KratosMultiphysics.<dep>` line, not on the user's own "
+            "import line. File-walk audit 2026-06-02 catalogued 42 apps "
+            "with this pattern."
+        ),
+    },
 }

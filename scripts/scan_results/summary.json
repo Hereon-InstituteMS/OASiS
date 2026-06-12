@@ -1,47 +1,23 @@
 {
-  "fenics": {
-    "version": "0.10.0",
+  "dealii": {
+    "version": "9.1.1",
     "n_applications": 0,
-    "n_elements": 0,
+    "n_elements": 39,
+    "n_element_families": 0,
     "n_conditions": 0,
     "n_constitutive_laws": 0,
     "n_variables": 0,
-    "notes": []
-  },
-  "fourc": {
-    "version": "",
-    "n_applications": 0,
-    "n_elements": 0,
-    "n_conditions": 281,
-    "n_constitutive_laws": 105,
-    "n_variables": 0,
+    "n_mesh_generators": 35,
+    "n_processes": 0,
+    "n_modelers": 0,
+    "other_counts": {
+      "solvers": 10,
+      "preconditioners": 15
+    },
     "notes": [
-      "source_root=~/Schreibtisch/4C-src/4C",
-      "materials_source=src/global_legacy_module/4C_global_legacy_module_validmaterials.cpp"
-    ]
-  },
-  "kratos": {
-    "version": "10.4.2--0-Release-x86_64",
-    "n_applications": 3,
-    "n_elements": 0,
-    "n_conditions": 0,
-    "n_constitutive_laws": 22,
-    "n_variables": 1527,
-    "notes": [
-      "Registry['Processes'] has 4 items (deep enumeration is a follow-up; the Python Registry binding does not expose child iteration)",
-      "Registry['Modelers'] has 4 items (deep enumeration is a follow-up; the Python Registry binding does not expose child iteration)",
-      "package_dir=<repo>/.venv/lib/python3.12/site-packages/KratosMultiphysics"
-    ]
-  },
-  "skfem": {
-    "version": "12.0.1",
-    "n_applications": 0,
-    "n_elements": 78,
-    "n_conditions": 0,
-    "n_constitutive_laws": 0,
-    "n_variables": 0,
-    "notes": [
-      "package_dir=<repo>/.venv/lib/python3.12/site-packages/skfem"
+      "constitutive_laws: deal.II ships no central material/law registry; user-written. Catalog diff should treat empty list as 'no information'.",
+      "tutorials: 97 step-* tutorials live in the upstream source tree, not in this conda install. Tutorial harvest pending.",
+      "install_root=~/miniconda3/envs/ofa-dealii"
     ]
   }
 }

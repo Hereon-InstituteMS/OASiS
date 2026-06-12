@@ -174,13 +174,90 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-29 (complex-valued Helmholtz with absorbing BCs)"],
     "function_space": "FESystem<dim>(FE_Q<dim>(1), 2) — real and imaginary parts as components",
     "solver": "GMRES + SSOR (indefinite system due to -k^2 mass term)",
+    "elements": {
+        "FESystem":
+            "Real+imag pair on a real-valued solver. "
+            "FESystem<dim>(FE_Q<dim>(degree), 2) is the canonical "
+            "complex-as-real-2-component formulation for scalar "
+            "acoustic Helmholtz.",
+        "FE_Q":
+            "Single-component formulation on a complex-valued "
+            "matrix (PETSc / Trilinos complex build). degree ≥ 2 "
+            "strongly recommended at high wavenumber k to "
+            "mitigate the pollution effect.",
+        "FE_Q_Hierarchical":
+            "Required for hp-adaptive refinement to counteract "
+            "the pollution effect at high k.",
+        "FE_Nedelec":
+            "H(curl) element for VECTOR Helmholtz (time-harmonic "
+            "Maxwell E-field). Do NOT pick for scalar acoustic "
+            "Helmholtz — that uses FE_Q.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Closed-cavity acoustics with sound-hard (Neumann) BCs.",
+        "hyper_ball": "Radial acoustic radiation; pair with absorbing BC on outer boundary.",
+        "hyper_shell": "Annular waveguide / acoustic resonator.",
+        "hyper_cube_with_cylindrical_hole": "Scattering off a cylinder; classic radiation test.",
+        "cheese": "Scattering by array of holes (sonic-crystal demos).",
+        "extrude_triangulation": "2D acoustic mesh → 3D waveguide; ≥ 8 slices per wavelength.",
+    },
+    "solvers": [
+        "SolverGMRES<>                — default for indefinite Helmholtz",
+        "SolverMinRes<>                — symmetric indefinite variant; only when the bilinear form stays symmetric",
+        "TrilinosWrappers::SolverDirect (UMFPACK / MUMPS) — ground truth at high k where iterative methods struggle",
+        "Complex shifted-Laplacian preconditioner — preconditions (K - k^2 M) with (K - (k^2 + i*shift) M); shift damps oscillations enough for multigrid",
+    ],
     "pitfalls": [
-        "System is INDEFINITE for k^2 > 0: cannot use CG, use GMRES or direct",
-        "Complex splitting: 2-component system (u_re, u_im), doubles DOF count",
-        "For absorbing BCs (radiation condition): add boundary integral -ik*u*v*dS",
-        "High frequency (large k): need ~10 DOFs per wavelength (rule of thumb: h < lambda/10)",
-        "Pollution effect: phase error grows with k*h, use higher order or hp-FEM",
-        "For PML (perfectly matched layer): modify coefficients in absorbing layer",
+        "[Numerical] System is INDEFINITE for k^2 > 0 — cannot use "
+        "SolverCG, use SolverGMRES / SolverMinRes / a direct solver. "
+        "Signal: SolverCG reports 'breakdown' immediately.",
+        "[Syntax] Complex splitting: 2-component FESystem<dim>(FE_Q, 2) "
+        "with (u_re, u_im) doubles the DOF count and requires the "
+        "bilinear form to assemble the 2x2 block carrying the "
+        "imaginary coupling. Forgetting the off-diagonal coupling "
+        "decouples real and imaginary parts and the absorbing BC "
+        "silently becomes a reflecting wall. Signal: "
+        "`solution.block(1).linfty_norm()` (the imaginary "
+        "component) is exactly 0 despite the source f being "
+        "complex; DataOut shows a real-valued standing-wave "
+        "pattern instead of a complex outgoing wave.",
+        "[Physics] For absorbing BCs (Sommerfeld radiation condition): "
+        "add boundary integral -i*k*u*v*dS on the outer boundary. "
+        "Missing the i (so adding -k*u*v*dS instead) gives a real "
+        "lossy boundary, not a radiating one. Signal: DataOut shows "
+        "wave amplitude DECAYING from the source toward the outer "
+        "boundary (drops to <0.1 of peak amplitude at the boundary) "
+        "instead of maintaining constant amplitude along a radial "
+        "ray; comparison against Hankel-function reference gives "
+        "L2-error of O(1).",
+        "[Numerical] High frequency (large k) — need ~10 DOFs per "
+        "wavelength minimum (h < lambda/10). For accurate amplitude "
+        "at k > 50 use 20 DOFs/wavelength OR higher polynomial order. "
+        "Signal: VectorTools::integrate_difference for the FE_Q "
+        "solution vs the analytic Hankel-function reference shows "
+        "amplitude error of factor 2-5x at the scattering centre; "
+        "refining h further (well below lambda/10) does NOT close "
+        "the gap (the resolution is fine; the polynomial order is "
+        "wrong for the wavenumber).",
+        "[Numerical] Pollution effect — phase error grows as "
+        "O(k^{p+1} h^{2p+1}) where p is the FE polynomial order. At "
+        "k > 100 even 10 DOFs/wavelength gives visibly wrong phase. "
+        "Mitigations: higher-order p, hp-FEM, or stabilised methods "
+        "(CIP, GLS). Signal: VectorTools::integrate_difference vs a "
+        "Hankel-function reference shows amplitude error stays at "
+        "10-20% but phase error grows like k^{p+1} h^{2p+1}; "
+        "DataOut node positions are correctly spaced (h < lambda/10) "
+        "but appear shifted by a constant fraction of a wavelength "
+        "relative to the analytic solution.",
+        "[Integration] PML (perfectly matched layer) modifies "
+        "coefficients in a thin shell around the domain to absorb "
+        "outgoing waves; the modification is COMPLEX-valued. A "
+        "real-coefficient 'PML' is not a PML. Signal: DataOut shows "
+        "the outgoing wave reflecting back into the interior — "
+        "standing-wave pattern visible with `solution.linfty_norm()` "
+        "rising periodically rather than monotonically decaying; "
+        "reflection coefficient measured at the PML interface "
+        "exceeds 1% (a real PML achieves <1e-4).",
     ],
     "materials": {
         "omega": {"range": [0.1, 1000.0], "unit": "rad/s (angular frequency)"},

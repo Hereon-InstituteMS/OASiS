@@ -52,8 +52,16 @@ int main() {{
   DoFHandler<dim> dof_handler(tria);
   dof_handler.distribute_dofs(fe);
 
+  // ZERO constraints for the NEWTON UPDATE (step-15 pattern): the
+  // initial guess already satisfies the inhomogeneous boundary
+  // values, so every Newton increment must vanish on the boundary.
+  // Using the inhomogeneous BC constraints here re-adds the boundary
+  // sine each step — the boundary value grows without bound, the
+  // surface gradients blow up, the Jacobian degenerates, and the
+  // inner CG throws NoConvergence (probe 2026-06-12).
   AffineConstraints<double> constraints;
-  VectorTools::interpolate_boundary_values(dof_handler, 0, BoundaryValues<dim>(), constraints);
+  VectorTools::interpolate_boundary_values(dof_handler, 0,
+    Functions::ZeroFunction<dim>(), constraints);
   constraints.close();
 
   DynamicSparsityPattern dsp(dof_handler.n_dofs());
@@ -73,7 +81,7 @@ int main() {{
   const unsigned int dpc = fe.n_dofs_per_cell();
 
   // Newton iterations
-  for (unsigned int newton_step = 0; newton_step < 20; ++newton_step) {{
+  for (unsigned int newton_step = 0; newton_step < 100; ++newton_step) {{
     system_matrix = 0;
     system_rhs = 0;
 
@@ -107,7 +115,12 @@ int main() {{
                                              system_matrix, system_rhs);
     }}
 
-    SolverControl sc(1000, 1e-12);
+    // Inner tolerance RELATIVE to the residual norm (the step-15
+    // pattern). An absolute 1e-12 tolerance threw
+    // SolverControl::NoConvergence on the first Newton steps, where
+    // the residual is O(1) and CG cannot reach 1e-12 absolute within
+    // the iteration cap (probe 2026-06-12).
+    SolverControl sc(2000, 1e-6 * system_rhs.l2_norm());
     SolverCG<Vector<double>> solver(sc);
     PreconditionSSOR<SparseMatrix<double>> preconditioner;
     preconditioner.initialize(system_matrix, 1.2);
@@ -115,10 +128,15 @@ int main() {{
     solver.solve(system_matrix, newton_update, system_rhs, preconditioner);
     constraints.distribute(newton_update);
 
-    solution += newton_update;
+    // Damped update with alpha = 0.1 — the step-15 value for this
+    // exact problem (same sine boundary values). alpha = 0.5 was
+    // observed to DIVERGE here: the residual rose 0.70 -> 0.96 over
+    // four steps before the Jacobian lost definiteness and the inner
+    // CG threw NoConvergence (probe 2026-06-12).
+    solution.add(0.1, newton_update);
     double residual = system_rhs.l2_norm();
     std::cout << "Newton step " << newton_step << ": residual = " << residual << std::endl;
-    if (residual < 1e-8) break;
+    if (residual < 1e-6) break;
   }}
 
   DataOut<dim> data_out;
@@ -141,11 +159,87 @@ KNOWLEDGE = {
                       "step-77 (SUNDIALS KINSOL)"],
     "function_space": "FE_Q<dim>(1) typically",
     "solver": "Newton-Raphson with line search. AD: Sacado/ADOL-C for tangent",
+    "elements": {
+        "FE_Q":
+            "degree=1 standard for minimal-surface-type scalar "
+            "nonlinear PDEs (step-15). Wrap in FESystem for "
+            "vector-valued nonlinear problems (minimal-surface-"
+            "vector, nonlinear elasticity, etc.).",
+        "FE_Q_Hierarchical":
+            "Required for hp-adaptive Newton continuation — "
+            "refine where residual is largest without losing "
+            "coarse-DoF Newton history.",
+        "FE_DGQ":
+            "DG variant for nonlinear advection (Burgers, "
+            "compressible Euler) where upwind flux is essential.",
+        "FESystem":
+            "Vector wrapper for vector-valued nonlinear "
+            "problems — composed with FE_Q for displacement / "
+            "velocity components.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Canonical domain for minimal-surface tests.",
+        "hyper_ball": "Radial nonlinear problems.",
+        "hyper_L": "Re-entrant corner; tests Newton robustness near singularities.",
+        "subdivided_hyper_rectangle": "For load-stepping with structured AMR.",
+        "cylinder": "Torsion / large-deformation cylinder benchmarks.",
+    },
+    "solvers": [
+        "Newton-Raphson with line search — outer loop; line-search backtracks until residual decreases (Armijo rule)",
+        "SUNDIALS::KINSOL (step-77) — production-grade Newton-Krylov solver; handles trust-region globalisation automatically",
+        "Continuation / load stepping — for problems where Newton's basin is small; sweep a parameter (load, viscosity) gradually",
+        "SparseDirectUMFPACK / MUMPS — robust linear sub-solver for Newton inner iteration",
+        "Picard iteration — fixed-point alternative; larger basin of convergence than Newton but only first-order convergent",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR             — when the tangent is SPD (smooth nonlinearities, small perturbations)",
+        "PreconditionAMG / BoomerAMG  — for large problems; rebuilt at each Newton iteration",
+        "PreconditionILU              — when the tangent becomes non-symmetric near a turning point",
+    ],
     "pitfalls": [
-        "Newton needs good initial guess (interpolate boundary values)",
-        "Line search prevents divergence: alpha * delta_u",
-        "AssembleLinearization must update with current solution",
-        "For AD: use Differentiation::AD::EnergyFunctional (step-72)",
-        "SUNDIALS KINSOL can replace hand-written Newton (step-77)",
+        "[Numerical] Newton needs a good initial guess. Cold-start "
+        "from zero usually diverges for any non-trivial "
+        "nonlinearity. Interpolate boundary values onto the "
+        "initial guess, or use the previous load step's solution "
+        "during continuation. Signal: SolverControl::last_step() "
+        "reports Newton iteration 1 with `residual.l2_norm()` "
+        "exceeding 1e3 (orders of magnitude above the 1e-6 "
+        "convergence tolerance); the residual at iteration 2 "
+        "is even larger — Newton diverges immediately rather "
+        "than stalling, ExcMessage('Newton step did not "
+        "converge').",
+        "[Numerical] Line search prevents divergence — backtrack "
+        "until the residual norm decreases. Full Newton step "
+        "(alpha=1) without line search overshoots in the early "
+        "iterations and diverges. Signal: SolverControl::last_step() "
+        "reports residual.l2_norm() oscillating between 1e-3 and "
+        "1e5 across consecutive Newton iterations without "
+        "converging; ExcMessage('Newton did not converge in N "
+        "iterations') eventually fires.",
+        "[Syntax] AssembleLinearisation MUST update with current "
+        "solution at every Newton iteration. Using a stale solution "
+        "(e.g. always the initial guess) makes Newton converge to "
+        "the WRONG linearised system — looks like convergence but "
+        "the solution is incorrect. Signal: SolverControl reports "
+        "Newton convergence (residual.l2_norm() < tol) in 3-5 "
+        "iterations on a problem that should take 10+; "
+        "VectorTools::integrate_difference vs an analytic "
+        "reference returns O(1) L2-error despite the reported "
+        "residual being machine-precision-small.",
+        "[API] For AD: use Differentiation::AD::EnergyFunctional "
+        "(step-72) for the energy-functional formulation, "
+        "Differentiation::AD::CellLevelBase for the residual-vector "
+        "formulation. Mixing them up produces a tangent with the "
+        "wrong sign on the off-diagonals. Signal: SolverGMRES "
+        "with the AD-built tangent diverges or stalls — "
+        "VectorTools::integrate_difference between AD and a "
+        "manually-derived reference tangent shows off-diagonals "
+        "with opposite sign; Newton converges to a saddle "
+        "point of the energy instead of the minimum.",
+        "[Integration] SUNDIALS KINSOL (step-77) requires deal.II "
+        "compiled with SUNDIALS support. Without it the link fails "
+        "with 'undefined reference to KINSOL::SUNDIALS::solve_with_"
+        "jacobian'. Signal: identical to the SLEPc/PETSc link "
+        "errors — same class of missing-third-party-dep failure.",
     ],
 }

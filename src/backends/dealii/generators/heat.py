@@ -363,10 +363,88 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(1)",
     "solver": "CG + SSOR for each time step. SUNDIALS for adaptive time stepping",
     "time_stepping": "Theta method (0=forward Euler, 0.5=Crank-Nicolson, 1=backward Euler)",
+    "elements": {
+        "FE_Q":
+            "Default for transient heat; degree=1 is the standard "
+            "choice and balances accuracy with mass-matrix cost.",
+        "FE_Q_Hierarchical":
+            "For p-adaptive refinement during transient runs with "
+            "smooth coefficient transitions.",
+        "FE_DGQ":
+            "DG variant; useful for sharp-front problems like "
+            "welding or phase-change where the solution gradient "
+            "is large across element interfaces.",
+        "FE_SimplexP":
+            "Use when the mesh comes from unstructured Gmsh / "
+            "Triangle / TetGen (deal.II ≥ 9.3).",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Default heat-equation test domain.",
+        "hyper_rectangle": "Thin plates / non-square aspect.",
+        "hyper_L": "L-shaped, tests AMR near re-entrant corner.",
+        "cylinder": "Heat-pipe / cylindrical-bar conduction.",
+        "hyper_shell": "Pipe-insulation, annular heat conduction.",
+        "plate_with_a_hole": "Local thermal-stress concentration via temperature gradient.",
+        "extrude_triangulation": "2D heat-eq mesh extruded into 3D layered slab.",
+    },
+    "solvers": [
+        "SolverCG<>                   — Heat-equation stiffness K and mass matrix M are SPD; CG works for all theta in (0,1]",
+        "SolverGMRES<>                — needed only when the time-step matrix becomes non-symmetric (rare; happens with full-coupled nonlinear source terms)",
+        "SUNDIALS::ARKode             — adaptive multi-step time integrator; step-86. Use when wall-time / step-count matters and dt is hard to estimate a priori",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR             — works on (M + dt*theta*K) at each step for moderate dt",
+        "PreconditionAMG / BoomerAMG  — needed for stiff systems (small dt with large K eigenvalues, or wide dynamic range in thermal diffusivity)",
+        "Use a SINGLE preconditioner factorisation across multiple time steps when dt and the mesh are fixed — re-building per step is the most common performance pitfall in transient heat code",
+    ],
     "pitfalls": [
-        "Mass matrix M + dt*theta*K system at each step",
-        "RHS: M*u_old - dt*(1-theta)*K*u_old + dt*theta*f_new + dt*(1-theta)*f_old",
-        "For AMR in time: interpolate solution to new mesh via SolutionTransfer",
-        "Non-zero initial conditions: interpolate or project",
+        "[Syntax] Time-step system is (M + dt*theta*K). Assemble M "
+        "and K once at startup, build the LHS each step. Re-assembling "
+        "M and K every time step is the most common transient-heat "
+        "performance bug. Signal: profiler / TimerOutput.print_summary() "
+        "shows 'assemble_system' dominating wall time at ~60-80% per "
+        "step, scaling as O(ndof^2) instead of the expected "
+        "O(ndof * log(ndof)) when AMG is used; SolverCG iteration "
+        "count is normal.",
+        "[Physics] RHS at each step is "
+        "M*u_old - dt*(1-theta)*K*u_old + dt*theta*f_new + "
+        "dt*(1-theta)*f_old. Forgetting the (1-theta) terms gives a "
+        "fully-implicit scheme regardless of the theta value; "
+        "Crank-Nicolson (theta=0.5) then degrades to backward Euler "
+        "and the time-discretisation error scales O(dt) not O(dt^2). "
+        "Signal: VectorTools::integrate_difference vs a "
+        "manufactured solution shows L2-error scaling as O(dt^1) "
+        "instead of O(dt^2) even though theta=0.5 was set; "
+        "log-log error-vs-dt slope is ~1.0, not ~2.0.",
+        "[API] For AMR in time: interpolate the solution to the new "
+        "mesh via SolutionTransfer between refine_grid() and "
+        "distribute_dofs(). Skipping SolutionTransfer gives a "
+        "zero solution on the new mesh and the next time step "
+        "evolves from zero — looks like a sudden cool-down. "
+        "Signal: `solution.l2_norm()` from DataOut drops to near "
+        "zero across the AMR-step boundary, then slowly recovers; "
+        "the discontinuity coincides exactly with the time-step "
+        "at which Triangulation::execute_coarsening_and_refinement() "
+        "was called.",
+        "[Numerical] Non-zero initial conditions must be set via "
+        "VectorTools::interpolate (for piecewise polynomial ICs) or "
+        "VectorTools::project (for general functions). Setting node "
+        "values directly bypasses the AffineConstraints and gives "
+        "an IC inconsistent with the boundary conditions. Signal: "
+        "DataOut shows a discontinuous jump of O(1) at Dirichlet-"
+        "boundary nodes between the t=0 output frame and the first "
+        "time-step frame; the discontinuity disappears on the "
+        "second step as the implicit solver smooths it out.",
+        "[Numerical] theta=0 (forward Euler) requires "
+        "dt < ~h^2 / (2*alpha) where alpha is the thermal "
+        "diffusivity — fine mesh + small alpha makes this dt tiny. "
+        "Use theta=0.5 (Crank-Nicolson, 2nd-order, unconditionally "
+        "stable) or theta=1 (backward Euler, 1st-order, "
+        "unconditionally stable) for any production run. "
+        "Signal: forward Euler with too-large dt — `solution."
+        "linfty_norm()` grows exponentially (doubles every 2-3 "
+        "steps) and overflows to NaN within ~20 steps; "
+        "VectorTools::integrate_difference vs analytic reference "
+        "exceeds 1e6 within the first few steps.",
     ],
 }

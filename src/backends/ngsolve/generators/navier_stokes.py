@@ -69,10 +69,53 @@ KNOWLEDGE = {
         "spaces": "VectorH1(order=2) * H1(order=1)",
         "solver": "IMEX: factor Stokes operator once, explicit convection each step",
         "pitfalls": [
-            "CFL condition for explicit convection: dt < h / max(velocity)",
-            "Convection term: Grad(velocity)*velocity for standard, or skew-symmetric form",
-            "Re > ~500 needs finer mesh or stabilization (SUPG)",
-            "Benchmark: Schafer-Turek DFG channel with cylinder (Re=20, 100)",
+            (
+                "[Numerical] CFL condition for explicit "
+                "convection: dt < h / max(velocity). Signal: "
+                "the VectorH1 GridFunction velocity field "
+                "reaches NaN within the first 10 steps when "
+                "violation_ratio dt*max|u|/h > ~0.5; per-step "
+                "max_u of the gfu diverges geometrically. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Convection term: Grad(velocity)*"
+                "velocity for standard, or skew-symmetric "
+                "form. Signal: in a closed periodic box the "
+                "non_conservative form of the BilinearForm "
+                "drifts the total kinetic_energy by ~1% over "
+                "1000 steps; the skew_symmetric variant of "
+                "the GridFunction velocity preserves it to "
+                "machine precision. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Re > ~500 needs finer mesh or "
+                "stabilization (SUPG). Signal: spurious "
+                "wiggles in the GridFunction velocity "
+                "upstream of obstacles; energy spectrum has "
+                "high-frequency content not present in a "
+                "reference DNS; on Schafer-Turek drag "
+                "coefficient computed via BilinearForm "
+                "boundary integrals differs > 10% from the "
+                "5.57 (Re=20) / 3.22 (Re=100) reference. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Validation] Benchmark: Schafer-Turek DFG "
+                "channel with cylinder at Re=20 (steady) and "
+                "Re=100 (periodic vortex shedding). Signal: a "
+                "Taylor-Hood VectorH1 + H1 implementation, "
+                "with the drag/lift integrals computed via "
+                "Integrate over the BoundaryFromVolumeCF / "
+                "BND patch on the cylinder, should produce "
+                "drag coefficient Cd around 5.57 and lift Cl "
+                "in [0.0104, 0.0110] (Schafer-Turek published "
+                "bounds); values outside this envelope "
+                "expose either pressure-pin / boundary-"
+                "condition errors or insufficient mesh "
+                "refinement around the cylinder. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 }

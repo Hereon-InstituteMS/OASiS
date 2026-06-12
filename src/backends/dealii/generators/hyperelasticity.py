@@ -334,34 +334,160 @@ KNOWLEDGE = {
         "J": "Volume ratio: J = det(F)",
         "E": "Green-Lagrange: E = 0.5*(C - I)",
     },
+    "elements": {
+        "FESystem":
+            "Vector wrapper for displacement-only formulations "
+            "(step-18, step-72): FESystem<dim>(FE_Q<dim>(degree), "
+            "dim). Or the three-field (u, p̃, J̃) composition per "
+            "step-44 for nearly-incompressible problems.",
+        "FE_Q":
+            "Displacement field; degree=2 typical to mitigate "
+            "volumetric locking at small compressibility. Pair "
+            "with FE_DGP(degree-1) + FE_DGP(degree-2) inside "
+            "FESystem for step-44 three-field hyperelasticity.",
+        "FE_Q_Bubbles":
+            "Improved volumetric behaviour over plain FE_Q "
+            "without going to the full step-44 three-field "
+            "formulation. Cheaper compromise.",
+        "FE_RannacherTurek":
+            "Locking-free P1-NC; cheap alternative when degree "
+            "≥ 2 FE_Q is too expensive but the user needs the "
+            "incompressible-limit response.",
+        "FE_Q_Hierarchical":
+            "For hp-adaptive refinement during load stepping — "
+            "refine in regions where Newton stalls without "
+            "throwing away the previous load step's coarse-DoF "
+            "solution.",
+        "FE_DGP":
+            "Pressure and dilation fields in the step-44 "
+            "three-field formulation. FE_DGP(degree-1) for the "
+            "pressure-like field, FE_DGP(degree-2) for the "
+            "Jacobian-like field.",
+    },
+    "mesh_generators": {
+        "subdivided_hyper_rectangle": "Anisotropic beams / slabs. colorize=true REQUIRED for per-face BC distinction (else all faces share boundary_id=0).",
+        "hyper_cube": "Cube-compression / tension test.",
+        "hyper_L": "Re-entrant corner amplifies stress concentration; tests element-inversion handling.",
+        "cylinder": "Bar-bending / torsion tests.",
+        "hyper_shell": "Pressure-vessel and balloon-inflation problems.",
+        "plate_with_a_hole": "Cook's-membrane-style stress concentration under large deformation.",
+    },
+    "solvers": [
+        "Newton-Raphson with line search — outer loop; line search MUST check det(F) > 0 to avoid element inversion",
+        "SparseDirectUMFPACK — preferred linear sub-solver for < 50k DoFs; more robust than iterative methods on the Newton tangent, which can become indefinite during line search",
+        "SolverCG<> with PreconditionSSOR — linear sub-solver beyond 50k DoFs; assumes the tangent stays SPD (true at small deformation, may break near the limit point)",
+        "SolverGMRES<>                — needed when the tangent has non-symmetric parts (e.g. follower-load tangent terms; geometric stiffness in updated Lagrangian)",
+        "Differentiation::AD::EnergyFunctional — automatic differentiation for tangent (step-72); eliminates the manual K_geo+K_mat split",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR for SPD tangents — works for small-deformation Neo-Hookean before geometric-stiffness dominates",
+        "PreconditionAMG / BoomerAMG for large problems; works on the displacement block of the three-field formulation",
+        "BlockPreconditioner — required for the three-field (u, p̃, J̃) saddle-point structure of step-44; analogous to the Stokes block preconditioner",
+    ],
     "pitfalls": [
-        "Must use load stepping for large deformations (Newton diverges otherwise)",
-        "MUST implement line search checking J=det(F) > 0 — without it, elements invert and the simulation crashes for any significant compression",
-        "Neo-Hookean with J: S = mu*(I - C^{-1}) + lambda*ln(J)*C^{-1}",
-        "Tangent has geometric + material parts: K = K_geo + K_mat",
-        "For nearly incompressible: use mixed formulation (step-44) or F-bar",
-        "Saint-Venant-Kirchhoff unstable in compression: use Neo-Hookean instead",
-        "Use roller BCs (constrain only normal component) instead of fully clamped for compression tests — clamped BCs create stress concentrations that worsen element inversion",
-        "AD (step-72) avoids manual tangent derivation: Differentiation::AD::EnergyFunctional",
-        "MappingQEulerian can visualize deformed configuration",
-        # GridGenerator boundary ID pitfall
-        "GridGenerator::subdivided_hyper_rectangle defaults ALL faces to boundary_id=0 "
-        "(colorize=false). Pass colorize=true to get distinct IDs (0-5 for 3D: "
-        "left=0, right=1, bottom=2, top=3, front=4, back=5). Without this, "
-        "Dirichlet BCs on boundary_id=0 clamp ALL faces.",
-        # Displacement-controlled loading
-        "For displacement-controlled nonlinear problems: use INCREMENTAL CONSTRAINTS. "
-        "Set inhomogeneous Dirichlet value for the FIRST Newton iteration of each "
-        "load step, then switch to homogeneous (zero increment) for subsequent "
-        "iterations. Do NOT set boundary DOFs directly in the solution vector — "
-        "this concentrates strain in boundary elements and Newton diverges.",
-        # FESystem gradient extraction
-        "For FESystem (vector-valued), use fe_values[FEValuesExtractors::Vector(0)]"
-        ".get_function_gradients() — NOT fe_values.get_function_gradients() which "
-        "is the scalar-FE signature and will not compile.",
-        # Solver choice
-        "For < 50k DOFs, use SparseDirectUMFPACK instead of CG+SSOR. "
-        "Direct solvers are more robust for nonlinear problems and avoid "
-        "iterative solver tuning issues.",
+        "[Numerical] Must use load stepping for large deformations — "
+        "cold-start Newton diverges. Signal: SolverControl reports "
+        "Newton residual.l2_norm() > 1e3 on iteration 1, growing "
+        "to NaN by iteration 3; "
+        "ExcMessage('Newton step did not converge').",
+        "[Physics] MUST implement line search checking J=det(F) > 0. "
+        "Without it, elements invert and the simulation crashes for "
+        "any significant compression. Signal: assembly raises "
+        "ExcMessage('det(F) <= 0 at quadrature point') or the "
+        "constitutive evaluator returns NaN — DataOut last-saved "
+        "frame shows mesh self-intersecting.",
+        "[Physics] Neo-Hookean with J: S = mu*(I - C^{-1}) + "
+        "lambda*ln(J)*C^{-1}. The ln(J) form is the standard "
+        "compressible Neo-Hookean stress; using the squared-J "
+        "variant gives the wrong incompressibility limit. Signal: "
+        "VectorTools::integrate_difference vs reference shows "
+        "stress error that grows with deformation magnitude "
+        "(O(1) at large strain) instead of the expected O(h^p).",
+        "[Syntax] Tangent has geometric + material parts: "
+        "K = K_geo + K_mat. Assembling only K_mat gives a "
+        "non-symmetric system; assembling K_mat + K_geo restores "
+        "symmetry. Signal: SolverCG reports 'breakdown' on the "
+        "geometrically-nonlinear tangent because K_mat alone is "
+        "not symmetric — switching to SolverGMRES still converges "
+        "but at 2x the iteration count.",
+        "[Numerical] For nearly incompressible: use mixed "
+        "formulation (step-44) or F-bar. Single-field FE_Q(1) "
+        "displacement locks at the volumetric limit. Signal: tip "
+        "deflection on a Cook membrane differs from reference by "
+        "30-50% as nu approaches 0.5; switching to the three-field "
+        "FESystem(FE_Q(2), dim, FE_DGP(1), 1, FE_DGP(0), 1) "
+        "recovers convergence to within 5%.",
+        "[Physics] Saint-Venant-Kirchhoff unstable in compression. "
+        "Use Neo-Hookean instead for any compression > ~30%. "
+        "Signal: SolverControl reports Newton breakdown at the "
+        "second or third load step under compression, with "
+        "residual.l2_norm() oscillating wildly between iterations.",
+        "[Integration] Use roller BCs (constrain only normal "
+        "component via AffineConstraints) instead of fully clamped "
+        "for compression tests — clamped BCs create stress "
+        "concentrations that worsen element inversion. Signal: "
+        "DataOut shows stress concentrations of >10x material "
+        "yield at clamped corners; the affected cells fail the "
+        "det(F)>0 check first as load grows.",
+        "[API] AD (step-72) avoids manual tangent derivation: "
+        "Differentiation::AD::EnergyFunctional. Manual differentiation "
+        "is the most common source of K_geo / K_mat sign errors. "
+        "Signal: Newton converges with manual tangent but to a "
+        "WRONG solution (off by 2x from AD-tangent reference); "
+        "VectorTools::integrate_difference between manual and AD "
+        "solutions is O(1).",
+        "[API] MappingQEulerian visualises deformed configuration. "
+        "Without it, DataOut shows the reference configuration "
+        "with the displacement field overlaid as colour — "
+        "misleading for large-deformation problems. Signal: "
+        "DataOut.build_patches() called without "
+        "DataOut::set_mapping(MappingQEulerian) writes a .vtu "
+        "whose geometry is the undeformed reference triangulation; "
+        "the displacement field appears only as colour overlay, "
+        "not as actual node motion, even when "
+        "solution.linfty_norm() is comparable to the domain size.",
+        "[Syntax] GridGenerator::subdivided_hyper_rectangle "
+        "defaults ALL faces to boundary_id=0 (colorize=false). "
+        "Pass colorize=true to get distinct IDs (0-5 in 3D: "
+        "left=0, right=1, bottom=2, top=3, front=4, back=5). "
+        "Without this, AffineConstraints applied to boundary_id=0 "
+        "clamps ALL faces. Signal: GridTools::get_boundary_ids(tria) "
+        "returns `{0}` (single id) instead of the expected set; "
+        "DataOut shows displacement field zero everywhere because "
+        "the entire boundary is over-constrained.",
+        "[Numerical] For displacement-controlled nonlinear "
+        "problems: use INCREMENTAL CONSTRAINTS. Set inhomogeneous "
+        "Dirichlet value for the FIRST Newton iteration of each "
+        "load step, then switch to homogeneous (zero increment) "
+        "for subsequent iterations. Do NOT set boundary DOFs "
+        "directly in the solution vector — this concentrates "
+        "strain in boundary elements and Newton diverges. Signal: "
+        "SolverControl reports residual.l2_norm() dropping "
+        "normally on iteration 1 of each load step then jumping "
+        "back up by 10x on iteration 2 — caused by direct "
+        "DOF-setting in the BlockVector bypassing the "
+        "AffineConstraints object on subsequent iterations.",
+        "[Syntax] For FESystem (vector-valued), use "
+        "fe_values[FEValuesExtractors::Vector(0)]"
+        ".get_function_gradients() to get the full Tensor<2, dim> "
+        "displacement-gradient field. Calling "
+        "fe_values.get_function_gradients() directly on a vector "
+        "FESystem (without the [Vector(0)] extractor) COMPILES "
+        "(deal.II resolves it via the underlying FEValuesBase "
+        "signature) but silently extracts only the FIRST "
+        "component's gradient — the other (dim-1) components are "
+        "dropped. Signal: VectorTools::integrate_difference of "
+        "DataOut output for a 2D vector elasticity problem shows "
+        "the off-diagonal strain components (eps_xy, eps_yx) "
+        "stuck at zero everywhere; cross-coupling Poisson "
+        "contraction never appears.",
+        "[Numerical] For < 50k DoFs, use SparseDirectUMFPACK "
+        "instead of SolverCG + PreconditionSSOR. Direct solvers "
+        "are more robust for nonlinear problems and avoid "
+        "iterative solver tuning issues at small problem size. "
+        "Signal: SolverCG reports 'breakdown' on the indefinite "
+        "tangent during line search; switching to UMFPACK gives "
+        "machine-precision residual and Newton converges in 3-5 "
+        "outer iterations.",
     ],
 }

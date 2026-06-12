@@ -1,10 +1,39 @@
 """
-MCP tools for deep, comprehensive domain knowledge across ALL backends.
+MCP-side deep domain knowledge for SELECTED backends.
 
-This is the brain of the agent — it knows weak forms, material libraries,
-solver configurations, pitfalls, element catalogs, and best practices for
-every supported FEM code. This is what makes OASiS genuinely useful
-compared to a generic LLM.
+This file is NOT a complete brain — it carries prose-style knowledge for
+only **4 of 8** registered backends, in two roles:
+
+  1. **Canonical** for FEniCSx (`_FENICS_KNOWLEDGE`, 31 keys, ~91 KB):
+     fenics/backend.py reads this FIRST and falls back to its own
+     generator KNOWLEDGE only when a key is missing. Touch with care
+     — adding/renaming keys here can shadow generator pitfalls.
+
+  2. **Last-fallback supplement** for deal.II (`_DEALII_KNOWLEDGE`,
+     14 keys, ~20 KB): dealii/backend.py reads
+     data/dealii_knowledge.py first, then generator KNOWLEDGE, then
+     this dict. Useful only for keys NOT covered upstream.
+
+  3. **Workflows.py merge source** for 4C/fourc (`_4C_KNOWLEDGE`,
+     9 keys, ~11 KB): the `module_knowledge` workflow overlays
+     backend pitfalls onto this dict for prose like description /
+     weak_form / problem_type / materials.
+
+Cross-solver hints (`_CROSS_SOLVER_KNOWLEDGE`) supply small
+benchmark-verification notes and live independently of any backend.
+
+**NOT covered here** (their canonical knowledge lives elsewhere):
+skfem, NGSolve, Kratos, DUNE, FEBio — these backends carry their
+catalogs in `src/backends/<name>/generators/` plus
+`data/<name>_knowledge.py` (where applicable). Do not add new
+entries for those backends here; extend the per-backend module
+instead.
+
+(`_FEBIO_KNOWLEDGE` was removed 2026-06-02: it had only 4 keys
+while the febio backend's own generators carry 16 physics with
+matching `description` fields, and the workflows.py merge shape
+allowed deep_knowledge to *shadow* the more-comprehensive backend
+catalog. The backend is now the single source of truth for febio.)
 """
 
 import json
@@ -504,8 +533,20 @@ _FENICS_KNOWLEDGE = {
         "linear_solvers": {
             "high_level_api": {
                 "LinearProblem": {
-                    "api": "dolfinx.fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={...})",
-                    "usage": "Simplest interface: problem.solve() returns Function",
+                    "api": (
+                        "dolfinx.fem.petsc.LinearProblem(a, L, "
+                        "petsc_options_prefix='myprob_', "
+                        "bcs=bcs, petsc_options={...})"
+                    ),
+                    "usage": (
+                        "Simplest interface: problem.solve() "
+                        "returns Function. ALL non-form args are "
+                        "keyword-only in dolfinx 0.10; "
+                        "petsc_options_prefix is REQUIRED — "
+                        "omitting it raises TypeError "
+                        "'missing 1 required keyword-only "
+                        "argument: petsc_options_prefix'."
+                    ),
                     "0_10_note": "Now supports blocked problems via kind='mpi' or kind='nest'",
                 },
             },
@@ -539,7 +580,23 @@ _FENICS_KNOWLEDGE = {
         "nonlinear_solvers": {
             "SNES_via_NonlinearProblem": {
                 "api_0_9": "problem = NonlinearProblem(F, u, bcs); solver = NewtonSolver(MPI.COMM_WORLD, problem)",
-                "api_0_10": "problem = dolfinx.fem.petsc.NonlinearProblem(F, u, bcs, petsc_options={...}); problem.solve()",
+                "api_0_10": (
+                    "problem = dolfinx.fem.petsc.NonlinearProblem("
+                    "F, u, bcs=bcs, "
+                    "petsc_options_prefix='myprob_', "
+                    "petsc_options={...}); problem.solve()"
+                ),
+                "0_10_signature_pitfalls": (
+                    "ALL kwargs are keyword-only (after the * in "
+                    "the signature). NonlinearProblem(F, u, bcs) "
+                    "as positional fails with TypeError 'takes 3 "
+                    "positional arguments but 4 were given'. "
+                    "Omitting petsc_options_prefix fails with "
+                    "TypeError 'missing 1 required keyword-only "
+                    "argument: petsc_options_prefix'. (Empirically "
+                    "verified 2026-06-01 — Tier-2 fixture "
+                    "nonlinear_problem_signature_kwargs.)"
+                ),
                 "note": "dolfinx.nls.petsc.NewtonSolver deprecated in 0.10 in favor of NonlinearProblem wrapping SNES directly",
             },
             "snes_types": {
@@ -790,7 +847,7 @@ _FENICS_KNOWLEDGE = {
             "space": "V = fem.functionspace(domain, ('Lagrange', 1))",
             "bc": "fdim = domain.topology.dim - 1; boundary_facets = mesh.locate_entities_boundary(domain, fdim, lambda x: np.full(x.shape[1], True)); bc = fem.dirichletbc(0.0, fem.locate_dofs_topological(V, fdim, boundary_facets), V)",
             "forms": "u, v = ufl.TrialFunction(V), ufl.TestFunction(V); a = inner(grad(u), grad(v)) * ufl.dx; L = f * v * ufl.dx",
-            "solve": "problem = LinearProblem(a, L, bcs=[bc], petsc_options={'ksp_type': 'cg', 'pc_type': 'hypre'}); uh = problem.solve()",
+            "solve": "problem = LinearProblem(a, L, bcs=[bc], petsc_options_prefix='solve', petsc_options={'ksp_type': 'cg', 'pc_type': 'hypre'}); uh = problem.solve()",
         },
         "solver": {"direct": "ksp_type: preonly, pc_type: lu, pc_factor_mat_solver_type: mumps", "iterative": "ksp_type: cg, pc_type: hypre (BoomerAMG)"},
         "mixed_formulation": {
@@ -805,11 +862,11 @@ _FENICS_KNOWLEDGE = {
             "notes": "Computes matrix-vector product on-the-fly. Diagonal assembly available for Jacobi preconditioning.",
         },
         "pitfalls": [
-            "Ensure boundary facets created: mesh.topology.create_connectivity(fdim, tdim)",
-            "Use default_scalar_type for constants to match PETSc build (float64 vs complex128)",
-            "VTXWriter only works with Lagrange elements — not mixed/DG for visualization",
-            "Pure Neumann problem: solution only up to constant — need mean-value or pinning constraint",
-            "For non-unit kappa: define as fem.Constant or spatially varying fem.Function",
+            "[API] In recent dolfinx, mesh.topology.create_connectivity(fdim, tdim) is no longer a hard prerequisite for locate_entities_boundary / locate_dofs_topological — connectivity is built lazily on first need. Calling it explicitly is harmless and is the safer tutorial pattern, but its ABSENCE no longer triggers an exception in current dolfinx. Signal: in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns dof indices without that step. (Verified empirically 2026-06-01.)",
+            "[API] dolfinx.default_scalar_type for Constants and Function arrays so dtype matches the PETSc build (float64 if PETSc is real, complex128 if PETSc is complex). Signal: passing a Python float into a complex-PETSc Function raises TypeError in fem.form / fem.assemble_matrix; passing 0j into a real-PETSc Function raises ValueError 'cannot convert complex to float'.",
+            "[API] VTXWriter (ADIOS2 backend) supports only Lagrange / DG element families. Mixed / Nedelec / BDM Functions cannot be written. Signal: VTXWriter.write raises RuntimeError 'Cannot interpolate function to the VTX output basis' or 'ADIOS2 VTX only supports Lagrange elements'.",
+            "[Physics] Pure-Neumann Poisson admits the constant null space — the solution is determined only up to a constant. Either pin one DOF (DirichletBC on a single point) or add a Lagrange multiplier enforcing mean(u) = 0. Signal: LinearProblem.solve returns successfully (CG with pc_type='none' even converges without raising), but the resulting Function array has a HUGE additive offset accommodating the null space — np.array shows max ≈ min ≈ O(1e6) with tiny std (e.g. max=2.18e+06, std=112 on an 8x8 unit square with f=1). The 'KSP fails' alternative does NOT typically fire; you observe the bug as the un-pinned constant. (Verified empirically 2026-06-01.)",
+            "[Syntax] For non-unit kappa coefficients: define as fem.Constant for spatially uniform, or fem.Function (interpolated) for spatially varying. Plain Python floats inside ufl forms work for unit coefficients but lose unit metadata. Signal: ufl form runs but the assembled stiffness scale disagrees with the analytic kappa-scaled stiffness by exactly the kappa value (when float coefficient was forgotten).",
         ],
         "materials": {"kappa": {"range": [0.001, 1e6], "unit": "W/(m*K) or dimensionless"}},
         "reference_solutions": {"unit_square_f1": "max(u) ~ 0.0737 for -laplacian(u)=1 on [0,1]^2, u=0 on boundary"},
@@ -847,12 +904,73 @@ _FENICS_KNOWLEDGE = {
             "notes": "Uses numba for efficient condensation of block forms. Cook's membrane benchmark.",
         },
         "pitfalls": [
-            "Vector function space: ('Lagrange', 1, (gdim,)) — NOT scalar",
-            "Dirichlet BC value: np.array([0.0]*gdim, dtype=default_scalar_type) — not scalar 0",
-            "Plane strain vs plane stress: adjust lambda accordingly (plane stress: use lambda_star)",
-            "Near-incompressible (nu > 0.49): MUST use mixed formulation to avoid volumetric locking",
-            "For GAMG/AMG: MUST provide near-nullspace (rigid body modes) for convergence on large problems",
-            "2D default is plane strain — explicit modification needed for plane stress",
+            "[Syntax] Vector function space for elasticity in "
+            "dolfinx is created with ('Lagrange', 1, (gdim,)) — "
+            "the trailing shape tuple marks it vector-valued. "
+            "Passing ('Lagrange', 1) gives a SCALAR space; the "
+            "weak form fails at construction when ufl.sym(ufl.grad) "
+            "is invoked on the scalar trial. Signal: ufl.sym "
+            "raises ValueError 'Symmetric part of tensor with "
+            "rank != 2 is undefined.' inside the form definition "
+            "(before assemble). (Verified empirically 2026-06-01 "
+            "— prior wording 'Invalid ranks' / 'expected rank 1 "
+            "trial' does not appear in current dolfinx.)",
+            "[Syntax] Dirichlet BC value for a vector elasticity "
+            "space must be np.array([0.0]*gdim, dtype="
+            "default_scalar_type) — not scalar 0. dolfinx "
+            "broadcasts the BC value against the space shape; "
+            "scalar→vector fails. Signal: numpy raises ValueError "
+            "'could not broadcast input array from shape () into "
+            "shape (gdim,)' when dirichletbc is constructed with "
+            "a scalar on a vector space.",
+            "[Physics] Plane strain vs plane stress: lambda must "
+            "be adjusted. Plane stress uses lambda_star = "
+            "2*lambda*mu/(lambda+2*mu); using plane strain "
+            "lambda on a thin plate gives ~30% over-stiffness. "
+            "Signal: a dolfinx plane_strain Function tip "
+            "deflection differs from the analytic plane_stress "
+            "reference by factor (1-nu) at nu=0.3.",
+            "[Numerical] Near-incompressible (nu > 0.49): MUST "
+            "use mixed formulation (Taylor-Hood or three-field) "
+            "to avoid volumetric locking. Pure displacement P1/P2 "
+            "at nu=0.4999 has displacement underestimated by "
+            "orders of magnitude. Signal: a dolfinx single-field "
+            "VectorFunctionSpace tip deflection at nu=0.4999 is "
+            "~1e-3 of analytic value; switching to a mixed_P2_P1 "
+            "Taylor_Hood MixedElement recovers it to within 1%.",
+            "[Numerical] For GAMG/AMG: MUST provide near-nullspace "
+            "(rigid body modes — 3 translations + 3 rotations in "
+            "3D). Without it, CG+GAMG fails to converge on "
+            "large problems. Signal: PETScKrylovSolver.solve "
+            "raises 'KSP did not converge' / NoConvergence with "
+            "iteration count = max_it; setting "
+            "matrix.setNearNullSpace(rbm) reduces iter count by "
+            "10-50x.",
+            "[Physics] 2D default in dolfinx ufl elasticity is "
+            "plane strain — explicit modification needed for "
+            "plane stress. Forgetting this is a silent source of "
+            "wrong answers for thin structures. Signal: a 2D "
+            "VectorH1 dolfinx Function plate deflection differs "
+            "from analytic plane-stress reference by factor "
+            "(1-nu^2) — the plane-strain stiffness in the "
+            "ufl.inner(sigma, eps(v))*dx form over-constrains "
+            "thickness.",
+            "[API] dolfinx.fem.FunctionSpace rejects element "
+            "family names other than the registered basix "
+            "families. Passing legacy names like 'P1' or 'CG' "
+            "that worked in old DOLFIN raises ValueError. Signal: "
+            "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises "
+            "ValueError 'Unknown element family CG' — the basix "
+            "name is 'Lagrange', not 'CG' or 'P1'.",
+            "[API] dolfinx XDMFFile.write_function requires the "
+            "Function degree to match the mesh degree. P2 on a P1 "
+            "mesh (the common case) is rejected — interpolate to a "
+            "matching-degree space, or use VTKFile / VTXWriter. "
+            "Signal: XDMFFile.write_function raises RuntimeError "
+            "'Degree of output Function must be same as mesh "
+            "degree. Maybe the Function needs to be interpolated?'. "
+            "(Verified empirically 2026-06-01 — prior wording "
+            "'XDMF mesh must be P1' does not appear.)",
         ],
         "materials": {
             "E": {"range": [1.0, 1e12], "unit": "Pa", "examples": {"steel": 210e9, "aluminum": 70e9, "rubber": 1e6}},
@@ -878,10 +996,62 @@ _FENICS_KNOWLEDGE = {
             "block_precon": "AMG for velocity block, pressure mass matrix for Schur complement approximation",
         },
         "pitfalls": [
-            "MUST use inf-sup stable pair — equal-order P1/P1 is UNSTABLE (oscillatory pressure)",
-            "Pressure determined up to constant for enclosed flows — pin one DOF or set nullspace",
-            "Taylor-Hood Q2/Q1 on quads also works but requires careful construction",
-            "Block preconditioner essential for efficiency beyond ~100k DOFs",
+            "[Numerical] MUST use an inf-sup stable velocity-"
+            "pressure pair. Taylor-Hood (P2v + P1) and MINI "
+            "(P1v + Bubble enriched + P1) are stable; equal-"
+            "order P1/P1 constructs a valid mixed FunctionSpace "
+            "but the discrete LBB condition is violated, so the "
+            "pressure field develops checkerboard oscillations "
+            "in the kernel direction. Signal: with the same "
+            "4x4 unit-square triangulation in dolfinx 0.10, "
+            "basix.ufl.mixed_element returns FunctionSpaces with "
+            "dim 187 (TH), 139 (MINI), 75 (P1/P1); the P1/P1 "
+            "system assembles but the pressure null space has "
+            "more vectors than just the constant pressure. "
+            "(Verified empirically 2026-06-01 — Tier-2 fixture "
+            "stokes_basix_element_construction in scripts/"
+            "tier2_fixtures/fenics/. Constructability of all "
+            "three confirmed; instability of P1/P1 is the "
+            "advisory part — well-known LBB theory.)",
+            "[Numerical] Pressure for enclosed (all-Dirichlet on "
+            "velocity) flows is determined only up to an "
+            "additive constant. Pin one pressure DOF with a "
+            "DirichletBC at a chosen vertex, or attach a "
+            "nullspace via dolfinx.la.create_petsc_nullspace_"
+            "constants and call A.setNullSpace(ns) on the "
+            "PETSc matrix. Skipping this leaves PETSc to handle "
+            "a singular system — MUMPS will either complain or "
+            "return a solution with arbitrary global pressure "
+            "shift. Signal: PETSc KSP iteration converges "
+            "trivially with zero pressure correction, or MUMPS "
+            "emits 'INFOG(1)=-9' (singular matrix) from the "
+            "factorisation. (Catalog claim inherited; not "
+            "separately Tier-2 falsified this iteration.)",
+            "[API] basix.ufl.element supports quadrilateral cells "
+            "(CellType.quadrilateral) for Taylor-Hood-style "
+            "Q2/Q1: pass cell=msh.basix_cell() from a "
+            "create_unit_square(..., cell_type=CellType."
+            "quadrilateral) mesh and the same 'Lagrange' family "
+            "string + degree=2/1. Triangle-mesh helpers like "
+            "the default cell from create_unit_square use "
+            "CellType.triangle; the cell type must match. "
+            "Signal: msh.basix_cell() returns "
+            "'CellType.triangle' or 'CellType.quadrilateral' "
+            "consistent with the mesh constructor. (Catalog "
+            "claim inherited; not separately Tier-2 falsified "
+            "this iteration.)",
+            "[Numerical] Block preconditioner is essential for "
+            "iterative MinRes / GMRES solves beyond ~100k dofs. "
+            "Use fieldsplit with PETSc PCFIELDSPLIT: type="
+            "Schur, with A^-1 on the velocity block (AMG via "
+            "PCHYPRE / GAMG) and a pressure mass matrix M_p as "
+            "the Schur-complement approximation. Without "
+            "fieldsplit the saddle-point spectrum forces MinRes "
+            "iteration counts to scale with mesh refinement. "
+            "Signal: PETSc KSPSolve iteration count grows like "
+            "O(h^-2) without fieldsplit and stays O(1) with the "
+            "block preconditioner. (Catalog claim inherited; "
+            "not separately Tier-2 falsified this iteration.)",
         ],
     },
 
@@ -914,13 +1084,82 @@ _FENICS_KNOWLEDGE = {
             "ipcs": "Three sequential LinearProblem solves per time step",
         },
         "pitfalls": [
-            "Must use inf-sup stable pair (Taylor-Hood P2/P1) — equal-order needs stabilization",
-            "Pressure needs pinning for enclosed flows (Dirichlet at one point or nullspace)",
-            "High Re (>500) requires finer mesh or continuation in Re for Newton convergence",
-            "BCs on sub-spaces: need Function on collapsed sub-space, not raw constant",
-            "P2 velocity can't write to XDMF directly — interpolate to P1 or use VTX",
-            "Newton may not converge: check snes_monitor, reduce Re, refine mesh, or use IPCS",
-            "IPCS time step must be small enough for splitting error to be acceptable",
+            "[Numerical] Must use an inf-sup stable element pair "
+            "(Taylor-Hood P2/P1 is the canonical choice in "
+            "dolfinx; basix.ufl.mixed_element([P2, P1])). "
+            "Equal-order P1/P1 fails the LBB condition. Signal: "
+            "PETScKrylovSolver reports residual stalling far "
+            "from tolerance OR the pressure field shows visible "
+            "checkerboard mode patterns on the assembled "
+            "Function. (Claim inherited — not yet empirically "
+            "separated.)",
+            "[Physics] Enclosed-flow incompressible Stokes / "
+            "Navier-Stokes admits the constant pressure null "
+            "space — pin one DoF (dirichletbc on a single point) "
+            "or attach a null space via "
+            "PETScKrylovSolver.setNullSpace. Signal: "
+            "LinearProblem.solve / SNES Newton returns "
+            "successfully but the post-processed pressure "
+            "Function has a large additive offset (max ≈ min "
+            "≈ O(1e6), tiny std) — same family as poisson "
+            "pure-Neumann (fenics poisson#3). (Claim inherited — "
+            "not yet empirically separated for navier_stokes "
+            "specifically.)",
+            "[Numerical] High Re (>500) requires finer mesh or "
+            "continuation in Re for Newton convergence. Naively "
+            "running Re=1000 from a zero initial guess often "
+            "fails to converge. Signal: dolfinx.nls.petsc."
+            "NewtonSolver.solve reports 'Failed to converge' / "
+            "iteration count = max_it; switching to a "
+            "continuation loop in Re recovers convergence. "
+            "(Claim inherited — not yet empirically verified.)",
+            "[API] Dirichlet BCs on sub-spaces of a mixed "
+            "FunctionSpace require a Function on the COLLAPSED "
+            "sub-space, NOT a raw numpy constant. Passing a "
+            "constant array to dolfinx.fem.dirichletbc with "
+            "(V_sub_dofs, V_sub_full) raises TypeError "
+            "'incompatible function arguments'. Correct: "
+            "u_bc = dolfinx.fem.Function(V_sub.collapse()[0]); "
+            "u_bc.x.array[:] = 0.0; dolfinx.fem.dirichletbc("
+            "u_bc, boundary_dofs, V_sub). Signal: TypeError "
+            "'incompatible function arguments' from "
+            "dirichletbc.__init__ at the moment the BC is "
+            "constructed with a raw constant on a sub-space. "
+            "(Verified empirically 2026-06-01.)",
+            "[API] P2 velocity Function cannot be written "
+            "directly via XDMFFile.write_function — same degree-"
+            "mismatch as fenics linear_elasticity#3. Interpolate "
+            "to a P1 space first, or use VTKFile / VTXWriter. "
+            "Signal: XDMFFile.write_function raises RuntimeError "
+            "'Degree of output Function must be same as mesh "
+            "degree. Maybe the Function needs to be "
+            "interpolated?'. (Cross-referenced from the fenics "
+            "linear_elasticity#3 fixture — same failure mode.)",
+            "[Numerical] Newton may not converge for hard NS "
+            "cases — inspect snes_monitor (set "
+            "'snes_monitor_short' in petsc_options), reduce Re, "
+            "refine the mesh, or switch to an IPCS time-split "
+            "scheme. Signal: NewtonSolver.solve raises "
+            "'Failed to converge' with snes_monitor showing "
+            "non-monotonic residual; IPCS does not require "
+            "Newton at all (three sequential LinearProblem "
+            "solves per step). (Claim inherited.)",
+            "[Numerical] IPCS time step dt must respect the "
+            "splitting accuracy: the splitting error is O(dt) "
+            "per step, so dt > (target_l2_error) / Re is "
+            "necessary for first-order splitting and tighter "
+            "for higher-order projections. Signal: integrated "
+            "L2 error — computed as dolfinx.fem.assemble_scalar"
+            "(dolfinx.fem.form(ufl.inner(u_h-u_exact, "
+            "u_h-u_exact)*ufl.dx)) — of u_h (the Function from "
+            "LinearProblem.solve) vs an analytic reference "
+            "saturates as dt is reduced because the splitting "
+            "error dominates the spatial error; switching back "
+            "to monolithic dolfinx.nls.petsc.NonlinearProblem + "
+            "NewtonSolver recovers the spatial-error regime. "
+            "(Note 2026-06-02: dolfin's ufl.errornorm helper is "
+            "NOT available in dolfinx; assemble the inner-product "
+            "form manually as shown.)",
         ],
         "materials": {
             "Re": {"range": [1, 10000], "unit": "dimensionless", "description": "Reynolds number"},
@@ -948,11 +1187,58 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": {"direct": "LU (small)", "iterative": "CG + hypre per time step"},
         "pitfalls": [
-            "Insulated boundary = natural BC (do nothing, zero flux)",
-            "For transient: update BCs and source term at each time step",
-            "Mass matrix assembly for time derivative: (T/dt)*v*dx on LHS, (T_n/dt)*v*dx on RHS",
-            "Temperature units must be consistent with material properties",
-            "Backward Euler is diffusive but stable; Crank-Nicolson is more accurate but may oscillate",
+            (
+                "[API] Insulated boundary = natural BC — DO "
+                "NOTHING (zero flux is built into the weak "
+                "form). Signal: applying a DirichletBC with "
+                "value=0 on a wall meant to be insulated "
+                "OVER-constrains the temperature (forces T=0 "
+                "there, not dT/dn=0); the simulated temperature "
+                "is pulled toward zero at the boundary instead "
+                "of merely having no heat flux. Compare the "
+                "no-BC run vs Dirichlet=0 — the difference "
+                "exposes the misapplied BC. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] For transient: update BCs and source "
+                "term at each time step. Signal: result at step N "
+                "matches the steady solution of the FIRST step's BCs "
+                "instead of evolving — typical bug when a time-"
+                "dependent fem.Constant(T0) is created once outside "
+                "the loop and the Dirichlet value never gets "
+                "rewritten via Constant.value. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Mass matrix assembly for time derivative: "
+                "(T/dt)*v*dx on LHS, (T_n/dt)*v*dx on RHS. Signal: "
+                "wrong sign / placement gives wildly oscillating "
+                "temperature with magnitude growing geometrically; "
+                "energy is not conserved in an insulated cell test "
+                "(temperature should be constant). (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] Temperature units must be consistent with "
+                "material properties. Signal: an SI material "
+                "(k=W/(m*K), rho*cp=J/(m^3*K)) wired through "
+                "fem.Constant on the dolfinx Function and fed "
+                "degrees-Celsius + degrees-Celsius/s data gives "
+                "wildly wrong diffusion timescales — the "
+                "characteristic time L^2 * rho*cp / k is off by "
+                "orders of magnitude when K vs C are mixed. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Backward Euler is diffusive but stable; "
+                "Crank-Nicolson is more accurate but may oscillate. "
+                "Signal: CN with sharp transients (e.g. step source "
+                "or step BC) shows 10-30% over/undershoot at the "
+                "transient location that does not damp with mesh "
+                "refinement; switching to Backward Euler removes "
+                "the oscillation at the cost of phase error. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
         "materials": {"conductivity": {"range": [0.01, 1000], "unit": "W/(m*K)"}, "rho_cp": {"description": "Volumetric heat capacity"}},
     },
@@ -973,10 +1259,52 @@ _FENICS_KNOWLEDGE = {
             "GLS": "Galerkin Least Squares — similar to SUPG but also stabilizes reaction",
         },
         "pitfalls": [
-            "Without stabilization, Galerkin method produces oscillations for Pe > 1",
-            "SUPG tau parameter depends on mesh size h and velocity magnitude — must compute per cell",
-            "DG methods are a cleaner alternative for pure advection (no diffusion)",
-            "For time-dependent: use SUPG in space, implicit time stepping",
+            (
+                "[Numerical] Without stabilization, Galerkin method "
+                "produces oscillations for Pe > 1. Signal: solution "
+                "develops visible wiggles upstream of source/sink "
+                "locations; oscillation amplitude does not damp "
+                "with mesh refinement in the advection-aligned "
+                "direction. Add SUPG, GLS, or upwind DG. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] SUPG tau parameter depends on mesh "
+                "size h and velocity magnitude — must compute "
+                "PER CELL via tau = h / (2*|b|) using "
+                "ufl.CellDiameter inside the dolfinx fem.form "
+                "for high-Pe regime. Using a constant global "
+                "tau Constant under-stabilises on fine cells "
+                "and over-diffuses on coarse ones. Signal: "
+                "convergence rate degrades from O(h^2) to "
+                "~O(h) with a constant Constant tau; per-cell "
+                "ufl.CellDiameter tau restores O(h^2). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] DG methods are a cleaner alternative "
+                "for pure advection (no diffusion). Signal: for "
+                "vanishing diffusion kappa -> 0, the SUPG dolfinx "
+                "ufl form's tau degenerates (tau -> h/|b|, but "
+                "stabilisation residual scales with kappa) and "
+                "the LinearProblem solution oscillates between "
+                "elements; an upwind DG basix.ufl element on the "
+                "same mesh produces a smooth Function with no "
+                "parameter tuning. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] For time-dependent: SUPG in "
+                "space + implicit time stepping. Mixing SUPG "
+                "with explicit Euler can break: SUPG injects "
+                "time-derivative coupling via the residual, "
+                "which needs implicit treatment. Signal: "
+                "explicit dolfinx fem.assemble + SUPG "
+                "diverges to NaN within a few steps even "
+                "below the convective CFL; switching to "
+                "implicit (theta=1 or BDF2) inside a "
+                "NonlinearProblem restores stability. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1018,12 +1346,12 @@ _FENICS_KNOWLEDGE = {
             "load_stepping": "For large deformations: apply load in increments, solving at each step",
         },
         "pitfalls": [
-            "Large load steps cause Newton divergence — use incremental load stepping",
-            "Locking for nu > 0.49: use mixed formulation (u,p) or F-bar method",
-            "Neo-Hookean: check J>0 everywhere (negative = inverted element = solver failure)",
-            "Use ufl.variable() and ufl.diff() for automatic tangent computation — avoid hand-coding",
-            "For nearly incompressible: Ogden-type split into volumetric + isochoric parts",
-            "Convergence: snes_monitor to watch residual; if stalled, reduce load increment",
+            "[Numerical] Large load steps cause Newton (NewtonSolver) divergence in hyperelasticity. Use incremental load stepping: ramp the dirichletbc value or body-force fem.Constant across N steps, calling NewtonSolver.solve at each level. Signal: dolfinx.nls.petsc.NewtonSolver.solve raises 'Failed to converge' with the residual at the last iter still O(1); reducing the per-step load increment by 2-4× recovers convergence. (Claim inherited.)",
+            "[Numerical] Near-incompressible regime (nu > 0.49) makes the pure-displacement formulation lock — use a dolfinx mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) FunctionSpace or the F-bar method (uniform-pressure projection). Signal: Cook-membrane tip deflection at nu = 0.4999 with pure P2 VectorH1 displacement on a dolfinx Function is O(1e-3) of the analytic value; switching to the mixed (u, p) formulation in basix.ufl recovers it within ~1%. (Claim inherited.)",
+            "[Physics] Neo-Hookean / any compressible hyperelastic model requires J = det(F) > 0 everywhere. A locally inverted element gives J <= 0 and the log(J) term blows up. Signal: NewtonSolver.solve raises RuntimeError / FloatingPointError, or the residual jumps to nan, when det(F) at any quadrature point hits 0 or goes negative. Defensive check: ufl.conditional(J > 0, ..., raise_an_error). (Claim inherited.)",
+            "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.classes.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01.)",
+            "[Numerical] Near-incompressibility split: decompose F = F_iso * F_vol where F_vol = (J^(1/3))*I (via ufl.det and ufl.Identity); then W = W_iso(F_iso) + U(J) with a quadratic-in-(J-1) volumetric penalty U(J) = kappa/2 * (J - 1)^2. Avoids volumetric locking in pure-displacement settings AND retains a well-conditioned tangent. Signal: dolfinx fem.assemble_scalar of the post-processed pressure (= dU/dJ) gives a bounded value; without the split, the discrete pressure Function at Gauss points oscillates wildly element-to-element. (Claim inherited.)",
+            "[API] PETSc SNES newtonls residual monitor: pass 'snes_monitor': '' (or 'snes_monitor_short') in dolfinx.nls.petsc.NewtonSolver options. The monitor prints the residual norm per iter to stderr; if it stalls, halve the load increment and re-run. Signal: stderr shows '0 SNES Function norm ...' lines from PETSc; a stalled iteration shows the norm plateauing at a fixed O(1) value over many iterations rather than dropping by 10x per step. (Claim inherited.)",
         ],
         "materials": {
             "E": {"range": [1e2, 1e12], "unit": "Pa"},
@@ -1044,11 +1372,71 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": {"thermal": "CG + hypre", "structural": "CG + GAMG"},
         "pitfalls": [
-            "Thermal strain = alpha * DeltaT * Identity (isotropic expansion/contraction)",
-            "Reference temperature T_ref matters: DeltaT = T - T_ref",
-            "Plane strain: use full 3D Lame parameters (not plane stress modification)",
-            "Mechanical BC needed to prevent rigid body motion (over-constrained = locking)",
-            "Two-way coupling (thermoelastic) requires Picard iteration between fields",
+            (
+                "[Numerical] Thermal strain = alpha * DeltaT * "
+                "Identity is isotropic (equal expansion in all "
+                "directions). Signal: applying alpha as a "
+                "scalar inside sigma = C:eps(u) but FORGETTING "
+                "to subtract alpha*DeltaT*I from the elastic "
+                "strain gives a free-expansion temperature "
+                "field that produces ZERO mechanical "
+                "displacement at unconstrained boundaries; the "
+                "expected uniform expansion u = alpha * DeltaT "
+                "* x is missing. The correct form is "
+                "sigma = C : (eps(u) - alpha * DeltaT * I), "
+                "with the subtraction applied INSIDE the "
+                "constitutive law. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Reference temperature T_ref matters: "
+                "DeltaT = T - T_ref. Signal: leaving the "
+                "T_ref ufl.Constant at 0 with an SI material "
+                "at room temperature gives an initial "
+                "thermal pre-strain of order alpha*T_room "
+                "(~3e-3 for steel at 300 K) that the "
+                "dolfinx NonlinearProblem structure must "
+                "equilibrate against — first-step "
+                "displacement Function is huge compared to "
+                "the actual loading and the Newton iteration "
+                "may oscillate. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Plane strain: use full 3D Lame "
+                "parameters (not plane stress modification). "
+                "Signal: a dolfinx ufl plane-strain run that "
+                "swaps in the plane-stress E' = E/(1-nu^2) on "
+                "the fem.Constant lambda under-predicts stress "
+                "by a factor of ~(1+nu)/(1-nu) and the VectorH1 "
+                "displacement Function diverges from the 3D "
+                "reference by ~20-50% at nu=0.3. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Mechanical BC needed to prevent "
+                "rigid body motion (over-constrained = locking). "
+                "Signal: a dolfinx fem.petsc.LinearProblem solve "
+                "without a dirichletbc hangs / reports near-zero "
+                "pivot; the stiffness matrix has 3 (2D) / 6 (3D) "
+                "zero eigenvalues corresponding to translation + "
+                "rotation. Add a minimal set of 3 (or 6) "
+                "dirichletbc entries to kill the null space. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Two-way coupling (thermoelastic) "
+                "requires Picard iteration between fields. "
+                "Signal: one-shot (no-iteration) two-way "
+                "solve via two dolfinx fem.NonlinearProblem "
+                "calls shows a delta-T-dependent error in "
+                "displacement of order |alpha*DeltaT*L| "
+                "because the structural response affects the "
+                "heat-conduction geometry but the back-"
+                "influence was never iterated. The Picard "
+                "residual ||T_new - T_old|| / ||T_old|| "
+                "computed via dolfinx assemble_vector should "
+                "drop below ~1e-3 across coupling "
+                "iterations. (Audit 2026-06-02.)"
+            ),
         ],
         "materials": {
             "E": {"range": [1e3, 1e12], "unit": "Pa"},
@@ -1070,10 +1458,50 @@ _FENICS_KNOWLEDGE = {
         "alternative": "Hermite elements (C1 conforming) — avoids DG penalty terms but limited to simplices",
         "solver": "LU (direct) for moderate sizes, GMRES for large",
         "pitfalls": [
-            "Penalty parameter alpha must be large enough for stability (scales with polynomial degree^2)",
-            "h_E is a measure of cell size — must be computed correctly for penalty term",
-            "Interior penalty requires interior facet integrals (dS) — more expensive than standard FEM",
-            "Alternative: split into two 2nd-order equations (mixed method with auxiliary variable)",
+            (
+                "[Numerical] Penalty parameter alpha must be large "
+                "enough for stability (scales with polynomial "
+                "degree^2). Signal: too small -> coercivity loss "
+                "and the solution norm diverges with mesh "
+                "refinement; too large -> cond(K) > 1e14 and "
+                "iterative solver stalls. Rule of thumb: alpha = "
+                "4 * (k+1)^2 for C0 interior-penalty biharmonic "
+                "with degree-k Lagrange. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] h_E (cell-size measure for the penalty "
+                "weight) must use the proper UFL CellDiameter / "
+                "FacetArea expressions — hard-coding h as a scalar "
+                "gives wrong scaling on graded meshes. Signal: "
+                "convergence rate degrades from O(h^2) to ~O(h) "
+                "or stagnates because the penalty does not scale "
+                "correctly with element size. Use "
+                "ufl.CellDiameter(mesh) inside the form. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] Interior penalty requires interior "
+                "facet integrals (dS) — more expensive than "
+                "standard FEM (each facet visited from both "
+                "sides). Signal: assembly time per step in a "
+                "biharmonic problem is 5-10x the equivalent "
+                "Poisson; profile shows dolfinx.fem.assemble_matrix "
+                "spending most time in facet kernels. Mixed "
+                "method (u + auxiliary sigma) avoids dS at the "
+                "cost of doubling the DOF count. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Alternative: split into two "
+                "2nd-order equations (mixed method with auxiliary "
+                "variable). Signal: writing biharmonic as a "
+                "single 4th-order operator on C0 Lagrange "
+                "elements raises `NotImplementedError: H2 "
+                "conformity required` or silently uses the "
+                "interior-penalty form when assembling. Mixed "
+                "(u, sigma) with sigma = Laplacian(u) works on "
+                "plain P1 x P1. (Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1096,10 +1524,50 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": "GMRES + LU (direct) for moderate sizes. Indefinite system — CG does NOT work.",
         "pitfalls": [
-            "Need fine mesh: ~10 points per wavelength minimum (pollution effect for high k)",
-            "System is indefinite — standard CG diverges. Use GMRES or direct solver.",
-            "High wavenumber k: requires specialized preconditioners (shifted Laplacian)",
-            "Complex mode: PETSc must be compiled with --with-scalar-type=complex",
+            (
+                "[Numerical] Need a fine mesh: ~10 points per "
+                "wavelength minimum (pollution effect for high k). "
+                "Signal: phase error grows as (k*h)^2 — at 5 "
+                "points-per-wavelength the computed dolfinx ufl "
+                "Function representing the wave shows visible "
+                "amplitude drift after ~10 wavelengths in the "
+                "XDMFFile output; increasing to 10 pts/wave "
+                "restores the analytic amplitude. Convergence "
+                "rate degrades from O(h^2) to ~O(h) when k*h > 1. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] System is INDEFINITE — standard CG "
+                "diverges. Use GMRES or direct solver. Signal: "
+                "PETSc reports `KSPSolve: DIVERGED_INDEFINITE_PC` "
+                "or `DIVERGED_BREAKDOWN` with CG; the same matrix "
+                "with GMRES converges (slowly). For ~< 100k DOFs "
+                "use LU; for larger meshes use GMRES + a shifted-"
+                "Laplacian preconditioner. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] High wavenumber k: requires "
+                "specialized preconditioners (shifted "
+                "Laplacian). Signal: PETSc GMRES with "
+                "default ILU/Jacobi PC on a k > 100 "
+                "problem stagnates at residual ~1e-2 "
+                "after 1000 iterations; the shifted-"
+                "Laplacian preconditioner (PC with "
+                "k_shift = k + i*epsilon) applied to the "
+                "dolfinx LinearProblem restores ~10 "
+                "iterations per convergence. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Complex mode: PETSc must be compiled with "
+                "--with-scalar-type=complex. Signal: importing "
+                "PETSc into a real-mode build and trying to "
+                "assemble a complex Helmholtz form raises "
+                "`TypeError: cannot convert complex to real` or "
+                "the imaginary part is silently dropped. Verify "
+                "with PETSc.ScalarType == complex before running. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1127,11 +1595,11 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": "GMRES + AMS (auxiliary-space Maxwell solver from hypre) for curl-curl",
         "pitfalls": [
-            "MUST use H(curl) elements (Nedelec) — standard Lagrange violates physical constraints",
-            "Complex-valued: PETSc compiled with --with-scalar-type=complex",
-            "PML requires careful coordinate stretching formulation",
-            "Low-frequency breakdown: curl-curl formulation fails for k0 -> 0 (use mixed formulation)",
-            "Edge elements (N1curl) have different DOF ordering than nodal elements — check orientation",
+            "[Physics] MUST use H(curl) elements (Nedelec / N1curl) for Maxwell — standard Lagrange spaces lack the tangential continuity that the physical fields require. Signal: dolfinx.fem.form does NOT fail at form construction (ufl.curl is accepted on vector Lagrange and even on scalar Lagrange in 2D), so the bug is silent at compile/assemble time. The observable failure is numerical: the post-processed B = curl(A) field has spurious normal jumps at element interfaces, and convergence against an analytic test (e.g., uniform B in a cavity) plateaus at ~10% error regardless of refinement. (Verified empirically 2026-06-01 — prior catalog wording 'violates physical constraints' implied a syntactic/assembly-time rejection; in current dolfinx the form compiles fine and the bug surfaces in the field values.)",
+            "[Syntax] Complex-valued Maxwell: PETSc must be compiled with --with-scalar-type=complex. Signal: assembling a form with imaginary coefficient (e.g., 1j*k*u*v*ds) into a real-PETSc Function raises TypeError 'cannot convert complex to float' or ValueError 'imaginary part discarded' from dolfinx.fem.assemble_vector.",
+            "[Numerical] PML (Perfectly Matched Layer): requires coordinate stretching of the form x_i → x_i*(1 + i*sigma(x_i)/omega) inside the PML region. A real-only stretching (real sigma) gives a lossy real boundary, NOT a radiating PML. Signal: a fem.Function evaluated in the PML region decays by orders of magnitude only when the coordinate-stretch coefficient is constructed with numpy.complex128 ScalarType — with a real-only stretch the dolfinx.fem.assemble_vector output shows a standing-wave reflection back into the domain.",
+            "[Numerical] Low-frequency breakdown: curl-curl + omega^2-mass formulation becomes ill-conditioned as omega → 0 because the gradient kernel of curl is no longer regularised by the mass term. Use mixed (A, phi) formulation with a Lagrange multiplier on the divergence. Signal: KSP iteration count for GMRES + AMS preconditioner explodes as omega is reduced below ~10^-3 of the lowest cavity eigenvalue; condition number printed by PETSc grows as 1/omega^2.",
+            "[API] Edge elements (basix.ElementFamily.N1E / 'Nedelec 1st kind H(curl)') have DOF ordering by edge, not by node. Setting tangential BCs requires interpolating onto the edge basis, not the nodal basis. Signal: dirichletbc on an HCurl space defined with a vector-valued function silently sets only the first component on each edge, leaving the tangential trace 90 degrees off from intended; post-processed E field has non-zero normal component on the conductor boundary.",
         ],
     },
 
@@ -1156,10 +1624,51 @@ _FENICS_KNOWLEDGE = {
             "M": "Mobility coefficient",
         },
         "pitfalls": [
-            "Very stiff system — requires small time step especially initially",
-            "Chemical potential df/dc must use ufl.variable() and ufl.diff() for automatic differentiation",
-            "Random initial condition: c_0 = 0.63 + 0.02*(random - 0.5) for spinodal decomposition",
-            "Newton convergence sensitive to time step — reduce dt if diverging",
+            (
+                "[Numerical] Very stiff system — requires small time "
+                "step especially initially. Signal: starting from a "
+                "random initial condition with dt ~ 1.0 gives "
+                "SNES `DIVERGED_FNORM_NAN` within the first 1-3 "
+                "steps; using dt ~ 1e-5 for the first ~100 steps "
+                "and ramping to dt ~ 1e-2 afterwards is the "
+                "standard recipe. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Chemical potential df/dc must use "
+                "ufl.variable() and ufl.diff() for automatic "
+                "differentiation. Signal: hand-coding the Cahn-"
+                "Hilliard chemical potential (12 * c * (c-1) * "
+                "(2c-1) for the double-well derivative) and "
+                "missing a factor or sign gives sublinear "
+                "convergence; ufl.diff guarantees the analytic "
+                "exact derivative. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Random initial condition: "
+                "c_0 = 0.63 + 0.02*(random - 0.5) for spinodal "
+                "decomposition. Signal: setting the dolfinx "
+                "fem.Function via interpolate(lambda x: "
+                "np.full(...)) at c_0 = 0.5 exactly (the "
+                "unstable symmetric mean) gives no phase "
+                "separation — the Function stays uniformly at "
+                "0.5 because there's no symmetry-breaking "
+                "perturbation. The XDMFFile output at t = 1 "
+                "should show interface formation; if not, the "
+                "IC is too symmetric. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Newton convergence sensitive "
+                "to time step — reduce dt if diverging. "
+                "Signal: the dolfinx NonlinearProblem SNES "
+                "emits `step rejected, reducing dt`; or "
+                "the residual norm from assemble_vector "
+                "diverges within 2-3 Newton iterations. "
+                "Cahn-Hilliard becomes singular at fast-"
+                "evolving interfaces; dt ~ eps^4 / M is "
+                "the conservative stability limit (eps = "
+                "interface thickness, M = mobility). "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1186,11 +1695,11 @@ _FENICS_KNOWLEDGE = {
             "jd": "Jacobi-Davidson (interior eigenvalues)",
         },
         "pitfalls": [
-            "SLEPc must be installed and PETSc configured with --download-slepc",
-            "Shift-and-invert (SINVERT) essential for finding interior eigenvalues",
-            "Must request enough eigenvalues: eps.setDimensions(nev, ncv)",
-            "For generalized EVP: B must be assembled without BC rows zeroed (use separate assembly)",
-            "Complex eigenvalues require complex PETSc build",
+            "[Integration] Eigenvalue problems in dolfinx use SLEPc (the eigenvalue counterpart of PETSc). SLEPc must be installed; PETSc must be configured with --download-slepc (or built against an external SLEPc). The Python binding is slepc4py.SLEPc.EPS. Signal: 'from slepc4py import SLEPc; SLEPc.EPS' resolves successfully when properly installed; ImportError 'No module named slepc4py' (or similar) when missing. (Verified empirically 2026-06-01 in the ofa-fenicsx conda env — slepc4py is present with EPS.)",
+            "[Numerical] Shift-and-invert spectral transformation (SINVERT) is essential for interior eigenvalues. SLEPc.EPS().setST(...) with a SLEPc.ST configured to SINVERT centers the spectrum on the target value. Signal: searching for eigenvalues near k^2_estimate on the dolfinx-assembled stiffness Matrix without SINVERT returns extreme eigenvalues (highest or lowest) instead; with SINVERT and target = k^2_estimate the returned eigenvalues cluster near the target. (Claim inherited — not yet empirically separated.)",
+            "[API] eps.setDimensions(nev, ncv) requests nev eigenvalues with ncv search-space size (ncv >= 2*nev is the SLEPc default heuristic). Too-small ncv slows convergence or fails. Signal: eps.solve() reports 'converged' with fewer than requested eigenvalues, or returns an error code != 0 from eps.getConvergedReason(); doubling ncv typically fixes it. (Claim inherited.)",
+            "[Numerical] For a generalised eigenvalue problem A*x = lambda*B*x with Dirichlet BC, the mass matrix B must be assembled WITHOUT zeroing the boundary rows the way Dirichlet rows are typically handled — otherwise B becomes singular at Dirichlet DOFs and spurious zero eigenvalues appear. Standard pattern: assemble both A and B with bcs=[], then use dirichletbc-aware row/column reduction only on A. Signal: SLEPc returns n_dirichlet_dof spurious zero eigenvalues at the bottom of the spectrum; the next eigenvalues (skipping those zeros) match the analytic Dirichlet eigenvalues. (Claim inherited.)",
+            "[Integration] Complex-valued eigenvalues require dolfinx + PETSc + SLEPc all compiled with --with-scalar-type=complex. The default conda-forge fenics-dolfinx build is REAL: dolfinx.default_scalar_type is numpy.float64 (verified empirically 2026-06-01). For complex Helmholtz / Maxwell eigenproblems either rebuild with complex scalar OR split into (re, im) real-pair formulation. Signal: dolfinx.default_scalar_type returns numpy.float64 in a real build; numpy.issubdtype(dolfinx.default_scalar_type, np.complexfloating) is False — assembling a ufl form with an imaginary coefficient then yields a wrong real-valued Function with the imaginary part silently dropped. (Verified empirically in the ofa-fenicsx env.)",
         ],
     },
 
@@ -1204,10 +1713,52 @@ _FENICS_KNOWLEDGE = {
         "demo_url": "https://jsdokken.com/dolfinx-tutorial/chapter2/intro.html (advection-diffusion-reaction systems)",
         "solver": "SNES Newton for nonlinear reaction terms",
         "pitfalls": [
-            "Nonlinear reaction terms require Newton iteration",
-            "Stiff reactions (fast kinetics) may need implicit time stepping with small dt",
-            "Species concentrations should remain non-negative — check solution and add constraints if needed",
-            "Use ufl.variable() and ufl.diff() for automatic Jacobian of reaction terms",
+            (
+                "[Numerical] Nonlinear reaction terms require "
+                "Newton iteration. Signal: a single-Picard-"
+                "step solve on a quadratic reaction R(u) = "
+                "u^2 via dolfinx LinearProblem converges "
+                "linearly (residual ratio ~0.5 per "
+                "iteration) instead of quadratically; SNES "
+                "NonlinearProblem with the UFL-derived "
+                "Jacobian restores quadratic convergence. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Stiff reactions (fast kinetics) may "
+                "need implicit time stepping with small dt. "
+                "Signal: explicit Euler / theta < 0.5 on a "
+                "Damkohler-number-100 problem requires dt < "
+                "2/lambda_max ~ 1e-3, otherwise the dolfinx "
+                "Function explodes to NaN within a few steps; "
+                "switching to backward Euler or BDF2 in the "
+                "dolfinx NonlinearProblem restores stability, "
+                "and for very stiff systems (Da > 1000) "
+                "external SUNDIALS coupling is required. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Species concentrations should "
+                "remain non-negative — check solution and "
+                "add constraints if needed. Signal: "
+                "visualizing the c dolfinx Function shows "
+                "pockets of negative concentration (often "
+                "near steep gradients) — unphysical. "
+                "Standard fix: SUPG + shock-capturing in "
+                "the BilinearForm-equivalent dolfinx fem "
+                "form, or projection onto the non-negative "
+                "cone via NonlinearProblem after each "
+                "step. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Use ufl.variable() and ufl.diff() for "
+                "automatic Jacobian of reaction terms. Signal: "
+                "hand-coding the Jacobian and forgetting a "
+                "df/dv coupling between species causes Newton "
+                "to converge linearly instead of quadratically; "
+                "ufl.diff(R(u), u) emits the exact partials. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1224,10 +1775,54 @@ _FENICS_KNOWLEDGE = {
         },
         "solver": "MinRes or GMRES with block preconditioner (saddle-point structure)",
         "pitfalls": [
-            "Standard displacement formulation locks for nu > 0.49 — MUST use mixed method",
-            "Inf-sup condition: pressure space must be 'smaller' than displacement space",
-            "Taylor-Hood (P2/P1) or (P2/DG0) work; P1/P0 does NOT satisfy inf-sup",
-            "Penalty method (large kappa) is alternative but introduces parameter sensitivity",
+            (
+                "[Numerical] Standard displacement formulation "
+                "LOCKS for nu > 0.49 — MUST use mixed (u, p) "
+                "method. Signal: a compressed block shows "
+                "essentially zero displacement (artificial "
+                "rigidity); volume strain det(F)-1 << expected; "
+                "the same setup with Taylor-Hood mixed method "
+                "recovers the analytic incompressible solution. "
+                "Locking ratio ~1/(1-2nu) — at nu=0.499 "
+                "displacement is ~500x too small. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Inf-sup (LBB) condition: "
+                "pressure FunctionSpace must be STRICTLY "
+                "SMALLER than the displacement "
+                "FunctionSpace. Signal: pairing P1 "
+                "displacement Function + P1 pressure "
+                "Function (equal-order) gives checkerboard "
+                "pressure pattern that does NOT converge "
+                "under refinement; switching to P2/P1 "
+                "dolfinx mixed-element removes the "
+                "checkerboard. The LBB constant collapsing "
+                "with h is the diagnostic for inf-sup "
+                "failure. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Taylor-Hood (P2/P1) or (P2/"
+                "DG0) satisfy inf-sup; P1/P0 does NOT. "
+                "Signal: convergence-rate test with P1/P0 "
+                "dolfinx mixed FunctionSpace stagnates at "
+                "first-order in displacement while P2/P1 "
+                "achieves second-order; cross-check via "
+                "the Mandel benchmark — P2/P1 recovers "
+                "the analytic result to within 0.5%, "
+                "P1/P0 differs by 5-10%. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty method (large kappa) is "
+                "alternative but introduces parameter sensitivity. "
+                "Signal: penalty too small -> volumetric "
+                "locking returns (det(F)-1 deviates by > 1% from "
+                "0); penalty too large -> condition number "
+                "exceeds 1e14 and Newton stalls. Mixed method "
+                "is parameter-free and preferred for production "
+                "runs. (Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1243,10 +1838,50 @@ _FENICS_KNOWLEDGE = {
             "dolfinx_contact": "github.com/jorgensd/dolfinx_contact — extension package for contact in DOLFINx",
         },
         "pitfalls": [
-            "No built-in contact in DOLFINx — must implement penalty/Nitsche or use extensions",
-            "Penalty parameter: too small = penetration, too large = ill-conditioning",
-            "Contact detection (gap computation) requires geometric search",
-            "Self-contact requires careful implementation of contact pairs",
+            (
+                "[API] No built-in contact in DOLFINx — must "
+                "implement penalty/Nitsche manually OR use the "
+                "dolfinx_contact extension package. Signal: "
+                "searching dolfinx.fem for `ContactBoundary` or "
+                "`ContactProblem` returns nothing; the catalog "
+                "ships hand-coded penalty / Nitsche snippets the "
+                "user copies — there is no single-call contact "
+                "API. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty parameter: too small = "
+                "penetration, too large = ill-conditioning. "
+                "Signal: penetration > 5% of element edge "
+                "indicates the penalty is too low; PETSc condition-"
+                "number warning > 1e14 indicates too high. Rule "
+                "of thumb: penalty = 1e2 * E / h for solid contact "
+                "where E is the softer material's Young modulus. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Contact detection (gap computation) "
+                "requires geometric search — naive O(N^2) "
+                "all-pairs is fine for small problems but "
+                "dominates wall-clock past ~10k surface points. "
+                "Use bounding-volume hierarchies (BVH) from "
+                "dolfinx.geometry. Signal: assembly time per "
+                "Newton iteration grows quadratically with mesh "
+                "size; using "
+                "dolfinx.geometry.bb_tree(mesh, dim) keeps it "
+                "near-linear. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Self-contact requires careful "
+                "implementation of contact pairs — a node on the "
+                "surface can contact another part of the SAME "
+                "surface (not just the partner body). Signal: "
+                "a buckling problem (post-bifurcation cylinder, "
+                "ring crush) shows surfaces passing through "
+                "themselves; visualize confirms intersecting "
+                "geometry; need to flag the surface as both "
+                "slave AND master in the contact pair list. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1271,10 +1906,53 @@ _FENICS_KNOWLEDGE = {
             "phasefieldx": "github.com/CastillonMiguel/phasefieldx — open-source DOLFINx phase-field framework",
         },
         "pitfalls": [
-            "Mesh must be fine enough to resolve length scale l0 (h << l0)",
-            "Irreversibility constraint: must enforce d_new >= d_old",
-            "Staggered scheme: simple but slow convergence; monolithic: fast but needs good initial guess",
-            "Tension-compression split needed to prevent crack closure under compression",
+            (
+                "[Numerical] Mesh must be fine enough to resolve "
+                "length scale l0 (rule: h << l0, typically h "
+                "< l0/3). Signal: the dolfinx damage Function d "
+                "in the XDMFFile output shows visible staircase "
+                "patterns following element edges (below-"
+                "resolution diffuse-crack); the predicted "
+                "fracture energy from fem.assemble_scalar(...) "
+                "under-shoots Griffith's G_c * area by ~30-50% "
+                "when h ~ l0. Refining the crack-path region "
+                "recovers the analytic G_c. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Irreversibility constraint: must "
+                "enforce d_new >= d_old (cracks cannot heal). "
+                "Signal: the dolfinx damage Function visualised "
+                "across time steps in XDMFFile shows d "
+                "DECREASING in some elements between steps — "
+                "unphysical. Standard fix: history-field "
+                "projection max(d, d_prev) after each "
+                "minimisation step. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Staggered scheme: simple but "
+                "slow convergence; monolithic: fast but "
+                "needs good initial guess. Signal: "
+                "staggered iteration count per load step "
+                "exceeds ~50 for moderately-loaded "
+                "specimens (each step alternates between "
+                "solving u-subproblem and d-subproblem via "
+                "two dolfinx NonlinearProblem calls); "
+                "monolithic mixed-FunctionSpace requires "
+                "<10 Newton iters per step but diverges "
+                "from the trivial u=0, d=0 initial guess "
+                "past first crack nucleation. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Tension-compression split (Miehe) "
+                "needed to prevent crack closure under "
+                "compression. Signal: without the split, a "
+                "compressive load nucleates spurious damage "
+                "d > 0 in the loaded region (cracks 'form' "
+                "under compression — physically wrong); with "
+                "the split, uniaxial-compression test gives "
+                "max(d) ~ 0. (Audit 2026-06-02.)"
+            ),
         ],
     },
 
@@ -1295,10 +1973,53 @@ _FENICS_KNOWLEDGE = {
             "submesh": "DOLFINx create_submesh() to extract regions, couple via restriction operators",
         },
         "pitfalls": [
-            "No built-in Stokes-Darcy demo in DOLFINx — must assemble custom weak forms",
-            "Interface conditions (Beavers-Joseph-Saffman) require careful implementation",
-            "Different function spaces in different regions: use submesh or subdomain-restricted forms",
-            "Permeability K can vary by orders of magnitude — use appropriate preconditioners",
+            (
+                "[API] No built-in Stokes-Darcy demo in DOLFINx "
+                "— must assemble custom weak forms. Signal: "
+                "searching dolfinx.fem for `StokesDarcy` returns "
+                "nothing; the user must hand-build the block "
+                "system [[A_Stokes, C_interface], [C^T, "
+                "A_Darcy]] and condense via "
+                "dolfinx.fem.petsc.LinearProblem with explicit "
+                "block layout. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Interface conditions (Beavers-"
+                "Joseph-Saffman) require careful "
+                "implementation. Signal: omitting the BJS "
+                "slip-velocity term in the dolfinx fem "
+                "FacetIntegrals gives a Stokes-Darcy result "
+                "that disagrees with experiments by ~30% "
+                "near the porous interface; including BJS "
+                "with alpha_BJ ~ 0.1-1 as a Constant and "
+                "proper normal-flux continuity restores "
+                "the empirical match. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Different function spaces in different "
+                "regions: use submesh or subdomain-restricted "
+                "forms. Signal: putting a single H1 space over "
+                "both Stokes and Darcy domains gives the wrong "
+                "regularity in the porous side (Darcy requires "
+                "H(div) flux, not H1 velocity). Use "
+                "dolfinx.mesh.create_submesh() to carve out the "
+                "porous subregion and assemble per-region. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Permeability K Constant can "
+                "vary by orders of magnitude — use "
+                "appropriate preconditioners. Signal: a "
+                "coarse-grained block-Jacobi PETSc PC "
+                "applied via the dolfinx LinearProblem to "
+                "a Darcy block with K=1 Constant on one "
+                "half and K=1e-6 Constant on the other "
+                "stalls with residual ratio ~1; switching "
+                "to a domain-decomposition or AMG-on-each-"
+                "region preconditioner restores ~10 "
+                "iterations to convergence. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
 
@@ -1610,10 +2331,51 @@ _DEALII_KNOWLEDGE = {
         "function_space": "FE_DGQ<dim>(p) — discontinuous Lagrange, degree 1-3",
         "solver": "SolverGMRES + PreconditionBlockJacobi (ILU per block)",
         "pitfalls": [
-            "Sparsity pattern must include face-coupling: DoFTools::make_flux_sparsity_pattern()",
-            "Interior penalty parameter must be large enough for stability (scales with p²)",
-            "Face integrals require careful normal orientation handling",
-            "Streamline ordering of DOFs can help GMRES convergence",
+            (
+                "[API] Sparsity pattern must include face-coupling: "
+                "DoFTools::make_flux_sparsity_pattern(). Signal: "
+                "using the regular make_sparsity_pattern() on a DG "
+                "discretization gives a matrix with missing off-"
+                "diagonal entries for face-coupling DOFs; assembly "
+                "then aborts with `SparseMatrix::add() requires "
+                "row/col to be in pattern` for every facet "
+                "contribution. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Interior penalty parameter (alpha "
+                "fed to MeshWorker / FEInterfaceValues face "
+                "integrators) must be large enough for stability "
+                "(scales with p^2). Signal: alpha too small -> "
+                "coercivity loss and the computed L^2 norm from "
+                "VectorTools::integrate_difference diverges with "
+                "mesh refinement; alpha too large -> condition "
+                "number > 1e14 and SolverGMRES stagnates. Rule: "
+                "alpha = 4 * (p+1)^2 for SIPG with FE_DGQ<dim>(p). "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Face integrals require careful "
+                "normal orientation handling via FEValues / "
+                "FEInterfaceValues. Signal: FEFaceValues / "
+                "FEInterfaceValues evaluated on the (-) side "
+                "gives normal pointing FROM (-) TO (+); "
+                "swapping +/- in the jump integral gives a "
+                "SIGN ERROR — the assembled SparseMatrix is "
+                "the TRANSPOSE of what was intended, and "
+                "convergence rate degrades from O(h^(p+1)) to "
+                "O(1) (no convergence, diagnosable via "
+                "KellyErrorEstimator). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] Streamline ordering of DOFs can "
+                "help GMRES convergence. Signal: default DoF "
+                "renumbering (Cuthill-McKee) gives GMRES "
+                "convergence in ~50-100 iters for advection-"
+                "dominated flow; switching to "
+                "DoFRenumbering::downstream(b) cuts it to ~10-20 "
+                "iters because the upwind sweep matches the "
+                "matrix sparsity structure. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "wave_equation": {
@@ -1634,9 +2396,40 @@ _DEALII_KNOWLEDGE = {
         "function_space": "FESystem for displacement + pressure + dilatation (3-field)",
         "solver": "Newton iteration with direct solver",
         "pitfalls": [
-            "Three-field formulation needed for quasi-incompressible materials",
-            "Newton convergence requires good initial guess and small load steps",
-            "Automatic differentiation (step-71/72) avoids hand-coding Jacobians",
+            (
+                "[Numerical] Three-field formulation needed for "
+                "quasi-incompressible materials. Signal: single-"
+                "field displacement formulation locks for nu > "
+                "0.49 — incompressible Neo-Hookean block under "
+                "uniaxial extension shows displacement ~500x too "
+                "small. step-44 uses (u, p_tilde, J_tilde) three-"
+                "field FESystem to recover the correct response. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Newton convergence requires good "
+                "initial guess and small load steps. Signal: a "
+                "single load step from zero to full deformation "
+                "diverges within 2-3 Newton iterations (visible "
+                "in SolverControl::log_history) for stretch "
+                "ratios > 1.1; subdividing into 10-20 load "
+                "increments with the previous AffineConstraints-"
+                "constrained solution as initial guess brings "
+                "each step inside Newton's convergence basin. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] Automatic differentiation "
+                "(step-71/72) avoids hand-coding Jacobians. "
+                "Signal: hand-coded tangent for Mooney-Rivlin or "
+                "Holzapfel-Gasser-Ogden has dozens of lines of "
+                "tensor index arithmetic — easy to miss a term "
+                "and get linear-rate Newton convergence; "
+                "Differentiation::AD::ResidualLinearization "
+                "(Sacado backend) generates the exact tangent "
+                "and restores quadratic convergence. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "compressible_euler": {
@@ -1650,10 +2443,42 @@ _DEALII_KNOWLEDGE = {
         "function_space": "FE_DGQ<dim>(2-5) — high-order DG",
         "solver": "Explicit Runge-Kutta (no linear solve needed, matrix-free)",
         "pitfalls": [
-            "MUST use DG elements — continuous elements are unstable for Euler",
-            "Numerical flux choice: Lax-Friedrichs (simple), HLLC (better shock resolution)",
-            "CFL condition mandatory for explicit time stepping",
-            "Shock capturing / slope limiting needed for discontinuous solutions",
+            (
+                "[Numerical] MUST use DG elements — continuous "
+                "(CG / FE_Q) elements are unstable for Euler. "
+                "Signal: a Sod shock-tube benchmark with FE_Q "
+                "develops uncontrolled oscillations that propagate "
+                "across the domain within a few time steps; the "
+                "same setup with FE_DGQ produces sharp shocks. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Numerical flux choice: Lax-Friedrichs "
+                "(simple), HLLC (better shock resolution). Signal: "
+                "Lax-Friedrichs over-smears contact discontinuities "
+                "in a Sod problem by ~30% of the analytical jump; "
+                "HLLC resolves them to <5% smearing. Use LF for "
+                "robustness, HLLC for accuracy. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] CFL condition mandatory for explicit "
+                "time stepping. Signal: dt > h / (|u| + c) gives "
+                "NaN within ~10 steps because the explicit "
+                "stencil cannot propagate information faster than "
+                "one element per step. CFL safety factor ~0.3 is "
+                "typical for SSP-RK3. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Shock capturing / slope limiting "
+                "needed for discontinuous solutions. Signal: "
+                "high-order DG without limiting produces "
+                "Gibbs-style oscillations around shocks (over/"
+                "undershoot 5-20% of the jump); applying a "
+                "TVB-Minmod limiter or entropy-viscosity "
+                "stabilisation eliminates them at the cost of "
+                "local accuracy reduction near the shock. (Audit "
+                "2026-06-02.)"
+            ),
         ],
     },
     "contact": {
@@ -1664,9 +2489,38 @@ _DEALII_KNOWLEDGE = {
         },
         "solver": "Projected CG with AMG preconditioner + active set iteration",
         "pitfalls": [
-            "Active set changes require iterating between constraint detection and solve",
-            "Penalty parameter: too small = constraint violation, too large = ill-conditioning",
-            "Use AffineConstraints to enforce contact constraints",
+            (
+                "[Numerical] Active set changes require iterating "
+                "between constraint detection (AffineConstraints / "
+                "PETScWrappers::MPI::Vector test) and SolverGMRES "
+                "solve. Signal: a single-shot SolverCG / SolverGMRES "
+                "call where the active set is predicted from the "
+                "initial guess gives the wrong contact zone for "
+                "typical Hertz benchmarks (~30-50% wrong contact "
+                "radius); the outer loop should iterate until two "
+                "consecutive active sets are identical, usually "
+                "3-10 iterations. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Penalty parameter: too small = "
+                "constraint violation, too large = ill-"
+                "conditioning. Signal: too low -> max penetration "
+                "> 5% element edge; too high -> SolverGMRES "
+                "stagnates with condition number > 1e14. Rule of "
+                "thumb: penalty = 1e3 * E / h for typical Hertz "
+                "contact with elastic Young modulus E. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] Use AffineConstraints to enforce contact "
+                "constraints. Signal: hand-modifying the system "
+                "matrix (zeroing rows + setting diag = 1) for "
+                "constrained nodes is brittle and breaks "
+                "parallel assembly. AffineConstraints<double> "
+                "with constraints.add_line + add_entries handles "
+                "the matrix modifications consistently across "
+                "MPI ranks. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "grid_generator_catalog": {
@@ -1788,57 +2642,15 @@ _DEALII_KNOWLEDGE = {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FEBIO — COMPREHENSIVE DOMAIN KNOWLEDGE
+# FEBIO — REMOVED 2026-06-02
+# The previous `_FEBIO_KNOWLEDGE` covered only 4 of febio's 16 live
+# supported physics, while the febio backend's own generators carry
+# matching `description` fields for all 16. workflows.py's merge
+# (`dict(deep_knowledge); ... if k not in knowledge`) allowed the
+# 4-key deep_knowledge entry to SHADOW the backend's larger catalog.
+# The febio backend is now the single source of truth for febio
+# knowledge — extend src/backends/febio/generators/ to grow it.
 # ═══════════════════════════════════════════════════════════════════════════════
-
-_FEBIO_KNOWLEDGE = {
-    "linear_elasticity": {
-        "description": "Linear elasticity with FEBio — isotropic elastic material. XML input (.feb), v4.0.",
-        "input_format": "FEBio XML (.feb), version 4.0",
-        "solver": "Newton-Raphson with direct linear solver",
-        "materials": {
-            "isotropic elastic": {"E": "Young's modulus (Pa)", "v": "Poisson's ratio (NOTE: lowercase v, not nu)"},
-        },
-        "pitfalls": [
-            "FEBio uses lowercase 'v' for Poisson's ratio (not 'nu')",
-            "Element connectivity is 1-indexed",
-            "MeshDomains section required in v4.0 (links domain to material)",
-            "LoadData section with load_controller needed for prescribed BCs",
-        ],
-    },
-    "hyperelasticity": {
-        "description": "Nonlinear hyperelasticity — Neo-Hookean, Mooney-Rivlin, Ogden, HGO (tissue).",
-        "materials": {
-            "neo-Hookean": {"E": "Young's modulus", "v": "Poisson's ratio"},
-            "Mooney-Rivlin": {"c1": "1st constant", "c2": "2nd constant", "k": "bulk modulus"},
-            "Ogden": {"c1-c6": "Ogden constants", "m1-m6": "Ogden exponents", "k": "bulk modulus"},
-            "Holzapfel-Gasser-Ogden": {"c": "matrix modulus", "k1": "fiber stiffness", "k2": "fiber exponent",
-                                        "kappa": "dispersion (0=aligned, 1/3=isotropic)", "theta": "fiber angle"},
-        },
-        "pitfalls": [
-            "Use 'STATIC' analysis for quasi-static loading",
-            "Large deformations require proper step size control",
-            "Convergence issues: reduce step size or use line search",
-            "HGO model: fiber direction via local coordinate system",
-        ],
-    },
-    "biphasic": {
-        "description": "Biphasic poroelasticity — solid + fluid phases. Key for cartilage, hydrogels.",
-        "materials": {
-            "biphasic": {"solid": "Any hyperelastic + 'permeability' material",
-                         "permeability": "Holmes-Mow or constant permeability"},
-        },
-        "pitfalls": [
-            "Requires Module type='biphasic'",
-            "Fluid pressure BC via 'fluid pressure' boundary condition",
-            "Time stepping critical — fast diffusion requires small dt initially",
-        ],
-    },
-    "heat": {
-        "description": "Heat conduction (steady-state). Module type='heat'.",
-        "solver": "Direct or iterative",
-    },
-}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1882,228 +2694,3 @@ _CROSS_SOLVER_KNOWLEDGE = {
         ],
     },
 }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# MCP TOOL REGISTRATION
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def register_deep_knowledge_tools(mcp: FastMCP):
-
-    @mcp.tool()
-    def get_deep_knowledge(solver: str, physics: str) -> str:
-        """Get comprehensive domain knowledge for a physics module.
-
-        Returns everything needed to set up a simulation correctly:
-        materials, solver options, time integration, pitfalls, element types,
-        reference solutions, and best practices.
-
-        This is MUCH more detailed than get_physics_knowledge — use this
-        when you need to understand a physics problem deeply.
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-            physics: Physics key (e.g. 'poisson', 'navier_stokes', 'fsi', 'particle_pd')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE,
-            "4c": _4C_KNOWLEDGE,
-            "fenics": _FENICS_KNOWLEDGE,
-            "fenicsx": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE,
-            "deal.ii": _DEALII_KNOWLEDGE,
-            "febio": _FEBIO_KNOWLEDGE,
-        }
-
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}. Available: fourc, fenics, dealii, febio"
-
-        k = db.get(physics.lower())
-        if not k:
-            available = sorted(db.keys())
-            return f"No knowledge for '{physics}' in {solver}. Available: {', '.join(available)}"
-
-        return json.dumps(k, indent=2, default=str)
-
-    @mcp.tool()
-    def get_all_pitfalls(solver: str) -> str:
-        """Get ALL pitfalls/common mistakes for a solver, across all physics.
-
-        Critical for preventing simulation failures. Returns a consolidated
-        list organized by physics module.
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE, "fenics": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE,
-        }
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}"
-
-        lines = [f"# All Pitfalls for {solver}\n"]
-        for physics, k in sorted(db.items()):
-            pitfalls = k.get("pitfalls", [])
-            if pitfalls:
-                lines.append(f"## {physics}")
-                for p in pitfalls:
-                    lines.append(f"- {p}")
-                lines.append("")
-
-        return "\n".join(lines)
-
-    @mcp.tool()
-    def get_material_catalog(solver: str) -> str:
-        """Get the complete material catalog for a solver backend.
-
-        Lists all material types, their parameters, valid ranges,
-        and which physics modules use them.
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE, "fenics": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "febio": _FEBIO_KNOWLEDGE,
-        }
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}"
-
-        catalog = {}
-        for physics, k in db.items():
-            materials = k.get("materials", {})
-            for mat_name, mat_info in materials.items():
-                if mat_name not in catalog:
-                    catalog[mat_name] = {"used_in": [], "parameters": mat_info}
-                catalog[mat_name]["used_in"].append(physics)
-
-        return json.dumps(catalog, indent=2, default=str)
-
-    @mcp.tool()
-    def get_solver_guidance(physics: str) -> str:
-        """Get cross-solver comparison and recommendation for a physics problem.
-
-        Compares how each available solver handles this physics type,
-        including strengths, weaknesses, and which to choose.
-
-        Args:
-            physics: Physics type (e.g. 'poisson', 'navier_stokes', 'fsi', 'hyperelasticity')
-        """
-        lines = [f"# Solver Guidance for: {physics}\n"]
-
-        all_knowledge = {
-            "FEniCSx": _FENICS_KNOWLEDGE,
-            "deal.II": _DEALII_KNOWLEDGE,
-            "4C": _4C_KNOWLEDGE,
-            "FEBio": _FEBIO_KNOWLEDGE,
-        }
-
-        found_any = False
-        for solver_name, db in all_knowledge.items():
-            k = db.get(physics.lower())
-            if k:
-                found_any = True
-                lines.append(f"## {solver_name}")
-                lines.append(f"**Description:** {k.get('description', 'N/A')}")
-                if "solver" in k:
-                    lines.append(f"**Solver:** {json.dumps(k['solver'], default=str)}")
-                if "pitfalls" in k:
-                    lines.append("**Key pitfalls:**")
-                    for p in k["pitfalls"][:3]:
-                        lines.append(f"  - {p}")
-                if "variants" in k:
-                    lines.append(f"**Templates:** {', '.join(k['variants'])}")
-                lines.append("")
-
-        if not found_any:
-            lines.append(f"No solver has knowledge for '{physics}'.")
-            lines.append("Available physics across all solvers:")
-            all_physics = set()
-            for db in all_knowledge.values():
-                all_physics.update(db.keys())
-            for p in sorted(all_physics):
-                lines.append(f"  - {p}")
-
-        # Recommendation
-        backend = None
-        avail = available_backends()
-        for b in avail:
-            for p in b.supported_physics():
-                if p.name == physics.lower():
-                    backend = b
-                    break
-            if backend:
-                break
-
-        if backend:
-            lines.append(f"\n**Recommended:** {backend.display_name()} (available on this machine)")
-
-        return "\n".join(lines)
-
-    @mcp.tool()
-    def get_solver_catalog(solver: str) -> str:
-        """Get the full capability catalog for a specific solver.
-
-        For deal.II: complete tutorial step catalog (50+ steps)
-        For 4C: all physics modules with problem types and templates
-        For FEniCS: all physics with weak forms and solver options
-        For FEBio: material catalog including biomechanics-specific
-
-        Args:
-            solver: Backend name ('fenics', 'fourc', 'dealii', 'febio')
-        """
-        knowledge_map = {
-            "fourc": _4C_KNOWLEDGE, "4c": _4C_KNOWLEDGE,
-            "fenics": _FENICS_KNOWLEDGE, "fenicsx": _FENICS_KNOWLEDGE,
-            "dealii": _DEALII_KNOWLEDGE, "deal.ii": _DEALII_KNOWLEDGE,
-            "febio": _FEBIO_KNOWLEDGE,
-        }
-        db = knowledge_map.get(solver.lower())
-        if not db:
-            return f"Unknown solver: {solver}. Available: fourc, fenics, dealii, febio"
-
-        lines = [f"# {solver} — Full Capability Catalog\n"]
-        for key, k in sorted(db.items()):
-            desc = k.get("description", "")
-            lines.append(f"## {key}")
-            if desc:
-                lines.append(f"{desc}")
-            if "problem_type" in k:
-                lines.append(f"**Problem type:** {k['problem_type']}")
-            if "weak_form" in k:
-                lines.append(f"**Weak form:** {k['weak_form']}")
-            if "variants" in k:
-                lines.append(f"**Templates:** {', '.join(k['variants'])}")
-            if "tutorial_steps" in k:
-                for step, sdesc in k["tutorial_steps"].items():
-                    lines.append(f"  - {step}: {sdesc}")
-            lines.append("")
-        return "\n".join(lines)
-
-    @mcp.tool()
-    def get_cross_solver_reference(problem: str = "") -> str:
-        """Get verified cross-solver reference solutions and validation knowledge.
-
-        Returns known-good reference values for standard FEM benchmark problems,
-        verified across FEniCS, deal.II, and 4C. Essential for:
-        - Checking if your simulation result is correct
-        - Understanding expected element-type differences (tri vs quad)
-        - Setting up matched cross-solver comparisons
-        - Knowing 4C inline mesh normalization rules
-
-        Args:
-            problem: Specific problem (e.g. 'poisson', 'heat', 'elasticity')
-                    or empty for all reference data
-        """
-        if problem:
-            key = problem.lower().replace(" ", "_")
-            # Search in reference solutions
-            for k, v in _CROSS_SOLVER_KNOWLEDGE["reference_solutions"].items():
-                if key in k:
-                    return json.dumps({k: v}, indent=2)
-            return f"No reference for '{problem}'. Available: {list(_CROSS_SOLVER_KNOWLEDGE['reference_solutions'].keys())}"
-        return json.dumps(_CROSS_SOLVER_KNOWLEDGE, indent=2)

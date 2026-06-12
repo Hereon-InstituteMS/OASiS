@@ -46,7 +46,9 @@ class InitialDisplacement : public Function<dim>
 public:
   double value(const Point<dim> &p, const unsigned int) const override
   {{
-    const double r2 = (p - Point<dim>(0.5, 0.5)).square();
+    // norm_square(), not square(): Tensor<1,dim> has no member
+    // named square — Point's difference decays to a Tensor.
+    const double r2 = (p - Point<dim>(0.5, 0.5)).norm_square();
     return std::exp(-100.0 * r2);
   }}
 }};
@@ -208,14 +210,99 @@ KNOWLEDGE = {
     "function_space": "FE_Q<dim>(1)",
     "time_stepping": "Newmark-beta (beta=0.25, gamma=0.5 for average acceleration, unconditionally stable)",
     "solver": "CG + SSOR for the effective stiffness system at each time step",
+    "elements": {
+        "FE_Q":
+            "degree=1 default for the linear wave equation; "
+            "degree=2 for spectral accuracy at moderate wave "
+            "numbers.",
+        "FE_Q_Hierarchical":
+            "For hp-adaptive refinement around shocks (sine-"
+            "Gordon, nonlinear wave) — coarse-DoF wavefront "
+            "survives degree changes.",
+        "FE_DGQ":
+            "DG variant; preferred for discontinuous-coefficient "
+            "wave problems and shock propagation.",
+        "FE_Q_iso_Q1":
+            "Lumped mass matrix becomes diagonal — explicit "
+            "Newmark (beta=0) reduces to a diagonal solve per "
+            "step, enabling matrix-free explicit time integration.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Canonical wave-equation test domain.",
+        "hyper_ball": "Circular drum; tests modal accuracy against Bessel-function reference.",
+        "hyper_shell": "Annular waveguide.",
+        "hyper_cube_with_cylindrical_hole": "Scattering from obstacle; tests absorbing-BC quality.",
+        "hyper_L": "Re-entrant corner reflects high-frequency content; tests AMR.",
+        "extrude_triangulation": "2D wave mesh → 3D acoustic-tank problems.",
+    },
+    "solvers": [
+        "SolverCG<>                    — effective-stiffness system is SPD if M and K are SPD (typical for the scalar wave equation); the default",
+        "SolverGMRES<>                 — needed when damping or absorbing BCs break symmetry of the effective stiffness",
+        "Explicit Newmark (beta=0)     — diagonalised, no linear solve; bound by CFL dt < h/c",
+        "SparseDirectUMFPACK           — for one-shot factorisation re-used at every time step; effective when dt and mesh are constant",
+    ],
+    "preconditioners": [
+        "PreconditionSSOR              — works on the effective-stiffness (M + beta*dt^2*c^2*K) for typical Newmark parameters",
+        "PreconditionAMG / BoomerAMG   — at >10^5 DoFs; rebuild factorisation only when dt or mesh changes",
+        "Diagonal scaling (PreconditionJacobi) — sufficient when the mass matrix dominates (small dt) and AMG overhead isn't worth it",
+    ],
     "pitfalls": [
-        "Newmark: unconditionally stable for beta >= gamma/2 >= 1/4",
-        "System each step: (M + beta*dt^2*c^2*K)*u_(n+1) = M*u_tilde",
-        "Effective stiffness matrix is SPD if M and K are SPD",
-        "CFL-like condition for explicit Newmark (beta=0): dt < h/c",
-        "Initial acceleration: solve M*a_0 = f_0 - c^2*K*u_0",
-        "For absorbing BCs: add damping term on boundary",
-        "VTU output at selected time steps for animation",
+        "[Numerical] Newmark-beta unconditional stability requires "
+        "beta >= gamma/2 >= 1/4. The (beta=0.25, gamma=0.5) pair "
+        "is the canonical 'average acceleration' choice. Setting "
+        "beta=0 (explicit) trades stability for CFL-bound dt < h/c. "
+        "Signal: when beta < gamma/2, "
+        "`solution.linfty_norm()` from DataOut grows exponentially "
+        "(doubles every 5-10 time steps) and reaches NaN within "
+        "~50 steps; the same problem with beta=0.25 stays bounded "
+        "at O(1) amplitude.",
+        "[Syntax] Time-step system: "
+        "(M + beta*dt^2*c^2*K)*u_(n+1) = M*u_tilde. Both M and K "
+        "must be assembled ONCE before time stepping; only the "
+        "RHS (u_tilde from u_n, v_n, a_n) varies per step. "
+        "Re-assembling K each step is the most common transient-"
+        "wave performance bug. Signal: TimerOutput.print_summary() "
+        "shows 'assemble_system' dominating wall time at 60-80% "
+        "per step, scaling as O(ndof^2) instead of "
+        "O(ndof * SolverCG::last_step()); SolverCG iteration "
+        "count itself is normal.",
+        "[Numerical] CFL-like condition for explicit Newmark "
+        "(beta=0): dt < h/c. Setting dt larger gives spurious "
+        "exponentially-growing modes. Signal: with beta=0 and "
+        "dt > h/c, BlockVector::linfty_norm() of the solution "
+        "doubles every ~5 steps and reaches NaN within ~30 steps; "
+        "energy 0.5 * v^T M v + 0.5 c^2 u^T K u (computed via "
+        "SparseMatrix::vmult + dot product) grows by factor 10+ "
+        "per step instead of staying bounded; switching to "
+        "implicit Newmark (beta=0.25) at the same dt keeps "
+        "amplitude bounded at O(1).",
+        "[Syntax] Initial acceleration must be computed by solving "
+        "M*a_0 = f_0 - c^2*K*u_0 (via SolverCG), not just zeroed "
+        "out. Setting a_0 = 0 produces a slowly-decaying transient "
+        "from the wrong initial condition. Signal: DataOut at "
+        "early times (t < 5*period) shows a low-frequency mode "
+        "of magnitude 0.1-0.3 superimposed on the correct wave "
+        "pattern; VectorTools::integrate_difference vs analytic "
+        "reference shows O(1) error in the first 10 steps then "
+        "decays to O(h^p) on later steps.",
+        "[Physics] Absorbing BCs: add a damping term on the "
+        "boundary, c * du/dt on the outflow face. Forgetting this "
+        "makes the boundary reflect waves back into the domain. "
+        "Signal: DataOut shows the outgoing wave reflecting at "
+        "the outflow boundary; "
+        "`solution.linfty_norm()` rises periodically (period = "
+        "2*L/c) rather than decaying monotonically; energy "
+        "`0.5 * v^T M v + 0.5 c^2 u^T K u` stays constant or "
+        "grows instead of decaying to zero as the wave should "
+        "leave the domain.",
+        "[Integration] VTU output at every time step is "
+        "unnecessarily expensive — output every N steps and use "
+        "DataOutInterface::write_pvd_record to assemble the .pvd "
+        "time-series file. Signal: TimerOutput.print_summary() "
+        "reports 'output_results' or 'DataOut::write_vtu' as the "
+        "top wall-time entry (>50% of total), exceeding the "
+        "SolverCG and assemble_system buckets; the per-step VTU "
+        "file count grows into the 10000s on disk.",
     ],
     "materials": {
         "wave_speed": {"range": [0.01, 10000.0], "unit": "m/s"},

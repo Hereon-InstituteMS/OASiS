@@ -34,12 +34,79 @@ _DG_KNOWLEDGE = {
     "function_space": "DG order 1 (or higher) — fully discontinuous Lagrange",
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
-        "DG advection flux: upwind — use ufl.conditional(ufl.dot(b,n)('+') > 0, u('+'), u('-'))",
-        "Interior penalty diffusion: alpha >= O(p^2) for coercivity; alpha=4 safe for p=1",
-        "FacetNormal n is outward; avg/jump operators need '+'/'-' sides",
-        "Inflow BC imposed weakly via boundary integral, NOT Dirichlet",
-        "For pure advection (eps=0): drop diffusion terms entirely",
-        "DG mass matrix is block-diagonal — efficient for explicit time stepping",
+        (
+            "[Numerical] DG advection flux: upwind — choose "
+            "the value from the upstream side via "
+            "ufl.conditional(ufl.dot(b, n)('+') > 0, u('+'), "
+            "u('-')). Signal: using a centred flux "
+            "0.5*(u('+') + u('-')) on a pure-advection DG "
+            "problem produces unconditional instability — the "
+            "solution amplitude grows exponentially in time "
+            "regardless of mesh size; upwind restores the "
+            "discrete maximum principle. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Interior penalty diffusion: alpha >= "
+            "O(p^2) for coercivity; alpha=4 safe for p=1. Signal: "
+            "for the SIPG penalty alpha_0 too small -> "
+            "coercivity_loss + the dolfinx Function L2 norm "
+            "diverges with refinement; alpha_0 too large -> "
+            "cond(K) > 1e14 and the PETScKrylovSolver stagnates. "
+            "Rule of thumb: alpha_0 = 4 * p_plus_1^2 for "
+            "symmetric IP. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] FacetNormal n is outward; avg/jump operators "
+            "need '+'/'-' sides. Signal: writing dot(b, n) "
+            "without a side suffix in an interior-facet integral "
+            "raises `Error: side specifier required on '+' or "
+            "'-' for restricted facet integrals` at form "
+            "compilation; the same expression with "
+            "dot(b, n('+')) compiles. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Inflow BC imposed weakly via boundary "
+            "integral, NOT Dirichlet. Signal: applying "
+            "DirichletBC(V, u_inlet, inflow_facets) on a DG "
+            "space silently does nothing — DG DOFs don't honour "
+            "strong Dirichlet across element interiors. The "
+            "inflow BC must enter the form via "
+            "+ b_n*u_inlet*v*ds(inflow). (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] For pure advection (eps = 0): DROP the "
+            "diffusion terms entirely (do not just set eps "
+            "small). Signal: keeping the IP diffusion terms "
+            "with eps = 0 gives a multiplicative-zero in the "
+            "form but the penalty term alpha/h * jump(u) * "
+            "jump(v) * dS REMAINS and over-stabilises the "
+            "pure-advection problem, smearing the solution "
+            "across element faces. Remove the avg/jump/eps "
+            "block entirely for hyperbolic problems. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Performance] DG mass matrix is block-DIAGONAL "
+            "(one block per cell) — efficient for explicit "
+            "time stepping because the inversion is local. "
+            "Signal: applying a generic scipy.sparse.linalg "
+            "spsolve to invert M each step misses the block-"
+            "diagonal structure; a per-cell local solve (using "
+            "the LocalSolver / scipy.linalg.solve on each cell "
+            "block) is 10-100x faster. For implicit DG, the "
+            "FULL system K is not block-diagonal — only the "
+            "mass is. (Audit 2026-06-02.)"
+        ),
+        "[API] Modern UFL has no ufl.Abs symbol — use Python's "
+        "builtin abs() (which UFL overloads for Expr operands) "
+        "or ufl.algebra.Abs as the explicit fallback. Calling "
+        "ufl.Abs(z) raises AttributeError: module 'ufl' has no "
+        "attribute 'Abs'. The idiomatic pattern in DG upwind-flux "
+        "construction is e.g. (b_n + abs(b_n))/2 for the outflow "
+        "side. Signal: AttributeError with the literal text "
+        "\"module 'ufl' has no attribute 'Abs'\" emitted at script "
+        "import time before any assembly is attempted. (Verified "
+        "empirically 2026-06-01 — Layer F catch.)",
     ],
     "materials": {
         "diffusion": {"range": [1e-8, 1.0], "unit": "m^2/s"},
@@ -97,8 +164,8 @@ u_D = fem.Constant(domain, default_scalar_type(0.0))  # inflow value
 
 # Upwind flux for advection
 bn = ufl.dot(b, n)
-bn_plus  = (bn("+") + ufl.Abs(bn("+")) ) / 2.0   # outflow side
-bn_minus = (bn("+") - ufl.Abs(bn("+")) ) / 2.0   # inflow  side
+bn_plus  = (bn("+") + abs(bn("+")) ) / 2.0   # outflow side
+bn_minus = (bn("+") - abs(bn("+")) ) / 2.0   # inflow  side
 adv_flux = bn_plus * u("+") + bn_minus * u("-")   # upwind
 
 # Interior-penalty diffusion bilinear form
@@ -117,7 +184,7 @@ a_adv = (
 )
 
 # Weakly imposed inflow boundary condition (negative bn face)
-bn_ds = (ufl.dot(b, n) - ufl.Abs(ufl.dot(b, n))) / 2.0  # only inflow faces
+bn_ds = (ufl.dot(b, n) - abs(ufl.dot(b, n))) / 2.0  # only inflow faces
 L_inflow = - bn_ds * u_D * v * ufl.ds
 
 # Full system
@@ -299,13 +366,97 @@ _MULTIPHASE_KNOWLEDGE = {
     "function_space": "Lagrange order 1 (phase field scalar)",
     "solver": "Newton for Allen-Cahn (nonlinear double-well); linear for advective LS",
     "pitfalls": [
-        "Interface width epsilon: set to 2-4 mesh elements; too small -> oscillations",
-        "Allen-Cahn: double-well potential W(phi) = (phi^2-1)^2 / (4*eps)",
-        "Mobility parameter kappa scales interface diffusion; set to eps^2 typically",
-        "Mass conservation: Allen-Cahn does NOT conserve volume; Cahn-Hilliard does",
-        "For two-fluid NS: couple with Navier-Stokes via density/viscosity interpolation",
-        "Level-set reinitialization required to keep |grad(phi)|=1 (signed distance property)",
-        "Smeared physical properties: rho = rho1*H(phi) + rho2*(1-H(phi)) where H is Heaviside",
+        (
+            "[Numerical] Interface width epsilon: set to 2-4 mesh "
+            "elements; too small -> oscillations. Signal: the phi "
+            "dolfinx Function near the interface develops 10-30% "
+            "overshoot/undershoot with checkerboard pattern in "
+            "the FunctionSpace, OR the NonlinearProblem solver "
+            "diverges with `DIVERGED_FNORM_NAN` because the "
+            "double-well derivative W'(phi) ~ phi^3 amplifies "
+            "the spurious oscillations. Rule of thumb: "
+            "eps >= 2 * h_min. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Allen-Cahn double-well potential "
+            "W(phi) = (phi^2 - 1)^2 / (4 * eps) — wells at phi="
+            "+/-1 (the two phases). Signal: forgetting the "
+            "1/(4*eps) prefactor produces a double-well shape "
+            "that is correct topologically but with the WRONG "
+            "height — equilibrium interface profile width "
+            "becomes O(sqrt(eps)) instead of O(eps), and the "
+            "tanh-shaped phi(x) at the interface visibly widens "
+            "with mesh refinement instead of stabilising. The "
+            "1/(4*eps) is dimensionally required (W has units "
+            "of [phi]^2 / [length]). (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Mobility parameter kappa scales the "
+            "interface diffusion (CH form: -kappa * grad(mu); "
+            "AC form: -kappa * d_phi(W)). Typically kappa = "
+            "eps^2 to match the asymptotic Hilliard-Mullins "
+            "limit. Signal: setting kappa = 1 (much larger "
+            "than eps^2) gives an artificially-thick "
+            "interface (~5-10 elements wide instead of 2-4) "
+            "and overly-slow front advection; setting "
+            "kappa = O(eps) gives the right interface width "
+            "but with under-diffusive transient dynamics. "
+            "Match kappa to eps^2 for the sharp-interface "
+            "limit. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Mass conservation: Allen-Cahn does NOT "
+            "conserve volume; Cahn-Hilliard does. Signal: integral "
+            "of phi over the domain drifts monotonically with time "
+            "(typical loss ~1-5% per characteristic interface time "
+            "in Allen-Cahn); a Cahn-Hilliard solve on the same "
+            "geometry preserves the integral to machine precision. "
+            "If volume conservation matters (two-phase flow, "
+            "spinodal decomposition), use Cahn-Hilliard. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Numerical] Two-fluid NS coupling: density and "
+            "viscosity are interpolated through phi via "
+            "rho(phi) = rho1*H(phi) + rho2*(1-H(phi)), "
+            "mu(phi) = mu1*H(phi) + mu2*(1-H(phi)). Signal: "
+            "using a SHARP Heaviside via ufl.conditional "
+            "(true step) makes the momentum equation "
+            "discontinuous at the interface and the dolfinx "
+            "NonlinearProblem stalls with "
+            "`DIVERGED_FNORM_NAN`; use a smoothed H(phi) = "
+            "0.5*(1 + tanh(phi/eps)) so the density / "
+            "viscosity Constant-equivalents vary smoothly "
+            "over a width ~ eps. The discrete pressure "
+            "Function across a clean interface should still "
+            "resolve the surface-tension jump 2*sigma*kappa "
+            "(kappa = curvature). (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Level-set reinitialization required to keep "
+            "|grad(phi)|=1 (signed distance property). Signal: "
+            "max(|grad(phi)|) drifts away from 1 (>2 or <0.5) after "
+            "~10-50 time steps, causing front advection-velocity "
+            "errors >5%; periodic reinitialization (every ~10 "
+            "steps) via the Hamilton-Jacobi update "
+            "phi_tau + sign(phi_0)(|grad phi|-1) = 0 restores the "
+            "property. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Smeared physical properties across the "
+            "interface: rho(phi) = rho1*H(phi) + rho2*(1-H(phi)) "
+            "where H is a SMOOTHED Heaviside (typically "
+            "0.5*(1 + tanh(phi/eps))), not the discontinuous "
+            "step. Signal: using a hard step H = "
+            "ufl.conditional(phi > 0, 1.0, 0.0) makes the "
+            "discrete mass and momentum equations have a "
+            "non-differentiable density inside ~1 element — "
+            "Newton stalls at the interface, residual norm "
+            "plateaus at O(rho2 - rho1). The smoothed H "
+            "restores well-posedness at the cost of an O(eps) "
+            "modelling error on the interface position. (Audit "
+            "2026-06-02.)"
+        ),
     ],
     "materials": {
         "epsilon": {"range": [0.01, 0.1], "unit": "m (interface thickness)"},
@@ -430,13 +581,92 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {
     "function_space": "Lagrange order 1 (or 2 for better accuracy)",
     "solver": "Linear system per time step; matrix assembled once if coefficients constant",
     "pitfalls": [
-        "Backward Euler: unconditionally stable, 1st order accurate in time",
-        "Crank-Nicolson: 2nd order but can oscillate for step-function sources",
-        "Convective BC: add h*(T - T_inf)*v*ds to bilinear form (Robin BC)",
-        "Heat flux BC: add -q_n*v*ds to linear form (Neumann BC)",
-        "Material properties rho, cp, k can be spatially varying Functions",
-        "For PCM: enthalpy method with effective capacity for phase change",
-        "CFL restriction irrelevant (implicit method); choose dt for accuracy",
+        (
+            "[Numerical] Backward Euler: unconditionally "
+            "stable, 1st order accurate in time. Signal: "
+            "comparing a BE solution at dt = 0.1 vs dt = 0.01 "
+            "against an analytic transient (e.g. heat "
+            "equation with sin(pi x) IC) should show L2 "
+            "error decreasing linearly in dt — slope 1 on a "
+            "log-log refinement study. A slope of 2 means "
+            "the implementation is actually Crank-Nicolson "
+            "(theta = 0.5) instead of BE (theta = 1); a "
+            "slope of 0 means dt is too large to be in the "
+            "asymptotic regime. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Crank-Nicolson: 2nd order but can oscillate "
+            "for step-function sources. Signal: temperature field at "
+            "the source location shows visible oscillation in time "
+            "(over/undershoot ~10-30%) that does not damp with mesh "
+            "refinement; switching to Backward Euler removes the "
+            "oscillation but degrades temporal accuracy. The "
+            "Courant-like criterion for CN stability with sharp "
+            "transients is k*dt/(rho*cp*h^2) < ~1/6. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Input] Convective BC: add h*(T - T_inf)*v*ds to "
+            "bilinear form (Robin BC). Signal: forgetting the "
+            "Robin term gives an insulated boundary (natural "
+            "BC) regardless of the h and T_inf values "
+            "specified — temperature at the cooling boundary "
+            "stays at the initial value because the heat-"
+            "transfer coefficient is never coupled into the "
+            "weak form. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Input] Heat flux BC: add -q_n*v*ds to linear "
+            "form (Neumann BC). Signal: a Neumann flux declared "
+            "in the input description but missing from the "
+            "weak form is silently treated as zero flux "
+            "(insulated). Visualize: temperature gradient at "
+            "the supposed-flux boundary is ~0 instead of "
+            "matching the prescribed q_n. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Material properties rho, cp, k can be "
+            "spatially varying fem.Function objects (not just "
+            "Constant scalars). Signal: a heterogeneous "
+            "material (e.g. layered conductivity 1 W/mK in "
+            "one half, 10 W/mK in the other) modelled with a "
+            "single fem.Constant gives a smooth temperature "
+            "field that misses the kink at the interface; "
+            "the correct approach is k = fem.Function(V_DG0) "
+            "with k.interpolate(piecewise_lambda) so each "
+            "cell gets its own k value, then "
+            "k * dot(grad(T), grad(v)) * dx in the weak form. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] For PCM: enthalpy method with effective "
+            "capacity for phase change. Signal: a uniform-temperature "
+            "method (constant cp) produces a sharp melting front "
+            "with overshoot >5K above T_melt; using c_eff(T) with a "
+            "smoothed delta around T_melt (width ~2K) preserves "
+            "energy and tracks the melting front correctly. Energy "
+            "conservation check: integral of rho*c_eff(T)*dT over "
+            "the domain matches the prescribed boundary heat flux "
+            "integral. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] CFL restriction is IRRELEVANT for "
+            "implicit BE/CN methods (L-stable) — but dt "
+            "still controls ACCURACY. Signal: choosing dt "
+            "by some explicit-stability formula (e.g. "
+            "dt < h^2 / (2*alpha)) in the dolfinx "
+            "LinearProblem time loop is unnecessarily "
+            "small for implicit and wastes compute; dt "
+            "should be chosen so the shortest physical "
+            "timescale of interest (e.g. heat-front "
+            "transit time) is resolved by 10-20 steps. "
+            "Implicit methods (via dolfinx fem "
+            "NonlinearProblem or LinearProblem) can take "
+            "dt up to the steady-state convergence "
+            "timescale without blowing up, but a too-"
+            "large dt smears the transient response in "
+            "the Function output. (Audit 2026-06-02.)"
+        ),
     ],
     "materials": {
         "conductivity": {"range": [0.01, 500.0], "unit": "W/(m*K)"},
@@ -762,13 +992,82 @@ _NONLINEAR_PDE_KNOWLEDGE = {
     "function_space": "Lagrange order 1 or 2 (scalar or vector)",
     "solver": "PETSc SNES (newtonls) with automatic UFL Jacobian",
     "pitfalls": [
-        "Jacobian computed via ufl.derivative(F, u, du) — automatic, no hand differentiation needed",
-        "Newton convergence: start from a good initial guess (e.g., linear solution or continuation)",
-        "For strongly nonlinear D(u): line search in SNES helps (snes_linesearch_type=l2)",
-        "Singularity: D(u)=0 can cause indefinite Jacobian; add regularization D_reg = max(D,eps)",
-        "p-Laplacian: D(u) = |grad(u)|^(p-2) — singular at grad(u)=0 for p<2",
-        "Semilinear: R(u)=u^3 (subcritical) is easy; R(u)=exp(u) can blow up",
-        "Monitor convergence with snes_monitor and ksp_monitor PETSc options",
+        (
+            "[API] Jacobian computed via ufl.derivative(F, u, du) "
+            "— automatic, no hand differentiation needed. Signal: "
+            "passing only F (without J) to "
+            "dolfinx.fem.petsc.NonlinearProblem raises "
+            "`TypeError: NonlinearProblem missing required "
+            "argument J` or SNES picks a finite-difference "
+            "Jacobian that converges linearly instead of "
+            "quadratically. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Newton convergence: start from a good "
+            "initial guess (e.g., linear solution or continuation). "
+            "Signal: SNES reports `reason DIVERGED_LINE_SEARCH` "
+            "with very large alpha_0, or `DIVERGED_MAX_IT` at the "
+            "first step; residual ratio stays > 0.5 for many "
+            "iterations instead of decreasing geometrically. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] For strongly nonlinear D(u): enable "
+            "PETSc SNES line search (snes_linesearch_type='l2' "
+            "or 'bt' for backtracking). Signal: a pure-Newton "
+            "step on a problem with strong D(u)-nonlinearity "
+            "(e.g. D(u) = u^3) overshoots the basin of "
+            "attraction — residual norm oscillates between two "
+            "values without converging, or diverges with "
+            "`DIVERGED_FNORM_NAN`. Enabling line search adds "
+            "a damping step alpha in (0, 1] per Newton iter, "
+            "trading raw Newton speed for robustness. PETSc "
+            "default is 'bt' (basic backtracking); 'l2' is "
+            "L2-norm minimisation. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Singularity: D(u)=0 can cause indefinite "
+            "Jacobian; add regularization D_reg = max(D,eps). "
+            "Signal: PETSc reports `KSPSolve: divergence reason "
+            "DIVERGED_INDEFINITE_PC` or LU pivoting warning "
+            "`small pivot, possible singularity`; Newton residual "
+            "oscillates rather than decreases. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] p-Laplacian: D(u) = |grad(u)|^(p-2) — "
+            "singular at grad(u)=0 for p<2. Signal: assembling J "
+            "on a uniform initial guess (grad u = 0) yields NaN "
+            "entries; `dolfinx_assemble_matrix raised "
+            "ZeroDivisionError`; or `nan` in the convergence-rate "
+            "table. Regularize the diffusivity D = (|grad(u)|^2 + "
+            "eps^2)^((p-2)/2) with eps ~ 1e-6 to step away from "
+            "the singular initial point. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Semilinear: R(u)=u^3 (subcritical) is "
+            "easy; R(u)=exp(u) can blow up. Signal: u_max grows "
+            "geometrically across SNES iterations (factor ~2-10x "
+            "per step) before SNES aborts with `DIVERGED_FNORM_NAN`"
+            " or `DIVERGED_INF`; the steady solution does not "
+            "exist for sufficiently large source / Dirichlet "
+            "amplitudes — use continuation in the load. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[API] Monitor SNES + KSP convergence via "
+            "petsc_options snes_monitor='' and ksp_monitor='' "
+            "(empty string activates default printing). "
+            "Signal: a silent SNES that prints only "
+            "`DIVERGED_LINE_SEARCH` after the fact gives no "
+            "actionable info; with snes_monitor enabled, "
+            "stderr shows '0 SNES Function norm 1.234e+02 / "
+            "1 SNES Function norm 3.456e+01' lines, "
+            "exposing whether the residual was decreasing "
+            "(load step too aggressive) or oscillating "
+            "(needs line search). The same applies to "
+            "ksp_monitor for inner linear solves. (Audit "
+            "2026-06-02.)"
+        ),
     ],
     "materials": {
         "nonlinearity_exponent": {"range": [1.0, 5.0], "unit": "dimensionless"},
@@ -850,7 +1149,7 @@ print(f"Newton: {{its}} iterations, converged reason = {{reason}}")
 
 # Postprocess: evaluate diffusivity D(u) at solution
 V_vis = fem.functionspace(domain, ("DG", 0))
-D_expr = fem.Expression(D_u, V_vis.element.interpolation_points())
+D_expr = fem.Expression(D_u, V_vis.element.interpolation_points)
 D_func = fem.Function(V_vis, name="diffusivity")
 D_func.interpolate(D_expr)
 
@@ -890,14 +1189,98 @@ _MAGNETOSTATICS_KNOWLEDGE = {
     ),
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
-        "In 2D: scalar Az formulation — standard Lagrange works perfectly",
-        "In 3D: MUST use H(curl) Nedelec elements (not Lagrange!) for correct curl",
-        "Gauge fixing: add Coulomb gauge div(A)=0 or use tree-cotree gauging in 3D",
-        "2D scalar formulation automatically satisfies gauge condition",
-        "Flux density: B = curl(A); in 2D: Bx = dAz/dy, By = -dAz/dx",
-        "For magnets: J=0 in iron, J=J_coil in coil regions (use markers)",
-        "Permeability mu = mu0 * mu_r; air: mu_r=1; iron: mu_r=1000-10000",
-        "Nonlinear iron (B-H curve): requires Newton iteration with mu(|B|)",
+        (
+            "[Numerical] In 2D: scalar Az formulation — "
+            "standard Lagrange works perfectly because curl "
+            "of a scalar Az is a 2D-vector gradient, which "
+            "H1-Lagrange represents exactly. Signal: solving "
+            "a 2D magnetostatics problem with NEDELEC "
+            "elements instead of Lagrange P1/P2 over-DOFs "
+            "the problem (2x DOFs per element) and gives the "
+            "SAME accuracy as scalar Az on the same mesh; "
+            "the right move in 2D is scalar Lagrange. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Numerical] In 3D: MUST use H(curl) Nedelec elements "
+            "(not Lagrange!) for correct curl. Signal: assembling "
+            "curl(A_lagrange) gives near-zero off-diagonal entries; "
+            "computed flux density B = curl(A) is uniformly ~0 even "
+            "with a strong source J; or PETSc reports "
+            "`KSPSolve: divergence reason DIVERGED_INDEFINITE_PC`. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] Gauge fixing: add Coulomb gauge div(A)=0 "
+            "or use tree-cotree gauging in 3D. Signal: in 3D "
+            "WITHOUT a gauge constraint the linear system is "
+            "singular — PETSc returns `KSP_DIVERGED_BREAKDOWN` or "
+            "the iterative solver diverges immediately; even with "
+            "a direct LU solver the magnetic-vector-potential "
+            "field shows a uniform drift unrelated to the source. "
+            "(Audit 2026-06-02.)"
+        ),
+        (
+            "[Numerical] 2D scalar formulation AUTOMATICALLY "
+            "satisfies the Coulomb gauge condition because "
+            "Az is scalar and div(A) reduces to dAz/dz which "
+            "is identically zero in plane problems. Signal: "
+            "if you mistakenly add an explicit gauge term "
+            "div(A) = 0 to a 2D scalar-Az problem (e.g. by "
+            "porting a 3D Nedelec recipe), the gauge "
+            "constraint is trivially zero and adds NO "
+            "information — but the augmented system is now "
+            "rank-deficient (one redundant row) and direct "
+            "LU reports a zero pivot. (Audit 2026-06-02.)"
+        ),
+        (
+            "[API] Flux density B = curl(A). In 2D scalar-Az: "
+            "Bx = dAz/dy, By = -dAz/dx. Signal: a sign flip "
+            "(e.g. Bx = -dAz/dy or By = +dAz/dx) reverses "
+            "the field direction without changing |B|; "
+            "checking |B|=|curl(A)| against an analytic case "
+            "(e.g. straight wire B = mu_0 I/(2 pi r)) shows "
+            "the right magnitude but the wrong winding "
+            "direction. Sign convention is critical for "
+            "Lorentz-force coupling. (Audit 2026-06-02.)"
+        ),
+        (
+            "[Input] For magnetised regions: J = 0 in iron, "
+            "J = J_coil in coil regions — distinguished via "
+            "mesh markers / cell tags. Signal: applying J = "
+            "J_coil over the ENTIRE domain (including the "
+            "iron) gives a field magnitude that is wrong "
+            "by orders of magnitude in the iron region "
+            "(iron's mu_r ~ 1000 amplifies the wrong-source "
+            "result); the canonical recipe is to define "
+            "j_func with j_func.x.array[cells_in_coil] = "
+            "J_coil and 0 elsewhere via MeshTags. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Input] Permeability mu = mu_0 * mu_r; air: "
+            "mu_r = 1; iron: mu_r ~ 1000-10000 (linear "
+            "approximation, below saturation). Signal: "
+            "setting mu_r = 1 uniformly (forgetting to "
+            "distinguish iron) gives B field that "
+            "under-predicts iron concentration by factor "
+            "mu_r ~ 1000 — the iron is supposed to "
+            "channel the flux but appears as if it were "
+            "air. Use a piecewise fem.Function(V_DG0) for "
+            "mu_r populated by cell tags. (Audit "
+            "2026-06-02.)"
+        ),
+        (
+            "[Numerical] Nonlinear iron (B-H curve): requires "
+            "Newton iteration with mu(|B|). Signal: a single linear "
+            "solve with constant mu_r=1000 under-predicts the "
+            "field magnitude in iron by 20-50% relative to a "
+            "B-H-curve solve at the same J_coil — typical of "
+            "saturation that the linear model misses; or the "
+            "computed B field shows |B| > B_saturation everywhere "
+            "(2 T for typical steel) without the saturation knee. "
+            "(Audit 2026-06-02.)"
+        ),
     ],
     "materials": {
         "mu_r": {"range": [1.0, 10000.0], "unit": "dimensionless (relative permeability)"},
@@ -982,15 +1365,15 @@ Az_h.name = "Az"
 # Post-process: magnetic flux density B = curl(A) = (dAz/dy, -dAz/dx, 0)
 # In 2D, computed on DG0 space
 V_vec = fem.functionspace(domain, ("DG", 0, (2,)))
-Bx_expr = fem.Expression(Az_h.dx(1),              V_vec.sub(0).collapse()[0].element.interpolation_points())
-By_expr = fem.Expression(-Az_h.dx(0),             V_vec.sub(0).collapse()[0].element.interpolation_points())
+Bx_expr = fem.Expression(Az_h.dx(1),              V_vec.sub(0).collapse()[0].element.interpolation_points)
+By_expr = fem.Expression(-Az_h.dx(0),             V_vec.sub(0).collapse()[0].element.interpolation_points)
 
 # Scalar DG0 for each component
 V_dg0 = fem.functionspace(domain, ("DG", 0))
 Bx = fem.Function(V_dg0, name="Bx")
 By = fem.Function(V_dg0, name="By")
-Bx.interpolate(fem.Expression(Az_h.dx(1),  V_dg0.element.interpolation_points()))
-By.interpolate(fem.Expression(-Az_h.dx(0), V_dg0.element.interpolation_points()))
+Bx.interpolate(fem.Expression(Az_h.dx(1),  V_dg0.element.interpolation_points))
+By.interpolate(fem.Expression(-Az_h.dx(0), V_dg0.element.interpolation_points))
 
 # |B| = sqrt(Bx^2 + By^2)
 B_mag = np.sqrt(Bx.x.array**2 + By.x.array**2)

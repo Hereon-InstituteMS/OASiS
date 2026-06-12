@@ -142,17 +142,28 @@ GENERATORS = {
 
 KNOWLEDGE = {
     "plasticity": {
-        "description": "Elasto-plasticity via ConstitutiveLawsApplication: 7 yield surfaces, 5 plastic potentials, 6 hardening curves",
+        "description": (
+            "Elasto-plasticity via ConstitutiveLawsApplication: "
+            "5 yield surfaces (plasticity), 5 plastic potentials, "
+            "6 hardening curves. Rankine + SimoJu yield surfaces "
+            "exist only in the *damage* family of constitutive "
+            "laws, NOT in plasticity — see pitfall #0."
+        ),
         "application": "ConstitutiveLawsApplication (pip install KratosConstitutiveLawsApplication)",
         "requires": "StructuralMechanicsApplication (for elements)",
         "yield_surfaces": [
+            # PLASTICITY-COMPATIBLE (combine with
+            # SmallStrainIsotropicPlasticity3D / Kinematic etc.):
             "VonMises — J2 metal plasticity",
             "Tresca — maximum shear stress",
             "DruckerPrager — smooth cone (soil/concrete)",
             "MohrCoulomb — hexagonal pyramid (classical soil plasticity)",
             "ModifiedMohrCoulomb — regularized MC with tension/compression asymmetry",
-            "Rankine — maximum tensile stress (brittle)",
-            "SimoJu — damage-type yield for quasi-brittle materials",
+            # DAMAGE-ONLY (combine with SmallStrainDplus
+            # DminusDamage* or SmallStrainIsotropicDamage*,
+            # NOT SmallStrainIsotropicPlasticity*):
+            "Rankine — DAMAGE only (maximum tensile stress, brittle)",
+            "SimoJu — DAMAGE only (damage-type yield for quasi-brittle materials)",
         ],
         "plastic_potentials": [
             "VonMises, Tresca, DruckerPrager, MohrCoulomb, ModifiedMohrCoulomb",
@@ -260,35 +271,52 @@ KNOWLEDGE = {
             ),
         },
         "pitfalls": [
-            "CRITICAL: Dilatancy angle psi=0 causes singular plastic denominator (dF:C:dG = 0) "
-            "at the MC compression meridian (Lode angle = -30 deg). Use psi >= 0.1 deg as workaround, "
-            "or implement a principal-stress-space return mapping (Sloan et al., 2001).",
-            "MC yield surface has 6 corners in the deviatoric plane. Standard backward Euler in "
-            "stress-invariant space needs Lode angle smoothing (switch to Drucker-Prager at |theta| >= 29 deg) "
-            "or explicit corner return mapping. Without this, Newton diverges at corners.",
-            "Modified MC (Kratos) and Classical MC (textbook) use DIFFERENT parameterizations. "
-            "Modified MC uses YIELD_STRESS_COMPRESSION/TENSION; Classical MC uses cohesion + friction angle. "
-            "The mapping is stress-state dependent — see parameter_translation above.",
-            "For perfect plasticity use HARDENING_CURVE=3 with a large FRACTURE_ENERGY (e.g., 1e10). "
-            "Using HARDENING_CURVE=0 (linear) still produces softening unless FRACTURE_ENERGY is very large.",
-            "In Python API: constitutive law variables are split across modules (CLA vs KM). "
-            "FRICTION_ANGLE, DILATANCY_ANGLE, YIELD_STRESS_COMPRESSION are in CLA; "
-            "FRACTURE_ENERGY, YOUNG_MODULUS are in KM. Using the wrong module causes AttributeError.",
-            "The factory class SmallStrainIsotropicPlasticityFactory() takes NO constructor arguments. "
-            "Passing KM.Parameters to its constructor raises TypeError. Use specific pre-combined classes instead.",
-            "SHEAR LOCKING: Linear hex8 (3D8N) elements lock in bending-dominated problems. "
-            "For plasticity benchmarks with uniform stress (uniaxial, triaxial), hex8 is fine. "
-            "For problems with stress gradients, use quadratic elements (3D20N, 3D27N).",
-            "TESTING PITFALL: Fully displacement-controlled single-element tests (all DOFs prescribed) "
-            "can appear to work but the material tangent is never exercised because the global Newton "
-            "converges in 1 iteration regardless. Always use at least one Neumann-loaded face "
-            "(e.g., confining pressure in triaxial) so the equilibrium iteration actually tests the "
-            "elastoplastic tangent. Without this, tangent bugs are hidden.",
-            "TRIAXIAL ELASTIC OFFSET: With confining pressure sigma_3, the deviatoric stress at zero "
-            "axial strain is q = -sigma_3*(1-2*nu), NOT zero. For sigma_3=100 kPa, nu=0.3: q_0 = -40 kPa. "
-            "If your stress-strain plot shows the curve starting below the expected elastic line, "
-            "this Poisson coupling offset is the reason — the solver is correct.",
-        ],
+                        '[API] Rankine and SimoJu yield surfaces '
+                        'are DAMAGE-only — they do NOT combine into '
+                        'the SmallStrainIsotropicPlasticity factory. '
+                        'The catalog yield_surfaces list previously '
+                        'implied SmallStrainIsotropicPlasticity3D'
+                        'RankineRankine / ...SimoJuSimoJu exist via '
+                        'the documented <StrainSize><HardeningType>'
+                        '<Dimension><YieldSurface><PlasticPotential>'
+                        ' pattern — they do not. The only Rankine / '
+                        'SimoJu instantiations registered in '
+                        'KratosConstitutiveLawsApplication 10.4.2 '
+                        'are damage models: '
+                        'SmallStrainDplusDminusDamageRankineRankine3D, '
+                        'SmallStrainDplusDminusDamageSimoJuSimoJu3D, '
+                        'SmallStrainIsotropicDamage3DRankine, '
+                        'SmallStrainIsotropicDamage3DSimoJu. The 5 '
+                        'plasticity-compatible yield surfaces are '
+                        'VonMises, Tresca, DruckerPrager, MohrCoulomb, '
+                        'ModifiedMohrCoulomb. '
+                        "Signal: hasattr(CLA, 'SmallStrainIsotropic"
+                        "Plasticity3DRankineRankine') is False; "
+                        "trying to construct it raises "
+                        "AttributeError on the CLA module. "
+                        "(Verified empirically 2026-06-01 — "
+                        "Tier-2 fixture plasticity_rankine_simoju_"
+                        "are_damage_only in scripts/tier2_fixtures/"
+                        "kratos/.)",
+                        '[Numerical] Mohr-Coulomb dilatancy angle psi=0 causes a singular plastic denominator (dF:C:dG = 0) at the MC compression meridian (Lode = -30 deg). Use psi >= 0.1 deg as workaround, or principal-stress-space return mapping (Sloan et al., 2001). '
+                        "Signal: ResidualBasedNewtonRaphsonStrategy reports 'Convergence is not achieved' with the global residual stuck; local return-mapping in the ConstitutiveLaw emits 'division by zero' / NaN in PK2_STRESS_VECTOR returned by CalculateOnIntegrationPoints.",
+                        '[Numerical] MC yield surface has 6 corners in the deviatoric plane; backward Euler needs Lode-angle smoothing (Drucker-Prager at |theta| >= 29 deg) or explicit corner return mapping. '
+                        "Signal: ResidualCriteria reports the global residual ratio not decreasing across ResidualBasedNewtonRaphsonStrategy iterations; CalculateOnIntegrationPoints returns NaN entries in PK2_STRESS_VECTOR for stress states whose Lode angle is close to |30 deg|.",
+                        '[Integration] Modified MC (Kratos) and Classical MC (textbook) use DIFFERENT parameterisations. Modified MC uses YIELD_STRESS_COMPRESSION/TENSION; Classical MC uses cohesion + friction angle. '
+                        'Signal: yield surface intersects axes at wrong values — sigma_y in uniaxial compression disagrees with hand-calc by tan(phi)-related factor.',
+                        '[Syntax] For perfect plasticity use HARDENING_CURVE=3 with large FRACTURE_ENERGY (e.g., 1e10). HARDENING_CURVE=0 (linear) still softens unless FRACTURE_ENERGY is very large. '
+                        'Signal: stress-strain past yield droops with negative slope despite HARDENING_MODULUS=0; integrated fracture energy < 0.5 of analytical perfect-plastic value.',
+                        '[API] Python API: constitutive-law variables are split across modules. FRICTION_ANGLE, DILATANCY_ANGLE, YIELD_STRESS_COMPRESSION live in ConstitutiveLawsApplication (CLA); FRACTURE_ENERGY, YOUNG_MODULUS in KratosMultiphysics (KM). '
+                        "Signal: Attribute lookup raises AttributeError 'Module KratosMultiphysics has no attribute FRICTION_ANGLE' at the moment the wrong module is dotted into (e.g. KM.FRICTION_ANGLE), BEFORE properties.SetValue is even reached. The correct path is ConstitutiveLawsApplication.FRICTION_ANGLE (returns a DoubleVariable). (Verified empirically 2026-06-01 — prior catalog claim said the error fires 'from properties.SetValue'; reality is the AttributeError fires at attribute access, never reaching SetValue.)",
+                        '[API] SmallStrainIsotropicPlasticityFactory() takes NO constructor arguments. Passing KM.Parameters raises TypeError. Use the specific pre-combined class (e.g. SmallStrainIsotropicPlasticityMisesMises3D). '
+                        "Signal: TypeError '__init__(): incompatible constructor arguments. The following argument types are supported: 1. KratosConstitutiveLawsApplication.SmallStrainIsotropicPlasticityFactory()' when the factory is called with KM.Parameters. (Verified empirically 2026-06-01 after KratosConstitutiveLawsApplication was installed; prior text said 'incompatible function arguments' / 'from SetValue binding' — the actual message says 'constructor arguments' and originates from the factory __init__ binding, not SetValue.)",
+                        '[Numerical] SHEAR LOCKING: linear hex8 (3D8N) locks in bending-dominated plasticity. Uniform-stress benchmarks (uniaxial, triaxial) are fine; gradient-stress problems need quadratic elements (3D20N, 3D27N). '
+                        'Signal: bending-plasticity tip rotation 20-40% smaller than analytic with hex8; switching to hex20 recovers it.',
+                        '[Numerical] Fully displacement-controlled single-element tests can pass spuriously — Newton converges in 1 iteration without exercising the material tangent. Always include at least one Neumann-loaded face (e.g., confining pressure in triaxial). '
+                        "Signal: ResidualBasedNewtonRaphsonStrategy reports 1 iteration per CloneTimeStep for every step; ResidualCriteria initial-residual ratio is below tolerance from iteration 0 — the algorithmic tangent (CalculateOnIntegrationPoints DEFORMATION_GRADIENT path) is never tested.",
+                        '[Physics] Triaxial elastic offset: with confining sigma_3, deviatoric q at zero axial strain is q = -sigma_3*(1-2*nu), NOT zero. For sigma_3=100 kPa, nu=0.3: q_0 = -40 kPa. '
+                        "Signal: CalculateOnIntegrationPoints PK2_STRESS_VECTOR[2] at zero axial DISPLACEMENT_Z is non-zero and matches -sigma_3*(1-2*nu); the SmallDisplacementElement stress-strain curve starts on a parallel line offset from origin (the solver is correct).",
+                    ],
         "elements": [
             "SmallDisplacementElement3D8N (linear hex, small strain)",
             "SmallDisplacementElement3D4N (linear tet)",

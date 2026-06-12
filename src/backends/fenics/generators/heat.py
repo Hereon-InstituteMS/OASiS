@@ -10,8 +10,27 @@ KNOWLEDGE = {
     "function_space": "Lagrange order 1",
     "solver": {"ksp_type": "preonly", "pc_type": "lu"},
     "pitfalls": [
-        "For transient: use backward Euler with mass matrix",
-        "Insulated boundary = natural BC (do nothing)",
+        # Promoted from short-tip form to full [Category] + Signal:
+        # pitfalls (2026-06-02). The two-line tips never reached Tier-0
+        # because they lacked category prefix + observable symptom.
+        "[Numerical] Transient heat is stiff: explicit time-stepping "
+        "(theta=0 / forward Euler) requires dt < 2/lambda_max ~ h^2 / "
+        "(2*kappa), which gets infeasibly small under refinement. Use "
+        "backward Euler (theta=1) with a mass matrix on the LHS — "
+        "unconditionally stable. Signal: an explicit-Euler dolfinx "
+        "Function update on a refined mesh reaches NaN within ~5-10 "
+        "time steps when dt > 2/lambda_max; the same problem with the "
+        "BilinearForm a = (T*v/dt + kappa*grad(T)*grad(v))*dx converges "
+        "smoothly to steady state. (Audit 2026-06-02.)",
+        "[Input] Insulated boundary is the NATURAL BC for "
+        "-div(kappa*grad(T)) = f — do NOTHING (no dirichletbc, no "
+        "Neumann line). Adding a dirichletbc with value=0 on an "
+        "insulated edge over-constrains the problem. Signal: applying "
+        "fem.dirichletbc(default_scalar_type(0.0), ...) on a "
+        "topologically insulated facet set pulls T_boundary to 0 — the "
+        "XDMFFile output shows a steep dip near that edge instead of "
+        "the expected zero-flux profile, and the integrated flux is "
+        "non-zero. (Audit 2026-06-02.)",
     ],
     "materials": {
         "conductivity": {"range": [0.01, 1000], "unit": "W/(m*K)"},

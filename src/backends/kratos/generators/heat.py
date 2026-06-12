@@ -170,10 +170,13 @@ KNOWLEDGE = {
         "application": "ConvectionDiffusionApplication",
         "solver_types": ["stationary", "transient"],
         "pitfalls": [
-            "Same as Poisson but with TEMPERATURE as unknown",
-            "Non-homogeneous Dirichlet: use AssignScalarVariableProcess with constrained=True",
-            "Neumann (heat flux): use ApplyConstantScalarValueProcess on FACE_HEAT_FLUX",
-        ],
+                        '[API] Same field equation as Poisson but with TEMPERATURE as the unknown — TEMPERATURE must be added to ModelPart variables before any Node is created. '
+                        "Signal: RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable: TEMPERATURE' from kratos/containers/variables_list_data_value_container at the first GetSolutionStepValue / SetSolutionStepValue on the node. (Verified empirically 2026-06-01 — same wording as the VELOCITY case in fluid#0; prior catalog text 'not found in variables list of ModelPart' + 'from ConvectionDiffusion InitializeSolutionStep' is rearranged and points at the wrong call site.)",
+                        '[Syntax] Non-homogeneous Dirichlet: use AssignScalarVariableProcess with constrained=True. Setting constrained=False applies the value but does NOT fix the DOF, so the solver overwrites it. '
+                        'Signal: boundary temperatures drift away from the prescribed values during the solve; T_boundary - T_imposed is O(1) instead of O(eps).',
+                        '[Syntax] Neumann (heat flux): use ApplyConstantScalarValueProcess on FACE_HEAT_FLUX (not TEMPERATURE). Targeting TEMPERATURE applies a Dirichlet pseudo-flux. '
+                        'Signal: the steady-state interior TEMPERATURE field from the VtkOutput .vtu is wrong by a multiplicative factor; the FACE_HEAT_FLUX integral on the boundary does not match the applied value.',
+                    ],
     },
     "heat_transient": {
         "description": "Transient heat conduction via ConvectionDiffusionApplication",
@@ -185,11 +188,15 @@ KNOWLEDGE = {
             "forward_euler": "theta=0.0, conditionally stable (dt < h^2/(2*kappa))",
         },
         "pitfalls": [
-            "Backward Euler: factor (M + dt*K) once and reuse each step",
-            "Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old",
-            "For varying BCs in time: update Dirichlet values each step",
-            "Consistent mass matrix gives better accuracy than lumped",
-        ],
+                        '[Numerical] Backward Euler: factor (M + dt*K) once and reuse each step '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Physics] For varying BCs in time: update Dirichlet values each step '
+                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
+                        '[Numerical] Consistent mass matrix gives better accuracy than lumped '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

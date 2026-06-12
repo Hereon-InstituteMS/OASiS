@@ -67,6 +67,18 @@ def available_backends() -> list[SolverBackend]:
     ]
 
 
+def all_backends() -> list[SolverBackend]:
+    """Return EVERY registered backend regardless of availability.
+
+    Use this for discovery surfaces that need to show LLMs which
+    backends are known to the MCP — including ones the user
+    has not installed yet. ``available_backends`` hides those,
+    which is correct for "run this simulation" code paths but
+    wrong for "what can this server do?" surfaces.
+    """
+    return list(_backends.values())
+
+
 def recommend_backend(physics: str) -> Optional[SolverBackend]:
     """Recommend the best available backend for a given physics problem.
 

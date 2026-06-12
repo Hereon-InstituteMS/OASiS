@@ -7,12 +7,26 @@ from mcp.server.fastmcp import FastMCP
 from core.registry import get_backend, available_backends
 
 
-def _find_reference_test_files(solver: str, physics: str) -> str:
-    """Find real test files from a solver's test suite as reference.
+def discover_test_dirs() -> dict:
+    """Return a {solver_key: Path} mapping of locally-present test/
+    demo directories.
 
-    Returns a note with file paths and content previews so the agent
-    can see how validated simulations are actually configured.
-    Works for ALL solvers that have accessible test files.
+    The same lookup is needed by prepare_simulation (via
+    _find_reference_test_files) and the `examples` MCP tool. Before
+    2026-06-01 these were two separate hardcoded fourc+dealii-only
+    dicts — meaning the examples tool returned 0 results for fenics
+    / ngsolve / kratos / dune / febio even though demo trees existed
+    locally. Centralising here keeps the two surfaces in sync.
+
+    Probes (each gated on directory existence):
+      fourc / 4c   -> $FOURC_ROOT/tests/input_files
+      dealii       -> /usr/share/doc/libdeal.ii-doc/examples
+      fenics(x)    -> any *fenics* conda env's
+                      share/dolfinx/demo OR
+                      etc/conda/test-files/fenics-dolfinx/0/python/demo
+      ngsolve      -> .venv .../ngsolve/demos OR
+                      conda *fenics* envs ../ngsolve/demos
+      kratos       -> .venv .../KratosMultiphysics
     """
     import os
     from pathlib import Path
@@ -23,12 +37,83 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
         "dealii": Path("/usr/share/doc/libdeal.ii-doc/examples"),
     }
 
-    # FEniCS demos
-    fenics_demo = Path.home() / "miniconda3" / "envs" / "fenics" / "share" / "dolfinx" / "demo"
-    if fenics_demo.is_dir():
-        test_dirs["fenics"] = fenics_demo
-        test_dirs["fenicsx"] = fenics_demo
+    # FEniCS demos — probe several known conda-forge layouts.
+    # Without this, prepare_simulation('fenics', 'poisson')
+    # silently emits no reference test file because the
+    # hardcoded share/dolfinx/demo path does not exist on
+    # current ofa-fenicsx installs (conda-forge moved demos
+    # under etc/conda/test-files/fenics-dolfinx/0/python/demo).
+    candidates = [
+        # Legacy path (older conda-forge layout)
+        Path.home() / "miniconda3" / "envs" / "fenics"
+        / "share" / "dolfinx" / "demo",
+        # Current conda-forge ofa-fenicsx layout (probed 2026-06-01)
+        Path.home() / "miniconda3" / "envs" / "ofa-fenicsx"
+        / "etc" / "conda" / "test-files" / "fenics-dolfinx"
+        / "0" / "python" / "demo",
+    ]
+    # Also probe any *fenics* conda env present locally
+    conda_envs = Path.home() / "miniconda3" / "envs"
+    if conda_envs.is_dir():
+        for env in conda_envs.iterdir():
+            if "fenics" in env.name.lower():
+                candidates.extend([
+                    env / "share" / "dolfinx" / "demo",
+                    env / "etc" / "conda" / "test-files"
+                    / "fenics-dolfinx" / "0" / "python" / "demo",
+                ])
+    for fenics_demo in candidates:
+        if fenics_demo.is_dir():
+            test_dirs["fenics"] = fenics_demo
+            test_dirs["fenicsx"] = fenics_demo
+            break
 
+    # NGSolve ships demos inside the installed wheel:
+    # site-packages/ngsolve/demos/{intro,howto,mpi,
+    # TensorProduct,...}. Probe the active .venv plus
+    # any conda env that includes ngsolve.
+    ngsolve_candidates = [
+        Path(__file__).resolve().parents[2] / ".venv" / "lib"
+        / "python3.12" / "site-packages" / "ngsolve" / "demos",
+    ]
+    for envname in ("ofa-fenicsx",):  # other envs may ship ngsolve too
+        ngsolve_candidates.append(
+            Path.home() / "miniconda3" / "envs" / envname / "lib"
+            / "python3.12" / "site-packages" / "ngsolve" / "demos")
+    for ng_demo in ngsolve_candidates:
+        if ng_demo.is_dir():
+            test_dirs["ngsolve"] = ng_demo
+            break
+
+    # Kratos ships Python tests inside each Application:
+    # site-packages/KratosMultiphysics/<App>/tests/*.py. The
+    # tree is broad (many Applications) so we point at the
+    # top KratosMultiphysics dir and let the rglob walk find
+    # *.py matching the keyword.
+    kratos_candidates = [
+        Path(__file__).resolve().parents[2] / ".venv" / "lib"
+        / "python3.12" / "site-packages" / "KratosMultiphysics",
+    ]
+    for kr_dir in kratos_candidates:
+        if kr_dir.is_dir():
+            test_dirs["kratos"] = kr_dir
+            break
+
+    return test_dirs
+
+
+def resolve_search_keywords(solver: str, physics: str) -> list[str]:
+    """Return a prioritised list of filename-substring keywords to
+    probe when looking for upstream test/demo files for the given
+    (solver, physics) pair.
+
+    Audit 2026-06-01: this logic was previously baked into
+    _find_reference_test_files, so the MCP `examples` tool (which
+    has its own file walk) couldn't reach NGSolve demos via aliases
+    — examples('hyperelasticity', solver='ngsolve') walked for the
+    literal substring 'hyperelasticity' and missed nonlin.py.
+    Factoring this out keeps the two LLM-facing surfaces in sync.
+    """
     # Map physics to search keywords for ALL physics types
     search_terms = {
         "particle_pd": "pdbody",
@@ -78,20 +163,88 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     }
 
     solver_key = solver.lower()
-    test_dir = test_dirs.get(solver_key)
 
+    # NGSolve demo filenames don't match the catalog or 4C /
+    # deal.II keys. Demos: poisson.py / navierstokes.py /
+    # elasticity.py / cmagnet.py (magnetostatics) / pml.py
+    # (helmholtz / PML) / hhj.py (Hellan-Herrmann-Johnson
+    # biharmonic) / hybrid_dg.py (DG methods) / nonlin.py
+    # (nonlinear elasticity) / mixed.py (mixed_poisson) /
+    # timeDG.py (time-dependent DG) / tdnns.py.
+    ngsolve_aliases = {
+        "navier_stokes": "navierstokes",
+        "maxwell": "cmagnet",
+        "magnetostatics": "cmagnet",
+        "helmholtz": "pml",
+        "biharmonic": "hhj",
+        "hdivdiv": "hhj",
+        "dg_methods": "hybrid_dg",
+        "hyperelasticity": "nonlin",
+        "nonlinear_elasticity": "nonlin",
+        "mixed_poisson": "mixed",
+        "time_dependent_heat": "timeDG",
+        "time_dependent_ns": "timeDG",
+    }
+
+    keywords = [physics]
+    if physics in search_terms:
+        keywords.insert(0, search_terms[physics])
+    if solver_key == "ngsolve" and physics in ngsolve_aliases:
+        keywords.insert(0, ngsolve_aliases[physics])
+    if "_" in physics:
+        keywords.append(physics.replace("_", "-"))
+    # Common substring trims so the FEniCS demo naming
+    # convention (demo_elasticity.py, no "linear_" prefix)
+    # is reachable from the catalog name (linear_elasticity).
+    # Audit 2026-06-01.
+    for prefix in ("linear_", "nonlinear_", "time_dependent_"):
+        if physics.startswith(prefix):
+            keywords.append(physics[len(prefix):])
+
+    return keywords
+
+
+def _find_reference_test_files(solver: str, physics: str) -> str:
+    """Find real test files from a solver's test suite as reference.
+
+    Returns a formatted block with file paths and content previews,
+    or empty string when no local demos are available.
+    """
+    # Empty / whitespace-only physics would match every filename
+    # via the substring-of-everything pattern that bit
+    # prepare_simulation, examples('search'), and discover(
+    # 'recommend'). Callers in this module already guard before
+    # reaching here, but the helper is publicly importable
+    # from src/tools/knowledge.py — guard it here too so a
+    # future caller can't reintroduce the bug. (Audit
+    # 2026-06-01.)
+    if not physics or not physics.strip():
+        return ""
+
+    test_dirs = discover_test_dirs()
+    solver_key = solver.lower()
+    test_dir = test_dirs.get(solver_key)
     if not test_dir or not test_dir.is_dir():
         return ""
 
-    keyword = search_terms.get(physics, physics)
-    ext = "*.4C.yaml" if solver_key in ("fourc", "4c") else "*.cc" if solver_key == "dealii" else "*.py"
+    ext = ("*.4C.yaml" if solver_key in ("fourc", "4c")
+           else "*.cc" if solver_key == "dealii"
+           else "*.py")
 
+    keywords = resolve_search_keywords(solver, physics)
+    # Drop any empty / whitespace-only keyword the resolver
+    # produced (a defensive de-dup against the same class of
+    # bug in resolve_search_keywords' alias map).
+    keywords = [k for k in keywords if k and k.strip()]
     matches = []
-    for f in sorted(test_dir.rglob(ext)):
-        if keyword.lower() in f.name.lower():
-            matches.append(f)
-            if len(matches) >= 2:
-                break
+    for kw in keywords:
+        for f in sorted(test_dir.rglob(ext)):
+            if kw.lower() in f.name.lower() and f not in matches:
+                matches.append(f)
+                if len(matches) >= 2:
+                    break
+        if len(matches) >= 2:
+            break
 
     if not matches:
         return ""
@@ -357,7 +510,9 @@ Key changes needed for new physics:
 
 ### Required Components
 
-1. **Element type:** `SOLIDSCATRA HEX8` (3D) — NOT `WALL QUAD4` or `SOLID HEX8`
+1. **Element type:** `SOLIDSCATRA HEX8` (3D) — TSI needs the
+   combined eletype, NOT plain `SOLID HEX8` (structure-only) or
+   the legacy `WALL` 2D eletype.
    - SOLIDSCATRA combines structural + scalar transport capabilities
    - Must be 3D (no 2D TSI elements in 4C)
 

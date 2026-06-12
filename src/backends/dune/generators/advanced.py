@@ -453,7 +453,7 @@ err_arr = np.array(uh.as_numpy) - np.array(u_ex.as_numpy)
 l2_err = float(np.sqrt(err_arr @ err_arr) / len(err_arr))
 
 vals = np.array(uh.as_numpy)
-print(f"Helmholtz: k={k_val}, max(u) = {{vals.max():.8f}}")
+print(f"Helmholtz: k={{k_val}}, max(u) = {{vals.max():.8f}}")
 print(f"L2 nodal error vs MMS: {{l2_err:.4e}}")
 print(f"DOFs: {{len(vals)}}")
 
@@ -589,7 +589,7 @@ Manufactured solution: u = sin(pi*x)*sin(pi*y)  =>
     sigma = -grad(u),  f = 2*pi^2*sin(pi*x)*sin(pi*y)
 """
 from dune.grid import structuredGrid
-from dune.fem.space import raviartthomas, dglagrange
+from dune.fem.space import raviartThomas, dglagrange
 from dune.fem.scheme import galerkin
 from dune.ufl import DirichletBC
 from ufl import (
@@ -605,7 +605,7 @@ order = {order}   # RT order (0 = RT0, 1 = RT1, ...)
 gridView = structuredGrid([0, 0], [1, 1], [{nx}, {nx}])
 
 # Flux space H(div) and scalar space L²
-Sigma = raviartthomas(gridView, order=order)
+Sigma = raviartThomas(gridView, order=order)
 V     = dglagrange(gridView,   order=order)
 
 # Mixed function: (sigma, u)
@@ -682,10 +682,46 @@ KNOWLEDGE = {
         "spaces": "lagrange(gridView, order=2) — higher order needed for wave problems",
         "element_types": ["Lagrange-P2 (scalar proxy)"],
         "pitfalls": [
-            "Full H(curl) Nedelec elements not yet in dune-fem — use NGSolve for true Maxwell",
-            "Helmholtz indefinite for k² > pi²: may need GMRES or direct solver",
-            "Rule of thumb: ≥ 10 DOFs per wavelength for low-order elements",
-            "Spurious modes appear with standard Lagrange elements for vector Maxwell",
+            (
+                "[API] Full H(curl) Nedelec elements are "
+                "NOT yet in dune-fem — for true vector "
+                "Maxwell use NGSolve or dolfinx. Signal: "
+                "looking for dune.fem.space.nedelec() "
+                "raises ImportError; the existing "
+                "maxwell template in dune-fem uses a "
+                "P2 scalar proxy that ONLY handles the "
+                "2D scalar Az formulation correctly. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Helmholtz is INDEFINITE for "
+                "k^2 > pi^2 — CG diverges, use GMRES or "
+                "direct LU. Signal: CG on -Δu - k^2*u = f "
+                "with k=10 raises 'matrix not positive "
+                "definite' or stalls; GMRES converges in "
+                "~ O(k) iterations. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Rule of thumb: >= 10 DOFs "
+                "per wavelength for low-order elements. "
+                "Signal: at < 5 DOFs/wavelength, phase "
+                "velocity is wrong by 10-30%; the wave "
+                "hits the boundary at the wrong time in "
+                "transient simulations. Increase mesh "
+                "resolution or use P2+. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Spurious MODES appear with "
+                "standard Lagrange elements for VECTOR "
+                "Maxwell. Signal: an eigenvalue solve "
+                "for the vector wave equation returns "
+                "many near-zero modes interleaved with "
+                "physical modes — these are the spurious "
+                "gradient modes (range(grad) in null(curl)). "
+                "Use H(curl) Nedelec for clean spectrum. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
     "eigenvalue": {
@@ -697,10 +733,55 @@ KNOWLEDGE = {
         "spaces": "lagrange(gridView, order=k) — higher order for better accuracy",
         "analytical_reference": "Unit square: λ_{m,n} = pi²(m²+n²); λ_11 ≈ 19.739",
         "pitfalls": [
-            "Shift sigma close to but below target eigenvalue accelerates convergence",
-            "Deflation required to compute multiple modes without contamination",
-            "For production use: SLEPc (PETSc eigenvalue solver) via as_petsc backend",
-            "Matrix must be assembled; use scheme.jacobian() or scipy sparse matrices",
+            (
+                "[Numerical] Shift sigma CLOSE TO BUT BELOW "
+                "target eigenvalue accelerates shift-"
+                "invert convergence. Signal: passing a sigma "
+                "kwarg to the scipy.sparse.linalg.eigsh "
+                "shift_invert solver far from any eigenvalue "
+                "gives slow inverse_iteration (10s of "
+                "iters); sigma > target jumps to a different "
+                "eigenvalue. For the first eigenpair on the "
+                "dune.fem lagrange Space, sigma slightly "
+                "below 0 works (Laplacian eigenvalues are "
+                "positive). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] DEFLATION required to compute "
+                "multiple modes without contamination. "
+                "Signal: a sequence of inverse iterations "
+                "without deflation converges all to the "
+                "SAME first eigenvalue — modes 2, 3, ... "
+                "are missed. After computing the i-th "
+                "mode, orthogonalise the starting vector "
+                "against the previous modes (Gram-"
+                "Schmidt) before iterating. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] For PRODUCTION use: SLEPc "
+                "(PETSc eigenvalue solver) via the "
+                "as_petsc backend. Signal: hand-rolled "
+                "inverse iteration in pure Python is "
+                "10-100x slower than SLEPc's "
+                "Krylov-Schur for 100+ eigenpairs; SLEPc "
+                "handles deflation, restarts, and "
+                "preconditioning automatically. Use "
+                "dune.fem.solver.as_petsc + SLEPc for "
+                "spectrum problems. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] Matrix must be ASSEMBLED — use "
+                "scheme.jacobian() or scipy sparse "
+                "matrices to extract the operator. "
+                "Signal: trying to pass the galerkin "
+                "scheme directly to scipy.sparse.linalg "
+                ".eigs raises 'not a sparse matrix'; "
+                "extract via "
+                "K = scheme.jacobian(uh).as_numpy or "
+                "use the dune-petsc backend for native "
+                "operator wrapping. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "hyperelasticity": {
@@ -712,11 +793,67 @@ KNOWLEDGE = {
         "solver": "Built-in Newton iteration via galerkin scheme on nonlinear residual",
         "spaces": "lagrange(gridView, dimRange=2, order=1) for displacement",
         "pitfalls": [
-            "Neo-Hookean energy: W = mu/2*(tr(C)-2) - mu*ln(J) + lam/2*ln(J)^2",
-            "Deformation gradient: F = I + grad(u); must have det(F) > 0",
-            "For large deformations: use load stepping (increment traction/body force)",
-            "Compressible formulation; near-incompressible needs mixed or F-bar method",
-            "DUNE differentiates UFL forms symbolically — no manual tangent needed",
+            (
+                "[Numerical] Neo-Hookean energy: W = "
+                "mu/2*(tr(C) - d) - mu*ln(J) + lam/2*"
+                "ln(J)^2 where d is spatial dim (2 or "
+                "3). Signal: writing W = mu/2*tr(C) "
+                "(without the -d subtraction) inside the "
+                "dune.fem galerkin scheme UFL form gives "
+                "W != 0 at F = I — stress-free reference "
+                "produces non-zero initial stress; the "
+                "first Newton iterate runs off looking "
+                "for a different equilibrium. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Deformation gradient: F = I "
+                "+ grad(u); MUST have det(F) > 0 "
+                "(no inversion). Signal: forgetting the "
+                "identity I in the dune.fem galerkin "
+                "scheme UFL form gives F = grad(u) which "
+                "is degenerate at the reference "
+                "configuration (det = 0); ln(J) blows up "
+                "as -inf; the lagrange-space Newton "
+                "residual is NaN on step 1. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] For LARGE deformations: use "
+                "load stepping (increment traction/body "
+                "force). Signal: applying full load at "
+                "t = 0 to a problem at > 30% nominal "
+                "strain typically diverges (the dune.fem "
+                "galerkin scheme Newton residual grows "
+                "~ 10x per iter); subdividing into 10 "
+                "substeps achieves quadratic per-step "
+                "convergence with the previous "
+                "GridFunction-equivalent as initial guess. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Compressible formulation; "
+                "near-incompressible needs MIXED or "
+                "F-bar method. Signal: a pure-displacement "
+                "dune.fem lagrange Space with a neo_Hookean "
+                "material at nu = 0.4999 exhibits "
+                "volumetric_locking — the Cook_membrane tip "
+                "deflection GridFunction is < 1% of analytic; "
+                "switch to a mixed (u, p) Form on a product "
+                "Space to recover. (Audit 2026-06-02.)"
+            ),
+            (
+                "[API] DUNE differentiates UFL forms "
+                "SYMBOLICALLY — no manual tangent needed. "
+                "Signal: hand-coding the PK1 stress + "
+                "Jacobian inside a custom assembler is "
+                "error-prone (sign / factor mistakes "
+                "drop Newton to linear convergence); "
+                "specifying just the energy W and "
+                "letting scheme.solve() build derivatives "
+                "via UFL auto-AD gives correct "
+                "quadratic Newton. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "navier_stokes": {
@@ -727,11 +864,62 @@ KNOWLEDGE = {
         "solver": "Picard iteration (fixed-point on convection velocity) with GMRES",
         "spaces": "lagrange(dimRange=2, order=2) velocity + lagrange(order=1) pressure (Taylor-Hood)",
         "pitfalls": [
-            "Picard converges well for Re < 1000; Newton converges faster near solution",
-            "Grad-div stabilization avoids solving full saddle-point system separately",
-            "True inf-sup stable pair: P2/P1 (Taylor-Hood) or P1/P1 + stabilization",
-            "Block preconditioner (SIMPLE, SIMPLEC, Schur complement) for efficiency",
-            "High Re: add SUPG/PSPG stabilization or use DG upwinding",
+            (
+                "[Numerical] PICARD (Oseen) iteration "
+                "converges well for Re < 1000; Newton "
+                "converges faster NEAR the solution but "
+                "diverges far from it. Signal: at Re > "
+                "1000 the dune.fem galerkin scheme Picard "
+                "solve takes 50+ iters or stalls; switch "
+                "to Newton with the Picard lagrange-space "
+                "solution as initial guess. For Re > "
+                "5000, use continuation in Re. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Grad-div stabilisation avoids "
+                "solving the FULL saddle-point separately. "
+                "Signal: a Taylor-Hood NS without "
+                "grad-div lets div(u) reach 1e-4 to 1e-3 "
+                "(not machine precision); adding "
+                "tau * (div(u), div(v)) * dx with "
+                "tau ~ nu makes div(u) ~ 1e-12. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] True inf-sup stable pair: "
+                "P2/P1 (Taylor-Hood) OR P1/P1 + "
+                "stabilisation. Signal: P1/P1 lagrange "
+                "spaces without PSPG stabilisation give "
+                "a CHECKERBOARD pressure mode "
+                "(alternating high/low across elements) — "
+                "visible in the gridView.writeVTK output "
+                "in ParaView. PSPG or grad-div added to "
+                "the galerkin scheme form removes the "
+                "mode. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] BLOCK preconditioner (SIMPLE, "
+                "SIMPLEC, Schur complement) for efficiency. "
+                "Signal: direct LU on a 100k-DOF Stokes "
+                "system takes 30+ GB memory; SIMPLE with "
+                "two inner solves (mass + Laplace) scales "
+                "linearly in N at the cost of more outer "
+                "iterations. Configure via PETSc "
+                "fieldsplit. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] High Re: add SUPG / PSPG "
+                "stabilisation or use DG upwinding. "
+                "Signal: the dune.fem galerkin scheme with "
+                "standard Galerkin NS at Re > 500 shows "
+                "visible streamwise oscillations (wiggles) "
+                "downstream of obstacles in the "
+                "lagrange-space velocity output; SUPG "
+                "removes them. The stabilisation parameter "
+                "tau scales as h / (2*|u|) at high Pe. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
     "helmholtz": {
@@ -742,11 +930,59 @@ KNOWLEDGE = {
         "solver": "galerkin with GMRES (system is indefinite for k² > smallest eigenvalue)",
         "spaces": "lagrange(gridView, order=2) — higher order for better phase accuracy",
         "pitfalls": [
-            "System is indefinite (not SPD): CG may diverge, use GMRES",
-            "Pollution effect: higher order reduces phase error — use P3+ or DG",
-            "For scattering: add absorbing BC (Robin/PML) on truncated domain",
-            "k² < pi²: system positive definite; k² > pi²: indefinite, precondition carefully",
-            "Rule of thumb: at least 10 P1 elements per wavelength for 1% phase error",
+            (
+                "[Numerical] Helmholtz system is INDEFINITE "
+                "(not SPD): CG may diverge, use GMRES or "
+                "direct LU. Signal: CG returns 'matrix "
+                "not positive definite' or stalls; GMRES "
+                "converges in O(k) iterations for "
+                "moderate k. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] Pollution effect: higher order "
+                "reduces phase error — use P3+ or DG. "
+                "Signal: P1 at k = 40 with 10 elem/"
+                "wavelength shows phase drift of ~ 1/4 "
+                "wavelength across the domain; P3 on "
+                "the same mesh recovers phase to < "
+                "0.1%. Pollution scales as O(k^3 h^2) "
+                "for P1, O(k^5 h^4) for P2. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Input] For SCATTERING: add absorbing BC "
+                "(Robin / PML) on truncated domain. "
+                "Signal: in dune.fem galerkin, a pure-"
+                "DirichletBC outer boundary reflects the "
+                "outgoing wave — visible standing-wave "
+                "interference in |u| (the GridFunction "
+                "magnitude) with lambda/2 spacing. Add "
+                "(i*k*u, v) * ds in the ufl Form on the "
+                "truncation boundary or a PML layer with "
+                "complex stretch. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] k^2 < pi^2: system positive "
+                "definite; k^2 > pi^2: indefinite, "
+                "precondition carefully. Signal: in the "
+                "dune.fem galerkin scheme a small-k case "
+                "(k=2, pi^2=9.87) converges with any "
+                "SolverCG / SolverGMRES; large-k (k=10, "
+                "k^2=100) needs shifted-Laplacian "
+                "preconditioner or sweeping preconditioner "
+                "— vanilla ILU stalls. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] Rule of thumb: at least 10 "
+                "P1 elements per wavelength for ~1% "
+                "phase error. Signal: < 5 elem/lambda "
+                "gives 10-30% phase error; check by "
+                "comparing computed |u| at distance L "
+                "with the analytic plane wave. Increase "
+                "h or polynomial order to meet the "
+                "rule of thumb. (Audit 2026-06-02.)"
+            ),
         ],
     },
     "time_dependent_heat": {
@@ -763,11 +999,60 @@ KNOWLEDGE = {
             "sdirk22": "2nd order singly-diagonal implicit RK",
         },
         "pitfalls": [
-            "Backward Euler: reassemble b = (u_n/dt)*v*dx every step (u_n changes)",
-            "The scheme object can be reused across steps — only RHS changes",
-            "Mass matrix stays the same if no moving mesh — cache if performance matters",
-            "For Crank-Nicolson: a = (u/dt + alpha/2*grad(u))*dx, b involves u_n terms",
-            "CFL not required for implicit methods — choose dt for accuracy not stability",
+            (
+                "[API] Backward Euler: REASSEMBLE "
+                "b = (u_n/dt)*v*dx every step (u_n "
+                "changes). Signal: assembling b once "
+                "outside the loop gives a heat solution "
+                "stuck at the INITIAL condition — the "
+                "RHS never updates. Inside the time "
+                "loop: compute new b from u_old. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] The scheme OBJECT can be "
+                "REUSED across steps — only RHS changes "
+                "if BCs and time step are constant. "
+                "Signal: re-creating the scheme each "
+                "step rebuilds the operator (re-JIT for "
+                "any UFL changes) — 10-100x slower than "
+                "reusing the scheme and just updating "
+                "RHS. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] Mass matrix stays the SAME "
+                "if no moving mesh — cache if "
+                "performance matters. Signal: re-"
+                "assembling M every step wastes 50% "
+                "of wall-clock; cache M outside the "
+                "loop and reuse. The galerkin scheme "
+                "does this automatically if the form "
+                "structure is constant. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] For CRANK-NICOLSON: a = "
+                "(u/dt + alpha/2*Δu)*v*dx; b involves "
+                "u_n terms with the matching alpha/2 "
+                "factor. Signal: writing the dune.fem "
+                "galerkin Crank_Nicolson scheme with the "
+                "ImplicitEuler form (alpha instead of "
+                "alpha/2) gives a first-order scheme "
+                "instead of second-order — the GridFunction "
+                "L2 error decays as O(dt) not O(dt^2) under "
+                "refinement. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] CFL is NOT required for "
+                "IMPLICIT methods — choose dt for "
+                "accuracy, not stability. Signal: BE "
+                "is unconditionally stable; choosing "
+                "a too-small explicit-CFL dt for an "
+                "implicit run wastes compute. Pick dt "
+                "by the shortest physical timescale of "
+                "interest, not by lambda_max / 2. "
+                "(Audit 2026-06-02.)"
+            ),
         ],
     },
     "mixed_methods": {
@@ -778,17 +1063,79 @@ KNOWLEDGE = {
         ),
         "solver": "galerkin with GMRES for indefinite saddle-point system",
         "spaces": {
-            "flux": "raviartthomas(gridView, order=0) — H(div) conforming",
+            "flux": "raviartThomas(gridView, order=0) — H(div) conforming",
             "pressure": "dglagrange(gridView, order=0) — piecewise constant L²",
             "product": "product_space(Sigma, V) — composite space for (sigma, u)",
         },
         "pitfalls": [
-            "Inf-sup stability: RT_k + DG-P_k pair is LBB-stable",
-            "product_space() from dune.fem.space wraps Sigma and V together",
-            "TrialFunctions(W) / TestFunctions(W) unpack composite functions",
-            "Natural BC on sigma.n (flux) imposed weakly via boundary term in b",
-            "For H1-conforming solution: postprocess with local projection",
-            "Saddle-point: use block preconditioner or direct solver for small problems",
+            (
+                "[Numerical] Inf-sup stability: RT_k + "
+                "DG-P_k pair is LBB-stable. Signal: in "
+                "the dune.fem galerkin scheme mixing non-"
+                "LBB-stable pairs (e.g. RT_1 + DG-P_1 "
+                "via raviartThomas(gridView, order=1) + "
+                "dglagrange(gridView, order=1)) makes "
+                "the discrete LBB constant collapse with "
+                "alugrid refinement — pressure norm "
+                "grows like O(h^-1). Stick to the "
+                "matched RT_k + DG-P_{k-1} convention. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[API] product_space() from dune.fem."
+                "space wraps Sigma and V together. "
+                "Signal: trying to solve the mixed "
+                "system on separate Sigma and V spaces "
+                "produces decoupled solves — no "
+                "saddle-point coupling. Use "
+                "W = product_space(Sigma, V) and "
+                "construct the form on W. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[API] TrialFunctions(W) / TestFunctions"
+                "(W) UNPACK composite functions into "
+                "(sigma, u). Signal: writing "
+                "TrialFunction(W) returns a single "
+                "TestFunction representing the whole "
+                "vector; you need "
+                "(sigma, u) = TrialFunctions(W) to "
+                "access components individually for "
+                "the mixed form. (Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] Natural BC on sigma.n (flux) "
+                "imposed WEAKLY via a boundary term in "
+                "b. Signal: applying a Dirichlet BC on "
+                "sigma.n at an inflow surface raises "
+                "'wrong DOF space' — the flux DOF lives "
+                "in H(div) and has nodal values only "
+                "on faces; impose flux via boundary "
+                "integrals in the RHS. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Numerical] For H1-conforming solution: "
+                "POST-PROCESS with local projection. "
+                "Signal: the mixed-Poisson 'pressure' "
+                "u in DG-P_{k-1} is piecewise-discontinuous "
+                "— direct ParaView visualisation shows "
+                "stepped values per cell. Project to "
+                "lagrange(order=k) for smooth output "
+                "via space.interpolate. (Audit "
+                "2026-06-02.)"
+            ),
+            (
+                "[Performance] Saddle-point: use BLOCK "
+                "preconditioner or direct solver for "
+                "small problems. Signal: GMRES on the "
+                "raw saddle-point converges in O(N) "
+                "iterations (slow); a block-diagonal "
+                "preconditioner with Sigma-Mass + "
+                "u-Laplace gives ~ O(sqrt(N)) "
+                "iterations. Direct UMFPACK works "
+                "for N < 100k. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }

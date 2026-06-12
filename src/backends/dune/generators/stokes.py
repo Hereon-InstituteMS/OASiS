@@ -50,9 +50,46 @@ KNOWLEDGE = {
         "solver": "Uzawa (scipy-based, dune-fem tutorial) or PETSc fieldsplit",
         "spaces": "Composite: lagrange(order=2, dimRange=2) + lagrange(order=1)",
         "pitfalls": [
-            "Block system requires composite/product space",
-            "Uzawa: iterate between velocity solve and pressure update",
-            "PETSc fieldsplit preconditioner available via as_petsc backend",
+            (
+                "[API] Block system requires COMPOSITE / "
+                "PRODUCT space. Signal: writing a Stokes "
+                "form on a plain lagrange(gridView, "
+                "order=2, dimRange=2) for velocity and "
+                "lagrange(gridView, order=1, dimRange=1) "
+                "for pressure SEPARATELY produces two "
+                "decoupled solves — the saddle-point "
+                "coupling is missing. Use product / "
+                "composite spaces (e.g. lagrange order=2 "
+                "with mixed component layout) so the "
+                "(u, p) block matrix is assembled. "
+                "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Numerical] UZAWA iterative scheme: "
+                "iterate between velocity solve and "
+                "pressure update. Signal: standard "
+                "block-LU (SolverDirect) on the (u, p) "
+                "saddle-point is expensive at scale "
+                "(memory ~ N^1.5 for direct); Uzawa with "
+                "a SolverCG-on-K_u inner loop + a "
+                "SIMPLE/PCD pressure-update outer step "
+                "in the galerkin scheme scales linearly. "
+                "The convergence rate depends on the "
+                "pressure preconditioner (mass-matrix "
+                "scaled). (Audit 2026-06-02.)"
+            ),
+            (
+                "[Performance] PETSc fieldsplit "
+                "preconditioner available via the "
+                "as_petsc() backend. Signal: switching "
+                "from direct UMFPACK to PETSc FieldSplit "
+                "with Schur-complement preconditioning "
+                "scales to 10x larger problems on the "
+                "same hardware; configure via "
+                "petsc_options including 'pc_type': "
+                "'fieldsplit', 'pc_fieldsplit_type': "
+                "'schur'. (Audit 2026-06-02.)"
+            ),
         ],
     },
 }

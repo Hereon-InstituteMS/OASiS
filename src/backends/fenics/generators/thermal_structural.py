@@ -10,10 +10,36 @@ KNOWLEDGE = {
     "function_space": "Scalar Lagrange for temperature, Vector Lagrange for displacement",
     "solver": "Sequential: heat (LU) \u2192 elasticity (CG+GAMG)",
     "pitfalls": [
-        "Thermal strain = \u03b1 * \u0394T * I (isotropic expansion)",
-        "Reference temperature T_ref matters: \u0394T = T - T_ref",
-        "Plane strain: use full 3D Lam\u00e9 parameters",
-        "Mechanical BC needed to prevent rigid body motion",
+        "[Numerical] Thermal strain eps_th = alpha * DeltaT * Id is "
+        "isotropic \u2014 equal expansion in all directions. Coupling into "
+        "the elastic Form is sigma = C : (eps(u) - eps_th). Signal: "
+        "writing the RHS as alpha * DeltaT * v * dx (forgetting Id) "
+        "couples thermal expansion only into a single component \u2014 the "
+        "dolfinx VectorH1 displacement Function develops anisotropic "
+        "strain in the XDMFFile output that does not match the "
+        "expected free-expansion alpha*DeltaT in all directions. "
+        "(Audit 2026-06-02.)",
+        "[Input] Reference temperature T_ref matters: DeltaT = T - "
+        "T_ref. Leaving the T_ref ufl.Constant at 0 with an SI "
+        "material at room temperature gives an initial thermal pre-"
+        "strain of order alpha*T_room (~3e-3 for steel at 300 K). "
+        "Signal: the first-step displacement Function from the dolfinx "
+        "NonlinearProblem is huge compared to the actual loading and "
+        "the NewtonSolver iteration may oscillate. (Audit 2026-06-02.)",
+        "[Physics] Plane strain (default in 2D dolfinx solid mechanics) "
+        "uses the full 3D Lame lambda \u2014 do NOT swap in plane-stress "
+        "lambda_star = 2*lambda*mu/(lambda+2*mu) for a thin-plate "
+        "approximation unless explicitly modelling plane stress. "
+        "Signal: a dolfinx plane_strain Function tip deflection "
+        "differs from the analytic plane_stress reference by a factor "
+        "(1-nu) at nu=0.3. (Audit 2026-06-02.)",
+        "[Input] A mechanical Dirichlet BC is required to remove the "
+        "null space (translation + rotation rigid-body modes) \u2014 "
+        "without it, GAMG and even direct solvers may fail. Signal: "
+        "running the PETScKrylovSolver on the structural step without "
+        "any dirichletbc on the VectorH1 displacement reports "
+        "KSPSolve: DIVERGED_INDEFINITE_PC or stalls with residual "
+        "~1e0; pinning one node fixes it. (Audit 2026-06-02.)",
     ],
     "materials": {
         "E": {"range": [1e3, 1e12], "unit": "Pa"},

@@ -56,7 +56,11 @@ int main() {{
   Vector<double> system_rhs(dof_handler.n_dofs());
 
   const double eps = {eps};
-  const Tensor<1, dim> beta({{{{1.0, 0.5}}}});
+  // Element-wise init: Tensor's array constructor is explicit, so
+  // brace-list construction fails to compile (deal.II 9.3.x).
+  Tensor<1, dim> beta;
+  beta[0] = 1.0;
+  beta[1] = 0.5;
 
   QGauss<dim> quadrature(2);
   FEValues<dim> fe_values(fe, quadrature,
@@ -132,10 +136,88 @@ KNOWLEDGE = {
                       "step-63 (GMG with block smoothers)"],
     "function_space": "FE_Q(1) for SUPG, FE_DGQ(p) for DG",
     "solver": "BiCGStab + Jacobi for SUPG; direct for DG (block-diagonal)",
+    "elements": {
+        "FE_Q":
+            "Used with SUPG / GLS / VMS stabilisation — bare "
+            "Galerkin Q1 oscillates at high Peclet. degree=1 + "
+            "tau = h/(2|b|)*(coth(Pe) - 1/Pe) is the SUPG "
+            "standard.",
+        "FE_DGQ":
+            "DG with upwind flux (step-12) — handles "
+            "discontinuous solutions and high Peclet naturally. "
+            "Preferred over stabilised FE_Q when Pe > ~100.",
+        "FE_FaceQ":
+            "Trace component of hybridised DG (HDG, step-51) — "
+            "combined with FE_DGQ on cells, trace unknowns live "
+            "only on faces, cheaper than full DG.",
+        "FE_DGP":
+            "DG monomial basis; alternative to FE_DGQ for "
+            "higher-order accurate transport.",
+        "FE_Q_Hierarchical":
+            "For hp-adaptive refinement around shock layers; "
+            "combine with anisotropic refinement (step-30) so "
+            "h refinement is concentrated normal to the front.",
+    },
+    "mesh_generators": {
+        "hyper_cube": "Canonical transport on unit square; step-9 reference solutions.",
+        "subdivided_hyper_rectangle": "Anisotropic refinement for boundary-layer / shock-front resolution.",
+        "hyper_rectangle": "Generic channel for inlet/outlet transport tests.",
+        "hyper_L": "L-shaped; tests discontinuity propagation around corner.",
+        "merge_triangulations": "Heterogeneous-coefficient demos (high-diff + low-diff patches).",
+    },
+    "solvers": [
+        "SolverBiCGStab<>             — non-symmetric system from convection term; best for SUPG",
+        "SolverGMRES<>                — robust alternative; works when BiCGStab stagnates",
+        "SparseDirectUMFPACK          — for DG up to ~10^4 cells; block-diagonal mass makes direct solves cheap",
+    ],
+    "preconditioners": [
+        "PreconditionJacobi           — for BiCGStab on SUPG; cheap diagonal scaling",
+        "PreconditionILU              — stronger preconditioning when Peclet is high",
+        "MGSmootherRelaxation with block-Jacobi (step-63) — point smoothers fail on convection-dominated systems",
+    ],
     "pitfalls": [
-        "SUPG: tau = h/(2|b|) * (coth(Pe) - 1/Pe), Pe = |b|*h/(2*eps)",
-        "DG: need FEInterfaceValues for jump/average on faces",
-        "Upwind flux: use the value from the element where b·n > 0",
-        "For high Peclet: either reduce h or use DG (SUPG may oscillate)",
+        "[Numerical] SUPG stabilisation parameter: "
+        "tau = h/(2|b|) * (coth(Pe) - 1/Pe) where "
+        "Pe = |b|*h/(2*eps). The h/(2|b|) form alone (without the "
+        "Bergant-Mizukami doubly-asymptotic factor) becomes O(1) "
+        "at low Pe and over-stabilises smooth diffusion-dominated "
+        "solutions. Signal: at Pe << 1 (diffusion-dominated), "
+        "DataOut shows over/undershoots of 5-15% near Dirichlet "
+        "boundaries that persist under refinement — "
+        "VectorTools::integrate_difference vs analytic reference "
+        "plateaus at ~0.05 L2-error instead of decreasing as h^p.",
+        "[Syntax] DG formulations need FEInterfaceValues for "
+        "jump/average operators on faces. Using FEValues alone "
+        "gives the cell-interior gradient but not the jump term. "
+        "Signal: DG solution with FE_DGQ in DataOut shows "
+        "continuous-Galerkin-like behaviour at element interfaces "
+        "— `solution.linfty_norm()` of jump-across-face values "
+        "drops below 1e-8 (effectively zero) where physical jumps "
+        "of O(1) are expected for an upwind discontinuous "
+        "Galerkin scheme.",
+        "[Physics] Upwind flux: use the value from the cell where "
+        "b·n > 0 (upstream). Switching the upwind direction inverts "
+        "transport — solutions advect BACKWARDS from the inflow. "
+        "Signal: DataOut shows the prescribed inflow Dirichlet "
+        "value (e.g. u=1 on x=0 with advection in +x direction) "
+        "appearing as a localized hump at the DOWNSTREAM (x=L) "
+        "boundary instead of being carried with the flow; "
+        "VectorTools::point_value at the outflow returns the "
+        "inflow value with reversed sign.",
+        "[Numerical] At high Peclet, SUPG can still oscillate. "
+        "Either refine h or switch to DG. Signal: DataOut output "
+        "shows O(1) oscillations in the FE_Q SUPG solution at "
+        "the interface between high and low coefficient regions; "
+        "VectorTools::integrate_difference vs the discontinuous "
+        "reference is O(1) and does not decrease as h refines.",
+        "[Integration] Anisotropic refinement (step-30) is "
+        "essential for boundary-layer resolution at high Pe — "
+        "isotropic refinement wastes DoFs perpendicular to the "
+        "flow. Signal: DataOut shows boundary-layer thickness "
+        "smeared across 3-5 cells in the streamwise direction "
+        "(where 1 should suffice) while resolved in 1 cell normal "
+        "to the flow; Triangulation::n_active_cells() climbs into "
+        "the 1e5+ range to achieve the same wall-normal resolution "
+        "anisotropic refinement reaches at 1e4 cells.",
     ],
 }

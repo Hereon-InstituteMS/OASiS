@@ -155,12 +155,17 @@ KNOWLEDGE = {
             "damping": "Near-boundary damping to prevent mesh distortion",
         },
         "pitfalls": [
-            "Shape gradients require adjoint solve or finite differences",
-            "Mesh quality degrades with large shape changes: use mesh smoothing",
-            "Filter radius should be > 2-3x element edge length",
-            "Constrained optimization: use penalized projection or augmented Lagrangian",
-            "For manufacturing constraints: use bead optimization or geometric filtering",
-        ],
+                        '[Numerical] Shape gradients require adjoint solve or finite differences '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Mesh quality degrades with large shape changes: use mesh smoothing '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Filter radius should be > 2-3x element edge length '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Constrained optimization: use penalized projection or augmented Lagrangian '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] For manufacturing constraints: use bead optimization or geometric filtering '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 

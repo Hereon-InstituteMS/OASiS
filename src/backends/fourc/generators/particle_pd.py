@@ -302,78 +302,183 @@ class ParticlePDGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "CRITICAL: The PARTICLE DYNAMIC/SPH section is MANDATORY for PD "
-                    "simulations even though the physics is peridynamic, not SPH.  "
-                    "Missing SPH parameters (KERNEL, KERNEL_SPACE_DIM, "
-                    "BOUNDARYPARTICLEFORMULATION, TRANSPORTVELOCITYFORMULATION) causes "
-                    "the code to crash with 'pd_neighbor_pairs = 0' because the "
-                    "neighbor search infrastructure is not initialized."
+                    "[Input] CRITICAL: The PARTICLE DYNAMIC/SPH section "
+                    "is MANDATORY for PD simulations even though the "
+                    "physics is peridynamic, not SPH.  Missing SPH "
+                    "parameters (KERNEL, KERNEL_SPACE_DIM, "
+                    "BOUNDARYPARTICLEFORMULATION, "
+                    "TRANSPORTVELOCITYFORMULATION) causes the code to "
+                    "crash with 'pd_neighbor_pairs = 0' because the "
+                    "neighbor search infrastructure is not initialized. "
+                    "Signal: log line `pd_neighbor_pairs = 0` followed "
+                    "by an abort, OR `BOUNDARYPARTICLEFORMULATION not "
+                    "set` during SPH section parsing. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "DOMAINBOUNDINGBOX must enclose ALL particles with margin.  If a "
-                    "particle (including the moving impactor at any time step) falls "
-                    "outside the bounding box, the simulation crashes."
+                    "[Numerical] DOMAINBOUNDINGBOX must enclose ALL "
+                    "particles with margin.  If a particle (including "
+                    "the moving impactor at any time step) falls "
+                    "outside the bounding box, the simulation crashes. "
+                    "Signal: runtime abort `particle outside "
+                    "DOMAINBOUNDINGBOX at step N` / `BinningStrategy: "
+                    "particle position out of bounds`; the position "
+                    "printed is just past one of the box faces. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "Use boundaryphase (NOT rigidphase) for rigid impactors.  "
-                    "rigidphase is DEM-only and incompatible with PD.  boundaryphase "
-                    "particles interact correctly with pdphase via the Adami "
-                    "boundary formulation."
+                    "[Input] Use boundaryphase (NOT rigidphase) for "
+                    "rigid impactors.  rigidphase is DEM-only and "
+                    "incompatible with PD.  boundaryphase particles "
+                    "interact correctly with pdphase via the Adami "
+                    "boundary formulation. Signal: parser error "
+                    "`unknown particle phase: rigidphase` or runtime "
+                    "abort `rigidphase incompatible with PD "
+                    "interaction`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Horizon ratio m = delta/dx should be at least 3 for convergence.  "
-                    "m=2 gives poor accuracy; m=4+ is more expensive but more accurate."
+                    "[Numerical] Horizon ratio m = delta / dx "
+                    "should be AT LEAST 3 for convergence. "
+                    "m = 2 gives poor accuracy; m >= 4 is "
+                    "more expensive but more accurate. "
+                    "Signal: m = 2 in the PARTICLE DYNAMIC "
+                    "FUNCT block produces stress fields "
+                    "(via the 4C PARTICLES output) off the "
+                    "analytic elasticity solution by "
+                    "10-20%; m = 3 hits 1-3% error, m = 4 "
+                    "reaches < 1%. The delta-convergence "
+                    "requires m -> infinity, but m = 3-4 "
+                    "is the practical sweet spot. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "BIN_SIZE_LOWER_BOUND must be > horizon.  If bins are smaller "
-                    "than the horizon, some neighbors will not be found."
+                    "[Numerical] BIN_SIZE_LOWER_BOUND must be > horizon. "
+                    " If bins are smaller than the horizon, some "
+                    "neighbors will not be found. Signal: PARTICLE DYNAMIC "
+                    "neighbor_count diagnostics from BinningStrategy show "
+                    "~50-70% of expected bonds (m=3 should give ~28 in 2D, "
+                    "~123 in 3D); the PDWaveSpeed in a uniaxial test is "
+                    "then ~sqrt of the true speed because the effective "
+                    "bulk modulus from MAT_ParticlePD is under-estimated. "
+                    "(Audit 2026-06-02.)"
                 ),
                 (
-                    "Pre-cracks (PRE_CRACKS) must use 2D coordinates (x, y) matching "
-                    "the particle positions.  The visibility check is geometric -- it "
-                    "tests whether the line segment connecting two particles crosses "
-                    "the crack segment."
+                    "[Input] Pre-cracks (PRE_CRACKS) must "
+                    "use 2D coordinates (x, y) matching the "
+                    "particle positions. The visibility "
+                    "check is GEOMETRIC — tests whether "
+                    "the line segment connecting two "
+                    "particles crosses the crack segment. "
+                    "Signal: PRE_CRACKS specified in "
+                    "wrong units (e.g. mm vs m, or with a "
+                    "domain offset that doesn't match the "
+                    "particle grid) results in NO bonds "
+                    "broken initially — the visualised "
+                    "damage field stays uniformly zero at "
+                    "t = 0; verify by counting "
+                    "initially-broken bonds against the "
+                    "expected ~2 * delta / dx per "
+                    "intersected segment. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "CFL violation: if dt >= dx / sqrt(E/rho), the explicit time "
-                    "integration becomes unstable.  Use a safety factor of 0.5."
+                    "[Numerical] CFL violation: if dt >= dx / "
+                    "sqrt(E/rho), the explicit time integration becomes "
+                    "unstable.  Use a safety factor of 0.5. Signal: "
+                    "kinetic energy grows monotonically with each step, "
+                    "particle velocities saturate at NaN within a few "
+                    "hundred steps; or 4C aborts with `non-finite "
+                    "velocity at particle X`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "INITRADIUS in the material must equal dx/2.  An inconsistent "
-                    "value causes incorrect mass and volume computation."
+                    "[Input] INITRADIUS in the material must equal dx/2. "
+                    " An inconsistent value causes incorrect mass and "
+                    "volume computation. Signal: total system mass "
+                    "printed at startup differs by ~(2*INITRADIUS/dx)^d "
+                    "from the analytical bar/plate mass (d = spatial "
+                    "dim); momentum conservation fails after the first "
+                    "step. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Bond-based PD restricts Poisson's ratio to nu=0.25 (2D) or "
-                    "nu=1/3 (3D).  This is a fundamental limitation of the pairwise "
-                    "force model."
+                    "[Numerical] Bond-based PD restricts "
+                    "Poisson's ratio to nu = 0.25 (2D) or "
+                    "nu = 1/3 (3D) — a FUNDAMENTAL "
+                    "limitation of the pairwise force model. "
+                    "Signal: a bond-based PD problem in the "
+                    "PARTICLE DYNAMIC/PD MAT_ParticlePD "
+                    "MATERIALS entry at nu != these fixed "
+                    "values runs but the resulting Poisson "
+                    "contraction matches 0.25 (2D) or 0.33 "
+                    "(3D) regardless of the input nu. Use "
+                    "state-based PD if you need arbitrary "
+                    "Poisson ratios. (Audit 2026-06-02.)"
                 ),
                 (
-                    "For 2D problems, particles must still have z=0.0 coordinates "
-                    "and the DOMAINBOUNDINGBOX must have a small z-extent (e.g., "
-                    "-0.01 to 0.01)."
+                    "[Input] For 2D problems, particles must "
+                    "STILL have z = 0.0 coordinates and "
+                    "DOMAINBOUNDINGBOX must have a small "
+                    "z-extent (e.g. -0.01 to 0.01). Signal: "
+                    "writing pure (x, y) particle entries "
+                    "(no z) raises a parser error 'expected "
+                    "3 coordinates'; setting z bounds to 0 "
+                    "produces a degenerate bounding box "
+                    "that conflicts with binning. Use the "
+                    "thin-slab convention. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "LOADING: boundaryphase particles interact with pdphase via "
-                    "REPULSIVE contact only (std::min(0.0, ...)).  They CANNOT apply "
-                    "tensile loads — only compressive impact.  For tension/opening "
-                    "problems (DCB, fracture), use INITIAL_VELOCITY_FIELD to impart "
-                    "kinetic energy, or PDFIXED flag on boundary particles with "
-                    "prescribed Dirichlet displacement."
+                    "[Input] LOADING: boundaryphase "
+                    "particles interact with pdphase via "
+                    "REPULSIVE contact ONLY (std::min(0.0, "
+                    "...)). They CANNOT apply tensile loads "
+                    "— only compressive impact. Signal: "
+                    "attaching boundaryphase to a DCB "
+                    "specimen and pulling apart gives ZERO "
+                    "tensile reaction (the contact law "
+                    "returns 0 for opening); use "
+                    "INITIAL_VELOCITY_FIELD or PDFIXED with "
+                    "Dirichlet displacement for "
+                    "tension/opening. (Audit 2026-06-02.)"
                 ),
                 (
-                    "PDFIXED: per-particle flag that fixes a particle in place "
-                    "(zero displacement).  Add 'PDFIXED 1' to the particle definition "
-                    "string.  Use for clamped supports in fracture problems."
+                    "[Input] PDFIXED: per-particle flag "
+                    "fixing a particle in place (zero "
+                    "displacement). Add 'PDFIXED 1' to the "
+                    "particle definition string. Use for "
+                    "clamped supports in fracture problems. "
+                    "Signal: omitting PDFIXED on a clamped "
+                    "edge lets those particles move freely — "
+                    "the specimen translates as a rigid body "
+                    "under tensile loading instead of "
+                    "developing the expected stress "
+                    "concentration at the notch. (Audit "
+                    "2026-06-02.)"
                 ),
                 (
-                    "IO/RUNTIME VTK OUTPUT sections are INCOMPATIBLE with particle "
-                    "problems — they crash 4C.  Remove them.  4C writes particle VTU "
-                    "files automatically via the PARTICLE DYNAMIC output mechanism."
+                    "[Output] IO/RUNTIME VTK OUTPUT sections are "
+                    "INCOMPATIBLE with particle problems — they crash "
+                    "4C.  Remove them.  4C writes particle VTU files "
+                    "automatically via the PARTICLE DYNAMIC output "
+                    "mechanism. Signal: 4C aborts on startup with "
+                    "`IO/RUNTIME VTK OUTPUT not supported for particle "
+                    "problems` or `RuntimeVTKOutputParams: invalid for "
+                    "PARTICLE`. (Audit 2026-06-02.)"
                 ),
                 (
-                    "Critical stretch formula differs between plane stress and plane "
-                    "strain.  Plane strain (2D): s_c = sqrt(5*G_Ic/(9*K_b*delta)) "
-                    "where K_b = E/(3*(1-2*nu)).  Plane stress: s_c = sqrt(5*G_Ic/(6*E*delta))."
+                    "[Numerical] Critical stretch formula "
+                    "DIFFERS between plane stress and plane "
+                    "strain. Plane strain (2D): s_c = "
+                    "sqrt(5*G_Ic / (9 * K_b * delta)) where "
+                    "K_b = E / (3*(1-2*nu)). Plane stress: "
+                    "s_c = sqrt(5*G_Ic / (6*E*delta)). "
+                    "Signal: using the plane-stress formula "
+                    "for a plane-strain problem (or vice "
+                    "versa) gives a critical stretch off "
+                    "by ~sqrt((6E)/(9K_b)) = sqrt(2*(1-2*"
+                    "nu)/3); fracture initiates at the "
+                    "wrong load. Match s_c formula to the "
+                    "chosen PD_DIMENSION. (Audit "
+                    "2026-06-02.)"
                 ),
             ],
             "typical_experiments": [
@@ -537,7 +642,8 @@ class ParticlePDGenerator(BaseGenerator):
             # ALL numerical values below are PLACEHOLDERS — they must be determined
             # by the user based on the specific problem geometry, material, and
             # required resolution. Consult the literature and 4C test files
-            # (browse_solver_tests tool) for appropriate values.
+            # via examples(keyword, solver='fourc', action='search') for
+            # appropriate values.
             #
             # Units: choose a consistent system (e.g., mm-ms-g or SI)
 
@@ -565,7 +671,7 @@ class ParticlePDGenerator(BaseGenerator):
               INTERACTION: "SPH"
               RESULTSEVERY: <OUTPUT_FREQUENCY>
               RESTARTEVERY: <RESTART_FREQUENCY>
-              TIMESTEP: <dt from CFL: dt < 0.5 * dx / sqrt(E/rho)>
+              TIMESTEP: "<dt-from-CFL: dt < 0.5 * dx / sqrt(E/rho)>"
               NUMSTEP: <total steps>
               MAXTIME: <end time>
               GRAVITY_ACCELERATION: "0.0 0.0 0.0"

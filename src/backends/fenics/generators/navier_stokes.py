@@ -10,11 +10,41 @@ KNOWLEDGE = {
     "function_space": "Mixed: P2 velocity + P1 pressure (Taylor-Hood, inf-sup stable)",
     "solver": "Newton iteration with LU (MUMPS) for direct solve",
     "pitfalls": [
-        "Must use inf-sup stable element pair (Taylor-Hood P2/P1)",
-        "Pressure needs pinning (Dirichlet at one point) for enclosed flows",
-        "High Re requires stabilization or finer mesh",
-        "Newton may not converge for Re>500 without continuation",
-        "Use basix.ufl.element() and mixed_element() in modern dolfinx",
+        # Promoted from one-line tips to [Category] + Signal: pitfalls
+        # (2026-06-02 audit pass 20). Each names a real dolfinx symptom.
+        "[Numerical] Must use inf-sup stable element pair "
+        "(Taylor-Hood P2/P1 — P2 velocity + P1 pressure). Equal-order "
+        "P1/P1 violates LBB. Signal: a dolfinx mixed_element with "
+        "matching basix.ufl.element('Lagrange', 1) on both velocity "
+        "and pressure yields a checkerboard pressure pattern; the "
+        "XDMFFile output shows oscillations between adjacent DOFs with "
+        "amplitude ~ 100% of mean. (Audit 2026-06-02.)",
+        "[Input] Pressure needs pinning (dirichletbc at one point) "
+        "for enclosed flows — pressure is determined only up to a "
+        "constant. Signal: the dolfinx NewtonSolver on a closed-domain "
+        "NS problem without pressure pinning either reports "
+        "DIVERGED_BREAKDOWN from KSPSolve or returns a Function with a "
+        "huge additive offset (the pressure component drifts by O(1e6) "
+        "between solver runs). (Audit 2026-06-02.)",
+        "[Numerical] High Re requires stabilization (SUPG) or a "
+        "finer mesh — the Galerkin form is unstable for "
+        "convection-dominated NS. Signal: a Taylor-Hood mixed-element "
+        "solve at Re > 500 with no SUPG produces visible wiggles in "
+        "the velocity Function near the inflow / obstacle; the "
+        "XDMFFile output shows oscillations growing with each Newton "
+        "iteration. (Audit 2026-06-02.)",
+        "[Numerical] Newton may not converge for Re > 500 without "
+        "load-step continuation (ramp Re from 1 to target). Signal: "
+        "the dolfinx NewtonSolver raises NoConvergence or the residual "
+        "ratio oscillates between two values; ramping nu via "
+        "fem.Constant(domain, nu_initial) then updating in a loop "
+        "produces monotonic convergence. (Audit 2026-06-02.)",
+        "[API] Use basix.ufl.element() and basix.ufl.mixed_element() "
+        "in modern dolfinx — the old VectorElement/MixedElement from "
+        "ufl alone is deprecated. Signal: passing ufl.MixedElement to "
+        "fem.functionspace raises DeprecationWarning or "
+        "AttributeError; the correct pattern is "
+        "basix.ufl.mixed_element([P2_vec, P1]). (Audit 2026-06-02.)",
     ],
     "materials": {
         "Re": {"range": [1, 10000], "unit": "dimensionless (Reynolds number)"},

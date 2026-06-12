@@ -103,12 +103,67 @@ KNOWLEDGE = {
         "solver": "Manual Newton loop: assemble Jacobian + residual, solve with spsolve",
         "elements": "ElementQuad1, ElementTriP1 (any standard H1 element)",
         "pitfalls": [
-            "scikit-fem does NOT have a built-in Newton solver — manual loop required",
-            "Jacobian: linearize the nonlinear weak form w.r.t. solution and assemble",
-            "Use ib.interpolate(u) to evaluate solution at quadrature points",
-            "ib.interpolate(u).grad gives gradient at quadrature points",
-            "Convergence: quadratic near solution if Jacobian is exact",
-            "For difficult problems: add line search or damping (u += alpha * du)",
+            "[API] scikit-fem provides NO built-in Newton "
+            "solver — the user must write a manual residual + "
+            "Jacobian loop using assemble + scipy.sparse.linalg."
+            "spsolve. Signal: neither skfem.* nor skfem.helpers."
+            "* has any attribute matching 'newton' or 'nonlin' "
+            "(verified via dir() inspection). Don't reach for a "
+            "skfem.NewtonSolver — it doesn't exist. (Verified "
+            "empirically 2026-06-01.)",
+            "[Numerical] The Newton-loop Jacobian is the "
+            "linearisation of the nonlinear weak form with "
+            "respect to the previous solution iterate. Assemble "
+            "as a fresh skfem.BilinearForm each iteration using "
+            "basis.interpolate(u_prev) inside the @BilinearForm "
+            "body. Signal: the ratio of consecutive "
+            "scipy.sparse.linalg.norm(residual) values follows "
+            "the O(r^2) Newton convergence rate only when the "
+            "BilinearForm-assembled Jacobian matches the exact "
+            "linearisation; using a Quasi-Newton secant "
+            "Jacobian collapses to linear (constant-ratio) "
+            "convergence. (Claim inherited.)",
+            "[API] basis.interpolate(u) returns a "
+            "skfem.element.DiscreteField with .value (evaluated "
+            "at quadrature points) and .grad attributes. Use "
+            "the field inside @BilinearForm/@LinearForm bodies "
+            "to access the previous-iterate solution and its "
+            "gradient. Signal: type(basis.interpolate(u_dof_vec))."
+            "__name__ == 'DiscreteField'; hasattr(it, 'grad') "
+            "is True; for u = constant, the .grad array is "
+            "uniformly zero. (Verified empirically 2026-06-01.)",
+            "[API] basis.interpolate(u).grad has shape "
+            "(spatial_dim, n_elements, n_quad_points) in 2D. "
+            "Indexing patterns like .grad[0] (x-component over "
+            "all elements and quad points) work directly inside "
+            "@Form decorated functions. Signal: "
+            "basis.interpolate(np.ones(N) * c).grad shape is "
+            "(2, n_elements, n_quad_points_per_element) for a "
+            "2D mesh with P1 elements (n_quad=3 per triangle "
+            "by default); all values are 0 because the function "
+            "is constant. (Verified empirically 2026-06-01 with "
+            "MeshTri.refined(2).)",
+            "[Numerical] Quadratic convergence diagnostic: "
+            "scipy.sparse.linalg.norm(residual_vector) computed "
+            "via skfem.LinearForm.assemble at each iteration "
+            "should drop with successive ratios r_{k+1}/r_k that "
+            "decrease by ~10x per step near the solution (slope "
+            "of log-residual vs iteration index doubles). Signal: "
+            "if the ratio stays roughly constant across iterations "
+            "the assembled skfem.BilinearForm Jacobian is wrong "
+            "or inexact. (Claim inherited.)",
+            "[Numerical] For difficult problems (large initial "
+            "residual, poor initial guess) add line search or "
+            "damping: u += alpha * du with alpha < 1, chosen "
+            "to ensure the residual norm decreases at each "
+            "step. A simple backtracking line search halves "
+            "alpha until scipy.sparse.linalg.norm of the "
+            "skfem.LinearForm-assembled residual at u + "
+            "alpha*du is below the previous value. Signal: "
+            "with alpha=1, the residual norm grows across "
+            "iterations; with alpha=0.5 backtracking, the "
+            "residual decreases monotonically. (Claim "
+            "inherited.)",
         ],
     },
 }

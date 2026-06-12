@@ -24,6 +24,16 @@ def _parallel_poisson_2d(params: dict) -> str:
 #include <deal.II/base/mpi.h>
 #include <deal.II/lac/generic_linear_algebra.h>
 
+// Hard precondition with ONE actionable diagnostic instead of 200
+// lines of template errors from inside generic_linear_algebra.h:
+// conda-forge deal.II builds ship WITHOUT MPI and WITHOUT PETSc in
+// every version (config.h: '#undef DEAL_II_WITH_MPI' / '..._PETSC',
+// verified 9.1.1 + 9.3.2 on 2026-06-12), so the step-40 distributed
+// pattern cannot compile there at all.
+#if !defined(DEAL_II_WITH_MPI) || !defined(DEAL_II_WITH_PETSC)
+#  error "parallel_poisson_2d requires a deal.II build with MPI + PETSc (+ p4est). conda-forge deal.II ships without them - use the serial poisson_2d template instead, or build deal.II from source with -DDEAL_II_WITH_MPI=ON -DDEAL_II_WITH_PETSC=ON."
+#endif
+
 // Choose LA backend: PETSc or Trilinos
 namespace LA
 {{
@@ -225,12 +235,57 @@ KNOWLEDGE = {
         "output": "DataOut::write_vtu_with_pvtu_record for parallel VTU",
     },
     "pitfalls": [
-        "Requires deal.II compiled with MPI + p4est + PETSc (or Trilinos)",
-        "Only locally owned cells are assembled: check cell->is_locally_owned()",
-        "Locally relevant DOFs needed for ghosted vectors (constraint distribution)",
-        "SparsityTools::distribute_sparsity_pattern needed for parallel sparsity",
-        "compress(VectorOperation::add) required after assembly",
-        "AMG preconditioner: works out-of-box for scalar Laplace, needs tuning for systems",
-        "Output: write_vtu_with_pvtu_record produces one .vtu per rank + one .pvtu index",
+        "[Integration] Requires deal.II compiled with MPI + p4est + "
+        "PETSc (or Trilinos). Without these the parallel:: classes "
+        "are not instantiated. Signal: link error 'undefined "
+        "reference to parallel::distributed::Triangulation<dim>::"
+        "Triangulation' or `ExcMessage('parallel::distributed::"
+        "Triangulation needs deal.II compiled with p4est')`.",
+        "[Syntax] Only locally-owned cells are assembled. Use "
+        "`cell->is_locally_owned()` to gate the assembly loop. "
+        "Signal: assembly runs on every rank but "
+        "`system_matrix.frobenius_norm()` is the SAME on rank 0 "
+        "and rank 1 — each rank assembled the full mesh, leading "
+        "to double-counted entries; Triangulation::n_locally_"
+        "owned_active_cells() returns the full count instead of "
+        "the per-rank partition.",
+        "[API] Locally-relevant DoFs needed for ghosted vectors "
+        "(AffineConstraints::distribute on parallel vectors). "
+        "Forgetting `DoFTools::extract_locally_relevant_dofs` "
+        "gives an empty IndexSet and constraints fail to apply. "
+        "Signal: `AffineConstraints::distribute(solution)` raises "
+        "ExcMessage('ghost entries not consistent') because the "
+        "ghost layer is empty.",
+        "[Syntax] SparsityTools::distribute_sparsity_pattern "
+        "needed for parallel sparsity. Skipping it produces a "
+        "globally-replicated sparsity (each rank holds all rows) "
+        "and matrix assembly OOMs at scale. Signal: rss / "
+        "VmPeak from /proc/self/status grows linearly with "
+        "n_dofs on each MPI rank instead of being O(n_dofs / "
+        "n_ranks); SparseMatrix::memory_consumption() exceeds "
+        "the expected per-rank slice.",
+        "[Syntax] `compress(VectorOperation::add)` required after "
+        "assembly to sum contributions across ranks. Without it, "
+        "system_rhs holds only this rank's contribution. Signal: "
+        "DataOut shows the global solution split into per-rank "
+        "regions with mismatched values at MPI subdomain "
+        "interfaces; VectorTools::integrate_difference against "
+        "the serial reference is O(1) at the interfaces and 0 "
+        "elsewhere.",
+        "[Numerical] PreconditionAMG / BoomerAMG works out-of-box "
+        "for scalar Laplace via TrilinosWrappers but needs tuning "
+        "(strong-threshold, smoother) for elasticity / NS / "
+        "multiphysics systems. Signal: SolverCG iteration count "
+        "from SolverControl::last_step() grows from O(20) on "
+        "Laplace to >500 on the same mesh size for elasticity, "
+        "with each iteration cost dominated by AMG-apply.",
+        "[Integration] Output: write_vtu_with_pvtu_record "
+        "produces one .vtu per rank plus one .pvtu index file. "
+        "ParaView opens the .pvtu, NOT the per-rank .vtu — opening "
+        "the latter shows only that rank's subdomain. Signal: "
+        "ParaView shows fragmentary mesh (only one MPI subdomain), "
+        "while reading the .pvtu yields the full distributed "
+        "result; DataOut::write_vtu (no pvtu_record) produces "
+        "the broken-into-pieces output.",
     ],
 }

@@ -35,11 +35,15 @@ KNOWLEDGE = {
                        "multi_objective", "frequency_maximization"],
         "constraints": ["volume_fraction", "stress_limit", "displacement_limit"],
         "pitfalls": [
-            "Requires StructuralMechanicsApplication as dependency",
-            "SIMP penalization factor p=3 is standard",
-            "Filter radius needed to avoid checkerboard patterns",
-            "Mesh-dependent results without proper filtering",
-        ],
+                        '[Integration] Requires StructuralMechanicsApplication as dependency '
+                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
+                        '[Numerical] SIMP penalization factor p=3 is standard '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Filter radius needed to avoid checkerboard patterns '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] Mesh-dependent results without proper filtering '
+                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                    ],
     },
 }
 
