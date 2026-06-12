@@ -15,7 +15,7 @@ The user-facing journey this module powers (task #227):
     4. VERIFY   Run the backend's smoke test (core/smoke_tests.py)
                 to confirm the install actually solves something.
     5. PERSIST  Write the resolved paths into
-                ~/.config/oasis-agent/sources.json (single config
+                ~/.config/oasis/sources.json (single config
                 entry point) so every future MCP session finds the
                 backend without re-discovery.
 
@@ -31,6 +31,7 @@ still shown in plans, flagged as untested.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -40,10 +41,12 @@ from typing import Any
 try:
     from .source_config import load as _load_source_config  # type: ignore
     from .source_config import _GLOBAL_CONFIG_PATH  # type: ignore
+    from .source_config import _LEGACY_GLOBAL_CONFIG_PATH  # type: ignore
 except ImportError:  # direct script execution
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from core.source_config import load as _load_source_config  # type: ignore
     from core.source_config import _GLOBAL_CONFIG_PATH  # type: ignore
+    from core.source_config import _LEGACY_GLOBAL_CONFIG_PATH  # type: ignore
 
 
 def _persist_backend_paths(backend: str, **paths: str | None) -> str:
@@ -57,6 +60,15 @@ def _persist_backend_paths(backend: str, **paths: str | None) -> str:
     if cfg_path.exists():
         try:
             raw = json.loads(cfg_path.read_text())
+        except json.JSONDecodeError:
+            raw = {}
+    if not raw and _LEGACY_GLOBAL_CONFIG_PATH.exists():
+        # First write to the new path: migrate the legacy global file
+        # wholesale. load() reads new-OR-legacy, never both — creating
+        # the new file with a single backend would silently shadow
+        # every other backend configured in the legacy file.
+        try:
+            raw = json.loads(_LEGACY_GLOBAL_CONFIG_PATH.read_text())
         except json.JSONDecodeError:
             raw = {}
     raw.setdefault("backends", {})
@@ -177,8 +189,13 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
                           "-c", "conda-forge", "dune-fem", "python=3.11"]],
             "typical_minutes": 10,
             "os_support": {
-                "linux": {"verified": True, "system_deps": ["conda"],
-                          "notes": []},
+                "linux": {"verified": False, "system_deps": ["conda"],
+                          "notes": ["2026-06-12: 'dune-fem' is NOT on "
+                                    "conda-forge (conda create fails with "
+                                    "PackagesNotFoundError; confirmed via "
+                                    "api.anaconda.org). Route kept in case "
+                                    "the package (re)appears; until then "
+                                    "dune needs a source build."]},
                 "darwin": {"verified": False, "system_deps": ["conda"],
                            "notes": ["conda-forge has osx-arm64 dune-fem "
                                      "packages; JIT compilation at first "
@@ -283,9 +300,13 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
             "typical_minutes": 5,
             "os_support": {
                 "linux": {"verified": True, "system_deps": [],
-                          "notes": ["Download the .tar.gz, unpack, then "
-                                    "setup_backend persists the binary "
-                                    "path."]},
+                          "notes": ["febio.org downloads require a (free) "
+                                    "registered account — there are no "
+                                    "direct download URLs, so this step "
+                                    "is interactive. After unpacking, set "
+                                    "FEBIO_BINARY to the febio4 "
+                                    "executable; verify then persists "
+                                    "that path."]},
                 "darwin": {"verified": False, "system_deps": [],
                            "notes": ["Official mac installer exists."]},
             },
@@ -359,7 +380,13 @@ def plan_setup(backend: str, prefer: str | None = None) -> dict:
     state = detect_backend(backend)
     routes = SETUP_ROUTES[backend]
     if prefer:
-        routes = [r for r in routes if r["kind"] == prefer] or routes
+        matching = [r for r in routes if r["kind"] == prefer]
+        if not matching:
+            return {"backend": backend, "os": osk, "state": state,
+                    "error": f"No {prefer!r} route for {backend}. "
+                             f"Available route kinds: "
+                             f"{[r['kind'] for r in routes]}"}
+        routes = matching
 
     chosen = None
     for r in routes:
@@ -416,9 +443,10 @@ def execute_setup(backend: str, route_kind: str | None = None,
         return result
 
     if route["kind"] in ("pip", "conda"):
-        for cmd in SETUP_ROUTES[backend][0]["commands"] if route_kind is None \
-                else [c for r in SETUP_ROUTES[backend]
-                      if r["kind"] == route["kind"] for c in r["commands"]]:
+        # Always execute the commands of the route the plan chose —
+        # routes[0] is not necessarily the one supported on this OS.
+        for cmd in [c for r in SETUP_ROUTES[backend]
+                    if r["kind"] == route["kind"] for c in r["commands"]]:
             t0 = time.time()
             try:
                 proc = subprocess.run(cmd, capture_output=True, text=True,
@@ -467,14 +495,24 @@ def execute_setup(backend: str, route_kind: str | None = None,
 
 
 def _verify_and_persist(backend: str) -> dict:
-    """Smoke-test the backend; on success persist paths to sources.json."""
+    """Smoke-test the backend; on success persist paths to sources.json.
+
+    Honesty contract: 'verified' requires a genuinely passing smoke
+    test. Backends without a smoke test are only reported
+    'installed_unverified' if detection says they are actually
+    available — otherwise 'not_installed', and nothing is persisted."""
     out: dict[str, Any] = {}
     try:
         from core.smoke_tests import SMOKE_TESTS
         fn = SMOKE_TESTS.get(backend)
         if fn is None:
             out["smoke"] = {"skipped": f"no smoke test for {backend}"}
-            out["status"] = "installed_unverified"
+            state = detect_backend(backend)
+            if state["available"]:
+                out["status"] = "installed_unverified"
+            else:
+                out["status"] = "not_installed"
+                out["detail"] = state["details"]
         else:
             sr = fn()
             out["smoke"] = sr.to_dict() if hasattr(sr, "to_dict") else vars(sr)
@@ -494,7 +532,11 @@ def _verify_and_persist(backend: str) -> dict:
                 src = getattr(info, "source_path", None) or \
                     (info.get("source_path") if isinstance(info, dict)
                      else None)
-            path = _persist_backend_paths(backend, source=src)
+            binary = os.environ.get(f"{backend.upper()}_BINARY")
+            if binary and not Path(binary).exists():
+                binary = None
+            path = _persist_backend_paths(backend, source=src,
+                                          binary=binary)
             out["persisted"] = f"{path} updated for {backend}"
         except Exception as e:
             out["persisted"] = f"persist skipped: {e}"

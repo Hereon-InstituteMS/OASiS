@@ -23,15 +23,19 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO / "src"))
 
+import core.backend_setup as backend_setup  # noqa: E402
 from core.backend_setup import (  # noqa: E402
     SETUP_ROUTES, plan_setup, detect_backend, setup_status,
-    render_status_markdown, _current_os,
+    render_status_markdown, _current_os, _verify_and_persist,
+    execute_setup,
 )
 
 
@@ -157,6 +161,161 @@ class TestDetectAndStatus(unittest.TestCase):
         rows = setup_status()
         self.assertEqual(sorted(r["backend"] for r in rows),
                          sorted(SETUP_ROUTES))
+
+
+class TestSetupSessionRegressions(unittest.TestCase):
+    """Regressions found in the 2026-06-12 fresh-Ubuntu test session
+    (see the session FINDINGS.md): false 'verified' for a broken dune,
+    false 'installed_unverified' + persistence for an absent febio,
+    silently ignored route= override, wrong-route command selection,
+    and the dune conda route claiming verification for a conda-forge
+    package that does not exist."""
+
+    def test_prefer_unavailable_route_is_explicit_error(self) -> None:
+        """Finding 2: plan(dune, route='source') used to silently
+        return the conda route. dune has only a conda route — asking
+        for anything else must error, not substitute."""
+        p = plan_setup("dune", prefer="source")
+        self.assertIn("error", p)
+        self.assertIn("source", p["error"])
+        self.assertIn("conda", str(p["error"]))
+
+    def test_dune_conda_route_not_marked_verified_on_linux(self) -> None:
+        """Finding 1: dune-fem is not on conda-forge (confirmed
+        2026-06-12 via api.anaconda.org) — the route must not claim
+        verified_on_this_os until that changes."""
+        dune_conda = [r for r in SETUP_ROUTES["dune"]
+                      if r["kind"] == "conda"][0]
+        self.assertFalse(dune_conda["os_support"]["linux"]["verified"])
+        notes = " ".join(dune_conda["os_support"]["linux"]["notes"])
+        self.assertIn("conda-forge", notes)
+
+    def test_smoke_dune_honours_ok_false(self) -> None:
+        """Finding 3: the dune smoke script exits 0 even on
+        ImportError; the verdict is the JSON 'ok' flag. passed=True
+        for {"ok": false} produced a false 'verified' status."""
+        import core.smoke_tests as smoke_tests
+        with mock.patch.object(
+                smoke_tests, "_run_script",
+                return_value=(True,
+                              '{"ok": false, "error": "libibverbs boom"}',
+                              "")):
+            r = smoke_tests.smoke_dune()
+        self.assertFalse(r.passed)
+        self.assertIn("libibverbs boom", r.error or "")
+
+    def test_smoke_dune_passes_on_ok_true(self) -> None:
+        import core.smoke_tests as smoke_tests
+        with mock.patch.object(smoke_tests, "_run_script",
+                               return_value=(True, '{"ok": true}', "")):
+            r = smoke_tests.smoke_dune()
+        self.assertTrue(r.passed)
+
+    def test_verify_no_smoke_test_unavailable_is_not_installed(self) -> None:
+        """Finding 5: febio (no smoke test, not installed) used to be
+        reported 'installed_unverified' and got a path persisted into
+        sources.json. Unavailable + no smoke test must be
+        'not_installed' with nothing persisted."""
+        with mock.patch.object(
+                backend_setup, "detect_backend",
+                return_value={"backend": "febio", "available": False,
+                              "source_tree": None, "build": None,
+                              "details": "NOT_INSTALLED: no binary"}):
+            out = _verify_and_persist("febio")
+        self.assertEqual(out["status"], "not_installed")
+        self.assertNotIn("persisted", out)
+
+    def test_verify_no_smoke_test_available_persists_binary_env(self) -> None:
+        """Finding 6: 'setup_backend persists the binary path' was
+        untrue — FEBIO_BINARY was never read. When the backend is
+        available and <BACKEND>_BINARY points at a real file, verify
+        must persist it."""
+        with tempfile.TemporaryDirectory() as td:
+            fake_bin = Path(td) / "febio4"
+            fake_bin.write_text("#!/bin/sh\n")
+            cfg = Path(td) / "sources.json"
+            with mock.patch.object(
+                    backend_setup, "detect_backend",
+                    return_value={"backend": "febio", "available": True,
+                                  "source_tree": None, "build": None,
+                                  "details": "AVAILABLE: binary"}), \
+                 mock.patch.object(backend_setup, "_GLOBAL_CONFIG_PATH",
+                                   cfg), \
+                 mock.patch.dict("os.environ",
+                                 {"FEBIO_BINARY": str(fake_bin)}):
+                out = _verify_and_persist("febio")
+            self.assertEqual(out["status"], "installed_unverified")
+            self.assertIn("persisted", out)
+            saved = json.loads(cfg.read_text())
+            self.assertEqual(saved["backends"]["febio"]["binary"],
+                             str(fake_bin))
+
+    def test_first_persist_migrates_legacy_config(self) -> None:
+        """Finding 9: load() reads the new global sources.json OR the
+        legacy one, never both. _persist_backend_paths used to create
+        the new file with only the persisted backend, silently
+        shadowing every backend configured in the legacy file (this
+        actually lost fourc/dealii on the test machine). The first
+        write to the new path must migrate the legacy content."""
+        with tempfile.TemporaryDirectory() as td:
+            legacy = Path(td) / "legacy" / "sources.json"
+            legacy.parent.mkdir()
+            legacy.write_text(json.dumps({
+                "scan_paths": ["~/Schreibtisch"],
+                "backends": {
+                    "fourc": {"source": "/src/4C", "build": "/src/4C/b"},
+                    "dealii": {"source": "/src/dealii"},
+                }}))
+            new = Path(td) / "new" / "sources.json"
+            with mock.patch.object(backend_setup, "_GLOBAL_CONFIG_PATH",
+                                   new), \
+                 mock.patch.object(backend_setup,
+                                   "_LEGACY_GLOBAL_CONFIG_PATH", legacy):
+                backend_setup._persist_backend_paths("dune",
+                                                     source="/src/dune")
+            saved = json.loads(new.read_text())
+            self.assertEqual(saved["backends"]["dune"]["source"],
+                             "/src/dune")
+            self.assertEqual(saved["backends"]["fourc"]["build"],
+                             "/src/4C/b", "legacy fourc entry lost")
+            self.assertIn("dealii", saved["backends"])
+            self.assertEqual(saved["scan_paths"], ["~/Schreibtisch"])
+
+    def test_execute_setup_runs_chosen_route_commands(self) -> None:
+        """Finding 7: with route_kind=None the commands came from
+        routes[0] even when the plan chose a different route for this
+        OS. The executed command must belong to the chosen kind."""
+        osk = _current_os()
+        fake_routes = [
+            {"kind": "pip", "description": "wrong-OS pip route",
+             "commands": [["pip", "install", "WRONG"]],
+             "typical_minutes": 1,
+             "os_support": {"someotheros": {"verified": True,
+                                            "system_deps": [],
+                                            "notes": []}}},
+            {"kind": "conda", "description": "right-OS conda route",
+             "commands": [["conda", "create", "-n", "RIGHT"]],
+             "typical_minutes": 1,
+             "os_support": {osk: {"verified": True, "system_deps": [],
+                                  "notes": []}}},
+        ]
+        ran: list[list[str]] = []
+
+        def fake_run(cmd, **kwargs):
+            ran.append(cmd)
+            return mock.Mock(returncode=1, stderr="stop here", stdout="")
+
+        with mock.patch.dict(SETUP_ROUTES, {"fakebe": fake_routes}), \
+             mock.patch.object(
+                 backend_setup, "detect_backend",
+                 return_value={"backend": "fakebe", "available": False,
+                               "source_tree": None, "build": None,
+                               "details": ""}), \
+             mock.patch.object(backend_setup.subprocess, "run", fake_run):
+            execute_setup("fakebe")
+        self.assertEqual(ran, [["conda", "create", "-n", "RIGHT"]],
+                         "must run the OS-chosen conda route, not "
+                         "routes[0]'s pip command")
 
 
 class TestMcpToolWiring(unittest.TestCase):

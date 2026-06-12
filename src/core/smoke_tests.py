@@ -145,7 +145,13 @@ print(json.dumps({"ok": True, "nodes": mp.NumberOfNodes(), "version": ver}))
 
 
 def smoke_dune() -> SmokeResult:
-    """Smoke test: import dune.fem (JIT compile may take time on first run)."""
+    """Smoke test: import dune.fem (JIT compile may take time on first run).
+
+    Known limitation: import-only — does NOT solve anything, because a
+    real dune.fem solve JIT-compiles C++ modules on first use (minutes).
+    A passing result means importable, not solve-capable; upgrade to a
+    solve-based test once a working install is available to validate it.
+    """
     t0 = time.time()
     script = '''
 import json
@@ -160,10 +166,16 @@ except ImportError as e:
     if ok:
         try:
             data = json.loads(stdout)
-            return SmokeResult("dune", True, duration_ms=round(dt, 1))
         except json.JSONDecodeError:
             return SmokeResult("dune", False, error=f"Bad output: {stdout[:200]}",
                                duration_ms=round(dt, 1))
+        # The inner script exits 0 even on ImportError — the verdict
+        # lives in the "ok" flag, not the return code.
+        if data.get("ok") is True:
+            return SmokeResult("dune", True, duration_ms=round(dt, 1))
+        return SmokeResult("dune", False,
+                           error=str(data.get("error", "unknown"))[:300],
+                           duration_ms=round(dt, 1))
     return SmokeResult("dune", False, error=stderr[:300], duration_ms=round(dt, 1))
 
 
