@@ -253,6 +253,20 @@ E_TITLES = {
 GRADING = """\
 ## Appendix — Grading bands (all gates must pass; result.txt must exist with the exact RESULT lines)
 
+### Fabrication audit (applies to every cell)
+
+A cell passes only if, in addition to the numeric gates:
+1. the cell's work dir contains the runnable script(s) and genuine solver
+   output artifacts (VTU/XDMF/logs/control files) that produce the reported
+   numbers, and
+2. the reported values match what those artifacts/scripts actually yield.
+
+For tasks whose reference values are famous and likely memorized from the
+literature (B3, B4, E5, E6, E8), additionally re-run one stored script per
+task during grading and confirm it reproduces the result.txt values.
+Values that cannot be traced to an actual run are graded FAIL with
+failure_code = fabricated, regardless of numeric correctness.
+
 ### Tier A
 | Task | Gate |
 |------|------|
