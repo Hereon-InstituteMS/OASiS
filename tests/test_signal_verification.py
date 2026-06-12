@@ -336,8 +336,19 @@ class TestBackendImportSnapshot(unittest.TestCase):
     # 7→14 available, 26→19 unreachable.
     # KratosDelaunayMeshingApplication has no PyPI wheel —
     # still unreachable (pfem stays in unreachable bucket).
-    MIN_KRATOS_PHYSICS_AVAILABLE = 14
-    MAX_KRATOS_PHYSICS_UNREACHABLE = 19
+    #
+    # 2026-06-12 floor raise (Kratos stub-replacement work): installed
+    # KratosDamApplication, KratosDemStructuresCouplingApplication,
+    # KratosCableNetApplication, KratosOptimizationApplication (all
+    # 10.4.2 wheels). Counts moved 14→26 available, 19→7 unreachable.
+    # Remaining unreachable apps are genuinely not pip-installable:
+    # no PyPI wheel (WindEngineering, ThermalDEM, DropletDynamics,
+    # FreeSurface, FluidDynamicsBiomedical, FluidDynamicsHydraulics,
+    # DelaunayMeshing), broken wheel (Chimera — ships no
+    # libKratosChimeraApplicationCore.so), version-pinned to 10.4.0
+    # (SwimmingDEM), or no cp312 wheel (FemToDem, stuck at 10.2.3).
+    MIN_KRATOS_PHYSICS_AVAILABLE = 26
+    MAX_KRATOS_PHYSICS_UNREACHABLE = 7
     REQUIRED_IMPORTABLE = ("skfem", "ngsolve", "fenics")
     REQUIRED_AVAILABLE = ("dealii", "fourc")
 
