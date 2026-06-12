@@ -164,5 +164,5 @@ Each run commits + pushes on `layer-a/kratos-source-scanner` and leaves a `REPOR
 | Template probe: fourc | **25/46 run + 21 honest stubs** (Run 2 + main session) | +16 routed |
 | setup_backend | shipped + Run-1 honesty fixes (no fabricated verifies) | NEW |
 | Layer D phase 2 | 5-backend Poisson + 4-backend cantilever consistency gates; skfem↔4C twin pair pinned at 1e-6 (observed 1e-10) | NEW |
-| Coupling pairs validated | 8/20 (Run 5 still pending) | — |
-| Runs still open | Run 4 (macOS), Run 5 (coupling) | |
+| Coupling pairs validated | **12/20 machine-validated** (+1 historical DUNE; 8 DUNE pairs unvalidated-not-failed). Run 5 found all 7 ngsolve pairs were dead-on-arrival pre-fix (generator never returned its script) — fixed + pinned (658cda1, 6b801d6) | +B1/B2 fixed |
+| Runs still open | Run 4 (macOS) | |

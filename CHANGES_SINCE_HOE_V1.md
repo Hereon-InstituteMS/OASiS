@@ -66,6 +66,12 @@
 - **`reload_catalog`** (hot-reload without server restart).
 - **Source-management layer** (`ensure_source`: discover → fetch → build for all 8 backends; single config at `~/.config/oasis/sources.json`, with legacy-path fallback).
 
+### 2.4b `coupled_solve` (Run 5, 2026-06-12 — HIGH for any coupling cell)
+
+- **12/20 advertised DD solver pairs machine-validated** on the canonical poisson_dd (Dirichlet–Neumann split at x=0.5), each gated on interface traces extracted INDEPENDENTLY from both solvers' VTUs agreeing to < 1e-6 relative L2. The 8 unvalidated pairs all involve DUNE (not installed here — unvalidated, not failed; one has a historical E2E pass).
+- **Critical pre-existing bug found:** at HOE-v1 time, ALL 7 ngsolve coupling pairs were dead on arrival — the NGSolve subdomain generator built its script but never returned it (`backend.run` got None), and the never-executed code had 5 further bugs. skfem-as-domain-A was also broken (malformed interface JSON). Both fixed + regression-pinned (commits 658cda1, 6b801d6). **If any HOE cell exercises ngsolve coupling, the published run could not have passed it through the tool path** — worth checking which condition/cell combinations touched coupling.
+- Manuscript number: **12 machine-validated pairs (+1 historical DUNE pair), not 20** — the honest figure for the coupling table.
+
 ### 2.5 Cross-backend numerical verification (NEW — manuscript-relevant beyond HOE)
 
 `tests/test_layer_d_phase2.py`: the catalog's own templates, run through real `generate_input() → run()` subprocess paths, agree across solvers:
@@ -84,6 +90,7 @@
 5. **C5 anomaly** (the one cell where BARE 1/3 beat all MCP conditions 0/3 in the published run): nothing was done specifically for C5 because the harness lives on your machine — check whether the new catalog changes its outcome, and if C5 still inverts, that's the per-pitfall-ablation lead (task #224).
 6. **Versions on this machine at close**: skfem 12.0.1, Kratos 10.4.2/py3.12, dolfinx in `ofa-fenicsx`, deal.II 9.3.2 in `ofa-dealii-93` (NEW env — the old `ofa-dealii` 9.1.1 is stale; discovery now picks the highest version), 4C at `~/Schreibtisch/4C-src/4C/build/4C`. dune is NOT runnable here (no conda-forge package exists; local source build ABI-broken); febio binary not installed.
 7. The repo's own quality gates to re-run before trusting a rerun: `pytest tests/ --ignore=tests/test_pitfall_falsification_live.py` (expect 515+/0) and `pytest tests/test_pitfall_falsification_live.py` (expect 65/0 with env skips).
+8. **Live-MCP staleness (Run-5 finding):** `reload_catalog` reloads `backends.*` modules only, NOT `tools.*` — a long-running MCP server keeps the old `tools/coupling.py` (and any other tools-layer code) until restarted. **Restart the MCP server after checking out the new branch state**, or tool-path runs will silently execute pre-fix code.
 
 ---
 
