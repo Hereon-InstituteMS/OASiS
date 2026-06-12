@@ -282,11 +282,13 @@ MATRIX: dict[str, list[Cell]] = {
         # skfem's `linear_elasticity/2d` template has two stacked
         # problems: (a) it constructs a tensor-product mesh with no
         # boundary tags and then calls `ib.get_dofs("left")`, which
-        # raises; and (b) even if (a) is fixed, the template writes a
-        # `results_summary.json` only, never a .vtu, so the sweep would
-        # then transition from `failed` to `no_vtu_output`.  Both are
-        # template bugs to address upstream.  The cell is kept so the
-        # matrix surfaces the gap on every run.
+        # raises; and (b) even if (a) is fixed, the template writes
+        # only a `results_summary.json` — no mesh output file in any
+        # of the formats this harness accepts (`_OUTPUT_SUFFIXES`:
+        # `.vtu` / `.vtk` / `.xdmf`) — so the sweep would then
+        # transition from `failed` to `no_output_file`.  Both are
+        # template bugs to address upstream.  The cell is kept so
+        # the matrix surfaces the gap on every run.
         Cell("skfem",   "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
              field="displacement", expected=None, rtol=0.5),
         # ngsolve and fenics write the displacement field as
@@ -303,16 +305,19 @@ MATRIX: dict[str, list[Cell]] = {
              field="displacement", expected=None, rtol=0.5),
         Cell("fenics",  "linear_elasticity", "2d", {"E": 1000, "nu": 0.3},
              field="displacement", expected=None, rtol=0.5),
-        # Kratos's `linear_elasticity/2d_nonlinear` is the only variant
-        # that imports KratosMultiphysics (the plain `linear_elasticity/2d`
-        # is one of the 8 known scipy stubs), but the script body is a
-        # placeholder that prints "StructuralMechanicsApplication
-        # available" and writes a JSON summary instead of actually running
-        # a structural analysis.  The cell completes but produces no .vtu,
-        # so the sweep reports "no_vtu_output" — which is precisely the
-        # right signal: validation passes superficially, runtime does
-        # nothing useful.  Replacement with a real Kratos cantilever
-        # analysis is a follow-up.
+        # Kratos `linear_elasticity/2d_nonlinear` was a placeholder
+        # stub until the same PR that widened this harness to accept
+        # legacy `.vtk` — it is now a real KratosMultiphysics
+        # TotalLagrangianElement2D4N cantilever with
+        # LinearElasticPlaneStrain2DLaw, prescribed-displacement BC at
+        # the tip mid-node, and `KM.VtkOutput` writing a real
+        # `Structure_0_*.vtk` containing `DISPLACEMENT` + `REACTION`
+        # node fields.  The cell scores max|u| = 0.50884 (the
+        # prescribed tip displacement is 0.5 in -y; the magnitude is
+        # slightly larger because the Newton solve picks up some
+        # bending-induced x-displacement near the tip).  Plain
+        # `linear_elasticity/2d` has also been rewritten as a real
+        # SmallDisplacement Newton solve.
         Cell("kratos",  "linear_elasticity", "2d_nonlinear", {"E": 1000, "nu": 0.3},
              field="DISPLACEMENT", expected=None, rtol=0.5),
         # deal.II's `linear_elasticity/2d` template needs the same
@@ -363,9 +368,10 @@ MATRIX: dict[str, list[Cell]] = {
         # points` because the Taylor-Hood mixed basis is assembled
         # with mismatched quadrature orders between velocity P2 and
         # pressure P1; and (b) even with (a) fixed, the template
-        # writes only a `results_summary.json` and never a `.vtu`,
-        # so the cell would still report `no_vtu_output` until VTU
-        # export is added.  Both are template-side gaps.
+        # writes only a `results_summary.json` and no mesh output in
+        # any of the accepted `_OUTPUT_SUFFIXES`, so the cell would
+        # still report `no_output_file` until VTU export is added.
+        # Both are template-side gaps.
         Cell("skfem",   "stokes", "2d", {"nx": 32, "ny": 32},
              field="velocity", expected=None, rtol=0.5),
         # NGSolve's `stokes/2d` template runs to the solver step then
@@ -442,8 +448,9 @@ MATRIX: dict[str, list[Cell]] = {
 
         # skfem `hyperelasticity/2d` raises during the Newton loop.
         # Root cause is not investigated here — the cell records the
-        # observed failure mode (Newton-loop exception, no .vtu);
-        # template-side fix tracked separately.
+        # observed failure mode (Newton-loop exception, no mesh
+        # output file in any accepted format); template-side fix
+        # tracked separately.
         Cell("skfem",   "hyperelasticity", "2d", {"E": 1000, "nu": 0.3},
              field="displacement", expected=None, rtol=0.5),
         # NGSolve `hyperelasticity/2d` raises during the Newton loop
@@ -517,22 +524,108 @@ async def run_cell(cell: Cell, work_dir: Path) -> CellResult:
         return CellResult(cell, status=job.status, elapsed_s=elapsed,
                           error=(job.error or "")[:300])
 
-    # ── extract scalar from the LAST VTU (final time step / converged state)
-    vtu_files = sorted([f for f in backend.get_result_files(job) if f.suffix == ".vtu"])
+    # ── extract scalar from the LAST output snapshot (final time step /
+    # converged state).  We accept a *subset* of what
+    # `core.post_processing.read_mesh()` knows how to load — the
+    # subset whose reads return a flat `pyvista.DataSet` with a
+    # `.point_data` API.  Concretely:
+    #
+    #   .vtu    accepted — modern XML unstructured (FEniCSx, skfem, fourc, ...)
+    #   .vtk    accepted — legacy unstructured (KratosMultiphysics `VtkOutput`)
+    #   .xdmf   accepted — XDMF (dolfinx alternative)
+    #
+    #   .pvtu   excluded — parallel-partitioned VTU wrapper that can
+    #           hang PyVista when the per-rank `.vtu` partials are
+    #           accessed (matching policy at
+    #           `src/tools/consolidated.py`: "skip .pvtu (parallel
+    #           wrappers that can hang PyVista)").  The per-rank
+    #           `.vtu` partials themselves are accepted via the
+    #           `.vtu` entry above.
+    #
+    #   .pvd    excluded — `pv.read("*.pvd")` returns a `MultiBlock`,
+    #           not a flat `DataSet`.  `post_process_file()` assumes
+    #           the flat shape, so accepting `.pvd` here would turn
+    #           every cell that writes a `.pvd` index into a
+    #           `postproc_failed` even when a perfectly good `.vtu`
+    #           partial sits next to it.  Re-enabling `.pvd` is
+    #           blocked on `core/post_processing.py` learning to
+    #           pick a block / time-step from a MultiBlock.
+    #
+    # Keep `_OUTPUT_SUFFIXES` below as the single source of truth
+    # for what is actually accepted.  This comment block describes
+    # *why* — never re-add a suffix here without verifying that
+    # `post_process_file` can read it as a flat DataSet.
+    #
+    # Suffix matching is case-insensitive: some backends and
+    # filesystems emit upper-case (`.VTU`) and `read_mesh` itself
+    # lower-cases the suffix before dispatching.
+    #
+    # Sort numerically by trailing step index, NOT lexicographically:
+    # backends like Kratos emit `Structure_0_1.vtk, Structure_0_2.vtk,
+    # ..., Structure_0_10.vtk`, where lexicographic sort would place
+    # `_10` *before* `_9` and pick the wrong snapshot as "the last".
+    # Within the same step, prefer the most-PyVista-stable format
+    # (`.vtu` > `.vtk` > `.xdmf`) so two formats emitted for the
+    # same step never pick a less-supported container.
+    import re as _re
+    # Listed in preference order so the error message text and the
+    # `_SUFFIX_PRIORITY` tiebreaker share a single, internally-
+    # consistent ordering: `.vtu` > `.vtk` > `.xdmf`.
+    # `.pvd` is intentionally NOT accepted here: PyVista reads a `.pvd`
+    # collection into a `MultiBlock`, not a single `DataSet`, and
+    # `core.post_processing.post_process_file()` assumes a flat
+    # `mesh.point_data` API.  Including `.pvd` in this set would
+    # silently turn every cell that emits a `.pvd` index into a
+    # `postproc_failed` even though a perfectly good `.vtu` partial
+    # sits next to it.  Re-enabling `.pvd` here is blocked on
+    # post-processing learning to pick a block / time-step from a
+    # MultiBlock collection (a separate piece of work in
+    # core/post_processing.py).  Individual `.vtu` partials referenced
+    # by a `.pvd` are still picked up via the `.vtu` entry below.
+    _OUTPUT_SUFFIXES = (".vtu", ".vtk", ".xdmf")
+    _SUFFIX_PRIORITY = {suf: i for i, suf in enumerate(_OUTPUT_SUFFIXES)}
+
+    def _step_key(p):
+        # Use the *full tuple* of integer groups in the stem, not just
+        # the last one.  Per-rank output files use a `<name>-<step>-<rank>`
+        # naming convention (e.g. 4C writes `structure-00001-0.vtu` and
+        # Kratos writes `Structure_0_5.vtk` for rank 0 / step 5).  If we
+        # only looked at the last integer we would treat the rank as the
+        # step on 4C (selecting the wrong "final" snapshot when steps
+        # exceed nine and rank stays zero).  An int-tuple key sorts
+        # naturally across both layouts: (step=10, rank=0) > (step=9,
+        # rank=0), and (rank=0, step=10) > (rank=0, step=5).
+        ints = tuple(int(x) for x in _re.findall(r"\d+", p.stem))
+        return (
+            ints,
+            # Negate so higher-priority sorts AFTER lower-priority on
+            # the same step (sorted() ascending → key[-1] is "last").
+            -_SUFFIX_PRIORITY.get(p.suffix.lower(), 99),
+            p.stem,
+        )
+
+    output_files = sorted(
+        (f for f in backend.get_result_files(job)
+         if f.suffix.lower() in _OUTPUT_SUFFIXES),
+        key=_step_key,
+    )
     scalar = None
     field_used = None
     if cell.field is not None:
-        # A cell that asked for a scalar but received no .vtu is a failure
-        # of the run even if the backend exited 0 — surface it instead of
-        # quietly returning status=completed with scalar=None.
-        if not vtu_files:
+        # A cell that asked for a scalar but received no output file
+        # in any of the formats in `_OUTPUT_SUFFIXES` (currently
+        # .vtu / .vtk / .xdmf — see comment block above) is a failure of the run even if
+        # the backend exited 0 — surface it instead of quietly
+        # returning status=completed with scalar=None.
+        if not output_files:
             return CellResult(
-                cell, status="no_vtu_output", elapsed_s=elapsed,
-                error=("backend reported completed but produced no .vtu in "
+                cell, status="no_output_file", elapsed_s=elapsed,
+                error=("backend reported completed but produced no "
+                       f"{'/'.join(_OUTPUT_SUFFIXES)} output in "
                        f"{work_dir}; expected field {cell.field!r}"),
             )
         try:
-            pp = post_process_file(vtu_files[-1], plot_dir=work_dir, plot_fields=False)
+            pp = post_process_file(output_files[-1], plot_dir=work_dir, plot_fields=False)
             available = [f.name for f in pp.fields]
             for f in pp.fields:
                 if f.name == cell.field or f.name.lower() == cell.field.lower():
