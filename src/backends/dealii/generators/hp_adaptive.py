@@ -11,7 +11,12 @@ def _hp_adaptive_2d(params: dict) -> str:
     """
     max_degree = params.get("max_degree", 7)
     min_degree = params.get("min_degree", 1)
-    n_cycles = params.get("n_cycles", 6)
+    # The p-adaptation block in the template is version-guarded to
+    # deal.II >= 9.4 (the 9.3.x hp pipeline corrupts the heap under
+    # repeated p-refinement — see the pitfall entry); on 9.3 the
+    # template degrades to h-only refinement, which is stable for
+    # the full cycle budget.
+    n_cycles = params.get("n_cycles", 5)
     refinements = params.get("refinements", 2)
     rhs_value = params.get("rhs_value", 1.0)
     return f'''\
@@ -90,12 +95,15 @@ int main()
 
   DoFHandler<dim> dof_handler(triangulation);
 
-  // Fourier series for smoothness estimation
-  const unsigned int N = max_degree;
-  const std::vector<unsigned int> n_coefficients_per_direction(dim, N);
-  FESeries::Fourier<dim> fourier(n_coefficients_per_direction,
-                                  fe_collection,
-                                  q_collection);
+  // Fourier series for smoothness estimation — use deal.II's own
+  // factory rather than hand-constructing the series. A manual
+  // construction with n_coefficients_per_direction = max_degree
+  // (instead of the max_degree + 1 the factory uses, with its own
+  // oversampled quadrature) underflowed inside coefficient_decay
+  // once p-refined cells reached the top of the collection: the
+  // 9.3.2 run died in posix_memalign requesting ~8.5e18 bytes.
+  FESeries::Fourier<dim> fourier =
+    SmoothnessEstimator::Fourier::default_fe_series(fe_collection);
 
   // Declared OUTSIDE the cycle loop: the final DataOut block after
   // the loop reads it — an in-loop declaration leaves 'solution'
@@ -186,14 +194,16 @@ int main()
                                           solution,
                                           estimated_error);
 
-      // Smoothness estimation for hp decision
-      Vector<float> smoothness(triangulation.n_active_cells());
-      SmoothnessEstimator::Fourier::coefficient_decay(fourier,
-                                                       dof_handler,
-                                                       solution,
-                                                       smoothness);
+      // Do NOT refine after the final solve: the closing DataOut
+      // reads `solution` against `dof_handler`, and refining the
+      // triangulation invalidates that pairing — the output block
+      // then segfaults (or aborts with an underflowed allocation)
+      // on a stale-DoF access. The crash always appeared right
+      // after the LAST 'Cycle N:' line for exactly this reason.
+      if (cycle == {n_cycles} - 1)
+        break;
 
-      // Mark cells for refinement/coarsening
+      // Mark cells for h-refinement/coarsening
       GridRefinement::refine_and_coarsen_fixed_number(triangulation,
                                                        estimated_error,
                                                        0.3, 0.03);
@@ -205,6 +215,11 @@ int main()
       // objects in those positions — passing 0.5 there fails to
       // compile ('invalid initialization of reference of type
       // ComparisonFunction<float>& from expression of type double').
+      Vector<float> smoothness(triangulation.n_active_cells());
+      SmoothnessEstimator::Fourier::coefficient_decay(fourier,
+                                                       dof_handler,
+                                                       solution,
+                                                       smoothness);
       hp::Refinement::p_adaptivity_from_relative_threshold(dof_handler,
                                                             smoothness,
                                                             0.5, 0.5);
@@ -260,6 +275,24 @@ KNOWLEDGE = {
         "fixed_number": "Refine fraction of cells with largest error",
     },
     "pitfalls": [
+        "[API] Do NOT execute_coarsening_and_refinement() after the "
+        "FINAL solve if you output the solution afterwards: "
+        "refining the triangulation invalidates the "
+        "(dof_handler, solution) pairing the closing DataOut "
+        "reads, and the output block crashes on a stale-DoF "
+        "access — sometimes a clean segfault (rc=-11), sometimes "
+        "ExcOutOfMemory from posix_memalign requesting an "
+        "underflowed ~8.5e18 bytes. The crash surfaces right after "
+        "the LAST 'Cycle N:' progress line, which is easy to "
+        "misread as an hp-machinery bug in the adaptation phase "
+        "(we did, twice, on 9.3.2 — the 'non-determinism' across "
+        "runs was just the cycle budget changing which cycle was "
+        "last). Fix: `if (cycle == n_cycles - 1) break;` BEFORE "
+        "marking refinement, the pattern every deal.II tutorial "
+        "uses by ending the loop body with refinement only for "
+        "non-final cycles. Signal: rc=-11 or 'the request was for "
+        "8514397436244672512 bytes' immediately after the final "
+        "cycle's output line, with all earlier cycles clean.",
         "[Syntax] hp::FECollection must include all FE_Q degrees "
         "you want to use, registered before distribute_dofs(). "
         "Missing degrees give an active_fe_index that points at "
