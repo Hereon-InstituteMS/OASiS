@@ -39,7 +39,6 @@ import subprocess
 from pathlib import Path
 from typing import Sequence
 
-from langchain_core.messages import SystemMessage
 from langchain_core.tools import BaseTool, tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
@@ -146,20 +145,32 @@ def _read_write_tools_for(workdir: Path):
 
 @tool
 def web_search(query: str, max_results: int = 5) -> str:
-    """Search the web (DuckDuckGo). Returns up to max_results result snippets."""
+    """Search the web (DuckDuckGo). Returns up to max_results result snippets.
+
+    DuckDuckGo occasionally rate-limits the API backend; we transparently
+    try its ``html`` and ``lite`` backends as fallbacks so the tool stays
+    useful through brief blocks.
+    """
     try:
         from duckduckgo_search import DDGS
     except ImportError:
         return ("[web_search unavailable: install duckduckgo-search "
                 "(pip install duckduckgo-search) to enable]")
-    try:
-        with DDGS() as ddgs:
-            hits = list(ddgs.text(query, max_results=max_results))
-        return "\n\n".join(
-            f"{h.get('title')}\n{h.get('href')}\n{h.get('body')}" for h in hits
-        ) or "[no results]"
-    except Exception as e:
-        return f"[web_search error: {type(e).__name__}: {e}]"
+    last_err = None
+    for backend in ("auto", "html", "lite"):
+        try:
+            with DDGS() as ddgs:
+                hits = list(ddgs.text(query, max_results=max_results,
+                                      backend=backend))
+            if hits:
+                return "\n\n".join(
+                    f"{h.get('title')}\n{h.get('href')}\n{h.get('body')}"
+                    for h in hits)
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {e}"
+            continue
+    return f"[no results; last backend error: {last_err}]" if last_err \
+        else "[no results]"
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -213,8 +224,7 @@ def _make_spawn_subagent_tool(
             )
         sub_llm = _llm(size, temperature=0.3, seed=seed + 100 + depth)
         sub_agent = create_react_agent(
-            sub_llm, tools=sub_tools,
-            state_modifier=SystemMessage(sys),
+            sub_llm, tools=sub_tools, prompt=sys,
         )
         msg = f"Task: {task}\n\nContext provided by parent:\n{context}"
         try:
@@ -278,8 +288,7 @@ def build_bare_agent(*, size: str, seed: int, workdir: Path, depth: int = 0):
     tools = _host_tools(workdir, size=size, seed=seed,
                         parent_tools=[], depth=depth)
     llm = _llm(size, temperature=0.2, seed=seed)
-    return create_react_agent(llm, tools=tools,
-                              state_modifier=SystemMessage(BARE_SYSTEM))
+    return create_react_agent(llm, tools=tools, prompt=BARE_SYSTEM)
 
 
 def build_mcp_agent(*, size: str, seed: int, workdir: Path, depth: int = 0):
@@ -288,7 +297,7 @@ def build_mcp_agent(*, size: str, seed: int, workdir: Path, depth: int = 0):
                        parent_tools=mcp_tools, depth=depth)
     llm = _llm(size, temperature=0.2, seed=seed)
     return create_react_agent(llm, tools=mcp_tools + host,
-                              state_modifier=SystemMessage(MCP_SYSTEM))
+                              prompt=MCP_SYSTEM)
 
 
 __all__ = ["build_bare_agent", "build_mcp_agent"]
