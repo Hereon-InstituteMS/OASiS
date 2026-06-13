@@ -1,0 +1,2 @@
+vllm>=0.6.3
+# torch is installed transitively by vllm; pin CUDA in your conda env.
