@@ -451,7 +451,10 @@ def _e8(r):
 # Driver
 # ───────────────────────────────────────────────────────────────────
 NAME_RE = re.compile(
-    r"^([A-Z]\d)_(MCP_FULL|MCP_NO_PITFALL_DB|MCP_NO_CRITIC|BARE)_seed(\d)_v2$"
+    r"^([A-Z]\d)"
+    r"_(?P<model>OPUS|SONNET|HAIKU)?_?"
+    r"(?P<cond>MCP_FULL|MCP_NO_PITFALL_DB|MCP_NO_CRITIC|BARE)"
+    r"_seed(?P<seed>\d)_v2$"
 )
 
 
@@ -460,7 +463,10 @@ def grade_cell(d: Path) -> dict:
     m = NAME_RE.match(name)
     if not m:
         return {"cell": name, "passed": False, "reason": "bad name"}
-    task, cond, seed = m.group(1), m.group(2), int(m.group(3))
+    task = m.group(1)
+    model = m.group("model") or "OPUS"  # legacy cells without prefix are Opus
+    cond = m.group("cond")
+    seed = int(m.group("seed"))
     rp = d / "work" / "result.txt"
     if not rp.exists():
         return {"cell": name, "task": task, "condition": cond,
@@ -476,7 +482,8 @@ def grade_cell(d: Path) -> dict:
     except Exception as e:
         passed, reason = False, f"{type(e).__name__}: {e}"
     return {"cell": name, "task": task, "condition": cond,
-            "seed": seed, "passed": bool(passed), "reason": reason,
+            "model": model, "seed": seed, "passed": bool(passed),
+            "reason": reason,
             "raw": json.dumps({k: v for k, v in r.items()
                                if not isinstance(v, str) or len(v) < 200},
                               default=str)}
@@ -508,37 +515,42 @@ def main():
     rows = [grade_cell(d) for d in sorted(EVAL.glob("*_v2")) if d.is_dir()]
 
     # CSV
-    cols = ["cell", "task", "condition", "seed", "passed", "reason", "raw"]
+    cols = ["cell", "task", "condition", "model", "seed", "passed",
+            "reason", "raw"]
     with (DATA / "v2_grades.csv").open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k, "") for k in cols})
 
-    # Aggregates
+    # Aggregates (now indexed by model × condition where present)
     pm = defaultdict(lambda: {"pass": 0, "total": 0})
     by_cond = defaultdict(lambda: {"pass": 0, "total": 0})
+    by_model_cond = defaultdict(lambda: {"pass": 0, "total": 0})
     by_tier = defaultdict(lambda:
                           defaultdict(lambda: {"pass": 0, "total": 0}))
-    per_task = defaultdict(lambda: defaultdict(list))  # task -> cond -> [pass_bool]
     for r in rows:
         if "task" not in r:
             continue
-        key = f"{r['task']}_{r['condition']}"
+        model = r.get("model", "OPUS")
+        cond = r["condition"]
+        key = f"{r['task']}_{model}_{cond}"
         pm[key]["total"] += 1
-        by_cond[r["condition"]]["total"] += 1
+        by_cond[cond]["total"] += 1
+        by_model_cond[f"{model}_{cond}"]["total"] += 1
         tier = r["task"][0]
-        by_tier[tier][r["condition"]]["total"] += 1
-        per_task[r["task"]][r["condition"]].append(r["passed"])
+        by_tier[tier][f"{model}_{cond}"]["total"] += 1
         if r["passed"]:
             pm[key]["pass"] += 1
-            by_cond[r["condition"]]["pass"] += 1
-            by_tier[tier][r["condition"]]["pass"] += 1
+            by_cond[cond]["pass"] += 1
+            by_model_cond[f"{model}_{cond}"]["pass"] += 1
+            by_tier[tier][f"{model}_{cond}"]["pass"] += 1
 
     matrix = {
-        "by_task_condition": dict(pm),
-        "by_condition": dict(by_cond),
-        "by_tier_condition": {t: dict(c) for t, c in by_tier.items()},
+        "by_task_model_condition": dict(pm),
+        "by_condition_all_models": dict(by_cond),
+        "by_model_condition": dict(by_model_cond),
+        "by_tier_model_condition": {t: dict(c) for t, c in by_tier.items()},
         "totals": {"cells": len(rows),
                    "passed": sum(1 for r in rows if r.get("passed"))},
     }
@@ -550,22 +562,19 @@ def main():
     # Console summary
     print("Cells graded:", len(rows))
     print("Total passed:", matrix["totals"]["passed"])
-    print("\nBy condition:")
-    order = ["BARE", "MCP_NO_PITFALL_DB", "MCP_NO_CRITIC", "MCP_FULL"]
-    for c in order:
-        v = by_cond.get(c)
-        if not v: continue
-        rate = v["pass"] / v["total"] * 100
-        print(f"  {c:<22} {v['pass']:>3}/{v['total']:<3}  {rate:5.1f}%")
-
-    print("\nBy tier × condition:")
-    for tier in sorted(by_tier):
-        print(f"  Tier {tier}:")
-        for c in order:
-            v = by_tier[tier].get(c)
-            if not v: continue
+    print("\nBy model × condition:")
+    cond_order = ["BARE", "MCP_NO_PITFALL_DB", "MCP_NO_CRITIC", "MCP_FULL"]
+    model_order = ["OPUS", "SONNET", "HAIKU"]
+    for model in model_order:
+        rows_for_model = [c for c in cond_order
+                          if f"{model}_{c}" in by_model_cond]
+        if not rows_for_model:
+            continue
+        print(f"  {model}:")
+        for c in rows_for_model:
+            v = by_model_cond[f"{model}_{c}"]
             rate = v["pass"] / v["total"] * 100
-            print(f"    {c:<22} {v['pass']:>2}/{v['total']:<2}  {rate:5.1f}%")
+            print(f"    {c:<22} {v['pass']:>3}/{v['total']:<3}  {rate:5.1f}%")
 
     print("\nFAILS:")
     for r in rows:
