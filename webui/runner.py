@@ -189,8 +189,24 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
             temperature=0.2, timeout=900,
         )
 
-    # ── OASiS MCP tools (optional)
-    mcp_tools = la._load_oasis_mcp_tools() if mcp_on else []
+    # ── OASiS MCP tools (optional).
+    # ``_load_oasis_mcp_tools`` does ``asyncio.run()`` internally, so we
+    # cannot call it from a running event loop. The WebUI is normally
+    # invoked from inside the WebSocket handler's loop; offload to a
+    # worker thread which gets its own loop.
+    mcp_tools = []
+    if mcp_on:
+        try:
+            running = asyncio.get_running_loop()
+        except RuntimeError:
+            running = None
+        if running:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                mcp_tools = ex.submit(la._load_oasis_mcp_tools).result(
+                    timeout=120)
+        else:
+            mcp_tools = la._load_oasis_mcp_tools()
 
     # ── Host tools (bash/read/write/web_search/spawn_subagent)
     host = []
@@ -198,23 +214,55 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
     host.extend(la._read_write_tools_for(workdir))
     host.append(la.web_search)
 
-    # spawn_subagent: wrap so we can emit subagent_spawned events
-    base_spawn = la._make_spawn_subagent_tool(
-        size="7b", seed=0, workdir=workdir,
-        parent_tools=mcp_tools + host, depth=0)
+    # spawn_subagent: build the sub-agent INLINE so it uses the parent's
+    # active model (mock vs vLLM). Using langgraph_eval's factory
+    # hard-codes a vLLM endpoint by size, which breaks the mock path.
+    from langgraph.prebuilt import create_react_agent
+
+    def _sub_llm():
+        if model == "mock":
+            return _mock_chat_model()
+        from langchain_openai import ChatOpenAI
+        port = config.MODELS[model]["port"]
+        return ChatOpenAI(
+            base_url=f"http://localhost:{port}/v1",
+            api_key="not-used", model=model,
+            temperature=0.3, timeout=600,
+            disable_streaming=(model == "mock"),
+        )
+
+    _SUB_PROMPTS = {
+        "critic": ("You are a ruthlessly critical reviewer. Challenge "
+                   "every parameter choice, check units, look for sign "
+                   "errors, verify BCs and validate against literature "
+                   "via web_search if available. Respond with one of: "
+                   "APPROVED: <reason> | REJECTED: <issue and fix>."),
+        "verifier": ("You are an independent verifier. Re-derive the "
+                     "requested quantity from first principles or by "
+                     "an alternative method, then compare numerically."),
+        "researcher": ("You are a research assistant. Look up "
+                       "authoritative sources for the requested "
+                       "information and summarise."),
+    }
 
     async def spawn_subagent_emitting(role: str, task: str,
                                       context: str = "") -> str:
         sa_id = f"sa_{uuid.uuid4().hex[:8]}"
         await emitter({"type": "subagent_spawned", "sa_id": sa_id,
                        "role": role, "task": task, "context": context})
+        sub_tools = [t for t in (mcp_tools + host)
+                     if t.name != "spawn_subagent"]
+        sys = _SUB_PROMPTS.get(role, _SUB_PROMPTS["researcher"])
+        sub_agent = create_react_agent(_sub_llm(), tools=sub_tools,
+                                       prompt=sys)
+        msg = f"Task: {task}\n\nContext provided by parent:\n{context}"
         try:
-            # base_spawn.invoke calls a sync LangGraph subagent. Running
-            # it on the current event loop would deadlock; offload to a
-            # worker thread so the outer await keeps draining events.
-            res = await asyncio.to_thread(
-                base_spawn.invoke,
-                {"role": role, "task": task, "context": context})
+            # ainvoke avoids the inner asyncio.run() that the sync .invoke
+            # would require, and keeps us on the caller's event loop.
+            out = await sub_agent.ainvoke(
+                {"messages": [("user", msg)]},
+                config={"recursion_limit": 40})
+            res = out["messages"][-1].content
         except Exception as e:
             res = f"[sub-agent error: {type(e).__name__}: {e}]"
         await emitter({"type": "subagent_returned",
@@ -225,7 +273,9 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
     spawn_wrapped = StructuredTool.from_function(
         coroutine=spawn_subagent_emitting,
         name="spawn_subagent",
-        description=base_spawn.description,
+        description=("Spawn a sub-agent. role∈{critic, verifier, "
+                     "researcher}. task = what it should do. context = "
+                     "facts to pass in. Returns its final message."),
     )
     host.append(spawn_wrapped)
 

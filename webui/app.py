@@ -96,6 +96,25 @@ async def api_file(rel: str):
         raise HTTPException(403, str(e))
 
 
+@app.post("/api/file")
+async def api_file_save(body: dict):
+    """Write ``content`` to ``rel`` inside the sandbox. Used by the
+    in-browser editor for input files / scripts."""
+    rel = body.get("rel")
+    content = body.get("content")
+    if not rel or content is None:
+        raise HTTPException(400, "rel and content required")
+    try:
+        p = files._safe(rel)
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+    if p.is_dir():
+        raise HTTPException(400, "path is a directory")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(content)
+    return {"ok": True, "path": str(p), "bytes": len(content)}
+
+
 @app.get("/api/viz")
 async def api_viz(rel: str):
     try:
@@ -166,19 +185,28 @@ class WSSession:
         self.gate = ApprovalGate()
         self.agent = None
         self.workdir = _session_workdir(sid)
+        # The active agent turn runs as a background task so we can keep
+        # processing approve/reject messages from the WS while the gated
+        # tool call is waiting. Without this, plan-mode deadlocks.
+        self.turn_task: asyncio.Task | None = None
 
     def mode(self) -> str:
         return self.state.get("mode", config.DEFAULT_MODE)
 
     async def emit(self, event: dict):
-        self.state["events"].append(event)
+        # Strip any state-snapshot fields before persisting so we never
+        # build a self-referencing tree (state.events ⊃ event ⊃ session
+        # ⊃ state). The wire payload still includes the snapshot.
+        wire = event
+        persist = {k: v for k, v in event.items() if k != "session"}
+        self.state["events"].append(persist)
         if event.get("type") == "token_count":
             self.state["tokens_in"] = (self.state.get("tokens_in", 0)
                                        + (event.get("input") or 0))
             self.state["tokens_out"] = (self.state.get("tokens_out", 0)
                                         + (event.get("output") or 0))
         try:
-            await self.ws.send_text(json.dumps(event, default=str))
+            await self.ws.send_text(json.dumps(wire, default=str))
         except Exception:
             pass
 
@@ -206,8 +234,12 @@ async def ws_endpoint(ws: WebSocket, sid: str):
         await ws.close()
         return
     try:
+        # Send a session snapshot WITHOUT the events array so the wire
+        # payload stays bounded; the frontend already has the
+        # historical events via GET /api/sessions/{sid}.
+        snap = {k: v for k, v in ses.state.items() if k != "events"}
         await ses.emit({"type": "status", "message": "connected",
-                        "session": ses.state})
+                        "session": snap})
         while True:
             raw = await ws.receive_text()
             try:
@@ -238,14 +270,24 @@ async def _handle_inbound(ses: WSSession, msg: dict):
         text = msg.get("text", "").strip()
         if not text:
             return
+        # Refuse to start a second turn while one is in flight so the
+        # event stream stays interpretable.
+        if ses.turn_task is not None and not ses.turn_task.done():
+            await ses.emit({"type": "error",
+                            "message": "previous turn is still running"})
+            return
         await ses.emit({"type": "user_msg", "text": text})
         ses.ensure_agent()
-        try:
-            await stream_turn(agent=ses.agent, user_text=text,
-                              emitter=ses.emit)
-        except Exception:
-            pass
-        sessions.save(ses.state)
+
+        async def _run():
+            try:
+                await stream_turn(agent=ses.agent, user_text=text,
+                                  emitter=ses.emit)
+            except Exception:
+                pass
+            sessions.save(ses.state)
+
+        ses.turn_task = asyncio.create_task(_run())
     elif t == "approve":
         ses.gate.resolve(msg["call_id"], True)
     elif t == "reject":

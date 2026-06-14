@@ -79,9 +79,31 @@ def _csv(p: Path) -> dict:
                         ys.append(None)
                 traces.append({"x": x, "y": ys, "name": name,
                                "mode": "lines+markers", "type": "scatter"})
-            plot = {"data": traces,
-                    "layout": {"title": p.name, "xaxis": {"title": header[0]},
-                               "margin": {"t": 40, "l": 60, "r": 20, "b": 50}}}
+            plot = {
+                "data": traces,
+                "layout": {
+                    "title": p.name,
+                    "xaxis": {"title": header[0]},
+                    "yaxis": {"title": "value"},
+                    "margin": {"t": 40, "l": 60, "r": 20, "b": 50},
+                },
+                # Plotly config — the frontend forwards these flags so
+                # axes, titles and legend entries become click-editable
+                # in place, and the toolbar exposes PNG/SVG download.
+                "config": {
+                    "editable": True,
+                    "edits": {"titleText": True, "axisTitleText": True,
+                              "legendText": True,
+                              "annotationText": True,
+                              "shapePosition": True},
+                    "responsive": True,
+                    "displayModeBar": True,
+                    "toImageButtonOptions": {
+                        "format": "png", "filename": p.stem,
+                        "scale": 2,
+                    },
+                },
+            }
         except Exception:
             plot = None
     return {"kind": "table", "header": header, "rows": body,

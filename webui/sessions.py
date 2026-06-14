@@ -23,14 +23,17 @@ def _path(sid: str) -> Path:
 def new_session(model: str | None = None,
                 mode: str | None = None,
                 mcp_servers: list[str] | None = None) -> dict:
+    # Distinguish "unspecified" (None → fall back to defaults) from
+    # "explicit empty" (mcp_servers=[] → really disable all MCPs).
+    if mcp_servers is None:
+        mcp_servers = [sid for sid, s in config.MCP_SERVERS.items()
+                       if s["default_on"]]
     return {
         "id": uuid.uuid4().hex[:12],
         "created_at": time.time(),
         "model": model or config.DEFAULT_MODEL,
         "mode": mode or config.DEFAULT_MODE,
-        "mcp_servers": mcp_servers or [
-            sid for sid, s in config.MCP_SERVERS.items() if s["default_on"]
-        ],
+        "mcp_servers": list(mcp_servers),
         "events": [],
         "workdir": "",
         "tokens_in": 0,

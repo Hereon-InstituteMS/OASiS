@@ -25,6 +25,8 @@ function oasisApp() {
     prompt: '', events: [],
     dir: { entries: [], rel: '' }, cwd: '/',
     viz: null, params: [],
+    editMode: false, saveStatus: '',
+    vtkState: null, vtkRange: [0, 1],
 
     async init() {
       const [m, s, md] = await Promise.all([
@@ -172,21 +174,28 @@ function oasisApp() {
     },
 
     async onClick(e) {
+      this.editMode = false;
+      this.saveStatus = '';
+      this.viz = null;
       if (e.is_dir) {
         this.loadFiles(e.rel_path);
         return;
       }
+      this.viz = { kind: 'pending', rel: e.rel_path };
       const r = await fetch('/api/viz?rel=' + encodeURIComponent(e.rel_path))
         .then(r => r.json());
+      r.rel = e.rel_path;
       this.viz = r;
       if (r.kind === 'table' && r.plot) {
         this.$nextTick(() => {
+          // r.plot.config carries editable/edits/toImageButtonOptions
+          // from the backend so axes & titles are click-editable and
+          // the toolbar exposes PNG/SVG export.
           Plotly.newPlot('plotDiv', r.plot.data, r.plot.layout,
-                         { displayModeBar: false, responsive: true });
+                         r.plot.config || {responsive: true});
         });
       }
       if (r.kind === 'vtk') {
-        // vtk.js HTTPDataAccessHelper loads the URL; light wiring only.
         this.$nextTick(() => this.renderVtk(r.url));
       }
       if (e.kind === 'text' && e.name.endsWith('.py')) {
@@ -194,14 +203,117 @@ function oasisApp() {
                                + encodeURIComponent(e.rel_path))
           .then(r => r.json());
         this.params = pr.params;
+      } else {
+        this.params = [];
       }
     },
 
+    // ─── File save (text/JSON/YAML/script editor) ───
+    async saveFile() {
+      if (!this.viz || !this.viz.rel || this.viz.kind !== 'text') return;
+      this.saveStatus = 'saving…';
+      try {
+        const r = await fetch('/api/file', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({rel: this.viz.rel,
+                                content: this.viz.text}),
+        });
+        const js = await r.json();
+        if (js.ok) {
+          this.saveStatus = 'saved (' + js.bytes + ' B)';
+          setTimeout(() => { this.saveStatus = ''; }, 4000);
+          this.editMode = false;
+        } else {
+          this.saveStatus = 'error: ' + (js.detail || js.error || 'unknown');
+        }
+      } catch (e) {
+        this.saveStatus = 'error: ' + e.message;
+      }
+    },
+
+    // ─── Plot export ───
+    exportPlot(format) {
+      const div = document.getElementById('plotDiv');
+      if (!div || typeof Plotly === 'undefined') return;
+      const name = (this.viz && this.viz.rel)
+        ? this.viz.rel.split('/').pop().replace(/\.\w+$/, '') : 'plot';
+      Plotly.downloadImage(div, {format, filename: name, scale: 2});
+    },
+
+    // ─── VTK rendering (real, vtk.js HTTPDataAccessHelper) ───
     async renderVtk(url) {
       const root = document.getElementById('vtkRoot');
-      if (!root || typeof vtk === 'undefined') return;
-      root.innerHTML = '<div class="text-slate-500 p-2">' +
-        'vtk.js render scaffold (extend in renderVtk in app.js)</div>';
+      if (!root || typeof vtk === 'undefined') {
+        if (root) root.innerHTML = '<div class="text-slate-500 p-2">' +
+          'vtk.js library failed to load from CDN; check network.</div>';
+        return;
+      }
+      root.innerHTML = '';
+      const fsContainer = vtk.Rendering.Misc.vtkFullScreenRenderWindow
+        ? vtk.Rendering.Misc.vtkFullScreenRenderWindow.newInstance({
+            rootContainer: root, background: [0.06, 0.09, 0.16],
+          }) : null;
+      if (!fsContainer) return;
+      const renderer = fsContainer.getRenderer();
+      const renderWindow = fsContainer.getRenderWindow();
+      const reader = vtk.IO.XML.vtkXMLPolyDataReader
+        ? vtk.IO.XML.vtkXMLPolyDataReader.newInstance() : null;
+      if (!reader) {
+        root.innerHTML = '<div class="text-slate-500 p-2">' +
+          'vtk.js modules missing — load full vtk.js bundle.</div>';
+        return;
+      }
+      try {
+        const resp = await fetch(url);
+        const buf = await resp.arrayBuffer();
+        reader.parseAsArrayBuffer(buf);
+      } catch (e) {
+        root.innerHTML = '<div class="text-rose-300 p-2">' +
+          'VTK read error: ' + e.message + '</div>';
+        return;
+      }
+      const polyData = reader.getOutputData(0);
+      const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+      mapper.setInputData(polyData);
+      const actor = vtk.Rendering.Core.vtkActor.newInstance();
+      actor.setMapper(mapper);
+      renderer.addActor(actor);
+      renderer.resetCamera();
+      renderWindow.render();
+      // remember state for the toolbar
+      this.vtkState = { fsContainer, renderer, renderWindow, mapper, actor };
+      // populate range
+      const arr = polyData.getPointData().getScalars();
+      if (arr) {
+        const r = arr.getRange();
+        this.vtkRange = [r[0], r[1]];
+      }
+    },
+
+    resetVtkCamera() {
+      if (!this.vtkState) return;
+      this.vtkState.renderer.resetCamera();
+      this.vtkState.renderWindow.render();
+    },
+    applyVtkRange() {
+      if (!this.vtkState) return;
+      const m = this.vtkState.mapper;
+      if (m && m.setScalarRange) {
+        m.setScalarRange(this.vtkRange[0], this.vtkRange[1]);
+        this.vtkState.renderWindow.render();
+      }
+    },
+    saveVtkScreenshot() {
+      if (!this.vtkState) return;
+      const canvas = this.vtkState.fsContainer.getOpenGLRenderWindow()
+        .getCanvas();
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (this.viz && this.viz.name) ? this.viz.name + '.png'
+        : 'render.png';
+      a.click();
     },
 
     rerunWithParams() {
@@ -213,23 +325,46 @@ function oasisApp() {
     },
 
     // ─── Helpers ─────────────────────────────────────────────
-    eventClass(e) {
+    bubbleClass(e) {
       const m = {
-        user_msg: 'border-emerald-700 bg-emerald-900/30',
-        agent_msg: 'border-slate-700 bg-slate-800/50',
-        agent_chunk: 'border-slate-700 bg-slate-800/50',
-        tool_call_pending: 'border-amber-700 bg-amber-900/20',
-        tool_call_executing: 'border-amber-700 bg-amber-900/20',
-        tool_result: 'border-slate-700 bg-slate-900',
-        subagent_spawned: 'border-violet-700 bg-violet-900/30',
-        subagent_returned: 'border-violet-700 bg-violet-900/30',
-        token_count: 'border-slate-800 bg-slate-900 text-xs',
-        error: 'border-rose-700 bg-rose-900/30',
-        done: 'border-emerald-700 bg-emerald-900/20',
-        status: 'border-slate-800 bg-slate-900 text-xs text-slate-400',
+        user_msg:           'border-accent-500/30 bg-accent-500/8 text-slate-100 ml-auto',
+        agent_msg:          'border-ink-700 bg-ink-800/70 text-slate-100',
+        agent_chunk:        'border-ink-700 bg-ink-800/70 text-slate-100',
+        tool_call_pending:  'border-amber-500/40 bg-amber-500/8 text-slate-100',
+        tool_call_executing:'border-amber-500/40 bg-amber-500/12 text-slate-100',
+        tool_result:        'border-ink-700 bg-ink-900/80 text-slate-300',
+        subagent_spawned:   'border-violet-500/40 bg-violet-500/10 text-slate-100',
+        subagent_returned:  'border-violet-500/40 bg-violet-500/8 text-slate-200',
+        token_count:        'border-ink-700/50 bg-ink-900/40 text-slate-500 text-[10px] py-1.5',
+        error:              'border-rose-500/40 bg-rose-500/12 text-rose-100',
+        done:               'border-accent-500/30 bg-accent-500/8 text-accent-300',
+        status:             'border-ink-700/50 bg-ink-900/40 text-slate-500 text-[10px] py-1.5',
       };
-      return m[e.type] || 'border-slate-700 bg-slate-800/50';
+      return m[e.type] || 'border-ink-700 bg-ink-800/50 text-slate-200';
     },
+    eventIcon(e) {
+      return ({
+        user_msg: '👤', agent_msg: '🤖', agent_chunk: '🤖',
+        tool_call_pending: '⚙', tool_call_executing: '⚙',
+        tool_result: '✓',
+        subagent_spawned: '👁', subagent_returned: '✓',
+        token_count: '∑', error: '⚠', done: '●', status: '·',
+      })[e.type] || '·';
+    },
+    eventLabel(e) {
+      const m = {
+        user_msg: 'You', agent_msg: 'Agent', agent_chunk: 'Agent',
+        tool_call_pending: 'Tool call (pending)',
+        tool_call_executing: 'Tool call',
+        tool_result: 'Tool result',
+        subagent_spawned: 'Sub-agent',
+        subagent_returned: 'Sub-agent return',
+        token_count: 'Tokens',
+        error: 'Error', done: 'Done', status: 'Status',
+      };
+      return m[e.type] || e.type;
+    },
+    eventClass(e) { return this.bubbleClass(e); },
     formatEvent(e) {
       if (e.type === 'agent_msg' || e.type === 'user_msg') return e.text || '';
       if (e.type === 'tool_call_pending' || e.type === 'tool_call_executing') {
