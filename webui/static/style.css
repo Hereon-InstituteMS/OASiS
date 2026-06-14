@@ -1,0 +1,9 @@
+html, body { font-family: ui-sans-serif, system-ui, -apple-system,
+  Segoe UI, Roboto, sans-serif; }
+pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* Cursor-style chat scrolling */
+main > div.flex-1::-webkit-scrollbar { width: 8px; }
+main > div.flex-1::-webkit-scrollbar-thumb { background: #1e293b; }
+
+textarea { resize: vertical; }
