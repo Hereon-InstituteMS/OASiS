@@ -176,9 +176,9 @@
     <div class="border-t border-ink-700/60 px-6 py-4 backdrop-blur">
       <div class="flex gap-2 bg-ink-800/80 rounded-xl border border-ink-700 px-3 py-2 focus-within:border-accent-500 transition-all">
         <textarea x-model="prompt" rows="2"
-                  placeholder="e.g. solve 2D Poisson with a manufactured solution and report L2 rates…"
+                  placeholder="e.g. solve 2D Poisson with a manufactured solution and report L2 rates… (Enter to send, Shift+Enter for newline)"
                   class="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder-slate-600 resize-none"
-                  @keydown.ctrl.enter.prevent="send()"></textarea>
+                  @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send() }"></textarea>
         <button @click="send()"
                 :disabled="!prompt.trim() || !connected"
                 class="self-end px-4 py-2 rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 text-ink-950 font-semibold text-sm shadow-glow hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all">

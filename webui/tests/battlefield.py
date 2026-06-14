@@ -480,6 +480,67 @@ async def ws_restart_clears_events() -> None:
           f"tokens={s['tokens_in']}/{s['tokens_out']}")
 
 
+async def ws_real_qwen_hello() -> None:
+    """If port 8000 has a running model server, send a literal 'hello'
+    and verify the agent answers conversationally — no silent stall.
+
+    This is the test that should have existed before. Skips cleanly if
+    the model server is not up so it doesn't false-fail in CI."""
+    print("\n[9] Real Qwen 'hello' over port 8000 (skips if no server)",
+          flush=True)
+    try:
+        async with httpx.AsyncClient(timeout=2) as c:
+            r = await c.get("http://127.0.0.1:8000/v1/models")
+        if r.status_code != 200:
+            print(f"  SKIP no Qwen server on :8000 (status={r.status_code})")
+            return
+    except Exception as e:
+        print(f"  SKIP no Qwen server on :8000 ({e})")
+        return
+
+    async with httpx.AsyncClient(base_url=BASE) as c:
+        sid = (await c.post("/api/sessions",
+                            json={"model": "qwen2.5-7b", "mode": "accept",
+                                  "mcp_servers": []})).json()["id"]
+
+    saw_status = False
+    saw_msg = False
+    saw_done = False
+    final_text = ""
+    error_text = ""
+    async with websockets.connect(f"{WS_BASE}/ws/{sid}") as ws:
+        await ws.recv()  # hello
+        await ws.send(json.dumps({"type": "prompt", "text": "hello"}))
+        deadline = time.time() + 90  # generous; 7B can be slow
+        while time.time() < deadline:
+            try:
+                msg = json.loads(
+                    await asyncio.wait_for(ws.recv(), timeout=10))
+            except asyncio.TimeoutError:
+                continue
+            if msg["type"] == "status" and "thinking" in msg.get(
+                    "message", "").lower():
+                saw_status = True
+            if msg["type"] == "agent_msg":
+                saw_msg = True
+            if msg["type"] == "error":
+                error_text = msg.get("message", "")
+            if msg["type"] == "done":
+                final_text = msg.get("final_text", "")
+                saw_done = True
+                break
+
+    check("Qwen: 'thinking…' status arrived after Send",
+          saw_status, "")
+    check("Qwen: agent_msg with non-empty content arrived",
+          saw_msg and final_text.strip() != "",
+          f"final={final_text[:120]!r}, error={error_text[:120]!r}")
+    check("Qwen: turn terminated with 'done'", saw_done, "")
+    check("Qwen: no LangChain streaming error",
+          "No generations found in stream" not in error_text,
+          f"error={error_text[:200]!r}")
+
+
 async def main():
     print("Battlefield test against", BASE, flush=True)
     async with httpx.AsyncClient(base_url=BASE, timeout=10) as client:
@@ -491,6 +552,7 @@ async def main():
     await ws_live_commands()
     await ws_multi_prompt_run()
     await ws_restart_clears_events()
+    await ws_real_qwen_hello()
     await cleanup()
 
     print()

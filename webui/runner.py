@@ -183,10 +183,17 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
             raise ValueError(f"unknown model: {model}")
         port = config.MODELS[model]["port"]
         from langchain_openai import ChatOpenAI
+        # disable_streaming forces a single JSON POST to /v1/chat/
+        # completions instead of an SSE stream. The user's local
+        # transformers_openai_server.py returns plain JSON, which
+        # langchain-openai's streaming parser refuses ("No generations
+        # found in stream"); vLLM works in either mode. So we always
+        # disable streaming for predictability.
         llm = ChatOpenAI(
             base_url=f"http://localhost:{port}/v1",
             api_key="not-used", model=model,
             temperature=0.2, timeout=900,
+            disable_streaming=True,
         )
 
     # ── OASiS MCP tools (optional).
@@ -228,7 +235,7 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
             base_url=f"http://localhost:{port}/v1",
             api_key="not-used", model=model,
             temperature=0.3, timeout=600,
-            disable_streaming=(model == "mock"),
+            disable_streaming=True,
         )
 
     _SUB_PROMPTS = {
@@ -284,6 +291,12 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
                         agent_label="main") for t in mcp_tools + host]
 
     from langgraph.prebuilt import create_react_agent
+    # Use the EXACT same system prompts as the langgraph_eval driver
+    # (la.BARE_SYSTEM / la.MCP_SYSTEM) — including the MANDATORY CRITIC
+    # paragraph. Softening them in the WebUI would change the agent's
+    # behaviour relative to the paper claim, and any failure mode the
+    # strict prompt causes on small models is a real finding, not a
+    # bug to paper over.
     prompt = (la.MCP_SYSTEM if mcp_on else la.BARE_SYSTEM)
     return create_react_agent(llm, tools=gated, prompt=prompt)
 
@@ -293,9 +306,13 @@ def build_agent_for_session(*, model: str, mcp_on: bool,
 # ───────────────────────────────────────────────────────────────────
 async def stream_turn(*, agent, user_text: str, emitter):
     """Run one user turn. Streams chunks/events via ``emitter`` and
-    returns the final message text."""
+    returns the final message text. Emits a 'thinking' status as soon
+    as we start so the user sees activity even before the first model
+    response, and an 'error' event with a clear message on any failure
+    (rather than dying silently)."""
     final_text = ""
     inputs = {"messages": [("user", user_text)]}
+    await emitter({"type": "status", "message": "thinking…"})
     try:
         async for event in agent.astream_events(inputs, version="v2"):
             kind = event.get("event")
@@ -314,6 +331,11 @@ async def stream_turn(*, agent, user_text: str, emitter):
                                    "output": um.get("output_tokens")})
                 if gen is not None and getattr(gen, "content", ""):
                     final_text = gen.content
+                    # Non-streaming models (disable_streaming=True) won't
+                    # emit on_chat_model_stream chunks, so surface the
+                    # full content here as an agent_msg.
+                    await emitter({"type": "agent_msg",
+                                   "text": gen.content})
             elif kind == "on_chain_end" and name == "LangGraph":
                 msgs = event["data"].get("output", {}).get("messages") or []
                 if msgs:
@@ -324,6 +346,7 @@ async def stream_turn(*, agent, user_text: str, emitter):
         await emitter({"type": "error",
                        "message": f"{type(e).__name__}: {e}",
                        "traceback": traceback.format_exc()[-4000:]})
-        raise
+        await emitter({"type": "done", "final_text": ""})
+        return ""
     await emitter({"type": "done", "final_text": final_text})
     return final_text
