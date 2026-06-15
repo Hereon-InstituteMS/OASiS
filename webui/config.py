@@ -13,14 +13,17 @@ SANDBOX_ROOT = REPO / "eval_interactive"
 SESSION_DIR = REPO / "data" / "webui_sessions"
 SESSION_DIR.mkdir(parents=True, exist_ok=True)
 
-# Each entry: id used in the API → human label, vLLM endpoint, on-disk weights.
+# Each entry: id used in the API → human label, serving endpoint port,
+# on-disk weights. Pointing at the *-Instruct checkpoints — the base
+# Qwen2.5 weights that were on disk before are next-token completion
+# models and CAN'T do tool calling, so the agent loop never closes.
 MODELS = {
-    "qwen2.5-7b":  {"label": "Qwen 2.5 7B",  "port": 8000,
-                    "weights": "/media/alexander/PortableSSD/AstroNet/models/qwen2.5-7b"},
-    "qwen2.5-14b": {"label": "Qwen 2.5 14B", "port": 8001,
-                    "weights": "/media/alexander/PortableSSD/AstroNet/models/qwen2.5-14b"},
-    "qwen2.5-32b": {"label": "Qwen 2.5 32B", "port": 8002,
-                    "weights": "/media/alexander/PortableSSD/AstroNet/models/qwen2.5-32b"},
+    "qwen2.5-7b":  {"label": "Qwen 2.5 7B Instruct",  "port": 8000,
+                    "weights": "/media/alexander/PortableSSD/AstroNet/models/qwen2.5-7b-instruct"},
+    "qwen2.5-14b": {"label": "Qwen 2.5 14B Instruct", "port": 8001,
+                    "weights": "/media/alexander/PortableSSD/AstroNet/models/qwen2.5-14b-instruct"},
+    "qwen2.5-32b": {"label": "Qwen 2.5 32B Instruct", "port": 8002,
+                    "weights": "/media/alexander/PortableSSD/AstroNet/models/qwen2.5-32b-instruct"},
     "mock":        {"label": "Mock LLM (no GPU)", "port": None,
                     "weights": None},
 }
