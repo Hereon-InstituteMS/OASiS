@@ -5,24 +5,16 @@ Application: RomApplication.
 """
 
 
-def _rom_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — ROM analysis."""
-    return '''\
-"""Reduced Order Model — Kratos RomApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.RomApplication
-    print("RomApplication available")
-    summary = {"note": "RomApplication available",
-               "capabilities": ["POD", "HROM", "neural_network_surrogates",
-                                "parametric_studies", "real_time_simulation"]}
-except ImportError:
-    print("RomApplication not installed")
-    print("Install: pip install KratosRomApplication")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _rom_2d generator emitted
+# an availability-probe stub that only import-checked RomApplication and
+# wrote {"note": "not installed"} with no solver run. RomApplication is NOT
+# importable in the installed Kratos stack (the working python3 stack ships
+# only StructuralMechanics, ConvectionDiffusion, ContactStructuralMechanics
+# and LinearSolvers). The stub generator and its 'rom_2d' registry entry
+# have been removed; 'rom' is no longer advertised in
+# KratosBackend.supported_physics(). The KNOWLEDGE block below is retained
+# as a reference-only entry (knowledge(kratos, rom) still works) — it makes
+# no claim that the app is runnable here.
 
 
 KNOWLEDGE = {
@@ -51,6 +43,6 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {
-    "rom_2d": _rom_2d,
-}
+# Empty: no runnable ROM generator — RomApplication is not installable in
+# this Kratos stack (see honesty-audit note above).
+GENERATORS = {}

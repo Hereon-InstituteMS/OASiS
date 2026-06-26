@@ -1,28 +1,13 @@
 """Kratos FSI generators and knowledge."""
 
 
-def _fsi_2d_kratos(params: dict) -> str:
-    """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
-
-    FSI via Kratos FSIApplication + CoSimulationApplication."""
-    return f'''\
-"""Fluid-Structure Interaction — Kratos FSI/CoSimulation"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.CoSimulationApplication as CSA
-    print("CoSimulationApplication available — enables partitioned FSI")
-    summary = {{"note": "Kratos CoSim available — Gauss-Seidel/Jacobi coupling, Aitken/MVQN acceleration"}}
-except ImportError:
-    try:
-        import KratosMultiphysics.FSIApplication as FSI
-        print("FSIApplication available — Dirichlet-Neumann partitioned FSI")
-        summary = {{"note": "Kratos FSI available"}}
-    except ImportError:
-        print("Neither FSI nor CoSimulation application installed")
-        summary = {{"note": "Install: pip install KratosCoSimulationApplication"}}
-with open("results_summary.json", "w") as _f: json.dump(summary, _f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _fsi_2d_kratos generator was
+# an availability-probe stub (it only import-checked CoSimulation/FSI apps and
+# wrote {"note": ...} with no solver run). FSIApplication and
+# CoSimulationApplication are NOT importable in the installed Kratos stack, so
+# 'fsi' has been removed from the generator registry and from
+# KratosBackend.supported_physics(). The KNOWLEDGE block below is retained as a
+# reference-only entry (accelerator/mapper names, pitfalls).
 
 
 KNOWLEDGE = {
@@ -99,6 +84,6 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {
-    "fsi_2d": _fsi_2d_kratos,
-}
+# Empty: FSIApplication / CoSimulationApplication not installable in this
+# Kratos stack; the prior generator was a no-solve probe stub (removed).
+GENERATORS = {}

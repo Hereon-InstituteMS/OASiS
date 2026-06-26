@@ -5,28 +5,15 @@ Applications: PfemFluidDynamicsApplication, PfemApplication, PFEM2Application.
 """
 
 
-def _pfem_fluid_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — PFEM free-surface fluid simulation."""
-    return '''\
-"""PFEM free-surface flow — Kratos PfemFluidDynamicsApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.PfemFluidDynamicsApplication
-    print("PfemFluidDynamicsApplication available")
-    summary = {"note": "PfemFluidDynamicsApplication available",
-               "capabilities": ["free_surface", "sloshing", "dam_break", "wave_breaking",
-                                "fluid_structure_topology_change"]}
-except ImportError:
-    print("PfemFluidDynamicsApplication not installed")
-    print("NOTE: PFEM apps are NOT published on PyPI as of "
-          "Kratos 10.4.2 — pip install does not work. "
-          "Build Kratos from source with "
-          "-DPFEM_FLUID_DYNAMICS_APPLICATION=ON "
-          "and -DDELAUNAY_MESHING_APPLICATION=ON.")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the three PFEM generators
+# (_pfem_fluid_2d, _pfem_solid_2d, _pfem2_2d) were availability-probe stubs
+# (import-check + {"note": ...}, no solver run) — the KNOWLEDGE pitfalls
+# below even self-document them as such. The PFEM applications
+# (PfemFluidDynamicsApplication, PfemSolidMechanicsApplication,
+# PFEM2Application) are not published on PyPI and are NOT importable in the
+# installed Kratos stack, so 'pfem_fluid', 'pfem_solid' and 'pfem2' have been
+# removed from the generator registry and from
+# KratosBackend.supported_physics(). KNOWLEDGE retained for reference.
 
 
 KNOWLEDGE = {
@@ -114,40 +101,7 @@ KNOWLEDGE = {
     },
 }
 
-def _pfem_solid_2d(params: dict) -> str:
-    """PFEM for large-deformation solids."""
-    return '''\
-"""PFEM Solid — Kratos PfemSolidMechanicsApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.PfemSolidMechanicsApplication
-    print("PfemSolidMechanicsApplication available")
-    summary = {"note": "Available", "capabilities": ["large_deformation", "cutting", "forming"]}
-except ImportError:
-    print("PfemSolidMechanicsApplication not installed")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
-
-def _pfem2_2d(params: dict) -> str:
-    """PFEM2 two-phase flow."""
-    return '''\
-"""PFEM2 Two-Phase — Kratos PFEM2Application"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.PFEM2Application
-    print("PFEM2Application available")
-    summary = {"note": "Available", "capabilities": ["two_phase", "interface_tracking"]}
-except ImportError:
-    print("PFEM2Application not installed")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
-
-GENERATORS = {
-    "pfem_fluid_2d": _pfem_fluid_2d,
-    "pfem_solid_2d": _pfem_solid_2d,
-    "pfem2_2d": _pfem2_2d,
-}
+# Empty: no PFEM application is installable in this Kratos stack; the prior
+# generators (pfem_fluid_2d, pfem_solid_2d, pfem2_2d) were no-solve probe
+# stubs (removed — see honesty-audit note at top of file).
+GENERATORS = {}

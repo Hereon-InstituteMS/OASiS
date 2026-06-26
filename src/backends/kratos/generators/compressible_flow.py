@@ -5,23 +5,12 @@ Applications: CompressiblePotentialFlowApplication.
 """
 
 
-def _compressible_potential_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — Compressible potential flow around airfoil."""
-    return '''\
-"""Compressible potential flow — Kratos CompressiblePotentialFlowApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.CompressiblePotentialFlowApplication
-    print("CompressiblePotentialFlowApplication available")
-    summary = {"note": "CompressiblePotentialFlowApplication available",
-               "capabilities": ["subsonic_potential", "transonic_potential", "full_potential"]}
-except ImportError:
-    print("CompressiblePotentialFlowApplication not installed")
-    print("Install: pip install KratosCompressiblePotentialFlowApplication")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _compressible_potential_2d
+# generator was an availability-probe stub (import-check +
+# {"note": "not installed"}, no solver run). CompressiblePotentialFlow-
+# Application is NOT importable in the installed Kratos stack, so
+# 'compressible_potential' has been removed from the generator registry and
+# from KratosBackend.supported_physics(). KNOWLEDGE retained for reference.
 
 
 KNOWLEDGE = {
@@ -47,6 +36,6 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {
-    "compressible_potential_2d": _compressible_potential_2d,
-}
+# Empty: CompressiblePotentialFlowApplication not installable in this Kratos
+# stack; the prior generator was a no-solve probe stub (removed).
+GENERATORS = {}
