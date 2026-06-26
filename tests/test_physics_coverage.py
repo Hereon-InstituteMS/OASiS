@@ -176,12 +176,16 @@ class TestDealiiFullCoverage(unittest.TestCase):
 
     def test_dealii_key_steps_covered(self):
         """All key deal.II tutorial categories must have physics."""
+        # Rebaselined to physics that produce a REAL, runnable, output-writing
+        # deal.II program on the installed version (9.1.x). compressible_euler,
+        # topology_opt_dealii, multiphysics_dealii, cg_dg_coupled, optimal_control
+        # were REMOVED in the catalog-honesty overhaul (could not be made runnable
+        # here — e.g. cg_dg_coupled needs FEInterfaceValues, absent in 9.1.x).
         required_physics = [
             "poisson", "linear_elasticity", "heat", "stokes",
             "helmholtz", "eigenvalue", "hyperelasticity",
-            "navier_stokes", "compressible_euler", "mixed_laplacian",
+            "navier_stokes", "mixed_laplacian",
             "matrix_free", "multigrid", "obstacle_problem",
-            "topology_opt_dealii",
         ]
         registered = {p.name for p in self.backend.supported_physics()}
         missing = [r for r in required_physics if r not in registered]

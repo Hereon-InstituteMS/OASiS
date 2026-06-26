@@ -303,8 +303,6 @@ class DealiiBackend(SolverBackend):
                               ["Q2-Q1 (Taylor-Hood)"], ["2d"]),
             PhysicsCapability("mixed_laplacian", "Mixed Laplacian with Raviart-Thomas H(div) (step-20)", [2],
                               ["FE_RaviartThomas + FE_DGQ"], ["2d"]),
-            PhysicsCapability("compressible_euler", "Compressible Euler with shock capturing (step-33, step-69)", [2, 3],
-                              ["FE_DGQ"], ["2d"]),
             PhysicsCapability("time_dependent_heat", "Transient heat with AMR (step-26)", [2],
                               ["Q1"], ["2d"]),
             PhysicsCapability("time_dependent_wave", "Wave equation (step-23, step-48)", [2, 3],
@@ -315,22 +313,14 @@ class DealiiBackend(SolverBackend):
                               ["Q1-Q4 (tensor product)"], ["2d"]),
             PhysicsCapability("multigrid", "Geometric multigrid preconditioner (step-16, step-50)", [2, 3],
                               ["Q1-Q2"], ["2d"]),
-            PhysicsCapability("multiphysics_dealii", "Two-phase flow / multi-physics (step-21, step-43)", [2],
-                              ["Q1"], ["2d"]),
             PhysicsCapability("obstacle_problem", "Variational inequality / contact (step-41)", [2],
                               ["Q1"], ["2d"]),
-            PhysicsCapability("topology_opt_dealii", "SIMP topology optimization (step-79)", [2],
-                              ["Q1"], ["2d"]),
-            PhysicsCapability("error_estimation", "Dual-weighted residual error estimation (step-14)", [2],
+            PhysicsCapability("error_estimation", "Adaptive error estimation, Kelly + AMR (step-6, step-14)", [2],
                               ["Q1-Q2"], ["2d"]),
             PhysicsCapability("phase_field", "Phase-field / ADR with SUPG (step-63)", [2],
                               ["Q1"], ["2d"]),
             PhysicsCapability("dg_advection_reaction", "DG advection-reaction (step-12, step-39)", [2],
                               ["FE_DGQ"], ["2d"]),
-            PhysicsCapability("cg_dg_coupled", "Mixed CG-DG methods (step-46)", [2],
-                              ["FE_Q + FE_DGQ"], ["2d"]),
-            PhysicsCapability("optimal_control", "Automatic differentiation / optimal control (step-72)", [2, 3],
-                              ["Q1"], ["2d"]),
             # ── 2026-06-01: three _DEALII_KNOWLEDGE keys had
             #    detailed pitfalls but no PhysicsCapability entry,
             #    so users browsing discover never saw them.
@@ -413,6 +403,12 @@ class DealiiBackend(SolverBackend):
         return generator(params)
 
     def validate_input(self, content: str) -> list[str]:
+        """Reject not just malformed C++ but *silent-wrong* programs:
+        a deal.II source that compiles and exits 0 while doing nothing
+        (no mesh, no solve, no output). Until the 2026-06-26 overhaul,
+        16 advanced generators emitted exactly such print-and-exit stubs
+        and passed every check while producing no result file. The extra
+        rules below make that class of program fail validation."""
         errors = []
         if "#include" not in content:
             errors.append("C++ source does not contain any #include directives")
@@ -420,6 +416,49 @@ class DealiiBackend(SolverBackend):
             errors.append("Source does not include deal.II headers")
         if "int main" not in content:
             errors.append("Source does not contain main()")
+
+        # A real solver must build a mesh.
+        if ("Triangulation" not in content
+                and "GridGenerator" not in content
+                and "GridIn" not in content):
+            errors.append(
+                "Source builds no mesh (no Triangulation / GridGenerator / "
+                "GridIn) — it cannot solve anything. Looks like a "
+                "placeholder/stub program.")
+
+        # A real solver must write output we can collect (.vtu/.vtk/.pvd
+        # via DataOut / DataOutBase, or a gnuplot dump).
+        has_output = any(tok in content for tok in (
+            "DataOut", "write_vtu", "write_vtk", "write_pvd",
+            "write_gnuplot", "output_results", "DataOutBase"))
+        if not has_output:
+            errors.append(
+                "Source produces no output (no DataOut/write_vtu/write_vtk/"
+                "write_pvd/output_results) — results cannot be collected. "
+                "Looks like a placeholder/stub program.")
+
+        # Catch the classic stub whose main() only prints a 'see the
+        # tutorial' message and returns. Heuristic: a main body that has
+        # std::cout/printf but none of the verbs a real solve uses.
+        lowered = content
+        solve_tokens = (
+            "distribute_dofs", "assemble", "solve(", ".solve",
+            "vmult", "FEValues", "system_matrix", "cell_loop",
+        )
+        placeholder_phrases = (
+            "see deal.II tutorial", "see step-", "for full implementation",
+            "Placeholder", "placeholder:",
+        )
+        if not any(tok in lowered for tok in solve_tokens):
+            errors.append(
+                "Source never assembles or solves a system (no "
+                "distribute_dofs/assemble/solve/vmult/FEValues) — it does "
+                "no finite-element work. Looks like a placeholder/stub.")
+        if any(p.lower() in lowered.lower() for p in placeholder_phrases):
+            errors.append(
+                "Source contains placeholder boilerplate ('see the "
+                "tutorial' / 'full implementation' / 'Placeholder') — "
+                "this is a stub, not a real solver.")
         return errors
 
     async def run(self, input_content: str, work_dir: Path,

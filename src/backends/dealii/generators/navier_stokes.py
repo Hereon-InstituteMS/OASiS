@@ -4,24 +4,22 @@ Based on step-57 (stationary NS), step-35 (Boussinesq), step-55 (Stokes MPI).
 """
 
 
-def _navier_stokes_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — Stationary Navier-Stokes (Newton iteration)."""
-    return '''\
-/* Stationary Navier-Stokes — deal.II (based on step-57)
- * Newton iteration for nonlinear convective term.
- * Taylor-Hood Q2/Q1 elements. */
+_SRC_NAVIER_STOKES_2D = r"""/* Stationary incompressible Navier-Stokes - deal.II (based on step-57)
+ * Lid-driven cavity, Taylor-Hood Q2/Q1, Newton iteration on the convective
+ * term, monolithic UMFPACK linear solves. Self-contained; writes result.vtu.
+ */
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/function.h>
-#include <deal.II/lac/vector.h>
-#include <deal.II/lac/full_matrix.h>
-#include <deal.II/lac/sparse_matrix.h>
-#include <deal.II/lac/dynamic_sparsity_pattern.h>
+#include <deal.II/lac/block_vector.h>
+#include <deal.II/lac/block_sparse_matrix.h>
+#include <deal.II/lac/block_sparsity_pattern.h>
 #include <deal.II/lac/sparse_direct.h>
 #include <deal.II/lac/affine_constraints.h>
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
+#include <deal.II/dofs/dof_renumbering.h>
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/fe/fe_values.h>
@@ -29,16 +27,228 @@ def _navier_stokes_2d(params: dict) -> str:
 #include <deal.II/numerics/data_out.h>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 using namespace dealii;
 
-// Placeholder: implement Newton iteration for NS
-// Reference: step-57 in deal.II tutorials
-int main() {
-    std::cout << "Navier-Stokes solver — see step-57 for full implementation" << std::endl;
-    return 0;
+const unsigned int degree = @@DEGREE@@;        // pressure degree; velocity = degree+1
+const unsigned int n_refine = @@REFINEMENTS@@;
+const double viscosity = @@VISCOSITY@@;         // 1/Re  (Re=10 here, robust cold start)
+const unsigned int max_newton = @@MAX_NEWTON@@;
+
+template <int dim>
+class LidVelocity : public Function<dim>
+{
+public:
+  LidVelocity() : Function<dim>(dim + 1) {}
+  virtual void vector_value(const Point<dim> &p, Vector<double> &v) const override
+  {
+    v = 0;
+    if (p[1] > 1.0 - 1e-8) // top lid
+      v[0] = 1.0;
+  }
+};
+
+int main()
+{
+  const int dim = 2;
+  Triangulation<dim> triangulation;
+  GridGenerator::hyper_cube(triangulation, 0, 1);
+  triangulation.refine_global(n_refine);
+
+  FESystem<dim> fe(FE_Q<dim>(degree + 1), dim, FE_Q<dim>(degree), 1);
+  DoFHandler<dim> dof_handler(triangulation);
+  dof_handler.distribute_dofs(fe);
+  DoFRenumbering::component_wise(dof_handler);
+
+  std::vector<types::global_dof_index> dofs_per_block(2);
+  std::vector<unsigned int> block_component(dim + 1, 0);
+  block_component[dim] = 1;
+  DoFTools::count_dofs_per_block(dof_handler, dofs_per_block, block_component);
+  const unsigned int n_u = dofs_per_block[0], n_p = dofs_per_block[1];
+  std::cout << "Navier-Stokes DOFs: u=" << n_u << " p=" << n_p << std::endl;
+
+  const FEValuesExtractors::Vector velocities(0);
+  const FEValuesExtractors::Scalar pressure(dim);
+
+  // Constraints for the Newton update (zero Dirichlet everywhere on velocity)
+  // and for the initial guess (lid velocity). Pressure pinned at one dof.
+  AffineConstraints<double> zero_constraints, nonzero_constraints;
+  {
+    nonzero_constraints.clear();
+    DoFTools::make_hanging_node_constraints(dof_handler, nonzero_constraints);
+    VectorTools::interpolate_boundary_values(dof_handler, 0,
+      LidVelocity<dim>(), nonzero_constraints, fe.component_mask(velocities));
+    nonzero_constraints.close();
+
+    zero_constraints.clear();
+    DoFTools::make_hanging_node_constraints(dof_handler, zero_constraints);
+    VectorTools::interpolate_boundary_values(dof_handler, 0,
+      Functions::ZeroFunction<dim>(dim + 1), zero_constraints,
+      fe.component_mask(velocities));
+    zero_constraints.close();
+  }
+
+  // Pin pressure at one dof to fix the constant null space. After
+  // component_wise renumbering the first pressure dof is index n_u.
+  const types::global_dof_index pressure_pin = n_u;
+  if (!nonzero_constraints.is_constrained(pressure_pin))
+    {
+      nonzero_constraints.clear();
+      DoFTools::make_hanging_node_constraints(dof_handler, nonzero_constraints);
+      VectorTools::interpolate_boundary_values(dof_handler, 0,
+        LidVelocity<dim>(), nonzero_constraints, fe.component_mask(velocities));
+      nonzero_constraints.add_line(pressure_pin);
+      nonzero_constraints.close();
+    }
+  {
+    zero_constraints.clear();
+    DoFTools::make_hanging_node_constraints(dof_handler, zero_constraints);
+    VectorTools::interpolate_boundary_values(dof_handler, 0,
+      Functions::ZeroFunction<dim>(dim + 1), zero_constraints,
+      fe.component_mask(velocities));
+    zero_constraints.add_line(pressure_pin);
+    zero_constraints.close();
+  }
+
+  BlockDynamicSparsityPattern dsp(2, 2);
+  dsp.block(0, 0).reinit(n_u, n_u); dsp.block(0, 1).reinit(n_u, n_p);
+  dsp.block(1, 0).reinit(n_p, n_u); dsp.block(1, 1).reinit(n_p, n_p);
+  dsp.collect_sizes();
+  DoFTools::make_sparsity_pattern(dof_handler, dsp, nonzero_constraints, true);
+  BlockSparsityPattern sparsity_pattern;
+  sparsity_pattern.copy_from(dsp);
+  BlockSparseMatrix<double> system_matrix(sparsity_pattern);
+
+  BlockVector<double> present_solution(2), newton_update(2), system_rhs(2);
+  for (auto *v : {&present_solution, &newton_update, &system_rhs})
+    {
+      v->block(0).reinit(n_u); v->block(1).reinit(n_p); v->collect_sizes();
+    }
+
+  // initial guess satisfies the lid BC
+  nonzero_constraints.distribute(present_solution);
+
+  QGauss<dim> quadrature(degree + 2);
+  FEValues<dim> fe_values(fe, quadrature,
+    update_values | update_gradients | update_JxW_values);
+  const unsigned int dofs_per_cell = fe.dofs_per_cell;
+  const unsigned int n_q = quadrature.size();
+  FullMatrix<double> local_matrix(dofs_per_cell, dofs_per_cell);
+  Vector<double> local_rhs(dofs_per_cell);
+  std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+  std::vector<Tensor<1, dim>> present_velocity_values(n_q);
+  std::vector<Tensor<2, dim>> present_velocity_gradients(n_q);
+  std::vector<double> present_pressure_values(n_q);
+  std::vector<double> div_phi_u(dofs_per_cell);
+  std::vector<Tensor<1, dim>> phi_u(dofs_per_cell);
+  std::vector<Tensor<2, dim>> grad_phi_u(dofs_per_cell);
+  std::vector<double> phi_p(dofs_per_cell);
+
+  for (unsigned int newton = 0; newton < max_newton; ++newton)
+    {
+      system_matrix = 0; system_rhs = 0;
+      for (const auto &cell : dof_handler.active_cell_iterators())
+        {
+          fe_values.reinit(cell);
+          local_matrix = 0; local_rhs = 0;
+          fe_values[velocities].get_function_values(present_solution, present_velocity_values);
+          fe_values[velocities].get_function_gradients(present_solution, present_velocity_gradients);
+          fe_values[pressure].get_function_values(present_solution, present_pressure_values);
+
+          for (unsigned int q = 0; q < n_q; ++q)
+            {
+              for (unsigned int k = 0; k < dofs_per_cell; ++k)
+                {
+                  div_phi_u[k] = fe_values[velocities].divergence(k, q);
+                  phi_u[k] = fe_values[velocities].value(k, q);
+                  grad_phi_u[k] = fe_values[velocities].gradient(k, q);
+                  phi_p[k] = fe_values[pressure].value(k, q);
+                }
+              const Tensor<1, dim> u = present_velocity_values[q];
+              const Tensor<2, dim> grad_u = present_velocity_gradients[q];
+              const double p = present_pressure_values[q];
+              for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                {
+                  for (unsigned int j = 0; j < dofs_per_cell; ++j)
+                    {
+                      local_matrix(i, j) +=
+                        (viscosity * scalar_product(grad_phi_u[j], grad_phi_u[i])
+                         + (grad_phi_u[j] * u) * phi_u[i]          // convection (Newton, part 1)
+                         + (grad_u * phi_u[j]) * phi_u[i]          // convection (Newton, part 2)
+                         - div_phi_u[i] * phi_p[j]                 // pressure
+                         - phi_p[i] * div_phi_u[j])                // incompressibility
+                        * fe_values.JxW(q);
+                    }
+                  // residual (negative): -F(present_solution)
+                  double divu = 0;
+                  for (unsigned int d = 0; d < dim; ++d)
+                    divu += grad_u[d][d];
+                  local_rhs(i) -=
+                    (viscosity * scalar_product(grad_u, grad_phi_u[i])
+                     + (grad_u * u) * phi_u[i]
+                     - p * div_phi_u[i]
+                     - phi_p[i] * divu)
+                    * fe_values.JxW(q);
+                }
+            }
+          cell->get_dof_indices(local_dof_indices);
+          const AffineConstraints<double> &cm =
+            (newton == 0) ? nonzero_constraints : zero_constraints;
+          cm.distribute_local_to_global(local_matrix, local_rhs,
+            local_dof_indices, system_matrix, system_rhs);
+        }
+
+      const double residual_norm = system_rhs.l2_norm();
+      std::cout << "  Newton " << newton << ": residual = " << residual_norm << std::endl;
+      if (residual_norm < 1e-10)
+        { std::cout << "Newton converged." << std::endl; break; }
+
+      SparseDirectUMFPACK direct;
+      direct.initialize(system_matrix);
+      direct.vmult(newton_update, system_rhs);
+      zero_constraints.distribute(newton_update);
+
+      present_solution += newton_update;
+    }
+
+  std::cout << "u_max = " << present_solution.block(0).linfty_norm()
+            << ", p range pinned at dof0=0" << std::endl;
+
+  std::vector<std::string> names(dim, "velocity");
+  names.push_back("pressure");
+  std::vector<DataComponentInterpretation::DataComponentInterpretation> interp(
+    dim, DataComponentInterpretation::component_is_part_of_vector);
+  interp.push_back(DataComponentInterpretation::component_is_scalar);
+  DataOut<dim> data_out;
+  data_out.attach_dof_handler(dof_handler);
+  data_out.add_data_vector(present_solution, names,
+    DataOut<dim>::type_dof_data, interp);
+  data_out.build_patches();
+  std::ofstream output("result.vtu");
+  data_out.write_vtu(output);
+  std::cout << "Output written to result.vtu" << std::endl;
+  return 0;
 }
-'''
+"""
+
+
+def _navier_stokes_2d(params: dict) -> str:
+    """Real stationary Navier-Stokes (step-57): lid-driven cavity,
+    Taylor-Hood Q2/Q1, Newton iteration, monolithic UMFPACK solves.
+    Self-contained and parameterized; writes result.vtu. Verified to
+    compile/run on deal.II 9.1.1 with quadratic Newton convergence."""
+    degree = int(params.get("degree", 1))
+    refinements = int(params.get("refinements", 4))
+    viscosity = float(params.get("viscosity", 0.1))
+    max_newton = int(params.get("max_newton", 15))
+    src = _SRC_NAVIER_STOKES_2D
+    src = src.replace("@@DEGREE@@", str(degree))
+    src = src.replace("@@REFINEMENTS@@", str(refinements))
+    src = src.replace("@@VISCOSITY@@", str(viscosity))
+    src = src.replace("@@MAX_NEWTON@@", str(max_newton))
+    return src
 
 
 KNOWLEDGE = {
