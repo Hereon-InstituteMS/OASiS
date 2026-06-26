@@ -1522,6 +1522,13 @@ def register_consolidated_tools(mcp: FastMCP):
                             input_snapshot=_snap)
             return f"Solver {solver} not available: {msg}"
 
+        # CP-4: validate the input BEFORE running (was skipped on the live path)
+        _input_warnings = []
+        try:
+            _input_warnings = backend.validate_input(input_content) or []
+        except Exception:
+            pass
+
         _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y%m%d_%H%M%S")
         name = job_name or f"{solver}_{ts}"
@@ -1551,8 +1558,17 @@ def register_consolidated_tools(mcp: FastMCP):
         }
         if job.error:
             result["error"] = job.error[:500]
+        if _input_warnings:
+            result["input_validation_warnings"] = _input_warnings
         if job.status == "completed":
-            result["output_files"] = [f.name for f in backend.get_result_files(job)]
+            out_files = backend.get_result_files(job)
+            result["output_files"] = [f.name for f in out_files]
+            # CP-4: a process that exits 0 but produces NO output is NOT a verified
+            # success — the canonical silent failure. Downgrade the status loudly.
+            if not out_files:
+                result["status"] = "completed_unverified"
+                result["warning"] = ("Process exited cleanly but produced NO output files "
+                                     "— this is NOT a verified solve. Do not treat as a result.")
             stdout_log = work_dir / "stdout.log"
             if stdout_log.exists():
                 text = stdout_log.read_text()
@@ -1560,7 +1576,7 @@ def register_consolidated_tools(mcp: FastMCP):
         return json.dumps(result, indent=2)
 
     # ═══════════════════════════════════════════════════════════
-    # 5. COUPLING (keep as-is — core workflow)
+    # 5. COUPLING (general couple() + legacy coupled_solve)
     # ═══════════════════════════════════════════════════════════
 
     @mcp.tool()
@@ -1571,7 +1587,14 @@ def register_consolidated_tools(mcp: FastMCP):
         relaxation: float = 1.0, params: str = "{}",
         critic_approved: bool = False,
     ) -> str:
-        """Cross-solver domain decomposition coupling.
+        """LEGACY cross-solver coupling — FIXED toy geometries only. PREFER `couple`.
+
+        DEPRECATED: this tool only handles a fixed enum of benchmark problems on a
+        hardcoded unit-square split at x=0.5 (heat_dd/poisson_dd/one_way/tsi_dd/...).
+        For ANY real or non-benchmark coupling use the general `couple` tool, which is
+        physics-agnostic and validates the result for silent-wrong (flux balance,
+        convergence, finiteness). Only use coupled_solve to reproduce the legacy
+        benchmarks.
 
         Domain A (Dirichlet at interface) supports: fenics, ngsolve, skfem, dune.
         Domain B (Neumann at interface) supports: fenics, fourc, ngsolve, skfem, dune.
