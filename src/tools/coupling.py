@@ -23,6 +23,7 @@ from core.field_transfer import (
     interpolate_to_points,
 )
 from core.coupling_driver import Participant, run_coupling
+from core.backend import sorted_by_step
 
 logger = logging.getLogger("oasis.coupling")
 
@@ -1244,7 +1245,7 @@ async def _heat_domain_decomposition(
 
         # Extract temperature at interface (x=0.5) from Domain B
         vtu_files_b = backend_b.get_result_files(job_b)
-        vtu_b = sorted([f for f in vtu_files_b if f.suffix == ".vtu"])
+        vtu_b = sorted_by_step([f for f in vtu_files_b if f.suffix == ".vtu"])
         if not vtu_b:
             return f"No VTU output from Domain B at iteration {iteration}"
 
@@ -1464,7 +1465,7 @@ async def _poisson_domain_decomposition(
             return f"Domain B ({backend_b.display_name()}) failed at iteration {iteration}: {job_b.error}"
 
         vtu_files_b = backend_b.get_result_files(job_b)
-        vtu_b = sorted([f for f in vtu_files_b if f.suffix == ".vtu"])
+        vtu_b = sorted_by_step([f for f in vtu_files_b if f.suffix == ".vtu"])
         if not vtu_b:
             return f"No VTU from Domain B at iteration {iteration}"
 
@@ -1768,7 +1769,7 @@ async def _oneway_thermal_structural(
 
     # Read 4C displacement from VTU
     vtu_files = backend_b.get_result_files(job_4c)
-    vtu_struct = sorted([f for f in vtu_files if f.suffix == ".vtu"])
+    vtu_struct = sorted_by_step([f for f in vtu_files if f.suffix == ".vtu"])
     if not vtu_struct:
         return "4C TSI produced no VTU output"
 
@@ -2040,7 +2041,7 @@ async def _poisson_dd_aitken(
             return f"Domain B failed at iteration {iteration}: {job_b.error}"
 
         vtu_files_b = backend_b.get_result_files(job_b)
-        vtu_b = sorted([f for f in vtu_files_b if f.suffix == ".vtu"])
+        vtu_b = sorted_by_step([f for f in vtu_files_b if f.suffix == ".vtu"])
         if not vtu_b:
             return f"No VTU from Domain B at iteration {iteration}"
 
@@ -2368,7 +2369,7 @@ print(f"max |u| = {{np.linalg.norm(u_arr, axis=1).max():.6e}}")
     fourc_results = {}
     if fourc_ok:
         vtu_files = backend_b.get_result_files(job_4c)
-        vtu_struct = sorted([f for f in vtu_files if f.suffix == ".vtu"])
+        vtu_struct = sorted_by_step([f for f in vtu_files if f.suffix == ".vtu"])
         if vtu_struct:
             try:
                 from core.post_processing import read_mesh

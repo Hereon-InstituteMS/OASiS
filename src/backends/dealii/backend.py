@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.backend import (
+    sorted_by_step,
     SolverBackend, BackendStatus, InputFormat,
     PhysicsCapability, JobHandle,
 )
@@ -523,7 +524,7 @@ class DealiiBackend(SolverBackend):
         results = []
         for ext in ["*.vtu", "*.pvd", "*.vtk", "*.gnuplot", "*.gpl"]:
             results.extend(job.work_dir.rglob(ext))
-        return sorted(results)
+        return sorted_by_step(results)
 
 
 def _generate_cmakelists(target_name: str) -> str:

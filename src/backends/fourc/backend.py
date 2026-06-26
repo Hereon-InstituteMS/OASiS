@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.backend import (
+    sorted_by_step,
     SolverBackend, BackendStatus, InputFormat,
     PhysicsCapability, JobHandle,
 )
@@ -1612,7 +1613,7 @@ class FourcBackend(SolverBackend):
         results = []
         for ext in ["*.vtu", "*.pvd", "*.pvtu"]:
             results.extend(job.work_dir.rglob(ext))
-        return sorted(results)
+        return sorted_by_step(results)
 
 
 def register():

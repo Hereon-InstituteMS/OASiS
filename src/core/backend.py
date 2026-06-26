@@ -31,6 +31,21 @@ class InputFormat(Enum):
     JSON = "json"           # generic
 
 
+def sorted_by_step(paths: list) -> list:
+    """Sort result files by NUMERIC step index, not lexicographically.
+
+    Fixes a silent-wrong bug: plain sorted() puts 'field_10.vtu' before
+    'field_2.vtu', so callers taking [-1] as "final timestep" can read an EARLIER
+    step (step 9 while step 10 exists) and report it as the converged result.
+    Sort by the LAST integer in each filename stem, then name.
+    """
+    import re
+    def _key(p):
+        nums = re.findall(r"\d+", Path(p).stem)
+        return (int(nums[-1]) if nums else -1, str(p))
+    return sorted(paths, key=_key)
+
+
 def detect_template_language(content: str, default: str) -> str:
     """Sniff a template's first-line markers and return the markdown
     fence language tag that matches the *content*, not the backend's

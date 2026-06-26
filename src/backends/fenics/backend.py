@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.backend import (
+    sorted_by_step,
     SolverBackend, BackendStatus, InputFormat,
     PhysicsCapability, JobHandle,
 )
@@ -597,7 +598,7 @@ class FenicsBackend(SolverBackend):
         # Prefer VTU (converted from XDMF) over raw XDMF
         for ext in ["*.vtu", "*.pvd", "*.pvtu", "*.xdmf"]:
             results.extend(job.work_dir.rglob(ext))
-        return sorted(results)
+        return sorted_by_step(results)
 
 
 def register():
