@@ -95,7 +95,10 @@ class ConstraintGenerator(BaseGenerator):
         return [{"name": "constraint_3d", "description": "Multi-point constraint problem"}]
 
     def get_template(self, variant: str = "constraint_3d") -> str:
-        return "# Constraint template — use DESIGN LINE/SURF COUPLING CONDITIONS"
+        if variant not in ("constraint_3d", "default"):
+            raise ValueError(f"Unknown variant {variant!r}")
+        from ..inline_mesh import matched_constraint_3d_input
+        return matched_constraint_3d_input()
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

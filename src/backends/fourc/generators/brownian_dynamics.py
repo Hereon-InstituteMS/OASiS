@@ -87,7 +87,34 @@ class BrownianDynamicsGenerator(BaseGenerator):
         return [{"name": "brownian_3d", "description": "Brownian fiber network"}]
 
     def get_template(self, variant: str = "brownian_3d") -> str:
-        return "# Brownian dynamics template — use BEAM3R elements with thermal fluctuation parameters"
+        # Not self-contained-runnable: Brownian dynamics of polymer
+        # filaments needs a BEAM3R filament mesh inside a periodic box
+        # plus a stochastic (statmech) integrator and a crosslinker
+        # BINNING STRATEGY — all case-specific. Return a valid-YAML
+        # reference stub (parses to a dict; documents what is required)
+        # rather than a comment-only one-liner.
+        return (
+            "# =====================================================\n"
+            "# 4C Brownian dynamics (variant: brownian_3d)\n"
+            "# =====================================================\n"
+            "# Not a self-contained runnable input. Requires:\n"
+            "#   * a BEAM3R LINE2 filament mesh in a periodic box\n"
+            "#   * BROWNIAN DYNAMICS section (thermal energy KT,\n"
+            "#     damping, random seed)\n"
+            "#   * STRUCTURAL DYNAMIC with a stochastic (statmech)\n"
+            "#     integrator + a BINNING STRATEGY for crosslinkers\n"
+            "#   * MAT_BeamReissnerElastHyper (filament cross-section)\n"
+            "# Pitfalls (see knowledge() for the full set):\n"
+            "#   * stochastic time step couples to KT and damping;\n"
+            "#     too large breaks fluctuation-dissipation balance\n"
+            "#   * results are statistical — one short run is not\n"
+            "#     representative\n"
+            "# =====================================================\n"
+            "TITLE:\n"
+            "  - \"4C Brownian dynamics reference stub\"\n"
+            "PROBLEM TYPE:\n"
+            "  PROBLEMTYPE: \"Structure\"\n"
+        )
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

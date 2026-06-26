@@ -101,7 +101,10 @@ class Cardiovascular0DGenerator(BaseGenerator):
         return [{"name": "windkessel_3d", "description": "3-element windkessel coupled to 3D"}]
 
     def get_template(self, variant: str = "windkessel_3d") -> str:
-        return "# Cardiovascular0D template — use DESIGN SURF CARDIOVASCULAR0D CONDITIONS"
+        if variant not in ("windkessel_3d", "default"):
+            raise ValueError(f"Unknown variant {variant!r}")
+        from ..inline_mesh import matched_cardiovascular0d_windkessel_input
+        return matched_cardiovascular0d_windkessel_input()
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

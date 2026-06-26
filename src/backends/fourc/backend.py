@@ -1106,6 +1106,9 @@ class FourcBackend(SolverBackend):
             matched_membrane_2d_input,
             matched_shell_3d_input,
             matched_cardiovascular0d_windkessel_input,
+            matched_fluid_cavity_input,
+            matched_fluid_channel_input,
+            matched_reduced_airways_input,
         )
         key = f"{physics}_{variant}"
 
@@ -1158,6 +1161,15 @@ class FourcBackend(SolverBackend):
             # linear_elasticity row uses (probe 2026-06-12).
             "solid_mechanics_linear_2d": _elasticity,
             "solid_mechanics_nonlinear_3d":
+                lambda p: matched_elasticity_3d_nonlinear_input(
+                    n=p.get("n", 4),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3)),
+            # linear_elasticity/nonlinear_3d previously fell through to
+            # the generator template with <placeholder> scalars + an
+            # external Exodus mesh (probe 2026-06-26: MatchTree abort).
+            # It is the same finite-strain HEX8 cube the solid_mechanics
+            # umbrella uses; route it to the proven inline input.
+            "linear_elasticity_nonlinear_3d":
                 lambda p: matched_elasticity_3d_nonlinear_input(
                     n=p.get("n", 4),
                     E=p.get("E", 1000.0), nu=p.get("nu", 0.3)),
@@ -1377,6 +1389,42 @@ class FourcBackend(SolverBackend):
                     numstep=max(1, min(10, round(p.get("T_end", 0.3)
                                                  / p.get("dt", 0.1)))),
                     timestep=p.get("dt", 0.1)),
+            # fluid/{channel_2d,cavity_2d} previously fell through to the
+            # generator template with <placeholder> scalars + an external
+            # Exodus mesh (FILE: "channel_2d.e", never produced) — 4C
+            # aborted in MatchTree (probe 2026-06-26). Route to the
+            # self-contained inline incompressible Navier-Stokes inputs
+            # (FLUID QUAD4 + MAT_fluid + Np_Gen_Alpha + UMFPACK), based on
+            # the corpus case f2_channel20x20_drt_weak.4C.yaml. nx,ny
+            # capped for a sub-30 s monolithic solve.
+            "fluid_cavity_2d": lambda p: matched_fluid_cavity_input(
+                nx=min(int(p.get("nx", 16)), 32),
+                ny=min(int(p.get("ny", 16)), 32),
+                u_lid=p.get("u_lid", p.get("u_max", 1.0)),
+                viscosity=p.get("mu", p.get("viscosity", 0.01)),
+                density=p.get("rho", p.get("density", 1.0)),
+                numstep=p.get("numstep", 10),
+                timestep=p.get("dt", p.get("timestep", 0.1))),
+            "fluid_channel_2d": lambda p: matched_fluid_channel_input(
+                nx=min(int(p.get("nx", 24)), 48),
+                ny=min(int(p.get("ny", 8)), 24),
+                u_max=p.get("u_max", 1.0),
+                viscosity=p.get("mu", p.get("viscosity", 0.01)),
+                density=p.get("rho", p.get("density", 1.0)),
+                numstep=p.get("numstep", 10),
+                timestep=p.get("dt", p.get("timestep", 0.1))),
+            # reduced_airways/airways_1d previously returned a reference
+            # stub (no MATERIALS — validate_input flagged it not
+            # runnable). The corpus case red_airway_3airway_2acinus_
+            # awacinter.4C.yaml is small and fully self-contained (6
+            # nodes, 5 elements, inline mesh, UMFPACK), so it ports to a
+            # genuinely runnable inline input. numstep capped for a
+            # sub-30 s solve.
+            "reduced_airways_airways_1d":
+                lambda p: matched_reduced_airways_input(
+                    peak_pressure=p.get("peak_pressure", 30.0),
+                    numstep=min(int(p.get("numstep", 200)), 2000),
+                    period=p.get("period", 100.0)),
         }
         gen = inline_generators.get(key)
         if gen is None:
@@ -1446,8 +1494,52 @@ class FourcBackend(SolverBackend):
         return content
 
     def validate_input(self, content: str) -> list[str]:
+        import re
         import yaml
         errors = []
+
+        # ── Hard rejections that would make 4C abort ──────────────────
+        # 1. Un-substituted <...> placeholders (e.g. <number_of_steps>,
+        #    <dynamic_viscosity>). 4C's input matcher aborts on these.
+        #    Skip matches inside comment lines so prose like "<...>" in a
+        #    reference stub is not flagged; scan only non-comment text.
+        non_comment = "\n".join(
+            ln for ln in content.splitlines()
+            if not ln.lstrip().startswith("#"))
+        placeholders = re.findall(
+            r"<[A-Za-z_][A-Za-z0-9_ ]*>", non_comment)
+        if placeholders:
+            uniq = sorted(set(placeholders))
+            errors.append(
+                "Un-substituted placeholder(s) found "
+                f"({', '.join(uniq[:5])}): the deck is not runnable — "
+                "every <...> must be replaced with a concrete value.")
+
+        # 2. External mesh FILE: references (e.g. FILE: \"channel_2d.e\").
+        #    These abort 4C unless the mesh travels with the deck. A
+        #    legitimate tutorial deck carries a leading
+        #    '# MESH_FILE: <path>' header that run() copies into the work
+        #    dir; allow the FILE: ref only when that header resolves to an
+        #    existing file.
+        mesh_refs = re.findall(
+            r'FILE:\s*["\']?([^\s"\']+\.(?:e|exo|dat|bin))\b',
+            non_comment)
+        if mesh_refs:
+            header_path = None
+            first_line = content.splitlines()[0] if content else ""
+            if first_line.startswith("# MESH_FILE: "):
+                header_path = Path(
+                    first_line.split(": ", 1)[1].strip())
+            if header_path is None or not header_path.exists():
+                errors.append(
+                    "External mesh FILE: reference(s) "
+                    f"({', '.join(sorted(set(mesh_refs))[:3])}) with no "
+                    "bundled/resolvable mesh — the deck references a mesh "
+                    "file that is not produced. Use an inline NODE COORDS "
+                    "mesh or a '# MESH_FILE:' header pointing at an "
+                    "existing file.")
+
+        # ── Structural YAML checks ────────────────────────────────────
         try:
             data = yaml.safe_load(content)
             if not isinstance(data, dict):

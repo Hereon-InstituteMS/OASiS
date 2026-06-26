@@ -55,7 +55,9 @@ STUB_ROWS = [
     ("sti", "monolithic_3d"),
     ("cardiac_monodomain", "monodomain_3d"),
     ("arterial_network", "single_artery_1d"),
-    ("reduced_airways", "airways_1d"),
+    # ("reduced_airways", "airways_1d"): promoted to a genuinely
+    # runnable inline input (ported from the self-contained corpus case
+    # red_airway_3airway_2acinus_awacinter.4C.yaml) — no longer a stub.
     ("reduced_lung", "lung_1d"),
     ("multiscale", "fe2_3d"),
     ("beam_interaction", "beam_contact_3d"),

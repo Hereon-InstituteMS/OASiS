@@ -82,7 +82,10 @@ class MembraneGenerator(BaseGenerator):
         return [{"name": "membrane_2d", "description": "Membrane under pressure loading"}]
 
     def get_template(self, variant: str = "membrane_2d") -> str:
-        return "# Membrane template — use MEMBRANE TRI3/QUAD4 elements with appropriate material"
+        if variant not in ("membrane_2d", "default"):
+            raise ValueError(f"Unknown variant {variant!r}")
+        from ..inline_mesh import matched_membrane_2d_input
+        return matched_membrane_2d_input()
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

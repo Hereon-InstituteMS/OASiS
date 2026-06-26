@@ -130,7 +130,13 @@ class ThermoGenerator(BaseGenerator):
                 {"name": "thermo_3d", "description": "3D transient heat conduction"}]
 
     def get_template(self, variant: str = "thermo_2d") -> str:
-        return "# Thermal template — use THERMO QUAD4/HEX8 elements with MAT_Fourier"
+        from ..inline_mesh import (
+            matched_thermo_2d_input, matched_thermo_3d_input)
+        if variant in ("thermo_2d", "default"):
+            return matched_thermo_2d_input()
+        if variant == "thermo_3d":
+            return matched_thermo_3d_input()
+        raise ValueError(f"Unknown variant {variant!r}")
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

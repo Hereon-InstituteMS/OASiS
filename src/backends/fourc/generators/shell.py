@@ -103,7 +103,10 @@ class ShellGenerator(BaseGenerator):
         return [{"name": "shell_3d", "description": "Shell structure under loading"}]
 
     def get_template(self, variant: str = "shell_3d") -> str:
-        return "# Shell template — use SHELL REISSNER QUAD4 for general purpose"
+        if variant not in ("shell_3d", "default"):
+            raise ValueError(f"Unknown variant {variant!r}")
+        from ..inline_mesh import matched_shell_3d_input
+        return matched_shell_3d_input()
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []
