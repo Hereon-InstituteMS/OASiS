@@ -57,3 +57,4 @@ scripts/scan_results/work/
 upstream_sources/
 data/source_discovery_cache.json
 data/build_logs/
+*.msh
