@@ -100,6 +100,16 @@ def _stub_template_tag(content: str, fmt: str) -> str:
     """
     if not isinstance(content, str):
         return ""
+    # Central stub detection: catches print-and-exit (deal.II), availability-probe
+    # (Kratos), <...>-placeholder decks (4C), and comment-only templates — fakes that
+    # advertise physics but don't solve. (Extends the original size heuristic.)
+    try:
+        from core.quality_checks import is_stub_output
+        reason = is_stub_output(content)
+        if reason:
+            return f" — ⚠ STUB (not a runnable deck: {reason})"
+    except Exception:
+        pass
     if fmt in ("yaml", "yml", "python", "py"):
         non_comment_lines = [
             ln for ln in content.splitlines()

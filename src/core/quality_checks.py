@@ -157,3 +157,46 @@ def check_monolithic_consistency(coupled_qoi: float, monolithic_qoi: float,
             f"differ by {rel:.1%} > {rtol:.0%} — the coupled result is likely WRONG."
         )
     return w
+
+
+def is_stub_output(content: str) -> str | None:
+    """Detect a placeholder/stub generator output that advertises physics but does
+    NOT produce a runnable, solving deck. Returns a reason string if stub, else None.
+
+    Catches the silent-wrong catalog landmines the audits found across backends:
+    deal.II print-and-exit placeholders, Kratos availability-probe stubs, 4C one-line
+    comment templates, and `<...>`-placeholder decks. Turning these into a LOUD refusal
+    (rather than fake output that passes validation) is the paper's own principle applied
+    to OASiS itself.
+    """
+    if content is None:
+        return "empty generator output"
+    c = content.strip()
+    if not c:
+        return "empty generator output"
+    low = c.lower()
+    # one-line / comment-only templates (4C stubs like "# Membrane template — use ...")
+    non_comment = [ln for ln in c.splitlines()
+                   if ln.strip() and not ln.strip().startswith("#")]
+    if not non_comment:
+        return "template is comment-only — not a runnable deck (stub)"
+    # explicit placeholder markers
+    markers = [
+        "see deal.ii tutorial for full implementation",  # dealii print-and-exit
+        "placeholder: implement",                        # dealii NS / others
+        "# placeholder", "// placeholder", "placeholder template",
+        "not pip-installable", "not installed",          # kratos probe stubs
+        '"note": "not installed"', "format template",     # kratos rom/iga/topology
+        "use this as a starting point — not a self-contained",  # reduced_lung
+    ]
+    for m in markers:
+        if m in low:
+            return f"placeholder marker present ('{m}') — generator is a stub, not a real solve"
+    # unfilled angle-bracket scalar placeholders (4C <...> YAML templates that abort).
+    # Skip for XML (FEBio tags like <time_steps>) and C++ (deal.II templates <double>).
+    import re
+    is_xml = c.startswith("<") or "<?xml" in low or "</" in c
+    is_cpp = "#include" in low or "int main" in low
+    if not is_xml and not is_cpp and len(re.findall(r"<[a-z]+_[a-z_]+>", low)) >= 3:
+        return "contains unfilled <...> placeholders — deck would not run (stub)"
+    return None
