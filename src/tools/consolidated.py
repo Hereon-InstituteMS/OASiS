@@ -1622,6 +1622,74 @@ def register_consolidated_tools(mcp: FastMCP):
 
         return await dispatch[problem]()
 
+    @mcp.tool()
+    async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
+                     accelerator: str = "aitken") -> str:
+        """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
+
+        Unlike coupled_solve (legacy, fixed toy geometries), this is physics-agnostic:
+        you write one self-contained solver script per subdomain/participant and OASiS
+        runs the fixed-point iteration, Aitken relaxation, convergence-or-fail, AND
+        silent-wrong validation (interface flux balance + finiteness). No fixed geometry
+        or physics is assumed.
+
+        PARTICIPANT CONTRACT — each iteration the driver, per participant:
+          1. writes <work_dir>/imports.json = {partner_name: InterfaceData} (boundary
+             data this participant consumes; empty on iteration 1).
+          2. runs your `command` in <work_dir>.
+          3. reads <work_dir>/exports.json = the InterfaceData your script produced on
+             the shared interface.
+        Your script decides HOW to apply imports (Dirichlet/Neumann/Robin/traction/
+        flux/...) and WHAT to export — opaque to the driver, so it generalizes.
+
+        InterfaceData JSON shape (read imports, write exports):
+          {"field_name": str, "n_points": N, "coordinates": [[x,y(,z)],...],
+           "values": [...], "normal_fluxes": [...]  # optional, for conservation check}
+
+        Args:
+            participants: JSON list of {"name", "command":[argv...], "work_dir",
+              "imports_from":[partner names]}.
+            max_iter, tol, accelerator: iteration controls ("aitken"|"constant").
+
+        Returns: JSON with converged, iterations, residual, exports, and a
+            `validation` block (interface-balance + finiteness). A non-converged or
+            unbalanced coupling is reported as a FAILURE, never as a trustworthy result.
+        """
+        from core.coupling_driver import Participant, run_coupling
+        from core.quality_checks import check_interface_balance, check_finite, check_convergence
+        _get_journal().record("tool_call", "couple", solver="general", physics="coupling")
+        try:
+            specs = json.loads(participants)
+        except json.JSONDecodeError as e:
+            return json.dumps({"error": f"invalid participants JSON: {e}"})
+        if not isinstance(specs, list) or len(specs) < 2:
+            return json.dumps({"error": "need a JSON list of >=2 participants"})
+        parts = []
+        for s in specs:
+            try:
+                wd = Path(s["work_dir"]); wd.mkdir(parents=True, exist_ok=True)
+                parts.append(Participant(name=s["name"], command=list(s["command"]),
+                                         work_dir=wd, imports_from=s.get("imports_from", []),
+                                         timeout=int(s.get("timeout", 3600))))
+            except (KeyError, TypeError) as e:
+                return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
+        r = run_coupling(parts, max_iter=max_iter, tol=tol, accelerator=accelerator)
+        # CP-2: wire the silent-wrong validators into the coupling result
+        val = list(r.warnings)
+        val += check_convergence(r.converged, r.residual, tol)
+        for nm, ex in r.exports.items():
+            val += check_finite(ex.get("values", []), label=f"{nm}.values")
+        names = list(r.exports)
+        if len(names) == 2:
+            val += check_interface_balance(r.exports[names[0]], r.exports[names[1]],
+                                           names[0], names[1])
+        trustworthy = r.converged and not any(
+            ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w) for w in val)
+        return json.dumps({"converged": r.converged, "iterations": r.iterations,
+                           "residual": r.residual, "history": r.history,
+                           "exports": r.exports, "error": r.error,
+                           "validation": val, "trustworthy_result": trustworthy}, indent=2)
+
     # ═══════════════════════════════════════════════════════════
     # 6. VISUALIZE (replaces 4 visualization tools)
     # ═══════════════════════════════════════════════════════════
