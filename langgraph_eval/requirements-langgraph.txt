@@ -1,0 +1,8 @@
+langgraph>=0.2.50
+langchain>=0.3.7
+langchain-openai>=0.2.5
+langchain-mcp-adapters>=0.1.0
+mcp>=1.1
+pydantic>=2.8
+httpx>=0.27
+duckduckgo-search>=6.2

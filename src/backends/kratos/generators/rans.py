@@ -5,23 +5,11 @@ Application: RANSApplication.
 """
 
 
-def _rans_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — RANS turbulent flow simulation."""
-    return '''\
-"""RANS turbulent flow — Kratos RANSApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.RANSApplication
-    print("RANSApplication available")
-    summary = {"note": "RANSApplication available",
-               "capabilities": ["k_epsilon", "k_omega", "k_omega_sst", "spalart_allmaras"]}
-except ImportError:
-    print("RANSApplication not installed")
-    print("Install: pip install KratosRANSApplication")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _rans_2d generator was an
+# availability-probe stub (import-check + {"note": "not installed"}, no
+# solver run). RANSApplication is NOT importable in the installed Kratos
+# stack, so 'rans' has been removed from the generator registry and from
+# KratosBackend.supported_physics(). KNOWLEDGE retained for reference.
 
 
 KNOWLEDGE = {
@@ -86,6 +74,6 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {
-    "rans_2d": _rans_2d,
-}
+# Empty: RANSApplication not installable in this Kratos stack; the prior
+# generator was a no-solve probe stub (removed).
+GENERATORS = {}

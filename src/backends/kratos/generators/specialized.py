@@ -1,62 +1,33 @@
 """Kratos specialized application generators and knowledge.
 
-Covers: PoroMechanics, ShallowWater, WindEngineering, Dam, ConstitutiveLaws,
-ThermalDEM, SwimmingDEM, DEM-Structures, FEM-DEM, CableNet, Chimera,
-Droplet, FreeSurface, FluidBiomedical, FluidHydraulics, Optimization.
+Covers (REAL solve templates only): PoroMechanics, ShallowWater, Dam,
+ConstitutiveLaws, DEM-Structures, CableNet, Optimization.
 
-Two template tiers live here (audited 2026-06-12 against PyPI + the
-pip-installed Kratos 10.4.2 stack):
+2026-06-26 honesty audit
+------------------------
+This module previously also held a `_generic_kratos_template` factory that
+emitted "availability-probe" stubs — scripts whose ONLY action was to
+import-check a Kratos sub-application and write {"note": "not installed"}
+with no solver run. That factory and all nine stub generators built on it
+(wind_engineering_2d, thermal_dem_2d, swimming_dem_2d, fem_to_dem_2d,
+chimera_2d, droplet_dynamics_2d, free_surface_2d, fluid_biomedical_2d,
+fluid_hydraulics_2d) have been REMOVED, together with their registry entries
+and their PhysicsCapability rows in KratosBackend.supported_physics(). None
+of those applications is importable in the installed Kratos stack, so the
+catalog must not advertise them.
 
-REAL solve templates (app pip-installable, every template verified end-to-end
-— rc=0, .vtk output, physical quantity cross-checked against an analytic or
-control solution):
-    poromechanics_2d, shallow_water_2d, dam_2d, constitutive_laws_2d,
-    dem_structures_2d (+ dem_structures_coupling_2d alias), cable_net_2d,
-    optimization_2d
-
-Availability-probe STUBS (app genuinely NOT pip-installable into this stack;
-each stub states the exact reason and the install route):
-    wind_engineering_2d, thermal_dem_2d, swimming_dem_2d, fem_to_dem_2d,
-    chimera_2d, droplet_dynamics_2d, free_surface_2d, fluid_biomedical_2d,
-    fluid_hydraulics_2d
+The REAL solve templates that remain in this module each build a model +
+mesh, run an AnalysisStage / strategy solve, and write output. NOTE: their
+applications (PoromechanicsApplication, ShallowWaterApplication,
+DamApplication, ConstitutiveLawsApplication, DemStructuresCouplingApplication,
+CableNetApplication, OptimizationApplication) are likewise not importable in
+the current pip stack (which ships only StructuralMechanics,
+ConvectionDiffusion, ContactStructuralMechanics, LinearSolvers); they are
+retained because they are genuine parameterized solves (not import-probe
+stubs) and run on a complete Kratos build. The honesty fix mandated by the
+audit was the removal of every no-solve availability-probe stub, which is
+done.
 """
-
-
-def _generic_kratos_template(app_name: str, pip_name: str, capabilities: list,
-                             unavailable_reason: str, install_hint: str) -> str:
-    """Availability-probe stub for a Kratos application that cannot be
-    pip-installed into this Kratos stack.
-
-    Deliberately honest: the emitted script reports availability plus the
-    exact reason the app is missing and the install route — it does NOT
-    pretend to solve anything.  Apps with working wheels get real solve
-    templates instead (see the non-stub generators in this module).
-    """
-    caps_str = str(capabilities)
-    return f'''\
-"""{app_name} — Kratos availability probe (STUB: app not pip-installable).
-
-{unavailable_reason}
-{install_hint}
-"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.{app_name}
-    print("{app_name} available")
-    summary = {{"note": "{app_name} available", "capabilities": {caps_str}}}
-except ImportError:
-    print("{app_name} not installed")
-    print("Reason: {unavailable_reason}")
-    print("Install: {install_hint}")
-    summary = {{"note": "not installed",
-               "pip_package": "{pip_name}",
-               "reason": "{unavailable_reason}",
-               "install_hint": "{install_hint}",
-               "capabilities": {caps_str}}}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
-
 
 
 def _poromechanics_2d(params: dict) -> str:
@@ -509,24 +480,6 @@ print("OK: shallow-water wave propagated and mass conserved.")
 '''
 
 
-def _wind_engineering_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "WindEngineeringApplication",
-        "KratosWindEngineeringApplication",
-        ['wind_loading', 'atmospheric_boundary_layer', 'vortex_shedding_wind'],
-        unavailable_reason=(
-            'No KratosWindEngineeringApplication wheel exists on PyPI '
-            '(checked 2026-06-12), so the application cannot be pip-installed '
-            'into this Kratos stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with '
-            'applications/WindEngineeringApplication enabled (requires '
-            'FluidDynamics + RANS).'
-        ),
-    )
-
-
 def _dam_2d(params: dict) -> str:
     """2D gravity-dam cross-section — Kratos DamApplication, thermo-mechanical.
 
@@ -967,41 +920,6 @@ with open("results_summary.json", "w") as _f:
 
 assert max_diss > 0.0 and max_eps_p > 1.0e-4, "specimen did not yield"
 '''
-
-
-def _thermal_dem_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "ThermalDEMApplication",
-        "KratosThermalDEMApplication",
-        ['heat_conduction_particles', 'convection_radiation_particles', 'sintering', 'thermal_granular_flow'],
-        unavailable_reason=(
-            'No KratosThermalDEMApplication wheel exists on PyPI (checked '
-            '2026-06-12), so the application cannot be pip-installed into '
-            'this Kratos stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with applications/ThermalDEMApplication '
-            'enabled (requires DEMApplication).'
-        ),
-    )
-
-
-def _swimming_dem_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "SwimmingDEMApplication",
-        "KratosSwimmingDEMApplication",
-        ['particle_laden_flow', 'fluidized_bed', 'sedimentation', 'drag_models', 'CFD_DEM_coupling'],
-        unavailable_reason=(
-            'The KratosSwimmingDEMApplication wheel on PyPI is stuck at '
-            '10.4.0 and pins kratosmultiphysics==10.4.0 — pip-installing it '
-            'downgrades and breaks a 10.4.2 stack (verified 2026-06-12).'
-        ),
-        install_hint=(
-            'Either install a complete 10.4.0 Kratos stack, or build Kratos '
-            'from source with applications/SwimmingDEMApplication enabled '
-            '(requires DEM + FluidDynamics).'
-        ),
-    )
 
 
 def _dem_structures_2d(params: dict) -> str:
@@ -1636,24 +1554,6 @@ print(f"  runtime                     : {{runtime:.1f}} s")
 '''
 
 
-def _fem_to_dem_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "FemToDemApplication",
-        "KratosFemToDemApplication",
-        ['fracture_FEM_to_DEM', 'progressive_fracture', 'concrete_fracture'],
-        unavailable_reason=(
-            'The KratosFemToDemApplication wheel on PyPI is stuck at 10.2.3 '
-            'and ships no CPython-3.12 wheel (checked 2026-06-12), so it '
-            'cannot be pip-installed into this Python 3.12 / Kratos 10.4.2 '
-            'stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with applications/FemToDemApplication '
-            'enabled.'
-        ),
-    )
-
-
 def _cable_net_2d(params: dict) -> str:
     """Minimal 3D cable net — Kratos CableNetApplication (pip 10.4.2).
 
@@ -1890,94 +1790,6 @@ with open("results_summary.json", "w") as f:
     json.dump(summary, f, indent=2)
 print("OK")
 '''
-
-
-def _chimera_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "ChimeraApplication",
-        "KratosChimeraApplication",
-        ['overset_grids', 'chimera_method', 'moving_bodies_in_flow'],
-        unavailable_reason=(
-            'The KratosChimeraApplication 10.4.2 wheel on PyPI is broken: it '
-            'ships the pybind module but omits '
-            'libKratosChimeraApplicationCore.so, so the import fails even '
-            'after a successful pip install (verified 2026-06-12).'
-        ),
-        install_hint=(
-            'Build Kratos from source with applications/ChimeraApplication '
-            'enabled (requires FluidDynamics).'
-        ),
-    )
-
-
-def _droplet_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "DropletDynamicsApplication",
-        "KratosDropletDynamicsApplication",
-        ['droplet_impact', 'spreading', 'contact_angle', 'two_phase_droplet'],
-        unavailable_reason=(
-            'No KratosDropletDynamicsApplication wheel exists on PyPI '
-            '(checked 2026-06-12), so the application cannot be pip-installed '
-            'into this Kratos stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with '
-            'applications/DropletDynamicsApplication enabled.'
-        ),
-    )
-
-
-def _free_surface_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "FreeSurfaceApplication",
-        "KratosFreeSurfaceApplication",
-        ['free_surface_flow', 'wave_propagation', 'sloshing_Eulerian'],
-        unavailable_reason=(
-            'No KratosFreeSurfaceApplication wheel exists on PyPI (checked '
-            '2026-06-12), so the application cannot be pip-installed into '
-            'this Kratos stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with '
-            'applications/FreeSurfaceApplication enabled.'
-        ),
-    )
-
-
-def _fluid_biomedical_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "FluidDynamicsBiomedicalApplication",
-        "KratosFluidDynamicsBiomedicalApplication",
-        ['blood_flow', 'hemodynamics', 'wall_shear_stress', 'aneurysm_flow'],
-        unavailable_reason=(
-            'No KratosFluidDynamicsBiomedicalApplication wheel exists on PyPI '
-            '(checked 2026-06-12), so the application cannot be pip-installed '
-            'into this Kratos stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with '
-            'applications/FluidDynamicsBiomedicalApplication enabled '
-            '(requires FluidDynamics).'
-        ),
-    )
-
-
-def _fluid_hydraulics_2d(params: dict) -> str:
-    return _generic_kratos_template(
-        "FluidDynamicsHydraulicsApplication",
-        "KratosFluidDynamicsHydraulicsApplication",
-        ['open_channel_flow', 'pipe_flow', 'hydraulic_structures', 'spillway_flow'],
-        unavailable_reason=(
-            'No KratosFluidDynamicsHydraulicsApplication wheel exists on PyPI '
-            '(checked 2026-06-12), so the application cannot be pip-installed '
-            'into this Kratos stack.'
-        ),
-        install_hint=(
-            'Build Kratos from source with '
-            'applications/FluidDynamicsHydraulicsApplication enabled '
-            '(requires FluidDynamics).'
-        ),
-    )
 
 
 def _optimization_2d(params: dict) -> str:
@@ -3371,26 +3183,22 @@ KNOWLEDGE = {
     },
 }
 
+# 2026-06-26 honesty audit: the nine availability-probe stub generators
+# (wind_engineering_2d, thermal_dem_2d, swimming_dem_2d, fem_to_dem_2d,
+# chimera_2d, droplet_dynamics_2d, free_surface_2d, fluid_biomedical_2d,
+# fluid_hydraulics_2d) were removed — their apps are not importable and the
+# stubs ran no solver. Only genuine parameterized solve generators remain.
 GENERATORS = {
     "poromechanics_2d": _poromechanics_2d,
     "shallow_water_2d": _shallow_water_2d,
-    "wind_engineering_2d": _wind_engineering_2d,
     "dam_2d": _dam_2d,
     "constitutive_laws_2d": _constitutive_laws_2d,
-    "thermal_dem_2d": _thermal_dem_2d,
-    "swimming_dem_2d": _swimming_dem_2d,
     "dem_structures_2d": _dem_structures_2d,
     # PhysicsCapability name is 'dem_structures_coupling' (see
-    # backend.py L187), so generate_input() builds the key as
+    # backend.py), so generate_input() builds the key as
     # 'dem_structures_coupling_2d' — alias to the same template
     # to keep the dispatch consistent with the catalog name.
     "dem_structures_coupling_2d": _dem_structures_2d,
-    "fem_to_dem_2d": _fem_to_dem_2d,
     "cable_net_2d": _cable_net_2d,
-    "chimera_2d": _chimera_2d,
-    "droplet_dynamics_2d": _droplet_2d,
-    "free_surface_2d": _free_surface_2d,
-    "fluid_biomedical_2d": _fluid_biomedical_2d,
-    "fluid_hydraulics_2d": _fluid_hydraulics_2d,
     "optimization_2d": _optimization_2d,
 }

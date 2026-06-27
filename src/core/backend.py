@@ -29,6 +29,22 @@ class InputFormat(Enum):
     CPP = "cpp"             # deal.ii
     XML = "xml"             # FEBio
     JSON = "json"           # generic
+    SPARTA = "sparta"       # SPARTA DSMC input script (LAMMPS-style)
+
+
+def sorted_by_step(paths: list) -> list:
+    """Sort result files by NUMERIC step index, not lexicographically.
+
+    Fixes a silent-wrong bug: plain sorted() puts 'field_10.vtu' before
+    'field_2.vtu', so callers taking [-1] as "final timestep" can read an EARLIER
+    step (step 9 while step 10 exists) and report it as the converged result.
+    Sort by the LAST integer in each filename stem, then name.
+    """
+    import re
+    def _key(p):
+        nums = re.findall(r"\d+", Path(p).stem)
+        return (int(nums[-1]) if nums else -1, str(p))
+    return sorted(paths, key=_key)
 
 
 def detect_template_language(content: str, default: str) -> str:
@@ -161,6 +177,33 @@ class SolverBackend(ABC):
     def get_version(self) -> Optional[str]:
         """Return solver version string, if detectable."""
         return None
+
+    def precice_participant(self) -> dict:
+        """How to make this backend a preCICE coupling participant.
+
+        Returns a dict describing the participant-adapter pattern so an agent (or the
+        general orchestrator) can wrap this solver into an arbitrary cross-code coupling:
+          {description, exchange_loop, notes}
+        Backends override this with solver-specific code; the default is the generic
+        preCICE time-loop that any participant follows.
+        """
+        return {
+            "description": f"Generic preCICE participant for {self.name()}",
+            "exchange_loop": (
+                "import precice, numpy as np\n"
+                "p = precice.Participant(NAME, 'precice-config.xml', 0, 1)\n"
+                "vid = p.set_mesh_vertices(MESH, coords)   # interface coordinates\n"
+                "p.initialize()\n"
+                "while p.is_coupling_ongoing():\n"
+                "    dt = p.get_max_time_step_size()\n"
+                "    read_vals = p.read_data(MESH, READ_DATA, vid, dt)   # inputs from partner\n"
+                "    # ... advance this solver one window using read_vals ...\n"
+                "    p.write_data(MESH, WRITE_DATA, vid, out_vals)        # outputs to partner\n"
+                "    p.advance(dt)\n"
+                "p.finalize()"
+            ),
+            "notes": "Set LD_LIBRARY_PATH to libprecice; match pyprecice to the libprecice version.",
+        }
 
 
 def get_python_executable() -> str:

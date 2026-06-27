@@ -22,6 +22,8 @@ from core.field_transfer import (
     extract_full_field_from_vtu,
     interpolate_to_points,
 )
+from core.coupling_driver import Participant, run_coupling
+from core.backend import sorted_by_step
 
 logger = logging.getLogger("oasis.coupling")
 
@@ -1101,8 +1103,67 @@ def register_coupling_tools(mcp: FastMCP):
         else:
             return (
                 f"Unknown problem: {problem}. Available: heat_dd, poisson_dd, "
-                f"one_way, poisson_dd_study, tsi_dd, l_bracket_tsi, heat_dd_precice"
+                f"one_way, poisson_dd_study, tsi_dd, l_bracket_tsi, heat_dd_precice. "
+                f"NOTE: this enum-based tool is DEPRECATED and only covers fixed toy "
+                f"geometries/physics. For ANY other coupling use `couple` (general)."
             )
+
+    @mcp.tool()
+    async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
+                     accelerator: str = "aitken") -> str:
+        """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
+
+        You write one self-contained solver script per subdomain/participant; OASiS
+        runs the fixed-point iteration, relaxation, and convergence-or-fail for you.
+        No fixed geometry, no fixed physics — the driver only moves interface data and
+        iterates. Use this for any coupling not covered by the legacy `coupled_solve`.
+
+        THE PARTICIPANT CONTRACT (per participant, every iteration the driver):
+          1. writes  <work_dir>/imports.json  = a dict {partner_name: InterfaceData}
+             giving the boundary data this participant must consume (empty on iter 1).
+          2. runs your `command` in <work_dir>.
+          3. reads   <work_dir>/exports.json  = the InterfaceData your script produced
+             on the shared interface.
+        Your script decides HOW to apply imports (Dirichlet/Neumann/Robin/traction/
+        flux/concentration/...) and WHAT to export — the driver treats them as opaque
+        numbers on coordinates, so it generalizes to any coupling.
+
+        InterfaceData JSON format (read imports, write exports in this shape):
+          {"field_name": str, "n_points": N, "coordinates": [[x,y(,z)], ...],
+           "values": [...],  "normal_fluxes": [...]  # optional}
+
+        Args:
+            participants: JSON list, each item:
+              {"name": str, "command": [argv...], "work_dir": abs path,
+               "imports_from": [partner names whose exports this one consumes]}
+            max_iter: max coupling iterations.
+            tol: relative-L2 convergence tol on the interface export vector.
+            accelerator: "aitken" (default, dynamic relaxation) or "constant".
+
+        Returns: JSON with converged (bool), iterations, residual, history, per-
+            participant exports, warnings, and — if it did NOT converge — a loud
+            error. A non-converged coupling is reported as FAILURE, never as a result.
+        """
+        try:
+            specs = json.loads(participants)
+        except json.JSONDecodeError as e:
+            return json.dumps({"error": f"invalid participants JSON: {e}"})
+        if not isinstance(specs, list) or len(specs) < 2:
+            return json.dumps({"error": "need a JSON list of >=2 participants"})
+        parts = []
+        for s in specs:
+            try:
+                wd = Path(s["work_dir"]); wd.mkdir(parents=True, exist_ok=True)
+                parts.append(Participant(name=s["name"], command=list(s["command"]),
+                                         work_dir=wd, imports_from=s.get("imports_from", []),
+                                         timeout=int(s.get("timeout", 3600))))
+            except (KeyError, TypeError) as e:
+                return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
+        r = run_coupling(parts, max_iter=max_iter, tol=tol, accelerator=accelerator)
+        return json.dumps({"converged": r.converged, "iterations": r.iterations,
+                           "residual": r.residual, "history": r.history,
+                           "exports": r.exports, "warnings": r.warnings,
+                           "error": r.error}, indent=2)
 
 
 async def _heat_domain_decomposition(
@@ -1184,7 +1245,7 @@ async def _heat_domain_decomposition(
 
         # Extract temperature at interface (x=0.5) from Domain B
         vtu_files_b = backend_b.get_result_files(job_b)
-        vtu_b = sorted([f for f in vtu_files_b if f.suffix == ".vtu"])
+        vtu_b = sorted_by_step([f for f in vtu_files_b if f.suffix == ".vtu"])
         if not vtu_b:
             return f"No VTU output from Domain B at iteration {iteration}"
 
@@ -1404,7 +1465,7 @@ async def _poisson_domain_decomposition(
             return f"Domain B ({backend_b.display_name()}) failed at iteration {iteration}: {job_b.error}"
 
         vtu_files_b = backend_b.get_result_files(job_b)
-        vtu_b = sorted([f for f in vtu_files_b if f.suffix == ".vtu"])
+        vtu_b = sorted_by_step([f for f in vtu_files_b if f.suffix == ".vtu"])
         if not vtu_b:
             return f"No VTU from Domain B at iteration {iteration}"
 
@@ -1708,7 +1769,7 @@ async def _oneway_thermal_structural(
 
     # Read 4C displacement from VTU
     vtu_files = backend_b.get_result_files(job_4c)
-    vtu_struct = sorted([f for f in vtu_files if f.suffix == ".vtu"])
+    vtu_struct = sorted_by_step([f for f in vtu_files if f.suffix == ".vtu"])
     if not vtu_struct:
         return "4C TSI produced no VTU output"
 
@@ -1980,7 +2041,7 @@ async def _poisson_dd_aitken(
             return f"Domain B failed at iteration {iteration}: {job_b.error}"
 
         vtu_files_b = backend_b.get_result_files(job_b)
-        vtu_b = sorted([f for f in vtu_files_b if f.suffix == ".vtu"])
+        vtu_b = sorted_by_step([f for f in vtu_files_b if f.suffix == ".vtu"])
         if not vtu_b:
             return f"No VTU from Domain B at iteration {iteration}"
 
@@ -2308,7 +2369,7 @@ print(f"max |u| = {{np.linalg.norm(u_arr, axis=1).max():.6e}}")
     fourc_results = {}
     if fourc_ok:
         vtu_files = backend_b.get_result_files(job_4c)
-        vtu_struct = sorted([f for f in vtu_files if f.suffix == ".vtu"])
+        vtu_struct = sorted_by_step([f for f in vtu_files if f.suffix == ".vtu"])
         if vtu_struct:
             try:
                 from core.post_processing import read_mesh

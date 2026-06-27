@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.backend import (
+    sorted_by_step,
     SolverBackend, BackendStatus, InputFormat,
     PhysicsCapability, JobHandle, get_python_executable,
 )
@@ -62,6 +63,33 @@ class KratosBackend(SolverBackend):
         return InputFormat.JSON
 
     def supported_physics(self) -> list[PhysicsCapability]:
+        # ---- 2026-06-26 honesty audit -----------------------------------
+        # Every physics listed here now maps to a generator that runs a REAL
+        # solve (model + mesh + solve + output). All former
+        # "availability-probe" stub generators — scripts whose only action
+        # was to import-check a Kratos sub-application and write
+        # {"note": ...} with no solver run — and their PhysicsCapability rows
+        # were REMOVED: rom, topology_optimization, iga, wind_engineering,
+        # thermal_dem, swimming_dem, fem_to_dem, chimera, droplet_dynamics,
+        # free_surface, fluid_biomedical, fluid_hydraulics, fluid, fsi,
+        # geomechanics, compressible_potential, rans, pfem_fluid, pfem_solid,
+        # pfem2.
+        #
+        # Importability tiers (verified on this host, python3 / Kratos 10.4):
+        #   * The minimal pip stack importable here ships only
+        #     StructuralMechanicsApplication, ConvectionDiffusionApplication,
+        #     ContactStructuralMechanicsApplication and LinearSolversApplication.
+        #     The generators that run end-to-end on that stack (verified
+        #     rc=0 with physical output) are: poisson, heat, heat_transient,
+        #     linear_elasticity (incl. the 2d_nonlinear Total-Lagrangian
+        #     Newton solve), contact (penalty Signorini), structural_dynamics,
+        #     plasticity / constitutive_laws (need ConstitutiveLawsApplication).
+        #   * The remaining entries below (poromechanics, shallow_water, dam,
+        #     dem, mpm, shape_optimization, cosimulation, dem_structures_coupling,
+        #     cable_net, optimization) are GENUINE parameterized solves — NOT
+        #     probe stubs — that require a fuller Kratos build whose
+        #     application is not in the minimal pip stack. They are retained
+        #     because they actually solve; they are not silent no-ops.
         return [
             PhysicsCapability(
                 name="poisson",
@@ -86,24 +114,10 @@ class KratosBackend(SolverBackend):
                 template_variants=["2d"],
             ),
             PhysicsCapability(
-                name="fluid",
-                description="Incompressible Navier-Stokes: VMS/QSVMS stabilized (FluidDynamicsApplication)",
-                spatial_dims=[2, 3],
-                element_types=["VMS2D3N", "QSVMS2D3N", "FractionalStep2D3N"],
-                template_variants=["2d_cavity"],
-            ),
-            PhysicsCapability(
                 name="contact",
-                description="Contact mechanics: mortar-based ALM/penalty (ContactStructuralMechanicsApplication)",
-                spatial_dims=[2, 3],
-                element_types=["ALMFrictionlessMortarContact"],
-                template_variants=["2d"],
-            ),
-            PhysicsCapability(
-                name="fsi",
-                description="Fluid-structure interaction via partitioned Dirichlet-Neumann (FSIApplication)",
-                spatial_dims=[2, 3],
-                element_types=["VMS + SmallDisplacement"],
+                description="Contact mechanics: frictionless Signorini (penalty active-set) — real solve via ContactStructuralMechanicsApplication",
+                spatial_dims=[2],
+                element_types=["Element2D3N (CST) + penalty contact"],
                 template_variants=["2d"],
             ),
             PhysicsCapability(
@@ -149,30 +163,10 @@ class KratosBackend(SolverBackend):
                 template_variants=["2d"],
             ),
             # New applications
-            PhysicsCapability("geomechanics", "Geomechanics: soil, consolidation, groundwater, slopes (GeoMechanicsApplication)", [2, 3],
-                              ["UPwSmallStrainElement2D3N", "UPwSmallStrainElement3D8N"], ["2d"]),
-            PhysicsCapability("compressible_potential", "Compressible potential flow: subsonic/transonic aerodynamics", [2, 3],
-                              ["CompressiblePotentialFlowElement2D3N", "IncompressiblePotentialFlowElement3D4N"], ["2d"]),
-            PhysicsCapability("rans", "RANS turbulence: k-epsilon, k-omega SST, Spalart-Allmaras (RANSApplication)", [2, 3],
-                              ["RansKEpsilonKElement2D3N", "RansKOmegaSSTKElement2D3N"], ["2d"]),
-            PhysicsCapability("pfem_fluid", "PFEM free-surface flow: dam break, sloshing, waves (PfemFluidDynamicsApplication)", [2, 3],
-                              ["TwoStepUpdatedLagrangianVPImplicit2D3N"], ["2d"]),
-            PhysicsCapability("pfem_solid", "PFEM large-deformation solids with remeshing", [2, 3],
-                              ["UpdatedLagrangianElement2D3N"], ["2d"]),
-            PhysicsCapability("pfem2", "PFEM2 two-phase flow with interface tracking", [2, 3],
-                              ["PFEM2_2D3N"], ["2d"]),
-            PhysicsCapability("rom", "Reduced Order Modeling: POD, HROM, neural network surrogates (RomApplication)", [2, 3],
-                              ["Generic (wraps FOM elements)"], ["2d"]),
-            PhysicsCapability("topology_optimization", "Topology optimization: SIMP, level-set, compliance/stress", [2, 3],
-                              ["SmallDisplacementElement2D3N"], ["2d"]),
-            PhysicsCapability("iga", "Isogeometric Analysis: NURBS shells, membranes, trimmed surfaces (IgaApplication)", [2, 3],
-                              ["Shell3pElement", "Shell5pElement"], ["2d"]),
             PhysicsCapability("poromechanics", "Poromechanics: fracture in porous media, dam/tunnel (PoromechanicsApplication)", [2, 3],
                               ["SmallStrainUPwDiffOrderElement2D6N"], ["2d"]),
             PhysicsCapability("shallow_water", "Shallow water equations: floods, dam breaks, coastal (ShallowWaterApplication)", [2],
                               ["ShallowWaterElement2D3N"], ["2d"]),
-            PhysicsCapability("wind_engineering", "Wind engineering: ABL, wind loading, vortex shedding", [2, 3],
-                              ["VMS2D3N"], ["2d"]),
             PhysicsCapability("dam", "Dam engineering: thermal-mechanical, seepage, cracking", [2, 3],
                               ["SmallStrainElement2D3N"], ["2d"]),
             PhysicsCapability("plasticity", "Elasto-plasticity: MC, DP, VonMises, Tresca + 6 hardening laws (ConstitutiveLawsApplication)", [2, 3],
@@ -180,26 +174,10 @@ class KratosBackend(SolverBackend):
                                "TotalLagrangianElement3D8N"], ["3d"]),
             PhysicsCapability("constitutive_laws", "Extended constitutive laws: hyperelastic, plasticity, damage, viscoplastic", [2, 3],
                               ["SmallDisplacementElement2D3N"], ["2d"]),
-            PhysicsCapability("thermal_dem", "Thermal DEM: heat transfer between particles, sintering", [2, 3],
-                              ["SphericParticle3D"], ["2d"]),
-            PhysicsCapability("swimming_dem", "Swimming DEM: CFD-DEM coupling, particle-laden flow", [2, 3],
-                              ["SphericParticle3D + VMS2D3N"], ["2d"]),
             PhysicsCapability("dem_structures_coupling", "DEM-FEM coupling: impact on structures, blast", [2, 3],
                               ["SphericParticle3D + SmallDisplacement"], ["2d"]),
-            PhysicsCapability("fem_to_dem", "FEM-to-DEM fracture transition: continuum→discrete", [2, 3],
-                              ["SmallDisplacement → SphericParticle"], ["2d"]),
             PhysicsCapability("cable_net", "Cable and net structures: cables, membranes, form-finding", [3],
                               ["CableElement3D2N", "MembraneElement3D3N"], ["2d"]),
-            PhysicsCapability("chimera", "Chimera/overset grids for moving bodies in flow", [2, 3],
-                              ["VMS2D3N (with overset)"], ["2d"]),
-            PhysicsCapability("droplet_dynamics", "Droplet dynamics: impact, spreading, contact angle", [2, 3],
-                              ["TwoFluidNavierStokes2D3N"], ["2d"]),
-            PhysicsCapability("free_surface", "Free-surface flow (Eulerian level-set)", [2, 3],
-                              ["TwoFluidNavierStokes2D3N"], ["2d"]),
-            PhysicsCapability("fluid_biomedical", "Biomedical flow: blood flow, hemodynamics, WSS", [2, 3],
-                              ["VMS2D3N (non-Newtonian)"], ["2d"]),
-            PhysicsCapability("fluid_hydraulics", "Hydraulic flow: open channels, pipes, spillways", [2, 3],
-                              ["VMS2D3N"], ["2d"]),
             PhysicsCapability("optimization", "General optimization: gradient-based, adjoint, multi-objective", [2, 3],
                               ["Generic"], ["2d"]),
             # ── 2026-06-01 (task #70): _auxiliary_overview in
@@ -299,12 +277,74 @@ class KratosBackend(SolverBackend):
 
     def validate_input(self, content: str) -> list[str]:
         errors = []
-        if "KratosMultiphysics" not in content:
-            errors.append("Script should import KratosMultiphysics")
         try:
             compile(content, "<kratos_input>", "exec")
         except SyntaxError as e:
             errors.append(f"Python syntax error: {e}")
+
+        # ---- Honesty guard (2026-06-26 audit) ----------------------------
+        # Reject "availability-probe" scripts: ones whose ONLY action is to
+        # import-check a Kratos (sub-)application and write {"note": "..."}
+        # without ever running a solve. Such stubs produce no solution yet
+        # return rc=0, making the catalog silently wrong. A legitimate Kratos
+        # analysis MUST actually solve something — via a Kratos strategy /
+        # AnalysisStage, or (as several generators in this backend do) by
+        # assembling the system and solving it with scipy/numpy while using
+        # KratosMultiphysics for I/O.
+        lowered = content.lower()
+
+        # Markers that a genuine solve is present (any one suffices). Covers
+        # both Kratos-native strategies and the scipy/numpy assemble-and-solve
+        # pattern used by the poisson / heat / elasticity / contact / dynamics
+        # generators in this backend.
+        solve_markers = (
+            ".Run()",                 # AnalysisStage.Run()
+            ".RunSolutionLoop(",
+            ".Solve()",               # strategy / solver .Solve()
+            ".SolveSolutionStep(",
+            "AnalysisStage",
+            "SolvingStrategy",
+            "CreateSolver",
+            "ResidualBasedNewtonRaphsonStrategy",
+            "ResidualBasedLinearStrategy",
+            "spsolve",                # scipy sparse direct solve
+            "scipy.sparse.linalg",
+            "factorized(",            # scipy prefactored solve (dynamics)
+            "np.linalg.solve",
+            "numpy.linalg.solve",
+        )
+        has_solve = any(m in content for m in solve_markers)
+
+        # A "note"-only summary is the tell-tale signature of the old probe
+        # stubs ({"note": "... available"} / {"note": "not installed"}).
+        note_only_summary = (
+            ('"note"' in content or "'note'" in content)
+            and ("not installed" in lowered
+                 or "available" in lowered
+                 or "not pip-installable" in lowered)
+        )
+        imports_subapp = "import KratosMultiphysics." in content
+
+        if not has_solve and (note_only_summary or imports_subapp):
+            errors.append(
+                "Script appears to be an availability-probe stub: it "
+                "import-checks Kratos and/or writes a {\"note\": ...} "
+                "summary but never runs a solve (no Kratos strategy / "
+                "AnalysisStage and no scipy/numpy linear solve). A Kratos "
+                "analysis must build a model and actually solve it, not just "
+                "report availability."
+            )
+
+        # A valid Kratos input must EITHER use KratosMultiphysics (for the
+        # model / output / strategy) OR perform a genuine solve (the
+        # scipy-assembly generators in this backend import only numpy/scipy
+        # and use KratosMultiphysics for VTK output). If it does neither it is
+        # not a runnable analysis.
+        if "KratosMultiphysics" not in content and not has_solve:
+            errors.append(
+                "Script neither uses KratosMultiphysics nor runs a solve — "
+                "it is not a runnable Kratos analysis."
+            )
         return errors
 
     async def run(self, input_content: str, work_dir: Path,
@@ -374,7 +414,7 @@ class KratosBackend(SolverBackend):
         results = []
         for ext in ["*.vtu", "*.vtk", "*.pvd"]:
             results.extend(job.work_dir.rglob(ext))
-        return sorted(results)
+        return sorted_by_step(results)
 
 
 def register():

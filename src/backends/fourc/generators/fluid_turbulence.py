@@ -115,7 +115,34 @@ class FluidTurbulenceGenerator(BaseGenerator):
         return [{"name": "les_channel_3d", "description": "LES of turbulent channel flow"}]
 
     def get_template(self, variant: str = "les_channel_3d") -> str:
-        return "# LES template — use FLUID elements with TURBULENCE MODEL section"
+        # Not self-contained-runnable: a meaningful LES needs a
+        # wall-resolved, periodic, graded HEX8 channel mesh — a coarse
+        # inline grid "runs" but produces physically meaningless
+        # statistics. Return a valid-YAML reference stub rather than a
+        # comment-only one-liner.
+        return (
+            "# =====================================================\n"
+            "# 4C fluid turbulence / LES (variant: les_channel_3d)\n"
+            "# =====================================================\n"
+            "# Not a self-contained runnable input. Requires:\n"
+            "#   * a wall-resolved 3-D HEX8 channel mesh graded to\n"
+            "#     the wall (y+ ~ 1) with periodic stream/spanwise\n"
+            "#     boundary surfaces\n"
+            "#   * FLUID DYNAMIC + a TURBULENCE MODEL section\n"
+            "#     (Smagorinsky / dynamic / WALE) + periodic BCs +\n"
+            "#     turbulence statistics sampling\n"
+            "#   * MAT_fluid at the target Reynolds number\n"
+            "# Pitfalls (see knowledge() for the full set):\n"
+            "#   * LES on an under-resolved mesh is meaningless — it\n"
+            "#     'runs' but the statistics are wrong\n"
+            "#   * needs a long sampling time to converge mean /\n"
+            "#     Reynolds-stress profiles\n"
+            "# =====================================================\n"
+            "TITLE:\n"
+            "  - \"4C fluid turbulence (LES) reference stub\"\n"
+            "PROBLEM TYPE:\n"
+            "  PROBLEMTYPE: \"Fluid\"\n"
+        )
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

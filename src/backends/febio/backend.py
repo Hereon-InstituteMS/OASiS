@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.backend import (
+    sorted_by_step,
     SolverBackend, BackendStatus, InputFormat,
     PhysicsCapability, JobHandle,
 )
@@ -293,7 +294,7 @@ class FebioBackend(SolverBackend):
         results = []
         for ext in ["*.xplt", "*.vtk", "*.vtu", "*.log"]:
             results.extend(job.work_dir.rglob(ext))
-        return sorted(results)
+        return sorted_by_step(results)
 
 
 

@@ -3179,3 +3179,297 @@ DESIGN SURF CARDIOVASCULAR 0D-STRUCTURE COUPLING CONDITIONS:
         yaml += f'  - "{e}"\n'
 
     return yaml
+
+
+def _fluid_quad4_mesh(nx: int, ny: int, lx: float, ly: float) -> dict:
+    """QUAD4 mesh tagged as FLUID elements (MAT 1, NA Euler)."""
+    return generate_quad4_rectangle(
+        nx, ny, lx, ly,
+        element_section="FLUID",
+        element_type="FLUID QUAD4",
+        element_suffix="MAT 1 NA Euler",
+    )
+
+
+def _fluid_common_sections(nx: int, ny: int, title: str,
+                           viscosity: float, density: float,
+                           numstep: int, timestep: float) -> str:
+    """Shared PROBLEM/SOLVER/MATERIALS block for a 2D incompressible
+    Navier-Stokes case (PROBLEMTYPE Fluid, Np_Gen_Alpha + UMFPACK).
+
+    Mirrors the corpus case f2_channel20x20_drt_weak.4C.yaml but with
+    a self-contained UMFPACK solver (no external XML) and strong
+    Dirichlet conditions instead of weak ones.
+    """
+    maxtime = numstep * timestep
+    return f'''TITLE:
+  - "{title}"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Fluid"
+FLUID DYNAMIC:
+  PHYSICAL_TYPE: "Incompressible"
+  LINEAR_SOLVER: 1
+  TIMEINTEGR: "Np_Gen_Alpha"
+  NONLINITER: Newton
+  NUMSTEP: {numstep}
+  TIMESTEP: {timestep:.10g}
+  MAXTIME: {maxtime:.10g}
+  ITEMAX: 10
+  ALPHA_M: 0.8333
+  ALPHA_F: 0.6666
+  GAMMA: 0.6666
+FLUID DYNAMIC/RESIDUAL-BASED STABILIZATION:
+  STABTYPE: "residual_based"
+  CHARELELENGTH_PC: "root_of_volume"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Fluid_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_fluid:
+      DYNVISCOSITY: {viscosity:.10g}
+      DENSITY: {density:.10g}
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/FLUID:
+  OUTPUT_FLUID: true
+  VELOCITY: true
+'''
+
+
+def matched_fluid_cavity_input(
+    nx: int = 16, ny: int = 16,
+    lx: float = 1.0, ly: float = 1.0,
+    u_lid: float = 1.0,
+    viscosity: float = 0.01, density: float = 1.0,
+    numstep: int = 10, timestep: float = 0.1,
+) -> str:
+    """2D lid-driven cavity, incompressible Navier-Stokes.
+
+    Square cavity [0,lx]x[0,ly]: no-slip on the bottom, left and right
+    walls; the top lid moves with a prescribed tangential velocity
+    u_lid (vy=0 on the lid). Self-contained inline FLUID QUAD4 mesh,
+    MAT_fluid, Np_Gen_Alpha time integration, UMFPACK solver. No
+    external mesh file, no placeholder scalars.
+
+    DLINE topology: 1 bottom (no-slip), 2 top (lid), 3 left (no-slip),
+    4 right (no-slip). The lid line excludes its two corner nodes so the
+    moving-lid and no-slip wall Dirichlet values never disagree on a
+    shared corner.
+    """
+    nx = max(2, int(nx))
+    ny = max(2, int(ny))
+    mesh = _fluid_quad4_mesh(nx, ny, lx, ly)
+    pin_node = mesh["bottom_nodes"][0]  # bottom-left corner
+    title = f"Lid-driven cavity {nx}x{ny} — self-contained inline mesh"
+    yaml = _fluid_common_sections(
+        nx, ny, title, viscosity, density, numstep, timestep)
+    # NUMDOF 3 = (vx, vy, p) in 2D fluid. The cavity is fully enclosed by
+    # velocity Dirichlet conditions, so the incompressible pressure is
+    # determined only up to a constant (singular pressure null space ->
+    # divide-by-zero in the solver). Pin the pressure at one corner node
+    # (DNODE 1, ONOFF only on the 3rd = pressure dof) to remove it.
+    yaml += f'''DESIGN POINT DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 3
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 4
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [{u_lid:.10g}, 0, 0]
+    FUNCT: [0, 0, 0]
+'''
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'FLUID ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+    yaml += 'DNODE-NODE TOPOLOGY:\n'
+    yaml += f'  - "NODE {pin_node} DNODE 1"\n'
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in mesh["bottom_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    # Lid: interior nodes only (corners belong to side walls).
+    for nid in mesh["top_nodes"][1:-1]:
+        yaml += f'  - "NODE {nid} DLINE 2"\n'
+    for nid in mesh["left_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 3"\n'
+    for nid in mesh["right_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 4"\n'
+    return yaml
+
+
+def matched_fluid_channel_input(
+    nx: int = 24, ny: int = 8,
+    lx: float = 3.0, ly: float = 1.0,
+    u_max: float = 1.0,
+    viscosity: float = 0.01, density: float = 1.0,
+    numstep: int = 10, timestep: float = 0.1,
+) -> str:
+    """2D plane channel flow, incompressible Navier-Stokes.
+
+    Channel [0,lx]x[0,ly]: parabolic inlet velocity (peak u_max) at
+    x=0, no-slip on the top and bottom walls, natural (do-nothing)
+    outflow at x=lx. Self-contained inline FLUID QUAD4 mesh, MAT_fluid,
+    Np_Gen_Alpha + UMFPACK. No external mesh, no placeholder scalars.
+
+    DLINE topology: 1 bottom wall, 2 top wall, 3 inlet (x=0). The inlet
+    parabola vanishes at both walls so it is consistent with no-slip on
+    the shared corner nodes; the outlet (x=lx) carries no Dirichlet
+    condition (natural outflow).
+    """
+    nx = max(2, int(nx))
+    ny = max(2, int(ny))
+    mesh = _fluid_quad4_mesh(nx, ny, lx, ly)
+    profile = f"{4.0 * u_max / (ly * ly):.10g}*y*({ly:.10g}-y)"
+    title = f"Plane channel flow {nx}x{ny} — self-contained inline mesh"
+    yaml = _fluid_common_sections(
+        nx, ny, title, viscosity, density, numstep, timestep)
+    yaml += f'''FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{profile}"
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [0, 0, 0]
+    FUNCT: [0, 0, 0]
+  - E: 3
+    NUMDOF: 3
+    ONOFF: [1, 1, 0]
+    VAL: [1, 0, 0]
+    FUNCT: [1, 0, 0]
+'''
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'FLUID ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+    yaml += 'DLINE-NODE TOPOLOGY:\n'
+    for nid in mesh["bottom_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    for nid in mesh["top_nodes"]:
+        yaml += f'  - "NODE {nid} DLINE 2"\n'
+    # Inlet: interior nodes only (corners belong to the walls so the
+    # parabola-vs-no-slip values agree at y=0 and y=ly anyway, but
+    # excluding them keeps the wall no-slip authoritative).
+    for nid in mesh["left_nodes"][1:-1]:
+        yaml += f'  - "NODE {nid} DLINE 3"\n'
+    return yaml
+
+
+def matched_reduced_airways_input(
+    peak_pressure: float = 30.0,
+    numstep: int = 200, period: float = 100.0,
+    wall_elasticity: float = 500.0,
+    acinus_stiffness: float = 0.001,
+) -> str:
+    """1-D reduced-dimensional airway tree (PROBLEMTYPE
+    ReducedDimensionalAirWays), self-contained inline mesh.
+
+    A 2-generation bifurcating tree: 3 RED_AIRWAY LINE2 segments
+    feeding 2 RED_ACINUS LINE2 compartments (6 nodes, 5 elements). The
+    inlet pressure is driven sinusoidally from 0 to peak_pressure
+    (cmH2O) with the given period; reduced fractions of that pressure
+    are prescribed at the two acinar outlets, mapped to the airways via
+    the airway-acinus interdependency (COMPAWACINTER).
+
+    Ported from the corpus case red_airway_3airway_2acinus_awacinter
+    .4C.yaml; the RESULT DESCRIPTION (baked expected pressures) is
+    intentionally NOT included. Solver is self-contained UMFPACK.
+    """
+    numstep = max(1, int(numstep))
+    amp = float(peak_pressure) / 2.0
+    return f'''TITLE:
+  - "2-generation airway tree (3 airways + 2 acini) — self-contained inline mesh"
+PROBLEM SIZE:
+  ELEMENTS: 5
+  NODES: 6
+  MATERIALS: 2
+  NUMDF: 1
+PROBLEM TYPE:
+  PROBLEMTYPE: "ReducedDimensionalAirWays"
+REDUCED DIMENSIONAL AIRWAYS DYNAMIC:
+  SOLVERTYPE: Nonlinear
+  NUMSTEP: {numstep}
+  RESTARTEVERY: 100000
+  RESULTSEVERY: 100000
+  MAXITERATIONS: 40
+  TOLERANCE: 1e-07
+  LINEAR_SOLVER: 1
+  COMPAWACINTER: true
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Reduced_dimensional_Airways_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_fluid:
+      DYNVISCOSITY: 0.04
+      DENSITY: 1.176e-06
+      GAMMA: 1
+  - MAT: 2
+    MAT_0D_MAXWELL_ACINUS_EXPONENTIAL:
+      Stiffness1: {acinus_stiffness:.10g}
+      Stiffness2: {acinus_stiffness:.10g}
+      Viscosity1: {acinus_stiffness:.10g}
+      Viscosity2: {acinus_stiffness:.10g}
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_TIME: "{amp:.10g}*(sin(pi*t/{period / 2.0:.10g}-pi/2)+1)"
+DESIGN NODE Reduced D AIRWAYS PRESCRIBED CONDITIONS:
+  - E: 1
+    boundarycond: "pressure"
+    VAL: [1]
+    curve: [1, null]
+  - E: 2
+    boundarycond: "pressure"
+    VAL: [0.1]
+    curve: [1, null]
+  - E: 3
+    boundarycond: "pressure"
+    VAL: [0.2]
+    curve: [1, null]
+REDUCED D AIRWAYS ELEMENTS:
+  - "1 RED_AIRWAY LINE2 1 2 MAT 1 ElemSolvingType NonLinear TYPE ConvectiveViscoElasticRLC Resistance Poiseuille PowerOfVelocityProfile 2 WallElasticity {wall_elasticity:.10g} PoissonsRatio 0.4 ViscousTs 2.0 ViscousPhaseShift 0.13 WallThickness 0.1 Area 1.0 Generation 0"
+  - "2 RED_AIRWAY LINE2 2 3 MAT 1 ElemSolvingType NonLinear TYPE ConvectiveViscoElasticRLC Resistance Poiseuille PowerOfVelocityProfile 2 WallElasticity {wall_elasticity:.10g} PoissonsRatio 0.4 ViscousTs 2.0 ViscousPhaseShift 0.13 WallThickness 0.1 Area 1.0 Generation 1"
+  - "3 RED_AIRWAY LINE2 2 4 MAT 1 ElemSolvingType NonLinear TYPE ConvectiveViscoElasticRLC Resistance Poiseuille PowerOfVelocityProfile 2 WallElasticity {wall_elasticity:.10g} PoissonsRatio 0.4 ViscousTs 2.0 ViscousPhaseShift 0.13 WallThickness 0.1 Area 1.0 Generation 1"
+  - "4 RED_ACINUS LINE2 3 5 MAT 2 TYPE Exponential AcinusVolume 1.0 AlveolarDuctVolume 1.0 E1_0 8.0 E1_LIN 1.0 E1_EXP 0.022 TAU 7"
+  - "5 RED_ACINUS LINE2 4 6 MAT 2 TYPE Exponential AcinusVolume 1.0 AlveolarDuctVolume 1.0 E1_0 8.0 E1_LIN 1.0 E1_EXP 0.022 TAU 7"
+NODE COORDS:
+  - "NODE 1 COORD 0.000 0.000 0.000"
+  - "NODE 2 COORD 10.00 0.000 0.000"
+  - "NODE 3 COORD 15.00 2.000 0.000"
+  - "NODE 4 COORD 15.00 -2.000 0.000"
+  - "NODE 5 COORD 17.50 2.000 0.000"
+  - "NODE 6 COORD 17.00 -2.000 0.000"
+DNODE-NODE TOPOLOGY:
+  - "NODE 1 DNODE 1"
+  - "NODE 5 DNODE 2"
+  - "NODE 6 DNODE 3"
+'''

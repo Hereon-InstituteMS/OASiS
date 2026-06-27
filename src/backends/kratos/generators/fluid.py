@@ -1,27 +1,11 @@
 """Kratos fluid dynamics generators and knowledge."""
 
 
-def _fluid_cavity_kratos(params: dict) -> str:
-    """FORMAT TEMPLATE — values are defaults, determine appropriate values for your specific problem.
-
-    Navier-Stokes via Kratos FluidDynamicsApplication."""
-    return f'''\
-"""Navier-Stokes — Kratos FluidDynamicsApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.FluidDynamicsApplication as FDA
-    print("FluidDynamicsApplication available")
-    # Full Kratos fluid analysis uses:
-    # from KratosMultiphysics.FluidDynamicsApplication.fluid_dynamics_analysis import FluidDynamicsAnalysis
-    # Requires: ProjectParameters.json + FluidMaterials.json + mesh.mdpa
-    summary = {{"note": "Kratos FDA available — use FluidDynamicsAnalysis for full simulation"}}
-except ImportError:
-    print("FluidDynamicsApplication not installed")
-    print("Install: pip install KratosFluidDynamicsApplication")
-    summary = {{"note": "KratosFluidDynamicsApplication not installed"}}
-with open("results_summary.json", "w") as _f: json.dump(summary, _f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _fluid_cavity_kratos
+# generator was an availability-probe stub (import-check + {"note": ...},
+# no solver run). FluidDynamicsApplication is NOT importable in the installed
+# Kratos stack, so 'fluid' has been removed from the generator registry and
+# from KratosBackend.supported_physics(). KNOWLEDGE retained for reference.
 
 
 KNOWLEDGE = {
@@ -57,6 +41,6 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {
-    "fluid_2d_cavity": _fluid_cavity_kratos,
-}
+# Empty: FluidDynamicsApplication not installable in this Kratos stack; the
+# prior generator was a no-solve probe stub (removed).
+GENERATORS = {}

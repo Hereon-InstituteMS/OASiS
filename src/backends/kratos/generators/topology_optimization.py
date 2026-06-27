@@ -4,23 +4,15 @@ Application: TopologyOptimizationApplication.
 """
 
 
-def _topology_opt_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — Topology optimization (SIMP/level-set)."""
-    return '''\
-"""Topology Optimization — Kratos TopologyOptimizationApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.TopologyOptimizationApplication
-    print("TopologyOptimizationApplication available")
-    summary = {"note": "TopologyOptimizationApplication available",
-               "capabilities": ["SIMP", "level_set", "compliance_minimization",
-                                "stress_constrained", "multi_material"]}
-except ImportError:
-    print("TopologyOptimizationApplication not installed")
-    summary = {"note": "not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _topology_opt_2d generator
+# emitted an availability-probe stub that only import-checked
+# TopologyOptimizationApplication and wrote {"note": "not installed"} with
+# no solver run. TopologyOptimizationApplication is NOT importable in the
+# installed Kratos stack. The stub generator and its
+# 'topology_optimization_2d' registry entry have been removed;
+# 'topology_optimization' is no longer advertised in
+# KratosBackend.supported_physics(). The KNOWLEDGE block below is retained
+# as a reference-only entry.
 
 
 KNOWLEDGE = {
@@ -47,4 +39,7 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {"topology_optimization_2d": _topology_opt_2d}
+# Empty: no runnable topology-optimization generator —
+# TopologyOptimizationApplication is not installable in this Kratos stack
+# (see honesty-audit note above).
+GENERATORS = {}

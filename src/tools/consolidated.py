@@ -7,6 +7,7 @@ Fewer tools = faster schema loading = faster agent response.
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
@@ -18,6 +19,34 @@ _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
 FOURC_ROOT = Path(os.environ.get("FOURC_ROOT", ""))
 _jobs: dict = {}
+
+# HOE ablation toggle (MCP_NO_PITFALL_DB condition): when set, every
+# knowledge surface strips pitfall-DB content so the agent operates as
+# if the component were absent. "Pitfall DB" covers, in spirit:
+#   - per-backend pitfall lists (incl. their Signal: failure anchors)
+#   - general input-format pitfalls
+#   - post-mortem records (the Signal-retrieval audit trail)
+#   - the cross-backend collation catalog (backends/_cross.py)
+# Off by default; never affects normal MCP usage.
+_ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
+
+_PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
+                 "general_pitfalls", "common_pitfalls")
+
+
+def _strip_pitfalls(obj):
+    """Recursively remove pitfall-DB keys from nested dicts/lists.
+
+    No-op when _ABLATE_PITFALLS is False.
+    """
+    if not _ABLATE_PITFALLS:
+        return obj
+    if isinstance(obj, dict):
+        return {k: _strip_pitfalls(v) for k, v in obj.items()
+                if k not in _PITFALL_KEYS}
+    if isinstance(obj, list):
+        return [_strip_pitfalls(x) for x in obj]
+    return obj
 
 
 async def _run_with_progress(ctx: Context, coro, message_prefix: str = "Running"):
@@ -72,6 +101,16 @@ def _stub_template_tag(content: str, fmt: str) -> str:
     """
     if not isinstance(content, str):
         return ""
+    # Central stub detection: catches print-and-exit (deal.II), availability-probe
+    # (Kratos), <...>-placeholder decks (4C), and comment-only templates — fakes that
+    # advertise physics but don't solve. (Extends the original size heuristic.)
+    try:
+        from core.quality_checks import is_stub_output
+        reason = is_stub_output(content)
+        if reason:
+            return f" — ⚠ STUB (not a runnable deck: {reason})"
+    except Exception:
+        pass
     if fmt in ("yaml", "yml", "python", "py"):
         non_comment_lines = [
             ln for ln in content.splitlines()
@@ -542,6 +581,27 @@ def _fuzzy_match_physics(backend, query: str) -> str:
             if query_lower in p.description.lower():
                 return p.name
 
+    # 6. Token-overlap fallback. Compound synonyms like
+    # 'rarefied_gas_dynamics' -> 'rarefied_flow' or 'hypersonic_cht'
+    # -> 'hypersonic_flow' share a DISCRIMINATING token ('rarefied',
+    # 'hypersonic', 'conjugate') but neither string is a substring of
+    # the other, so steps 3-5 miss them. Match on shared significant
+    # tokens (>= 5 chars to avoid 'flow'/'heat'/'grid' collisions) and
+    # pick the physics with the most shared tokens. Discovered when a
+    # 72B agent asked SPARTA for 'rarefied_gas_dynamics' and got a raw
+    # "unknown physics" error instead of the worked rarefied_flow deck.
+    q_tokens = {t for t in re.split(r"[^a-z0-9]+", query_lower) if len(t) >= 5}
+    if q_tokens:
+        best, best_n = None, 0
+        for p in backend.supported_physics():
+            p_tokens = {t for t in re.split(r"[^a-z0-9]+", p.name.lower())
+                        if len(t) >= 5}
+            n = len(q_tokens & p_tokens)
+            if n > best_n:
+                best, best_n = p.name, n
+        if best:
+            return best
+
     # Nothing matched — return original so the caller can
     # surface the "no information found" message with the
     # available-physics list.
@@ -735,6 +795,7 @@ def register_consolidated_tools(mcp: FastMCP):
             k = backend.get_knowledge(physics)
             if not k:
                 return f"No knowledge for '{physics}' in {solver}"
+            k = _strip_pitfalls(k)
             result = json.dumps(k, indent=2, default=str)
             # Append real test file references
             from tools.knowledge import _find_reference_test_files
@@ -755,7 +816,8 @@ def register_consolidated_tools(mcp: FastMCP):
             # it has a Signal: to match. Agent can fetch the full
             # record explicitly via
             # `knowledge(topic="postmortems", solver=..., signal=...)`.
-            postmortems = _load_matching_postmortems(solver, physics, "")
+            postmortems = ([] if _ABLATE_PITFALLS
+                           else _load_matching_postmortems(solver, physics, ""))
             if postmortems:
                 breadcrumbs = [
                     {"id": pm.get("id", "?"),
@@ -774,6 +836,10 @@ def register_consolidated_tools(mcp: FastMCP):
             return result
 
         elif topic == "postmortems":
+            if _ABLATE_PITFALLS:
+                return ("No post-mortems found. data/postmortems/*.json is "
+                        "the canonical store; absence here means the failure "
+                        "mode has not yet been audited.")
             postmortems = _load_matching_postmortems(solver, physics, signal)
             if not postmortems:
                 what = ", ".join(
@@ -788,6 +854,10 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps(postmortems, indent=2)
 
         elif topic == "pitfalls" and solver:
+            # Ablation: when OFA_DISABLE_PITFALLS=1, refuse to surface
+            # pitfalls so the agent has no shortcut to known-bug knowledge.
+            if _ABLATE_PITFALLS:
+                return f"No pitfalls available for {solver}"
             # Backend is the source of truth for pitfalls (Table-1
             # promoted, post-execution-critic-actionable). The
             # deep_knowledge fallback was inverted historically —
@@ -1013,6 +1083,8 @@ def register_consolidated_tools(mcp: FastMCP):
             # for content + rationale. The `physics` arg here is
             # repurposed as a topic filter (e.g. 'units', 'mesh',
             # 'bc', 'restart', 'mpi') to narrow the response.
+            if _ABLATE_PITFALLS:
+                return "No cross-backend collation entries available."
             from backends._cross import get_cross_backend_pitfalls
             result = get_cross_backend_pitfalls(physics or signal or None)
             return json.dumps(result, indent=2)
@@ -1482,6 +1554,13 @@ def register_consolidated_tools(mcp: FastMCP):
                             input_snapshot=_snap)
             return f"Solver {solver} not available: {msg}"
 
+        # CP-4: validate the input BEFORE running (was skipped on the live path)
+        _input_warnings = []
+        try:
+            _input_warnings = backend.validate_input(input_content) or []
+        except Exception:
+            pass
+
         _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y%m%d_%H%M%S")
         name = job_name or f"{solver}_{ts}"
@@ -1511,8 +1590,17 @@ def register_consolidated_tools(mcp: FastMCP):
         }
         if job.error:
             result["error"] = job.error[:500]
+        if _input_warnings:
+            result["input_validation_warnings"] = _input_warnings
         if job.status == "completed":
-            result["output_files"] = [f.name for f in backend.get_result_files(job)]
+            out_files = backend.get_result_files(job)
+            result["output_files"] = [f.name for f in out_files]
+            # CP-4: a process that exits 0 but produces NO output is NOT a verified
+            # success — the canonical silent failure. Downgrade the status loudly.
+            if not out_files:
+                result["status"] = "completed_unverified"
+                result["warning"] = ("Process exited cleanly but produced NO output files "
+                                     "— this is NOT a verified solve. Do not treat as a result.")
             stdout_log = work_dir / "stdout.log"
             if stdout_log.exists():
                 text = stdout_log.read_text()
@@ -1520,7 +1608,7 @@ def register_consolidated_tools(mcp: FastMCP):
         return json.dumps(result, indent=2)
 
     # ═══════════════════════════════════════════════════════════
-    # 5. COUPLING (keep as-is — core workflow)
+    # 5. COUPLING (general couple() + legacy coupled_solve)
     # ═══════════════════════════════════════════════════════════
 
     @mcp.tool()
@@ -1531,7 +1619,14 @@ def register_consolidated_tools(mcp: FastMCP):
         relaxation: float = 1.0, params: str = "{}",
         critic_approved: bool = False,
     ) -> str:
-        """Cross-solver domain decomposition coupling.
+        """LEGACY cross-solver coupling — FIXED toy geometries only. PREFER `couple`.
+
+        DEPRECATED: this tool only handles a fixed enum of benchmark problems on a
+        hardcoded unit-square split at x=0.5 (heat_dd/poisson_dd/one_way/tsi_dd/...).
+        For ANY real or non-benchmark coupling use the general `couple` tool, which is
+        physics-agnostic and validates the result for silent-wrong (flux balance,
+        convergence, finiteness). Only use coupled_solve to reproduce the legacy
+        benchmarks.
 
         Domain A (Dirichlet at interface) supports: fenics, ngsolve, skfem, dune.
         Domain B (Neumann at interface) supports: fenics, fourc, ngsolve, skfem, dune.
@@ -1581,6 +1676,124 @@ def register_consolidated_tools(mcp: FastMCP):
             return f"Unknown problem: {problem}. Available: {list(dispatch.keys())}"
 
         return await dispatch[problem]()
+
+    @mcp.tool()
+    async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
+                     accelerator: str = "aitken") -> str:
+        """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
+
+        Unlike coupled_solve (legacy, fixed toy geometries), this is physics-agnostic:
+        you write one self-contained solver script per subdomain/participant and OASiS
+        runs the fixed-point iteration, Aitken relaxation, convergence-or-fail, AND
+        silent-wrong validation (interface flux balance + finiteness). No fixed geometry
+        or physics is assumed.
+
+        PARTICIPANT CONTRACT — each iteration the driver, per participant:
+          1. writes <work_dir>/imports.json = {partner_name: InterfaceData} (boundary
+             data this participant consumes; empty on iteration 1).
+          2. runs your `command` in <work_dir>.
+          3. reads <work_dir>/exports.json = the InterfaceData your script produced on
+             the shared interface.
+        Your script decides HOW to apply imports (Dirichlet/Neumann/Robin/traction/
+        flux/...) and WHAT to export — opaque to the driver, so it generalizes.
+
+        InterfaceData JSON shape (read imports, write exports):
+          {"field_name": str, "n_points": N, "coordinates": [[x,y(,z)],...],
+           "values": [...], "normal_fluxes": [...]  # optional, for conservation check}
+
+        Args:
+            participants: JSON list of {"name", "command":[argv...], "work_dir",
+              "imports_from":[partner names]}.
+            max_iter, tol, accelerator: iteration controls ("aitken"|"constant").
+
+        Returns: JSON with converged, iterations, residual, exports, and a
+            `validation` block (interface-balance + finiteness). A non-converged or
+            unbalanced coupling is reported as a FAILURE, never as a trustworthy result.
+        """
+        from core.coupling_driver import Participant, run_coupling
+        from core.quality_checks import check_interface_balance, check_finite, check_convergence
+        _get_journal().record("tool_call", "couple", solver="general", physics="coupling")
+        try:
+            specs = json.loads(participants)
+        except json.JSONDecodeError as e:
+            return json.dumps({"error": f"invalid participants JSON: {e}"})
+        if not isinstance(specs, list) or len(specs) < 2:
+            return json.dumps({"error": "need a JSON list of >=2 participants"})
+        parts = []
+        for s in specs:
+            try:
+                wd = Path(s["work_dir"]); wd.mkdir(parents=True, exist_ok=True)
+                parts.append(Participant(name=s["name"], command=list(s["command"]),
+                                         work_dir=wd, imports_from=s.get("imports_from", []),
+                                         timeout=int(s.get("timeout", 3600))))
+            except (KeyError, TypeError) as e:
+                return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
+        r = run_coupling(parts, max_iter=max_iter, tol=tol, accelerator=accelerator)
+        # CP-2: wire the silent-wrong validators into the coupling result
+        val = list(r.warnings)
+        val += check_convergence(r.converged, r.residual, tol)
+        for nm, ex in r.exports.items():
+            val += check_finite(ex.get("values", []), label=f"{nm}.values")
+        names = list(r.exports)
+        if len(names) == 2:
+            val += check_interface_balance(r.exports[names[0]], r.exports[names[1]],
+                                           names[0], names[1])
+        trustworthy = r.converged and not any(
+            ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w) for w in val)
+        return json.dumps({"converged": r.converged, "iterations": r.iterations,
+                           "residual": r.residual, "history": r.history,
+                           "exports": r.exports, "error": r.error,
+                           "validation": val, "trustworthy_result": trustworthy}, indent=2)
+
+    @mcp.tool()
+    async def couple_precice(participants: str, data: str, exchanges: str,
+                             work_dir: str, scheme: str = "serial-explicit",
+                             dimensions: int = 2, max_time: float = 10.0,
+                             time_window: float = 1.0, timeout: int = 1800,
+                             extra_env: str = "") -> str:
+        """GENERAL preCICE coupling of ARBITRARY codes/paradigms, end-to-end.
+
+        The standard-library (preCICE) path for cross-code coupling — works for any
+        number of participants, any data fields, any exchange pattern. OASiS generates
+        the preCICE config and launches every participant's solver command. Use this
+        when each side is a separate executable/script that talks preCICE (e.g. a DSMC
+        particle code <-> a FEM solid; FSI; TSI). Each backend's preCICE participant
+        pattern is available via knowledge(topic='precice', solver=...).
+
+        Args (all JSON strings except scheme/numbers):
+            participants: list of {"name","mesh","writes":[data],"reads":[data],
+                          "command":[argv...]} — one per coupled code.
+            data:      list of {"name","type":"scalar"|"vector"}.
+            exchanges: list of {"data","from","to"} — one per coupled field.
+            work_dir:  directory to run in (config + participant cwd).
+            scheme:    serial-explicit|serial-implicit|parallel-explicit|parallel-implicit.
+            dimensions, max_time, time_window, timeout: coupling controls.
+            extra_env: optional JSON dict of extra env (e.g. {"LD_LIBRARY_PATH":...,
+                       "PYTHONPATH":...}) for the participant processes.
+
+        Returns: JSON {converged, returncodes, config, logs}. A non-zero participant
+            return code is reported as a failed coupling, never as a trustworthy result.
+        """
+        from core.precice_config import run_precice_coupling, check_precice_available
+        _get_journal().record("tool_call", "couple_precice", solver="general", physics="coupling")
+        ok, msg = check_precice_available()
+        if not ok:
+            return json.dumps({"error": f"preCICE not usable: {msg}"})
+        try:
+            parts = json.loads(participants); ds = json.loads(data); exs = json.loads(exchanges)
+            env = json.loads(extra_env) if extra_env else None
+        except json.JSONDecodeError as e:
+            return json.dumps({"error": f"invalid JSON argument: {e}"})
+        if not isinstance(parts, list) or len(parts) < 2:
+            return json.dumps({"error": "need a JSON list of >=2 participants"})
+        try:
+            r = run_precice_coupling(parts, ds, exs, Path(work_dir), scheme=scheme,
+                                     dimensions=dimensions, max_time=max_time,
+                                     time_window=time_window, timeout=timeout, extra_env=env)
+        except Exception as e:
+            return json.dumps({"error": f"coupling failed: {e}"})
+        r["trustworthy_result"] = bool(r.get("converged"))
+        return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
     # 6. VISUALIZE (replaces 4 visualization tools)
@@ -1908,7 +2121,7 @@ def register_consolidated_tools(mcp: FastMCP):
         # to the LLM client; every Layer F fix landed but never
         # reached the prepare_simulation surface that's meant to
         # teach the agent.
-        k = backend.get_knowledge(matched_physics)
+        k = _strip_pitfalls(backend.get_knowledge(matched_physics))
         if k:
             pitfalls_separate = None
             json_payload = k
@@ -1939,7 +2152,7 @@ def register_consolidated_tools(mcp: FastMCP):
 
         # 1b. General input-format pitfalls (ExodusII IDs, FUNCT syntax, etc.)
         # These apply to ALL physics in this solver, not just the current one
-        general_k = backend.get_knowledge("input_format")
+        general_k = _strip_pitfalls(backend.get_knowledge("input_format"))
         if isinstance(general_k, dict):
             gp = general_k.get("general_pitfalls")
             if gp:

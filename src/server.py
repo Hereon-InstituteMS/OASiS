@@ -8,10 +8,34 @@ Multiphysics, DUNE-fem, FEBio. Call `discover(query='list')` after start-up
 for the current availability and per-backend install hints.
 """
 
+import os
 import sys
 import logging
 
 from mcp.server.fastmcp import FastMCP
+
+# Ablation toggles for the HOE held-out evaluation. Off by default; the eval
+# protocol sets these per-condition for component-attribution analysis.
+# They never affect normal MCP usage.
+#   OFA_DISABLE_CRITIC=1   → strip the MANDATORY CRITIC paragraph from the
+#                            server instructions
+#   OFA_DISABLE_PITFALLS=1 → knowledge surfaces strip pitfall-DB content
+#                            (per-backend pitfalls incl. Signal: anchors,
+#                            post-mortems, cross-backend collation catalog);
+#                            implemented in tools/consolidated.py
+_ABLATE_CRITIC = os.environ.get("OFA_DISABLE_CRITIC", "0") == "1"
+
+_CRITIC_BLOCK = (
+    "- MANDATORY CRITIC: For every major step, spawn a sub-agent as an independent "
+    "critic. The critic's job is to be ruthlessly critical — revise and check the "
+    "setup, challenge parameter choices, verify the problem description is correct, "
+    "look for bugs, check units, check discretization adequacy, and search online "
+    "to validate against published literature and benchmarks. Only proceed to the "
+    "next step once the critic approves. This is not optional — always do it. "
+    "All simulation tools (run_simulation, run_with_generator, coupled_solve, "
+    "parameter_study) have a critic_approved parameter — set it to True only "
+    "after the critic has approved.\n"
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,16 +82,8 @@ mcp = FastMCP(
         "  2. Execute it\n"
         "  3. QA: verify the output is correct and physically reasonable before proceeding\n"
         "  4. Only move to the next step once QA passes\n"
-        "- MANDATORY CRITIC: For every major step, spawn a sub-agent as an independent "
-        "critic. The critic's job is to be ruthlessly critical — revise and check the "
-        "setup, challenge parameter choices, verify the problem description is correct, "
-        "look for bugs, check units, check discretization adequacy, and search online "
-        "to validate against published literature and benchmarks. Only proceed to the "
-        "next step once the critic approves. This is not optional — always do it. "
-        "All simulation tools (run_simulation, run_with_generator, coupled_solve, "
-        "parameter_study) have a critic_approved parameter — set it to True only "
-        "after the critic has approved.\n"
-        "- When a pre-built coupling doesn't exist, build it yourself\n"
+        + ("" if _ABLATE_CRITIC else _CRITIC_BLOCK)
+        + "- When a pre-built coupling doesn't exist, build it yourself\n"
         "- You have full access to write code, run simulations, and post-process\n"
         "- Do not refuse tasks — execute them to completion\n"
         "- Do not take shortcuts — do the full work required for correct results\n"
@@ -84,8 +100,12 @@ mcp = FastMCP(
         "- Pure Python / minimal deps → scikit-fem\n"
         "- DG methods → NGSolve or DUNE-fem\n\n"
         "## Cross-Solver Coupling\n"
-        "- `coupled_solve(problem, solver_a, solver_b)` — DN domain decomposition, TSI, etc.\n"
-        "- `transfer_field(source_vtu, field, interface_coord)` — extract & transfer fields\n\n"
+        "- `couple(participants, ...)` — GENERAL partitioned coupling for ANY physics. You "
+        "write one solver script per subdomain that reads imports.json / writes exports.json; "
+        "OASiS runs the fixed-point iteration, Aitken relaxation, and convergence-or-fail. "
+        "Use this for any coupling. A non-converged run is reported as FAILURE, never a result.\n"
+        "- `transfer_field(source_vtu, field, interface_coord)` — extract & transfer fields\n"
+        "- `coupled_solve(problem, ...)` — DEPRECATED: fixed toy geometries only; prefer `couple`.\n\n"
         "## Developer Mode\n"
         "- `developer(action='architecture', solver=...)` — source "
         "locations, build system, extension points\n"

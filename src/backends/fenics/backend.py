@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.backend import (
+    sorted_by_step,
     SolverBackend, BackendStatus, InputFormat,
     PhysicsCapability, JobHandle,
 )
@@ -597,7 +598,38 @@ class FenicsBackend(SolverBackend):
         # Prefer VTU (converted from XDMF) over raw XDMF
         for ext in ["*.vtu", "*.pvd", "*.pvtu", "*.xdmf"]:
             results.extend(job.work_dir.rglob(ext))
-        return sorted(results)
+        return sorted_by_step(results)
+
+    def precice_participant(self) -> dict:
+        """FEniCSx as a preCICE participant — a dolfinx solve advanced each window,
+        exchanging an interface field (e.g. read heat flux as Neumann BC, write surface
+        temperature). Verified pattern (works with the fenicsxprecice adapter too)."""
+        return {
+            "description": "FEniCSx (dolfinx) preCICE participant for the FEM side of a coupling",
+            "exchange_loop": (
+                "import precice, numpy as np\n"
+                "from dolfinx import fem, mesh; from dolfinx.fem.petsc import LinearProblem\n"
+                "# build mesh + functionspace + the transient/steady weak form; the coupled\n"
+                "# field enters as a BC: a Neumann flux (read) or Dirichlet value (read), and\n"
+                "# the surface response (write) is sampled from the solution.\n"
+                "qheat = fem.Constant(domain, 0.0)          # updated each window from preCICE\n"
+                "p = precice.Participant('Solid','precice-config.xml',0,1)\n"
+                "vid = p.set_mesh_vertices('Solid-Mesh', np.array([[0.0,0.0]]))\n"
+                "p.initialize()\n"
+                "while p.is_coupling_ongoing():\n"
+                "    dt = p.get_max_time_step_size()\n"
+                "    qheat.value = float(p.read_data('Solid-Mesh','Heat-Flux',vid,dt)[0])\n"
+                "    Th = problem.solve()                    # advance the FEM solve one window\n"
+                "    Tw = surface_value(Th)\n"
+                "    p.write_data('Solid-Mesh','Wall-Temperature',vid,np.array([Tw])); p.advance(dt)\n"
+                "p.finalize()"
+            ),
+            "notes": ("dolfinx 0.10: use fem.functionspace + LinearProblem(..., "
+                      "petsc_options_prefix=...). For per-interface-node exchange use the "
+                      "fenicsxprecice Adapter; for a scalar/lumped interface a 1-vertex mesh "
+                      "suffices. Set LD_LIBRARY_PATH to /opt/precice/lib; pyprecice must match "
+                      "the libprecice version."),
+        }
 
 
 def register():

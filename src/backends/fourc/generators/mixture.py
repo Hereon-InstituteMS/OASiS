@@ -93,7 +93,10 @@ class MixtureGenerator(BaseGenerator):
         return [{"name": "mixture_3d", "description": "Mixture material under loading"}]
 
     def get_template(self, variant: str = "mixture_3d") -> str:
-        return "# Mixture template — use MAT_Mixture with multiple constituents"
+        if variant not in ("mixture_3d", "default"):
+            raise ValueError(f"Unknown variant {variant!r}")
+        from ..inline_mesh import matched_mixture_3d_input
+        return matched_mixture_3d_input()
 
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         return []

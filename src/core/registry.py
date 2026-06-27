@@ -175,3 +175,9 @@ def load_all_backends():
         register_dune()
     except Exception as e:
         logger.debug(f"DUNE-fem backend not available: {e}")
+
+    try:
+        from backends.sparta.backend import register as register_sparta
+        register_sparta()
+    except Exception as e:
+        logger.debug(f"SPARTA backend not available: {e}")

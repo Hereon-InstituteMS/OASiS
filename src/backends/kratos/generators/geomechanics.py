@@ -5,24 +5,13 @@ Application: GeoMechanicsApplication.
 """
 
 
-def _geomechanics_2d(params: dict) -> str:
-    """FORMAT TEMPLATE — Geomechanics consolidation/slope analysis."""
-    return '''\
-"""GeoMechanics analysis — Kratos GeoMechanicsApplication"""
-import json
-try:
-    import KratosMultiphysics as KM
-    import KratosMultiphysics.GeoMechanicsApplication as GMA
-    from KratosMultiphysics.GeoMechanicsApplication.geo_mechanics_analysis import GeoMechanicsAnalysis
-    print("GeoMechanicsApplication available")
-    summary = {"note": "GeoMechanicsApplication available — use ProjectParameters.json + .mdpa workflow",
-               "capabilities": ["consolidation", "groundwater_flow", "slope_stability", "excavation"]}
-except ImportError:
-    print("GeoMechanicsApplication not installed")
-    print("Install: pip install KratosGeoMechanicsApplication")
-    summary = {"note": "KratosGeoMechanicsApplication not installed"}
-with open("results_summary.json", "w") as f: json.dump(summary, f, indent=2)
-'''
+# NOTE (2026-06-26 honesty audit): the previous _geomechanics_2d generator
+# was an availability-probe stub (import-check + {"note": ...}, no solver
+# run). GeoMechanicsApplication is NOT importable in the installed Kratos
+# stack, so 'geomechanics' has been removed from the generator registry and
+# from KratosBackend.supported_physics(). KNOWLEDGE retained for reference.
+# (A genuine saturated-porous-media consolidation solve exists separately as
+# the 'poromechanics' physics in specialized.py.)
 
 
 KNOWLEDGE = {
@@ -105,6 +94,6 @@ KNOWLEDGE = {
     },
 }
 
-GENERATORS = {
-    "geomechanics_2d": _geomechanics_2d,
-}
+# Empty: GeoMechanicsApplication not installable in this Kratos stack; the
+# prior generator was a no-solve probe stub (removed).
+GENERATORS = {}
