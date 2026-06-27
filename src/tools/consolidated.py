@@ -7,6 +7,7 @@ Fewer tools = faster schema loading = faster agent response.
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
@@ -579,6 +580,27 @@ def _fuzzy_match_physics(backend, query: str) -> str:
         for p in backend.supported_physics():
             if query_lower in p.description.lower():
                 return p.name
+
+    # 6. Token-overlap fallback. Compound synonyms like
+    # 'rarefied_gas_dynamics' -> 'rarefied_flow' or 'hypersonic_cht'
+    # -> 'hypersonic_flow' share a DISCRIMINATING token ('rarefied',
+    # 'hypersonic', 'conjugate') but neither string is a substring of
+    # the other, so steps 3-5 miss them. Match on shared significant
+    # tokens (>= 5 chars to avoid 'flow'/'heat'/'grid' collisions) and
+    # pick the physics with the most shared tokens. Discovered when a
+    # 72B agent asked SPARTA for 'rarefied_gas_dynamics' and got a raw
+    # "unknown physics" error instead of the worked rarefied_flow deck.
+    q_tokens = {t for t in re.split(r"[^a-z0-9]+", query_lower) if len(t) >= 5}
+    if q_tokens:
+        best, best_n = None, 0
+        for p in backend.supported_physics():
+            p_tokens = {t for t in re.split(r"[^a-z0-9]+", p.name.lower())
+                        if len(t) >= 5}
+            n = len(q_tokens & p_tokens)
+            if n > best_n:
+                best, best_n = p.name, n
+        if best:
+            return best
 
     # Nothing matched — return original so the caller can
     # surface the "no information found" message with the
