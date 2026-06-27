@@ -29,6 +29,7 @@ class InputFormat(Enum):
     CPP = "cpp"             # deal.ii
     XML = "xml"             # FEBio
     JSON = "json"           # generic
+    SPARTA = "sparta"       # SPARTA DSMC input script (LAMMPS-style)
 
 
 def sorted_by_step(paths: list) -> list:

@@ -1,30 +1,67 @@
 """
-preCICE XML configuration generator for cross-solver coupling.
+preCICE coupling — a first-class member of OASiS.
 
-Generates preCICE-config.xml for standard coupling scenarios.
-This enables comparison between our MCP-orchestrated DN coupling
-and preCICE's native coupling infrastructure.
+preCICE (precice.org) is the field-standard library for black-box coupling of
+independent simulation codes. In OASiS it is the native coupling path for genuinely
+forced multi-paradigm couplings — e.g. a DSMC particle code (SPARTA) coupled to a FEM
+solid (FEniCS) for conjugate heat transfer — that the file-handshake driver cannot
+express as cleanly.
 
-preCICE is NOT required for the OASiS to work — this module
-generates configurations for optional comparison studies.
+This module (1) detects the preCICE Python bindings + C++ library, (2) generates valid
+preCICE-config.xml for standard coupling scenarios (heat DN, TSI, and generic), and
+(3) verifies an end-to-end coupling actually runs. The libprecice shared library lives
+at PRECICE_LIB_DIR (default /opt/precice/lib); pyprecice must match its version.
 """
 
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger("oasis.precice")
 
+# Location of libprecice.so.* — pyprecice loads it at import time.
+PRECICE_LIB_DIR = os.environ.get("PRECICE_LIB_DIR", "/opt/precice/lib")
+
+
+def _ensure_lib_on_path() -> None:
+    """Make libprecice loadable for the pyprecice import.
+
+    Sets LD_LIBRARY_PATH (for child processes) AND ctypes-preloads libprecice into the
+    current process with RTLD_GLOBAL — necessary because changing LD_LIBRARY_PATH at
+    runtime does NOT affect the already-initialized dynamic linker of this process.
+    """
+    if not Path(PRECICE_LIB_DIR).exists():
+        return
+    cur = os.environ.get("LD_LIBRARY_PATH", "")
+    if PRECICE_LIB_DIR not in cur.split(":"):
+        os.environ["LD_LIBRARY_PATH"] = (PRECICE_LIB_DIR + ":" + cur).rstrip(":")
+    import ctypes
+    for cand in ("libprecice.so.3", "libprecice.so"):
+        try:
+            ctypes.CDLL(str(Path(PRECICE_LIB_DIR) / cand), mode=ctypes.RTLD_GLOBAL)
+            return
+        except OSError:
+            continue
+
 
 def check_precice_available() -> tuple[bool, str]:
-    """Check if preCICE Python bindings are installed."""
+    """Check that the preCICE Python bindings + C++ library are usable.
+
+    Returns (ok, message). Sets LD_LIBRARY_PATH so the bindings can find libprecice.
+    """
+    _ensure_lib_on_path()
     try:
         import precice
-        return True, f"preCICE {precice.__version__}"
-    except ImportError:
+        info = precice.get_version_information()
+        ver = info.decode().split(";")[0] if isinstance(info, bytes) else str(info)
+        return True, f"preCICE {ver} (lib at {PRECICE_LIB_DIR})"
+    except ImportError as e:
         return False, (
-            "preCICE not installed. Install via: "
-            "pip install pyprecice (requires libprecice C++ library)"
+            f"preCICE Python bindings not importable ({e}). Install a pyprecice whose "
+            f"version matches libprecice in {PRECICE_LIB_DIR}: pip install 'pyprecice==<libver>'"
         )
+    except Exception as e:
+        return False, f"preCICE present but unusable: {e}"
 
 
 def generate_heat_coupling_config(
@@ -219,3 +256,82 @@ def save_precice_config(config_xml: str, output_dir: Path, filename: str = "prec
     path.write_text(config_xml)
     logger.info(f"preCICE config saved to {path}")
     return path
+
+
+# A minimal two-participant preCICE config used to verify the coupling end-to-end.
+_VERIFY_CONFIG = """\
+<?xml version="1.0" encoding="UTF-8" ?>
+<precice-configuration>
+  <data:scalar name="Val" />
+  <mesh name="A-Mesh" dimensions="2"><use-data name="Val" /></mesh>
+  <mesh name="B-Mesh" dimensions="2"><use-data name="Val" /></mesh>
+  <participant name="A">
+    <provide-mesh name="A-Mesh" />
+    <write-data name="Val" mesh="A-Mesh" />
+  </participant>
+  <participant name="B">
+    <provide-mesh name="B-Mesh" />
+    <receive-mesh name="A-Mesh" from="A" />
+    <read-data name="Val" mesh="B-Mesh" />
+    <mapping:nearest-neighbor direction="read" from="A-Mesh" to="B-Mesh" constraint="consistent" />
+  </participant>
+  <m2n:sockets acceptor="A" connector="B" exchange-directory="." />
+  <coupling-scheme:serial-explicit>
+    <time-window-size value="1.0" /><max-time value="3.0" />
+    <participants first="A" second="B" />
+    <exchange data="Val" mesh="A-Mesh" from="A" to="B" />
+  </coupling-scheme:serial-explicit>
+</precice-configuration>
+"""
+
+_VERIFY_PARTICIPANT = """\
+import sys, numpy as np, precice
+name, other = sys.argv[1], sys.argv[2]
+p = precice.Participant(name, "precice-config.xml", 0, 1)
+mesh = f"{name}-Mesh"
+vid = p.set_mesh_vertices(mesh, np.array([[0.0, 0.0]]))
+p.initialize()
+while p.is_coupling_ongoing():
+    dt = p.get_max_time_step_size()
+    if name == "B":
+        v = p.read_data(mesh, "Val", vid, dt)
+        print(f"B received {float(v[0])}", flush=True)
+    if name == "A":
+        p.write_data(mesh, "Val", vid, np.array([42.0]))
+    p.advance(dt)
+p.finalize()
+"""
+
+
+def verify_precice_coupling(work_dir: Path = None, timeout: int = 60) -> tuple[bool, str]:
+    """Run a real 2-participant preCICE coupling and confirm data is exchanged.
+
+    Launches participants A and B (A writes 42.0, B reads it) over 3 time windows via
+    the preCICE sockets m2n. Returns (ok, message). This is the complete end-to-end
+    verification that preCICE works in this environment, not just that it imports.
+    """
+    import subprocess, sys, tempfile, time
+    _ensure_lib_on_path()
+    wd = Path(work_dir or tempfile.mkdtemp(prefix="precice_verify_"))
+    wd.mkdir(parents=True, exist_ok=True)
+    (wd / "precice-config.xml").write_text(_VERIFY_CONFIG)
+    (wd / "participant.py").write_text(_VERIFY_PARTICIPANT)
+    env = os.environ.copy()
+    env["LD_LIBRARY_PATH"] = PRECICE_LIB_DIR + ":" + env.get("LD_LIBRARY_PATH", "")
+    py = sys.executable
+    try:
+        pa = subprocess.Popen([py, "participant.py", "A", "B"], cwd=wd, env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        pb = subprocess.Popen([py, "participant.py", "B", "A"], cwd=wd, env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        out_b, _ = pb.communicate(timeout=timeout)
+        pa.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        pa.kill(); pb.kill()
+        return False, "preCICE coupling timed out (deadlock?)"
+    except Exception as e:
+        return False, f"preCICE coupling launch failed: {e}"
+    got = out_b.count("B received 42.0")
+    if pa.returncode == 0 and pb.returncode == 0 and got >= 1:
+        return True, f"preCICE coupling verified: B received the coupled value over {got} window(s)"
+    return False, f"preCICE coupling failed (rc_A={pa.returncode}, rc_B={pb.returncode}); output:\n{out_b[-500:]}"
