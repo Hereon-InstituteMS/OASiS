@@ -1723,6 +1723,56 @@ def register_consolidated_tools(mcp: FastMCP):
                            "exports": r.exports, "error": r.error,
                            "validation": val, "trustworthy_result": trustworthy}, indent=2)
 
+    @mcp.tool()
+    async def couple_precice(participants: str, data: str, exchanges: str,
+                             work_dir: str, scheme: str = "serial-explicit",
+                             dimensions: int = 2, max_time: float = 10.0,
+                             time_window: float = 1.0, timeout: int = 1800,
+                             extra_env: str = "") -> str:
+        """GENERAL preCICE coupling of ARBITRARY codes/paradigms, end-to-end.
+
+        The standard-library (preCICE) path for cross-code coupling — works for any
+        number of participants, any data fields, any exchange pattern. OASiS generates
+        the preCICE config and launches every participant's solver command. Use this
+        when each side is a separate executable/script that talks preCICE (e.g. a DSMC
+        particle code <-> a FEM solid; FSI; TSI). Each backend's preCICE participant
+        pattern is available via knowledge(topic='precice', solver=...).
+
+        Args (all JSON strings except scheme/numbers):
+            participants: list of {"name","mesh","writes":[data],"reads":[data],
+                          "command":[argv...]} — one per coupled code.
+            data:      list of {"name","type":"scalar"|"vector"}.
+            exchanges: list of {"data","from","to"} — one per coupled field.
+            work_dir:  directory to run in (config + participant cwd).
+            scheme:    serial-explicit|serial-implicit|parallel-explicit|parallel-implicit.
+            dimensions, max_time, time_window, timeout: coupling controls.
+            extra_env: optional JSON dict of extra env (e.g. {"LD_LIBRARY_PATH":...,
+                       "PYTHONPATH":...}) for the participant processes.
+
+        Returns: JSON {converged, returncodes, config, logs}. A non-zero participant
+            return code is reported as a failed coupling, never as a trustworthy result.
+        """
+        from core.precice_config import run_precice_coupling, check_precice_available
+        _get_journal().record("tool_call", "couple_precice", solver="general", physics="coupling")
+        ok, msg = check_precice_available()
+        if not ok:
+            return json.dumps({"error": f"preCICE not usable: {msg}"})
+        try:
+            parts = json.loads(participants); ds = json.loads(data); exs = json.loads(exchanges)
+            env = json.loads(extra_env) if extra_env else None
+        except json.JSONDecodeError as e:
+            return json.dumps({"error": f"invalid JSON argument: {e}"})
+        if not isinstance(parts, list) or len(parts) < 2:
+            return json.dumps({"error": "need a JSON list of >=2 participants"})
+        try:
+            r = run_precice_coupling(parts, ds, exs, Path(work_dir), scheme=scheme,
+                                     dimensions=dimensions, max_time=max_time,
+                                     time_window=time_window, timeout=timeout, extra_env=env)
+        except Exception as e:
+            return json.dumps({"error": f"coupling failed: {e}"})
+        r["trustworthy_result"] = bool(r.get("converged"))
+        return json.dumps(r, indent=2)
+
     # ═══════════════════════════════════════════════════════════
     # 6. VISUALIZE (replaces 4 visualization tools)
     # ═══════════════════════════════════════════════════════════
