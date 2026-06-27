@@ -178,6 +178,33 @@ class SolverBackend(ABC):
         """Return solver version string, if detectable."""
         return None
 
+    def precice_participant(self) -> dict:
+        """How to make this backend a preCICE coupling participant.
+
+        Returns a dict describing the participant-adapter pattern so an agent (or the
+        general orchestrator) can wrap this solver into an arbitrary cross-code coupling:
+          {description, exchange_loop, notes}
+        Backends override this with solver-specific code; the default is the generic
+        preCICE time-loop that any participant follows.
+        """
+        return {
+            "description": f"Generic preCICE participant for {self.name()}",
+            "exchange_loop": (
+                "import precice, numpy as np\n"
+                "p = precice.Participant(NAME, 'precice-config.xml', 0, 1)\n"
+                "vid = p.set_mesh_vertices(MESH, coords)   # interface coordinates\n"
+                "p.initialize()\n"
+                "while p.is_coupling_ongoing():\n"
+                "    dt = p.get_max_time_step_size()\n"
+                "    read_vals = p.read_data(MESH, READ_DATA, vid, dt)   # inputs from partner\n"
+                "    # ... advance this solver one window using read_vals ...\n"
+                "    p.write_data(MESH, WRITE_DATA, vid, out_vals)        # outputs to partner\n"
+                "    p.advance(dt)\n"
+                "p.finalize()"
+            ),
+            "notes": "Set LD_LIBRARY_PATH to libprecice; match pyprecice to the libprecice version.",
+        }
+
 
 def get_python_executable() -> str:
     """Get the Python executable that's running this MCP server.

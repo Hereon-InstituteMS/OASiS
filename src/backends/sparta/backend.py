@@ -299,6 +299,38 @@ class SpartaBackend(SolverBackend):
     def get_version(self) -> Optional[str]:
         return f"SPARTA ({_KB.get('n_commands', 0)} commands distilled)"
 
+    def precice_participant(self) -> dict:
+        """SPARTA as a preCICE participant — drive it via its Python library, exchange a
+        surface quantity (e.g. heat flux out, wall temperature in). Verified pattern."""
+        return {
+            "description": "SPARTA DSMC preCICE participant (driven via libsparta Python library)",
+            "exchange_loop": (
+                "import precice, numpy as np\n"
+                "from sparta import sparta                 # PYTHONPATH=<sparta>/python\n"
+                "spa = sparta(name='serial')               # loads libsparta_serial.so\n"
+                "for line in setup_deck.splitlines(): spa.command(line)\n"
+                "# setup must include: compute <id> surf all all etot ; fix ave/surf ;\n"
+                "#   variable twall equal <T0> ; surf_collide <sc> diffuse v_twall 1.0 ;\n"
+                "#   compute totflux reduce sum f_<avesurf>\n"
+                "p = precice.Participant('Gas','precice-config.xml',0,1)\n"
+                "vid = p.set_mesh_vertices('Gas-Mesh', np.array([[0.0,0.0]]))\n"
+                "p.initialize()\n"
+                "while p.is_coupling_ongoing():\n"
+                "    dt = p.get_max_time_step_size()\n"
+                "    T = p.read_data('Gas-Mesh','Wall-Temperature',vid,dt)\n"
+                "    spa.command('variable twall delete'); spa.command(f'variable twall equal {float(T[0])}')\n"
+                "    spa.command('run 500')                 # advance DSMC, re-average flux\n"
+                "    q = spa.extract_compute('totflux',0,0) / WALL_AREA\n"
+                "    p.write_data('Gas-Mesh','Heat-Flux',vid,np.array([q])); p.advance(dt)\n"
+                "p.finalize()"
+            ),
+            "notes": ("Build libsparta_serial.so via 'make mode=shlib serial'. The Python library "
+                      "exposes command/extract_global/extract_compute/extract_variable only (no surf "
+                      "scatter) -> couple a SCALAR (total flux <-> uniform wall temp) by re-issuing a "
+                      "SPARTA equal-variable for the wall temperature each window. Set LD_LIBRARY_PATH "
+                      "to <sparta>/src and /opt/precice/lib."),
+        }
+
 
 # ─── Registration ────────────────────────────────────────────────────────
 
