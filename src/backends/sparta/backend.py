@@ -83,14 +83,14 @@ _PHYSICS = {
                  "gas is collisionless (free-molecular only)."),
     "hypersonic_flow": dict(
         desc="Hypersonic rarefied flow over a body (shock, surface heat flux) — DSMC",
-        dims=[2, 3], example="cylinder",
+        dims=[2, 3], example="adjust_temp",
         commands=["read_surf", "surf_collide", "surf_react", "compute", "fix",
                   "bound_modify", "create_particles", "fix emit/face"],
         pitfalls="Resolve the shock/boundary layer with fine cells near the surface; "
                  "run to statistical steady state before sampling surface heat flux."),
     "surface_interaction": dict(
         desc="Gas-surface interaction: diffuse/specular/CLL collision + surface reactions",
-        dims=[2, 3], example="surf",
+        dims=[2, 3], example="adjust_temp",
         commands=["read_surf", "surf_collide", "surf_react", "surf_modify",
                   "compute surf", "fix surf/temp"],
         pitfalls="surf_collide diffuse needs a wall temperature + accommodation; for "
@@ -128,7 +128,7 @@ _PHYSICS = {
     "conjugate_heat_transfer": dict(
         desc="DSMC gas <-> FEM solid conjugate heat transfer (the forced two-code coupling; "
              "SPARTA writes surface heat flux, reads back wall temperature via preCICE)",
-        dims=[2, 3], example="cylinder",
+        dims=[2, 3], example="adjust_temp",
         commands=["surf_collide diffuse", "compute surf ... etot", "fix surf/temp",
                   "fix field/surf", "read_surf"],
         pitfalls="The wall temperature is a coupling unknown updated each preCICE window; "
