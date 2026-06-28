@@ -661,18 +661,36 @@ p = precice.Participant("<PARTICIPANT_NAME>", "precice-config.xml", 0, 1)
 # coordinates of YOUR coupling-interface points (the surface/edge shared with the partner):
 coords = np.array([[x0, y0], ...])
 vid = p.set_mesh_vertices("<MESH_NAME>", coords)
+if p.requires_initial_data():
+    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, initial_outgoing)
 p.initialize()
 while p.is_coupling_ongoing():
+    # --- IMPLICIT coupling: save state at the start of a window so the window can be redone ---
+    if p.requires_writing_checkpoint():
+        saved_state = your_solver.save_state()        # deep-copy solver state (fields, time)
     dt = p.get_max_time_step_size()
     incoming = p.read_data("<MESH_NAME>", "<READ_FIELD>", vid, dt)   # field FROM the partner
     # --- advance YOUR solver by dt, using `incoming` as a boundary condition ---
     outgoing = ...                                                   # field YOUR solver produces
     p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, outgoing)
     p.advance(dt)
+    # --- IMPLICIT coupling: if not yet converged, REDO the window from the checkpoint ---
+    if p.requires_reading_checkpoint():
+        your_solver.restore_state(saved_state)
+    # else: window converged -> commit and move to the next time window
 p.finalize()
 ```
 
-CRITICAL: both participant scripts must run AT THE SAME TIME — they handshake through
+CHECKPOINTS ARE MANDATORY FOR IMPLICIT SCHEMES. With `serial-implicit`/`parallel-implicit`
+(needed when explicit Dirichlet–Neumann diverges — values blow up to infinity), preCICE
+SUB-ITERATES each time window to convergence, so each participant MUST handle the checkpoint
+calls above: `requires_writing_checkpoint()` (save state) and `requires_reading_checkpoint()`
+(restore state and redo the window). If you ignore these, an implicit run never advances and
+preCICE reports the window unconverged. For `*-explicit` schemes these calls always return
+False, so the same loop works unchanged. Add convergence acceleration
+(`<acceleration:aitken>` or IQN) under the coupling-scheme to make implicit converge fast.
+
+CRITICAL LAUNCH: both participant scripts must run AT THE SAME TIME — they handshake through
 preCICE and each blocks at `initialize()` until the other connects. Start each as its own
 concurrent process (NOT one after the other, and NOT a single `mpirun` over both files), or
 let the `couple_precice` tool launch every participant for you. Set `LD_LIBRARY_PATH` to the
