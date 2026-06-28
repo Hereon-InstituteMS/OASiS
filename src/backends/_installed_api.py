@@ -117,6 +117,24 @@ INSTALLED_API = {
     "Omit the optional RESULT DESCRIPTION section for a pure smoke run so regression asserts can't fail the job.",
     "Success = stdout 'processor 0 finished normally' / EXIT:0 and a <prefix>.control output file.",
   ],
+  # Additional VERIFIED capability references (each written-run-fixed on this 4C, generic
+  # problems that teach the schema — NOT any benchmark solution).
+  "capabilities": [
+   {"name": "Elastoplasticity (von Mises / J2, isotropic hardening)",
+    "facts": [
+     "Material: MAT_Struct_PlasticLinElast {YOUNG, NUE, DENS, YIELD (initial yield stress), ISOHARD (linear isotropic hardening modulus, stress units), KINHARD (kinematic; 0 for pure isotropic), TOL (return-mapping Newton tol)}. This is a SMALL-STRAIN J2 model -> pair it with `KINEM linear` on the element. (Finite-strain: MAT_Struct_PlasticNlnLogNeoHooke; ductile damage: MAT_Struct_PlasticGTN.)",
+     "CONVERGENCE GOTCHA: a single load jump well past yield stalls the local return-mapping Newton. RAMP the load over several steps (e.g. NUMSTEP 5, FUNCT 't') so only ~1% plastic strain accrues per step -> nlniter jumps 2->4 at yield and converges.",
+     "Use a robust direct linear solver for tiny meshes (SOLVER 1: {SOLVER: 'UMFPACK'}). Apply load by prescribed displacement (DESIGN SURF DIRICH), fully clamp the opposite face to kill rigid-body modes.",
+     "Confirm yielding: IO {STRUCT_STRAIN/STRUCT_PLASTIC_STRAIN: 'EA', STRUCT_STRESS: 'Cauchy'} + runtime VTK STRESS_STRAIN:true; compare von Mises stress to YIELD.",
+    ]},
+   {"name": "2D structural element + EDGE (line) traction",
+    "facts": [
+     "2D element: `<id> WALL QUAD4 <4 CCW node ids> MAT <id> KINEM linear EAS none THICK <t> STRESS_STRAIN plane_stress GP 2 2`. Missing/garbled tail params abort at input parse.",
+     "EDGE traction in 2D attaches to LINES, not surfaces: use `DESIGN LINE NEUMANN CONDITIONS` (E: d) + a `DLINE-NODE TOPOLOGY` block ('NODE n DLINE d') for the loaded edge; clamp via `DESIGN LINE DIRICH CONDITIONS` + its own DLINE. NUMDOF 6, ONOFF[0]=1 turns on x-traction, VAL is traction per unit edge length (x THICK).",
+     "ZERO-DISPLACEMENT GOTCHA (the classic 2D trap): if you attach the load to a DSURFACE in 2D, or DLINE-NODE TOPOLOGY is missing/points at the wrong nodes, 4C STILL runs and exits 0 but the load set is EMPTY -> displacement is zero everywhere. Always confirm every loaded-edge node appears under the Neumann DLINE.",
+     "Dirichlet on the clamped edge must constrain BOTH dofs (ONOFF [1,1]) or the body is under-constrained.",
+    ]},
+  ],
  },
 }
 
@@ -132,4 +150,7 @@ def render(backend_name: str) -> str:
            "```", e["verified_smoke_test"].rstrip(), "```",
            "Version-specific gotchas:"]
     out += [f"- {g}" for g in e["gotchas"]]
+    for cap in e.get("capabilities", []):
+        out.append(f"\n### Verified capability: {cap['name']}")
+        out += [f"- {f}" for f in cap["facts"]]
     return "\n".join(out)
