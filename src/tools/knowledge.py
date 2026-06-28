@@ -650,6 +650,34 @@ independent solvers via adapters.
 </precice-configuration>
 ```
 
+## Participant Adapter Pattern (generic — every coupled code follows this)
+
+Each participant is a small script wrapping ONE solver that exchanges the coupling
+fields every time window. Fill in the `<SOLVER>` specifics yourself:
+
+```python
+import precice, numpy as np
+p = precice.Participant("<PARTICIPANT_NAME>", "precice-config.xml", 0, 1)
+# coordinates of YOUR coupling-interface points (the surface/edge shared with the partner):
+coords = np.array([[x0, y0], ...])
+vid = p.set_mesh_vertices("<MESH_NAME>", coords)
+p.initialize()
+while p.is_coupling_ongoing():
+    dt = p.get_max_time_step_size()
+    incoming = p.read_data("<MESH_NAME>", "<READ_FIELD>", vid, dt)   # field FROM the partner
+    # --- advance YOUR solver by dt, using `incoming` as a boundary condition ---
+    outgoing = ...                                                   # field YOUR solver produces
+    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, outgoing)
+    p.advance(dt)
+p.finalize()
+```
+
+CRITICAL: both participant scripts must run AT THE SAME TIME — they handshake through
+preCICE and each blocks at `initialize()` until the other connects. Start each as its own
+concurrent process (NOT one after the other, and NOT a single `mpirun` over both files), or
+let the `couple_precice` tool launch every participant for you. Set `LD_LIBRARY_PATH` to the
+preCICE lib and match the `pyprecice` version to `libprecice`.
+
 ## Adapter Ecosystem
 
 | Solver | preCICE Adapter | Status |
