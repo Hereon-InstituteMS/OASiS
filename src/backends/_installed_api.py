@@ -134,6 +134,13 @@ INSTALLED_API = {
      "ZERO-DISPLACEMENT GOTCHA (the classic 2D trap): if you attach the load to a DSURFACE in 2D, or DLINE-NODE TOPOLOGY is missing/points at the wrong nodes, 4C STILL runs and exits 0 but the load set is EMPTY -> displacement is zero everywhere. Always confirm every loaded-edge node appears under the Neumann DLINE.",
      "Dirichlet on the clamped edge must constrain BOTH dofs (ONOFF [1,1]) or the body is under-constrained.",
     ]},
+   {"name": "Reading results out of 4C output (extract a nodal value)",
+    "facts": [
+     "By DEFAULT 4C writes only a BINARY <prefix>.control + binary result files — NOT human-readable. Do NOT try to hex-decode them by hand.",
+     "To get readable output, add: `IO/RUNTIME VTK OUTPUT: {INTERVAL_STEPS: 1, OUTPUT_DATA_FORMAT: ascii}` and `IO/RUNTIME VTK OUTPUT/STRUCTURE: {OUTPUT_STRUCTURE: true, DISPLACEMENT: true}` (add `STRESS_STRAIN: true` for stresses). This writes `<prefix>-vtk-files/structure-0000N-0.vtu`.",
+     "Extract with pyvista (available in /home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python): `import pyvista as pv, numpy as np; m = pv.read(LAST_vtu); d = np.asarray(m.point_data['displacement']); pts = m.points`. Find your node by coordinate: `i = np.argmin(np.linalg.norm(pts - target_xyz, axis=1))`, then `d[i]` is its displacement (stress/strain are cell or point arrays too).",
+     "GOTCHA: read the LAST timestep file (highest number, e.g. structure-00005-0.vtu), NOT structure-00000-0.vtu which is the INITIAL zero state -> reading step 0 gives displacement 0 everywhere and looks like the load did nothing.",
+    ]},
   ],
  },
 }
