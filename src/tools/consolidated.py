@@ -2150,6 +2150,19 @@ def register_consolidated_tools(mcp: FastMCP):
                 parts.append(
                     f"### Pitfalls ({len(pitfalls_separate)})\n{bullets}\n")
 
+        # 1a. Installed-version API reference (VERIFIED by actually running here).
+        # The dominant failure mode is writing API calls for the WRONG version of the
+        # installed code (NGSolve Integrate signature, deal.II DEAL_II_DIR build-tree,
+        # the 4C YAML schema, ...). Surface a verified smoke test + version gotchas so
+        # the agent adapts a known-good call instead of guessing from memory.
+        try:
+            from backends._installed_api import render as _render_installed_api
+            api_ref = _render_installed_api(backend.name())
+            if api_ref:
+                parts.append(api_ref + "\n")
+        except Exception:
+            pass
+
         # 1b. General input-format pitfalls (ExodusII IDs, FUNCT syntax, etc.)
         # These apply to ALL physics in this solver, not just the current one
         general_k = _strip_pitfalls(backend.get_knowledge("input_format"))
