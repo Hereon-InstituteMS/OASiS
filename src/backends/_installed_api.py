@@ -15,6 +15,75 @@ Keyed by the backend registry name.
 """
 
 INSTALLED_API = {
+ "dune": {
+  "version": "dune-fem 2.12.0.0 (ufl 2024.2.0, python 3.12)",
+  "run": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python <script>.py",
+  "verified_smoke_test": (
+    "import numpy as np\n"
+    "from dune.grid import structuredGrid\n"
+    "from dune.fem.space import lagrange\n"
+    "from dune.fem.scheme import galerkin\n"
+    "from dune.ufl import DirichletBC\n"
+    "from ufl import TrialFunction, TestFunction, SpatialCoordinate, dx, grad, dot, sin, pi\n"
+    "import dune.fem\n"
+    "gridView = structuredGrid([0, 0], [1, 1], [8, 8])      # leaf view directly (quads)\n"
+    "space = lagrange(gridView, order=1)\n"
+    "u, v = TrialFunction(space), TestFunction(space)\n"
+    "x = SpatialCoordinate(space)\n"
+    "exact = sin(pi*x[0]) * sin(pi*x[1])\n"
+    "a = dot(grad(u), grad(v)) * dx\n"
+    "l = 2*pi*pi * exact * v * dx\n"
+    "scheme = galerkin([a == l, DirichletBC(space, 0)], solver='cg')  # BC goes IN the eq list\n"
+    "uh = space.interpolate(0, name='uh')\n"
+    "scheme.solve(target=uh)                                # solves IN PLACE into uh\n"
+    "e2 = dune.fem.integrate((uh - exact)**2, gridView=gridView, order=5)\n"
+    "print('L2 error =', np.sqrt(e2))                       # -> 7.588e-03 on 8x8; rate 2.0 on refine\n"),
+  "gotchas": [
+    "Dirichlet BCs go INTO the equation list: `galerkin([a == l, DirichletBC(space, value)])` — NOT attached to the solve call as in FEniCS. The value may be a constant OR a UFL expression (inhomogeneous BCs verified).",
+    "`scheme.solve(target=uh)` solves IN PLACE into a pre-created `uh = space.interpolate(0, name='uh')` and returns an info dict ({'converged', 'iterations' (=Newton steps), 'linear_iterations', ...}). It always wraps a Newton loop (0 extra steps for linear problems).",
+    "Error norms: `dune.fem.integrate(expr, gridView=gv, order=5)` -> float. (The old `dune.fem.function.integrate(gv, expr, order)` still works but is deprecated and has a DIFFERENT argument order.)",
+    "Global refinement: `gridView.hierarchicalGrid.globalRefine(1)` — the existing gridView/space/scheme all track it automatically (just re-solve; no re-creation). `dune.fem.globalRefine(1, hgrid)` is the discrete-function-aware variant (prolongs existing DFs).",
+    "CRITICAL: point-evaluating a discrete function at a coordinate, `uh((0.5, 0.5))`, HANGS at 100% CPU (infinite float()/complex() recursion in this dune-2.12/ufl-2024.2 combo). Use `from dune.fem.utility import pointSample; pointSample(uh, [0.5, 0.5])` (verified) or `lineSample(uh, p0, p1, n)`.",
+    "JIT: every new form/scheme signature triggers a C++ compile into ~/.cache/dune-py (minutes on FIRST use, instant when warm), serialized on a global cmake.lock — NEVER run two dune scripts concurrently on first compile; a silent zero-output 'hang' usually means it is compiling (or waiting on the lock), not a code bug.",
+    "Simplex meshes: `from dune.alugrid import aluConformGrid; aluConformGrid(dune.grid.cartesianDomain([0,0],[1,1],[4,4]))`. Dof vector: `uh.as_numpy`; VTK: `gridView.writeVTK('name', pointdata=[uh])`.",
+    "Cosmetic: an 'Invalid MIT-MAGIC-COOKIE-1 key' X11 warning prints at import WITHOUT a trailing newline (it concatenates with your first stdout line — beware when parsing logs).",
+  ],
+ },
+ "fenics": {
+  "version": "dolfinx 0.10.0",
+  "run": "LD_LIBRARY_PATH=/opt/precice/lib /home/alexander/miniconda3/envs/fenics/bin/python <script>.py",
+  "verified_smoke_test": (
+    "from mpi4py import MPI\n"
+    "import numpy as np, dolfinx, dolfinx.fem.petsc, ufl   # fem.petsc import is MANDATORY\n"
+    "mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 32, 32)\n"
+    "V = dolfinx.fem.functionspace(mesh, ('Lagrange', 1))   # lowercase factory\n"
+    "u, v = ufl.TrialFunction(V), ufl.TestFunction(V)\n"
+    "a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx\n"
+    "L = dolfinx.fem.Constant(mesh, dolfinx.default_scalar_type(1.0)) * v * ufl.dx\n"
+    "def bnd(x): return np.isclose(x[0],0)|np.isclose(x[0],1)|np.isclose(x[1],0)|np.isclose(x[1],1)\n"
+    "bc = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0),\n"
+    "                             dolfinx.fem.locate_dofs_geometrical(V, bnd), V)\n"
+    "problem = dolfinx.fem.petsc.LinearProblem(a, L, bcs=[bc],\n"
+    "    petsc_options_prefix='poisson_',                    # REQUIRED kwarg in 0.10\n"
+    "    petsc_options={'ksp_type': 'preonly', 'pc_type': 'lu'})\n"
+    "uh = problem.solve()                                    # returns the Function directly\n"
+    "e2 = dolfinx.fem.assemble_scalar(dolfinx.fem.form(ufl.inner(uh, uh) * ufl.dx))\n"
+    "print('max(u) =', uh.x.array.max())                     # -> ~0.0736\n"),
+  "gotchas": [
+    "`petsc_options_prefix` is a REQUIRED keyword-only arg of LinearProblem AND NonlinearProblem in 0.10 — omitting it raises TypeError. Any distinct string works.",
+    "`import dolfinx.fem.petsc` (and `dolfinx.nls.petsc` for the legacy Newton path) must be EXPLICIT — `import dolfinx` alone gives AttributeError on fem.petsc.",
+    "Function spaces: lowercase `dolfinx.fem.functionspace(mesh, ('Lagrange', 1))`. The capitalized FunctionSpace class cannot be built from a (family, degree) tuple.",
+    "`interpolate()` DOES accept plain python callables of x (shape (3, npts); vector fields return np.vstack of components). It does NOT accept raw UFL expressions — wrap those in `dolfinx.fem.Expression(expr, V.element.interpolation_points)`; NOTE `interpolation_points` is a PROPERTY in 0.10 (no parentheses).",
+    "`uh.x.petsc_vec`, never `uh.vector` (gone in 0.10). Raw dofs: `uh.x.array`; after parallel writes: `uh.x.scatter_forward()`.",
+    "`tabulate_dof_coordinates()` returns (ndofs, 3) even in 2D — slice [:, :2]. Point-evaluation coordinates must be 3D too: np.array([[x, y, 0.0]]).",
+    "Mixed elements: `basix.ufl.element('Lagrange', mesh.basix_cell(), 2, shape=(2,))` + `dolfinx.fem.functionspace(mesh, basix.ufl.mixed_element([P2, P1]))`; split with ufl.TrialFunctions/TestFunctions (PLURAL). Collapse: `V, V_to_W = W.sub(0).collapse()` (returns a tuple).",
+    "Subspace BC: value as a Function on the COLLAPSED space + dofs from the two-space form `locate_dofs_geometrical((W.sub(0), V), marker)` + `dirichletbc(func, dofs_pair, W.sub(0))`. Extract components: `wh.sub(0).collapse()`.",
+    "SADDLE-POINT (Stokes/mixed) with all-Dirichlet velocity: pressure is only defined up to a constant -> PIN ONE PRESSURE DOF as a subspace BC on W.sub(1) at a corner (verified to machine precision with LU/mumps). Without the pin the system is singular and the answer (and any convergence rate from it) is garbage.",
+    "NONLINEAR — BIGGEST 0.10 BREAK: `dolfinx.fem.petsc.NonlinearProblem(F, u, bcs=..., petsc_options_prefix=..., petsc_options={...})` is now SNES-BASED with its own `.solve()` (configure Newton via petsc_options: {'snes_type':'newtonls','snes_rtol':1e-10,'ksp_type':'preonly','pc_type':'lu'}). The old Newton-companion class was RENAMED `NewtonSolverNonlinearProblem` (for the legacy `dolfinx.nls.petsc.NewtonSolver` path, deprecated). The nonlinear unknown is a fem.Function (NOT a TrialFunction) used directly in the residual. Prefer the SNES path.",
+    "Scalar norms: `assemble_scalar(form(...))` is the LOCAL contribution — always `mesh.comm.allreduce(val, op=MPI.SUM)` before sqrt.",
+    "Use `dolfinx.default_scalar_type` for Constants/BC scalars to avoid dtype mismatches.",
+  ],
+ },
  "ngsolve": {
   "version": "6.2.2604",
   "run": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python <script>.py",
@@ -96,6 +165,10 @@ INSTALLED_API = {
     "NONLINEAR (Newton) — deal.II nonlinear WORKS here (verified clean O(h^2)); a segfault is YOUR code, not the install. Pattern: `current_solution` is a Vector sized to dof_handler.n_dofs() holding the ITERATE (not the update). Each step assembles system_matrix=Jacobian and system_rhs = MINUS residual, linearized about current_solution: per cell `fe_values.reinit(cell)` then `fe_values.get_function_values/get_function_gradients(current_solution, ...)` for the current state (e.g. k=1+u^2, k'=2u -> J_ij=(k*grad_phi_j.grad_phi_i + k'*phi_j*(grad_u.grad_phi_i))*JxW, R_i=(k*(grad_u.grad_phi_i)-f*phi_i)*JxW). Solve J*delta=-R; `current_solution += delta`; loop until residual l2_norm small.",
     "Newton BCs: set Dirichlet values on current_solution ONCE before iterating, then every Newton UPDATE is homogeneous (ZeroFunction boundary values applied to matrix+rhs each assembly) so the boundary stays fixed.",
     "SEGFAULT in assembly is almost always: (1) `fe_values.reinit(cell)` missing/mis-scoped; (2) update flag missing — need `update_values|update_gradients|update_quadrature_points|update_JxW_values` (reading grads/points without the flag crashes); (3) current_solution not sized to n_dofs() before get_function_*; (4) DoFs not distributed; (5) cell_matrix/local_dof_indices sized with wrong dofs_per_cell.",
+    "THIS deal.II IS A RELEASE BUILD: all Assert checks are compiled OUT, so beginner mistakes segfault SILENTLY or give garbage instead of a friendly assertion. Absence of a diagnostic is expected — it is NOT evidence of a broken library.",
+    "VARIABLE-COEFFICIENT / custom `Function<dim>` classes (verified): exact override `double value(const Point<dim> &p, const unsigned int component = 0) const override` — ALWAYS write `override` (a wrong signature without it silently hides the base and yields NaN -> 'residual was nan' at solve, not a helpful error). Evaluate at q-points via `coefficient.value(fe_values.quadrature_point(q))` — which REQUIRES `update_quadrature_points` in the FEValues flags (missing flag = the #1 verified cause of 'compiles fine, segfaults in the cell loop').",
+    "SparsityPattern LIFETIME: the SparsityPattern must OUTLIVE the SparseMatrix (declare it before the matrix, same scope — never a local in setup()). A destroyed pattern = verified segfault at the first system_matrix.add(), i.e. 'after distribute_dofs, before assembly'.",
+    "MISDIAGNOSIS GUARD: before blaming the installation, build+run a known-good minimal case (step-3 pattern) with the same CMake + LD_LIBRARY_PATH — if that runs (it does on this machine, rate 2), the install is FINE and the segfault is YOUR code: check update_quadrature_points, SparsityPattern lifetime, `override` on every Function::value.",
   ],
  },
  "fourc": {

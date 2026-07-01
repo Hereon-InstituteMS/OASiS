@@ -1110,8 +1110,14 @@ def register_coupling_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
-                     accelerator: str = "aitken") -> str:
+                     accelerator: str = "aitken", validate_only: bool = False) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
+
+        RECOMMENDED WORKFLOW: call with validate_only=True FIRST — it dry-runs each
+        participant ONCE (empty imports.json) and reports whether it fulfilled the
+        contract (ran OK, wrote a well-formed exports.json). Debug each side alone,
+        THEN run the real coupling. This catches contract bugs in seconds instead of
+        after a failed 100-iteration coupling.
 
         You write one self-contained solver script per subdomain/participant; OASiS
         runs the fixed-point iteration, relaxation, and convergence-or-fail for you.
@@ -1168,6 +1174,52 @@ def register_coupling_tools(mcp: FastMCP):
             return json.dumps({"error": f"invalid participants JSON: {e}"})
         if not isinstance(specs, list) or len(specs) < 2:
             return json.dumps({"error": "need a JSON list of >=2 participants"})
+        if validate_only:
+            # dry-run each participant once against the contract (general, physics-agnostic)
+            import subprocess as _sp
+            report = {}
+            for s in specs:
+                name = s.get("name", "?")
+                try:
+                    wd = Path(s["work_dir"]); wd.mkdir(parents=True, exist_ok=True)
+                    (wd / "imports.json").write_text("{}")          # iteration-1 condition
+                    (wd / "exports.json").unlink(missing_ok=True)
+                    r = _sp.run(list(s["command"]), cwd=wd, capture_output=True,
+                                text=True, timeout=int(s.get("timeout", 600)))
+                    exp = wd / "exports.json"
+                    if r.returncode != 0:
+                        report[name] = {"ok": False, "problem": "script exited nonzero",
+                                        "stderr_tail": (r.stderr or r.stdout)[-500:]}
+                    elif not exp.exists():
+                        report[name] = {"ok": False, "problem":
+                                        "ran OK but wrote NO exports.json (contract violation)"}
+                    else:
+                        try:
+                            e = json.loads(exp.read_text())
+                            probs = [k for k in ("field_name", "n_points", "coordinates", "values")
+                                     if k not in e]
+                            nv = len(e.get("values", [])); np_ = e.get("n_points", -1)
+                            if probs:
+                                report[name] = {"ok": False, "problem": f"exports.json missing keys: {probs}"}
+                            elif nv != np_:
+                                report[name] = {"ok": False, "problem":
+                                                f"n_points={np_} but len(values)={nv} (mismatch)"}
+                            else:
+                                report[name] = {"ok": True, "n_points": np_,
+                                                "field_name": e.get("field_name"),
+                                                "value_sample": e["values"][:3]}
+                        except json.JSONDecodeError as je:
+                            report[name] = {"ok": False, "problem": f"exports.json is not valid JSON: {je}"}
+                except _sp.TimeoutExpired:
+                    report[name] = {"ok": False, "problem": "TIMEOUT (script hung — must run once and exit)"}
+                except (KeyError, TypeError, OSError) as e:
+                    report[name] = {"ok": False, "problem": f"bad spec / launch failure: {e}"}
+            all_ok = all(v.get("ok") for v in report.values())
+            return json.dumps({"validate_only": True, "all_ok": all_ok, "participants": report,
+                               "next": ("all participants fulfil the contract — re-call couple() "
+                                        "WITHOUT validate_only to run the real coupling" if all_ok
+                                        else "fix the flagged participants, re-validate, then couple")},
+                              indent=2)
         parts = []
         for s in specs:
             try:

@@ -603,18 +603,49 @@ FUNCT1:
         return '''\
 # Coupling Knowledge
 
-## ⭐ RECOMMENDED coupling approach: the `couple()` tool (PREFER THIS)
-To couple two codes, PREFER OASiS's `couple()` tool over hand-writing preCICE. It is FILE-BASED and
-SEQUENTIAL — no preCICE, no MPI, no concurrent processes — so it CANNOT deadlock. You write ONE plain
-"solve this subdomain" script per code (read `imports.json` → solve your subdomain → write
-`exports.json` with the interface coordinates+values), and `couple()` runs the fixed-point
-Dirichlet-Neumann iteration + relaxation + convergence FOR you. That is far more robust for an agent
-than assembling preCICE participants + config XML + a concurrent launcher (which DEADLOCKS if one
-participant crashes). Call `couple()` with a JSON list of participants (name, command, work_dir,
-imports_from); read its docstring for the exact participant contract and the verified gotchas
-(iteration-1 imports are empty, always write exports.json, raise max_iter, `constant` relaxation often
-beats `aitken`, keep the flux-sign/value-index handshake consistent). Use preCICE (below) ONLY if you
-specifically need it — for most agent-driven couplings, `couple()` is the robust choice.
+## ⭐ RECOMMENDED coupling approach: the `couple()` tool — FOLLOW THIS PROCEDURE EXACTLY
+`couple()` is FILE-BASED and SEQUENTIAL (no preCICE, no MPI, no concurrent processes — CANNOT
+deadlock). You only write one "solve my subdomain" script per code; the driver does the fixed-point
+iteration, relaxation, and convergence FOR you. Do NOT hand-write preCICE unless specifically
+required. Follow these steps IN ORDER:
+
+**STEP 1 — write one participant script per code from this SKELETON** (fill only the <PLACEHOLDERS>;
+the imports-guard and exports-writer stay as-is):
+```python
+import json, os, numpy as np
+# -- 1. read partner interface data (EMPTY {} on iteration 1 -> use a default guess) --
+bc_values = None
+if os.path.exists("imports.json"):
+    imp = json.load(open("imports.json"))
+    if "<PARTNER_NAME>" in imp and imp["<PARTNER_NAME>"].get("n_points", 0) > 0:
+        bc_values = np.array(imp["<PARTNER_NAME>"]["values"])
+if bc_values is None:
+    bc_values = <REASONABLE_DEFAULT_GUESS>          # e.g. ambient temperature / zero flux
+# -- 2. solve YOUR subdomain with bc_values applied on the interface --
+#    <YOUR SINGLE-CODE SOLVE HERE — same as any standalone problem in this code;
+#     Dirichlet-side: impose partner values, export your resulting flux (density, q = k*du/dn);
+#     Neumann-side:  impose partner flux,  export your resulting interface values>
+# -- 3. ALWAYS write exports.json (the driver fails loudly if it is missing) --
+json.dump({"field_name": "<WHAT_YOU_EXPORT>", "n_points": len(iface_coords),
+           "coordinates": [[float(x), float(y)] for x, y in iface_coords],
+           "values": [float(v) for v in out_values]}, open("exports.json", "w"))
+```
+
+**STEP 2 — VALIDATE each participant alone BEFORE coupling:** call
+`couple(participants=..., validate_only=True)`. It dry-runs each script once (empty imports) and
+reports contract violations (nonzero exit / missing exports.json / malformed shape). Fix and
+re-validate until `all_ok` — this catches bugs in seconds instead of after a failed coupling.
+
+**STEP 3 — run the real coupling:** `couple(participants=..., max_iter=200, accelerator="constant")`.
+General numerics (verified): iteration-1 imports are EMPTY for everyone (Jacobi exchange — you never
+see this-iteration's partner output); default max_iter=50 is often too LOW — use 150-300;
+`accelerator="constant"` (theta0~0.5) often BEATS "aitken" on oscillatory couplings; HIGH-CONTRAST
+interfaces (e.g. metal/fluid conductivity ratios ~100+) contract slowly — use STRONG under-relaxation
+(theta0 ~0.1-0.2) and more iterations; NOISY exports (particle/DSMC codes) — time-average inside your
+script before exporting. The flux SIGN and the values-index are a handshake between your two scripts:
+agree once, keep consistent (a sign flip diverges).
+
+**STEP 4 — sanity-check the converged value** (physical range, both sides agree) before reporting.
 
 ## What is preCICE?
 
@@ -697,7 +728,7 @@ ONE `<exchange>` per direction + a `relative-convergence-measure` + `acceleratio
   parallel to the returned `vids`; preCICE's nearest-neighbor mapping bridges the non-matching sets.
 
 ### dolfinx 0.10.0 coupling gotchas (verified)
-- `interpolate()` NO LONGER accepts python lambdas. For received coupling data, assign DIRECTLY:
+- `interpolate()` accepts plain python callables of x but NOT raw UFL expressions (wrap UFL in `dolfinx.fem.Expression(expr, V.element.interpolation_points)`; `interpolation_points` is a PROPERTY — no parentheses). For received coupling data, skip interpolate and assign DIRECTLY:
   `g = Function(V); g.x.array[iface_dofs] = Tvals; bc = dirichletbc(g, iface_dofs)`.
 - Interface dofs: `iface_dofs = locate_dofs_geometrical(V, lambda x: np.isclose(x[0], 1.0))` (lambda OK in *locate*);
   `coords = V.tabulate_dof_coordinates()[iface_dofs][:, :2]` (SLICE to 2D — tabulate returns 3D).
