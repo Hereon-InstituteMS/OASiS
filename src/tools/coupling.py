@@ -1143,6 +1143,24 @@ def register_coupling_tools(mcp: FastMCP):
         Returns: JSON with converged (bool), iterations, residual, history, per-
             participant exports, warnings, and — if it did NOT converge — a loud
             error. A non-converged coupling is reported as FAILURE, never as a result.
+
+        VERIFIED USAGE GOTCHAS (a converging Dirichlet-Neumann heat coupling was run to confirm):
+        - Iteration 1 gives EVERY participant EMPTY imports (imports.json = `{}` is PRESENT, not
+          absent) because the exchange is JACOBI (partner exports update only AFTER all run this
+          iter). Guard: check `os.path.exists('imports.json')` AND the partner key AND `n_points>0`,
+          else use a default guess. Never assume you see this-iteration's partner output.
+        - ALWAYS write exports.json on every run (the driver deletes it before each run and FAILS
+          loudly if it is missing).
+        - Raise max_iter: the default 50 is often too low — an oscillatory / complex-eigenvalue DN
+          map can need 50-300 iters. For such couplings `accelerator="constant"` (theta0≈0.5) often
+          BEATS "aitken" (scalar Aitken can't accelerate an oscillatory coupling).
+        - The values-index and the flux SIGN are a hand-shake contract between the two scripts (the
+          driver is physics-agnostic): both sides must agree WHERE the number lives (e.g. values[0])
+          and on the flux sign, or the fixed point DIVERGES. `field_name` is decorative.
+        - Dirichlet side: import partner TEMPERATURE, impose it, export the resulting FLUX.
+          Neumann side: import partner FLUX, impose it as a gradient BC, export the interface TEMP.
+        - This path needs NO preCICE, NO MPI, NO concurrent processes — so it CANNOT deadlock. Prefer
+          it over hand-rolled preCICE for a robust coupling.
         """
         try:
             specs = json.loads(participants)

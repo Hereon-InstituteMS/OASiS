@@ -109,6 +109,7 @@ def _bash_tool_for(workdir: Path):
             p = subprocess.run(
                 ["bash", "-lc", command],
                 cwd=workdir, capture_output=True, text=True, timeout=900,
+                errors="replace",   # binary solver output (cat'ing .vtu/.control) must not crash the tool
             )
             out = (p.stdout or "") + (("\n[stderr]\n" + p.stderr) if p.stderr else "")
             return out[-12000:] if len(out) > 12000 else out
@@ -190,7 +191,7 @@ def _make_spawn_subagent_tool(
     """
 
     @tool
-    def spawn_subagent(role: str, task: str, context: str = "") -> str:
+    async def spawn_subagent(role: str, task: str, context: str = "") -> str:
         """Spawn a sub-agent. role∈{critic, researcher, verifier}; task = what it should do; context = facts to pass in.
 
         The critic role should ruthlessly challenge the parent's setup; the
@@ -228,7 +229,7 @@ def _make_spawn_subagent_tool(
         )
         msg = f"Task: {task}\n\nContext provided by parent:\n{context}"
         try:
-            out = sub_agent.invoke(
+            out = await sub_agent.ainvoke(
                 {"messages": [("user", msg)]},
                 config={"recursion_limit": 40},
             )

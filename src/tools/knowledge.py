@@ -601,7 +601,20 @@ FUNCT1:
         comparison between preCICE and our MCP-orchestrated coupling.
         """
         return '''\
-# preCICE Coupling Knowledge
+# Coupling Knowledge
+
+## ⭐ RECOMMENDED coupling approach: the `couple()` tool (PREFER THIS)
+To couple two codes, PREFER OASiS's `couple()` tool over hand-writing preCICE. It is FILE-BASED and
+SEQUENTIAL — no preCICE, no MPI, no concurrent processes — so it CANNOT deadlock. You write ONE plain
+"solve this subdomain" script per code (read `imports.json` → solve your subdomain → write
+`exports.json` with the interface coordinates+values), and `couple()` runs the fixed-point
+Dirichlet-Neumann iteration + relaxation + convergence FOR you. That is far more robust for an agent
+than assembling preCICE participants + config XML + a concurrent launcher (which DEADLOCKS if one
+participant crashes). Call `couple()` with a JSON list of participants (name, command, work_dir,
+imports_from); read its docstring for the exact participant contract and the verified gotchas
+(iteration-1 imports are empty, always write exports.json, raise max_iter, `constant` relaxation often
+beats `aitken`, keep the flux-sign/value-index handshake consistent). Use preCICE (below) ONLY if you
+specifically need it — for most agent-driven couplings, `couple()` is the robust choice.
 
 ## What is preCICE?
 
@@ -649,6 +662,67 @@ independent solvers via adapters.
   </coupling-scheme:serial-implicit>
 </precice-configuration>
 ```
+
+## ⚙️ VERIFIED on the INSTALLED stack (pyprecice 3.1.2, dolfinx 0.10.0) — use these EXACT APIs
+(Confirmed by running converging Dirichlet-Neumann couplings FE↔FE and NGSolve↔FE on this machine.)
+
+### pyprecice 3.1.2 Participant API — the EXACT calls
+```python
+p = precice.Participant(name, "precice-config.xml", rank, size)   # positional (name, config, rank, size)
+vids = p.set_mesh_vertices(mesh_name, coords)        # coords shape (N, dim); RETURNS the vertex ids
+if p.requires_initial_data(): p.write_data(mesh_name, data_name, vids, values)  # BEFORE initialize()
+p.initialize()                                        # BLOCKS until the peer connects
+while p.is_coupling_ongoing():
+    if p.requires_writing_checkpoint(): save_state()
+    dt   = p.get_max_time_step_size()
+    vals = p.read_data(mesh_name, read_data_name, vids, dt)   # 4th arg = relative read time (use dt)
+    # ...solve with vals as the interface BC...
+    p.write_data(mesh_name, write_data_name, vids, out)
+    p.advance(dt)
+    if p.requires_reading_checkpoint(): restore_state()
+p.finalize()
+```
+These methods DO NOT EXIST in 3.1.2 (the #1 cause of failure — do NOT call them):
+`is_mesh_available()`, `is_read_data_available()`, `is_write_data_required()`, `initialize_data()`,
+`read_block_scalar_data()`, `write_block_scalar_data()`. (read/write are now plain `read_data`/`write_data`
+WITH mesh_name+data_name; initial data goes via `requires_initial_data()` BEFORE `initialize()`.)
+
+### Minimal precice-config.xml (verified serial-implicit Dirichlet-Neumann)
+Two scalar data; each participant `provide-mesh`s its OWN mesh and `receive-mesh from=` the partner;
+`mapping:nearest-neighbor direction="read"`; `m2n:sockets`; `coupling-scheme:serial-implicit` with
+ONE `<exchange>` per direction + a `relative-convergence-measure` + `acceleration:aitken` (or IQN-ILS).
+- `<exchange data=.. mesh=.. from=A to=B>` — `mesh` is the mesh where the data is PROVIDED (writer A's mesh).
+- `initialize="true"` ONLY on the data the FIRST participant reads before it has produced anything.
+- You NEVER match vertex orders yourself: each side registers its own vertices and keeps its local dof list
+  parallel to the returned `vids`; preCICE's nearest-neighbor mapping bridges the non-matching sets.
+
+### dolfinx 0.10.0 coupling gotchas (verified)
+- `interpolate()` NO LONGER accepts python lambdas. For received coupling data, assign DIRECTLY:
+  `g = Function(V); g.x.array[iface_dofs] = Tvals; bc = dirichletbc(g, iface_dofs)`.
+- Interface dofs: `iface_dofs = locate_dofs_geometrical(V, lambda x: np.isclose(x[0], 1.0))` (lambda OK in *locate*);
+  `coords = V.tabulate_dof_coordinates()[iface_dofs][:, :2]` (SLICE to 2D — tabulate returns 3D).
+- Read solution at interface: `uh.x.array[iface_dofs]`. Solution PETSc vec: `uh.x.petsc_vec` (exists in 0.10).
+- `functionspace` (lowercase, not `FunctionSpace`); import `dolfinx.fem.petsc` explicitly;
+  `LinearProblem(...)` REQUIRES the `petsc_options_prefix=` kwarg in 0.10.
+- Exchange flux DENSITY `q = k·du/dn` (consistent-mappable), NOT integrated nodal reactions (those scale with
+  element size and break under nearest-neighbor on non-matching meshes). Apply on the Neumann side as `-q*v*ds`.
+
+### NGSolve-side preCICE adapter (verified)
+- Use PLAIN geometry: `Mesh(unit_square.GenerateMesh(maxh=0.2))`. NEVER `SplineGeometry.AddRectangle(rightdomain=-1)`
+  (a hole) — it CRASHES NetGen with "double free or corruption". For obstacles, pre-generate/import a mesh instead.
+- Interface verts from a NAMED boundary (`unit_square` boundaries are 'bottom','right','top','left'):
+  `for el in mesh.Boundaries('right').Elements(): for v in el.vertices: mesh[v].point` → coords (N,2) →
+  `vids = p.set_mesh_vertices("NGSolve-Mesh", coords)`.
+- `H1(order=1)`: the P1 vertex dof index == vertex number, so write received data straight into `gfu.vec[vnr]`,
+  then solve `gfu.vec.data += A.Inverse(fes.FreeDofs()) * (f.vec - A.mat*gfu.vec)`.
+- Write flux density by evaluating the gradient SLIGHTLY inside an element:
+  `gx = grad(gfu)[0]; q = [k*gx(mesh(1.0-1e-7, y)) for y in ys]`.
+
+### ROBUST concurrent launcher (MANDATORY — `initialize()` blocks until the peer connects → a serial run deadlocks)
+Launch BOTH participants in the background; poll with `kill -0`: both gone → done; if ONE exits non-zero while the
+sibling is alive → `kill -9` the sibling (this is THE fix for the classic deadlock where a crash leaves the other
+blocked forever in `initialize()`/`advance()`); enforce an overall wall-clock deadline (rc 124 on timeout).
+`rm -rf precice-run/` before each run (a stale socket dir hangs startup). Both need `LD_LIBRARY_PATH=/opt/precice/lib`.
 
 ## Participant Adapter Pattern (generic — every coupled code follows this)
 

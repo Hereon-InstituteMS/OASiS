@@ -34,8 +34,16 @@ INSTALLED_API = {
     "Dirichlet BC goes on the SPACE: H1(mesh, order=1, dirichlet='.*'); '.*' matches all (unnamed) boundaries robustly.",
     "Trial/test: `u, v = fes.TnT()`. Forms: `a += grad(u)*grad(v)*dx` then `a.Assemble()` (explicit).",
     "Solve: `gfu.vec.data = a.mat.Inverse(fes.FreeDofs(), inverse='sparsecholesky') * f.vec` — FreeDofs() enforces the Dirichlet constraint.",
+    "INHOMOGENEOUS Dirichlet (u=g on the boundary, e.g. any MMS): do NOT guess `fes.Vec()`/`fes.GetBaseFunction()`/`sol.FV()` — none of those exist. Verified pattern: set boundary values then solve on the free DOFs with the lifted RHS:\n"
+    "    gfu = GridFunction(fes)\n"
+    "    gfu.Set(g_exact, BND)                       # impose u=g on the boundary\n"
+    "    r = f.vec - a.mat * gfu.vec\n"
+    "    gfu.vec.data += a.mat.Inverse(fes.FreeDofs()) * r\n"
+    "  Here x,y,exp,sin,cos are NGSolve CoefficientFunctions (NOT numpy: `cf.exp` fails — use exp(cf)); take symbolic derivatives for the MMS source via `uex.Diff(x)` (e.g. f = -(uex.Diff(x).Diff(x)+uex.Diff(y).Diff(y))). Verified: gives optimal O(h^2) for P1.",
     "Point eval: `gfu(mesh(0.5,0.5))` — the coords MUST go through mesh(...); `gfu(0.5,0.5)` does NOT work.",
     "Integrate(cf*dx, mesh) is a SEPARATE functional, not how you assemble forms.",
+    "DIRECT SOLVER: `inverse='pardiso'` is NOT available in this build (MKL Pardiso missing) — use `inverse='umfpack'` (also handles indefinite saddle-point systems). Options seen: 'sparsecholesky' (SPD), 'umfpack' (general).",
+    "STEADY NAVIER-STOKES / saddle-point (Taylor-Hood = VectorH1(order=2) * H1(order=1)): if velocity is Dirichlet on the WHOLE boundary, pressure is only defined up to a constant -> the saddle matrix is SINGULAR and Newton 'diverges' (garbage increments, residual oscillates). FIX = pin the null space: add a NumberSpace Lagrange multiplier for zero-mean pressure (X = V*Q*N; form has `+ lam*q + mu*p`) OR fix one pressure dof. NEWTON via symbolic linearization (no hand Jacobian): build residual BilinearForm `a` in the unknown (convection term `InnerProduct(grad(u)*u, v)`), then loop: `a.Apply(gfu.vec,res); a.AssembleLinearization(gfu.vec); du.data = a.mat.Inverse(X.FreeDofs(), inverse='umfpack')*res; gfu.vec.data -= du`. Inhom velocity BC on the component: `gfu.components[0].Set(uex, definedon=mesh.Boundaries('.*'))`. Converges quadratically (~4 its) at nu=0.1.",
   ],
  },
  "skfem": {
@@ -85,6 +93,9 @@ INSTALLED_API = {
     "Functions::ZeroFunction<dim>() (namespaced; bare ZeroFunction removed). Header <deal.II/base/function.h>.",
     "Sparsity needs both <.../dynamic_sparsity_pattern.h> and <.../sparsity_pattern.h>; BCs need <.../numerics/vector_tools.h> + <.../numerics/matrix_tools.h>.",
     "Evaluate: VectorTools::point_value(dof_handler, solution, Point<dim>(...)); solution.linfty_norm() for the max.",
+    "NONLINEAR (Newton) — deal.II nonlinear WORKS here (verified clean O(h^2)); a segfault is YOUR code, not the install. Pattern: `current_solution` is a Vector sized to dof_handler.n_dofs() holding the ITERATE (not the update). Each step assembles system_matrix=Jacobian and system_rhs = MINUS residual, linearized about current_solution: per cell `fe_values.reinit(cell)` then `fe_values.get_function_values/get_function_gradients(current_solution, ...)` for the current state (e.g. k=1+u^2, k'=2u -> J_ij=(k*grad_phi_j.grad_phi_i + k'*phi_j*(grad_u.grad_phi_i))*JxW, R_i=(k*(grad_u.grad_phi_i)-f*phi_i)*JxW). Solve J*delta=-R; `current_solution += delta`; loop until residual l2_norm small.",
+    "Newton BCs: set Dirichlet values on current_solution ONCE before iterating, then every Newton UPDATE is homogeneous (ZeroFunction boundary values applied to matrix+rhs each assembly) so the boundary stays fixed.",
+    "SEGFAULT in assembly is almost always: (1) `fe_values.reinit(cell)` missing/mis-scoped; (2) update flag missing — need `update_values|update_gradients|update_quadrature_points|update_JxW_values` (reading grads/points without the flag crashes); (3) current_solution not sized to n_dofs() before get_function_*; (4) DoFs not distributed; (5) cell_matrix/local_dof_indices sized with wrong dofs_per_cell.",
   ],
  },
  "fourc": {
@@ -120,6 +131,23 @@ INSTALLED_API = {
   # Additional VERIFIED capability references (each written-run-fixed on this 4C, generic
   # problems that teach the schema — NOT any benchmark solution).
   "capabilities": [
+   {"name": "Near-incompressible / locking-free structural analysis (what 4C can and cannot do)",
+    "facts": [
+     "4C has NO geometrically-LINEAR locking-free 2D element. The only 2D structural element is WALL/W1; its EAS is NONLINEAR-ONLY (source hard-throws 'No EAS for geometrically linear WALL element'), and reduced integration (GP 1 1) is unstabilized -> singular system. So a KINEM-linear locking-free nearly-incompressible run in 2D is NOT constructible — do not waste time trying; use nonlinear kinematics or go 3D.",
+     "Locking-free / anti-volumetric-locking primitives (FBAR, richer EAS) exist for the 3D SOLID element (hex/tet/wedge); there is no 2D SOLID element. Use `KINEM nonlinear` + EAS on 2D WALL, or FBAR on 3D SOLID.",
+     "Because those are FINITE-STRAIN, a valid MMS for them needs the finite-strain manufactured body force `f = -Div P` (P = 1st Piola-Kirchhoff), NOT the linear `-div(sigma)`. Keep the manufactured displacement amplitude MODERATE (O(1) finite-strain fields at near-incompressible lambda make Newton diverge).",
+     "2D WALL Q1E4 EAS relieves shear/bending locking but does NOT cure VOLUMETRIC locking as nu->0.5 (verified: at nu=0.4999 it still stalls; at nu=0.3 it works and improves accuracy).",
+     "Near-incompressible K is severely ill-conditioned: with a direct solver the residual floors around ~1e-9, so a tight TOLRES (1e-10) spuriously fails at max-iter even though the displacement update is ~1e-13. RELAX TOLRES (e.g. 1e-5) and rely on TOLDISP.",
+    ]},
+   {"name": "Spatially-varying body force + inhomogeneous Dirichlet via FUNCT (analytic / manufactured loads)",
+    "facts": [
+     "Define top-level FUNCTn blocks with a SPATIAL expression: `FUNCT1: [{COMPONENT: 0, SYMBOLIC_FUNCTION_OF_SPACE_TIME: 'x + 2.0*y'}]` (x,y,z are spatial coords, t is time; one block per scalar function). Reference a block by its 1-BASED NUMBER (FUNCT1 -> 1).",
+     "FUNCT IS AN INDEX, NOT A VALUE. The applied value per dof = VAL[i] * FUNCT[i] where FUNCT[i] is the block index (0 = constant, i.e. just VAL[i]). Putting the load magnitude in the FUNCT field (or vice-versa) is THE classic bug.",
+     "Body force over the domain: in 2D the domain is a SURFACE -> `DESIGN SURF NEUMANN CONDITIONS: [{E:1, NUMDOF:2, ONOFF:[1,1], VAL:[1,1], FUNCT:[1,2], TYPE:'Live'}]` with a DSURF-NODE TOPOLOGY listing ALL domain nodes under DSURFACE 1. (3D analog: DESIGN VOL NEUMANN + DVOL.)",
+     "Inhomogeneous Dirichlet g(x,y): on a 2D edge `DESIGN LINE DIRICH CONDITIONS: [{E:1, NUMDOF:2, ONOFF:[1,1], VAL:[1,1], FUNCT:[3,3]}]` (value = VAL*FUNCT3) with a DLINE-NODE TOPOLOGY of exactly the boundary nodes. (3D: DESIGN SURF DIRICH.)",
+     "MPI_ABORT at 4C_fem_discretization_conditions.cpp:55 means a condition's `E: n` has NO matching D{LINE,SURF,VOL}-NODE TOPOLOGY (wrong/missing number, or wrong topology keyword for the condition's dimension). Also: wrong dimension (no VOL in DIM:2 — body=SURF, BC=LINE), ONOFF/VAL/FUNCT lengths must all equal NUMDOF, and every referenced FUNCTn must be defined.",
+     "2D element line: `STRUCTURE ELEMENTS: ['1 WALL QUAD4 1 2 5 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2']`. Verified runs to 'processor 0 finished normally'.",
+    ]},
    {"name": "Elastoplasticity (von Mises / J2, isotropic hardening)",
     "facts": [
      "Material: MAT_Struct_PlasticLinElast {YOUNG, NUE, DENS, YIELD (initial yield stress), ISOHARD (linear isotropic hardening modulus, stress units), KINHARD (kinematic; 0 for pure isotropic), TOL (return-mapping Newton tol)}. This is a SMALL-STRAIN J2 model -> pair it with `KINEM linear` on the element. (Finite-strain: MAT_Struct_PlasticNlnLogNeoHooke; ductile damage: MAT_Struct_PlasticGTN.)",
