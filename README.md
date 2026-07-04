@@ -73,7 +73,7 @@ Then just ask, e.g.: *"Solve the Poisson equation on a unit square with a known 
 
 ### Option B: drive it from your own code with ANY API model (LangGraph)
 
-If you prefer an API key over an app subscription — OpenAI, OpenRouter, Anthropic, a local vLLM or Ollama server — this repository ships a working **LangGraph agent harness** in [`langgraph_eval/`](langgraph_eval/). It attaches every OASiS tool to a LangGraph agent via `langchain-mcp-adapters` and works with any OpenAI-compatible endpoint. The shipped driver (`langgraph_eval/agent.py`, `run_eval.py`) is wired to local vLLM endpoints; pointing it at any other provider is a one-line change to the model client:
+If you prefer an API key over an app subscription — OpenAI, OpenRouter, Anthropic, a local vLLM or Ollama server — this repository ships a working **LangGraph agent harness** in [`langgraph_eval/`](langgraph_eval/). It attaches every OASiS tool to a LangGraph agent via `langchain-mcp-adapters` and works with any OpenAI-compatible endpoint. The shipped scaffold (`langgraph_eval/agent.py`) builds the complete agent — model client, host-side tools, OASiS MCP tools — as a reusable function you call from your own driver script; pointing it at any provider is a one-line change to the model client:
 
 ```python
 from langchain_openai import ChatOpenAI
