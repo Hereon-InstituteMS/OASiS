@@ -4,326 +4,207 @@
 
 # OASiS
 
-**O**pen-source **A**gent for **Si**mulation across multiple FEM **S**olvers — an open-source multi-physics and multi-code framework for verified computer simulations.
+**O**pen-source **A**gent for **Si**mulation across multiple FEM **S**olvers
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20543501.svg)](https://doi.org/10.5281/zenodo.20543501)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-OASiS is a **Model Context Protocol (MCP) server** that connects AI coding agents to **eight independent finite element codes** (FEniCSx, deal.II, 4C Multiphysics, NGSolve, scikit-fem, Kratos Multiphysics, DUNE-fem, FEBio). Any MCP-compatible AI tool (Claude Code, Cursor, Windsurf, GitHub Copilot) can **operate** solvers, **couple** them across codes, **develop** new solver capabilities, and **verify** simulation correctness — all through one protocol.
+> [!NOTE]
+> Development happens on the experimental fork <https://github.com/alhermann/OASiS>; stable releases live here.
 
-## Key Numbers
+## What it is
 
-| Metric | Value |
-|--------|-------|
-| FEM backends | **8 working** (FEniCSx, deal.II, 4C, NGSolve, scikit-fem, Kratos, DUNE-fem, FEBio) |
-| MCP tools | **13** consolidated tools |
-| Physics types | **180+** across all backends |
-| Coupling modes | **7** (heat DD, Poisson DD, one-way TSI, two-way TSI, relaxation study, L-bracket, preCICE) |
-| Supported solver pairs | **20** for domain decomposition (any Python solver + any backend) |
-| Tests | **400+ passing** |
-| E2E stress tests | **24 completed** (24 pass) |
-| Cross-backend collation topics | **26** topics, **45+** pitfalls (the actual differentiator) |
-| Signal: retrieval-anchor coverage | **100%** across all 8 backends |
+OASiS is an **agentic simulation system**: it lets any AI language model operate **eight professional finite-element and multiphysics codes** — FEniCSx, deal.II, 4C Multiphysics, NGSolve, scikit-fem, Kratos Multiphysics, DUNE-fem, and FEBio — through one common interface. You describe the physics problem in plain language; the AI agent picks a solver, writes correct input for it, runs the simulation, checks the result against analytical solutions or published benchmarks, and shows you the outcome. Under the hood, OASiS gives the model curated solver knowledge (pitfalls, working examples, element catalogs) and verified execution, so the agent does not have to rediscover each code's quirks by trial and error.
 
-## Quick Start
+## What it can do
 
-### 1. Clone and install
+- **Classic PDEs** — Poisson and other elliptic problems, heat conduction, diffusion
+- **Solid mechanics** — linear elasticity, hyperelasticity, plasticity, contact, eigenfrequency analysis
+- **Nonlinear problems** — large deformation, nonlinear material laws, Newton-solver setup with sensible defaults
+- **Flow** — Stokes and Navier-Stokes (lid-driven cavity, vortex shedding, channel flow)
+- **Transport** — transient heat, reaction-diffusion (e.g. Turing patterns), convection
+- **Electromagnetics** — Maxwell, cavity resonances, magnetostatics (NGSolve)
+- **Particle methods** — SPH, DEM, peridynamics (4C, Kratos)
+- **Cross-code coupling** — split a problem across two different solvers and iterate to convergence: thermo-mechanics, fluid-structure interaction, domain decomposition, and even multi-paradigm couplings such as **FEM ↔ DSMC** (continuum solid + rarefied-gas particle code via the experimental SPARTA backend), plus a bridge to the preCICE coupling library
+- **Mesh generation** — Gmsh-based geometries (L-domain, plate with hole, channel, custom)
+- **Visualization & checking** — field statistics, plots, automated sanity checks
+- **Convergence studies** — h-refinement studies with error norms against analytical solutions
+- **Solver development** — when a code lacks a feature, the agent can browse its source, implement the change, rebuild, and test
 
-```bash
-git clone https://github.com/Hereon-InstituteMS/OASiS.git && cd OASiS
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-```
+## How to use it — with any model
 
-### 2. Install solver backends (pick what you need)
+OASiS speaks the **Model Context Protocol (MCP)** — the standard way to plug tools into AI assistants. That gives you two ways in.
 
-```bash
-# pip-installable (any combination)
-pip install ngsolve scikit-fem dune-fem
-pip install KratosMultiphysics KratosStructuralMechanicsApplication
+### Option A: connect to an MCP-capable app (Claude Desktop, Claude Code, Cursor, ...)
 
-# FEniCSx (requires conda)
-conda create -n fenics -c conda-forge fenics-dolfinx
-# or: pip install fenics-dolfinx (if available for your platform)
+If you already use an AI coding app with a subscription, this is the zero-extra-cost path: the app brings the model, OASiS brings the solvers.
 
-# deal.II (system package)
-sudo apt install libdeal.ii-dev   # Ubuntu/Debian
-
-# 4C Multiphysics (build from source — see 4C documentation)
-
-# FEBio (binary download)
-# https://febio.org/downloads/  — set FEBIO_BINARY env var or place in PATH
-```
-
-### 3. Connect to your AI tool
-
-The MCP server runs as a stdio process. Each AI tool has its own way to register it.
-
-**Claude Code** (recommended — supports sub-agent spawning for critic workflow):
+**Claude Code** (from the project root):
 
 ```bash
-# From the project root:
 claude mcp add oasis \
   .venv/bin/python -- -m server \
   -e PYTHONPATH=src \
   -e PYVISTA_OFF_SCREEN=true
 ```
 
-Or manually create `.claude/settings.json` in the project directory:
+**Claude Desktop** — add to `claude_desktop_config.json` (Settings > Developer > Edit Config):
 
 ```json
 {
   "mcpServers": {
     "oasis": {
-      "type": "stdio",
-      "command": ".venv/bin/python",
+      "command": "/path/to/OASiS/.venv/bin/python",
       "args": ["-m", "server"],
-      "cwd": "src",
-      "env": {
-        "PYTHONPATH": "src",
-        "PYVISTA_OFF_SCREEN": "true"
-      }
+      "cwd": "/path/to/OASiS/src",
+      "env": { "PYTHONPATH": "src", "PYVISTA_OFF_SCREEN": "true" }
     }
   }
 }
 ```
 
-**Cursor**:
+**Cursor / Windsurf / any MCP client** — same idea: command `/path/to/OASiS/.venv/bin/python`, args `-m server`, working directory `/path/to/OASiS/src`, env `PYTHONPATH=src` and `PYVISTA_OFF_SCREEN=true`. The server speaks standard MCP over stdio.
 
-Go to Settings > MCP Servers > Add Server, then enter:
-- Name: `oasis`
-- Command: `/path/to/OASiS/.venv/bin/python`
-- Args: `-m server`
-- Working directory: `/path/to/OASiS/src`
-- Environment: `PYTHONPATH=src`, `PYVISTA_OFF_SCREEN=true`
+Then just ask, e.g.: *"Solve the Poisson equation on a unit square with a known analytical solution and verify the convergence rate."*
 
-**Windsurf**:
+### Option B: drive it from your own code with ANY API model (LangGraph)
 
-Add to your Windsurf MCP configuration (Settings > MCP):
-```json
-{
-  "oasis": {
-    "command": "/path/to/OASiS/.venv/bin/python",
-    "args": ["-m", "server"],
-    "cwd": "/path/to/OASiS/src",
-    "env": { "PYTHONPATH": "src", "PYVISTA_OFF_SCREEN": "true" }
-  }
-}
+If you prefer an API key over an app subscription — OpenAI, OpenRouter, Anthropic, a local vLLM or Ollama server — this repository ships a working **LangGraph agent harness** in [`langgraph_eval/`](langgraph_eval/). It attaches every OASiS tool to a LangGraph agent via `langchain-mcp-adapters` and works with any OpenAI-compatible endpoint. The shipped driver (`langgraph_eval/agent.py`, `run_eval.py`) is wired to local vLLM endpoints; pointing it at any other provider is a one-line change to the model client:
+
+```python
+from langchain_openai import ChatOpenAI
+
+# OpenRouter (any hosted model)
+llm = ChatOpenAI(base_url="https://openrouter.ai/api/v1",
+                 api_key=os.environ["OPENROUTER_API_KEY"],
+                 model="anthropic/claude-sonnet-4.5")
+
+# OpenAI:  base_url default,             api_key=os.environ["OPENAI_API_KEY"]
+# local vLLM:  base_url="http://localhost:8000/v1", api_key="not-needed"
+# Ollama:      base_url="http://localhost:11434/v1", api_key="not-needed"
 ```
 
-**OpenAI Codex / any MCP client**:
+The harness spawns the OASiS server as an MCP subprocess (see `_mcp_server_params()` in `langgraph_eval/agent.py` for the exact launch configuration), gives the model file/shell/web tools alongside the solver tools, and even lets it spawn a sub-agent to criticize its own setup before running. Install the extra dependencies with `pip install -r langgraph_eval/requirements-langgraph.txt` (a separate virtualenv, e.g. `.venv-lg`, is recommended).
 
-The server speaks standard MCP over stdio. Point your client at:
-```
-command: .venv/bin/python -m server
-cwd: src/
-env: PYTHONPATH=src
+### Subscription or API key?
+
+- **Subscription** (Claude Pro/Max, Cursor, ...): use Option A. No API key, no per-token billing; the app you already pay for becomes a simulation front-end.
+- **API key**: use Option B. Full control over which model runs the agent loop — including free/cheap models via OpenRouter or fully local open-weight models via vLLM/Ollama. Costs scale with usage.
+
+## Install
+
+### Prerequisites by backend tier
+
+| Tier | Backends | Install effort |
+|------|----------|----------------|
+| pip-installable | NGSolve, scikit-fem, Kratos | `pip install ...` — seconds |
+| conda-installable | FEniCSx, DUNE-fem | `conda create -c conda-forge ...` — minutes |
+| system package | deal.II | `sudo apt install libdeal.ii-dev` |
+| compiled from source | 4C Multiphysics | CMake build, see 4C docs |
+| binary download | FEBio | <https://febio.org/downloads/>, set `FEBIO_BINARY` |
+
+You do **not** need all eight — install what you need; `discover(query='list')` reports what is available and how to get the rest.
+
+### Quickstart: five lines to a first Poisson solve
+
+```bash
+git clone https://github.com/Hereon-InstituteMS/OASiS.git && cd OASiS
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e . && pip install scikit-fem
+claude mcp add oasis .venv/bin/python -- -m server -e PYTHONPATH=src -e PYVISTA_OFF_SCREEN=true
+claude "Solve the Poisson equation -Δu = 1 on a unit square with u=0 on the boundary using scikit-fem, and report the max value."
 ```
 
-### 4. Verify
+### Backend examples
+
+```bash
+# pip-installable (any combination)
+pip install ngsolve scikit-fem
+pip install KratosMultiphysics KratosStructuralMechanicsApplication
+
+# FEniCSx and DUNE-fem (conda-forge is the supported path)
+conda create -n fenics -c conda-forge fenics-dolfinx
+conda create -n ofa-dune -c conda-forge dune-fem
+
+# deal.II (Ubuntu/Debian)
+sudo apt install libdeal.ii-dev
+```
+
+### Verify
 
 ```bash
 source .venv/bin/activate
-cd src && python -m server  # should start without errors (Ctrl+C to stop)
-
-# Run tests
-cd .. && pytest tests/ -v
+cd src && python -m server   # should start without errors (Ctrl+C to stop)
+cd .. && pytest tests/ -v    # run the test suite
 ```
 
-### 5. Optional: configure solver source access
+### Optional: solver source access (developer mode)
 
-To enable developer mode (source browsing, modification, rebuild), add solver paths to your MCP environment. See `.claude/settings.json.example` for the template.
-
-## Environment Variables
-
-Solver backends are auto-detected from pip/conda installations. For compiled solvers or source-level development access, set these in your MCP settings:
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `FOURC_ROOT` | 4C source tree | `/home/user/4C` |
-| `FOURC_BINARY` | 4C binary path | `/home/user/4C/build/4C` |
-| `DEALII_ROOT` | deal.II source | `/opt/dealii` |
-| `FENICS_ROOT` | FEniCSx source | `/home/user/dolfinx` |
-| `NGSOLVE_ROOT` | NGSolve source | `/home/user/ngsolve` |
-| `KRATOS_ROOT` | Kratos source | `/home/user/Kratos` |
-| `DUNE_ROOT` | DUNE-fem source | `/home/user/dune-fem` |
-| `SKFEM_ROOT` | scikit-fem source | `/home/user/scikit-fem` |
-| `FEBIO_BINARY` | FEBio binary | `/home/user/febio4/bin/febio4` |
-
-When a `*_ROOT` variable is set, the agent can browse, modify, and rebuild the solver source code (developer mode).
+Set `*_ROOT` environment variables (`FOURC_ROOT`, `DEALII_ROOT`, `FENICS_ROOT`, `NGSOLVE_ROOT`, `KRATOS_ROOT`, `DUNE_ROOT`, `SKFEM_ROOT`) in your MCP settings to let the agent browse, modify, and rebuild solver source code. For compiled binaries set `FOURC_BINARY` / `FEBIO_BINARY`. See `.claude/settings.json.example`.
 
 ## Architecture
 
 ```
-User --> AI Agent (any MCP client) --> MCP Protocol --> OASiS
-                                                          |
+You --> AI model (any app or API) --> MCP --> OASiS (src/server.py)
+                                                |
    +-------------+---------+------+--------+--------+--------+--------+-------+
    |             |         |      |        |        |        |        |       |
 FEniCSx     deal.II      4C   NGSolve   skfem   Kratos    DUNE    FEBio
 (Python)     (C++)    (YAML) (Python) (Python) (JSON)   (Python)  (XML)
 ```
 
-## Three Modes of Operation
+- **Server** — `src/server.py`, a stdio MCP server; backends load as plugins via `src/core/registry.py`.
+- **Backends** — one package per code under `src/backends/`, each with a physics catalog and input **generators** for the compiled codes (plus an experimental SPARTA DSMC backend for rarefied-gas problems).
+- **Curated knowledge** — per-backend pitfalls, element catalogs, installed-version API references, and a cross-backend collation layer, served through `knowledge` and `prepare_simulation`.
+- **Coupling orchestrator** — `src/core/coupling_driver.py`: each participant is a black box that reads `imports.json` / writes `exports.json` under an explicit contract; OASiS validates the contract, runs the fixed-point iteration with Aitken relaxation, and reports convergence-or-failure. A non-converged run is never presented as a result.
+- **preCICE bridge** — `src/core/precice_config.py` + the `couple_precice` tool: generates a valid `precice-config.xml` for standard scenarios and verifies the coupling end-to-end.
 
-### 1. Operate: Run Simulations
-The agent generates solver-specific input, runs the simulation, and validates results.
-
-### 2. Couple: Multi-Solver Workflows
-Domain decomposition, field transfer, and multi-physics coupling across different FEM codes.
-
-### 3. Develop: Extend Solver Capabilities
-When a solver lacks a needed feature, the agent can read source code, implement the missing piece, rebuild, and test.
-
-## MCP Tools
+### Tools the agent gets
 
 | Tool | Purpose |
 |------|---------|
-| `prepare_simulation` | Knowledge + examples + template in ONE call |
-| `run_simulation` | Execute Python-based solvers (FEniCS, NGSolve, scikit-fem, DUNE) |
+| `discover` | List solvers, availability, capabilities matrix |
+| `prepare_simulation` | Knowledge + real examples + template in one call — always the first step |
+| `run_simulation` | Execute Python-based solvers (FEniCSx, NGSolve, scikit-fem, DUNE-fem) |
 | `run_with_generator` | Generate input + run compiled solvers (4C, deal.II, Kratos) |
 | `knowledge` | Physics knowledge, pitfalls, materials, coupling docs, cross-backend collation |
-| `discover` | List solvers, check availability, capabilities matrix |
-| `examples` | Real test files and templates from solver test suites |
-| `coupled_solve` | Cross-solver domain decomposition (20 solver pair combinations) |
+| `examples` | Real test files from the solvers' own test suites |
+| `couple` | General partitioned coupling for any physics (contract + Aitken relaxation) |
+| `couple_precice` | preCICE-based coupling: config generation and end-to-end run |
+| `coupled_solve` | Legacy fixed-geometry domain decomposition (deprecated — prefer `couple`) |
 | `transfer_field` | Extract and transfer fields between solver outputs |
+| `generate_mesh` | Gmsh mesh generation |
 | `visualize` | Field statistics, plots, automated validation |
-| `generate_mesh` | Gmsh mesh generation (L-domain, plate with hole, channel) |
-| `developer` | Source architecture, file browsing, extension points |
-| `session_insights` | Review session patterns, contribute knowledge back |
-| `reload_catalog` | Hot-reload backend catalogs without restarting the MCP server |
+| `developer` | Solver source architecture, file browsing, extension points |
+| `session_insights` | Review session patterns, contribute reusable knowledge back |
+| `setup_backend` / `rediscover_backends` / `reload_catalog` | Install hints, re-scan for new solvers, hot-reload catalogs |
 
-## The Cross-Backend Differentiator
+## Methodology
 
-OASiS ships **26 cross-backend collation topics** with **45+ pitfalls** that describe gotchas at the *delta* between two or more solvers — content that has no equivalent in any individual solver's docs:
+Three principles shape everything in this repository:
 
-- units, element node ordering, linear-elastic semantics, Dirichlet BC enforcement
-- restart/checkpoint compatibility, MPI launch idioms, element-type naming
-- time-integration defaults, solver-tolerance defaults, contact formulation defaults
-- output-format conventions, integration-order defaults, boundary-tag semantics
-- plasticity return-mapping, turbulence model defaults, material orientation
-- frequency-unit conventions, mesh-quality thresholds, stress-measure conventions
-- periodic-BC implementation, damping-convention defaults, timestamp output
-- initial-condition interpolation, frame-of-reference BC
-- **linear-solver defaults** (direct vs iterative dispatch, GMRES restart, tolerance scaling)
-- **nonlinear convergence criteria** (relative vs absolute, energy-norm, line-search, failure-signal paths)
-
-Reach via `knowledge(topic='cross_backend')` or filter by physics: `knowledge(topic='cross_backend', physics='units')`.
-
-## Tested Benchmarks
-
-These benchmarks have been run as end-to-end stress tests with a fresh AI agent. Each prompt was given verbatim to the agent with no additional guidance.
-
-### Single-Solver Benchmarks (9/9 pass)
-
-| # | Prompt | Solver | Result |
-|---|--------|--------|--------|
-| 1 | `Solve the lid-driven cavity problem at Re=400 using FEniCS and visualize the vortex structure in ParaView.` | FEniCS | PASS |
-| 2 | `Run a 3D magnetostatics problem in NGSolve: a permanent magnet inside a steel housing. Show the B-field distribution.` | NGSolve | PASS |
-| 3 | `Simulate a cantilever beam with Neo-Hookean hyperelastic material under large deformation using deal.II. Apply 30% compression.` | deal.II | PASS |
-| 4 | `Run an eigenvalue analysis on an L-shaped membrane in scikit-fem. Find the first 10 eigenfrequencies and compare against known values.` | scikit-fem | PASS |
-| 5 | `Simulate fluid-structure interaction of a flexible flag behind a cylinder in 4C.` | 4C | PASS |
-| 6 | `Solve a transient reaction-diffusion system (Turing patterns) on a unit square using DUNE-fem. Show the pattern evolution.` | DUNE-fem | PASS |
-| 7 | `Simulate a 3D cantilever beam subjected to a sudden tip load using Kratos Multiphysics. Track the tip displacement over time and compare the oscillation frequency against the analytical first natural frequency.` | Kratos | PASS |
-| 8 | `Simulate 2D flow past a circular cylinder at Re=100 using FEniCS. Run long enough to capture periodic vortex shedding and measure the Strouhal number. Compare against the accepted value St~0.164.` | FEniCS | PASS |
-| 9 | `Solve the Poisson equation with a known analytical solution on a 3D unit cube using NGSolve. Run an h-convergence study with 4 mesh refinement levels and verify optimal L2 convergence rate for P1 and P2 elements.` | NGSolve | PASS |
-
-### Cross-Solver Validation (2/2 pass)
-
-| # | Prompt | Solvers | Result |
-|---|--------|---------|--------|
-| 10 | `Solve Stokes flow in a backward-facing step on FEniCS, NGSolve, and scikit-fem. Compare the reattachment length.` | 3 solvers | PASS |
-| 11 | `Run linear elasticity on a plate with a circular hole under uniaxial tension. Compare stress concentration factor across deal.II, FEniCS, and 4C.` | 3 solvers | PASS |
-
-### Multi-Solver Coupling (4/4 pass)
-
-| # | Prompt | Solvers | Result |
-|---|--------|---------|--------|
-| 12 | `Solve heat conduction on an L-domain with FEniCS, transfer the temperature field to NGSolve, and solve thermoelasticity there. Show the thermal stress distribution.` | FEniCS + NGSolve | PASS |
-| 13 | `Run a Poisson problem with domain decomposition: left half on DUNE-fem, right half on scikit-fem. Iterate until convergence.` | DUNE + scikit-fem | PASS |
-| 14 | `Simulate a heated steel beam in 4C (TSI one-way) and independently verify the thermal expansion using FEniCS. Compare displacements.` | 4C + FEniCS | PASS |
-| 15 | `Model electromagnetic wave scattering in NGSolve around an obstacle, then use the Joule heating field as a thermal load in a Kratos structural analysis.` | NGSolve + Kratos | PASS |
-
-### Advanced (7/7 pass)
-
-| # | Prompt | Solver | Result |
-|---|--------|--------|--------|
-| 16 | `Run a poroelasticity consolidation problem in 4C (Terzaghi's problem) and verify against the analytical solution.` | 4C | PASS (re-run: settlement 0.1%, pressure < 0.4% error, agent derived correct BULKMODULUS→alpha mapping) |
-| 17 | `Simulate crack propagation in a double-cantilever beam using 4C peridynamics and compare the energy release rate against LEFM predictions.` | 4C | PASS (G_eff = G_Ic exact, CMOD 8.5% of LEFM) |
-| 18 | `Set up a fluid-beam interaction problem in 4C: flow around a slender elastic beam. Monitor the beam tip displacement over time.` | 4C | PASS (4.36mm tip deflection, monotonic growth) |
-| 19 | `Simulate gravity-driven packing of 500 spherical particles into a cylindrical container using Kratos DEM. Measure the final packing fraction and compare against the random close packing limit (~0.64).` | Kratos | PASS |
-| 20 | `Compute the first 6 electromagnetic resonant frequencies of a 3D rectangular cavity using NGSolve Nédélec elements. Compare against the analytical TM/TE mode frequencies.` | NGSolve | PASS (all 6 modes match to <10⁻⁶ relative error) |
-| 21 | `Generate a 3D thick-walled cylinder mesh with Gmsh, then solve internal pressure loading with Neo-Hookean material in FEniCS. Compare the radial displacement against the analytical Lamé solution at small strain.` | FEniCS | PASS (0.42% L2 error vs Lamé, P2 curved elements) |
-
-### Solver Selection & Agent Intelligence (1/1 pass)
-
-| # | Prompt | Solver Chosen | Result |
-|---|--------|---------------|--------|
-| 22 | `Solve the heat equation on a unit square with T=1 on the left, T=0 on the right, and zero-flux top/bottom. Pick the best solver and verify against the analytical solution.` | FEniCS (auto-selected) | PASS (L2 error = 7e-15, machine precision) |
-| 23 | `Simulate two elastic blocks being pressed together with contact. Use whichever solver is most appropriate.` | 4C (auto-selected) | PASS (mortar penalty contact, 10 load steps, stress concentration 1.66x) |
-| 24 | `Set up a simple fluid-structure interaction problem in Kratos using the CoSimulation application: flow in a channel with a flexible wall segment. Monitor the wall deflection.` | Kratos | PASS (14 Aitken iterations, 13.99mm deflection, 1.3% vs beam theory) |
+- **General knowledge, never problem constants.** Curated entries describe a *class* of failure and its general fix. Templates use placeholders, not the dimensions of any particular benchmark — anything that would anchor the agent to one geometry or one paper's parameters is rejected. The agent researches problem-specific values per task; the knowledge layer only removes tooling friction.
+- **Verification is not optional.** Every workflow should end with a check against an analytical solution, a published benchmark, or an independent solver. The coupling orchestrator enforces this in code: contract violations and non-converged iterations are failures, never results. The server also asks the agent to have an independent critic review each setup before running.
+- **Operate and develop.** The agent both runs the solvers and, when a feature is missing, extends them: developer mode exposes the source tree, and the agent reads, modifies, rebuilds, and re-tests the code itself. Fixes flow back into the knowledge layer in general form.
 
 ## Contributing
 
-We welcome contributions that improve the **general-purpose** capabilities of OASiS. The key principle:
-
-**Every improvement must benefit ALL simulations, not be fine-tuned for specific examples.**
-
-### How to contribute
-
-1. **Report agent behavior** — Run any of the benchmark prompts (or your own) with your AI tool and solver setup. Report:
-   - Which AI tool you used (Claude Code, Cursor, Windsurf, etc.)
-   - The exact prompt you gave
-   - What worked and what didn't
-   - The agent's retrospective (ask the debrief questions below)
-
-2. **Improve solver knowledge** — Add pitfalls, element catalogs, or API documentation that would help any agent set up simulations correctly. Focus on things the agent had to discover by trial-and-error.
-
-3. **Add solver backends** — Implement the `SolverBackend` interface for a new FEM code.
-
-4. **Expand coupling** — Add script generators for new solver pairs in `src/tools/coupling.py`.
-
-### What NOT to contribute
-
-- Benchmark-specific parameter databases (the agent should research these per-problem)
-- Model-specific templates (e.g., "Turek-Hron FSI2 template") — these are fine-tuning
-- Hardcoded paths or machine-specific configurations
-
-### Debrief questions (ask after every stress test)
-
-```
-- "What went wrong and what workarounds did you have to use?"
-- "Which MCP tools were useful and which were missing or unhelpful?"
-- "What information did you have to look up online that should have been available through the MCP?"
-- "What parameters did you struggle with and why?"
-- "If you had to do this again, what would you do differently?"
-```
-
-Feed the answers back as general-purpose improvements to the MCP knowledge and tools.
-
-## AI Tool Compatibility
-
-The MCP server works with any MCP-compatible AI tool. Agent instructions are provided in multiple formats:
-
-| File | AI Tool |
-|------|---------|
-| `CLAUDE.md` | Claude Code |
-| `AGENTS.md` | Cross-tool standard |
-| `.cursorrules` | Cursor |
-| `.windsurfrules` | Windsurf |
-| `.github/copilot-instructions.md` | GitHub Copilot |
+Contributions are welcome. One rule above all: **every improvement must benefit all simulations**, not be fine-tuned for a specific example. Solver pitfalls, element catalogs, new backends, and new coupling generators are great contributions; benchmark-specific parameter databases and model-specific templates are not. New capabilities are typically developed and stress-tested on the experimental fork (<https://github.com/alhermann/OASiS>) before they land here.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
 
 ## Citation
 
-If you use OASiS in your research, please cite:
+If you use OASiS in your research, please cite the archived release:
 
 ```bibtex
-@article{oasis2026,
-  title={OASiS: an open-source multi-physics and multi-code framework for verified computer simulations},
-  author={Hermann, Alexander and Shojaei, Arman and Scheider, Ingo and Cyron, Christian},
-  year={2026},
+@software{oasis2026,
+  title  = {OASiS: an open-source multi-physics and multi-code framework for verified computer simulations},
+  author = {Hermann, Alexander and Shojaei, Arman and Scheider, Ingo and Cyron, Christian},
+  year   = {2026},
+  doi    = {10.5281/zenodo.20543501},
+  url    = {https://github.com/Hereon-InstituteMS/OASiS}
 }
 ```
