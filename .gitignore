@@ -6,12 +6,22 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+build_*/
 
-# Virtual environment
-.venv/
+# Virtual environments
+.venv*/
+.venv*
+new_venv/
 
-# Documents
+# Documents / private material
 papers/
+
+# Evaluation & experiment campaigns (private, not for release)
+eval_interactive/
+langgraph_eval/
+paper_experiments/
+runs/
+program/
 
 # Solver source checkouts
 solvers/
@@ -21,7 +31,24 @@ simulation_outputs/
 benchmarks/results/
 benchmarks/coupling/
 benchmarks/sweep_results/
+benchmarks/*/results/
 meshes/
+*.vtk
+solution-*.vtk
+convergence-*.tex
+error-*.tex
+
+# Session data (may contain machine-local details)
+data/sessions/
+!data/sessions/.gitkeep
+data/webui_sessions/
+
+# Logs & runtime debris
+*.log
+log.sparta
+src/log.sparta
+pid.txt
+OFFLOAD_POINTER.txt
 
 # Machine-specific settings (users create their own from settings.json.example)
 .claude/settings.json
@@ -32,6 +59,7 @@ meshes/
 .vscode/
 *.swp
 *.swo
+*.bak
 
 # OS
 .DS_Store
@@ -49,6 +77,7 @@ Thumbs.db
 papers/.env
 
 # Local quarantine directories (work-in-progress, not for release)
+.quarantine*
 .quarantine_*
 benchmarks/probe_results/work/
 scripts/scan_results/work/
@@ -58,3 +87,20 @@ upstream_sources/
 data/source_discovery_cache.json
 data/build_logs/
 *.msh
+
+# Local build experiments (deal.II scratch work at repo root)
+/CMakeFiles/
+/CMakeLists.txt
+/CMakeLists_simple.txt
+/compile_commands.json
+/build_poisson/
+/build_simple/
+/main.cpp
+/nonlinear_pde.cc
+/poisson_simple_test.cc
+/poisson_variable_coef.cc
+
+# Local eval helper scripts (machine-specific)
+/scripts/chain_sonnet_after_opus.sh
+/scripts/run_parity_chain.sh
+/scripts/run_truebare.py
