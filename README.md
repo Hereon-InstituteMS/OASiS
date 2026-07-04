@@ -57,13 +57,13 @@ claude mcp add oasis \
       "command": "/path/to/OASiS/.venv/bin/python",
       "args": ["-m", "server"],
       "cwd": "/path/to/OASiS/src",
-      "env": { "PYTHONPATH": "src", "PYVISTA_OFF_SCREEN": "true" }
+      "env": { "PYTHONPATH": "/path/to/OASiS/src", "PYVISTA_OFF_SCREEN": "true" }
     }
   }
 }
 ```
 
-**Cursor / Windsurf / any MCP client** — same idea: command `/path/to/OASiS/.venv/bin/python`, args `-m server`, working directory `/path/to/OASiS/src`, env `PYTHONPATH=src` and `PYVISTA_OFF_SCREEN=true`. The server speaks standard MCP over stdio.
+**Cursor / Windsurf / any MCP client** — same idea: command `/path/to/OASiS/.venv/bin/python`, args `-m server`, working directory `/path/to/OASiS/src`, env `PYTHONPATH=/path/to/OASiS/src` and `PYVISTA_OFF_SCREEN=true`. The server speaks standard MCP over stdio.
 
 Then just ask, e.g.: *"Solve the Poisson equation on a unit square with a known analytical solution and verify the convergence rate."*
 
@@ -72,6 +72,7 @@ Then just ask, e.g.: *"Solve the Poisson equation on a unit square with a known 
 If you prefer an API key over an app subscription — OpenAI, OpenRouter, Anthropic, a local vLLM or Ollama server — this repository ships a working **LangGraph agent harness** in [`langgraph_eval/`](langgraph_eval/). It attaches every OASiS tool to a LangGraph agent via `langchain-mcp-adapters` and works with any OpenAI-compatible endpoint. The shipped driver (`langgraph_eval/agent.py`, `run_eval.py`) is wired to local vLLM endpoints; pointing it at any other provider is a one-line change to the model client:
 
 ```python
+import os
 from langchain_openai import ChatOpenAI
 
 # OpenRouter (any hosted model)
@@ -84,7 +85,7 @@ llm = ChatOpenAI(base_url="https://openrouter.ai/api/v1",
 # Ollama:      base_url="http://localhost:11434/v1", api_key="not-needed"
 ```
 
-The harness spawns the OASiS server as an MCP subprocess (see `_mcp_server_params()` in `langgraph_eval/agent.py` for the exact launch configuration), gives the model file/shell/web tools alongside the solver tools, and even lets it spawn a sub-agent to criticize its own setup before running. Install the extra dependencies with `pip install -r langgraph_eval/requirements-langgraph.txt` (a separate virtualenv, e.g. `.venv-lg`, is recommended).
+The harness spawns the OASiS server as an MCP subprocess (see `_load_oasis_mcp_tools()` in `langgraph_eval/agent.py` for the exact launch configuration), gives the model file/shell/web tools alongside the solver tools, and even lets it spawn a sub-agent to criticize its own setup before running. Install the extra dependencies with `pip install -r langgraph_eval/requirements-langgraph.txt` (a separate virtualenv, e.g. `.venv-lg`, is recommended).
 
 ### Subscription or API key?
 
