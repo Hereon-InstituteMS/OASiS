@@ -378,7 +378,7 @@
     "has_vtu": null,
     "vtu_fields": null,
     "elapsed_s": 4.674995422363281,
-    "error": "Compilation failed:\narks/probe_results/work/dealii/parallel_poisson_2d/main.cpp:170:7: error: 'LA::MPI' has not been declared\n  170 |   LA::MPI::PreconditionAMG preconditioner;\n      |       ^~~\n/home/hermann/Schreibtisch/Open-FEM-agent/benchmarks/probe_results/work/dealii/parallel_poisson_2d/main.c"
+    "error": "Compilation failed:\narks/probe_results/work/dealii/parallel_poisson_2d/main.cpp:170:7: error: 'LA::MPI' has not been declared\n  170 |   LA::MPI::PreconditionAMG preconditioner;\n      |       ^~~\n<repo>/benchmarks/probe_results/work/dealii/parallel_poisson_2d/main.c"
   },
   {
     "backend": "dealii",

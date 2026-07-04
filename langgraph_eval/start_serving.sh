@@ -19,16 +19,29 @@ case "${1:-}" in
   *) echo "usage: $0 {7b|14b|32b}"; exit 2;;
 esac
 
-MODEL_DIR="/media/alexander/PortableSSD/AstroNet/models/qwen2.5-${SIZE}-instruct"
+# Machine-local paths — override via env; defaults match the reference machine.
+MODELS_ROOT="${MODELS_ROOT:-/media/$USER/PortableSSD/AstroNet/models}"
+MODEL_DIR="${MODEL_DIR:-$MODELS_ROOT/qwen2.5-${SIZE}-instruct}"
 [ -d "$MODEL_DIR" ] || { echo "model dir missing: $MODEL_DIR"; exit 1; }
 [ -f "$MODEL_DIR/tokenizer_config.json" ] || {
   echo "tokenizer_config.json missing in $MODEL_DIR (download incomplete?)"
   exit 1
 }
 
-REPO=/home/alexander/Schreibtisch/open-fem-agent
-PYBIN=/home/alexander/Schreibtisch/AstroNet/venv/bin/python
-export HF_HOME="${HF_HOME:-/media/alexander/PortableSSD/.cache/huggingface}"
+REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PYBIN="${PYBIN:-$HOME/Schreibtisch/AstroNet/venv/bin/python}"
+export HF_HOME="${HF_HOME:-/media/$USER/PortableSSD/.cache/huggingface}"
+
+# nvidia-smi index 0 is a 2 GB GT 1030; indices 1 and 2 are 24 GB TITAN
+# RTX cards. WITHOUT CUDA_DEVICE_ORDER=PCI_BUS_ID, CUDA reorders by
+# performance internally and CUDA_VISIBLE_DEVICES selects from THAT
+# list — so 'CUDA_VISIBLE_DEVICES=2' silently picked the slowest card.
+# Forcing PCI_BUS_ID order makes the indices match nvidia-smi.
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+case "$SIZE" in
+  7b|14b) export CUDA_VISIBLE_DEVICES=1 ;;   # single 24 GB TITAN
+  32b)    export CUDA_VISIBLE_DEVICES=1,2 ;; # both 24 GB TITANs
+esac
 
 exec "$PYBIN" "$REPO/langgraph_eval/transformers_openai_server.py" \
     --model "$MODEL_DIR" \

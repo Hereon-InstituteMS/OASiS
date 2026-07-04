@@ -24,7 +24,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-BASE = os.path.expanduser("~/Schreibtisch/open-fem-agent")
+BASE = os.environ.get("OASIS_ROOT", str(Path(__file__).resolve().parents[1]))
 V1_DOC = Path(BASE) / "papers/overleaf-paper/prompts/PROMPTS.md"
 OUT_DOC = Path(BASE) / "papers/overleaf-paper/prompts/PROMPTS_HOE_V2.md"
 
@@ -58,8 +58,7 @@ def extract_v1_prompts():
     prompts = {}
     for task in ORIGINAL_TASKS:
         cell = f"{task}_MCP_FULL_seed0"
-        old_path = (f"/home/alexander/Schreibtisch/open-fem-agent/"
-                    f"eval_interactive/{cell}/work/result.txt")
+        old_path = f"{BASE}/eval_interactive/{cell}/work/result.txt"
         # locate cell header
         idx = next(i for i, l in enumerate(lines)
                    if l.startswith("## Cell ") and l.endswith(f"— {cell}"))
@@ -345,7 +344,7 @@ cd {BASE}
 
 Note: failures in `tests/test_signal_verification.py::TestBackendImportSnapshot`
 are expected on this machine (snapshots reference dev-machine library paths,
-e.g. `~/Schreibtisch/dealii-debug/`); they are environment drift, not server
+e.g. `<dev-machine>/dealii-debug/`); they are environment drift, not server
 defects. The `.venv` was repaired on 2026-06-12 (re-pointed to the local
 cpython-3.12.13 copy after a snap revision GC broke the old symlinks).
 

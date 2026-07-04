@@ -14,10 +14,23 @@ Surfaced to agents via prepare_simulation()/knowledge() for the matching backend
 Keyed by the backend registry name.
 """
 
+import os as _os
+from pathlib import Path as _Path
+
+# Machine-specific prefixes, resolved at import time so the served references
+# match THIS install. Override via env vars if your layout differs.
+_REPO = _os.environ.get("OASIS_ROOT", str(_Path(__file__).resolve().parents[2]))
+_HOME = str(_Path.home())
+_VENV_PY = _REPO + "/.venv/bin/python"
+_FENICS_PY = _os.environ.get("FENICS_PYTHON", _HOME + "/miniconda3/envs/fenics/bin/python")
+_DEALII_BUILD = _os.environ.get("DEALII_BUILD_DIR", _HOME + "/dealii/build")
+_FOURC_ROOT = _os.environ.get("FOURC_ROOT", _HOME + "/4C")
+_FOURC_BIN = _os.environ.get("FOURC_BINARY", _FOURC_ROOT + "/build/4C")
+
 INSTALLED_API = {
  "dune": {
   "version": "dune-fem 2.12.0.0 (ufl 2024.2.0, python 3.12)",
-  "run": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python <script>.py",
+  "run": _VENV_PY + " <script>.py",
   "verified_smoke_test": (
     "import numpy as np\n"
     "from dune.grid import structuredGrid\n"
@@ -51,7 +64,7 @@ INSTALLED_API = {
  },
  "fenics": {
   "version": "dolfinx 0.10.0",
-  "run": "LD_LIBRARY_PATH=/opt/precice/lib /home/alexander/miniconda3/envs/fenics/bin/python <script>.py",
+  "run": "LD_LIBRARY_PATH=/opt/precice/lib " + _FENICS_PY + " <script>.py",
   "verified_smoke_test": (
     "from mpi4py import MPI\n"
     "import numpy as np, dolfinx, dolfinx.fem.petsc, ufl   # fem.petsc import is MANDATORY\n"
@@ -86,7 +99,7 @@ INSTALLED_API = {
  },
  "ngsolve": {
   "version": "6.2.2604",
-  "run": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python <script>.py",
+  "run": _VENV_PY + " <script>.py",
   "verified_smoke_test": (
     "from ngsolve import *\n"
     "from netgen.geom2d import unit_square\n"
@@ -117,7 +130,7 @@ INSTALLED_API = {
  },
  "skfem": {
   "version": "12.0.1",
-  "run": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python <script>.py",
+  "run": _VENV_PY + " <script>.py",
   "verified_smoke_test": (
     "import numpy as np\n"
     "from skfem import MeshTri, ElementTriP1, Basis, BilinearForm, LinearForm, asm, condense, solve\n"
@@ -142,8 +155,8 @@ INSTALLED_API = {
   ],
  },
  "dealii": {
-  "version": "9.8.0-pre  (build tree at /home/alexander/dealii/build)",
-  "run": "cmake -DDEAL_II_DIR=/home/alexander/dealii/build . && make && LD_LIBRARY_PATH=/opt/4C-dependencies/lib ./<exe>",
+  "version": "9.8.0-pre  (build tree at " + _DEALII_BUILD + ")",
+  "run": "cmake -DDEAL_II_DIR=" + _DEALII_BUILD + " . && make && LD_LIBRARY_PATH=/opt/4C-dependencies/lib ./<exe>",
   "verified_smoke_test": (
     "// CMakeLists.txt:\n"
     "//   CMAKE_MINIMUM_REQUIRED(VERSION 3.13.4)\n"
@@ -155,7 +168,7 @@ INSTALLED_API = {
     "//   Functions::ZeroFunction<dim>() for the BC; VectorTools::point_value(dof_handler, solution,\n"
     "//   Point<dim>(0.5,0.5)) -> ~0.0737 ; SolverCG + PreconditionIdentity.\n"),
   "gotchas": [
-    "CRITICAL: DEAL_II_DIR must be the BUILD tree `/home/alexander/dealii/build` (config at .../build/lib/cmake/deal.II). Pointing at `/home/alexander/dealii` SILENTLY falls back to the OLD system install (9.1.1 at /usr) with no error — check cmake's `-- Using the deal.II-X found at ...` line.",
+    "CRITICAL: DEAL_II_DIR must be the BUILD tree `" + _DEALII_BUILD + "` (config at .../build/lib/cmake/deal.II). Pointing at its parent source dir SILENTLY falls back to the OLD system install (9.1.1 at /usr) with no error — check cmake's `-- Using the deal.II-X found at ...` line.",
     "Runtime needs `LD_LIBRARY_PATH=/opt/4C-dependencies/lib` (shared TBB/etc).",
     "CMake order: FIND_PACKAGE(deal.II 9.0 REQUIRED HINTS ${DEAL_II_DIR}) -> DEAL_II_INITIALIZE_CACHED_VARIABLES() -> PROJECT() -> DEAL_II_SETUP_TARGET(<tgt>). INITIALIZE must precede PROJECT().",
     "Use modern idioms: fe_values.quadrature_point_indices(), fe_values.dof_indices(), fe.n_dofs_per_cell() (data member fe.dofs_per_cell is deprecated).",
@@ -172,11 +185,11 @@ INSTALLED_API = {
   ],
  },
  "fourc": {
-  "version": "build at /home/alexander/4C/build/4C",
-  "run": "LD_LIBRARY_PATH=/opt/4C-dependencies/lib /home/alexander/4C/build/4C <input>.4C.yaml <output_prefix>",
+  "version": "build at " + _FOURC_BIN,
+  "run": "LD_LIBRARY_PATH=/opt/4C-dependencies/lib " + _FOURC_BIN + " <input>.4C.yaml <output_prefix>",
   "verified_smoke_test": (
     "# Minimal single HEX8 linear-elastic cube (fixed at x=0, pulled at x=1), Statics, 2 steps.\n"
-    "# Started from /home/alexander/4C/tests/input_files/solid_runtime_material_element_id.4C.yaml\n"
+    "# Started from " + _FOURC_ROOT + "/tests/input_files/solid_runtime_material_element_id.4C.yaml\n"
     "# Runs to completion: stdout ends 'processor 0 finished normally' / EXIT:0; writes <prefix>.control + VTK.\n"
     "PROBLEM TYPE: {PROBLEMTYPE: 'Structure'}\n"
     "SOLVER 1: {SOLVER: 'Superlu', NAME: 'Structure_Solver'}\n"
@@ -190,7 +203,7 @@ INSTALLED_API = {
     "NODE COORDS: ['NODE 1 COORD 0.0 0.0 0.0', ...8 nodes...]\n"
     "STRUCTURE ELEMENTS: ['1 SOLID HEX8 1 5 6 2 3 7 8 4 MAT 1 KINEM nonlinear']\n"),
   "gotchas": [
-    "Run: `LD_LIBRARY_PATH=/opt/4C-dependencies/lib /home/alexander/4C/build/4C <in>.4C.yaml <output_prefix>` — the output prefix is MANDATORY.",
+    "Run: `LD_LIBRARY_PATH=/opt/4C-dependencies/lib " + _FOURC_BIN + " <in>.4C.yaml <output_prefix>` — the output prefix is MANDATORY.",
     "File is one YAML map; keys are section names with spaces/slashes (e.g. 'STRUCTURAL DYNAMIC', 'IO/RUNTIME VTK OUTPUT/STRUCTURE').",
     "Required minimal: PROBLEM TYPE, SOLVER 1, STRUCTURAL DYNAMIC, MATERIALS, mesh sections, conditions.",
     "Time integrator references the linear solver via LINEAR_SOLVER: 1 (-> 'SOLVER 1').",
@@ -239,7 +252,7 @@ INSTALLED_API = {
     "facts": [
      "By DEFAULT 4C writes only a BINARY <prefix>.control + binary result files — NOT human-readable. Do NOT try to hex-decode them by hand.",
      "To get readable output, add: `IO/RUNTIME VTK OUTPUT: {INTERVAL_STEPS: 1, OUTPUT_DATA_FORMAT: ascii}` and `IO/RUNTIME VTK OUTPUT/STRUCTURE: {OUTPUT_STRUCTURE: true, DISPLACEMENT: true}` (add `STRESS_STRAIN: true` for stresses). This writes `<prefix>-vtk-files/structure-0000N-0.vtu`.",
-     "Extract with pyvista (available in /home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python): `import pyvista as pv, numpy as np; m = pv.read(LAST_vtu); d = np.asarray(m.point_data['displacement']); pts = m.points`. Find your node by coordinate: `i = np.argmin(np.linalg.norm(pts - target_xyz, axis=1))`, then `d[i]` is its displacement (stress/strain are cell or point arrays too).",
+     "Extract with pyvista (available in " + _VENV_PY + "): `import pyvista as pv, numpy as np; m = pv.read(LAST_vtu); d = np.asarray(m.point_data['displacement']); pts = m.points`. Find your node by coordinate: `i = np.argmin(np.linalg.norm(pts - target_xyz, axis=1))`, then `d[i]` is its displacement (stress/strain are cell or point arrays too).",
      "GOTCHA: read the LAST timestep file (highest number, e.g. structure-00005-0.vtu), NOT structure-00000-0.vtu which is the INITIAL zero state -> reading step 0 gives displacement 0 everywhere and looks like the load did nothing.",
      "STRESS output: set `IO: {STRUCT_STRESS: 'Cauchy'}` (this is what actually enables stress) AND `IO/RUNTIME VTK OUTPUT/STRUCTURE: {..., STRESS_STRAIN: true}`. Then stress is in BOTH point_data['nodal_cauchy_stresses_xyz'] and cell_data['element_cauchy_stresses_xyz'], shape (n,6) Voigt [xx,yy,zz,xy,yz,xz] -> index 0 = sigma_xx. e.g. `pv.read(LAST_pvtu).cell_data['element_cauchy_stresses_xyz'][cell,0]`.",
      "Read the explicit last `.pvtu`/`.vtu` (e.g. sorted(glob('...structure-*.pvtu'))[-1]); pv.read('<prefix>-structure.pvd') is unreliable (its MultiBlock may expose only the t=0 zero block).",

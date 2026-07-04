@@ -57,8 +57,10 @@ def _find_sparta_binary() -> Optional[str]:
         if p:
             return p
     for cand in (
-        "/home/alexander/Schreibtisch/sparta/src/spa_serial",
-        "/home/alexander/Schreibtisch/sparta/src/spa_mpi",
+        str(Path.home() / "Schreibtisch/sparta/src/spa_serial"),
+        str(Path.home() / "Schreibtisch/sparta/src/spa_mpi"),
+        str(Path.home() / "sparta/src/spa_serial"),
+        str(Path.home() / "sparta/src/spa_mpi"),
     ):
         if Path(cand).exists():
             return cand

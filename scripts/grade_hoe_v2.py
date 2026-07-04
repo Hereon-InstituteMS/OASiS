@@ -23,12 +23,13 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
 from statistics import mean, stdev
 
-ROOT = Path("/home/alexander/Schreibtisch/open-fem-agent")
+ROOT = Path(os.environ.get("OASIS_ROOT", Path(__file__).resolve().parents[1]))
 EVAL = ROOT / "eval_interactive"
 DATA = ROOT / "papers/overleaf-paper/data"
 
@@ -39,6 +40,8 @@ DATA = ROOT / "papers/overleaf-paper/data"
 # ───────────────────────────────────────────────────────────────────
 _UNITS = re.compile(r"\s*(mm|Hz|MPa|N|s|m|K|degrees|deg)\s*$",
                     re.IGNORECASE)
+# Agents sometimes serialise results as repr() of numpy scalars; unwrap.
+_NP_WRAP = re.compile(r"np\.(?:float64|float32|int64|int32)\((-?\d[\d\.eE+\-]*)\)")
 
 
 def parse(text: str) -> dict:
@@ -51,6 +54,7 @@ def parse(text: str) -> dict:
         k = m.group(1)
         raw = m.group(2).strip()
         raw = raw.split("#", 1)[0].strip()  # strip inline comments
+        raw = _NP_WRAP.sub(r"\1", raw)      # unwrap np.float64(...) etc.
         raw = _UNITS.sub("", raw)
         try:
             out[k] = float(raw)
@@ -370,9 +374,12 @@ def _e2(r):
             and isinstance(ed, (int, float))):
         return False, f"rf={rf}, rd={rd}, ef={ef}, ed={ed}"
     factor = max(ef, ed) / min(ef, ed) if min(ef, ed) > 0 else float("inf")
-    # Factor ≤ 5: P2 tet vs Q2 hex have different DOF densities at the
+    # rate ≥ 2.7 one-sided: P2/Q2 best-approx rate is 3; super-convergence
+    # to ~3.5-4 happens with smooth fields on regular meshes, that's
+    # better-than-expected, not a fail.
+    # factor ≤ 5: P2 tet vs Q2 hex have different DOF densities at the
     # same N, so a factor ~3-4 in L2 error is expected, not a failure.
-    return (all(2.7 <= x <= 3.3 for x in rf + rd) and factor <= 5.0,
+    return (all(x >= 2.7 for x in rf + rd) and factor <= 5.0,
             f"rates_f={rf}, rates_d={rd}, factor={factor:.2f}")
 
 
@@ -470,7 +477,8 @@ def grade_cell(d: Path) -> dict:
     rp = d / "work" / "result.txt"
     if not rp.exists():
         return {"cell": name, "task": task, "condition": cond,
-                "seed": seed, "passed": False, "reason": "no result.txt"}
+                "model": model, "seed": seed, "passed": False,
+                "reason": "no result.txt"}
     r = parse(rp.read_text())
     fn = GATES.get(task)
     if fn is None:
