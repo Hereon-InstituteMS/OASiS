@@ -3,7 +3,7 @@
 **Generated:** 2026-06-04
 **Project:** OASiS — an open-source multi-physics and multi-code framework for verified computer simulations
 **Repo:** https://github.com/Hereon-InstituteMS/OASiS (renamed today from `Open-FEM-agent`)
-**Local working dir:** `~/Schreibtisch/Open-FEM-agent/` (NOT renamed — see "Why the local dir is still Open-FEM-agent" below)
+**Local working dir:** `/path/to/open-fem-agent/` (NOT renamed — see "Why the local dir is still Open-FEM-agent" below)
 **Active branch:** `layer-a/kratos-source-scanner` (554 commits ahead of `main`; all pushed)
 
 ---
@@ -25,7 +25,7 @@ A Model Context Protocol (MCP) server that connects AI coding agents to **eight 
 ## 3. Architecture at a glance
 
 ```
-~/Schreibtisch/Open-FEM-agent/
+/path/to/open-fem-agent/
 ├── src/
 │   ├── server.py                       # FastMCP entry point
 │   ├── tools/
@@ -147,7 +147,7 @@ Run via `pytest tests/test_pitfall_falsification_live.py`. As of today: **65 pas
 
 ## 6. Why the local dir is still `Open-FEM-agent`
 
-I deliberately did NOT rename `~/Schreibtisch/Open-FEM-agent/`. Renaming it would break:
+I deliberately did NOT rename `/path/to/open-fem-agent/`. Renaming it would break:
 - The user's `~/.claude/settings.json` MCP entry (`cwd: ".../Open-FEM-agent/src"`)
 - All `scripts/cron/*.py` schedules (they hardcode the path)
 - All `scripts/scan_results/*.json` files (they record absolute paths)
@@ -162,7 +162,7 @@ Only the **GitHub repo name** + **package metadata** + **README branding** were 
 
 ```bash
 # in the working dir:
-cd ~/Schreibtisch/Open-FEM-agent
+cd /path/to/open-fem-agent
 
 # run all tests:
 .venv/bin/python -m pytest tests/ --tb=short -q --ignore=tests/test_pitfall_falsification_live.py

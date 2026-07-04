@@ -8,7 +8,7 @@ them, hand me back the screen/event-log notes and we'll verify.
 ## Setup
 
 ```bash
-cd ~/Schreibtisch/open-fem-agent
+cd /path/to/open-fem-agent
 # kill any old instance
 fuser -k 8080/tcp 2>/dev/null || true
 # start the UI (foreground; Ctrl+C to stop)

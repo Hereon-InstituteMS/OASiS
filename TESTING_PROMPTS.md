@@ -22,7 +22,7 @@ The dedicated directory matters: the runs write scratch meshes/VTUs/logs, and yo
 **Duration:** ~30 min.
 
 ```
-We are testing the OASiS MCP's new setup_backend tool. The MCP server code is at ~/Schreibtisch/Open-FEM-agent (run its tests from there), but do all scratch work in the current directory.
+We are testing the OASiS MCP's new setup_backend tool. The MCP server code is at /path/to/open-fem-agent (run its tests from there), but do all scratch work in the current directory.
 
 1. Call the MCP tool setup_backend(action='status') and report the table. Expected: dune and febio NOT available, everything else available.
 
@@ -30,7 +30,7 @@ We are testing the OASiS MCP's new setup_backend tool. The MCP server code is at
 
 3. For febio: setup_backend(action='plan', solver='febio') — the binary route returns manual instructions. Follow them: download the linux FEBio package from https://febio.org/downloads/ into ./febio/, unpack, then set FEBIO_BINARY and call setup_backend(action='verify', solver='febio').
 
-4. File honest bug reports: for every rough edge (wrong path persisted, misleading plan output, smoke test that passes but the backend doesn't actually solve), write a numbered finding into ./FINDINGS.md with the exact tool call and output. Then fix what's fixable in ~/Schreibtisch/Open-FEM-agent/src/core/backend_setup.py, add a regression test in tests/test_backend_setup.py, run pytest tests/test_backend_setup.py, and commit on the layer-a/kratos-source-scanner branch.
+4. File honest bug reports: for every rough edge (wrong path persisted, misleading plan output, smoke test that passes but the backend doesn't actually solve), write a numbered finding into ./FINDINGS.md with the exact tool call and output. Then fix what's fixable in /path/to/open-fem-agent/src/core/backend_setup.py, add a regression test in tests/test_backend_setup.py, run pytest tests/test_backend_setup.py, and commit on the layer-a/kratos-source-scanner branch.
 
 Honesty constraint: do NOT mark a backend 'verified' unless its smoke test genuinely solved something. If conda/download infrastructure is unavailable, say so and stop — don't fake the result.
 ```
@@ -44,7 +44,7 @@ Honesty constraint: do NOT mark a backend 'verified' unless its smoke test genui
 **Duration:** 2-5 h with sub-agent fan-out.
 
 ```
-We are fixing the OASiS MCP's broken 4C templates. Repo: ~/Schreibtisch/Open-FEM-agent (work on branch layer-a/kratos-source-scanner). 4C binary: ~/Schreibtisch/4C-src/4C/build/4C (export FOURC_ROOT=~/Schreibtisch/4C-src/4C and FOURC_BINARY accordingly). Scratch work in the current directory.
+We are fixing the OASiS MCP's broken 4C templates. Repo: /path/to/open-fem-agent (work on branch layer-a/kratos-source-scanner). 4C binary: /path/to/4C/build/4C (export FOURC_ROOT=/path/to/4C and FOURC_BINARY accordingly). Scratch work in the current directory.
 
 Context: benchmarks/probe_all_templates.py --backend fourc --timeout 300 currently shows 9/46 rows completed. The failing rows abort in 4C's MatchTree because generate_input() falls through to generator templates with literal <placeholder> scalars. Commit 6a1755e closed 5 rows by routing them to self-contained inline-mesh inputs (src/backends/fourc/inline_mesh.py — study matched_elasticity_input / matched_heat_transient_input / matched_elasticity_3d_nonlinear_input as the pattern). tests/test_fourc_inline_routing.py shows the gen-only regression-test pattern.
 
@@ -71,7 +71,7 @@ Honesty constraints: a stub is a SUCCESS state only if it is clearly marked as a
 **Duration:** 2-4 h.
 
 ```
-We are replacing the OASiS MCP's Kratos availability-probe stubs with real solving templates. Repo: ~/Schreibtisch/Open-FEM-agent, branch layer-a/kratos-source-scanner, venv .venv (KratosMultiphysics 10.x installed). Scratch in current directory.
+We are replacing the OASiS MCP's Kratos availability-probe stubs with real solving templates. Repo: /path/to/open-fem-agent, branch layer-a/kratos-source-scanner, venv .venv (KratosMultiphysics 10.x installed). Scratch in current directory.
 
 1. Identify the stub rows: grep '_generic_kratos_template' src/backends/kratos/generators/specialized.py — these emit import-check stubs. Cross-check against benchmarks/probe_results/templates.json (kratos rows that gen but fail validate are the stubs).
 2. For each stub where the application is actually pip-installed in .venv (probe with python -c "import KratosMultiphysics.<App>"), replace the stub with a minimal REAL solve: smallest meaningful mdpa mesh (or KM.Model built programmatically — see the pattern in commit bb7533c "real KM.Model solves replacing scipy stubs"), real ProjectParameters, real solver loop, results_summary.json with a physical quantity (not just "available").
@@ -117,7 +117,7 @@ Honesty constraint: 'verified' means the smoke test solved something on THIS Mac
 **Duration:** 2-4 h.
 
 ```
-We are validating the OASiS MCP's cross-solver coupling claims. Repo ~/Schreibtisch/Open-FEM-agent, branch layer-a/kratos-source-scanner, scratch in current directory.
+We are validating the OASiS MCP's cross-solver coupling claims. Repo /path/to/open-fem-agent, branch layer-a/kratos-source-scanner, scratch in current directory.
 
 1. Enumerate the supported pairs: read src/tools/coupling.py and the coupled_solve tool registration in src/tools/consolidated.py. List all advertised (solver_a, solver_b) combos and identify which have an existing passing record (tests/, benchmarks/coupling/, E2E_POSTMORTEMS.md).
 2. For each UNTESTED pair that is runnable on this machine (both solvers available — check setup_backend(action='status')): run the canonical Poisson domain-decomposition through the actual MCP tool coupled_solve(problem='poisson_dd', solver_a=..., solver_b=...). Iterate on failures: the fix may live in the per-pair script generator in coupling.py.

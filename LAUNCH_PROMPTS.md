@@ -4,7 +4,7 @@ Each run below needs **its own fresh terminal** running Claude Code interactivel
 
 For every block:
 1. Open a new terminal.
-2. `cd ~/Schreibtisch/Open-FEM-agent`
+2. `cd /path/to/open-fem-agent`
 3. Start Claude Code: `claude`
 4. Paste the prompt block verbatim. Walk away. Come back to results.
 
@@ -21,7 +21,7 @@ The three blocks are **independent** — they can run in parallel in separate te
 **Paste this:**
 
 ```
-We are working on the OASiS MCP at ~/Schreibtisch/Open-FEM-agent (this directory). Goal: close pending tasks #27, #28, #29 (NGSolve / FEniCSx / 4C failing templates). Task #30 (deal.II rebuild) requires a heavy rebuild; SKIP it unless I tell you otherwise.
+We are working on the OASiS MCP at /path/to/open-fem-agent (this directory). Goal: close pending tasks #27, #28, #29 (NGSolve / FEniCSx / 4C failing templates). Task #30 (deal.II rebuild) requires a heavy rebuild; SKIP it unless I tell you otherwise.
 
 For each backend in (ngsolve, fenics, fourc):
   1. Read scripts/scan_results/tier2_results.json and find all rows where backend matches and "captured_head" looks like a real Python traceback or 4C error — these are the broken templates the catalog returns when a user calls prepare_simulation().
@@ -50,7 +50,7 @@ Wrap up by writing a short report to RUN_A_REPORT.md: how many templates were br
 **Paste this:**
 
 ```
-We are working on the OASiS MCP at ~/Schreibtisch/Open-FEM-agent (this directory). Goal: rerun HOE-v1 (Held-Out Evaluation v1) to measure whether the catalog work over the past two days (290-entry physics alias map, 26 cross-backend collation topics + 45 pitfalls, 100% Signal: coverage across 8 backends) moved the MCP_FULL number above the published 94%.
+We are working on the OASiS MCP at /path/to/open-fem-agent (this directory). Goal: rerun HOE-v1 (Held-Out Evaluation v1) to measure whether the catalog work over the past two days (290-entry physics alias map, 26 cross-backend collation topics + 45 pitfalls, 100% Signal: coverage across 8 backends) moved the MCP_FULL number above the published 94%.
 
 Step 1. Find the HOE-v1 harness. Look in benchmarks/hoe_v1/. There should be a runner script + a 204-cell task list + a baseline results file (BARE 78% / MCP_FULL 94%). If you can't find it, read SESSION_STATUS.md in this directory which documents where it lives.
 
@@ -88,7 +88,7 @@ Wrap up: short 5-bullet summary at the top of the results file.
 **Paste this:**
 
 ```
-We are working on the OASiS MCP at ~/Schreibtisch/Open-FEM-agent (this directory). Goal: build the per-pitfall ablation suite (task #224). Until now we know MCP_FULL beats BARE by 8 percentage points on HOE-v1, but we don't know WHICH pitfalls deserve credit. This run identifies the high-impact ones.
+We are working on the OASiS MCP at /path/to/open-fem-agent (this directory). Goal: build the per-pitfall ablation suite (task #224). Until now we know MCP_FULL beats BARE by 8 percentage points on HOE-v1, but we don't know WHICH pitfalls deserve credit. This run identifies the high-impact ones.
 
 Step 1. Read benchmarks/hoe_v1/ to understand how the existing harness picks cells and conditions. We're going to add a 5th condition: MCP_FULL_MINUS_<pitfall_id>.
 
