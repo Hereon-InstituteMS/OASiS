@@ -35,12 +35,12 @@ def _fluid_fsi_3d_block(params: dict) -> str:
     </solver>
   </Control>
   <Material>
-    <material id="1" type="neo-Hookean">
+    <material id="1" name="Material1" type="neo-Hookean">
       <density>1.0</density>
       <E>{E}</E>
       <v>{nu}</v>
     </material>
-    <material id="2" type="fluid-FSI">
+    <material id="2" name="Material2" type="fluid-FSI">
       <fluid type="fluid">
         <density>{rho_f}</density>
         <k>1e3</k>
@@ -76,16 +76,12 @@ def _fluid_fsi_3d_block(params: dict) -> str:
     <Elements type="hex8" mat="2" name="Fluid">
       <elem id="2">5,6,7,8,9,10,11,12</elem>
     </Elements>
-    <NodeSet name="solid_base">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="fluid_top">
-      <n id="9"/><n id="10"/><n id="11"/><n id="12"/>
-    </NodeSet>
+    <NodeSet name="solid_base">1,2,3,4</NodeSet>
+    <NodeSet name="fluid_top">9,10,11,12</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Solid" mat="1"/>
-    <SolidDomain name="Fluid" mat="2"/>
+    <SolidDomain name="Solid" mat="Material1"/>
+    <SolidDomain name="Fluid" mat="Material2"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix_base" type="zero displacement" node_set="solid_base">

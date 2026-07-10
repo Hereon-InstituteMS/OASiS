@@ -32,7 +32,7 @@ def _elasticity_3d_cube(params: dict) -> str:
     </Constants>
   </Globals>
   <Material>
-    <material id="1" type="isotropic elastic">
+    <material id="1" name="Material1" type="isotropic elastic">
       <density>1.0</density>
       <E>{E}</E>
       <v>{nu}</v>
@@ -52,15 +52,11 @@ def _elasticity_3d_cube(params: dict) -> str:
     <Elements type="hex8" mat="1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="load_top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
+    <NodeSet name="load_top">5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="fix_bottom">
@@ -126,15 +122,20 @@ KNOWLEDGE = {
             ),
             (
                 "[Input] MeshDomains section is REQUIRED in v4.0 "
-                "(links each domain to a material id). Older "
-                "v3.x .feb files put the mat attribute directly "
-                "on the <Elements> tag; v4.0 requires the "
-                "explicit MeshDomains/SolidDomain mapping. "
-                "Signal: FEBio aborts with `domain Part1 has no "
-                "MeshDomains entry — required for v4.0` or "
-                "silently associates the domain with material "
-                "id=1 (giving the wrong material if there are "
-                "multiple). (Audit 2026-06-02.)"
+                "and links each domain to a material BY NAME: "
+                "<SolidDomain name=... mat=\"<material name>\"> is "
+                "resolved through FEModel::FindMaterial(name), which "
+                "matches the material's name= attribute (NOT its "
+                "numeric id). Older v3.x .feb files put a numeric mat "
+                "id directly on the <Elements> tag; v4.0 requires the "
+                "explicit MeshDomains/SolidDomain mapping AND every "
+                "<material> to carry a name= attribute. "
+                "Signal: FEBio aborts at parse with "
+                "`invalid value for attribute \"mat\"` when the "
+                "referenced name is not found — e.g. a leftover "
+                "numeric mat=\"1\" that matches no material name. "
+                "(Audit 2026-06-02; name lookup verified against "
+                "FEBioMeshDomainsSection4 + FEModel::FindMaterial.)"
             ),
             (
                 "[Input] LoadData section with <load_controller> "

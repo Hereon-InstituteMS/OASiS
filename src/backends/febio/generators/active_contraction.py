@@ -40,7 +40,7 @@ def _active_contraction_3d_fiber(params: dict) -> str:
     </solver>
   </Control>
   <Material>
-    <material id="1" type="solid mixture">
+    <material id="1" name="Material1" type="solid mixture">
       <density>1.0</density>
       <mat_axis type="vector">
         <a>0,0,1</a>
@@ -70,12 +70,10 @@ def _active_contraction_3d_fiber(params: dict) -> str:
     <Elements type="hex8" mat="1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
+    <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="fix_bottom">
@@ -93,7 +91,6 @@ def _active_contraction_3d_fiber(params: dict) -> str:
       <var type="displacement"/>
       <var type="stress"/>
       <var type="fiber vector"/>
-      <var type="active fiber stress"/>
     </plotfile>
   </Output>
 </febio_spec>
