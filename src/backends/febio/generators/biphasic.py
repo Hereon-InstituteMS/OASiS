@@ -28,7 +28,7 @@ def _biphasic_3d_confined(params: dict) -> str:
     </solver>
   </Control>
   <Material>
-    <material id="1" type="biphasic">
+    <material id="1" name="Material1" type="biphasic">
       <phi0>0.2</phi0>
       <solid type="neo-Hookean">
         <density>1.0</density>
@@ -54,15 +54,11 @@ def _biphasic_3d_confined(params: dict) -> str:
     <Elements type="hex8" mat="1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="load_top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
+    <NodeSet name="load_top">5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="fix_bottom">
@@ -113,6 +109,26 @@ KNOWLEDGE = {
             "BC types — separate from displacement BCs. "
             "Signal: silent stagnation of pressure field if drainage "
             "BC is missing from the loaded surface.",
+            "[Solver] Biphasic (and multiphasic / fluid / FSI) systems are "
+            "NON-SYMMETRIC. The linear solver must support a non-symmetric "
+            "matrix format. FEBio's default 'skyline' solver — the fallback "
+            "when FEBio is built without Intel MKL (e.g. on Apple Silicon, "
+            "where MKL is unavailable) — is symmetric-only and aborts "
+            "immediately with 0 linear-solver calls: 'The selected linear "
+            "solver does not support the requested matrix format'. Use a "
+            "non-symmetric solver: 'pardiso' (MKL builds) or 'accelerate' "
+            "(Apple Accelerate sparse solver on macOS; registered in "
+            "NumCore/NumCore.cpp as \"accelerate\"). Set it install-wide via "
+            "<default_linear_solver type=\"accelerate\"/> in febio.xml, or per "
+            "run via <linear_solver> in the Control/solver block.",
+            "[Syntax] FEBio 4.x <material> requires a 'name' attribute (in "
+            "addition to id), and <MeshDomains> reference the material by that "
+            "name (mat=\"<name>\"). Omitting name fails at parse with "
+            "'tag \"material\" ... missing attribute \"name\"' "
+            "(required in FEBioXML/FEBioMaterialSection.cpp). NodeSets declared "
+            "in <Mesh> take a comma-separated node-id list "
+            "(<NodeSet name=\"x\">1,2,3,4</NodeSet>), NOT <n id=.../> child "
+            "elements, which FEBio 4.x rejects with 'invalid value'.",
         ],
     },
 }

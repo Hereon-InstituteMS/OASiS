@@ -32,7 +32,7 @@ def _elasticity_3d_cube(params: dict) -> str:
     </Constants>
   </Globals>
   <Material>
-    <material id="1" type="isotropic elastic">
+    <material id="1" name="Material1" type="isotropic elastic">
       <density>1.0</density>
       <E>{E}</E>
       <v>{nu}</v>
@@ -52,15 +52,11 @@ def _elasticity_3d_cube(params: dict) -> str:
     <Elements type="hex8" mat="1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="load_top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
+    <NodeSet name="load_top">5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="fix_bottom">
