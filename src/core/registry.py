@@ -117,6 +117,8 @@ def load_all_backends():
                 loc = info.get("location", "")
                 if backend == "fenics" and loc:
                     os.environ.setdefault("FENICS_PYTHON", loc)
+                elif backend == "dune" and loc:
+                    os.environ.setdefault("DUNE_PYTHON", loc)
                 elif backend == "fourc" and loc:
                     os.environ.setdefault("FOURC_BINARY", loc)
                 src_root = info.get("source_root", "")

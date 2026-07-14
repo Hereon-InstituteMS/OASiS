@@ -57,12 +57,89 @@ def _find_sparta_binary() -> Optional[str]:
         if p:
             return p
     for cand in (
+        str(Path.home() / "sparta" / "src" / "spa_serial"),
+        str(Path.home() / "sparta" / "src" / "spa_mpi"),
         "/home/alexander/Schreibtisch/sparta/src/spa_serial",
         "/home/alexander/Schreibtisch/sparta/src/spa_mpi",
     ):
         if Path(cand).exists():
             return cand
     return None
+
+
+def _sparta_data_dirs(binary: str) -> list[Path]:
+    """Candidate dirs holding SPARTA data files (*.species, *.vss, data.*).
+
+    The bundled example decks reference data files (`species ar.species Ar`,
+    `read_surf data.circle`, `collide vss air air.vss`) that live in the
+    SPARTA distribution's data/ and examples/ trees, NOT in the knowledge
+    JSON. Without staging them the deck dies with e.g.
+    'Cannot open species file ar.species' (verified on macOS build
+    2026-07-14). We locate the distribution relative to the binary
+    (src/spa_serial -> repo root) plus SPARTA_ROOT."""
+    dirs = []
+    root_env = os.environ.get("SPARTA_ROOT", "")
+    if root_env and Path(root_env).is_dir():
+        dirs.append(Path(root_env))
+    try:
+        # <repo>/src/spa_serial -> <repo>
+        repo = Path(binary).resolve().parent.parent
+        if (repo / "data").is_dir() or (repo / "examples").is_dir():
+            dirs.append(repo)
+    except OSError:
+        pass
+    return dirs
+
+
+def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
+    """Copy data files referenced by the deck into work_dir (best effort).
+
+    Handles the reference styles used across the bundled decks:
+    `species <file> ...`, `collide vss <mix> <file>`, `read_surf <file>`,
+    `read_grid <file>`, `react tce <file>`. Relative ../data/ prefixes in
+    the deck are resolved against the distribution dirs."""
+    wanted: set[str] = set()
+    for line in deck.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        toks = line.split()
+        if toks[0] == "species" and len(toks) >= 2:
+            wanted.add(toks[1])
+        elif toks[0] == "collide" and len(toks) >= 4 and toks[1].startswith("vss"):
+            wanted.add(toks[3])
+        elif toks[0] in ("read_surf", "read_grid", "read_isurf") and len(toks) >= 2:
+            wanted.add(toks[1])
+        elif toks[0] == "react" and len(toks) >= 3:
+            wanted.add(toks[2])
+    if not wanted:
+        return
+    search_dirs = _sparta_data_dirs(binary)
+    for ref in wanted:
+        name = Path(ref).name
+        dest = work_dir / name
+        if dest.exists():
+            continue
+        found = None
+        for base in search_dirs:
+            for cand_dir in (base / "data", base / "examples", base):
+                cand = cand_dir / name
+                if cand.is_file():
+                    found = cand
+                    break
+            if not found:
+                # examples/* subdirs (data.circle lives in examples/circle)
+                hits = list((base / "examples").glob(f"*/{name}")) \
+                    if (base / "examples").is_dir() else []
+                if hits:
+                    found = hits[0]
+            if found:
+                break
+        if found:
+            shutil.copy(found, dest)
+            logger.info(f"Staged SPARTA data file {name} from {found}")
+        else:
+            logger.warning(f"SPARTA data file referenced by deck not found: {ref}")
 
 
 # ── physics capability -> {relevant commands, example template dir, pitfalls} ──
@@ -249,6 +326,10 @@ class SpartaBackend(SolverBackend):
         work_dir.mkdir(parents=True, exist_ok=True)
         script_path = work_dir / "in.sparta"
         script_path.write_text(input_content)
+        try:
+            _stage_sparta_data_files(input_content, work_dir, binary)
+        except Exception as e:
+            logger.warning(f"SPARTA data-file staging failed (continuing): {e}")
 
         job = JobHandle(job_id=job_id, backend_name="sparta",
                         work_dir=work_dir, status="running")

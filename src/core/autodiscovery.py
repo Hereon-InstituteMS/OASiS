@@ -228,8 +228,16 @@ def discover_backends() -> list[ProbeResult]:
     results.append(_probe_pip_package(
         "KratosMultiphysics", "KratosMultiphysics", "kratos",
         "pip install KratosMultiphysics"))
-    results.append(_probe_pip_package(
-        "dune-fem", "dune.fem", "dune", "pip install dune-fem"))
+
+    # DUNE-fem — like FEniCSx it usually lives in a conda env (ofa-dune),
+    # not the server's venv (issue #40).
+    dune_pip = _probe_pip_package(
+        "dune-fem", "dune.fem", "dune", "pip install dune-fem")
+    if dune_pip.found:
+        results.append(dune_pip)
+    else:
+        dune_conda = _probe_conda_env(["dune"], "dune.fem", "dune")
+        results.append(dune_conda or dune_pip)
 
     # FEniCSx — needs conda usually
     fenics_pip = _probe_pip_package(

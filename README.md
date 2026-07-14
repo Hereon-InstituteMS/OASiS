@@ -140,6 +140,15 @@ app bundle, not an OASiS issue), set the SDK sysroot consistently:
 export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 ```
 
+Conda envs are auto-detected (envs whose name contains `fenics`/`dolfinx`
+or `dune` are preferred). For non-standard layouts point OASiS at the
+interpreter explicitly — both discovery **and** execution use it:
+
+```bash
+export FENICS_PYTHON=/path/to/env/bin/python   # or FENICS_CONDA_PREFIX=/path/to/env
+export DUNE_PYTHON=/path/to/env/bin/python     # or DUNE_CONDA_PREFIX=/path/to/env
+```
+
 ### Verify
 
 ```bash
