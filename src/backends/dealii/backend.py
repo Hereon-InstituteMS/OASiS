@@ -510,7 +510,17 @@ class DealiiBackend(SolverBackend):
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
             if proc.returncode != 0:
                 job.status = "failed"
-                job.error = f"Compilation failed:\n{stderr.decode(errors='replace')[-2000:]}"
+                err = stderr.decode(errors='replace')
+                hint = ""
+                import platform
+                if platform.system() == "Darwin" and (
+                        "MacOSX.sdk" in err or "isinf" in err
+                        or ("abs" in err and "ambiguous" in err)):
+                    hint = ("\n\nHint (macOS + deal.II.app): this looks like the Xcode "
+                            "SDK header conflict (a deal.II.app packaging issue, not an "
+                            "OASiS bug). Make the sysroot consistent and re-run:\n"
+                            "    export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk")
+                job.error = f"Compilation failed:\n{err[-2000:]}{hint}"
                 job.elapsed = time.time() - start
                 return job
         except asyncio.TimeoutError:
