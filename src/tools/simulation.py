@@ -96,13 +96,9 @@ def register_simulation_tools(mcp: FastMCP):
                 "work_dir": str(work_dir),
             }, indent=2)
 
-        # Step 2: Find the generated input file
-        input_file = None
-        for pattern in ["*.4C.yaml", "*.yaml", "input.*", "solve.py", "MainKratos.py"]:
-            matches = list(work_dir.glob(pattern))
-            if matches:
-                input_file = matches[0]
-                break
+        # Step 2: Find the generated input file (backend-aware; see issue #39)
+        from core.backend import find_generated_input
+        input_file = find_generated_input(work_dir, backend)
 
         if not input_file:
             return json.dumps({
@@ -110,7 +106,7 @@ def register_simulation_tools(mcp: FastMCP):
                 "phase": "generator",
                 "error": "Generator did not produce an input file",
                 "work_dir": str(work_dir),
-                "files": [f.name for f in work_dir.iterdir()],
+                "files": sorted(f.name for f in work_dir.iterdir())[:50],
             }, indent=2)
 
         input_content = input_file.read_text()
