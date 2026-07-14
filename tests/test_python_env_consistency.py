@@ -66,11 +66,6 @@ def _write_fake_python(path: Path, script: str = FAKE_PYTHON_SCRIPT) -> Path:
     return path
 
 
-def _clean_dune_env():
-    """Context: DUNE_* overrides removed from os.environ."""
-    return mock.patch.dict(os.environ, {}, clear=False)
-
-
 class _DuneEnvTestCase(unittest.TestCase):
     """Base: isolated cache + env for every test."""
 

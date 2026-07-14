@@ -129,6 +129,9 @@ def _find_dune_python() -> Optional[str]:
                 return python
         except Exception:
             continue
+    # Cache the negative result too, so a missing/misconfigured dune.fem does
+    # not re-probe every candidate (up to 30 s each) on every check/run.
+    _DUNE_PYTHON_CACHE["python"] = None
     return None
 
 

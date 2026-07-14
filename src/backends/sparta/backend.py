@@ -98,7 +98,6 @@ def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
     `species <file> ...`, `collide vss <mix> <file>`, `read_surf <file>`,
     `read_grid <file>`, `react tce <file>`. Relative ../data/ prefixes in
     the deck are resolved against the distribution dirs."""
-    import re
     wanted: set[str] = set()
     for line in deck.splitlines():
         line = line.strip()
@@ -327,7 +326,10 @@ class SpartaBackend(SolverBackend):
         work_dir.mkdir(parents=True, exist_ok=True)
         script_path = work_dir / "in.sparta"
         script_path.write_text(input_content)
-        _stage_sparta_data_files(input_content, work_dir, binary)
+        try:
+            _stage_sparta_data_files(input_content, work_dir, binary)
+        except Exception as e:
+            logger.warning(f"SPARTA data-file staging failed (continuing): {e}")
 
         job = JobHandle(job_id=job_id, backend_name="sparta",
                         work_dir=work_dir, status="running")
