@@ -623,7 +623,7 @@ int main()
 
 ## Build (CMakeLists.txt)
 ```cmake
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.13.4)
 find_package(deal.II 9.0 REQUIRED)
 deal_ii_initialize_cached_variables()
 project(my_problem)

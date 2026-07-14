@@ -1463,12 +1463,8 @@ def register_consolidated_tools(mcp: FastMCP):
                 "work_dir": str(work_dir),
             }, indent=2)
 
-        input_file = None
-        for pattern in ["*.4C.yaml", "*.yaml", "input.*", "solve.py", "MainKratos.py"]:
-            matches = list(work_dir.glob(pattern))
-            if matches:
-                input_file = matches[0]
-                break
+        from core.backend import find_generated_input
+        input_file = find_generated_input(work_dir, backend)
 
         if not input_file:
             _journal.record("tool_error", "run_with_generator", solver=solver,
@@ -1478,6 +1474,7 @@ def register_consolidated_tools(mcp: FastMCP):
                 "status": "failed", "phase": "generator",
                 "error": "Generator did not produce an input file",
                 "work_dir": str(work_dir),
+                "files": [f.name for f in work_dir.iterdir()],
             }, indent=2)
 
         input_content = input_file.read_text()

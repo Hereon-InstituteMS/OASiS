@@ -32,6 +32,73 @@ class InputFormat(Enum):
     SPARTA = "sparta"       # SPARTA DSMC input script (LAMMPS-style)
 
 
+# Filename patterns a generator script may write for the actual solver input,
+# keyed by the backend's declared input format. Ordered most-specific first.
+# Note: deal.II writes main.cpp and SPARTA writes in.sparta; neither is matched
+# by the old ["*.4C.yaml","*.yaml","input.*","solve.py","MainKratos.py"] glob,
+# which silently broke run_with_generator for those backends (issue #39).
+_GENERATED_INPUT_PATTERNS = {
+    InputFormat.CPP:    ["main.cpp", "*.cpp", "*.cc", "*.cxx"],
+    InputFormat.YAML:   ["*.4C.yaml", "*.yaml", "*.yml"],
+    InputFormat.PYTHON: ["solve.py", "main.py", "*.py"],
+    InputFormat.XML:    ["input.feb", "*.feb", "*.xml"],
+    InputFormat.JSON:   ["MainKratos.py", "*.json"],
+    InputFormat.SPARTA: ["in.sparta", "in.*", "*.sparta"],
+}
+
+# Legacy patterns kept as a fallback so previously-working backends still match.
+_GENERATED_INPUT_LEGACY = ["*.4C.yaml", "*.yaml", "input.*", "solve.py",
+                           "MainKratos.py"]
+
+# Artifacts a generator run leaves behind that are never the input itself.
+_GENERATED_INPUT_EXCLUDE_NAMES = {
+    "generate_input.py", "CMakeLists.txt", "CMakeCache.txt", "Makefile",
+    "cmake_install.cmake", "stdout.log", "stderr.log", "log.sparta",
+}
+_GENERATED_INPUT_EXCLUDE_SUFFIXES = {
+    ".log", ".pyc", ".o", ".obj", ".vtk", ".vtu", ".vtp", ".pvd", ".h5", ".xdmf",
+}
+
+
+def find_generated_input(work_dir, backend=None) -> Optional[Path]:
+    """Locate the solver-input file a generator script wrote in ``work_dir``.
+
+    Backend-aware: prefers the file type matching ``backend.input_format``
+    (e.g. ``main.cpp`` for deal.II, ``in.sparta`` for SPARTA), then falls back
+    to the legacy pattern list, then to any plausible non-script artifact the
+    generator produced. Returns the matching Path, or ``None`` if nothing
+    looks like an input file.
+    """
+    work_dir = Path(work_dir)
+
+    def _ok(p: Path) -> bool:
+        return (p.is_file()
+                and p.name not in _GENERATED_INPUT_EXCLUDE_NAMES
+                and p.suffix not in _GENERATED_INPUT_EXCLUDE_SUFFIXES)
+
+    patterns: list[str] = []
+    if backend is not None:
+        try:
+            # input_format is a method on real backends but may be a plain
+            # attribute on stubs; accept either.
+            fmt = backend.input_format
+            if callable(fmt):
+                fmt = fmt()
+            patterns = list(_GENERATED_INPUT_PATTERNS.get(fmt, []))
+        except Exception:
+            patterns = []
+    patterns += _GENERATED_INPUT_LEGACY
+
+    for pattern in patterns:
+        matches = sorted(m for m in work_dir.glob(pattern) if _ok(m))
+        if matches:
+            return matches[0]
+
+    # Last resort: any file the generator produced that is not a script/aux.
+    leftovers = sorted(f for f in work_dir.iterdir() if _ok(f))
+    return leftovers[0] if leftovers else None
+
+
 def sorted_by_step(paths: list) -> list:
     """Sort result files by NUMERIC step index, not lexicographically.
 

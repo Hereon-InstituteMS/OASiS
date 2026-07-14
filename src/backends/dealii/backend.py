@@ -165,7 +165,7 @@ class DealiiBackend(SolverBackend):
 
         test_cpp = '#include <deal.II/base/utilities.h>\nint main(){return 0;}\n'
         test_cmake = (
-            'cmake_minimum_required(VERSION 3.1)\n'
+            'cmake_minimum_required(VERSION 3.13.4)\n'
             'find_package(deal.II REQUIRED)\n'
             'deal_ii_initialize_cached_variables()\n'
             'project(test)\n'
@@ -618,7 +618,7 @@ def _generate_cmakelists(target_name: str) -> str:
     # CMake does not emit a type-mismatch warning.  Use plain
     # `if(NOT DEFINED CMAKE_*_COMPILER)` rather than the `CACHE{}`
     # operand form, which only works on CMake >= 3.14 (the file declares
-    # a minimum of 3.1).  A `-D` from the command line is visible as a
+    # a minimum of 3.13.4).  A `-D` from the command line is visible as a
     # regular variable too, so this still respects user overrides.
     cc = os.environ.get("CC", "")
     cxx = os.environ.get("CXX", "")
@@ -637,7 +637,7 @@ def _generate_cmakelists(target_name: str) -> str:
         )
 
     return f"""\
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.13.4)
 {compiler_cache}find_package(deal.II 9.0 REQUIRED
   HINTS ${{DEAL_II_DIR}} ${{deal.II_DIR}}{extra_hints} /usr /usr/local
 )
