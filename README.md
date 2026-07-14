@@ -131,6 +131,15 @@ conda create -n ofa-dune -c conda-forge dune-fem
 sudo apt install libdeal.ii-dev
 ```
 
+On macOS, install deal.II from the official `deal.II.app` bundle and point
+`DEAL_II_DIR` at its `Contents/Resources/Libraries`. If a deal.II build then
+fails inside `<complex>`/`<cmath>` (an Xcode SDK header clash baked into the
+app bundle, not an OASiS issue), set the SDK sysroot consistently:
+
+```bash
+export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+```
+
 Conda envs are auto-detected (envs whose name contains `fenics`/`dolfinx`
 or `dune` are preferred). For non-standard layouts point OASiS at the
 interpreter explicitly — both discovery **and** execution use it:
