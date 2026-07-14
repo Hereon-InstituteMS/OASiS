@@ -1474,7 +1474,7 @@ def register_consolidated_tools(mcp: FastMCP):
                 "status": "failed", "phase": "generator",
                 "error": "Generator did not produce an input file",
                 "work_dir": str(work_dir),
-                "files": [f.name for f in work_dir.iterdir()],
+                "files": sorted(f.name for f in work_dir.iterdir())[:50],
             }, indent=2)
 
         input_content = input_file.read_text()
