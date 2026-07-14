@@ -11,6 +11,7 @@ interchangeable. Different backend (DUNE C++ infrastructure vs PETSc).
 
 import asyncio
 import logging
+import os
 import shutil
 import time
 import uuid
@@ -27,6 +28,129 @@ from .generators import GENERATORS, KNOWLEDGE
 
 logger = logging.getLogger("oasis.dune")
 
+# Cache for the verified dune.fem interpreter. Probing candidates spawns a
+# subprocess per candidate (`import dune.fem`, up to 30 s each), so we only
+# resolve once per server lifetime. Cleared via _reset_dune_python_cache()
+# (used by tests).
+_DUNE_PYTHON_CACHE: dict = {}
+
+_DUNE_INSTALL_HINT = (
+    "dune.fem not importable in any candidate Python. "
+    "Try: conda create -n ofa-dune -c conda-forge dune-fem\n"
+    "Or point OASiS at an existing install:\n"
+    "  DUNE_PYTHON=/path/to/env/bin/python   (explicit interpreter)\n"
+    "  DUNE_CONDA_PREFIX=/path/to/env        (conda env root)")
+
+
+def _reset_dune_python_cache():
+    """Clear the cached interpreter (tests / env changes)."""
+    _DUNE_PYTHON_CACHE.clear()
+
+
+def _find_dune_python() -> Optional[str]:
+    """Locate and VERIFY the Python interpreter that can import dune.fem.
+
+    This is the single source of truth for interpreter resolution — used by
+    BOTH check_availability() and run(). (Issue #40: run() previously used
+    the server's own venv Python unconditionally, so a dune.fem found in a
+    conda env by check_availability() was ignored at execution time.)
+
+    DUNE-fem is heavy enough that users typically install it into a
+    dedicated conda env (ofa-dune is the convention mirroring
+    ofa-fenicsx / ofa-dealii). The MCP server runs in the oasis .venv
+    which usually does NOT have dune.fem.
+
+    Resolution order:
+      * DUNE_PYTHON env var (explicit interpreter, verified too)
+      * DUNE_CONDA_PREFIX env var (conda env root)
+      * priority 0 — any conda env with "dune" in its name (ofa-dune,
+        dune, dune-fem, ...) — the most likely place.
+      * priority 1 — any other conda env (covers dune.fem installed
+        alongside fenicsx in a single shared env).
+      * priority 99 — the active interpreter (.venv) — checked last
+        because dune.fem in the harness's own .venv is rare and probing
+        it first would slow down the common case.
+
+    Every candidate is verified with a subprocess `import dune.fem`
+    before being returned; the first success is cached.
+    """
+    import subprocess
+
+    if "python" in _DUNE_PYTHON_CACHE:
+        return _DUNE_PYTHON_CACHE["python"]
+
+    candidates: list[tuple[int, str]] = []
+
+    # Explicit overrides first (mirrors FENICS_PYTHON / FENICS_CONDA_PREFIX).
+    env_python = os.environ.get("DUNE_PYTHON", "")
+    if env_python and Path(env_python).is_file():
+        candidates.append((-2, env_python))
+    env_prefix = os.environ.get("DUNE_CONDA_PREFIX", "")
+    if env_prefix:
+        p = Path(env_prefix) / "bin" / "python"
+        if p.is_file():
+            candidates.append((-1, str(p)))
+
+    for conda_base in (
+            Path.home() / "miniconda3" / "envs",
+            Path.home() / "anaconda3" / "envs",
+            Path.home() / "miniforge3" / "envs"):
+        if not conda_base.is_dir():
+            continue
+        for env_dir in sorted(conda_base.iterdir()):
+            py = env_dir / "bin" / "python"
+            if py.is_file():
+                # Prioritise *dune* envs but accept any
+                name = env_dir.name.lower()
+                priority = 0 if "dune" in name else 1
+                candidates.append((priority, str(py)))
+
+    active = get_python_executable()
+    if active:
+        candidates.append((99, active))
+
+    # De-dup while preserving the best (lowest) priority per interpreter.
+    seen = set()
+    ordered = []
+    for priority, py in sorted(candidates, key=lambda x: x[0]):
+        if py in seen:
+            continue
+        seen.add(py)
+        ordered.append(py)
+
+    for python in ordered:
+        try:
+            result = subprocess.run(
+                [python, "-c", "import dune.fem; print('OK')"],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0:
+                _DUNE_PYTHON_CACHE["python"] = python
+                return python
+        except Exception:
+            continue
+    return None
+
+
+def _dune_subprocess_env(python: str) -> dict:
+    """Environment for running dune scripts with the resolved interpreter.
+
+    dune-fem JIT-compiles C++ modules at run time; its CMake needs to
+    find the dune-* package configs that live under the interpreter's
+    prefix (<prefix>/lib/cmake/dune-*). When the interpreter comes from
+    a conda env that the server never activated, CMAKE_PREFIX_PATH does
+    not contain that prefix and the very first JIT build fails with
+    "Could not find ... dune-commonConfig.cmake" (issue #40 follow-up:
+    picking the right python is necessary but not sufficient).
+    """
+    env = os.environ.copy()
+    prefix = str(Path(python).resolve().parent.parent)
+    existing = env.get("CMAKE_PREFIX_PATH", "")
+    if prefix not in existing.split(os.pathsep):
+        env["CMAKE_PREFIX_PATH"] = (
+            prefix + (os.pathsep + existing if existing else ""))
+    return env
+
 
 class DuneBackend(SolverBackend):
 
@@ -37,66 +161,13 @@ class DuneBackend(SolverBackend):
         return "DUNE-fem"
 
     def check_availability(self) -> tuple[BackendStatus, str]:
-        # DUNE-fem is heavy enough that users typically install it
-        # into a dedicated conda env (ofa-dune is the convention
-        # mirroring ofa-fenicsx / ofa-dealii). The MCP server runs
-        # in the oasis .venv which usually does NOT have
-        # dune.fem.
-        #
-        # Search order (priority lowest-first):
-        #   0 — any conda env with "dune" in its name (ofa-dune,
-        #       dune, dune-fem, etc.) — the most likely place.
-        #   1 — any other conda env (covers the case where dune.fem
-        #       was installed alongside fenicsx in a single shared
-        #       env).
-        #   99 — the active interpreter (.venv) — checked last
-        #       because dune.fem in the harness's own .venv is rare
-        #       and probing it first would slow down the common
-        #       case. Still checked so an unusual install layout
-        #       gets picked up.
-        # (Audit 2026-06-01; comment corrected 2026-06-02 — the
-        # earlier "Check the active interpreter first" was wrong.)
-        import subprocess
-        candidates = []
-        active = get_python_executable()
-        if active:
-            candidates.append(active)
-        for conda_base in (
-                Path.home() / "miniconda3" / "envs",
-                Path.home() / "anaconda3" / "envs",
-                Path.home() / "miniforge3" / "envs"):
-            if not conda_base.is_dir():
-                continue
-            for env_dir in conda_base.iterdir():
-                py = env_dir / "bin" / "python"
-                if py.is_file():
-                    # Prioritise *dune* envs but accept any
-                    name = env_dir.name.lower()
-                    priority = 0 if "dune" in name else 1
-                    candidates.append((priority, str(py)))
-        # De-dup while preserving order; sort by priority where annotated.
-        seen = set()
-        ordered = []
-        for c in candidates:
-            py = c[1] if isinstance(c, tuple) else c
-            if py in seen:
-                continue
-            seen.add(py)
-            ordered.append((c[0] if isinstance(c, tuple) else 99, py))
-        ordered.sort(key=lambda x: x[0])
-        for _, python in ordered:
-            try:
-                result = subprocess.run(
-                    [python, "-c", "import dune.fem; print('OK')"],
-                    capture_output=True, text=True, timeout=30,
-                )
-                if result.returncode == 0:
-                    return BackendStatus.AVAILABLE, f"DUNE-fem at {python}"
-            except Exception:
-                continue
-        return BackendStatus.NOT_INSTALLED, (
-            "dune.fem not importable in any candidate Python. "
-            "Try: conda create -n ofa-dune -c conda-forge dune-fem")
+        # Interpreter discovery + verification lives in
+        # _find_dune_python() so that run() executes with EXACTLY the
+        # interpreter reported here (issue #40).
+        python = _find_dune_python()
+        if python:
+            return BackendStatus.AVAILABLE, f"DUNE-fem at {python}"
+        return BackendStatus.NOT_INSTALLED, _DUNE_INSTALL_HINT
 
     def input_format(self) -> InputFormat:
         return InputFormat.PYTHON
@@ -232,14 +303,17 @@ class DuneBackend(SolverBackend):
 
     async def run(self, input_content: str, work_dir: Path,
                   np: int = 1, timeout=None) -> JobHandle:
-        python = get_python_executable()
+        # Use the SAME interpreter that check_availability() verified —
+        # NOT the server's own venv Python (issue #40: the venv usually
+        # lacks dune.fem; it lives in a conda env).
+        python = _find_dune_python()
         if not python:
             return JobHandle(
                 job_id=str(uuid.uuid4())[:8],
                 backend_name="dune",
                 work_dir=work_dir,
                 status="failed",
-                error="Python not found",
+                error=_DUNE_INSTALL_HINT,
             )
 
         work_dir = work_dir.resolve()
@@ -262,6 +336,7 @@ class DuneBackend(SolverBackend):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=str(work_dir),
+                env=_dune_subprocess_env(python),
             )
             # DUNE JIT compiles on first run — can be slow
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)

@@ -10,6 +10,7 @@
         "FOURC_BINARY": "${HOME}/4C/build/4C",
         "LD_LIBRARY_PATH": "/opt/4C-dependencies/lib",
         "FENICS_PYTHON": "${HOME}/miniconda3/envs/fenics/bin/python",
+        "DUNE_PYTHON": "${HOME}/miniconda3/envs/ofa-dune/bin/python",
         "PYVISTA_OFF_SCREEN": "true"
       }
     }

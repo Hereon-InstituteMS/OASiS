@@ -131,6 +131,15 @@ conda create -n ofa-dune -c conda-forge dune-fem
 sudo apt install libdeal.ii-dev
 ```
 
+Conda envs are auto-detected (envs whose name contains `fenics`/`dolfinx`
+or `dune` are preferred). For non-standard layouts point OASiS at the
+interpreter explicitly — both discovery **and** execution use it:
+
+```bash
+export FENICS_PYTHON=/path/to/env/bin/python   # or FENICS_CONDA_PREFIX=/path/to/env
+export DUNE_PYTHON=/path/to/env/bin/python     # or DUNE_CONDA_PREFIX=/path/to/env
+```
+
 ### Verify
 
 ```bash
