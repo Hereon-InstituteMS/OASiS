@@ -58,3 +58,15 @@ upstream_sources/
 data/source_discovery_cache.json
 data/build_logs/
 *.msh
+
+# internal dev/paper docs — kept local, not published
+/AGENTS.md
+/CLAUDE.md
+/E2E_POSTMORTEMS.md
+/LAUNCH_PROMPTS.md
+/PLAN.md
+/SESSION_STATUS.md
+/STRESS_TESTS.md
+/TESTING_PROMPTS.md
+/webui/TEST_PROMPTS.md
+/benchmarks/probe_results/templates.md
