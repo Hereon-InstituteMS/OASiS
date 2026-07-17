@@ -123,8 +123,8 @@ KNOWLEDGE = {
             "run via <linear_solver> in the Control/solver block.",
             "[Syntax] FEBio 4.x <material> requires a 'name' attribute (in "
             "addition to id), and <MeshDomains> reference the material by that "
-            "name (mat=\"<name>\"). Omitting name fails at parse with "
-            "'tag \"material\" ... missing attribute \"name\"' "
+            "name (mat=\"<name>\"). Signal: omitting the name attribute fails at "
+            "parse with 'tag \"material\" ... missing attribute \"name\"' "
             "(required in FEBioXML/FEBioMaterialSection.cpp). NodeSets declared "
             "in <Mesh> take a comma-separated node-id list "
             "(<NodeSet name=\"x\">1,2,3,4</NodeSet>), NOT <n id=.../> child "

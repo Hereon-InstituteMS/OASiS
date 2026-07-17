@@ -43,6 +43,18 @@ _REFERENCE_KEYS: set[str] = {
     # Same shape as the io_catalog whitelist already — not a
     # PhysicsCapability candidate.
     "adaptive_refinement",
+    # deal.II ships compressible-Euler *knowledge* but no input generator, so it
+    # is reference material rather than a runnable PhysicsCapability.
+    "compressible_euler",
+    # Kratos 2026-06-26 honesty audit: these 20 physics were REMOVED from
+    # supported_physics because their generators were import-probe stubs with no
+    # real solve, but their deep_knowledge entries are kept as reference. They
+    # are reference-only by design (see backends/kratos/backend.py), so they are
+    # not orphans.
+    "rom", "topology_optimization", "iga", "wind_engineering", "thermal_dem",
+    "swimming_dem", "fem_to_dem", "chimera", "droplet_dynamics", "free_surface",
+    "fluid_biomedical", "fluid_hydraulics", "fluid", "fsi", "geomechanics",
+    "compressible_potential", "rans", "pfem_fluid", "pfem_solid", "pfem2",
 }
 
 
@@ -122,6 +134,17 @@ class TestNoOrphanPhysics(unittest.TestCase):
                              "dune", "febio"):
             backend = get_backend(backend_name)
             if backend is None:
+                continue
+            # A backend that is registered but not actually importable here
+            # (e.g. Kratos when its wheel needs a newer glibc) reports an EMPTY
+            # supported_physics, which would orphan its entire deep_knowledge
+            # catalog. That is an environment gap, not a catalog bug — its
+            # physics ARE wired up wherever the backend imports. Skip it.
+            try:
+                _st, _ = backend.check_availability()
+                if _st.value != "available":
+                    continue
+            except Exception:
                 continue
             exposed = {c.name for c in backend.supported_physics()}
             # Recognise the convention where a backend exposes

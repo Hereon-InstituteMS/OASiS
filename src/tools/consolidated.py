@@ -533,10 +533,8 @@ _PHYSICS_SYNONYMS = {
     "fe_squared": "multiscale",
     "fe2": "multiscale",
 
-    # ── Optimization ───────────────────────────────────────────────
-    "optimal_control": "optimal_control",
-    "adjoint": "optimal_control",
-    "inverse_problem": "optimal_control",
+    # (Removed dead 'optimal_control' aliases — no backend provides that
+    # canonical, even as reference knowledge, so they routed users to nothing.)
 
     # ── Matrix-free / multigrid (solver-level not physics, but
     #     dealii exposes them as physics keys) ─────────────────────
