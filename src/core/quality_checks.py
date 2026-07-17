@@ -114,17 +114,49 @@ def check_finite(values, label: str = "result") -> list[str]:
 _FINITE_SCANNABLE = (".vtu", ".vtk", ".vtp", ".pvtu", ".msh", ".vtkhdf")
 
 
+def _scan_bp_finite(path) -> tuple[list[str], bool]:
+    """Best-effort finiteness scan of an ADIOS2 .bp dataset (dolfinx VTXWriter).
+
+    Mac stress audit 2026-07-18: an all-NaN field written ONLY via VTXWriter
+    (.bp) was stamped VERIFIED because meshio cannot read .bp — the exact
+    'fabricated result' the gate exists to catch (dolfinx Stokes/Taylor-Hood
+    templates emit .bp exclusively). Scans via adios2 when importable.
+    Returns (warnings, scanned?) — scanned=False when adios2 is unavailable
+    so the caller can report that finiteness was NOT asserted.
+    """
+    try:
+        import adios2
+        import numpy as _np2
+    except Exception:
+        return [], False
+    w = []
+    try:
+        with adios2.FileReader(str(path)) as f:
+            for name in list(f.available_variables() or {}):
+                try:
+                    arr = _np2.asarray(f.read(name), float)
+                except (ValueError, TypeError):
+                    continue  # non-numeric variable (labels, connectivity strings)
+                w += check_finite(arr, label=f"{getattr(path, 'name', path)}:{name}")
+        return w, True
+    except BaseException:
+        return [], False
+
+
 def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
     """Best-effort finiteness scan of a run's OUTPUT files.
 
     Attestation binds a claim to run evidence, but "a file exists" is not enough:
     a solve can exit 0 and write an output full of NaN/Inf — a fabricated-looking
-    result. This reads each result file with meshio and flags non-finite values in
-    any point/cell data, so the verification gate can reject it. Formats meshio
-    cannot read are skipped (finiteness is simply not asserted for them here);
-    this never raises.
+    result. This reads each result file with meshio (plus adios2 for .bp) and
+    flags non-finite values in any point/cell data, so the verification gate can
+    reject it. If NONE of the output files could be scanned, that is reported
+    too — a VERIFIED verdict must not silently imply a finiteness check that
+    never ran. This never raises.
     """
     w = []
+    scannable_format_seen = False
+    considered = 0
     try:
         import meshio
     except Exception:
@@ -132,8 +164,19 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
     from pathlib import Path as _Path
     for p in list(paths)[:max_files]:
         p = p if hasattr(p, "suffix") else _Path(str(p))
-        if p.suffix.lower() not in _FINITE_SCANNABLE:
+        suffix = p.suffix.lower()
+        if suffix == ".bp":
+            considered += 1
+            bp_w, bp_scanned = _scan_bp_finite(p)
+            w += bp_w
+            # .bp counts as scannable only when adios2 actually read it —
+            # without adios2 the format is unscannable in this environment.
+            scannable_format_seen = scannable_format_seen or bp_scanned
             continue
+        considered += 1
+        if suffix not in _FINITE_SCANNABLE:
+            continue
+        scannable_format_seen = True
         try:
             m = meshio.read(str(p))
         except BaseException:
@@ -145,6 +188,16 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
         for name, blocks in list(getattr(m, "cell_data", {}).items()):
             for i, arr in enumerate(blocks):
                 w += check_finite(arr, label=f"{p.name}:{name}[{i}]")
+    if considered and not scannable_format_seen:
+        # Not a NaN finding — an honesty note: no output file was in a
+        # format scannable in this environment (e.g. only .xplt, or .bp
+        # without adios2), so finiteness is NOT asserted by the gate.
+        w.append(
+            "finiteness not asserted: none of the output files are in a "
+            "scannable format (meshio: "
+            + ", ".join(_FINITE_SCANNABLE)
+            + "; .bp needs the adios2 python package) — verify field values "
+            "independently.")
     return w
 
 

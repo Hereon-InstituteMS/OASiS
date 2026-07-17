@@ -73,8 +73,14 @@ class TestProjectInstructionsToolRefs(unittest.TestCase):
 
     def test_claude_md(self) -> None:
         """CLAUDE.md sub-agent instructions: `name(...)` form."""
+        path = _REPO / "CLAUDE.md"
+        if not path.is_file():
+            # CLAUDE.md was intentionally removed from the public repo
+            # (#43, commit f342a55). The phantom-reference gate only
+            # applies when the file exists (e.g. private checkouts).
+            self.skipTest("CLAUDE.md intentionally removed (#43)")
         self._check_file(
-            _REPO / "CLAUDE.md",
+            path,
             r"`([a-z_][a-z_0-9]*)\([^`]*\)`",
             "CLAUDE.md")
 

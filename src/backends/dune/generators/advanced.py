@@ -528,7 +528,11 @@ a = (u * v / dt + alpha * dot(grad(u), grad(v))) * dx
 f_source = 0.0
 
 dbc = DirichletBC(space, 0)
-scheme = galerkin([a == u_n * v / dt + f_source * v * dx, dbc], solver="cg")
+# NOTE the parentheses: (u_n/dt + f)*v must be grouped BEFORE *dx —
+# 'u_n * v / dt + f_source * v * dx' only multiplies the source term by
+# the measure and raises 'This integral is missing an integration
+# domain' (ufl.measure). Caught in the 2026-07-18 Mac stress audit.
+scheme = galerkin([a == (u_n / dt + f_source) * v * dx, dbc], solver="cg")
 
 n_steps = int(round(T_end / dt))
 out_every = max(1, n_steps // n_out)

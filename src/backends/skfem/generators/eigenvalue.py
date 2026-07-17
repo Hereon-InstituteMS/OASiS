@@ -40,6 +40,17 @@ for i, (c, e_val) in enumerate(zip(eigenvalues, exact)):
 summary = {{"eigenvalues": eigenvalues.tolist(), "exact": exact, "n_dofs": K.shape[0]}}
 with open("results_summary.json", "w") as _f:
     json.dump(summary, _f, indent=2)
+
+# Write the first eigenmode so the run has attestable output — without a
+# result file the verification gate correctly reports completed_unverified
+# ("produced NO output files") and the physics can never be VERIFIED
+# (Mac stress audit 2026-07-18).
+mode = np.zeros(K.shape[0])
+mode[I] = eigenvectors[:, 0]
+import meshio
+pts = np.column_stack([m.p.T, np.zeros(m.p.shape[1])])
+meshio.write_points_cells("result.vtu", pts, [("quad", m.t.T)],
+                          point_data={{"eigenmode_1": mode}})
 print("Eigenvalue solve complete.")
 '''
 

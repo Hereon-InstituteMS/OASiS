@@ -1639,6 +1639,11 @@ def register_consolidated_tools(mcp: FastMCP):
             nonfinite += check_summary_finite(work_dir, _stdout_text)
             if nonfinite:
                 result.setdefault("validation", []).extend(nonfinite)
+            # The 'finiteness not asserted' honesty note is a coverage gap,
+            # not evidence of a bad number — it must not flip the verdict to
+            # 'non-finite values' (FEBio .xplt / .bp-without-adios2 runs).
+            nonfinite = [x for x in nonfinite
+                         if not x.startswith("finiteness not asserted")]
         # Verification gate: bind the verdict to run evidence (attestation).
         if job.error:
             reason = "the solver run errored, so no number is backed by a valid run"
@@ -1756,6 +1761,11 @@ def register_consolidated_tools(mcp: FastMCP):
             nonfinite += check_summary_finite(work_dir, _stdout_text)
             if nonfinite:
                 result.setdefault("validation", []).extend(nonfinite)
+            # The 'finiteness not asserted' honesty note is a coverage gap,
+            # not evidence of a bad number — it must not flip the verdict to
+            # 'non-finite values' (FEBio .xplt / .bp-without-adios2 runs).
+            nonfinite = [x for x in nonfinite
+                         if not x.startswith("finiteness not asserted")]
         # Verification gate: attestation binds the verdict to run evidence.
         if job.error:
             reason = "the solver run errored, so no number is backed by a valid run"
