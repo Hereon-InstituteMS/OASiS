@@ -20,7 +20,18 @@ class TestSmokeResults(unittest.TestCase):
         self.assertLess(r.duration_ms, 5000)
 
     def test_kratos_smoke(self):
+        # Skip where Kratos is genuinely not importable (e.g. the conda-forge
+        # wheel needs a newer glibc than the host) — an unconditional assert
+        # kept the smoke suite red on every sweep. Machines WITH a working
+        # Kratos still get the hard assertion. Mirrors test_dune_smoke.
         r = smoke_kratos()
+        if not r.passed and r.error and (
+                "No module named" in str(r.error)
+                or "not found" in str(r.error).lower()
+                or "GLIBC" in str(r.error)
+                or "ImportError" in str(r.error)):
+            self.skipTest(f"Kratos not installed/usable here: "
+                          f"{str(r.error)[:200]}")
         self.assertTrue(r.passed, f"Kratos smoke failed: {r.error}")
 
     def test_dune_smoke(self):

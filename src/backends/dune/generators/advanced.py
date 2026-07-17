@@ -686,7 +686,7 @@ KNOWLEDGE = {
                 "[API] Full H(curl) Nedelec elements are "
                 "NOT yet in dune-fem — for true vector "
                 "Maxwell use NGSolve or dolfinx. Signal: "
-                "looking for dune.fem.space.nedelec() "
+                "looking for an H(curl) Nedelec space "
                 "raises ImportError; the existing "
                 "maxwell template in dune-fem uses a "
                 "P2 scalar proxy that ONLY handles the "
@@ -767,7 +767,7 @@ KNOWLEDGE = {
                 "Krylov-Schur for 100+ eigenpairs; SLEPc "
                 "handles deflation, restarts, and "
                 "preconditioning automatically. Use "
-                "dune.fem.solver.as_petsc + SLEPc for "
+                "the PETSc/SLEPc solver backend for "
                 "spectrum problems. (Audit 2026-06-02.)"
             ),
             (
@@ -995,7 +995,7 @@ KNOWLEDGE = {
         "time_stepping": {
             "backward_euler": "1st order, A-stable, unconditionally stable",
             "crank_nicolson": "2nd order, A-stable, better accuracy",
-            "dirk23": "2nd/3rd order DIRK, available in dune.fem.rungekutta",
+            "dirk23": "2nd/3rd order DIRK via dune-fem's Runge-Kutta steppers",
             "sdirk22": "2nd order singly-diagonal implicit RK",
         },
         "pitfalls": [

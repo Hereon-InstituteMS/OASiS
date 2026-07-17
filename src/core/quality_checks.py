@@ -148,6 +148,51 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
     return w
 
 
+def _walk_nonfinite(obj, label: str) -> list[str]:
+    import math
+    w = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            w += _walk_nonfinite(v, f"{label}.{k}")
+    elif isinstance(obj, (list, tuple)):
+        for i, v in enumerate(obj):
+            w += _walk_nonfinite(v, f"{label}[{i}]")
+    elif isinstance(obj, float):
+        if not math.isfinite(obj):
+            w.append(f"{label}: non-finite value ({obj}) — result is invalid.")
+    return w
+
+
+# stdout NaN/Inf only where it clearly denotes a numeric RESULT (after = or :,
+# optionally bracketed), so prose/paths can't trigger a false downgrade.
+import re as _re
+_STDOUT_NONFINITE = _re.compile(r"[=:]\s*[\[(]?\s*-?(?:nan|inf|infinity)\b", _re.I)
+
+
+def check_summary_finite(work_dir, stdout_text: str = "") -> list[str]:
+    """Scan a run's HEADLINE numbers — results_summary.json and stdout — for
+    NaN/Inf. The mesh-file scan alone misses these: a summary can report
+    ``"max_value": Infinity`` (the number the user actually reads) while the VTU
+    field stays finite. json.loads parses bare Infinity/NaN to floats, which the
+    walk then catches. Never raises.
+    """
+    import json as _json
+    from pathlib import Path as _P
+    w = []
+    try:
+        wd = _P(work_dir)
+        for js in sorted(wd.rglob("results_summary.json")):
+            try:
+                w += _walk_nonfinite(_json.loads(js.read_text()), js.name)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    if stdout_text and _STDOUT_NONFINITE.search(stdout_text):
+        w.append("stdout reports a non-finite (NaN/Inf) numeric result.")
+    return w
+
+
 def check_convergence(converged: bool, residual: float, tol: float) -> list[str]:
     """A non-converged coupled/iterative solve must NOT be reported as a result.
     The single most general silent-wrong guard."""

@@ -104,6 +104,32 @@ def test_scan_never_raises_on_garbage(tmp_path):
     assert check_result_files_finite([bad]) == []
 
 
+# ── Headline-number scan: results_summary.json + stdout (P2) ─────────────
+from core.quality_checks import check_summary_finite  # noqa: E402
+
+
+def test_summary_json_infinity_is_flagged(tmp_path):
+    # json.loads parses bare Infinity/NaN to floats; the walk must catch them.
+    (tmp_path / "results_summary.json").write_text('{"max_value": Infinity, "mean": 0.5}')
+    w = check_summary_finite(tmp_path)
+    assert w and any("max_value" in x and "non-finite" in x for x in w)
+
+
+def test_summary_clean_passes(tmp_path):
+    (tmp_path / "results_summary.json").write_text('{"max_value": 0.0737, "mean": 0.03}')
+    assert check_summary_finite(tmp_path, "solve ok, residual 1e-9") == []
+
+
+def test_stdout_nonfinite_result_flagged(tmp_path):
+    assert check_summary_finite(tmp_path, "max(u) = inf\nmean = nan")
+
+
+def test_stdout_prose_nan_does_not_false_trigger(tmp_path):
+    # 'information'/'nanometer'/a bare word must NOT trigger a false downgrade;
+    # only a NaN/Inf presented as a numeric result (after = or :) counts.
+    assert check_summary_finite(tmp_path, "computed 42 nanometers of information") == []
+
+
 # ── Call-site wiring: the tools must actually apply the verdict ───────────
 import asyncio            # noqa: E402
 import json               # noqa: E402

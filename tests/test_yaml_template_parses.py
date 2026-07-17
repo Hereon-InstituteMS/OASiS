@@ -74,7 +74,8 @@ STUB_TEMPLATES = {
     ("fourc", "sti", "monolithic_3d"),
     ("fourc", "cardiac_monodomain", "monodomain_3d"),
     ("fourc", "arterial_network", "single_artery_1d"),
-    ("fourc", "reduced_airways", "airways_1d"),
+    # reduced_airways/airways_1d was upgraded from a stub to a real inline-mesh
+    # template, so it is no longer tagged ⚠ STUB in prepare_simulation.
     ("fourc", "reduced_lung", "lung_1d"),
     ("fourc", "multiscale", "fe2_3d"),
     ("fourc", "beam_interaction", "beam_contact_3d"),

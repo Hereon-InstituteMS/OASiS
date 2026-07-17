@@ -14,7 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 from core.backend import detect_template_language
 from core.registry import get_backend, available_backends, all_backends
-from core.quality_checks import check_result_files_finite
+from core.quality_checks import check_result_files_finite, check_summary_finite
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
@@ -79,6 +79,30 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
         else "disabled for evaluation" if _ABLATE_CRITIC
         else "not recorded (pre-execution critic review)")
     return result
+
+
+def _short_reason(msg: str, limit: int = 240) -> str:
+    """Collapse a multi-line availability/error message (often a raw import
+    traceback) to a concise one-liner for user-facing surfaces. A backend that
+    isn't installed should read as one clear line, not a 30-frame stack dump that
+    floods the backend list. Keeps the actual exception (last non-empty line) and
+    any install/try hint; the full trace stays available via `developer`/logs.
+    """
+    if not msg:
+        return msg or ""
+    lines = [ln.strip() for ln in str(msg).strip().splitlines() if ln.strip()]
+    if not lines:
+        return ""
+    if len(lines) == 1:
+        return lines[0][:limit]
+    tail = lines[-1]
+    if tail.lower().startswith("traceback"):
+        tail = lines[-2] if len(lines) > 1 else tail
+    hint = next((ln for ln in lines
+                 if ln.lower().startswith(("install", "try", "run ", "set ", "conda ", "pip "))),
+                "")
+    out = tail if (not hint or hint == tail) else f"{tail}  ({hint})"
+    return out[:limit]
 
 
 def _strip_pitfalls(obj):
@@ -1184,9 +1208,10 @@ def register_consolidated_tools(mcp: FastMCP):
                         f"{status.value} — "
                         f"{b.input_format().value} input")
                 if status.value != "available" and msg:
-                    # Inline the install/troubleshoot hint so the
-                    # LLM does not have to call a second tool.
-                    core += f"\n  *{msg.strip()}*"
+                    # Inline a ONE-LINE reason/hint (not a raw traceback) so the
+                    # LLM does not have to call a second tool and the list stays
+                    # readable.
+                    core += f"\n  *{_short_reason(msg)}*"
                 lines.append(core)
             return "\n".join(lines) if lines else "No backends registered."
 
@@ -1482,7 +1507,7 @@ def register_consolidated_tools(mcp: FastMCP):
             _journal.record("tool_error", "run_with_generator", solver=solver,
                             error_message=f"Not available: {msg}",
                             input_snapshot=_snap)
-            return f"Solver {solver} not available: {msg}"
+            return f"Solver {solver} not available: {_short_reason(msg)}"
 
         _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y%m%d_%H%M%S")
@@ -1554,9 +1579,15 @@ def register_consolidated_tools(mcp: FastMCP):
         if job.error:
             result["error"] = job.error[:500]
         nonfinite = []
+        _stdout_text = ""
         if job.status == "completed":
             out_files = backend.get_result_files(job)
             result["output_files"] = [f.name for f in out_files]
+            stdout_log = work_dir / "stdout.log"
+            if stdout_log.exists():
+                _stdout_text = stdout_log.read_text()
+                result["stdout_tail"] = (_stdout_text[-2000:]
+                                         if len(_stdout_text) > 2000 else _stdout_text)
             # Attestation: a process that exits 0 but produces NO output files is
             # NOT a verified solve — the canonical silent failure. Flag it loudly.
             if not out_files:
@@ -1564,12 +1595,10 @@ def register_consolidated_tools(mcp: FastMCP):
             else:
                 # ... and a file full of NaN/Inf is a fabricated-looking result.
                 nonfinite = check_result_files_finite(out_files)
-                if nonfinite:
-                    result["validation"] = nonfinite
-            stdout_log = work_dir / "stdout.log"
-            if stdout_log.exists():
-                text = stdout_log.read_text()
-                result["stdout_tail"] = text[-2000:] if len(text) > 2000 else text
+            # Also scan the headline numbers (results_summary.json + stdout).
+            nonfinite += check_summary_finite(work_dir, _stdout_text)
+            if nonfinite:
+                result.setdefault("validation", []).extend(nonfinite)
         # Verification gate: bind the verdict to run evidence (attestation).
         if job.error:
             reason = "the solver run errored, so no number is backed by a valid run"
@@ -1579,8 +1608,8 @@ def register_consolidated_tools(mcp: FastMCP):
             reason = ("the process exited cleanly but produced NO output files, "
                       "so no reported number is backed by run evidence")
         elif nonfinite:
-            reason = ("the output files contain non-finite (NaN/Inf) values, so "
-                      "the result is numerically invalid")
+            reason = ("the result contains non-finite (NaN/Inf) values, so it is "
+                      "numerically invalid")
         else:
             reason = ""
         _stamp_verification(result,
@@ -1623,7 +1652,7 @@ def register_consolidated_tools(mcp: FastMCP):
             _journal.record("tool_error", "run_simulation", solver=solver,
                             error_message=f"Not available: {msg}",
                             input_snapshot=_snap)
-            return f"Solver {solver} not available: {msg}"
+            return f"Solver {solver} not available: {_short_reason(msg)}"
 
         # CP-4: validate the input BEFORE running (was skipped on the live path)
         _input_warnings = []
@@ -1664,9 +1693,15 @@ def register_consolidated_tools(mcp: FastMCP):
         if _input_warnings:
             result["input_validation_warnings"] = _input_warnings
         nonfinite = []
+        _stdout_text = ""
         if job.status == "completed":
             out_files = backend.get_result_files(job)
             result["output_files"] = [f.name for f in out_files]
+            stdout_log = work_dir / "stdout.log"
+            if stdout_log.exists():
+                _stdout_text = stdout_log.read_text()
+                result["stdout_tail"] = (_stdout_text[-2000:]
+                                         if len(_stdout_text) > 2000 else _stdout_text)
             # CP-4: a process that exits 0 but produces NO output is NOT a verified
             # success — the canonical silent failure. Downgrade the status loudly.
             if not out_files:
@@ -1676,12 +1711,11 @@ def register_consolidated_tools(mcp: FastMCP):
             else:
                 # ... and output full of NaN/Inf is a fabricated-looking result.
                 nonfinite = check_result_files_finite(out_files)
-                if nonfinite:
-                    result.setdefault("validation", []).extend(nonfinite)
-            stdout_log = work_dir / "stdout.log"
-            if stdout_log.exists():
-                text = stdout_log.read_text()
-                result["stdout_tail"] = text[-2000:] if len(text) > 2000 else text
+            # Also scan the HEADLINE numbers (results_summary.json + stdout): a
+            # summary can report max_value: Infinity while the mesh stays finite.
+            nonfinite += check_summary_finite(work_dir, _stdout_text)
+            if nonfinite:
+                result.setdefault("validation", []).extend(nonfinite)
         # Verification gate: attestation binds the verdict to run evidence.
         if job.error:
             reason = "the solver run errored, so no number is backed by a valid run"
@@ -1691,8 +1725,8 @@ def register_consolidated_tools(mcp: FastMCP):
             reason = ("the process exited cleanly but produced NO output files, "
                       "so no reported number is backed by run evidence")
         elif nonfinite:
-            reason = ("the output files contain non-finite (NaN/Inf) values, so "
-                      "the result is numerically invalid")
+            reason = ("the result contains non-finite (NaN/Inf) values, so it is "
+                      "numerically invalid")
         else:
             reason = ""
         _stamp_verification(result,
@@ -1965,11 +1999,15 @@ def register_consolidated_tools(mcp: FastMCP):
         if not wd.is_dir():
             return f"Directory not found: {wd}"
 
-        # Collect result files — skip .pvtu (parallel wrappers that can hang PyVista)
+        # Collect result files — skip .pvtu (parallel wrappers that can hang PyVista).
+        # Deliberately NOT globbing *.xdmf: pyvista's VTK XDMF reader SIGSEGVs on
+        # some files, which is uncatchable and takes the whole MCP server down
+        # (it wiped the in-memory job registry for the session). Every backend
+        # that writes .xdmf also writes a readable .vtu companion, so nothing is
+        # lost. (Mirrors quality_checks._FINITE_SCANNABLE excluding xdmf.)
         vtu_files = [f for f in sorted(wd.rglob("*.vtu")) if not f.name.endswith(".pvtu")]
         vtu_files += sorted(wd.rglob("*.vtk"))
         vtu_files += sorted(wd.rglob("*.vtp"))
-        vtu_files += sorted(wd.rglob("*.xdmf"))
         vtu_files += sorted(wd.rglob("*.bp"))  # ADIOS2/VTX output from dolfinx 0.10+
 
         if action == "list":
@@ -2224,6 +2262,18 @@ def register_consolidated_tools(mcp: FastMCP):
         backend = get_backend(solver)
         if not backend:
             return f"Unknown solver: {solver}"
+
+        # Warn up front if the REQUESTED backend is not usable on this install.
+        # Otherwise a user follows the returned template and only discovers at
+        # run time that the solver can't run (user-session finding). The guidance
+        # is still returned — it is valid — just clearly flagged.
+        _avail_status, _avail_msg = backend.check_availability()
+        if _avail_status.value != "available":
+            parts.append(
+                f"> ⚠ **{backend.display_name()} ({backend.name()}) is NOT available "
+                f"on this install** — {_short_reason(_avail_msg)}\n>\n> The setup below "
+                f"is still accurate, but install/enable {backend.name()} (or choose an "
+                f"available backend) before running.\n")
 
         # Fuzzy match: find the best matching physics name
         matched_physics = _fuzzy_match_physics(backend, physics)
