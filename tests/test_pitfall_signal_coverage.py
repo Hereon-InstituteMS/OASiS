@@ -484,9 +484,15 @@ SIGNAL_COVERAGE_MIN = {
                        #                 weak BC, postprocess to H1,
                        #                 block precond / direct).
                        #                 dune is the EIGHTH and FINAL
-                       #                 backend at 100% Signal: coverage.
+                       #                 FEM backend at 100% Signal: coverage.
                        #                 Trajectory: 0.0% -> 100.0% in
                        #                 a SINGLE pass.)
+    "sparta":   0.0,   # SPARTA (DSMC particle code, the 9th backend) carries one
+                       #   curated rarefied-gas pitfall per physics (10 total) that
+                       #   predate the Signal: convention. Baseline locked at 0.0
+                       #   so it can't REGRESS; enriching them with Signal:
+                       #   observable-symptom markers is follow-up work (it is a
+                       #   fundamentally different, non-FEM code).
 }
 
 

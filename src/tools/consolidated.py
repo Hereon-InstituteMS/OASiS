@@ -1131,6 +1131,30 @@ def register_consolidated_tools(mcp: FastMCP):
                         "Navier-Stokes / electromagnetics / "
                         "geomechanics."),
                 },
+                "SPARTA (DSMC)": {
+                    "parallelism": (
+                        "MPI-first: the simulation grid is spatially "
+                        "decomposed across ranks; SPARTA scales to "
+                        "thousands of cores and is a production HPC DSMC "
+                        "code (run: mpirun -np N spa_mpi -in <script>)."),
+                    "gpu": (
+                        "Yes — via the Kokkos package (build spa_kokkos): "
+                        "CUDA (NVIDIA) and HIP (AMD) backends run the "
+                        "particle move/collide/surface kernels on GPU. "
+                        "Enable with '-k on g 1 -sf kk' package flags."),
+                    "threading": (
+                        "OpenMP or Kokkos (OpenMP) for shared-memory "
+                        "parallelism; typically combined with MPI (MPI+X)."),
+                    "typical_scale": (
+                        "Billions of simulator particles on HPC clusters; "
+                        "particle count (fnum) trades statistical noise "
+                        "against cost, not DOFs."),
+                    "note": (
+                        "SPARTA is a Direct Simulation Monte Carlo (DSMC) "
+                        "rarefied-gas / particle code, NOT a FEM solver — "
+                        "reachable through OASiS coupling (e.g. a continuum "
+                        "FEM thermal wall coupled to DSMC gas)."),
+                },
             }
             if solver:
                 key_map = {"fourc": "4C Multiphysics", "4c": "4C Multiphysics",
@@ -1138,7 +1162,7 @@ def register_consolidated_tools(mcp: FastMCP):
                            "dealii": "deal.II", "deal.ii": "deal.II",
                            "ngsolve": "NGSolve", "skfem": "scikit-fem", "scikit-fem": "scikit-fem",
                            "kratos": "Kratos Multiphysics", "dune": "DUNE-fem", "dune-fem": "DUNE-fem",
-                           "febio": "FEBio"}
+                           "febio": "FEBio", "sparta": "SPARTA (DSMC)"}
                 name = key_map.get(solver.lower(), solver)
                 if name in hw:
                     return json.dumps({name: hw[name]}, indent=2)

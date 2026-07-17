@@ -113,7 +113,7 @@ KNOWLEDGE = {
             "NON-SYMMETRIC. The linear solver must support a non-symmetric "
             "matrix format. FEBio's default 'skyline' solver — the fallback "
             "when FEBio is built without Intel MKL (e.g. on Apple Silicon, "
-            "where MKL is unavailable) — is symmetric-only and aborts "
+            "where MKL is unavailable) — is symmetric-only. Signal: FEBio aborts "
             "immediately with 0 linear-solver calls: 'The selected linear "
             "solver does not support the requested matrix format'. Use a "
             "non-symmetric solver: 'pardiso' (MKL builds) or 'accelerate' "

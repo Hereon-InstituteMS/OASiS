@@ -595,8 +595,11 @@ class FenicsBackend(SolverBackend):
 
     def get_result_files(self, job: JobHandle) -> list[Path]:
         results = []
-        # Prefer VTU (converted from XDMF) over raw XDMF
-        for ext in ["*.vtu", "*.pvd", "*.pvtu", "*.xdmf"]:
+        # Prefer VTU (converted from XDMF) over raw XDMF. Include ADIOS2 *.bp
+        # (a directory) too: dolfinx forbids higher-order (e.g. P2 Taylor-Hood)
+        # fields in XDMF and writes VTX/.bp instead, so without this a correct
+        # P2 solve produced "no output" and was wrongly flagged NOT VERIFIED.
+        for ext in ["*.vtu", "*.pvd", "*.pvtu", "*.xdmf", "*.bp"]:
             results.extend(job.work_dir.rglob(ext))
         return sorted_by_step(results)
 

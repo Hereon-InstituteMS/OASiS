@@ -13,7 +13,7 @@ def _heat_2d(params: dict) -> str:
 from dune.grid import structuredGrid
 from dune.fem.space import lagrange
 from dune.fem.scheme import galerkin
-from dune.ufl import DirichletBC
+from dune.ufl import DirichletBC, Constant
 from ufl import TrialFunction, TestFunction, SpatialCoordinate, dot, grad, dx, conditional, lt
 import numpy as np
 import json
@@ -25,7 +25,10 @@ u = TrialFunction(space)
 v = TestFunction(space)
 
 a = dot(grad(u), grad(v)) * dx
-b = 0 * v * dx  # No source
+# Zero source wrapped in a UFL Constant: a bare `0 * v * dx` folds to a domainless
+# Zero ("integral is missing an integration domain"); a symbolic Constant keeps
+# the measure/domain.
+b = Constant(0.0) * v * dx
 
 # Dirichlet BCs — set for your problem
 bc_expr = conditional(lt(x[0], 0.01), {T_left}, conditional(lt(1.0 - x[0], 0.01), {T_right}, 0.0))

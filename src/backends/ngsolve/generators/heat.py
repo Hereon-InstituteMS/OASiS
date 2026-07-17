@@ -32,9 +32,12 @@ f.Assemble()
 
 gfu = GridFunction(fes)
 
-# Apply Dirichlet BCs
-gfu.Set(CoefficientFunction({T_left}), definedon=mesh.Boundaries("left"))
-gfu.Set(CoefficientFunction({T_right}), definedon=mesh.Boundaries("right"))
+# Apply Dirichlet BCs. NOTE: gfu.Set() ZEROES the whole vector first, so calling
+# it twice (once per boundary) wipes the first BC and silently yields a wrong
+# (often all-zero) field. Set BOTH boundary values in ONE call via a
+# boundary-piecewise CoefficientFunction over the union boundary.
+gfu.Set(mesh.BoundaryCF({{"left": {T_left}, "right": {T_right}}}),
+        definedon=mesh.Boundaries("left|right"))
 
 # Modify RHS for Dirichlet
 f.vec.data -= a.mat * gfu.vec
