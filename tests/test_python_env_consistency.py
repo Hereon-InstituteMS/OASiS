@@ -268,6 +268,26 @@ class TestDuneSubprocessEnv(_DuneEnvTestCase):
         # CMake does not read Python3_EXECUTABLE from the env -> must not be set
         self.assertNotIn("Python3_EXECUTABLE", env)
 
+    def test_symlinked_venv_prefix_is_the_venv(self):
+        # A real venv's bin/python is a SYMLINK to the base interpreter. The
+        # prefix must be the VENV, not the base — otherwise <venv>/lib/cmake/
+        # dune-* goes unfound and the JIT build fails exactly like issue #40
+        # (second-audit GAP 3). resolve()-ing the interpreter file followed the
+        # symlink out to the base; the fix resolves the bin DIRECTORY instead.
+        base = self.tmp / "base" / "bin" / "python"
+        base.parent.mkdir(parents=True)
+        base.write_text("")  # non-runnable -> exercises the non-following path
+        venv = self.tmp / "venv"
+        (venv / "bin").mkdir(parents=True)
+        os.symlink(base, venv / "bin" / "python")
+        venv_r = str(venv.resolve())
+        env = dune_mod._dune_subprocess_env(str(venv / "bin" / "python"))
+        self.assertEqual(env["CMAKE_PREFIX_PATH"].split(os.pathsep)[0], venv_r)
+        self.assertEqual(env["VIRTUAL_ENV"], venv_r)
+        self.assertEqual(env["Python3_ROOT_DIR"], venv_r)
+        self.assertEqual(env["PATH"].split(os.pathsep)[0],
+                         str((venv / "bin").resolve()))
+
 
 # ── 3. Caching ───────────────────────────────────────────────
 

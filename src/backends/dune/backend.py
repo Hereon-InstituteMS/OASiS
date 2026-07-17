@@ -135,6 +135,29 @@ def _find_dune_python() -> Optional[str]:
     return None
 
 
+def _interpreter_prefix(python: str) -> str:
+    """Authoritative install prefix (sys.prefix) for an interpreter.
+
+    Correct for venv, conda, and --system-site-packages alike, and — crucially —
+    for a venv it returns the VENV, not the base interpreter a resolve()'d
+    bin/python symlink would point at (issue #40 redux). Falls back, if the
+    interpreter can't be queried, to resolving the bin DIRECTORY (never a
+    symlink) rather than the interpreter FILE (the venv symlink we must not
+    follow).
+    """
+    import subprocess
+    try:
+        out = subprocess.run(
+            [python, "-c", "import sys; print(sys.prefix)"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except Exception:
+        pass
+    return str(Path(os.path.dirname(python) or ".").resolve().parent)
+
+
 def _dune_subprocess_env(python: str) -> dict:
     """Environment for running dune scripts with the resolved interpreter.
 
@@ -155,9 +178,16 @@ def _dune_subprocess_env(python: str) -> dict:
     FindPython3 resolves to exactly the interpreter we picked.
     """
     env = os.environ.copy()
-    py = Path(python).resolve()
-    prefix = str(py.parent.parent)   # <env>
-    bindir = str(py.parent)          # <env>/bin
+    # A venv's bin/python is a SYMLINK to the base interpreter, so
+    # Path(python).resolve() would yield the BASE prefix, not the venv — every
+    # dune-*Config.cmake under <venv>/lib/cmake then goes unfound and the JIT
+    # build fails exactly as in issue #40 (audit finding). Ask the interpreter
+    # for its own sys.prefix (authoritative for venv / conda / system-site),
+    # with a fallback that resolves the bin DIRECTORY rather than following the
+    # interpreter symlink.
+    prefix = _interpreter_prefix(python)
+    # <env>/bin — resolve the DIRECTORY (safe) but not the interpreter symlink.
+    bindir = str(Path(os.path.dirname(python) or ".").resolve())
 
     def _prepend(var: str, value: str) -> None:
         cur = env.get(var, "")

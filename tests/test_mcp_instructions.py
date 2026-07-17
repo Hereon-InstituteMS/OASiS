@@ -64,3 +64,47 @@ def test_all_sections_present():
                 "## Solver Selection", "## Cross-Solver Coupling",
                 "## Developer Mode", "## Session Knowledge"]:
         assert sec in instr, f"missing section {sec}"
+
+
+# ── Schema-level guards (issue #45 second audit) ─────────────────────────
+# The instructions blob is truncatable; the tool SCHEMAS are always delivered.
+# These assert that every tool the critic block names is really registered and
+# really carries critic_approved, so the fix can't silently regress with the
+# text-only tests above still green.
+
+_CRITIC_TOOLS = ["run_simulation", "run_with_generator", "coupled_solve",
+                 "couple", "couple_precice"]
+
+
+def _registered_tools() -> dict:
+    """{name: Tool} for the live MCP registry, resolved in a subprocess so the
+    heavy backend imports don't run in the test process."""
+    code = (
+        "import asyncio, json, sys; import server;\n"
+        "tools = asyncio.new_event_loop().run_until_complete(server.mcp.list_tools());\n"
+        "sys.stdout.write(json.dumps({t.name: t.inputSchema for t in tools}))"
+    )
+    env = dict(os.environ, PYTHONPATH=SRC)
+    env.pop("OFA_DISABLE_CRITIC", None)
+    r = subprocess.run([sys.executable, "-c", code], env=env,
+                       capture_output=True, text=True, timeout=240)
+    assert r.returncode == 0, r.stderr[-2000:]
+    import json
+    return json.loads(r.stdout)
+
+
+def test_every_critic_block_tool_is_registered_with_critic_approved():
+    schemas = _registered_tools()
+    assert "parameter_study" not in schemas  # the phantom tool must be gone
+    for name in _CRITIC_TOOLS:
+        assert name in schemas, f"critic block names unregistered tool {name}"
+        props = schemas[name].get("properties", {})
+        assert "critic_approved" in props, f"{name} lost critic_approved"
+        assert props["critic_approved"].get("type") == "boolean"
+
+
+def test_coupling_tools_expose_critic_approved():
+    # The recommended coupling tools carried no critic surface before the fix.
+    schemas = _registered_tools()
+    for name in ("couple", "couple_precice"):
+        assert "critic_approved" in schemas[name].get("properties", {})
