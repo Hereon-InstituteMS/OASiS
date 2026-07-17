@@ -32,9 +32,9 @@ _CRITIC_BLOCK = (
     "look for bugs, check units, check discretization adequacy, and search online "
     "to validate against published literature and benchmarks. Only proceed to the "
     "next step once the critic approves. This is not optional — always do it. "
-    "All simulation tools (run_simulation, run_with_generator, coupled_solve, "
-    "parameter_study) have a critic_approved parameter — set it to True only "
-    "after the critic has approved.\n"
+    "The run and coupling tools (run_simulation, run_with_generator, "
+    "coupled_solve, couple, couple_precice) take a critic_approved parameter "
+    "— set it to True only after the critic has approved.\n"
 )
 
 logging.basicConfig(

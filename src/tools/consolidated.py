@@ -1676,8 +1676,13 @@ def register_consolidated_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
-                     accelerator: str = "aitken") -> str:
+                     accelerator: str = "aitken",
+                     critic_approved: bool = False) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
+
+        Have an independent critic review the setup before coupling; pass
+        critic_approved=True only after that review (every simulation must be
+        critic-reviewed first).
 
         Unlike coupled_solve (legacy, fixed toy geometries), this is physics-agnostic:
         you write one self-contained solver script per subdomain/participant and OASiS
@@ -1740,15 +1745,22 @@ def register_consolidated_tools(mcp: FastMCP):
         return json.dumps({"converged": r.converged, "iterations": r.iterations,
                            "residual": r.residual, "history": r.history,
                            "exports": r.exports, "error": r.error,
-                           "validation": val, "trustworthy_result": trustworthy}, indent=2)
+                           "validation": val, "trustworthy_result": trustworthy,
+                           "critic_review": ("approved" if critic_approved else
+                               "SKIPPED — no critic reviewed this setup; results may be wrong")},
+                          indent=2)
 
     @mcp.tool()
     async def couple_precice(participants: str, data: str, exchanges: str,
                              work_dir: str, scheme: str = "serial-explicit",
                              dimensions: int = 2, max_time: float = 10.0,
                              time_window: float = 1.0, timeout: int = 1800,
-                             extra_env: str = "") -> str:
+                             extra_env: str = "",
+                             critic_approved: bool = False) -> str:
         """GENERAL preCICE coupling of ARBITRARY codes/paradigms, end-to-end.
+
+        Have an independent critic review the setup before coupling; pass
+        critic_approved=True only after that review.
 
         The standard-library (preCICE) path for cross-code coupling — works for any
         number of participants, any data fields, any exchange pattern. OASiS generates
@@ -1790,6 +1802,8 @@ def register_consolidated_tools(mcp: FastMCP):
         except Exception as e:
             return json.dumps({"error": f"coupling failed: {e}"})
         r["trustworthy_result"] = bool(r.get("converged"))
+        r["critic_review"] = ("approved" if critic_approved else
+                              "SKIPPED — no critic reviewed this setup; results may be wrong")
         return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
@@ -2465,6 +2479,15 @@ def register_consolidated_tools(mcp: FastMCP):
             format_discovery,
             save_discovered_config,
         )
+
+        # A negative dune interpreter result is cached for the server's
+        # lifetime, so a dune installed after startup would otherwise stay
+        # invisible. Reset the cache so re-discovery genuinely re-probes.
+        try:
+            from backends.dune.backend import _reset_dune_python_cache
+            _reset_dune_python_cache()
+        except Exception:
+            pass
 
         results = _discover()
         report = format_discovery(results)

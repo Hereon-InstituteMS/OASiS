@@ -167,18 +167,28 @@ def _dune_subprocess_env(python: str) -> dict:
     # dune-*Config.cmake lookup (issue #40 follow-up)
     _prepend("CMAKE_PREFIX_PATH", prefix)
 
-    # Mirror `conda activate` so CMake's FindPython3 prefers this env, and
-    # put the interpreter's bin first so a bare `python3` / CMake's
-    # PATH-based search resolves here and not to a system / Xcode python.
+    # Mirror activation so CMake's FindPython3 (which honours CONDA_PREFIX /
+    # VIRTUAL_ENV via Python3_FIND_VIRTUALENV) prefers THIS env, and put the
+    # interpreter's bin first so a bare `python3` / CMake's PATH-based search
+    # resolves here and not to a system / Xcode python.
     if (Path(prefix) / "conda-meta").is_dir():
         env["CONDA_PREFIX"] = prefix
         env["CONDA_DEFAULT_ENV"] = Path(prefix).name
+        env.pop("VIRTUAL_ENV", None)
+    else:
+        # Non-conda venv: a stale CONDA_PREFIX inherited from the server's own
+        # environment would otherwise win CMake's virtualenv detection and pull
+        # in the WRONG python (audit finding). Clear it and point virtualenv
+        # detection at the resolved interpreter instead.
+        env.pop("CONDA_PREFIX", None)
+        env.pop("CONDA_DEFAULT_ENV", None)
+        env["VIRTUAL_ENV"] = prefix
     _prepend("PATH", bindir)
 
-    # Explicit hints for CMake's FindPython3 (Python3_ROOT_DIR is honoured
-    # from the environment; the executable hint helps builds that forward it).
+    # CMake's FindPython3 honours Python3_ROOT_DIR from the environment.
+    # (Python3_EXECUTABLE is only read as a -D cache argument, never from the
+    # environment, so setting it here would be dead weight.)
     env["Python3_ROOT_DIR"] = prefix
-    env["Python3_EXECUTABLE"] = str(py)
     return env
 
 

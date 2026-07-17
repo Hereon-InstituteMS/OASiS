@@ -229,18 +229,26 @@ class TestDuneSubprocessEnv(_DuneEnvTestCase):
         py = env_root / "bin" / "python"
         py.parent.mkdir(parents=True)
         py.write_text("")
+        os.environ["VIRTUAL_ENV"] = "/stale/venv"
         env = dune_mod._dune_subprocess_env(str(py))
         self.assertEqual(env["CONDA_PREFIX"], str(env_root.resolve()))
         self.assertEqual(env["CONDA_DEFAULT_ENV"], "ofa-dune")
+        self.assertNotIn("VIRTUAL_ENV", env)  # conda target clears a stale venv
 
-    def test_conda_vars_not_set_for_non_conda_env(self):
-        os.environ.pop("CONDA_PREFIX", None)
+    def test_non_conda_env_clears_stale_conda_prefix(self):
+        # Audit BUG 2: a CONDA_PREFIX inherited from the server's own env must
+        # not leak into a non-conda-venv build — it would win CMake's virtualenv
+        # detection and select the wrong python (the #44 failure mode again).
+        os.environ["CONDA_PREFIX"] = "/some/other/conda"
+        os.environ["CONDA_DEFAULT_ENV"] = "other"
         py = self.tmp / "plain-venv" / "bin" / "python"
         py.parent.mkdir(parents=True)
         py.write_text("")
         env = dune_mod._dune_subprocess_env(str(py))
-        self.assertNotEqual(env.get("CONDA_PREFIX"),
-                            str((self.tmp / "plain-venv").resolve()))
+        self.assertNotIn("CONDA_PREFIX", env)
+        self.assertNotIn("CONDA_DEFAULT_ENV", env)
+        self.assertEqual(env["VIRTUAL_ENV"],
+                         str((self.tmp / "plain-venv").resolve()))
 
     def test_bin_dir_prepended_to_path(self):
         py = self.tmp / "some-env" / "bin" / "python"
@@ -250,14 +258,15 @@ class TestDuneSubprocessEnv(_DuneEnvTestCase):
         self.assertEqual(env["PATH"].split(os.pathsep)[0],
                          str((self.tmp / "some-env" / "bin").resolve()))
 
-    def test_findpython3_hints_set(self):
+    def test_findpython3_root_dir_set_executable_not(self):
         py = self.tmp / "some-env" / "bin" / "python"
         py.parent.mkdir(parents=True)
         py.write_text("")
         env = dune_mod._dune_subprocess_env(str(py))
         self.assertEqual(env["Python3_ROOT_DIR"],
                          str((self.tmp / "some-env").resolve()))
-        self.assertEqual(env["Python3_EXECUTABLE"], str(py.resolve()))
+        # CMake does not read Python3_EXECUTABLE from the env -> must not be set
+        self.assertNotIn("Python3_EXECUTABLE", env)
 
 
 # ── 3. Caching ───────────────────────────────────────────────
