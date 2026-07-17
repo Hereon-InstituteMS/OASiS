@@ -33,6 +33,52 @@ _ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
 _PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
                  "general_pitfalls", "common_pitfalls")
 
+# The optional pre-execution critic (paper §3.1). Off-toggle is the held-out
+# eval's ablation control; it only affects the informational critic surface,
+# never the verification-gate verdict below.
+_ABLATE_CRITIC = os.environ.get("OFA_DISABLE_CRITIC", "0") == "1"
+
+
+def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
+                        critic_approved: bool = False) -> dict:
+    """Attach OASiS's verification-gate verdict to a run/coupling result in place.
+
+    Faithful to the paper's V&V model (§3): OASiS *verifies* — numerical
+    correctness plus *attestation*, the integrity check that binds every reported
+    number to run evidence (execution logs, result files, convergence tables) and
+    flags any claim without a supporting, check-passing run — but it does not
+    *validate*; physical validity stays the engineer's task. This is the
+    framework's defence against the paper's most dangerous failure mode,
+    fabricated numbers. It never raises and never refuses a run: an unverified
+    result is still returned, but labelled unmistakably so it can never be taken
+    for a verified result.
+
+    evidence_ok: True iff a real run backs this result AND the gate's numerical
+        checks passed (execution completed, output/logs produced, converged,
+        finite, interface balanced — as applicable to the calling tool).
+    reason: short cause shown when evidence_ok is False.
+    critic_approved: whether the optional critic reviewed the setup; surfaced
+        for the agent but, per the paper, NOT what makes a result verified.
+    """
+    if evidence_ok:
+        result["trustworthy_result"] = True
+        result["verification"] = (
+            "VERIFIED — bound to run evidence and passed OASiS verification-gate "
+            "checks. This is verification, not validation: confirm physical "
+            "validity against reality yourself.")
+    else:
+        result["trustworthy_result"] = False
+        result["verification"] = (
+            "NOT VERIFIED — "
+            + (reason or "the result is not bound to a check-passing run")
+            + ". Per OASiS attestation this claim must NOT be reported as a "
+            "result; revise the setup and re-run.")
+    result["critic_review"] = (
+        "approved" if critic_approved
+        else "disabled for evaluation" if _ABLATE_CRITIC
+        else "not performed (optional pre-execution review)")
+    return result
+
 
 def _strip_pitfalls(obj):
     """Recursively remove pitfall-DB keys from nested dicts/lists.
@@ -1502,16 +1548,33 @@ def register_consolidated_tools(mcp: FastMCP):
             "status": job.status, "work_dir": str(job.work_dir),
             "elapsed": f"{job.elapsed:.2f}s" if job.elapsed else None,
             "input_file": input_file.name,
-            "critic_review": "approved" if critic_approved else "SKIPPED",
         }
+        out_files = []
         if job.error:
             result["error"] = job.error[:500]
         if job.status == "completed":
-            result["output_files"] = [f.name for f in backend.get_result_files(job)]
+            out_files = backend.get_result_files(job)
+            result["output_files"] = [f.name for f in out_files]
+            # Attestation: a process that exits 0 but produces NO output files is
+            # NOT a verified solve — the canonical silent failure. Flag it loudly.
+            if not out_files:
+                result["status"] = "completed_unverified"
             stdout_log = work_dir / "stdout.log"
             if stdout_log.exists():
                 text = stdout_log.read_text()
                 result["stdout_tail"] = text[-2000:] if len(text) > 2000 else text
+        # Verification gate: bind the verdict to run evidence (attestation).
+        if job.error:
+            reason = "the solver run errored, so no number is backed by a valid run"
+        elif job.status != "completed":
+            reason = f"the run did not complete (status={job.status})"
+        elif not out_files:
+            reason = ("the process exited cleanly but produced NO output files, "
+                      "so no reported number is backed by run evidence")
+        else:
+            reason = ""
+        _stamp_verification(result, evidence_ok=bool(out_files) and not job.error,
+                            reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -1583,8 +1646,8 @@ def register_consolidated_tools(mcp: FastMCP):
             "job_id": job.job_id, "solver": solver,
             "status": job.status, "work_dir": str(job.work_dir),
             "elapsed": f"{job.elapsed:.2f}s" if job.elapsed else None,
-            "critic_review": "approved" if critic_approved else "SKIPPED",
         }
+        out_files = []
         if job.error:
             result["error"] = job.error[:500]
         if _input_warnings:
@@ -1602,6 +1665,18 @@ def register_consolidated_tools(mcp: FastMCP):
             if stdout_log.exists():
                 text = stdout_log.read_text()
                 result["stdout_tail"] = text[-2000:] if len(text) > 2000 else text
+        # Verification gate: attestation binds the verdict to run evidence.
+        if job.error:
+            reason = "the solver run errored, so no number is backed by a valid run"
+        elif job.status != "completed":
+            reason = f"the run did not complete (status={job.status})"
+        elif not out_files:
+            reason = ("the process exited cleanly but produced NO output files, "
+                      "so no reported number is backed by run evidence")
+        else:
+            reason = ""
+        _stamp_verification(result, evidence_ok=bool(out_files) and not job.error,
+                            reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
     # ═══════════════════════════════════════════════════════════
@@ -1740,15 +1815,17 @@ def register_consolidated_tools(mcp: FastMCP):
         if len(names) == 2:
             val += check_interface_balance(r.exports[names[0]], r.exports[names[1]],
                                            names[0], names[1])
-        trustworthy = r.converged and not any(
+        checks_ok = r.converged and not any(
             ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w) for w in val)
-        return json.dumps({"converged": r.converged, "iterations": r.iterations,
-                           "residual": r.residual, "history": r.history,
-                           "exports": r.exports, "error": r.error,
-                           "validation": val, "trustworthy_result": trustworthy,
-                           "critic_review": ("approved" if critic_approved else
-                               "SKIPPED — no critic reviewed this setup; results may be wrong")},
-                          indent=2)
+        result = {"converged": r.converged, "iterations": r.iterations,
+                  "residual": r.residual, "history": r.history,
+                  "exports": r.exports, "error": r.error, "validation": val}
+        reason = ("" if checks_ok else
+                  "the coupling did not converge or failed a finiteness / "
+                  "interface-balance check")
+        _stamp_verification(result, evidence_ok=checks_ok, reason=reason,
+                            critic_approved=critic_approved)
+        return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def couple_precice(participants: str, data: str, exchanges: str,
@@ -1801,9 +1878,11 @@ def register_consolidated_tools(mcp: FastMCP):
                                      time_window=time_window, timeout=timeout, extra_env=env)
         except Exception as e:
             return json.dumps({"error": f"coupling failed: {e}"})
-        r["trustworthy_result"] = bool(r.get("converged"))
-        r["critic_review"] = ("approved" if critic_approved else
-                              "SKIPPED — no critic reviewed this setup; results may be wrong")
+        conv = bool(r.get("converged"))
+        _stamp_verification(
+            r, evidence_ok=conv, critic_approved=critic_approved,
+            reason="" if conv else "a participant returned non-zero or the "
+                   "coupling did not converge, so no result is backed by a valid run")
         return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
