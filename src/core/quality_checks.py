@@ -107,6 +107,47 @@ def check_finite(values, label: str = "result") -> list[str]:
     return w
 
 
+# Field/mesh formats meshio reads ROBUSTLY and that carry numeric solution data.
+# .xdmf/.xmf are deliberately excluded: meshio's XDMF reader can raise SystemExit
+# on multi-grid files (killing the process), and solvers that emit XDMF also emit
+# a companion .vtu here, so nothing is lost by scanning the .vtu instead.
+_FINITE_SCANNABLE = (".vtu", ".vtk", ".vtp", ".pvtu", ".msh", ".vtkhdf")
+
+
+def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
+    """Best-effort finiteness scan of a run's OUTPUT files.
+
+    Attestation binds a claim to run evidence, but "a file exists" is not enough:
+    a solve can exit 0 and write an output full of NaN/Inf — a fabricated-looking
+    result. This reads each result file with meshio and flags non-finite values in
+    any point/cell data, so the verification gate can reject it. Formats meshio
+    cannot read are skipped (finiteness is simply not asserted for them here);
+    this never raises.
+    """
+    w = []
+    try:
+        import meshio
+    except Exception:
+        return w
+    from pathlib import Path as _Path
+    for p in list(paths)[:max_files]:
+        p = p if hasattr(p, "suffix") else _Path(str(p))
+        if p.suffix.lower() not in _FINITE_SCANNABLE:
+            continue
+        try:
+            m = meshio.read(str(p))
+        except BaseException:
+            # A best-effort scan must NEVER take down the run — some meshio
+            # readers even raise SystemExit on malformed input.
+            continue
+        for name, arr in list(getattr(m, "point_data", {}).items()):
+            w += check_finite(arr, label=f"{p.name}:{name}")
+        for name, blocks in list(getattr(m, "cell_data", {}).items()):
+            for i, arr in enumerate(blocks):
+                w += check_finite(arr, label=f"{p.name}:{name}[{i}]")
+    return w
+
+
 def check_convergence(converged: bool, residual: float, tol: float) -> list[str]:
     """A non-converged coupled/iterative solve must NOT be reported as a result.
     The single most general silent-wrong guard."""

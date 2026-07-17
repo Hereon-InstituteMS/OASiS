@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 from core.backend import detect_template_language
 from core.registry import get_backend, available_backends, all_backends
+from core.quality_checks import check_result_files_finite
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
@@ -76,7 +77,7 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
     result["critic_review"] = (
         "approved" if critic_approved
         else "disabled for evaluation" if _ABLATE_CRITIC
-        else "not performed (optional pre-execution review)")
+        else "not recorded (pre-execution critic review)")
     return result
 
 
@@ -1552,6 +1553,7 @@ def register_consolidated_tools(mcp: FastMCP):
         out_files = []
         if job.error:
             result["error"] = job.error[:500]
+        nonfinite = []
         if job.status == "completed":
             out_files = backend.get_result_files(job)
             result["output_files"] = [f.name for f in out_files]
@@ -1559,6 +1561,11 @@ def register_consolidated_tools(mcp: FastMCP):
             # NOT a verified solve — the canonical silent failure. Flag it loudly.
             if not out_files:
                 result["status"] = "completed_unverified"
+            else:
+                # ... and a file full of NaN/Inf is a fabricated-looking result.
+                nonfinite = check_result_files_finite(out_files)
+                if nonfinite:
+                    result["validation"] = nonfinite
             stdout_log = work_dir / "stdout.log"
             if stdout_log.exists():
                 text = stdout_log.read_text()
@@ -1571,9 +1578,13 @@ def register_consolidated_tools(mcp: FastMCP):
         elif not out_files:
             reason = ("the process exited cleanly but produced NO output files, "
                       "so no reported number is backed by run evidence")
+        elif nonfinite:
+            reason = ("the output files contain non-finite (NaN/Inf) values, so "
+                      "the result is numerically invalid")
         else:
             reason = ""
-        _stamp_verification(result, evidence_ok=bool(out_files) and not job.error,
+        _stamp_verification(result,
+                            evidence_ok=bool(out_files) and not job.error and not nonfinite,
                             reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
@@ -1652,6 +1663,7 @@ def register_consolidated_tools(mcp: FastMCP):
             result["error"] = job.error[:500]
         if _input_warnings:
             result["input_validation_warnings"] = _input_warnings
+        nonfinite = []
         if job.status == "completed":
             out_files = backend.get_result_files(job)
             result["output_files"] = [f.name for f in out_files]
@@ -1661,6 +1673,11 @@ def register_consolidated_tools(mcp: FastMCP):
                 result["status"] = "completed_unverified"
                 result["warning"] = ("Process exited cleanly but produced NO output files "
                                      "— this is NOT a verified solve. Do not treat as a result.")
+            else:
+                # ... and output full of NaN/Inf is a fabricated-looking result.
+                nonfinite = check_result_files_finite(out_files)
+                if nonfinite:
+                    result.setdefault("validation", []).extend(nonfinite)
             stdout_log = work_dir / "stdout.log"
             if stdout_log.exists():
                 text = stdout_log.read_text()
@@ -1673,9 +1690,13 @@ def register_consolidated_tools(mcp: FastMCP):
         elif not out_files:
             reason = ("the process exited cleanly but produced NO output files, "
                       "so no reported number is backed by run evidence")
+        elif nonfinite:
+            reason = ("the output files contain non-finite (NaN/Inf) values, so "
+                      "the result is numerically invalid")
         else:
             reason = ""
-        _stamp_verification(result, evidence_ok=bool(out_files) and not job.error,
+        _stamp_verification(result,
+                            evidence_ok=bool(out_files) and not job.error and not nonfinite,
                             reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
@@ -1747,7 +1768,15 @@ def register_consolidated_tools(mcp: FastMCP):
         if problem not in dispatch:
             return f"Unknown problem: {problem}. Available: {list(dispatch.keys())}"
 
-        return await dispatch[problem]()
+        out = await dispatch[problem]()
+        # LEGACY path returns human-readable text, not a gated JSON verdict.
+        # Append an explicit attestation note so a reader never mistakes it for a
+        # gate-verified result (the machine-readable verdict lives on `couple`).
+        note = ("\n\n[OASiS verification: LEGACY coupled_solve — trust is governed "
+                "by the convergence report above (a non-converged run is reported "
+                "as failure, never a result). For an attested, machine-readable "
+                "verification verdict use `couple`.]")
+        return (out + note) if isinstance(out, str) else out
 
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
@@ -1879,10 +1908,24 @@ def register_consolidated_tools(mcp: FastMCP):
         except Exception as e:
             return json.dumps({"error": f"coupling failed: {e}"})
         conv = bool(r.get("converged"))
+        # The preCICE orchestrator returns only exit codes + log tails (not the
+        # exchanged field values), so we cannot run check_finite on the data.
+        # Best-effort: a whole-word NaN/Inf in any participant log is a broken
+        # exchange. This only ever DOWNGRADES the verdict (fails safe toward "not
+        # verified"), never upgrades it — the anti-fabrication direction.
+        import re as _re
+        _logs = " ".join(str(v) for v in (r.get("logs") or {}).values())
+        nonfinite = bool(_re.search(r"\b(nan|-?inf|-?infinity)\b", _logs, _re.I))
+        if nonfinite:
+            r["validation"] = ["participant logs report non-finite (NaN/Inf) "
+                               "values — the exchanged fields are invalid."]
         _stamp_verification(
-            r, evidence_ok=conv, critic_approved=critic_approved,
-            reason="" if conv else "a participant returned non-zero or the "
-                   "coupling did not converge, so no result is backed by a valid run")
+            r, evidence_ok=conv and not nonfinite, critic_approved=critic_approved,
+            reason="" if (conv and not nonfinite) else
+                   ("participant logs report non-finite (NaN/Inf) values"
+                    if nonfinite else
+                    "a participant returned non-zero or the coupling did not "
+                    "converge, so no result is backed by a valid run"))
         return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
