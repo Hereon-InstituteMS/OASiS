@@ -17,8 +17,9 @@ sys.path.insert(0, SRC)
 from tools.consolidated import _stamp_verification  # noqa: E402
 
 
-def test_evidence_ok_is_verified():
-    r = _stamp_verification({}, evidence_ok=True, critic_approved=False)
+def test_evidence_and_critic_is_verified():
+    # A verified result needs BOTH attestation and the mandatory critic.
+    r = _stamp_verification({}, evidence_ok=True, critic_approved=True)
     assert r["trustworthy_result"] is True
     assert r["verification"].startswith("VERIFIED")
     # Verification is not validation — the verdict must say so.
@@ -35,16 +36,18 @@ def test_no_evidence_is_not_verified_and_flagged():
     assert "must NOT be reported as a result" in r["verification"]
 
 
-def test_critic_does_not_drive_trust():
-    """Per the paper the critic is optional; a run backed by evidence is
-    verified whether or not the critic reviewed it. Attestation, not the
-    critic, is what makes a result trustworthy."""
+def test_critic_is_mandatory_for_trust():
+    """The whole point of OASiS: verification is enforced in software. A run that
+    passes every automated check but was NOT reviewed by the mandatory critic is
+    still NOT verified — enforced by verdict, not by an error."""
     with_critic = _stamp_verification({}, evidence_ok=True, critic_approved=True)
     without = _stamp_verification({}, evidence_ok=True, critic_approved=False)
-    assert with_critic["trustworthy_result"] == without["trustworthy_result"] is True
-    # ... but the critic status is still surfaced, and it differs.
+    assert with_critic["trustworthy_result"] is True
+    assert without["trustworthy_result"] is False        # critic is MANDATORY
+    assert without["verification"].startswith("NOT VERIFIED")
+    assert "MANDATORY" in without["verification"]
     assert with_critic["critic_review"] == "approved"
-    assert "not recorded" in without["critic_review"]
+    assert "REQUIRED" in without["critic_review"]
 
 
 def test_failed_checks_stay_unverified_even_with_critic_approved():
@@ -66,12 +69,13 @@ def _critic_review_under_ablation() -> str:
     return out.stdout
 
 
-def test_ablation_only_touches_the_critic_surface_not_trust():
-    """OFA_DISABLE_CRITIC (the held-out eval's ablation) disables the optional
-    critic surface but must NOT change the attestation-driven verdict."""
+def test_ablation_lifts_the_mandatory_critic_requirement():
+    """OFA_DISABLE_CRITIC (the held-out eval's ablation) lifts ONLY the mandatory
+    critic requirement, so an evidence-backed run verifies without critic
+    approval — this is how the eval measures the critic's contribution."""
     review, trust = _critic_review_under_ablation().splitlines()
     assert review == "disabled for evaluation"
-    assert trust == "True"   # evidence-backed run is still verified
+    assert trust == "True"   # under ablation, attestation alone verifies
 
 
 # ── Finiteness scan (attestation's numeric side) ─────────────────────────
@@ -181,12 +185,22 @@ def _run_sim(backend, **kw):
     return json.loads(out)
 
 
-def test_run_simulation_verified_with_finite_output(tmp_path):
+def test_run_simulation_verified_with_finite_output_and_critic(tmp_path):
     f = tmp_path / "out.vtu"; _write_vtu(f, [1.0, 2.0, 3.0, 4.0])
-    d = _run_sim(_Backend([f]), critic_approved=False)
+    d = _run_sim(_Backend([f]), critic_approved=True)
     assert d["status"] == "completed"
     assert d["trustworthy_result"] is True
     assert d["verification"].startswith("VERIFIED")
+
+
+def test_run_simulation_finite_output_without_critic_is_not_verified(tmp_path):
+    # Enforced in software: a clean run WITHOUT the mandatory critic is not
+    # trustworthy — but it still returns (no error).
+    f = tmp_path / "out.vtu"; _write_vtu(f, [1.0, 2.0, 3.0, 4.0])
+    d = _run_sim(_Backend([f]), critic_approved=False)
+    assert d["status"] == "completed"           # the run still ran and returned
+    assert d["trustworthy_result"] is False
+    assert "MANDATORY" in d["verification"]
 
 
 def test_run_simulation_nan_output_not_verified_even_if_critic_approved(tmp_path):

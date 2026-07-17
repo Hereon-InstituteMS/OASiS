@@ -44,40 +44,58 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
                         critic_approved: bool = False) -> dict:
     """Attach OASiS's verification-gate verdict to a run/coupling result in place.
 
-    Faithful to the paper's V&V model (§3): OASiS *verifies* — numerical
-    correctness plus *attestation*, the integrity check that binds every reported
-    number to run evidence (execution logs, result files, convergence tables) and
-    flags any claim without a supporting, check-passing run — but it does not
-    *validate*; physical validity stays the engineer's task. This is the
-    framework's defence against the paper's most dangerous failure mode,
-    fabricated numbers. It never raises and never refuses a run: an unverified
-    result is still returned, but labelled unmistakably so it can never be taken
-    for a verified result.
+    The whole point of OASiS: verification is ENFORCED IN SOFTWARE (paper §7 —
+    "verification enforced in software substitutes for the judgment users hoped
+    to delegate"). A result is trustworthy ONLY when it (1) passes attestation +
+    the numerical checks (a real run backs every number, and it is finite /
+    converged / balanced) AND (2) has been reviewed by OASiS's MANDATORY
+    independent critic. OASiS *verifies* and checks integrity; it does not
+    *validate* — physical validity stays the engineer's task.
+
+    Enforcement is by VERDICT, never by error: an unverified run still returns
+    its output, but is never labelled trustworthy, so a confidently-wrong or
+    fabricated claim can't be reported as a result. The critic is mandatory in
+    normal operation; the OFA_DISABLE_CRITIC ablation lifts ONLY the critic
+    requirement, and only for the held-out evaluation that measures its
+    contribution.
 
     evidence_ok: True iff a real run backs this result AND the gate's numerical
         checks passed (execution completed, output/logs produced, converged,
         finite, interface balanced — as applicable to the calling tool).
     reason: short cause shown when evidence_ok is False.
-    critic_approved: whether the optional critic reviewed the setup; surfaced
-        for the agent but, per the paper, NOT what makes a result verified.
+    critic_approved: whether the mandatory critic reviewed the setup. Without it
+        (and outside the ablation) the result is NOT verified.
     """
-    if evidence_ok:
-        result["trustworthy_result"] = True
-        result["verification"] = (
-            "VERIFIED — bound to run evidence and passed OASiS verification-gate "
-            "checks. This is verification, not validation: confirm physical "
-            "validity against reality yourself.")
-    else:
+    critic_ok = _ABLATE_CRITIC or critic_approved
+    if not evidence_ok:
         result["trustworthy_result"] = False
         result["verification"] = (
             "NOT VERIFIED — "
             + (reason or "the result is not bound to a check-passing run")
             + ". Per OASiS attestation this claim must NOT be reported as a "
             "result; revise the setup and re-run.")
+    elif not critic_ok:
+        result["trustworthy_result"] = False
+        result["verification"] = (
+            "NOT VERIFIED — the automated checks passed, but OASiS's MANDATORY "
+            "independent critic has not reviewed this setup, and OASiS treats no "
+            "result as trustworthy until it has. Spawn a critic to challenge the "
+            "parameters, units, discretisation, problem statement and boundary "
+            "conditions and to cross-check against literature/benchmarks, then "
+            "re-run with critic_approved=True.")
+    else:
+        result["trustworthy_result"] = True
+        result["verification"] = (
+            "VERIFIED — "
+            + ("critic-approved" if critic_approved
+               else "critic disabled for this evaluation run")
+            + " and passed OASiS verification-gate checks (attestation + "
+            "numerical checks). This is verification, not validation: confirm "
+            "physical validity against reality yourself.")
     result["critic_review"] = (
         "approved" if critic_approved
         else "disabled for evaluation" if _ABLATE_CRITIC
-        else "not recorded (pre-execution critic review)")
+        else "REQUIRED — mandatory critic not yet performed")
     return result
 
 
