@@ -145,13 +145,40 @@ def _dune_subprocess_env(python: str) -> dict:
     not contain that prefix and the very first JIT build fails with
     "Could not find ... dune-commonConfig.cmake" (issue #40 follow-up:
     picking the right python is necessary but not sufficient).
+
+    Issue #44: CMAKE_PREFIX_PATH alone is still not enough. dune-py's JIT
+    build runs ``find_package(Python3)``, and on macOS that grabs Xcode's
+    bundled Python 3.9 (or any earlier interpreter on PATH) instead of the
+    conda env's python — the compiled module then cannot ``import dune.fem``
+    because it was built against the wrong Python. Make the env look like
+    the conda env is activated and hand CMake explicit hints so its
+    FindPython3 resolves to exactly the interpreter we picked.
     """
     env = os.environ.copy()
-    prefix = str(Path(python).resolve().parent.parent)
-    existing = env.get("CMAKE_PREFIX_PATH", "")
-    if prefix not in existing.split(os.pathsep):
-        env["CMAKE_PREFIX_PATH"] = (
-            prefix + (os.pathsep + existing if existing else ""))
+    py = Path(python).resolve()
+    prefix = str(py.parent.parent)   # <env>
+    bindir = str(py.parent)          # <env>/bin
+
+    def _prepend(var: str, value: str) -> None:
+        cur = env.get(var, "")
+        if value not in cur.split(os.pathsep):
+            env[var] = value + (os.pathsep + cur if cur else "")
+
+    # dune-*Config.cmake lookup (issue #40 follow-up)
+    _prepend("CMAKE_PREFIX_PATH", prefix)
+
+    # Mirror `conda activate` so CMake's FindPython3 prefers this env, and
+    # put the interpreter's bin first so a bare `python3` / CMake's
+    # PATH-based search resolves here and not to a system / Xcode python.
+    if (Path(prefix) / "conda-meta").is_dir():
+        env["CONDA_PREFIX"] = prefix
+        env["CONDA_DEFAULT_ENV"] = Path(prefix).name
+    _prepend("PATH", bindir)
+
+    # Explicit hints for CMake's FindPython3 (Python3_ROOT_DIR is honoured
+    # from the environment; the executable hint helps builds that forward it).
+    env["Python3_ROOT_DIR"] = prefix
+    env["Python3_EXECUTABLE"] = str(py)
     return env
 
 

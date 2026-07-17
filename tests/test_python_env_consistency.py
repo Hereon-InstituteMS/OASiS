@@ -220,6 +220,45 @@ class TestDuneSubprocessEnv(_DuneEnvTestCase):
         env = dune_mod._dune_subprocess_env(str(py))
         self.assertEqual(env["CMAKE_PREFIX_PATH"], expected)
 
+    # ── issue #44: force CMake's FindPython3 to the resolved interpreter ──
+    # CMAKE_PREFIX_PATH alone let CMake grab Xcode's Python 3.9 on macOS.
+
+    def test_conda_activation_vars_set_for_conda_env(self):
+        env_root = self.tmp / "ofa-dune"
+        (env_root / "conda-meta").mkdir(parents=True)
+        py = env_root / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertEqual(env["CONDA_PREFIX"], str(env_root.resolve()))
+        self.assertEqual(env["CONDA_DEFAULT_ENV"], "ofa-dune")
+
+    def test_conda_vars_not_set_for_non_conda_env(self):
+        os.environ.pop("CONDA_PREFIX", None)
+        py = self.tmp / "plain-venv" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertNotEqual(env.get("CONDA_PREFIX"),
+                            str((self.tmp / "plain-venv").resolve()))
+
+    def test_bin_dir_prepended_to_path(self):
+        py = self.tmp / "some-env" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertEqual(env["PATH"].split(os.pathsep)[0],
+                         str((self.tmp / "some-env" / "bin").resolve()))
+
+    def test_findpython3_hints_set(self):
+        py = self.tmp / "some-env" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertEqual(env["Python3_ROOT_DIR"],
+                         str((self.tmp / "some-env").resolve()))
+        self.assertEqual(env["Python3_EXECUTABLE"], str(py.resolve()))
+
 
 # ── 3. Caching ───────────────────────────────────────────────
 
