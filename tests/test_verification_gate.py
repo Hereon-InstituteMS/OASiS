@@ -1,10 +1,12 @@
 """Tests for the verification-gate verdict (_stamp_verification).
 
-Faithful to the paper's V&V model (§3): OASiS verifies via numerical checks and
+OASiS enforces verification IN SOFTWARE: OASiS verifies via numerical checks and
 *attestation* — binding every reported number to run evidence — but does not
-validate, and the pre-execution critic is OPTIONAL. So the trustworthy verdict is
-driven by run evidence, NOT by whether the optional critic was run. These tests
-pin exactly that, plus the anti-fabrication labelling and the eval ablation.
+validate. The independent pre-execution critic is MANDATORY: a result is
+trustworthy ONLY when it passes attestation + numerical checks AND the critic
+approved (critic_approved=True). Enforced by verdict, never by error. These tests
+pin exactly that, plus the anti-fabrication labelling and the eval ablation
+(OFA_DISABLE_CRITIC lifts only the critic requirement).
 """
 import os
 import subprocess
@@ -104,8 +106,12 @@ def test_nan_inf_output_is_flagged(tmp_path):
 
 def test_scan_never_raises_on_garbage(tmp_path):
     bad = tmp_path / "junk.vtu"; bad.write_text("not a real vtu at all")
-    # A best-effort scan must swallow reader failures (incl. SystemExit).
-    assert check_result_files_finite([bad]) == []
+    # A best-effort scan must NEVER raise (incl. SystemExit). An unreadable file
+    # yields the HONESTY NOTE (finiteness could not be asserted) — never a false
+    # NaN finding and never a crash.
+    w = check_result_files_finite([bad])
+    assert all("non-finite" not in x for x in w)   # no false NaN finding
+    assert any("not asserted" in x for x in w)     # honesty note present
 
 
 # ── Headline-number scan: results_summary.json + stdout (P2) ─────────────
@@ -180,8 +186,12 @@ class _Backend:
 def _run_sim(backend, **kw):
     caps = _capture_tools()
     with mock.patch.object(C, "get_backend", lambda s: backend):
-        out = asyncio.new_event_loop().run_until_complete(
-            caps["run_simulation"]("fenics", "print('x')", **kw))
+        _loop = asyncio.new_event_loop()
+        try:
+            out = _loop.run_until_complete(
+                caps["run_simulation"]("fenics", "print('x')", **kw))
+        finally:
+            _loop.close()
     return json.loads(out)
 
 
@@ -232,9 +242,13 @@ def _run_precice(logs, converged=True, **kw):
     import tempfile
     with mock.patch.object(PC, "check_precice_available", lambda: (True, "ok")), \
          mock.patch.object(PC, "run_precice_coupling", stub):
-        out = asyncio.new_event_loop().run_until_complete(
-            caps["couple_precice"]('[{"name":"A"},{"name":"B"}]', "[]", "[]",
-                                   tempfile.mkdtemp(), **kw))
+        _loop = asyncio.new_event_loop()
+        try:
+            out = _loop.run_until_complete(
+                caps["couple_precice"]('[{"name":"A"},{"name":"B"}]', "[]", "[]",
+                                       tempfile.mkdtemp(), **kw))
+        finally:
+            _loop.close()
     return json.loads(out)
 
 

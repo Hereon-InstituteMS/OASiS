@@ -176,13 +176,17 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
         considered += 1
         if suffix not in _FINITE_SCANNABLE:
             continue
-        scannable_format_seen = True
         try:
             m = meshio.read(str(p))
         except BaseException:
             # A best-effort scan must NEVER take down the run — some meshio
-            # readers even raise SystemExit on malformed input.
+            # readers even raise SystemExit on malformed input. Leave
+            # scannable_format_seen False so the honesty note still fires: we
+            # did NOT actually assert finiteness for this file.
             continue
+        # Only mark as scanned AFTER a successful read — otherwise an unreadable
+        # .vtu would suppress the honesty note without any check having run.
+        scannable_format_seen = True
         for name, arr in list(getattr(m, "point_data", {}).items()):
             w += check_finite(arr, label=f"{p.name}:{name}")
         for name, blocks in list(getattr(m, "cell_data", {}).items()):

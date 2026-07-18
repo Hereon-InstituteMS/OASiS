@@ -34,9 +34,11 @@ _ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
 _PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
                  "general_pitfalls", "common_pitfalls")
 
-# The optional pre-execution critic (paper §3.1). Off-toggle is the held-out
-# eval's ablation control; it only affects the informational critic surface,
-# never the verification-gate verdict below.
+# The MANDATORY pre-execution critic. OFA_DISABLE_CRITIC is the held-out eval's
+# ablation control: it LIFTS the mandatory-critic requirement so an evidence-
+# backed run verifies without critic approval (attestation is still enforced).
+# It therefore DOES change the verification-gate verdict — that is exactly how
+# the ablation measures the critic's contribution — but only under the toggle.
 _ABLATE_CRITIC = os.environ.get("OFA_DISABLE_CRITIC", "0") == "1"
 
 
