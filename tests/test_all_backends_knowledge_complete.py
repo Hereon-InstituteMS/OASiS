@@ -33,7 +33,7 @@ sys.path.insert(0, str(_REPO / "data"))
 # Backends to cover. All 8 must be in this list — if a new
 # backend is added to the registry and not listed here, that
 # itself is a coverage gap.
-_BACKENDS = ["fenics", "dealii", "ngsolve", "skfem", "kratos",
+_BACKENDS = ["fenics", "dealii", "ngsolve", "skfem", "kratos", "sparta",
              "fourc", "febio", "dune"]
 
 

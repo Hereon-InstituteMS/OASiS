@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 from core.backend import detect_template_language
 from core.registry import get_backend, available_backends, all_backends
+from core.quality_checks import check_result_files_finite, check_summary_finite
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
@@ -32,6 +33,96 @@ _ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
 
 _PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
                  "general_pitfalls", "common_pitfalls")
+
+# The MANDATORY pre-execution critic. OFA_DISABLE_CRITIC is the held-out eval's
+# ablation control: it LIFTS the mandatory-critic requirement so an evidence-
+# backed run verifies without critic approval (attestation is still enforced).
+# It therefore DOES change the verification-gate verdict — that is exactly how
+# the ablation measures the critic's contribution — but only under the toggle.
+_ABLATE_CRITIC = os.environ.get("OFA_DISABLE_CRITIC", "0") == "1"
+
+
+def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
+                        critic_approved: bool = False) -> dict:
+    """Attach OASiS's verification-gate verdict to a run/coupling result in place.
+
+    The whole point of OASiS: verification is ENFORCED IN SOFTWARE (paper §7 —
+    "verification enforced in software substitutes for the judgment users hoped
+    to delegate"). A result is trustworthy ONLY when it (1) passes attestation +
+    the numerical checks (a real run backs every number, and it is finite /
+    converged / balanced) AND (2) has been reviewed by OASiS's MANDATORY
+    independent critic. OASiS *verifies* and checks integrity; it does not
+    *validate* — physical validity stays the engineer's task.
+
+    Enforcement is by VERDICT, never by error: an unverified run still returns
+    its output, but is never labelled trustworthy, so a confidently-wrong or
+    fabricated claim can't be reported as a result. The critic is mandatory in
+    normal operation; the OFA_DISABLE_CRITIC ablation lifts ONLY the critic
+    requirement, and only for the held-out evaluation that measures its
+    contribution.
+
+    evidence_ok: True iff a real run backs this result AND the gate's numerical
+        checks passed (execution completed, output/logs produced, converged,
+        finite, interface balanced — as applicable to the calling tool).
+    reason: short cause shown when evidence_ok is False.
+    critic_approved: whether the mandatory critic reviewed the setup. Without it
+        (and outside the ablation) the result is NOT verified.
+    """
+    critic_ok = _ABLATE_CRITIC or critic_approved
+    if not evidence_ok:
+        result["trustworthy_result"] = False
+        result["verification"] = (
+            "NOT VERIFIED — "
+            + (reason or "the result is not bound to a check-passing run")
+            + ". Per OASiS attestation this claim must NOT be reported as a "
+            "result; revise the setup and re-run.")
+    elif not critic_ok:
+        result["trustworthy_result"] = False
+        result["verification"] = (
+            "NOT VERIFIED — the automated checks passed, but OASiS's MANDATORY "
+            "independent critic has not reviewed this setup, and OASiS treats no "
+            "result as trustworthy until it has. Spawn a critic to challenge the "
+            "parameters, units, discretisation, problem statement and boundary "
+            "conditions and to cross-check against literature/benchmarks, then "
+            "re-run with critic_approved=True.")
+    else:
+        result["trustworthy_result"] = True
+        result["verification"] = (
+            "VERIFIED — "
+            + ("critic-approved" if critic_approved
+               else "critic disabled for this evaluation run")
+            + " and passed OASiS verification-gate checks (attestation + "
+            "numerical checks). This is verification, not validation: confirm "
+            "physical validity against reality yourself.")
+    result["critic_review"] = (
+        "approved" if critic_approved
+        else "disabled for evaluation" if _ABLATE_CRITIC
+        else "REQUIRED — mandatory critic not yet performed")
+    return result
+
+
+def _short_reason(msg: str, limit: int = 240) -> str:
+    """Collapse a multi-line availability/error message (often a raw import
+    traceback) to a concise one-liner for user-facing surfaces. A backend that
+    isn't installed should read as one clear line, not a 30-frame stack dump that
+    floods the backend list. Keeps the actual exception (last non-empty line) and
+    any install/try hint; the full trace stays available via `developer`/logs.
+    """
+    if not msg:
+        return msg or ""
+    lines = [ln.strip() for ln in str(msg).strip().splitlines() if ln.strip()]
+    if not lines:
+        return ""
+    if len(lines) == 1:
+        return lines[0][:limit]
+    tail = lines[-1]
+    if tail.lower().startswith("traceback"):
+        tail = lines[-2] if len(lines) > 1 else tail
+    hint = next((ln for ln in lines
+                 if ln.lower().startswith(("install", "try", "run ", "set ", "conda ", "pip "))),
+                "")
+    out = tail if (not hint or hint == tail) else f"{tail}  ({hint})"
+    return out[:limit]
 
 
 def _strip_pitfalls(obj):
@@ -462,10 +553,8 @@ _PHYSICS_SYNONYMS = {
     "fe_squared": "multiscale",
     "fe2": "multiscale",
 
-    # ── Optimization ───────────────────────────────────────────────
-    "optimal_control": "optimal_control",
-    "adjoint": "optimal_control",
-    "inverse_problem": "optimal_control",
+    # (Removed dead 'optimal_control' aliases — no backend provides that
+    # canonical, even as reference knowledge, so they routed users to nothing.)
 
     # ── Matrix-free / multigrid (solver-level not physics, but
     #     dealii exposes them as physics keys) ─────────────────────
@@ -1062,6 +1151,30 @@ def register_consolidated_tools(mcp: FastMCP):
                         "Navier-Stokes / electromagnetics / "
                         "geomechanics."),
                 },
+                "SPARTA (DSMC)": {
+                    "parallelism": (
+                        "MPI-first: the simulation grid is spatially "
+                        "decomposed across ranks; SPARTA scales to "
+                        "thousands of cores and is a production HPC DSMC "
+                        "code (run: mpirun -np N spa_mpi -in <script>)."),
+                    "gpu": (
+                        "Yes — via the Kokkos package (build spa_kokkos): "
+                        "CUDA (NVIDIA) and HIP (AMD) backends run the "
+                        "particle move/collide/surface kernels on GPU. "
+                        "Enable with '-k on g 1 -sf kk' package flags."),
+                    "threading": (
+                        "OpenMP or Kokkos (OpenMP) for shared-memory "
+                        "parallelism; typically combined with MPI (MPI+X)."),
+                    "typical_scale": (
+                        "Billions of simulator particles on HPC clusters; "
+                        "particle count (fnum) trades statistical noise "
+                        "against cost, not DOFs."),
+                    "note": (
+                        "SPARTA is a Direct Simulation Monte Carlo (DSMC) "
+                        "rarefied-gas / particle code, NOT a FEM solver — "
+                        "reachable through OASiS coupling (e.g. a continuum "
+                        "FEM thermal wall coupled to DSMC gas)."),
+                },
             }
             if solver:
                 key_map = {"fourc": "4C Multiphysics", "4c": "4C Multiphysics",
@@ -1069,7 +1182,7 @@ def register_consolidated_tools(mcp: FastMCP):
                            "dealii": "deal.II", "deal.ii": "deal.II",
                            "ngsolve": "NGSolve", "skfem": "scikit-fem", "scikit-fem": "scikit-fem",
                            "kratos": "Kratos Multiphysics", "dune": "DUNE-fem", "dune-fem": "DUNE-fem",
-                           "febio": "FEBio"}
+                           "febio": "FEBio", "sparta": "SPARTA (DSMC)"}
                 name = key_map.get(solver.lower(), solver)
                 if name in hw:
                     return json.dumps({name: hw[name]}, indent=2)
@@ -1137,9 +1250,10 @@ def register_consolidated_tools(mcp: FastMCP):
                         f"{status.value} — "
                         f"{b.input_format().value} input")
                 if status.value != "available" and msg:
-                    # Inline the install/troubleshoot hint so the
-                    # LLM does not have to call a second tool.
-                    core += f"\n  *{msg.strip()}*"
+                    # Inline a ONE-LINE reason/hint (not a raw traceback) so the
+                    # LLM does not have to call a second tool and the list stays
+                    # readable.
+                    core += f"\n  *{_short_reason(msg)}*"
                 lines.append(core)
             return "\n".join(lines) if lines else "No backends registered."
 
@@ -1435,7 +1549,7 @@ def register_consolidated_tools(mcp: FastMCP):
             _journal.record("tool_error", "run_with_generator", solver=solver,
                             error_message=f"Not available: {msg}",
                             input_snapshot=_snap)
-            return f"Solver {solver} not available: {msg}"
+            return f"Solver {solver} not available: {_short_reason(msg)}"
 
         _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y%m%d_%H%M%S")
@@ -1502,16 +1616,52 @@ def register_consolidated_tools(mcp: FastMCP):
             "status": job.status, "work_dir": str(job.work_dir),
             "elapsed": f"{job.elapsed:.2f}s" if job.elapsed else None,
             "input_file": input_file.name,
-            "critic_review": "approved" if critic_approved else "SKIPPED",
         }
+        out_files = []
         if job.error:
             result["error"] = job.error[:500]
+        nonfinite = []
+        _stdout_text = ""
         if job.status == "completed":
-            result["output_files"] = [f.name for f in backend.get_result_files(job)]
+            out_files = backend.get_result_files(job)
+            result["output_files"] = [f.name for f in out_files]
             stdout_log = work_dir / "stdout.log"
             if stdout_log.exists():
-                text = stdout_log.read_text()
-                result["stdout_tail"] = text[-2000:] if len(text) > 2000 else text
+                _stdout_text = stdout_log.read_text()
+                result["stdout_tail"] = (_stdout_text[-2000:]
+                                         if len(_stdout_text) > 2000 else _stdout_text)
+            # Attestation: a process that exits 0 but produces NO output files is
+            # NOT a verified solve — the canonical silent failure. Flag it loudly.
+            if not out_files:
+                result["status"] = "completed_unverified"
+            else:
+                # ... and a file full of NaN/Inf is a fabricated-looking result.
+                nonfinite = check_result_files_finite(out_files)
+            # Also scan the headline numbers (results_summary.json + stdout).
+            nonfinite += check_summary_finite(work_dir, _stdout_text)
+            if nonfinite:
+                result.setdefault("validation", []).extend(nonfinite)
+            # The 'finiteness not asserted' honesty note is a coverage gap,
+            # not evidence of a bad number — it must not flip the verdict to
+            # 'non-finite values' (FEBio .xplt / .bp-without-adios2 runs).
+            nonfinite = [x for x in nonfinite
+                         if not x.startswith("finiteness not asserted")]
+        # Verification gate: bind the verdict to run evidence (attestation).
+        if job.error:
+            reason = "the solver run errored, so no number is backed by a valid run"
+        elif job.status != "completed":
+            reason = f"the run did not complete (status={job.status})"
+        elif not out_files:
+            reason = ("the process exited cleanly but produced NO output files, "
+                      "so no reported number is backed by run evidence")
+        elif nonfinite:
+            reason = ("the result contains non-finite (NaN/Inf) values, so it is "
+                      "numerically invalid")
+        else:
+            reason = ""
+        _stamp_verification(result,
+                            evidence_ok=bool(out_files) and not job.error and not nonfinite,
+                            reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -1549,7 +1699,7 @@ def register_consolidated_tools(mcp: FastMCP):
             _journal.record("tool_error", "run_simulation", solver=solver,
                             error_message=f"Not available: {msg}",
                             input_snapshot=_snap)
-            return f"Solver {solver} not available: {msg}"
+            return f"Solver {solver} not available: {_short_reason(msg)}"
 
         # CP-4: validate the input BEFORE running (was skipped on the live path)
         _input_warnings = []
@@ -1583,25 +1733,57 @@ def register_consolidated_tools(mcp: FastMCP):
             "job_id": job.job_id, "solver": solver,
             "status": job.status, "work_dir": str(job.work_dir),
             "elapsed": f"{job.elapsed:.2f}s" if job.elapsed else None,
-            "critic_review": "approved" if critic_approved else "SKIPPED",
         }
+        out_files = []
         if job.error:
             result["error"] = job.error[:500]
         if _input_warnings:
             result["input_validation_warnings"] = _input_warnings
+        nonfinite = []
+        _stdout_text = ""
         if job.status == "completed":
             out_files = backend.get_result_files(job)
             result["output_files"] = [f.name for f in out_files]
+            stdout_log = work_dir / "stdout.log"
+            if stdout_log.exists():
+                _stdout_text = stdout_log.read_text()
+                result["stdout_tail"] = (_stdout_text[-2000:]
+                                         if len(_stdout_text) > 2000 else _stdout_text)
             # CP-4: a process that exits 0 but produces NO output is NOT a verified
             # success — the canonical silent failure. Downgrade the status loudly.
             if not out_files:
                 result["status"] = "completed_unverified"
                 result["warning"] = ("Process exited cleanly but produced NO output files "
                                      "— this is NOT a verified solve. Do not treat as a result.")
-            stdout_log = work_dir / "stdout.log"
-            if stdout_log.exists():
-                text = stdout_log.read_text()
-                result["stdout_tail"] = text[-2000:] if len(text) > 2000 else text
+            else:
+                # ... and output full of NaN/Inf is a fabricated-looking result.
+                nonfinite = check_result_files_finite(out_files)
+            # Also scan the HEADLINE numbers (results_summary.json + stdout): a
+            # summary can report max_value: Infinity while the mesh stays finite.
+            nonfinite += check_summary_finite(work_dir, _stdout_text)
+            if nonfinite:
+                result.setdefault("validation", []).extend(nonfinite)
+            # The 'finiteness not asserted' honesty note is a coverage gap,
+            # not evidence of a bad number — it must not flip the verdict to
+            # 'non-finite values' (FEBio .xplt / .bp-without-adios2 runs).
+            nonfinite = [x for x in nonfinite
+                         if not x.startswith("finiteness not asserted")]
+        # Verification gate: attestation binds the verdict to run evidence.
+        if job.error:
+            reason = "the solver run errored, so no number is backed by a valid run"
+        elif job.status != "completed":
+            reason = f"the run did not complete (status={job.status})"
+        elif not out_files:
+            reason = ("the process exited cleanly but produced NO output files, "
+                      "so no reported number is backed by run evidence")
+        elif nonfinite:
+            reason = ("the result contains non-finite (NaN/Inf) values, so it is "
+                      "numerically invalid")
+        else:
+            reason = ""
+        _stamp_verification(result,
+                            evidence_ok=bool(out_files) and not job.error and not nonfinite,
+                            reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
     # ═══════════════════════════════════════════════════════════
@@ -1672,12 +1854,25 @@ def register_consolidated_tools(mcp: FastMCP):
         if problem not in dispatch:
             return f"Unknown problem: {problem}. Available: {list(dispatch.keys())}"
 
-        return await dispatch[problem]()
+        out = await dispatch[problem]()
+        # LEGACY path returns human-readable text, not a gated JSON verdict.
+        # Append an explicit attestation note so a reader never mistakes it for a
+        # gate-verified result (the machine-readable verdict lives on `couple`).
+        note = ("\n\n[OASiS verification: LEGACY coupled_solve — trust is governed "
+                "by the convergence report above (a non-converged run is reported "
+                "as failure, never a result). For an attested, machine-readable "
+                "verification verdict use `couple`.]")
+        return (out + note) if isinstance(out, str) else out
 
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
-                     accelerator: str = "aitken") -> str:
+                     accelerator: str = "aitken",
+                     critic_approved: bool = False) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
+
+        Have an independent critic review the setup before coupling; pass
+        critic_approved=True only after that review (every simulation must be
+        critic-reviewed first).
 
         Unlike coupled_solve (legacy, fixed toy geometries), this is physics-agnostic:
         you write one self-contained solver script per subdomain/participant and OASiS
@@ -1735,20 +1930,29 @@ def register_consolidated_tools(mcp: FastMCP):
         if len(names) == 2:
             val += check_interface_balance(r.exports[names[0]], r.exports[names[1]],
                                            names[0], names[1])
-        trustworthy = r.converged and not any(
+        checks_ok = r.converged and not any(
             ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w) for w in val)
-        return json.dumps({"converged": r.converged, "iterations": r.iterations,
-                           "residual": r.residual, "history": r.history,
-                           "exports": r.exports, "error": r.error,
-                           "validation": val, "trustworthy_result": trustworthy}, indent=2)
+        result = {"converged": r.converged, "iterations": r.iterations,
+                  "residual": r.residual, "history": r.history,
+                  "exports": r.exports, "error": r.error, "validation": val}
+        reason = ("" if checks_ok else
+                  "the coupling did not converge or failed a finiteness / "
+                  "interface-balance check")
+        _stamp_verification(result, evidence_ok=checks_ok, reason=reason,
+                            critic_approved=critic_approved)
+        return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def couple_precice(participants: str, data: str, exchanges: str,
                              work_dir: str, scheme: str = "serial-explicit",
                              dimensions: int = 2, max_time: float = 10.0,
                              time_window: float = 1.0, timeout: int = 1800,
-                             extra_env: str = "") -> str:
+                             extra_env: str = "",
+                             critic_approved: bool = False) -> str:
         """GENERAL preCICE coupling of ARBITRARY codes/paradigms, end-to-end.
+
+        Have an independent critic review the setup before coupling; pass
+        critic_approved=True only after that review.
 
         The standard-library (preCICE) path for cross-code coupling — works for any
         number of participants, any data fields, any exchange pattern. OASiS generates
@@ -1789,7 +1993,25 @@ def register_consolidated_tools(mcp: FastMCP):
                                      time_window=time_window, timeout=timeout, extra_env=env)
         except Exception as e:
             return json.dumps({"error": f"coupling failed: {e}"})
-        r["trustworthy_result"] = bool(r.get("converged"))
+        conv = bool(r.get("converged"))
+        # The preCICE orchestrator returns only exit codes + log tails (not the
+        # exchanged field values), so we cannot run check_finite on the data.
+        # Best-effort: a whole-word NaN/Inf in any participant log is a broken
+        # exchange. This only ever DOWNGRADES the verdict (fails safe toward "not
+        # verified"), never upgrades it — the anti-fabrication direction.
+        import re as _re
+        _logs = " ".join(str(v) for v in (r.get("logs") or {}).values())
+        nonfinite = bool(_re.search(r"\b(nan|-?inf|-?infinity)\b", _logs, _re.I))
+        if nonfinite:
+            r["validation"] = ["participant logs report non-finite (NaN/Inf) "
+                               "values — the exchanged fields are invalid."]
+        _stamp_verification(
+            r, evidence_ok=conv and not nonfinite, critic_approved=critic_approved,
+            reason="" if (conv and not nonfinite) else
+                   ("participant logs report non-finite (NaN/Inf) values"
+                    if nonfinite else
+                    "a participant returned non-zero or the coupling did not "
+                    "converge, so no result is backed by a valid run"))
         return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
@@ -1829,11 +2051,15 @@ def register_consolidated_tools(mcp: FastMCP):
         if not wd.is_dir():
             return f"Directory not found: {wd}"
 
-        # Collect result files — skip .pvtu (parallel wrappers that can hang PyVista)
+        # Collect result files — skip .pvtu (parallel wrappers that can hang PyVista).
+        # Deliberately NOT globbing *.xdmf: pyvista's VTK XDMF reader SIGSEGVs on
+        # some files, which is uncatchable and takes the whole MCP server down
+        # (it wiped the in-memory job registry for the session). Every backend
+        # that writes .xdmf also writes a readable .vtu companion, so nothing is
+        # lost. (Mirrors quality_checks._FINITE_SCANNABLE excluding xdmf.)
         vtu_files = [f for f in sorted(wd.rglob("*.vtu")) if not f.name.endswith(".pvtu")]
         vtu_files += sorted(wd.rglob("*.vtk"))
         vtu_files += sorted(wd.rglob("*.vtp"))
-        vtu_files += sorted(wd.rglob("*.xdmf"))
         vtu_files += sorted(wd.rglob("*.bp"))  # ADIOS2/VTX output from dolfinx 0.10+
 
         if action == "list":
@@ -2088,6 +2314,18 @@ def register_consolidated_tools(mcp: FastMCP):
         backend = get_backend(solver)
         if not backend:
             return f"Unknown solver: {solver}"
+
+        # Warn up front if the REQUESTED backend is not usable on this install.
+        # Otherwise a user follows the returned template and only discovers at
+        # run time that the solver can't run (user-session finding). The guidance
+        # is still returned — it is valid — just clearly flagged.
+        _avail_status, _avail_msg = backend.check_availability()
+        if _avail_status.value != "available":
+            parts.append(
+                f"> ⚠ **{backend.display_name()} ({backend.name()}) is NOT available "
+                f"on this install** — {_short_reason(_avail_msg)}\n>\n> The setup below "
+                f"is still accurate, but install/enable {backend.name()} (or choose an "
+                f"available backend) before running.\n")
 
         # Fuzzy match: find the best matching physics name
         matched_physics = _fuzzy_match_physics(backend, physics)
@@ -2465,6 +2703,15 @@ def register_consolidated_tools(mcp: FastMCP):
             format_discovery,
             save_discovered_config,
         )
+
+        # A negative dune interpreter result is cached for the server's
+        # lifetime, so a dune installed after startup would otherwise stay
+        # invisible. Reset the cache so re-discovery genuinely re-probes.
+        try:
+            from backends.dune.backend import _reset_dune_python_cache
+            _reset_dune_python_cache()
+        except Exception:
+            pass
 
         results = _discover()
         report = format_discovery(results)

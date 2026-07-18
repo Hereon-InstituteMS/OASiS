@@ -21,19 +21,36 @@ a = BilinearForm(grad(u)*grad(v)*dx).Assemble()
 m = BilinearForm(u*v*dx).Assemble()
 
 gfu = GridFunction(fes, multidim={n_eigs})
-lam = ArnoldiSolver(a.mat, m.mat, fes.FreeDofs(), list(gfu.vecs), shift=0)
+# ArnoldiSolver returns the eigenvalues UNSORTED (Krylov ordering) and the
+# tail of the requested window may be unconverged garbage (observed:
+# lambda_9 = 218523 vs 167.78 while the sorted spectrum was exact to
+# 1e-11 — Mac stress audit 2026-07-18). Request a buffer of extra Krylov
+# vectors, then SORT and report only the leading n_eigs.
+n_report = {n_eigs}
+n_krylov = {n_eigs} + 10
+gfu_k = GridFunction(fes, multidim=n_krylov)
+lam_raw = ArnoldiSolver(a.mat, m.mat, fes.FreeDofs(), list(gfu_k.vecs), shift=0)
+order_idx = sorted(range(n_krylov), key=lambda i: float(complex(lam_raw[i]).real))
+lam = [float(complex(lam_raw[i]).real) for i in order_idx][:n_report]
+for _k, _i in enumerate(order_idx[:n_report]):
+    gfu.vecs[_k].data = gfu_k.vecs[_i]
 
 print(f"First {n_eigs} eigenvalues:")
 exact = [math.pi**2*(i**2+j**2) for i in range(1,6) for j in range(1,6)]
 exact.sort()
-for i, (computed, ref) in enumerate(zip(lam, exact[:{n_eigs}])):
-    # ArnoldiSolver returns complex eigenvalues even for
-    # self-adjoint problems; .real strips the O(1e-16)
-    # imaginary part. ':.6f' format specifier on a complex
-    # value raises TypeError so this conversion is mandatory.
-    c = float(complex(computed).real)
+checked = []
+for i, (c, ref) in enumerate(zip(lam, exact[:n_report])):
     err = abs(c - ref) / ref
+    checked.append((c, ref, err))
     print(f"  lambda_{{i+1}} = {{c:.6f}} (exact: {{ref:.6f}}, error: {{err:.2e}})")
+
+# Self-check: a mis-ordered or unconverged spectrum must not be reported.
+bad = [i + 1 for i, (_c, _r, e) in enumerate(checked) if e > 0.05]
+if bad:
+    raise SystemExit(
+        f"Eigenvalues {{bad}} deviate >5% from the analytic Dirichlet-Laplace "
+        f"sequence — spectrum unconverged; increase order / reduce maxh / "
+        f"reduce n_eigenvalues.")
 
 # GridFunction(fes, multidim=N) stores N modes in
 # gfu.vecs[0..N-1].  gfu.components is for COMPOUND
@@ -45,10 +62,8 @@ gfu.vec.data = gfu.vecs[0]
 vtk = VTKOutput(mesh, coefs=[gfu], names=["eigenmode_1"],
                 filename="result", subdivision=1)
 vtk.Do()
-# ArnoldiSolver returns complex eigenvalues even for the
-# self-adjoint Laplacian (imaginary parts are O(1e-16)).
-# float() on a complex raises TypeError — take .real first.
-summary = {{"eigenvalues": [float(complex(l).real) for l in lam], "n_dofs": fes.ndof}}
+# lam is already sorted-real (see above).
+summary = {{"eigenvalues": [float(l) for l in lam], "n_dofs": fes.ndof}}
 with open("results_summary.json", "w") as _f:
     json.dump(summary, _f, indent=2)
 print("Eigenvalue solve complete.")

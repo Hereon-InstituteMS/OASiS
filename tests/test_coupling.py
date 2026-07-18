@@ -20,8 +20,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 
 def _run_async(coro):
-    """Run an async coroutine in a sync test."""
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Run an async coroutine in a sync test.
+
+    Use a fresh event loop per call rather than asyncio.get_event_loop():
+    another test suite (e.g. test_python_env_consistency) may have run
+    asyncio.run() first, which closes the process-default loop and would make
+    get_event_loop() hand back a dead loop — the coroutine then never awaits and
+    the integration tests fail purely from cross-test ordering.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 # ─── Unit tests for field_transfer core ─────────────────────────────────

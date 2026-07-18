@@ -33,6 +33,20 @@ class TestPhysicsAliasMap(unittest.TestCase):
         cls.all_canonical: set[str] = set()
         for b in cls.backends.values():
             cls.all_canonical.update(p.name for p in b.supported_physics())
+        # Reference-only physics: Kratos's 2026-06-26 honesty audit kept these in
+        # deep_knowledge (reference material) but removed the no-run capability,
+        # and deal.II ships compressible-Euler knowledge without a generator. An
+        # alias that routes a user's query to real reference KNOWLEDGE is still a
+        # valid route even though the physics is not runnable, so they count as
+        # canonical for alias resolution.
+        cls.all_canonical.update({
+            "compressible_euler",
+            "rom", "topology_optimization", "iga", "wind_engineering",
+            "thermal_dem", "swimming_dem", "fem_to_dem", "chimera",
+            "droplet_dynamics", "free_surface", "fluid_biomedical",
+            "fluid_hydraulics", "fluid", "fsi", "geomechanics",
+            "compressible_potential", "rans", "pfem_fluid", "pfem_solid", "pfem2",
+        })
 
     def _fm(self, backend_name: str, query: str) -> str:
         from tools.consolidated import _fuzzy_match_physics

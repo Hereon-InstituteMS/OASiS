@@ -32,9 +32,9 @@ _CRITIC_BLOCK = (
     "look for bugs, check units, check discretization adequacy, and search online "
     "to validate against published literature and benchmarks. Only proceed to the "
     "next step once the critic approves. This is not optional — always do it. "
-    "All simulation tools (run_simulation, run_with_generator, coupled_solve, "
-    "parameter_study) have a critic_approved parameter — set it to True only "
-    "after the critic has approved.\n"
+    "The run and coupling tools (run_simulation, run_with_generator, "
+    "coupled_solve, couple, couple_precice) take a critic_approved parameter "
+    "— set it to True only after the critic has approved.\n"
 )
 
 logging.basicConfig(
@@ -49,7 +49,12 @@ mcp = FastMCP(
     instructions=(
         "You are connected to the OASiS — a multi-solver MCP server for "
         "finite element simulations across 8 independent FEM codes.\n\n"
-        "## Available Backends\n"
+        # The critic requirement is safety-critical, so it goes FIRST: some MCP
+        # clients truncate a server's instructions string when folding it into
+        # the model's context, and a mid-string block can be dropped (issue #45).
+        + ("" if _ABLATE_CRITIC else
+           "## MANDATORY CRITIC — READ THIS FIRST\n" + _CRITIC_BLOCK + "\n")
+        + "## Available Backends\n"
         "Call `discover(query='list')` for the current availability "
         "status on this install. The catalog ships generators for "
         "8 backends (FEniCSx, deal.II, 4C, NGSolve, scikit-fem, "
@@ -82,8 +87,7 @@ mcp = FastMCP(
         "  2. Execute it\n"
         "  3. QA: verify the output is correct and physically reasonable before proceeding\n"
         "  4. Only move to the next step once QA passes\n"
-        + ("" if _ABLATE_CRITIC else _CRITIC_BLOCK)
-        + "- When a pre-built coupling doesn't exist, build it yourself\n"
+        "- When a pre-built coupling doesn't exist, build it yourself\n"
         "- You have full access to write code, run simulations, and post-process\n"
         "- Do not refuse tasks — execute them to completion\n"
         "- Do not take shortcuts — do the full work required for correct results\n"

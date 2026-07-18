@@ -220,6 +220,74 @@ class TestDuneSubprocessEnv(_DuneEnvTestCase):
         env = dune_mod._dune_subprocess_env(str(py))
         self.assertEqual(env["CMAKE_PREFIX_PATH"], expected)
 
+    # ── issue #44: force CMake's FindPython3 to the resolved interpreter ──
+    # CMAKE_PREFIX_PATH alone let CMake grab Xcode's Python 3.9 on macOS.
+
+    def test_conda_activation_vars_set_for_conda_env(self):
+        env_root = self.tmp / "ofa-dune"
+        (env_root / "conda-meta").mkdir(parents=True)
+        py = env_root / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        os.environ["VIRTUAL_ENV"] = "/stale/venv"
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertEqual(env["CONDA_PREFIX"], str(env_root.resolve()))
+        self.assertEqual(env["CONDA_DEFAULT_ENV"], "ofa-dune")
+        self.assertNotIn("VIRTUAL_ENV", env)  # conda target clears a stale venv
+
+    def test_non_conda_env_clears_stale_conda_prefix(self):
+        # Audit BUG 2: a CONDA_PREFIX inherited from the server's own env must
+        # not leak into a non-conda-venv build — it would win CMake's virtualenv
+        # detection and select the wrong python (the #44 failure mode again).
+        os.environ["CONDA_PREFIX"] = "/some/other/conda"
+        os.environ["CONDA_DEFAULT_ENV"] = "other"
+        py = self.tmp / "plain-venv" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertNotIn("CONDA_PREFIX", env)
+        self.assertNotIn("CONDA_DEFAULT_ENV", env)
+        self.assertEqual(env["VIRTUAL_ENV"],
+                         str((self.tmp / "plain-venv").resolve()))
+
+    def test_bin_dir_prepended_to_path(self):
+        py = self.tmp / "some-env" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertEqual(env["PATH"].split(os.pathsep)[0],
+                         str((self.tmp / "some-env" / "bin").resolve()))
+
+    def test_findpython3_root_dir_set_executable_not(self):
+        py = self.tmp / "some-env" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        env = dune_mod._dune_subprocess_env(str(py))
+        self.assertEqual(env["Python3_ROOT_DIR"],
+                         str((self.tmp / "some-env").resolve()))
+        # CMake does not read Python3_EXECUTABLE from the env -> must not be set
+        self.assertNotIn("Python3_EXECUTABLE", env)
+
+    def test_symlinked_venv_prefix_is_the_venv(self):
+        # A real venv's bin/python is a SYMLINK to the base interpreter. The
+        # prefix must be the VENV, not the base — otherwise <venv>/lib/cmake/
+        # dune-* goes unfound and the JIT build fails exactly like issue #40
+        # (second-audit GAP 3). resolve()-ing the interpreter file followed the
+        # symlink out to the base; the fix resolves the bin DIRECTORY instead.
+        base = self.tmp / "base" / "bin" / "python"
+        base.parent.mkdir(parents=True)
+        base.write_text("")  # non-runnable -> exercises the non-following path
+        venv = self.tmp / "venv"
+        (venv / "bin").mkdir(parents=True)
+        os.symlink(base, venv / "bin" / "python")
+        venv_r = str(venv.resolve())
+        env = dune_mod._dune_subprocess_env(str(venv / "bin" / "python"))
+        self.assertEqual(env["CMAKE_PREFIX_PATH"].split(os.pathsep)[0], venv_r)
+        self.assertEqual(env["VIRTUAL_ENV"], venv_r)
+        self.assertEqual(env["Python3_ROOT_DIR"], venv_r)
+        self.assertEqual(env["PATH"].split(os.pathsep)[0],
+                         str((venv / "bin").resolve()))
+
 
 # ── 3. Caching ───────────────────────────────────────────────
 

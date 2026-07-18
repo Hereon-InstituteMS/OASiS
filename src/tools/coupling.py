@@ -507,6 +507,14 @@ for _i, _v in enumerate(mesh.vertices):
         gfu.vec[_i] = float(np.interp(_v.point[1], _iface_y, _iface_T))
 """
 
+    # NGSolve rejects an identically-zero LinearForm ("Linearform must have
+    # TestFunction") and even optimises CoefficientFunction(0.0) away — so add a
+    # volume source term ONLY when it is non-zero, on top of an empty
+    # LinearForm(V). A pure-Dirichlet subdomain then has a valid empty RHS.
+    source_term = ""
+    if float(source) != 0.0:
+        source_term = f"f += {source} * v * dx"
+
     neumann_code = ""
     if neumann_flux != 0.0:
         neumann_code = f"""
@@ -566,7 +574,8 @@ mesh = Mesh(geo.GenerateMesh(maxh={maxh:.6f}))
 V = H1(mesh, order=1, dirichlet="{dirichlet_flags}")
 u, v = V.TnT()
 a = BilinearForm({conductivity} * grad(u) * grad(v) * dx).Assemble()
-f = LinearForm({source} * v * dx)
+f = LinearForm(V)
+{source_term}
 {neumann_code}
 f.Assemble()
 
@@ -733,7 +742,7 @@ import numpy as np
 from dune.grid import structuredGrid
 from dune.fem.space import lagrange
 from dune.fem.scheme import galerkin
-from dune.ufl import DirichletBC
+from dune.ufl import DirichletBC, Constant
 from ufl import TrialFunction, TestFunction, inner, grad, dx, SpatialCoordinate
 import json as _json
 
@@ -744,7 +753,11 @@ x = SpatialCoordinate(space)
 u = TrialFunction(space)
 v = TestFunction(space)
 a_form = {conductivity} * inner(grad(u), grad(v)) * dx
-L_form = {source} * v * dx
+# Wrap the source in a UFL Constant: a bare `0.0 * v * dx` folds to a domainless
+# Zero ("integral is missing an integration domain"), but a symbolic Constant is
+# not folded at compile time, so the measure/domain is preserved even for a zero
+# source (pure-Dirichlet subdomain).
+L_form = Constant({source}) * v * dx
 
 # Dirichlet BCs on all boundaries, then override
 bc = DirichletBC(space, 0)

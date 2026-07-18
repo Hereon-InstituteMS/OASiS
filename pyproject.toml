@@ -18,12 +18,20 @@ classifiers = [
 dependencies = [
     "mcp[cli]>=1.2.0",
     "pyyaml>=6.0",
-    "numpy>=1.24",
+    # numpy capped <2 because pyprecice pins numpy<2; scipy capped <1.16 because
+    # scipy>=1.16 uses numpy-2-only dtypes (np.long) and requires numpy>=2.0,
+    # which silently breaks scikit-fem on a numpy-1.x install (dep conflict).
+    "numpy>=1.24,<2",
     "pyvista>=0.43",
     "meshio>=5.3",
     "h5py>=3.10",
     "matplotlib>=3.8",
-    "scipy>=1.10",
+    "scipy>=1.10,<1.16",
+    # adios2 lets the verification gate scan ADIOS2/.bp output (dolfinx VTXWriter,
+    # e.g. P2/Taylor-Hood Stokes) for NaN/Inf. Without it the gate cannot read
+    # .bp and only emits an honesty note, so a NaN-filled .bp could read as
+    # verified — the SEV-HIGH fabrication gap this closes.
+    "adios2>=2.10",
 ]
 
 [project.optional-dependencies]

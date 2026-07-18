@@ -342,10 +342,30 @@ class FenicsBackend(SolverBackend):
                 ver = result.stdout.strip()
                 return BackendStatus.AVAILABLE, f"dolfinx {ver} at {python}"
             else:
+                err = result.stderr.strip()
+                # macOS + VPN (Mac stress audit 2026-07-18): mpich's libfabric
+                # can pick a VPN tunnel interface (utun*) as the default NIC and
+                # crash MPI on import/finalize — the probe then reports the
+                # backend missing although dolfinx is fine. Surface the fix.
+                if any(k in err for k in ("OFI poll failed", "utun",
+                                          "MPIDI_OFI", "libfabric")):
+                    hint = (
+                        "  macOS/VPN: libfabric picked a VPN tunnel interface "
+                        "(utun*). Set in the MCP server environment:\n"
+                        "    FI_PROVIDER=sockets FI_SOCKETS_IFACE=en0\n"
+                    ) + hint
                 return BackendStatus.NOT_INSTALLED, (
                     f"dolfinx import failed at {python}: "
-                    f"{result.stderr.strip()}\n" + hint
+                    f"{err}\n" + hint
                 )
+        except subprocess.TimeoutExpired:
+            return BackendStatus.NOT_INSTALLED, (
+                f"dolfinx import probe timed out at {python} (10 s). On macOS "
+                "the FIRST import after install can exceed this (Gatekeeper "
+                "scan of fresh dylibs; VPN/libfabric interface selection). "
+                "Warm it up once and retry:\n"
+                f"    {python} -c 'import dolfinx'\n" + hint
+            )
         except Exception as e:
             return BackendStatus.NOT_INSTALLED, f"Check failed at {python}: {e}\n" + hint
 
@@ -595,8 +615,11 @@ class FenicsBackend(SolverBackend):
 
     def get_result_files(self, job: JobHandle) -> list[Path]:
         results = []
-        # Prefer VTU (converted from XDMF) over raw XDMF
-        for ext in ["*.vtu", "*.pvd", "*.pvtu", "*.xdmf"]:
+        # Prefer VTU (converted from XDMF) over raw XDMF. Include ADIOS2 *.bp
+        # (a directory) too: dolfinx forbids higher-order (e.g. P2 Taylor-Hood)
+        # fields in XDMF and writes VTX/.bp instead, so without this a correct
+        # P2 solve produced "no output" and was wrongly flagged NOT VERIFIED.
+        for ext in ["*.vtu", "*.pvd", "*.pvtu", "*.xdmf", "*.bp"]:
             results.extend(job.work_dir.rglob(ext))
         return sorted_by_step(results)
 

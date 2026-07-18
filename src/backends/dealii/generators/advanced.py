@@ -69,8 +69,8 @@ int main()
   dof_handler.distribute_dofs(fe);
   DoFRenumbering::component_wise(dof_handler);
 
-  std::vector<types::global_dof_index> dofs_per_component(dim + 1);
-  DoFTools::count_dofs_per_component(dof_handler, dofs_per_component);
+  const std::vector<types::global_dof_index> dofs_per_component =
+      DoFTools::count_dofs_per_fe_component(dof_handler);
   const unsigned int n_u = dofs_per_component[0], n_p = dofs_per_component[dim];
   std::cout << "Mixed Laplacian DOFs: u=" << n_u << " p=" << n_p << std::endl;
 

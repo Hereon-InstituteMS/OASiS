@@ -605,12 +605,23 @@ def _generate_cmakelists(target_name: str) -> str:
     if not extra_hints:
         discovered = _find_dealii()
         if discovered is not None:
-            # Prefer the lib/cmake/deal.II sub-path if present —
-            # find_package picks up the Config file from there.
-            cmake_cfg = discovered / "lib" / "cmake" / "deal.II"
-            if (cmake_cfg / "deal.IIConfig.cmake").exists():
-                extra_hints = f" {cmake_cfg}"
-            else:
+            # Point the hint at the directory that ACTUALLY holds
+            # deal.IIConfig.cmake. For a SOURCE tree the config lives under
+            # build/lib/cmake/deal.II (not <root>/lib/cmake/deal.II), so a bare
+            # root hint makes find_package silently fall back to a *system*
+            # deal.II of a different (older) version — e.g. advertising a 9.8
+            # source build but compiling against /usr's 9.1.1, which breaks every
+            # template that uses a post-9.1 API (issue #39 class). Search the same
+            # build/install sub-paths the DEALII_ROOT branch does.
+            for sub in ("lib/cmake/deal.II", "build/lib/cmake/deal.II",
+                        "build/release/lib/cmake/deal.II",
+                        "build/Release/lib/cmake/deal.II",
+                        "install/lib/cmake/deal.II", "share/deal.II/cmake"):
+                cfg = discovered / sub
+                if (cfg / "deal.IIConfig.cmake").exists():
+                    extra_hints = f" {cfg}"
+                    break
+            if not extra_hints:
                 extra_hints = f" {discovered}"
 
     # Honour CC/CXX from the environment so that conda-forge deal.II

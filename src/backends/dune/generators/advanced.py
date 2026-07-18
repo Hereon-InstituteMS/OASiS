@@ -528,7 +528,11 @@ a = (u * v / dt + alpha * dot(grad(u), grad(v))) * dx
 f_source = 0.0
 
 dbc = DirichletBC(space, 0)
-scheme = galerkin([a == u_n * v / dt + f_source * v * dx, dbc], solver="cg")
+# NOTE the parentheses: (u_n/dt + f)*v must be grouped BEFORE *dx —
+# 'u_n * v / dt + f_source * v * dx' only multiplies the source term by
+# the measure and raises 'This integral is missing an integration
+# domain' (ufl.measure). Caught in the 2026-07-18 Mac stress audit.
+scheme = galerkin([a == (u_n / dt + f_source) * v * dx, dbc], solver="cg")
 
 n_steps = int(round(T_end / dt))
 out_every = max(1, n_steps // n_out)
@@ -686,7 +690,7 @@ KNOWLEDGE = {
                 "[API] Full H(curl) Nedelec elements are "
                 "NOT yet in dune-fem — for true vector "
                 "Maxwell use NGSolve or dolfinx. Signal: "
-                "looking for dune.fem.space.nedelec() "
+                "looking for an H(curl) Nedelec space "
                 "raises ImportError; the existing "
                 "maxwell template in dune-fem uses a "
                 "P2 scalar proxy that ONLY handles the "
@@ -767,7 +771,7 @@ KNOWLEDGE = {
                 "Krylov-Schur for 100+ eigenpairs; SLEPc "
                 "handles deflation, restarts, and "
                 "preconditioning automatically. Use "
-                "dune.fem.solver.as_petsc + SLEPc for "
+                "the PETSc/SLEPc solver backend for "
                 "spectrum problems. (Audit 2026-06-02.)"
             ),
             (
@@ -995,7 +999,7 @@ KNOWLEDGE = {
         "time_stepping": {
             "backward_euler": "1st order, A-stable, unconditionally stable",
             "crank_nicolson": "2nd order, A-stable, better accuracy",
-            "dirk23": "2nd/3rd order DIRK, available in dune.fem.rungekutta",
+            "dirk23": "2nd/3rd order DIRK via dune-fem's Runge-Kutta steppers",
             "sdirk22": "2nd order singly-diagonal implicit RK",
         },
         "pitfalls": [

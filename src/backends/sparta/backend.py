@@ -272,7 +272,11 @@ class SpartaBackend(SolverBackend):
         return {
             "description": info["desc"],
             "spatial_dims": info["dims"],
-            "pitfalls": info["pitfalls"],
+            # pitfalls as a LIST (one curated DSMC pitfall per physics), matching
+            # every other backend — a bare string made catalog tests see it as
+            # "no pitfalls" (and the signal counter count characters).
+            "pitfalls": [info["pitfalls"]] if isinstance(info["pitfalls"], str)
+                        else list(info["pitfalls"]),
             "relevant_commands": relevant,
             "worked_example": {"dir": info["example"], "decks": tmpl},
             "solver": "SPARTA DSMC; run: spa_serial -in <script>",

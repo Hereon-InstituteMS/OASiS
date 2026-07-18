@@ -107,6 +107,149 @@ def check_finite(values, label: str = "result") -> list[str]:
     return w
 
 
+# Field/mesh formats meshio reads ROBUSTLY and that carry numeric solution data.
+# .xdmf/.xmf are deliberately excluded: meshio's XDMF reader can raise SystemExit
+# on multi-grid files (killing the process), and solvers that emit XDMF also emit
+# a companion .vtu here, so nothing is lost by scanning the .vtu instead.
+_FINITE_SCANNABLE = (".vtu", ".vtk", ".vtp", ".pvtu", ".msh", ".vtkhdf")
+
+
+def _scan_bp_finite(path) -> tuple[list[str], bool]:
+    """Best-effort finiteness scan of an ADIOS2 .bp dataset (dolfinx VTXWriter).
+
+    Mac stress audit 2026-07-18: an all-NaN field written ONLY via VTXWriter
+    (.bp) was stamped VERIFIED because meshio cannot read .bp — the exact
+    'fabricated result' the gate exists to catch (dolfinx Stokes/Taylor-Hood
+    templates emit .bp exclusively). Scans via adios2 when importable.
+    Returns (warnings, scanned?) — scanned=False when adios2 is unavailable
+    so the caller can report that finiteness was NOT asserted.
+    """
+    try:
+        import adios2
+        import numpy as _np2
+    except Exception:
+        return [], False
+    w = []
+    try:
+        with adios2.FileReader(str(path)) as f:
+            for name in list(f.available_variables() or {}):
+                try:
+                    arr = _np2.asarray(f.read(name), float)
+                except (ValueError, TypeError):
+                    continue  # non-numeric variable (labels, connectivity strings)
+                w += check_finite(arr, label=f"{getattr(path, 'name', path)}:{name}")
+        return w, True
+    except BaseException:
+        return [], False
+
+
+def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
+    """Best-effort finiteness scan of a run's OUTPUT files.
+
+    Attestation binds a claim to run evidence, but "a file exists" is not enough:
+    a solve can exit 0 and write an output full of NaN/Inf — a fabricated-looking
+    result. This reads each result file with meshio (plus adios2 for .bp) and
+    flags non-finite values in any point/cell data, so the verification gate can
+    reject it. If NONE of the output files could be scanned, that is reported
+    too — a VERIFIED verdict must not silently imply a finiteness check that
+    never ran. This never raises.
+    """
+    w = []
+    scannable_format_seen = False
+    considered = 0
+    try:
+        import meshio
+    except Exception:
+        return w
+    from pathlib import Path as _Path
+    for p in list(paths)[:max_files]:
+        p = p if hasattr(p, "suffix") else _Path(str(p))
+        suffix = p.suffix.lower()
+        if suffix == ".bp":
+            considered += 1
+            bp_w, bp_scanned = _scan_bp_finite(p)
+            w += bp_w
+            # .bp counts as scannable only when adios2 actually read it —
+            # without adios2 the format is unscannable in this environment.
+            scannable_format_seen = scannable_format_seen or bp_scanned
+            continue
+        considered += 1
+        if suffix not in _FINITE_SCANNABLE:
+            continue
+        try:
+            m = meshio.read(str(p))
+        except BaseException:
+            # A best-effort scan must NEVER take down the run — some meshio
+            # readers even raise SystemExit on malformed input. Leave
+            # scannable_format_seen False so the honesty note still fires: we
+            # did NOT actually assert finiteness for this file.
+            continue
+        # Only mark as scanned AFTER a successful read — otherwise an unreadable
+        # .vtu would suppress the honesty note without any check having run.
+        scannable_format_seen = True
+        for name, arr in list(getattr(m, "point_data", {}).items()):
+            w += check_finite(arr, label=f"{p.name}:{name}")
+        for name, blocks in list(getattr(m, "cell_data", {}).items()):
+            for i, arr in enumerate(blocks):
+                w += check_finite(arr, label=f"{p.name}:{name}[{i}]")
+    if considered and not scannable_format_seen:
+        # Not a NaN finding — an honesty note: no output file was in a
+        # format scannable in this environment (e.g. only .xplt, or .bp
+        # without adios2), so finiteness is NOT asserted by the gate.
+        w.append(
+            "finiteness not asserted: none of the output files are in a "
+            "scannable format (meshio: "
+            + ", ".join(_FINITE_SCANNABLE)
+            + "; .bp needs the adios2 python package) — verify field values "
+            "independently.")
+    return w
+
+
+def _walk_nonfinite(obj, label: str) -> list[str]:
+    import math
+    w = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            w += _walk_nonfinite(v, f"{label}.{k}")
+    elif isinstance(obj, (list, tuple)):
+        for i, v in enumerate(obj):
+            w += _walk_nonfinite(v, f"{label}[{i}]")
+    elif isinstance(obj, float):
+        if not math.isfinite(obj):
+            w.append(f"{label}: non-finite value ({obj}) — result is invalid.")
+    return w
+
+
+# stdout NaN/Inf only where it clearly denotes a numeric RESULT (after = or :,
+# optionally bracketed), so prose/paths can't trigger a false downgrade.
+import re as _re
+_STDOUT_NONFINITE = _re.compile(r"[=:]\s*[\[(]?\s*-?(?:nan|inf|infinity)\b", _re.I)
+
+
+def check_summary_finite(work_dir, stdout_text: str = "") -> list[str]:
+    """Scan a run's HEADLINE numbers — results_summary.json and stdout — for
+    NaN/Inf. The mesh-file scan alone misses these: a summary can report
+    ``"max_value": Infinity`` (the number the user actually reads) while the VTU
+    field stays finite. json.loads parses bare Infinity/NaN to floats, which the
+    walk then catches. Never raises.
+    """
+    import json as _json
+    from pathlib import Path as _P
+    w = []
+    try:
+        wd = _P(work_dir)
+        for js in sorted(wd.rglob("results_summary.json")):
+            try:
+                w += _walk_nonfinite(_json.loads(js.read_text()), js.name)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    if stdout_text and _STDOUT_NONFINITE.search(stdout_text):
+        w.append("stdout reports a non-finite (NaN/Inf) numeric result.")
+    return w
+
+
 def check_convergence(converged: bool, residual: float, tol: float) -> list[str]:
     """A non-converged coupled/iterative solve must NOT be reported as a result.
     The single most general silent-wrong guard."""

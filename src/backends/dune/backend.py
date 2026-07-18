@@ -135,6 +135,29 @@ def _find_dune_python() -> Optional[str]:
     return None
 
 
+def _interpreter_prefix(python: str) -> str:
+    """Authoritative install prefix (sys.prefix) for an interpreter.
+
+    Correct for venv, conda, and --system-site-packages alike, and — crucially —
+    for a venv it returns the VENV, not the base interpreter a resolve()'d
+    bin/python symlink would point at (issue #40 redux). Falls back, if the
+    interpreter can't be queried, to resolving the bin DIRECTORY (never a
+    symlink) rather than the interpreter FILE (the venv symlink we must not
+    follow).
+    """
+    import subprocess
+    try:
+        out = subprocess.run(
+            [python, "-c", "import sys; print(sys.prefix)"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except Exception:
+        pass
+    return str(Path(os.path.dirname(python) or ".").resolve().parent)
+
+
 def _dune_subprocess_env(python: str) -> dict:
     """Environment for running dune scripts with the resolved interpreter.
 
@@ -145,13 +168,57 @@ def _dune_subprocess_env(python: str) -> dict:
     not contain that prefix and the very first JIT build fails with
     "Could not find ... dune-commonConfig.cmake" (issue #40 follow-up:
     picking the right python is necessary but not sufficient).
+
+    Issue #44: CMAKE_PREFIX_PATH alone is still not enough. dune-py's JIT
+    build runs ``find_package(Python3)``, and on macOS that grabs Xcode's
+    bundled Python 3.9 (or any earlier interpreter on PATH) instead of the
+    conda env's python — the compiled module then cannot ``import dune.fem``
+    because it was built against the wrong Python. Make the env look like
+    the conda env is activated and hand CMake explicit hints so its
+    FindPython3 resolves to exactly the interpreter we picked.
     """
     env = os.environ.copy()
-    prefix = str(Path(python).resolve().parent.parent)
-    existing = env.get("CMAKE_PREFIX_PATH", "")
-    if prefix not in existing.split(os.pathsep):
-        env["CMAKE_PREFIX_PATH"] = (
-            prefix + (os.pathsep + existing if existing else ""))
+    # A venv's bin/python is a SYMLINK to the base interpreter, so
+    # Path(python).resolve() would yield the BASE prefix, not the venv — every
+    # dune-*Config.cmake under <venv>/lib/cmake then goes unfound and the JIT
+    # build fails exactly as in issue #40 (audit finding). Ask the interpreter
+    # for its own sys.prefix (authoritative for venv / conda / system-site),
+    # with a fallback that resolves the bin DIRECTORY rather than following the
+    # interpreter symlink.
+    prefix = _interpreter_prefix(python)
+    # <env>/bin — resolve the DIRECTORY (safe) but not the interpreter symlink.
+    bindir = str(Path(os.path.dirname(python) or ".").resolve())
+
+    def _prepend(var: str, value: str) -> None:
+        cur = env.get(var, "")
+        if value not in cur.split(os.pathsep):
+            env[var] = value + (os.pathsep + cur if cur else "")
+
+    # dune-*Config.cmake lookup (issue #40 follow-up)
+    _prepend("CMAKE_PREFIX_PATH", prefix)
+
+    # Mirror activation so CMake's FindPython3 (which honours CONDA_PREFIX /
+    # VIRTUAL_ENV via Python3_FIND_VIRTUALENV) prefers THIS env, and put the
+    # interpreter's bin first so a bare `python3` / CMake's PATH-based search
+    # resolves here and not to a system / Xcode python.
+    if (Path(prefix) / "conda-meta").is_dir():
+        env["CONDA_PREFIX"] = prefix
+        env["CONDA_DEFAULT_ENV"] = Path(prefix).name
+        env.pop("VIRTUAL_ENV", None)
+    else:
+        # Non-conda venv: a stale CONDA_PREFIX inherited from the server's own
+        # environment would otherwise win CMake's virtualenv detection and pull
+        # in the WRONG python (audit finding). Clear it and point virtualenv
+        # detection at the resolved interpreter instead.
+        env.pop("CONDA_PREFIX", None)
+        env.pop("CONDA_DEFAULT_ENV", None)
+        env["VIRTUAL_ENV"] = prefix
+    _prepend("PATH", bindir)
+
+    # CMake's FindPython3 honours Python3_ROOT_DIR from the environment.
+    # (Python3_EXECUTABLE is only read as a -D cache argument, never from the
+    # environment, so setting it here would be dead weight.)
+    env["Python3_ROOT_DIR"] = prefix
     return env
 
 
