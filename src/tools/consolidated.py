@@ -1656,7 +1656,10 @@ def register_consolidated_tools(mcp: FastMCP):
                       "so no reported number is backed by run evidence")
         elif nonfinite:
             reason = ("the result contains non-finite (NaN/Inf) values, so it is "
-                      "numerically invalid")
+                      "numerically invalid"
+                      if any("non-finite" in x for x in nonfinite)
+                      else "a result file is unreadable/corrupt, so the gate "
+                           "could not assert the output's integrity")
         else:
             reason = ""
         _stamp_verification(result,
@@ -1778,7 +1781,10 @@ def register_consolidated_tools(mcp: FastMCP):
                       "so no reported number is backed by run evidence")
         elif nonfinite:
             reason = ("the result contains non-finite (NaN/Inf) values, so it is "
-                      "numerically invalid")
+                      "numerically invalid"
+                      if any("non-finite" in x for x in nonfinite)
+                      else "a result file is unreadable/corrupt, so the gate "
+                           "could not assert the output's integrity")
         else:
             reason = ""
         _stamp_verification(result,
