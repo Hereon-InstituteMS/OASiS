@@ -140,7 +140,14 @@ def _scan_bp_finite(path) -> tuple[list[str], bool]:
                 w += check_finite(arr, label=f"{getattr(path, 'name', path)}:{name}")
         return w, True
     except BaseException:
-        return [], False
+        # adios2 IS present but could not read the dataset: that is a CORRUPT
+        # result file, not an unscannable format — report it as hard evidence
+        # failure (verdict-flipping), unlike the missing-adios2 case above.
+        return [
+            f"{getattr(path, 'name', path)}: unreadable/corrupt result file — "
+            "the gate could not read it to assert finiteness; the output "
+            "cannot serve as verified run evidence."
+        ], False
 
 
 def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
@@ -180,9 +187,16 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
             m = meshio.read(str(p))
         except BaseException:
             # A best-effort scan must NEVER take down the run — some meshio
-            # readers even raise SystemExit on malformed input. Leave
-            # scannable_format_seen False so the honesty note still fires: we
-            # did NOT actually assert finiteness for this file.
+            # readers even raise SystemExit on malformed input. But a file with
+            # a SCANNABLE suffix that fails to parse is a CORRUPT result file,
+            # not an unscannable format (stress audit F1: a garbage-only .vtu
+            # was stamped VERIFIED with the honesty note relegated to
+            # 'validation'). Report it as a hard, verdict-flipping finding —
+            # a result the gate cannot read is not verified run evidence.
+            w.append(
+                f"{p.name}: unreadable/corrupt result file — the gate could "
+                "not read it to assert finiteness; the output cannot serve as "
+                "verified run evidence.")
             continue
         # Only mark as scanned AFTER a successful read — otherwise an unreadable
         # .vtu would suppress the honesty note without any check having run.
@@ -192,7 +206,10 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
         for name, blocks in list(getattr(m, "cell_data", {}).items()):
             for i, arr in enumerate(blocks):
                 w += check_finite(arr, label=f"{p.name}:{name}[{i}]")
-    if considered and not scannable_format_seen:
+    if considered and not scannable_format_seen and not w:
+        # `not w`: when a hard corrupt-file finding was already emitted, the
+        # note below would be misleading (the format IS scannable here — the
+        # file is corrupt) and redundant (the hard finding flips the verdict).
         # Not a NaN finding — an honesty note: no output file was in a
         # format scannable in this environment (e.g. only .xplt, or .bp
         # without adios2), so finiteness is NOT asserted by the gate.
@@ -223,7 +240,11 @@ def _walk_nonfinite(obj, label: str) -> list[str]:
 # stdout NaN/Inf only where it clearly denotes a numeric RESULT (after = or :,
 # optionally bracketed), so prose/paths can't trigger a false downgrade.
 import re as _re
-_STDOUT_NONFINITE = _re.compile(r"[=:]\s*[\[(]?\s*-?(?:nan|inf|infinity)\b", _re.I)
+# Also matches arrow ("max(u) -> nan") and copula ("residual is nan") headline
+# forms (stress audit F2) — still anchored to a result-introducing token so
+# prose ("infinite domain", "information") cannot false-trigger.
+_STDOUT_NONFINITE = _re.compile(
+    r"(?:[=:]|->|→|\bis\b)\s*[\[(]?\s*[+-]?(?:nan|inf|infinity)\b", _re.I)
 
 
 def check_summary_finite(work_dir, stdout_text: str = "") -> list[str]:

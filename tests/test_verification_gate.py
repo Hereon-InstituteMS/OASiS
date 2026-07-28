@@ -106,12 +106,23 @@ def test_nan_inf_output_is_flagged(tmp_path):
 
 def test_scan_never_raises_on_garbage(tmp_path):
     bad = tmp_path / "junk.vtu"; bad.write_text("not a real vtu at all")
-    # A best-effort scan must NEVER raise (incl. SystemExit). An unreadable file
-    # yields the HONESTY NOTE (finiteness could not be asserted) — never a false
-    # NaN finding and never a crash.
+    # A best-effort scan must NEVER raise (incl. SystemExit). A file with a
+    # SCANNABLE suffix that fails to parse is a CORRUPT result file (stress
+    # audit F1): a hard, verdict-flipping finding — never a false NaN finding
+    # and never a crash.
     w = check_result_files_finite([bad])
-    assert all("non-finite" not in x for x in w)   # no false NaN finding
-    assert any("not asserted" in x for x in w)     # honesty note present
+    assert all("non-finite" not in x for x in w)          # no false NaN finding
+    assert any("unreadable/corrupt" in x for x in w)      # hard corrupt finding
+
+
+def test_unscannable_format_keeps_honesty_note_only(tmp_path):
+    # A genuinely UNSCANNABLE format (e.g. FEBio .xplt) is a coverage gap, not
+    # corruption: only the informational honesty note fires, no hard finding —
+    # so a legitimate FEBio run is not wrongly flipped to NOT VERIFIED.
+    xplt = tmp_path / "result.xplt"; xplt.write_bytes(b"\x00\x01\x02")
+    w = check_result_files_finite([xplt])
+    assert any("not asserted" in x for x in w)            # honesty note
+    assert all("unreadable/corrupt" not in x for x in w)  # no hard finding
 
 
 # ── Headline-number scan: results_summary.json + stdout (P2) ─────────────
@@ -136,8 +147,17 @@ def test_stdout_nonfinite_result_flagged(tmp_path):
 
 def test_stdout_prose_nan_does_not_false_trigger(tmp_path):
     # 'information'/'nanometer'/a bare word must NOT trigger a false downgrade;
-    # only a NaN/Inf presented as a numeric result (after = or :) counts.
+    # only a NaN/Inf presented as a numeric result counts.
     assert check_summary_finite(tmp_path, "computed 42 nanometers of information") == []
+    # ... including prose around the anchor tokens (F2 hardening must stay
+    # anchored: 'infinite domain' / 'this is fine' are not findings).
+    assert check_summary_finite(tmp_path, "solved on an infinite domain, all is fine") == []
+
+
+def test_stdout_arrow_and_copula_nonfinite_flagged(tmp_path):
+    # Stress audit F2: arrow / copula headline forms evaded the =/: anchor.
+    assert check_summary_finite(tmp_path, "max(u) -> nan")
+    assert check_summary_finite(tmp_path, "residual is inf")
 
 
 # ── Call-site wiring: the tools must actually apply the verdict ───────────
@@ -219,6 +239,18 @@ def test_run_simulation_nan_output_not_verified_even_if_critic_approved(tmp_path
     assert d["trustworthy_result"] is False   # attestation beats critic
     assert d["verification"].startswith("NOT VERIFIED")
     assert any("non-finite" in v for v in d.get("validation", []))
+
+
+def test_run_simulation_corrupt_output_not_verified_even_if_critic_approved(tmp_path):
+    # Stress audit F1: a garbage/unreadable .vtu as the ONLY output used to be
+    # stamped VERIFIED with the honesty note buried in 'validation'. A result
+    # the gate cannot read is not verified run evidence — verdict must flip.
+    f = tmp_path / "out.vtu"; f.write_text("%%% not a vtu at all")
+    d = _run_sim(_Backend([f]), critic_approved=True)
+    assert d["status"] == "completed"          # the run itself still returns
+    assert d["trustworthy_result"] is False
+    assert d["verification"].startswith("NOT VERIFIED")
+    assert any("unreadable/corrupt" in v for v in d.get("validation", []))
 
 
 def test_run_simulation_no_output_is_completed_unverified(tmp_path):
