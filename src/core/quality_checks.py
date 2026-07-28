@@ -206,7 +206,10 @@ def check_result_files_finite(paths, max_files: int = 25) -> list[str]:
         for name, blocks in list(getattr(m, "cell_data", {}).items()):
             for i, arr in enumerate(blocks):
                 w += check_finite(arr, label=f"{p.name}:{name}[{i}]")
-    if considered and not scannable_format_seen:
+    if considered and not scannable_format_seen and not w:
+        # `not w`: when a hard corrupt-file finding was already emitted, the
+        # note below would be misleading (the format IS scannable here — the
+        # file is corrupt) and redundant (the hard finding flips the verdict).
         # Not a NaN finding — an honesty note: no output file was in a
         # format scannable in this environment (e.g. only .xplt, or .bp
         # without adios2), so finiteness is NOT asserted by the gate.
