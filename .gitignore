@@ -70,3 +70,4 @@ data/build_logs/
 /TESTING_PROMPTS.md
 /webui/TEST_PROMPTS.md
 /benchmarks/probe_results/templates.md
+benchmarks/coupling_pairs/*/build_dealii/
