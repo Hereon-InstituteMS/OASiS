@@ -128,6 +128,17 @@ class KratosBackend(SolverBackend):
                 template_variants=["2d"],
             ),
             PhysicsCapability(
+                name="curved_mms",
+                description=("Curved-geometry manufactured solution: steady diffusion on a "
+                             "Gmsh-meshed annulus, real ConvectionDiffusionApplication solve "
+                             "(LaplacianElement2D3N), prints machine-readable L2_ERROR; "
+                             "theoretical P1 L2 order 2 (live-verified). Meshing is "
+                             "agent-driven via mesh_size or an agent-built .msh file."),
+                spatial_dims=[2],
+                element_types=["LaplacianElement2D3N"],
+                template_variants=["annulus_2d"],
+            ),
+            PhysicsCapability(
                 name="heat_transient",
                 description="Transient heat conduction with backward Euler time integration",
                 spatial_dims=[2],
