@@ -690,6 +690,13 @@ TSI DYNAMIC:
   MAXTIME: 1.0
   TIMESTEP: 1.0
   ITEMAX: 1
+# COUPVARIABLE Temperature = one-way direction thermo -> structure
+# (thermal strain loads the structure). The 4C DEFAULT is Displacement
+# (structure -> thermo): with the default, these one-way decks ran to
+# rc=0 but produced ZERO displacement — silently wrong physics
+# (verified against the 4C binary 2026-08-01).
+TSI DYNAMIC/PARTITIONED:
+  COUPVARIABLE: "Temperature"
 SOLVER 1:
   SOLVER: "UMFPACK"
   NAME: "Thermal_Solver"
@@ -988,6 +995,13 @@ TSI DYNAMIC:
   MAXTIME: 1.0
   TIMESTEP: 1.0
   ITEMAX: 1
+# COUPVARIABLE Temperature = one-way direction thermo -> structure
+# (thermal strain loads the structure). The 4C DEFAULT is Displacement
+# (structure -> thermo): with the default, these one-way decks ran to
+# rc=0 but produced ZERO displacement — silently wrong physics
+# (verified against the 4C binary 2026-08-01).
+TSI DYNAMIC/PARTITIONED:
+  COUPVARIABLE: "Temperature"
 SOLVER 1:
   SOLVER: "UMFPACK"
   NAME: "Thermal_Solver"
@@ -2069,6 +2083,172 @@ DESIGN SURF DIRICH CONDITIONS:
         yaml += f'  - "NODE {nid} DSURFACE 1"\n'
     for nid in right_face:
         yaml += f'  - "NODE {nid} DSURFACE 2"\n'
+
+    return yaml
+
+
+def matched_tsi_plane_strain_input(
+    nx: int = 16, ny: int = 4,
+    lx: float = 2.0, ly: float = 0.25, thickness: float | None = None,
+    E: float = 200e9, nu: float = 0.3, alpha: float = 12e-6,
+    T_ref: float = 293.0, T_left: float = 293.0, T_right: float = 450.0,
+    temp_expr: str | None = None,
+    density: float = 7850.0,
+    conductivity: float = 1.0, capacity: float = 1.0,
+) -> str:
+    """4C thermo-elastic PLANE STRAIN via a pseudo-2D thin slab (one-way TSI).
+
+    Why this exists (T14 evaluation campaign, 2026-07): 4C has NO 2D TSI
+    elements — every TSI corpus test is 3D SOLIDSCATRA. Agents given a 2D
+    plane-strain thermo-mechanical problem tried the two 2D structural
+    eletypes and hit hard errors on the deployed binary:
+      * WALL QUAD4  + MAT_Struct_ThermoStVenantK
+          -> "Invalid type of material law for wall element" (4C_w1_mat.cpp:179)
+      * SOLID QUAD4 (any material, this build)
+          -> "Element 'SOLID' does not seem to know cell type 'quad4'"
+    Both reproduced 2026-08-01 against /home/alexander/4C/build/4C. The
+    correct route is the standard thin-slab trick implemented here:
+
+      - 3D mesh [0,lx]x[0,ly]x[0,t] with ONE SOLIDSCATRA HEX8 layer in z
+        (t defaults to ly/ny so elements stay well-shaped),
+      - plane strain enforced exactly by fixing u_z on ALL nodes
+        (DESIGN VOL DIRICH, ONOFF [0,0,1]),
+      - the x=0 face clamped (structural Dirichlet, all 3 dofs),
+      - the temperature FIELD imposed on the whole volume via
+        DESIGN VOL THERMO DIRICH + FUNCT1 = ``temp_expr`` (also the thermal
+        initial field), so a partner code's temperature solution can be
+        passed in as a symbolic expression of x/y — the one-way coupled
+        (partner -> 4C) use case,
+      - COUPALGO tsi_oneway, Statics, single step: thermal expansion of
+        the imposed field drives the structural solve.
+
+    ``temp_expr`` defaults to the linear profile
+    "T_left + (T_right-T_left)*x/lx". Verified against the 4C binary
+    2026-08-01: rc=0, tip displacement matches the analytic plane-strain
+    thermal-expansion estimate (see tests/test_fourc_inline_tsi.py).
+    """
+    nx = max(1, int(nx)); ny = max(1, int(ny))
+    lz = float(thickness) if thickness else float(ly) / ny
+    mesh = generate_hex8_cube(
+        nx, ny, 1, lx, ly, lz,
+        element_section="STRUCTURE",
+        element_type="SOLIDSCATRA HEX8",
+        element_suffix="MAT 1 KINEM linear TYPE Undefined",
+    )
+    ng = mesh["node_grid"]
+
+    clamp_face = sorted({ng[(0, j, k)] for j in range(ny + 1) for k in (0, 1)})
+    all_nodes = sorted(ng.values())
+
+    if not temp_expr:
+        temp_expr = f"{T_left} + ({T_right} - {T_left}) * x / {lx}"
+
+    yaml = f'''TITLE:
+  - "TSI plane strain (pseudo-2D thin slab): imposed temperature field -> thermo-elastic expansion"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo_Structure_Interaction"
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1e-8
+  TOLRES: 1e-8
+  MAXITER: 20
+  LINEAR_SOLVER: 2
+  PREDICT: TangDis
+THERMAL DYNAMIC:
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 1
+  TIMESTEP: 1.0
+  MAXTIME: 1.0
+  LINEAR_SOLVER: 1
+TSI DYNAMIC:
+  COUPALGO: "tsi_oneway"
+  MAXTIME: 1.0
+  TIMESTEP: 1.0
+  ITEMAX: 1
+# COUPVARIABLE Temperature = one-way direction thermo -> structure
+# (thermal strain loads the structure). The 4C DEFAULT is Displacement
+# (structure -> thermo): with the default, these one-way decks ran to
+# rc=0 but produced ZERO displacement — silently wrong physics
+# (verified against the 4C binary 2026-08-01).
+TSI DYNAMIC/PARTITIONED:
+  COUPVARIABLE: "Temperature"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermal_Solver"
+SOLVER 2:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_ThermoStVenantK:
+      YOUNGNUM: 1
+      YOUNG: [{E}]
+      NUE: {nu}
+      DENS: {density}
+      THEXPANS: {alpha}
+      INITTEMP: {T_ref}
+      THERMOMAT: 2
+  - MAT: 2
+    MAT_Fourier:
+      CAPA: {capacity}
+      CONDUCT:
+        constant: [{conductivity}]
+CLONING MATERIAL MAP:
+  - SRC_FIELD: "structure"
+    SRC_MAT: 1
+    TAR_FIELD: "thermo"
+    TAR_MAT: 2
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{temp_expr}"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+# Impose the (partner-supplied) temperature field on the whole volume:
+# thermal Dirichlet everywhere = the thermal solve reproduces FUNCT1
+# exactly, and one-way TSI turns it into thermal strain.
+DESIGN VOL THERMO DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [1.0]
+    FUNCT: [1]
+# Plane strain: u_z = 0 on every node of the slab.
+DESIGN VOL DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+# Clamped edge x=0 (all displacement dofs).
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in clamp_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    yaml += 'DVOL-NODE TOPOLOGY:\n'
+    for nid in all_nodes:
+        yaml += f'  - "NODE {nid} DVOL 1"\n'
 
     return yaml
 

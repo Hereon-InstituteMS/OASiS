@@ -114,5 +114,127 @@ class TestFourcInlineTsiMonolithic(unittest.TestCase):
         self.assertEqual(elem_count, 8 ** 3)
 
 
+class TestFourcTsiPlaneStrain(unittest.TestCase):
+    """tsi/plane_strain_2d — the pseudo-2D thin-slab route added after the
+    T14 evaluation campaign (2026-07): agents given a 2D plane-strain
+    thermo-mechanical problem dead-ended, because 4C has no 2D TSI
+    elements, WALL QUAD4 rejects MAT_Struct_ThermoStVenantK ('Invalid
+    type of material law for wall element', 4C_w1_mat.cpp:179) and the
+    deployed binary rejects SOLID QUAD4 outright ("Element 'SOLID' does
+    not seem to know cell type 'quad4'"). Verified live against
+    /home/alexander/4C/build/4C 2026-08-01: rc=0 and max|u| = 2.462e-3 m
+    vs the analytic plane-strain estimate (1+nu)*alpha*int(T-Tref)dx =
+    2.449e-3 m (0.5%). GEN-ONLY here so CI needs no binary."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from core.registry import load_all_backends, get_backend
+        load_all_backends()
+        cls.backend = get_backend("fourc")
+        if cls.backend is None:
+            raise unittest.SkipTest("fourc backend not registered")
+
+    def _gen(self, params: dict | None = None) -> str:
+        return self.backend.generate_input(
+            "tsi", "plane_strain_2d", params or {})
+
+    def test_no_placeholders_and_self_contained(self) -> None:
+        content = self._gen(dict(PROBE_PARAMS))
+        self.assertFalse(_PLACEHOLDER.findall(content))
+        self.assertIn("NODE COORDS", content)
+        self.assertNotIn("FILE:", content)
+
+    def test_no_2d_eletypes(self) -> None:
+        """The exact eletypes that dead-ended the T14 agents must NOT
+        appear — the route is a 3D SOLIDSCATRA slab."""
+        content = self._gen()
+        self.assertIn("SOLIDSCATRA HEX8", content)
+        self.assertNotIn("WALL QUAD4", content)
+        self.assertNotIn("SOLID QUAD4", content)
+        self.assertIn("DIM: 3", content)
+
+    def test_plane_strain_constraint(self) -> None:
+        """Plane strain = u_z fixed on EVERY node via a volume Dirichlet
+        (ONOFF [0,0,1]) + full clamp on the x=0 face."""
+        content = self._gen()
+        self.assertIn("DESIGN VOL DIRICH CONDITIONS", content)
+        self.assertIn("ONOFF: [0, 0, 1]", content)
+        self.assertIn("DVOL-NODE TOPOLOGY", content)
+        self.assertIn("DESIGN SURF DIRICH CONDITIONS", content)
+        # every node belongs to the plane-strain volume
+        n_nodes = len(re.findall(r'"NODE \d+ COORD', content))
+        n_dvol = len(re.findall(r'DVOL 1"', content))
+        self.assertEqual(n_nodes, n_dvol)
+
+    def test_oneway_temperature_coupling(self) -> None:
+        """COUPVARIABLE Temperature is what makes the one-way direction
+        thermo->structure. The 4C default (Displacement) ran to rc=0
+        with exactly ZERO displacement — the silent-wrong bug verified
+        2026-08-01."""
+        content = self._gen()
+        self.assertIn('COUPALGO: "tsi_oneway"', content)
+        self.assertIn("TSI DYNAMIC/PARTITIONED", content)
+        self.assertIn('COUPVARIABLE: "Temperature"', content)
+
+    def test_imposed_temperature_field(self) -> None:
+        """The partner-computed temperature field enters as a symbolic
+        FUNCT imposed volume-wide (thermal Dirichlet everywhere)."""
+        content = self._gen({"temp_expr": "293.0 + 78.5*x*x",
+                             "lx": 2.0, "ly": 0.25})
+        self.assertIn("DESIGN VOL THERMO DIRICH CONDITIONS", content)
+        self.assertIn('SYMBOLIC_FUNCTION_OF_SPACE_TIME: "293.0 + 78.5*x*x"',
+                      content)
+
+    def test_single_element_layer_in_z(self) -> None:
+        """Pseudo-2D: exactly one HEX8 layer through the thickness."""
+        content = self._gen({"nx": 6, "ny": 3})
+        n_elem = len(re.findall(r"SOLIDSCATRA HEX8", content))
+        self.assertEqual(n_elem, 6 * 3)
+
+    def test_catalog_advertises_variants(self) -> None:
+        caps = {c.name: c for c in self.backend.supported_physics()}
+        self.assertIn("tsi", caps)
+        self.assertIn("plane_strain_2d", caps["tsi"].template_variants)
+        self.assertIn("oneway_3d", caps["tsi"].template_variants)
+        self.assertIn(2, caps["tsi"].spatial_dims)
+
+
+class TestFourcTsiOnewayVariant(unittest.TestCase):
+    """tsi/oneway_3d — the pre-existing inline one-way input, now exposed
+    as a variant and carrying the COUPVARIABLE Temperature fix (it
+    produced max|u| = 0.0 with the 4C default; 9.12e-4 after the fix,
+    both verified live 2026-08-01)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from core.registry import load_all_backends, get_backend
+        load_all_backends()
+        cls.backend = get_backend("fourc")
+        if cls.backend is None:
+            raise unittest.SkipTest("fourc backend not registered")
+
+    def test_generates_and_couples_thermo_to_structure(self) -> None:
+        content = self.backend.generate_input("tsi", "oneway_3d", {})
+        self.assertFalse(_PLACEHOLDER.findall(content))
+        self.assertIn('COUPALGO: "tsi_oneway"', content)
+        self.assertIn('COUPVARIABLE: "Temperature"', content)
+        self.assertIn("SOLIDSCATRA HEX8", content)
+        self.assertIn("CLONING MATERIAL MAP", content)
+
+    def test_all_inline_oneway_decks_have_coupvariable(self) -> None:
+        """Regression across the module: every tsi_oneway deck the repo
+        can emit must pin COUPVARIABLE Temperature."""
+        from backends.fourc import inline_mesh
+        for fn in (inline_mesh.matched_tsi_oneway_input,
+                   inline_mesh.matched_l_bracket_tsi_input,
+                   inline_mesh.matched_tsi_plane_strain_input):
+            content = fn()
+            if 'COUPALGO: "tsi_oneway"' in content:
+                self.assertIn('COUPVARIABLE: "Temperature"', content,
+                              f"{fn.__name__} emits tsi_oneway without "
+                              f"COUPVARIABLE Temperature — structure->"
+                              f"thermo default = zero displacement.")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1732,7 +1732,12 @@ FOURC_KNOWLEDGE = {
 
         "requirements": [
             "SOLIDSCATRA elements (NOT plain SOLID — the SCATRA coupling is needed). "
-            "Accepts HEX8, HEX27, TET4, TET10, NURBS27, QUAD4, QUAD9, TRI3, TRI6.",
+            "3D ONLY: HEX8, HEX27, TET4, TET10, NURBS27 (the module is "
+            "solid_scatra_3D_ele — QUAD4/TRI3 are NOT accepted, and WALL QUAD4 "
+            "rejects MAT_Struct_ThermoStVenantK with 'Invalid type of material "
+            "law for wall element'). For 2D plane strain use the "
+            "plane_strain_2d variant: a one-element-thick HEX8 slab with u_z "
+            "fixed on all nodes.",
             "MAT_Struct_ThermoStVenantK (structural material with thermal expansion)",
             "MAT_Fourier (thermal material linked via THERMOMAT parameter)",
             "CLONING MATERIAL MAP: SRC_FIELD structure → TAR_FIELD thermo",
@@ -1741,6 +1746,24 @@ FOURC_KNOWLEDGE = {
         ],
 
         "pitfalls": [
+            (
+                "[Input] 4C has NO 2D TSI elements — the element module is "
+                "solid_scatra_3D_ele and every TSI corpus test is 3D. Signal: "
+                "a 2D thermo-mechanical deck dead-ends BOTH ways on current "
+                "builds: WALL QUAD4 + MAT_Struct_ThermoStVenantK aborts with "
+                "'Invalid type of material law for wall element' "
+                "(4C_w1_mat.cpp:179), and SOLID QUAD4 aborts with \"Element "
+                "'SOLID' does not seem to know cell type 'quad4'\" "
+                "(4C_fem_general_element_definition.cpp). For 2D plane "
+                "strain use generate_input('tsi', 'plane_strain_2d', ...): a "
+                "one-element-thick 3D SOLIDSCATRA HEX8 slab with u_z fixed "
+                "on all nodes (exact plane strain), the temperature field "
+                "imposed volume-wide via DESIGN VOL THERMO DIRICH + a "
+                "symbolic FUNCT (param temp_expr — pass the partner code's "
+                "temperature solution). Verified against the 4C binary "
+                "2026-08-01: tip displacement within 0.5% of the analytic "
+                "plane-strain thermal-expansion value. (T14 campaign fix.)"
+            ),
             (
                 "[Input] Without CLONING MATERIAL MAP, 4C "
                 "crashes at initialization. Signal: TSI setup "

@@ -184,6 +184,31 @@ class TSIGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
+                    "4C has NO 2D TSI elements (the element module is "
+                    "solid_scatra_3D_ele; every TSI test in the 4C corpus is "
+                    "3D).  Do NOT attempt a 2D thermo-mechanical deck: "
+                    "WALL QUAD4 + MAT_Struct_ThermoStVenantK aborts with "
+                    "'Invalid type of material law for wall element' "
+                    "(4C_w1_mat.cpp), and on current builds SOLID QUAD4 "
+                    "aborts with \"Element 'SOLID' does not seem to know "
+                    "cell type 'quad4'\".  For a 2D plane-strain problem use "
+                    "the 'plane_strain_2d' variant: a one-element-thick 3D "
+                    "SOLIDSCATRA HEX8 slab with u_z fixed on all nodes "
+                    "(exact plane strain) and the temperature field imposed "
+                    "volume-wide via DESIGN VOL THERMO DIRICH + a symbolic "
+                    "FUNCT (pass temp_expr) — verified against the 4C "
+                    "binary 2026-08-01, tip displacement within 0.5% of the "
+                    "analytic plane-strain thermal-expansion value."
+                ),
+                (
+                    "One-way thermo->structure TSI REQUIRES 'TSI DYNAMIC/"
+                    "PARTITIONED: COUPVARIABLE: Temperature'.  The 4C "
+                    "default is Displacement (structure->thermo): a "
+                    "tsi_oneway deck with the default runs to rc=0 but "
+                    "produces exactly ZERO displacement — silently wrong "
+                    "physics (verified 2026-08-01)."
+                ),
+                (
                     "Structure elements MUST be SOLIDSCATRA (not plain SOLID) "
                     "to carry the thermal DOF.  Using SOLID elements will "
                     "silently omit the thermal coupling."
@@ -245,6 +270,26 @@ class TSIGenerator(BaseGenerator):
                     "SOLIDSCATRA HEX8 elements, MAT_Struct_ThermoStVenantK "
                     "material, MAT_Fourier thermal material, monolithic "
                     "Belos/Teko solver."
+                ),
+            },
+            {
+                "name": "oneway_3d",
+                "description": (
+                    "3-D one-way TSI (thermo -> structure): heated beam, "
+                    "SOLIDSCATRA HEX8, COUPALGO tsi_oneway with "
+                    "COUPVARIABLE Temperature.  For cross-solver coupling "
+                    "where a partner supplies the thermal boundary data."
+                ),
+            },
+            {
+                "name": "plane_strain_2d",
+                "description": (
+                    "2-D plane-strain thermo-elasticity via a pseudo-2D "
+                    "thin slab: one SOLIDSCATRA HEX8 layer, u_z fixed on "
+                    "all nodes, temperature field imposed volume-wide via "
+                    "a symbolic FUNCT (param temp_expr).  THE route for 2D "
+                    "thermo-mechanics — 4C has no 2D TSI elements and "
+                    "WALL/SOLID QUAD4 both fail with the thermo material."
                 ),
             },
         ]
@@ -513,9 +558,20 @@ class TSIGenerator(BaseGenerator):
         # Check element type
         elem_type = params.get("element_type", "")
         if elem_type and "SOLIDSCATRA" not in str(elem_type).upper():
-            issues.append(
-                f"TSI requires SOLIDSCATRA elements (not {elem_type}).  "
-                f"Plain SOLID elements do not carry the thermal DOF."
-            )
+            et = str(elem_type).upper()
+            if "WALL" in et or "QUAD" in et or "TRI" in et:
+                issues.append(
+                    f"TSI cannot use 2D elements ({elem_type}): 4C has no "
+                    f"2D TSI elements, and MAT_Struct_ThermoStVenantK is "
+                    f"rejected by WALL ('Invalid type of material law for "
+                    f"wall element').  Use the 'plane_strain_2d' variant "
+                    f"(one-element-thick SOLIDSCATRA HEX8 slab, u_z fixed "
+                    f"everywhere) for 2D plane-strain thermo-mechanics."
+                )
+            else:
+                issues.append(
+                    f"TSI requires SOLIDSCATRA elements (not {elem_type}).  "
+                    f"Plain SOLID elements do not carry the thermal DOF."
+                )
 
         return issues

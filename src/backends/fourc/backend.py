@@ -135,9 +135,10 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("particle_sph", "Smoothed particle hydrodynamics", [2],
                               ["particle"],
                               ["poiseuille_2d", "dam_break_2d"]),
-            PhysicsCapability("tsi", "Thermo-structure interaction", [3],
+            PhysicsCapability("tsi", "Thermo-structure interaction", [2, 3],
                               ["SOLIDSCATRA HEX8"],
-                              ["monolithic_3d"]),
+                              ["monolithic_3d", "oneway_3d",
+                               "plane_strain_2d"]),
             PhysicsCapability("ssi", "Structure-scalar interaction (battery/electrode)", [3],
                               ["SOLIDSCATRA HEX8"],
                               ["monolithic_elch_3d"]),
@@ -1096,6 +1097,8 @@ class FourcBackend(SolverBackend):
             matched_low_mach_heated_channel_input,
             matched_porofluid_single_phase_3d_input,
             matched_tsi_monolithic_3d_input,
+            matched_tsi_oneway_input,
+            matched_tsi_plane_strain_input,
             matched_beam_cantilever_static_input,
             matched_beam_cantilever_dynamic_input,
             matched_thermo_2d_input,
@@ -1258,6 +1261,47 @@ class FourcBackend(SolverBackend):
             # (COUPALGO tsi_monolithic, merged TSI block matrix +
             # UMFPACK). Mesh capped at 8^3: the probe passes nx=ny=nz=16
             # and a 16^3 monolithic SOLIDSCATRA solve is too big.
+            # tsi/plane_strain_2d: pseudo-2D thin-slab route for 2D
+            # plane-strain thermo-mechanics. 4C has NO 2D TSI elements
+            # (module solid_scatra_3D_ele; every TSI corpus test is 3D)
+            # and the 2D structural eletypes both dead-end with the
+            # thermo material on the deployed binary (T14 campaign
+            # 2026-07: WALL QUAD4 -> "Invalid type of material law for
+            # wall element"; SOLID QUAD4 -> "Element 'SOLID' does not
+            # seem to know cell type 'quad4'"). One SOLIDSCATRA HEX8
+            # layer with u_z fixed everywhere is exact plane strain;
+            # temp_expr imposes a (partner-computed) temperature field.
+            "tsi_plane_strain_2d":
+                lambda p: matched_tsi_plane_strain_input(
+                    nx=min(int(p.get("nx", 16)), 64),
+                    ny=min(int(p.get("ny", 4)), 32),
+                    lx=p.get("lx", 2.0), ly=p.get("ly", 0.25),
+                    thickness=p.get("thickness"),
+                    E=p.get("E", 200e9), nu=p.get("nu", 0.3),
+                    alpha=p.get("alpha", 12e-6),
+                    T_ref=p.get("T_ref", 293.0),
+                    T_left=p.get("T_left", 293.0),
+                    T_right=p.get("T_right", 450.0),
+                    temp_expr=p.get("temp_expr"),
+                    density=p.get("rho", 7850.0),
+                    conductivity=p.get("kappa", 1.0)),
+            # tsi/oneway_3d: the corrected one-way (thermo->structure)
+            # heated-beam input. Existed in inline_mesh since the
+            # coupled_solve era but was never exposed as a variant —
+            # and carried the silent COUPVARIABLE default bug (ran
+            # rc=0, zero displacement) until 2026-08-01.
+            "tsi_oneway_3d":
+                lambda p: matched_tsi_oneway_input(
+                    nx=min(int(p.get("nx", 4)), 8),
+                    ny=min(int(p.get("ny", 4)), 8),
+                    nz=min(int(p.get("nz", 4)), 8),
+                    E=p.get("E", 200e3), nu=p.get("nu", 0.3),
+                    alpha=p.get("alpha", 12e-6),
+                    T_left=p.get("T_left", 100.0),
+                    T_right=p.get("T_right", 0.0),
+                    T_ref=p.get("T_ref", 0.0),
+                    density=p.get("rho", 1.0),
+                    conductivity=p.get("kappa", 1.0)),
             "tsi_monolithic_3d":
                 lambda p: matched_tsi_monolithic_3d_input(
                     nx=min(int(p.get("nx", 4)), 8),
