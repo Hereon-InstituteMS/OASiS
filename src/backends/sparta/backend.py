@@ -67,7 +67,8 @@ def _find_sparta_binary() -> Optional[str]:
     return None
 
 
-def _sparta_data_dirs(binary: str) -> list[Path]:
+def _sparta_data_dirs(binary: Optional[str] = None,
+                      extra_dirs: tuple | list = ()) -> list[Path]:
     """Candidate dirs holding SPARTA data files (*.species, *.vss, data.*).
 
     The bundled example decks reference data files (`species ar.species Ar`,
@@ -76,28 +77,43 @@ def _sparta_data_dirs(binary: str) -> list[Path]:
     JSON. Without staging them the deck dies with e.g.
     'Cannot open species file ar.species' (verified on macOS build
     2026-07-14). We locate the distribution relative to the binary
-    (src/spa_serial -> repo root) plus SPARTA_ROOT."""
-    dirs = []
+    (src/spa_serial -> repo root) plus SPARTA_ROOT.
+
+    Search ORDER matters: explicit per-call ``extra_dirs`` (a task's own
+    data dir) come first, then SPARTA_DATA_DIR (colon-separated env, same
+    precedence idea), then the distribution. A task-specific circle.surf
+    must win over the distribution's example circle.surf of the same name
+    — the two are different geometries (T15 campaign, 2026-07)."""
+    dirs: list[Path] = []
+    for d in extra_dirs:
+        p = Path(d).expanduser()
+        if p.is_dir() and p not in dirs:
+            dirs.append(p)
+    data_env = os.environ.get("SPARTA_DATA_DIR", "")
+    for d in data_env.split(os.pathsep):
+        if d and Path(d).is_dir() and Path(d) not in dirs:
+            dirs.append(Path(d))
     root_env = os.environ.get("SPARTA_ROOT", "")
     if root_env and Path(root_env).is_dir():
         dirs.append(Path(root_env))
-    try:
-        # <repo>/src/spa_serial -> <repo>
-        repo = Path(binary).resolve().parent.parent
-        if (repo / "data").is_dir() or (repo / "examples").is_dir():
-            dirs.append(repo)
-    except OSError:
-        pass
+    if binary:
+        try:
+            # <repo>/src/spa_serial -> <repo>
+            repo = Path(binary).resolve().parent.parent
+            if ((repo / "data").is_dir() or (repo / "examples").is_dir()) \
+                    and repo not in dirs:
+                dirs.append(repo)
+        except OSError:
+            pass
     return dirs
 
 
-def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
-    """Copy data files referenced by the deck into work_dir (best effort).
+def _deck_data_refs(deck: str) -> set[str]:
+    """File references in a SPARTA deck that must exist in the run dir.
 
     Handles the reference styles used across the bundled decks:
     `species <file> ...`, `collide vss <mix> <file>`, `read_surf <file>`,
-    `read_grid <file>`, `react tce <file>`. Relative ../data/ prefixes in
-    the deck are resolved against the distribution dirs."""
+    `read_grid <file>`, `read_isurf <file>`, `react <style> <file>`."""
     wanted: set[str] = set()
     for line in deck.splitlines():
         line = line.strip()
@@ -112,34 +128,84 @@ def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
             wanted.add(toks[1])
         elif toks[0] == "react" and len(toks) >= 3:
             wanted.add(toks[2])
+    return wanted
+
+
+def stage_deck_data_files(deck: str, work_dir: Path,
+                          binary: Optional[str] = None,
+                          extra_dirs: tuple | list = ()) -> dict:
+    """Copy every data file the deck references into ``work_dir``.
+
+    Public staging entry point — used by the single-run path
+    (SpartaBackend.run) AND by the coupled path (the couple() tool),
+    which previously did NO staging at all: a SPARTA participant deck
+    run by the coupling driver in a fresh work_dir died with
+    'Cannot open species file ar.species' (../particle.cpp:711)
+    (T15 campaign 2026-07, reproduced 2026-08-01).
+
+    Resolution per reference:
+      1. already present in work_dir -> keep (never overwrite),
+      2. the reference itself is an existing path (absolute or relative
+         to a search dir) -> copy it,
+      3. basename lookup through ``extra_dirs`` (task data dir),
+         SPARTA_DATA_DIR, SPARTA_ROOT, then the distribution's data/ and
+         examples/ trees.
+
+    Returns {"staged": {name: source_path}, "missing": [refs]}.
+    """
+    if binary is None:
+        binary = _find_sparta_binary()
+    staged: dict[str, str] = {}
+    missing: list[str] = []
+    wanted = _deck_data_refs(deck)
     if not wanted:
-        return
-    search_dirs = _sparta_data_dirs(binary)
+        return {"staged": staged, "missing": missing}
+    search_dirs = _sparta_data_dirs(binary, extra_dirs=extra_dirs)
     for ref in wanted:
         name = Path(ref).name
         dest = work_dir / name
         if dest.exists():
             continue
         found = None
-        for base in search_dirs:
-            for cand_dir in (base / "data", base / "examples", base):
-                cand = cand_dir / name
+        # the deck may reference an explicit path (../data/ar.species,
+        # /abs/path/circle.surf) — honor it before basename search
+        refp = Path(ref).expanduser()
+        if refp.is_absolute() and refp.is_file():
+            found = refp
+        else:
+            for base in search_dirs:
+                cand = (base / ref)
                 if cand.is_file():
                     found = cand
                     break
-            if not found:
-                # examples/* subdirs (data.circle lives in examples/circle)
-                hits = list((base / "examples").glob(f"*/{name}")) \
-                    if (base / "examples").is_dir() else []
-                if hits:
-                    found = hits[0]
-            if found:
-                break
+        if not found:
+            for base in search_dirs:
+                for cand_dir in (base, base / "data", base / "examples"):
+                    cand = cand_dir / name
+                    if cand.is_file():
+                        found = cand
+                        break
+                if not found:
+                    # examples/* subdirs (data.circle lives in examples/circle)
+                    hits = sorted((base / "examples").glob(f"*/{name}")) \
+                        if (base / "examples").is_dir() else []
+                    if hits:
+                        found = hits[0]
+                if found:
+                    break
         if found:
             shutil.copy(found, dest)
+            staged[name] = str(found)
             logger.info(f"Staged SPARTA data file {name} from {found}")
         else:
+            missing.append(ref)
             logger.warning(f"SPARTA data file referenced by deck not found: {ref}")
+    return {"staged": staged, "missing": missing}
+
+
+def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
+    """Backward-compatible wrapper kept for the single-run path."""
+    stage_deck_data_files(deck, work_dir, binary=binary)
 
 
 # ── physics capability -> {relevant commands, example template dir, pitfalls} ──
@@ -208,10 +274,27 @@ _PHYSICS = {
         dims=[2, 3], example="adjust_temp",
         commands=["surf_collide diffuse", "compute surf ... etot", "fix surf/temp",
                   "fix field/surf", "read_surf"],
-        pitfalls="The wall temperature is a coupling unknown updated each preCICE window; "
-                 "the DSMC heat flux is statistically noisy — average over the (long) solid "
-                 "thermal timescale. Explicit serial coupling is stable because solid "
-                 "thermal inertia damps DSMC fluctuations."),
+        pitfalls=[
+            "The wall temperature is a coupling unknown updated each preCICE window; "
+            "the DSMC heat flux is statistically noisy — average over the (long) solid "
+            "thermal timescale. Explicit serial coupling is stable because solid "
+            "thermal inertia damps DSMC fluctuations.",
+            "Data files (ar.species, *.vss, *.surf) must be IN the run directory — "
+            "SPARTA opens them relative to cwd and dies with 'Cannot open species "
+            "file ...' (particle.cpp). The couple() tool auto-stages files referenced "
+            "by any in.* deck in a participant work_dir (searching the participant's "
+            "data_dir, then SPARTA_DATA_DIR, then the distribution); pass explicit "
+            "task files via the participant's data_files list.",
+            "Half-body surface files (e.g. a half-cylinder arc for a symmetric 2D "
+            "case) are OPEN curves: read_surf aborts with 'Watertight check failed "
+            "with N unmatched points' (surf.cpp). Place the open endpoints exactly ON "
+            "a simulation-box face (e.g. box ylo = 0 for an arc ending at y=0) and "
+            "use 'read_surf <file> clip' — verified 2026-08-01.",
+            "compute reduce on a fix ave/surf with a SINGLE input column: reference "
+            "it as f_ID (per-surf vector), not f_ID[1] — the [1] form aborts with "
+            "'Compute reduce fix does not calculate a per-surf array' "
+            "(compute_reduce.cpp).",
+        ]),
 }
 
 
