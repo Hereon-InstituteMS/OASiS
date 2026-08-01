@@ -352,11 +352,18 @@ KNOWLEDGE = {
             '(4) prefer tolerance-free topological boundary detection (edges adjacent to '
             'exactly one triangle) over radius comparisons — it cannot misclassify nodes '
             'on curved boundaries; Gmsh physical groups ("inner"/"outer") remain useful '
-            'when the two circles need DIFFERENT boundary conditions.',
+            'when the two circles need DIFFERENT boundary conditions. Signal: (1) raises '
+            '"Error: Node #<id> does not exist" (or KeyError) at CreateNewElement; (2) '
+            'raises "Element found with negative Jacobian" (or NaN/absurd L2 error) at '
+            'solve; (3) raises "missing variable" / "CONVECTION_DIFFUSION_SETTINGS not '
+            'defined" at AddDof or solver init; (4) shows up as a convergence-order drop '
+            'below 2 with errors concentrated at near-boundary nodes.',
             '[Workflow] Meshing is agent-driven: the template accepts mesh_size (in-process '
             'Gmsh OCC meshing, also writes annulus_mms.msh) or msh_file (gmsh.open() an '
             'agent-built .msh; identical extraction path). Measure convergence by rerunning '
-            'with halved mesh_size and fitting the machine-readable "L2_ERROR = ..." lines.',
+            'with halved mesh_size and fitting the machine-readable "L2_ERROR = ..." lines. '
+            'Signal: a run whose stdout contains no "L2_ERROR = " line did not reach the '
+            'error computation — treat it as failed, never grade it.',
         ],
     },
 }

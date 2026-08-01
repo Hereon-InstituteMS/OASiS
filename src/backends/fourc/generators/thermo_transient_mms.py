@@ -111,20 +111,32 @@ class ThermoTransientMMSGenerator(BaseGenerator):
                 "Constraints from the code: exactly ONE such "
                 "condition may touch an element ('more than one "
                 "VolumeNeumann cond on one node' throw) and FUNCT "
-                "must have exactly one entry.",
+                "must have exactly one entry. Signal: overlapping "
+                "conditions abort with 'more than one VolumeNeumann "
+                "cond on one node'; a working body load reproduces "
+                "the MMS field (probe 2026-08-01: error 5e-4 vs "
+                "0.55 with the source dropped).",
                 "[Syntax] Initial condition by function: THERMAL "
                 "DYNAMIC INITIALFIELD 'field_by_function' + "
                 "INITFUNCNO <id>; the referenced "
                 "SYMBOLIC_FUNCTION_OF_SPACE_TIME is evaluated at "
-                "t=0 at the nodes. Verified: step-0 VTK equals "
-                "u*(x,0) to machine precision.",
+                "t=0 at the nodes. Signal: the step-0 VTK file "
+                "equals u*(x,0) to machine precision when the "
+                "initial field is applied (verified 2026-08-01); a "
+                "zero_field default shows up as an O(amplitude) "
+                "error at step 0 that decays over the first steps.",
                 "[Syntax] Time-dependent Dirichlet: plain 'DESIGN "
                 "LINE DIRICH CONDITIONS' with VAL [1.0] and FUNCT "
                 "[<id>] evaluates the space-time function at node "
                 "coordinates and CURRENT time each step "
                 "(effective value = VAL * f(x,t)). Works on the "
                 "whole boundary of a pure Thermo problem; the "
-                "THERMO-prefixed DIRICH sections are not needed.",
+                "THERMO-prefixed DIRICH sections are not needed. "
+                "Signal: boundary nodes in the output VTK track "
+                "u*(x,t) exactly at every step when wired correctly "
+                "(verified 2026-08-01); frozen boundary values "
+                "(equal to the t=0 trace) mean FUNCT was omitted "
+                "and VAL alone is being applied.",
                 "[Numerics] On a fixed mesh the error vs the exact "
                 "MMS solution saturates at the spatial Q1 floor "
                 "(e.g. ~4.8e-4 RMS at n=32 for a unit-amplitude "
@@ -133,12 +145,21 @@ class ThermoTransientMMSGenerator(BaseGenerator):
                 "order from Richardson differences "
                 "||u_dt - u_dt/2|| of consecutive-dt solutions on "
                 "the SAME mesh — the spatial floor cancels exactly "
-                "and theta=0.5 shows clean order 2.",
+                "and theta=0.5 shows clean order 2. Signal: an "
+                "error-vs-exact dt series whose ratios decay toward "
+                "1 (orders 0.91/0.31/0.08 in the 2026-08-01 smoke) "
+                "while Richardson ratios sit at 4.0 (orders "
+                "2.009/2.002) is the spatial floor, not a solver "
+                "defect.",
                 "[Numerics] The symbolic expression parser knows "
                 "'pi' (4C_utils_symbolic_expression.cpp:479); the "
                 "generator nevertheless bakes kx, ky, omega and all "
                 "coefficients in as numeric literals (:.16g) to "
-                "avoid precedence surprises.",
+                "avoid precedence surprises. Signal: a malformed "
+                "symbolic expression fails at input read with a "
+                "4C parser error naming the expression; a silently "
+                "mis-parsed one shows as an initial field that does "
+                "not match u*(x,0) in the step-0 VTK.",
                 "[Physics] Choose omega and T_end so the temporal "
                 "error dominates: temporal error ~ (dt*omega)^p * "
                 "amplitude. If MAXTIME is not an integer multiple "
@@ -146,7 +167,11 @@ class ThermoTransientMMSGenerator(BaseGenerator):
                 "round(T_end/dt) and sets MAXTIME = NUMSTEP*dt — "
                 "compare solutions at the SAME final time across "
                 "the dt series (use dt-halving from a dt that "
-                "divides T_end exactly).",
+                "divides T_end exactly). Signal: mismatched final "
+                "times across a dt series produce error ratios that "
+                "wander instead of approaching 2^p — check the "
+                "actual MAXTIME/NUMSTEP echoed in the 4C stdout "
+                "header before grading.",
             ],
         }
 

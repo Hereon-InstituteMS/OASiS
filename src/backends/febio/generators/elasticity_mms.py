@@ -457,9 +457,12 @@ KNOWLEDGE = {
                 "guidance to enter gravity as positive g = 9.8. The "
                 "generator therefore emits f_input = +div(sigma(u*))/rho "
                 "(parameter body_force_sign = -1). SOURCE-DERIVED, not "
-                "live-verified: if a live convergence sweep shows O(1) "
-                "errors that do not shrink with refinement, flip "
-                "body_force_sign to +1. (Source walk 2026-08-01.)"
+                "live-verified. Signal: a wrong sign is a clean run "
+                "(normal termination, no warning) whose displacement L2 "
+                "error is O(1) relative — the interior solves toward -u* "
+                "while the boundary pins +u* — and does NOT shrink under "
+                "mesh refinement; flip body_force_sign to +1 in that "
+                "case. (Source walk 2026-08-01.)"
             ),
             (
                 "[Input] FEBio body forces are per unit MASS, multiplied "
@@ -469,7 +472,12 @@ KNOWLEDGE = {
                 "the applied force per volume is density-independent, "
                 "but the deck's <density> and the rho parameter MUST "
                 "stay in sync (they come from the same parameter). "
-                "(Manual 4.7 sec. 3.13.3; forum confirmation.)"
+                "Signal: a hand-edited <density> that no longer matches "
+                "the rho baked into the body-force expressions rescales "
+                "the effective load — a clean run with a mesh-"
+                "independent multiplicative error offset equal to the "
+                "density ratio. (Manual 4.7 sec. 3.13.3; forum "
+                "confirmation.)"
             ),
             (
                 "[Input] Math expressions in FEBio parameters use "
@@ -477,7 +485,11 @@ KNOWLEDGE = {
                 "(manual 4.7 Appendix A.1). Older forum posts show "
                 "lowercase x,y,z in 2.x-era 'data' attributes — do not "
                 "mix the two conventions; lowercase symbols are not the "
-                "reference coordinates in the 4.x math parser."
+                "reference coordinates in the 4.x math parser. Signal: "
+                "an unrecognised symbol in a math parameter fails at "
+                "deck-read time with a math-expression parse error "
+                "naming the offending string (spec-derived; exact "
+                "wording not live-verified on this install)."
             ),
             (
                 "[Discretization] FEBio's 'isotropic elastic' material "
@@ -489,7 +501,11 @@ KNOWLEDGE = {
                 "displacement error is O(amplitude) relative, so keep "
                 "amplitude small enough that h^2 discretization error "
                 "dominates on the finest mesh of a sweep, or the "
-                "measured order degrades below 2. Spec-derived."
+                "measured order degrades below 2. Spec-derived. Signal: "
+                "measured order that decays toward 0 on the finest "
+                "meshes while coarse-mesh ratios look fine — the "
+                "O(amplitude) nonlinearity floor has been reached; "
+                "reduce amplitude and re-run."
             ),
             (
                 "[Input] NodeData lid semantics: lid is the 1-based "
@@ -497,7 +513,11 @@ KNOWLEDGE = {
                 "order, NOT the global node id. The generator emits the "
                 "boundary NodeSet in ascending node-id order and the "
                 "maps in the same order. Spec-derived (no live parse "
-                "check was possible on this install)."
+                "check was possible on this install). Signal: lid/"
+                "global-id confusion is either a deck-read error (lid "
+                "exceeding the node_set size) or a clean run whose "
+                "boundary nodes carry permuted u* values — O(1) error "
+                "at the boundary, measured order destroyed."
             ),
             (
                 "[Integration] No FEBio binary ships via public "
