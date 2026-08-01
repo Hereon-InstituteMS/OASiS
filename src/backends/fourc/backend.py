@@ -135,9 +135,10 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("particle_sph", "Smoothed particle hydrodynamics", [2],
                               ["particle"],
                               ["poiseuille_2d", "dam_break_2d"]),
-            PhysicsCapability("tsi", "Thermo-structure interaction", [3],
+            PhysicsCapability("tsi", "Thermo-structure interaction", [2, 3],
                               ["SOLIDSCATRA HEX8"],
-                              ["monolithic_3d"]),
+                              ["monolithic_3d", "oneway_3d",
+                               "plane_strain_2d"]),
             PhysicsCapability("ssi", "Structure-scalar interaction (battery/electrode)", [3],
                               ["SOLIDSCATRA HEX8"],
                               ["monolithic_elch_3d"]),
@@ -208,6 +209,12 @@ class FourcBackend(SolverBackend):
                               ["SHELL REISSNER QUAD4", "SHELL KIRCHHOFF TRI3", "SOLIDSHELL HEX8"], ["shell_3d"]),
             PhysicsCapability("thermo", "Pure thermal analysis (standalone heat conduction)", [2, 3],
                               ["THERMO QUAD4", "THERMO HEX8"], ["thermo_2d", "thermo_3d"]),
+            PhysicsCapability("thermo_transient_mms",
+                              "Transient thermal MMS on a fixed mesh for "
+                              "TEMPORAL-order dt-halving studies "
+                              "(One-Step-Theta: order 2 at theta=0.5, "
+                              "order 1 at theta=1)", [2],
+                              ["THERMO QUAD4"], ["temporal_mms_2d"]),
             PhysicsCapability("mixture", "Mixture/composite materials (fiber-reinforced, biological)", [3],
                               ["SOLID HEX8 with MAT_Mixture"], ["mixture_3d"]),
             PhysicsCapability("constraint", "Constraints: MPC, rigid body, periodic BCs, mortar coupling", [2, 3],
@@ -1096,10 +1103,13 @@ class FourcBackend(SolverBackend):
             matched_low_mach_heated_channel_input,
             matched_porofluid_single_phase_3d_input,
             matched_tsi_monolithic_3d_input,
+            matched_tsi_oneway_input,
+            matched_tsi_plane_strain_input,
             matched_beam_cantilever_static_input,
             matched_beam_cantilever_dynamic_input,
             matched_thermo_2d_input,
             matched_thermo_3d_input,
+            matched_thermo_transient_mms_input,
             matched_lubrication_slider_bearing_input,
             matched_mixture_3d_input,
             matched_constraint_3d_input,
@@ -1258,6 +1268,47 @@ class FourcBackend(SolverBackend):
             # (COUPALGO tsi_monolithic, merged TSI block matrix +
             # UMFPACK). Mesh capped at 8^3: the probe passes nx=ny=nz=16
             # and a 16^3 monolithic SOLIDSCATRA solve is too big.
+            # tsi/plane_strain_2d: pseudo-2D thin-slab route for 2D
+            # plane-strain thermo-mechanics. 4C has NO 2D TSI elements
+            # (module solid_scatra_3D_ele; every TSI corpus test is 3D)
+            # and the 2D structural eletypes both dead-end with the
+            # thermo material on the deployed binary (T14 campaign
+            # 2026-07: WALL QUAD4 -> "Invalid type of material law for
+            # wall element"; SOLID QUAD4 -> "Element 'SOLID' does not
+            # seem to know cell type 'quad4'"). One SOLIDSCATRA HEX8
+            # layer with u_z fixed everywhere is exact plane strain;
+            # temp_expr imposes a (partner-computed) temperature field.
+            "tsi_plane_strain_2d":
+                lambda p: matched_tsi_plane_strain_input(
+                    nx=min(int(p.get("nx", 16)), 64),
+                    ny=min(int(p.get("ny", 4)), 32),
+                    lx=p.get("lx", 2.0), ly=p.get("ly", 0.25),
+                    thickness=p.get("thickness"),
+                    E=p.get("E", 200e9), nu=p.get("nu", 0.3),
+                    alpha=p.get("alpha", 12e-6),
+                    T_ref=p.get("T_ref", 293.0),
+                    T_left=p.get("T_left", 293.0),
+                    T_right=p.get("T_right", 450.0),
+                    temp_expr=p.get("temp_expr"),
+                    density=p.get("rho", 7850.0),
+                    conductivity=p.get("kappa", 1.0)),
+            # tsi/oneway_3d: the corrected one-way (thermo->structure)
+            # heated-beam input. Existed in inline_mesh since the
+            # coupled_solve era but was never exposed as a variant —
+            # and carried the silent COUPVARIABLE default bug (ran
+            # rc=0, zero displacement) until 2026-08-01.
+            "tsi_oneway_3d":
+                lambda p: matched_tsi_oneway_input(
+                    nx=min(int(p.get("nx", 4)), 8),
+                    ny=min(int(p.get("ny", 4)), 8),
+                    nz=min(int(p.get("nz", 4)), 8),
+                    E=p.get("E", 200e3), nu=p.get("nu", 0.3),
+                    alpha=p.get("alpha", 12e-6),
+                    T_left=p.get("T_left", 100.0),
+                    T_right=p.get("T_right", 0.0),
+                    T_ref=p.get("T_ref", 0.0),
+                    density=p.get("rho", 1.0),
+                    conductivity=p.get("kappa", 1.0)),
             "tsi_monolithic_3d":
                 lambda p: matched_tsi_monolithic_3d_input(
                     nx=min(int(p.get("nx", 4)), 8),
@@ -1316,6 +1367,33 @@ class FourcBackend(SolverBackend):
                 numstep=max(1, min(20, round(p.get("T_end", 0.5)
                                              / p.get("dt", 0.1)))),
                 timestep=p.get("dt", 0.1)),
+            # thermo_transient_mms/temporal_mms_2d: unsteady-heat MMS
+            # family graded on TEMPORAL convergence order (E3,
+            # 2026-08-01). Fixed fine mesh keyed off "n" (capped in
+            # the inline builder), dt-halving to the same T_end;
+            # One-Step-Theta shows measured order ~2 at theta=0.5
+            # (Richardson 2.018/2.004) and ~1 at theta=1.0
+            # (0.95/1.00/1.05 vs exact) on this build. The volumetric
+            # MMS source goes through the PLAIN "DESIGN SURF NEUMANN
+            # CONDITIONS" — the THERMO-prefixed Neumann sections are
+            # silently ignored in standalone Thermo (see the
+            # thermo_transient_mms generator's pitfalls).
+            "thermo_transient_mms_temporal_mms_2d":
+                lambda p: matched_thermo_transient_mms_input(
+                    n=int(p.get("n", 48)),
+                    lx=p.get("lx", 1.0), ly=p.get("ly", 1.0),
+                    kappa=p.get("kappa", 1.0),
+                    rho=p.get("rho", 1.0), c=p.get("c", 1.0),
+                    theta=p.get("theta", 0.5),
+                    dt=p.get("dt", 0.02),
+                    t_end=p.get("T_end", p.get("t_end", 0.4)),
+                    temp_offset=p.get("temp_offset", 1.0),
+                    amp=p.get("amp", 1.0),
+                    grad_amp=p.get("grad_amp", 0.5),
+                    mode_x=int(p.get("mode_x", 1)),
+                    mode_y=int(p.get("mode_y", 1)),
+                    omega=p.get("omega", 6.283185307179586),
+                    time_profile=p.get("time_profile", "cos")),
             # Lubrication (Reynolds eq.) slider bearing: the placeholder
             # generator template emitted literal <...> scalars + an
             # external Exodus mesh, aborting 4C's MatchTree (probe

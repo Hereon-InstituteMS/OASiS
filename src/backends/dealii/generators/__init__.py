@@ -24,6 +24,8 @@ _TEMPLATE_SPECS: dict[str, tuple[str, str]] = {
     "poisson_l_domain":          (".poisson",              "_poisson_l_domain"),
     "poisson_rectangle":         (".poisson",              "_poisson_rectangle"),
     "poisson_2d_adaptive":       (".poisson",              "_poisson_adaptive_2d"),
+    # 3D mixed Dirichlet-Neumann MMS convergence study (step-7 pattern)
+    "poisson_3d_mixed_bc":       (".poisson_mixed_bc",     "_poisson_3d_mixed_bc"),
     # elasticity
     "linear_elasticity_2d":      (".elasticity",           "_elasticity_2d"),
     "linear_elasticity_thick_beam": (".elasticity",        "_elasticity_thick_beam"),
@@ -93,6 +95,11 @@ _TEMPLATE_SPECS: dict[str, tuple[str, str]] = {
 # Maps physics name to (module_path, dict_name) for knowledge.
 _KNOWLEDGE_SPECS: dict[str, tuple[str, str]] = {
     "poisson":              (".poisson",              "KNOWLEDGE"),
+    # Mixed-BC MMS study — knowledge lives in its own module; the
+    # template key poisson_3d_mixed_bc is a variant of physics
+    # "poisson" (capability row in backend.py), so per-physics
+    # knowledge lookups for "poisson" still resolve to .poisson.
+    "poisson_mixed_bc":     (".poisson_mixed_bc",     "KNOWLEDGE"),
     "linear_elasticity":    (".elasticity",           "KNOWLEDGE"),
     "heat":                 (".heat",                 "KNOWLEDGE"),
     "stokes":               (".stokes",               "KNOWLEDGE"),

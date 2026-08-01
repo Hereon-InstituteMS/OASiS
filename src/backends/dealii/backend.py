@@ -209,10 +209,13 @@ class DealiiBackend(SolverBackend):
         return [
             PhysicsCapability(
                 name="poisson",
-                description="Poisson / Laplace equation (step-3/6, with AMR, L-domain, rectangle)",
+                description="Poisson / Laplace equation (step-3/6/7, with AMR, "
+                            "L-domain, rectangle, 3D mixed Dirichlet-Neumann "
+                            "MMS convergence study)",
                 spatial_dims=[2, 3],
                 element_types=["Q1", "Q2"],
-                template_variants=["2d", "3d", "l_domain", "rectangle", "2d_adaptive"],
+                template_variants=["2d", "3d", "l_domain", "rectangle",
+                                   "2d_adaptive", "3d_mixed_bc"],
             ),
             PhysicsCapability(
                 name="linear_elasticity",

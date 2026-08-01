@@ -65,6 +65,8 @@ _GENERATOR_SPECS: dict[str, tuple[str, str]] = {
     "membrane":            (".membrane",              "MembraneGenerator"),
     "shell":               (".shell",                 "ShellGenerator"),
     "thermo":              (".thermo",                "ThermoGenerator"),
+    "thermo_transient_mms": (".thermo_transient_mms",
+                             "ThermoTransientMMSGenerator"),
     "mixture":             (".mixture",               "MixtureGenerator"),
     "constraint":          (".constraint",            "ConstraintGenerator"),
     "brownian_dynamics":   (".brownian_dynamics",     "BrownianDynamicsGenerator"),
@@ -247,6 +249,10 @@ _ALIASES: dict[str, str] = {
     "heat_standalone":                   "thermo",
     "thermal":                           "thermo",
     "heat_conduction_standalone":        "thermo",
+    # Transient-thermo MMS aliases (temporal-convergence deck family)
+    "transient_thermo_mms":              "thermo_transient_mms",
+    "thermo_mms":                        "thermo_transient_mms",
+    "unsteady_heat_mms":                 "thermo_transient_mms",
     # Mixture aliases
     "composite":                         "mixture",
     "fiber_reinforced":                  "mixture",

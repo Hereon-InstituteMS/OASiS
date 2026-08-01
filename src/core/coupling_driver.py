@@ -24,6 +24,7 @@ general silent-wrong guard: never frame a non-converged run as a result).
 """
 from __future__ import annotations
 import json
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -43,6 +44,11 @@ class Participant:
     # which partner-export this participant imports (edge): partner_name -> None (take its export)
     imports_from: list[str] = field(default_factory=list)
     timeout: int = 3600
+    # Files the solver needs in work_dir (species/surface/mesh/config data).
+    # Staged (copied in) once before the iteration loop. A missing file is a
+    # LOUD setup error — the alternative is the solver dying mid-iteration
+    # with an opaque 'Cannot open ...' (the T15 SPARTA failure mode).
+    data_files: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -92,6 +98,19 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
     runs, and produces new exports. Converges when the relaxed export-vector stops
     changing. Returns success=False if not converged within max_iter.
     """
+    # ── stage participant data files BEFORE the loop (loud on missing) ──
+    for p in participants:
+        p.work_dir.mkdir(parents=True, exist_ok=True)
+        for df in p.data_files:
+            src = Path(df).expanduser()
+            if not src.is_file():
+                return CouplingResult(
+                    False, 0, float("nan"), {}, [],
+                    error=f"participant {p.name}: data file not found: {df}")
+            dest = p.work_dir / src.name
+            if dest.resolve() != src.resolve():
+                shutil.copy(src, dest)
+
     exports: dict[str, InterfaceData] = {}      # latest relaxed exports per participant
     raw_prev: dict[str, np.ndarray] = {}
     relaxed_prev: dict[str, np.ndarray] = {}

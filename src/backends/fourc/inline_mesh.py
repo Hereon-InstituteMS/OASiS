@@ -690,6 +690,13 @@ TSI DYNAMIC:
   MAXTIME: 1.0
   TIMESTEP: 1.0
   ITEMAX: 1
+# COUPVARIABLE Temperature = one-way direction thermo -> structure
+# (thermal strain loads the structure). The 4C DEFAULT is Displacement
+# (structure -> thermo): with the default, these one-way decks ran to
+# rc=0 but produced ZERO displacement — silently wrong physics
+# (verified against the 4C binary 2026-08-01).
+TSI DYNAMIC/PARTITIONED:
+  COUPVARIABLE: "Temperature"
 SOLVER 1:
   SOLVER: "UMFPACK"
   NAME: "Thermal_Solver"
@@ -988,6 +995,13 @@ TSI DYNAMIC:
   MAXTIME: 1.0
   TIMESTEP: 1.0
   ITEMAX: 1
+# COUPVARIABLE Temperature = one-way direction thermo -> structure
+# (thermal strain loads the structure). The 4C DEFAULT is Displacement
+# (structure -> thermo): with the default, these one-way decks ran to
+# rc=0 but produced ZERO displacement — silently wrong physics
+# (verified against the 4C binary 2026-08-01).
+TSI DYNAMIC/PARTITIONED:
+  COUPVARIABLE: "Temperature"
 SOLVER 1:
   SOLVER: "UMFPACK"
   NAME: "Thermal_Solver"
@@ -2073,6 +2087,172 @@ DESIGN SURF DIRICH CONDITIONS:
     return yaml
 
 
+def matched_tsi_plane_strain_input(
+    nx: int = 16, ny: int = 4,
+    lx: float = 2.0, ly: float = 0.25, thickness: float | None = None,
+    E: float = 200e9, nu: float = 0.3, alpha: float = 12e-6,
+    T_ref: float = 293.0, T_left: float = 293.0, T_right: float = 450.0,
+    temp_expr: str | None = None,
+    density: float = 7850.0,
+    conductivity: float = 1.0, capacity: float = 1.0,
+) -> str:
+    """4C thermo-elastic PLANE STRAIN via a pseudo-2D thin slab (one-way TSI).
+
+    Why this exists (T14 evaluation campaign, 2026-07): 4C has NO 2D TSI
+    elements — every TSI corpus test is 3D SOLIDSCATRA. Agents given a 2D
+    plane-strain thermo-mechanical problem tried the two 2D structural
+    eletypes and hit hard errors on the deployed binary:
+      * WALL QUAD4  + MAT_Struct_ThermoStVenantK
+          -> "Invalid type of material law for wall element" (4C_w1_mat.cpp:179)
+      * SOLID QUAD4 (any material, this build)
+          -> "Element 'SOLID' does not seem to know cell type 'quad4'"
+    Both reproduced 2026-08-01 against /home/alexander/4C/build/4C. The
+    correct route is the standard thin-slab trick implemented here:
+
+      - 3D mesh [0,lx]x[0,ly]x[0,t] with ONE SOLIDSCATRA HEX8 layer in z
+        (t defaults to ly/ny so elements stay well-shaped),
+      - plane strain enforced exactly by fixing u_z on ALL nodes
+        (DESIGN VOL DIRICH, ONOFF [0,0,1]),
+      - the x=0 face clamped (structural Dirichlet, all 3 dofs),
+      - the temperature FIELD imposed on the whole volume via
+        DESIGN VOL THERMO DIRICH + FUNCT1 = ``temp_expr`` (also the thermal
+        initial field), so a partner code's temperature solution can be
+        passed in as a symbolic expression of x/y — the one-way coupled
+        (partner -> 4C) use case,
+      - COUPALGO tsi_oneway, Statics, single step: thermal expansion of
+        the imposed field drives the structural solve.
+
+    ``temp_expr`` defaults to the linear profile
+    "T_left + (T_right-T_left)*x/lx". Verified against the 4C binary
+    2026-08-01: rc=0, tip displacement matches the analytic plane-strain
+    thermal-expansion estimate (see tests/test_fourc_inline_tsi.py).
+    """
+    nx = max(1, int(nx)); ny = max(1, int(ny))
+    lz = float(thickness) if thickness else float(ly) / ny
+    mesh = generate_hex8_cube(
+        nx, ny, 1, lx, ly, lz,
+        element_section="STRUCTURE",
+        element_type="SOLIDSCATRA HEX8",
+        element_suffix="MAT 1 KINEM linear TYPE Undefined",
+    )
+    ng = mesh["node_grid"]
+
+    clamp_face = sorted({ng[(0, j, k)] for j in range(ny + 1) for k in (0, 1)})
+    all_nodes = sorted(ng.values())
+
+    if not temp_expr:
+        temp_expr = f"{T_left} + ({T_right} - {T_left}) * x / {lx}"
+
+    yaml = f'''TITLE:
+  - "TSI plane strain (pseudo-2D thin slab): imposed temperature field -> thermo-elastic expansion"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo_Structure_Interaction"
+STRUCTURAL DYNAMIC:
+  INT_STRATEGY: Standard
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1e-8
+  TOLRES: 1e-8
+  MAXITER: 20
+  LINEAR_SOLVER: 2
+  PREDICT: TangDis
+THERMAL DYNAMIC:
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 1
+  TIMESTEP: 1.0
+  MAXTIME: 1.0
+  LINEAR_SOLVER: 1
+TSI DYNAMIC:
+  COUPALGO: "tsi_oneway"
+  MAXTIME: 1.0
+  TIMESTEP: 1.0
+  ITEMAX: 1
+# COUPVARIABLE Temperature = one-way direction thermo -> structure
+# (thermal strain loads the structure). The 4C DEFAULT is Displacement
+# (structure -> thermo): with the default, these one-way decks ran to
+# rc=0 but produced ZERO displacement — silently wrong physics
+# (verified against the 4C binary 2026-08-01).
+TSI DYNAMIC/PARTITIONED:
+  COUPVARIABLE: "Temperature"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermal_Solver"
+SOLVER 2:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_ThermoStVenantK:
+      YOUNGNUM: 1
+      YOUNG: [{E}]
+      NUE: {nu}
+      DENS: {density}
+      THEXPANS: {alpha}
+      INITTEMP: {T_ref}
+      THERMOMAT: 2
+  - MAT: 2
+    MAT_Fourier:
+      CAPA: {capacity}
+      CONDUCT:
+        constant: [{conductivity}]
+CLONING MATERIAL MAP:
+  - SRC_FIELD: "structure"
+    SRC_MAT: 1
+    TAR_FIELD: "thermo"
+    TAR_MAT: 2
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{temp_expr}"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+# Impose the (partner-supplied) temperature field on the whole volume:
+# thermal Dirichlet everywhere = the thermal solve reproduces FUNCT1
+# exactly, and one-way TSI turns it into thermal strain.
+DESIGN VOL THERMO DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [1.0]
+    FUNCT: [1]
+# Plane strain: u_z = 0 on every node of the slab.
+DESIGN VOL DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+# Clamped edge x=0 (all displacement dofs).
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+'''
+
+    yaml += 'NODE COORDS:\n'
+    for n in mesh["nodes"]:
+        yaml += f'  - "{n}"\n'
+    yaml += 'STRUCTURE ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in clamp_face:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
+    yaml += 'DVOL-NODE TOPOLOGY:\n'
+    for nid in all_nodes:
+        yaml += f'  - "NODE {nid} DVOL 1"\n'
+
+    return yaml
+
+
 # ── Beam line meshes (BEAM3R cantilevers) ──────────────────────────────
 
 
@@ -2477,6 +2657,164 @@ DESIGN SURF DIRICH CONDITIONS:
     for nid in right_face:
         yaml += f'  - "NODE {nid} DSURFACE 2"\n'
 
+    yaml += 'NODE COORDS:\n'
+    for nd in mesh["nodes"]:
+        yaml += f'  - "{nd}"\n'
+    yaml += 'THERMO ELEMENTS:\n'
+    for e in mesh["elements"]:
+        yaml += f'  - "{e}"\n'
+
+    return yaml
+
+
+def matched_thermo_transient_mms_input(n: int = 48,
+                                       lx: float = 1.0, ly: float = 1.0,
+                                       kappa: float = 1.0,
+                                       rho: float = 1.0, c: float = 1.0,
+                                       theta: float = 0.5,
+                                       dt: float = 0.02,
+                                       t_end: float = 0.4,
+                                       temp_offset: float = 1.0,
+                                       amp: float = 1.0,
+                                       grad_amp: float = 0.5,
+                                       mode_x: int = 1, mode_y: int = 1,
+                                       omega: float = 6.283185307179586,
+                                       time_profile: str = "cos") -> str:
+    """Transient thermo MMS deck for TEMPORAL convergence studies.
+
+    Manufactured solution on [0,lx] x [0,ly] (PROBLEMTYPE "Thermo",
+    THERMO QUAD4 + MAT_Fourier, One-Step-Theta):
+
+        u*(x,y,t) = temp_offset
+                    + (amp * sin(kx x) * sin(ky y)
+                       + grad_amp * x / lx) * f(t)
+
+    with kx = mode_x*pi/lx, ky = mode_y*pi/ly and
+    f(t) = cos(omega t) (time_profile "cos") or exp(-omega t)
+    (time_profile "exp"). The matching volumetric source
+
+        q = rho*c * du*/dt - kappa * lap(u*)
+
+    is emitted as FUNCT2 and applied through a plain
+    "DESIGN SURF NEUMANN CONDITIONS" on a DSURF covering the whole
+    domain — in a 2D discretization that condition's geometry is the
+    QUAD4 elements themselves, so 4C's thermo body-load path
+    (TemperImpl::radiation, which looks up the PLAIN "SurfaceNeumann"
+    condition name) integrates it as a volumetric heat source. The
+    THERMO-prefixed Neumann sections are registered under
+    "ThermoSurfaceNeumann" and are SILENTLY IGNORED in standalone
+    Thermo (verified empirically 2026-08-01).
+
+    Time-dependent Dirichlet u* on the whole boundary (VAL 1.0 scaled
+    by FUNCT 1 = exact solution) and INITIALFIELD field_by_function
+    from the same function (evaluated at t=0), so the only model error
+    is discretization error. On a fixed mesh, halving dt grades the
+    temporal order of One-Step-Theta: ~2 for theta=0.5
+    (Crank-Nicolson; the 4C OST residual theta-weights the external
+    force at t_n / t_{n+1}, i.e. trapezoid quadrature, and consistent
+    initial rates are computed), ~1 for theta=1 (backward Euler).
+    Note the error vs the exact solution saturates at the spatial Q1
+    floor; grade the order from Richardson differences of
+    consecutive-dt solutions on the same mesh where needed
+    (live study 2026-08-01: Richardson orders 2.018/2.004 at
+    theta=0.5; 0.95/1.00/1.05 vs exact at theta=1.0).
+
+    Final-time nodal temperatures land in
+    <prefix>-vtk-files/thermo-<step>-0.vtu (point_data key
+    "temperature", readable with meshio); INTERVAL_STEPS is set to
+    NUMSTEP so step 0 and the final step are written.
+    """
+    import math
+
+    n = max(2, min(int(n), 96))
+    dt = float(dt)
+    numstep = max(1, round(float(t_end) / dt))
+    maxtime = numstep * dt
+
+    kx = mode_x * math.pi / lx
+    ky = mode_y * math.pi / ly
+    rhoc = rho * c
+    lap_coeff = kappa * amp * (kx * kx + ky * ky)
+
+    spatial = (f"({amp:.16g}*sin({kx:.16g}*x)*sin({ky:.16g}*y)"
+               f" + {grad_amp / lx:.16g}*x)")
+    if time_profile == "exp":
+        f_t = f"exp(-{omega:.16g}*t)"
+        fp_t = f"(-{omega:.16g}*exp(-{omega:.16g}*t))"
+    else:  # "cos"
+        f_t = f"cos({omega:.16g}*t)"
+        fp_t = f"(-{omega:.16g}*sin({omega:.16g}*t))"
+
+    u_exact = f"{temp_offset:.16g} + {spatial}*{f_t}"
+    source = (f"{rhoc:.16g}*{spatial}*{fp_t}"
+              f" + {lap_coeff:.16g}*sin({kx:.16g}*x)*sin({ky:.16g}*y)"
+              f"*{f_t}")
+
+    mesh = generate_quad4_rectangle(n, n, lx, ly,
+                                    element_section="THERMO",
+                                    element_type="THERMO QUAD4",
+                                    element_suffix="MAT 1")
+    boundary = sorted(set(mesh["left_nodes"]) | set(mesh["right_nodes"])
+                      | set(mesh["bottom_nodes"]) | set(mesh["top_nodes"]))
+
+    yaml = f'''TITLE:
+  - "Transient thermo MMS — temporal convergence (One-Step-Theta)"
+  - "u* = {temp_offset:.6g} + ({amp:.6g}*sin({kx:.6g}x)*sin({ky:.6g}y) + {grad_amp / lx:.6g}x)*f(t), f = {time_profile}(omega t), omega = {omega:.6g}"
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo"
+THERMAL DYNAMIC:
+  DYNAMICTYPE: OneStepTheta
+  INITIALFIELD: "field_by_function"
+  INITFUNCNO: 1
+  TIMESTEP: {dt:.16g}
+  NUMSTEP: {numstep}
+  MAXTIME: {maxtime:.16g}
+  RESULTSEVERY: {numstep}
+  RESTARTEVERY: 0
+  LINEAR_SOLVER: 1
+THERMAL DYNAMIC/ONESTEPTHETA:
+  THETA: {theta:.16g}
+THERMAL DYNAMIC/RUNTIME VTK OUTPUT:
+  OUTPUT_THERMO: true
+  TEMPERATURE: true
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: {numstep}
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermal_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Fourier:
+      CAPA: {rhoc:.16g}
+      CONDUCT:
+        constant: [{kappa:.16g}]
+FUNCT1:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{u_exact}"
+FUNCT2:
+  - COMPONENT: 0
+    SYMBOLIC_FUNCTION_OF_SPACE_TIME: "{source}"
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [1.0]
+    FUNCT: [1]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 1
+    NUMDOF: 1
+    ONOFF: [1]
+    VAL: [1.0]
+    FUNCT: [2]
+DLINE-NODE TOPOLOGY:
+'''
+    for nid in boundary:
+        yaml += f'  - "NODE {nid} DLINE 1"\n'
+    yaml += 'DSURF-NODE TOPOLOGY:\n'
+    for nid in mesh["all_nodes"]:
+        yaml += f'  - "NODE {nid} DSURFACE 1"\n'
     yaml += 'NODE COORDS:\n'
     for nd in mesh["nodes"]:
         yaml += f'  - "{nd}"\n'

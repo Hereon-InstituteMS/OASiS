@@ -941,6 +941,56 @@ def _auto_detect_field(mesh_data, preferred=("temperature", "phi")):
     return fields[0] if fields else None
 
 
+def _stage_sparta_deck_refs(work_dir: Path, spec: dict) -> list[str]:
+    """Auto-stage data files referenced by SPARTA decks in a participant dir.
+
+    The coupled path (couple()/run_coupling) runs raw commands in fresh
+    work_dirs and — unlike SpartaBackend.run() — did no data staging, so a
+    SPARTA participant died with 'Cannot open species file ar.species'
+    (../particle.cpp:711) unless the agent hand-copied every file (T15
+    campaign 2026-07; reproduced 2026-08-01). Here: scan work_dir for
+    SPARTA-style decks and stage whatever they reference, searching the
+    participant's data_dir / data_files parents FIRST (a task-specific
+    circle.surf must beat the distribution example of the same name),
+    then SPARTA_DATA_DIR, then the distribution.
+
+    Best-effort by design: never raises; returns human-readable notes
+    (staged files + loud MISSING warnings) for the couple() result JSON.
+    """
+    notes: list[str] = []
+    try:
+        from backends.sparta.backend import stage_deck_data_files
+    except ImportError:                                    # pragma: no cover
+        return notes
+    extra: list[str] = []
+    if spec.get("data_dir"):
+        extra.append(str(spec["data_dir"]))
+    for f in spec.get("data_files", []):
+        parent = str(Path(f).expanduser().parent)
+        if parent not in extra:
+            extra.append(parent)
+    decks: list[Path] = []
+    for pat in ("in.*", "*.sparta", "*.in"):
+        decks += [p for p in sorted(work_dir.glob(pat)) if p.is_file()]
+    for deck in decks:
+        try:
+            res = stage_deck_data_files(deck.read_text(errors="replace"),
+                                        work_dir, extra_dirs=extra)
+        except Exception as e:                             # pragma: no cover
+            notes.append(f"{spec.get('name', '?')}: SPARTA staging for "
+                         f"{deck.name} failed: {e}")
+            continue
+        for name, src in res["staged"].items():
+            notes.append(f"{spec.get('name', '?')}: staged {name} "
+                         f"(from {src}) for {deck.name}")
+        for ref in res["missing"]:
+            notes.append(f"{spec.get('name', '?')}: MISSING data file "
+                         f"'{ref}' referenced by {deck.name} — the run "
+                         f"will fail with 'Cannot open ...'; pass it via "
+                         f"data_files or set data_dir/SPARTA_DATA_DIR")
+    return notes
+
+
 def register_coupling_tools(mcp: FastMCP):
 
     @mcp.tool()
@@ -1148,10 +1198,21 @@ def register_coupling_tools(mcp: FastMCP):
         Args:
             participants: JSON list, each item:
               {"name": str, "command": [argv...], "work_dir": abs path,
-               "imports_from": [partner names whose exports this one consumes]}
+               "imports_from": [partner names whose exports this one consumes],
+               "data_files": [abs paths copied into work_dir before the run —
+                              species/surface/mesh files the solver opens],
+               "data_dir": abs path searched (in addition to SPARTA_DATA_DIR
+                           and the SPARTA distribution) when auto-staging
+                           data files referenced by SPARTA decks in work_dir}
             max_iter: max coupling iterations.
             tol: relative-L2 convergence tol on the interface export vector.
             accelerator: "aitken" (default, dynamic relaxation) or "constant".
+
+        SPARTA participants: any deck (in.*, *.sparta, *.in) already in
+        work_dir is scanned for `species` / `collide vss` / `read_surf` /
+        `read_grid` / `react` references, and the referenced files are staged
+        into work_dir automatically — a bare `spa_serial -in in.gas` command
+        works without hand-copying ar.species / ar.vss / circle.surf first.
 
         Returns: JSON with converged (bool), iterations, residual, history, per-
             participant exports, warnings, and — if it did NOT converge — a loud
@@ -1164,18 +1225,23 @@ def register_coupling_tools(mcp: FastMCP):
         if not isinstance(specs, list) or len(specs) < 2:
             return json.dumps({"error": "need a JSON list of >=2 participants"})
         parts = []
+        staging_notes: list[str] = []
         for s in specs:
             try:
                 wd = Path(s["work_dir"]); wd.mkdir(parents=True, exist_ok=True)
                 parts.append(Participant(name=s["name"], command=list(s["command"]),
                                          work_dir=wd, imports_from=s.get("imports_from", []),
-                                         timeout=int(s.get("timeout", 3600))))
+                                         timeout=int(s.get("timeout", 3600)),
+                                         data_files=[str(f) for f in
+                                                     s.get("data_files", [])]))
             except (KeyError, TypeError) as e:
                 return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
+            staging_notes += _stage_sparta_deck_refs(wd, s)
         r = run_coupling(parts, max_iter=max_iter, tol=tol, accelerator=accelerator)
         return json.dumps({"converged": r.converged, "iterations": r.iterations,
                            "residual": r.residual, "history": r.history,
-                           "exports": r.exports, "warnings": r.warnings,
+                           "exports": r.exports,
+                           "warnings": r.warnings + staging_notes,
                            "error": r.error}, indent=2)
 
 

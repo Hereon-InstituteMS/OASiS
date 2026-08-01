@@ -91,6 +91,17 @@ class FebioBackend(SolverBackend):
                 template_variants=["3d_cube"],
             ),
             PhysicsCapability(
+                name="elasticity_mms",
+                description=("3D linear-elasticity manufactured-solution "
+                             "(MMS) verification family — structured hex8 "
+                             "cube [0,L]^3, exact trig body force "
+                             "-div(sigma(u*)), per-node Dirichlet maps, "
+                             "displacement L2 order 2 expected"),
+                spatial_dims=[3],
+                element_types=["hex8"],
+                template_variants=["3d_cube_hex8"],
+            ),
+            PhysicsCapability(
                 name="hyperelasticity",
                 description="Nonlinear hyperelasticity (Neo-Hookean, Mooney-Rivlin)",
                 spatial_dims=[3],
