@@ -1792,6 +1792,223 @@ def register_consolidated_tools(mcp: FastMCP):
                             reason=reason, critic_approved=critic_approved)
         return json.dumps(result, indent=2)
 
+    @mcp.tool()
+    async def verify_mesh_independence(
+            solver: str, input_template: str, resolution: float,
+            refinement_factor: float = 2.0, levels: int = 1,
+            parameter_kind: str = "divisions", field: str = "",
+            probe_points: str = "", rel_tol: float = 0.01,
+            job_name: str = "", np: int = 1,
+            critic_approved: bool = False, ctx: Context = None) -> str:
+        """Heuristic mesh-independence study for problems WITHOUT an exact
+        solution: re-run the SAME problem at successively refined
+        resolutions and accept it as converged only if ALL monitored
+        quantities stop changing materially.
+
+        MMS convergence tests need a manufactured exact solution; real
+        application problems have none. This tool automates the
+        established recourse: halve the discretisation length (once by
+        default, more via `levels`), then compare (a) a volume-weighted
+        global L2 norm and the global max of the primary field, (b) the
+        field value at probe points (auto-chosen from the mesh — field
+        hotspot, domain centre, off-centre interior points — or supplied
+        explicitly), and (c) any scalar QoIs the script writes to
+        results_summary.json. Verdict: CONVERGED only if every monitored
+        quantity changes by less than `rel_tol` on the finest refinement
+        step; otherwise NOT CONVERGED, with all numbers in the report.
+
+        The input template must contain the placeholder __RESOLUTION__
+        where the characteristic discretisation parameter goes, e.g.
+        `nx = __RESOLUTION__`. For Python-scripted solvers (fenics,
+        ngsolve, skfem, dune) the template is the solve script itself; for
+        compiled/file-input solvers (fourc, dealii, kratos, febio) it is a
+        generator script that writes the input file, exactly as in
+        run_with_generator. The solve must write the primary field as
+        nodal data in a VTU/VTK/VTP result file.
+
+        IMPORTANT — this tool checks discretisation convergence only. It
+        does not validate the model physics; have the MANDATORY critic
+        review the setup and pass critic_approved=True as with the run
+        tools.
+
+        Args:
+            solver: Backend name (any registered backend).
+            input_template: Solve/generator script containing __RESOLUTION__.
+            resolution: Coarsest value of the discretisation parameter.
+            refinement_factor: Refinement per level (default 2 = halving h).
+            levels: Number of refinements (default 1; runs levels+1 cases).
+            parameter_kind: 'divisions' (parameter counts elements; refining
+                multiplies) or 'size' (parameter is h; refining divides).
+            field: Field name to monitor (default: auto-select from result).
+            probe_points: Optional JSON list of probe coordinates, e.g.
+                "[[0.5, 0.5], [0.25, 0.75]]" (default: auto from the mesh).
+            rel_tol: Acceptance threshold on relative change (default 0.01).
+            job_name: Optional study directory name.
+            np: MPI processes per run.
+            critic_approved: True only after the critic approved the setup.
+        """
+        import subprocess
+        import sys
+        from core import mesh_independence as mi
+        from core.backend import InputFormat, find_generated_input, sorted_by_step
+
+        _journal = _get_journal()
+        _snap = _make_input_snapshot(input_template, solver,
+                                     {"type": "mesh_independence_template"})
+        _journal.record("tool_call", "verify_mesh_independence", solver=solver,
+                        input_snapshot=_snap)
+
+        def _fail(msg: str) -> str:
+            _journal.record("tool_error", "verify_mesh_independence",
+                            solver=solver, error_message=msg[:300],
+                            input_snapshot=_snap)
+            res = {"tool": "verify_mesh_independence", "solver": solver,
+                   "status": "failed", "error": msg}
+            _stamp_verification(res, evidence_ok=False, reason=msg[:200],
+                                critic_approved=critic_approved)
+            return json.dumps(res, indent=2)
+
+        backend = get_backend(solver)
+        if not backend:
+            return f"Unknown solver: {solver}"
+        status, msg = backend.check_availability()
+        if status.value != "available":
+            return f"Solver {solver} not available: {_short_reason(msg)}"
+
+        try:
+            resolutions = mi.refinement_resolutions(
+                resolution, refinement_factor, levels, parameter_kind)
+            mi.substitute_resolution(input_template, resolutions[0])
+        except ValueError as e:
+            return _fail(str(e))
+        if not (0 < rel_tol < 1):
+            return _fail(f"rel_tol must be in (0, 1), got {rel_tol}")
+
+        user_probes = None
+        if probe_points.strip():
+            try:
+                user_probes = json.loads(probe_points)
+                if (not isinstance(user_probes, list) or not user_probes
+                        or not all(isinstance(p, (list, tuple)) for p in user_probes)):
+                    raise ValueError("expected a JSON list of coordinate lists")
+            except (json.JSONDecodeError, ValueError) as e:
+                return _fail(f"probe_points is not a JSON list of coordinates: {e}")
+
+        _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        study_dir = _OUTPUT_DIR / (job_name or f"{solver}_meshcheck_{ts}")
+        is_python = backend.input_format() == InputFormat.PYTHON
+
+        level_reports = []      # user-facing per-level info
+        level_metrics = []      # input to mi.compare_levels
+        shared_probes = user_probes
+        pinned_field = field
+        for lvl, res_val in enumerate(resolutions):
+            content = mi.substitute_resolution(input_template, res_val)
+            work_dir = study_dir / f"level{lvl}_res{mi.format_resolution(res_val)}"
+            work_dir.mkdir(parents=True, exist_ok=True)
+
+            if not is_python:
+                # generator path (fourc / dealii / kratos / febio / sparta):
+                # the template writes the solver input file first.
+                gen_path = work_dir / "generate_input.py"
+                gen_path.write_text(content)
+                gen = subprocess.run([sys.executable, str(gen_path)],
+                                     capture_output=True, text=True,
+                                     cwd=str(work_dir))
+                if gen.returncode != 0:
+                    return _fail(f"level {lvl} (resolution "
+                                 f"{mi.format_resolution(res_val)}): generator "
+                                 f"failed: {gen.stderr[-400:]}")
+                input_file = find_generated_input(work_dir, backend)
+                if not input_file:
+                    return _fail(f"level {lvl}: generator produced no input file")
+                content = input_file.read_text()
+
+            run_coro = backend.run(content, work_dir, np=np, timeout=None)
+            if ctx is not None:
+                job = await _run_with_progress(
+                    ctx, run_coro,
+                    f"Mesh study level {lvl}/{levels} on {solver}")
+            else:
+                job = await run_coro
+            _jobs[job.job_id] = job
+
+            if job.status != "completed" or job.error:
+                return _fail(
+                    f"level {lvl} (resolution {mi.format_resolution(res_val)}) "
+                    f"did not complete: {(job.error or job.status)[:400]}")
+
+            out_files = [f for f in backend.get_result_files(job)
+                         if f.suffix.lower() in (".vtu", ".vtk", ".vtp")
+                         and not f.name.endswith(".pvtu")]
+            if not out_files:
+                return _fail(
+                    f"level {lvl} exited cleanly but produced no readable "
+                    f"result file (.vtu/.vtk/.vtp) — no number is backed by "
+                    f"run evidence")
+            result_file = sorted_by_step(out_files)[-1]
+
+            try:
+                metrics = mi.extract_level_metrics(
+                    result_file, field=pinned_field, probe_points=shared_probes)
+            except Exception as e:
+                # unreadable/fieldless output is a verdict, never a crash
+                return _fail(f"level {lvl}: {e}")
+            if lvl == 0:
+                # Pin the auto-chosen field and probe locations so every
+                # level monitors the SAME quantities at the SAME points.
+                pinned_field = metrics["field"]
+                shared_probes = metrics["probe_points"]
+            metrics["resolution"] = res_val
+            metrics["qoi"] = mi.collect_qoi_scalars(work_dir)
+            level_metrics.append(metrics)
+            level_reports.append({
+                "level": lvl, "resolution": res_val,
+                "job_id": job.job_id, "work_dir": str(work_dir),
+                "result_file": result_file.name,
+                "elapsed": f"{job.elapsed:.2f}s" if job.elapsed else None,
+                "n_points": metrics["n_points"], "n_cells": metrics["n_cells"],
+                "global_l2": metrics["global_l2"],
+                "global_max": metrics["global_max"],
+                "probe_values": metrics["probe_values"],
+                **({"qoi": metrics["qoi"]} if metrics["qoi"] else {}),
+            })
+
+        comparison = mi.compare_levels(level_metrics, rel_tol=rel_tol)
+        result = {
+            "tool": "verify_mesh_independence", "solver": solver,
+            "status": "completed",
+            "field": pinned_field,
+            "norm_type": level_metrics[0]["norm_type"],
+            "parameter_kind": parameter_kind,
+            "refinement_factor": refinement_factor,
+            "probe_points": shared_probes,
+            "levels": level_reports,
+            "refinement_steps": comparison["steps"],
+            "rel_tol": rel_tol,
+            "converged": comparison["converged"],
+            "verdict": comparison["verdict"],
+            "study_dir": str(study_dir),
+        }
+        if not comparison["converged"]:
+            result["failures"] = comparison["failures"]
+
+        _journal.record("tool_success", "verify_mesh_independence",
+                        solver=solver, input_snapshot=_snap)
+        # Verification gate: the runs are the evidence; the verdict is the
+        # check. A study whose quantities still drift is NOT a verified
+        # solution — stamp it so the coarse answer cannot be reported.
+        _stamp_verification(
+            result,
+            evidence_ok=comparison["converged"],
+            reason=("the mesh-independence study did NOT converge: "
+                    + "; ".join(comparison["failures"])
+                    + f" (threshold {rel_tol:.2%}). The solution still "
+                    "depends on the mesh — refine further"),
+            critic_approved=critic_approved)
+        return json.dumps(result, indent=2)
+
     # ═══════════════════════════════════════════════════════════
     # 5. COUPLING (general couple() + legacy coupled_solve)
     # ═══════════════════════════════════════════════════════════
