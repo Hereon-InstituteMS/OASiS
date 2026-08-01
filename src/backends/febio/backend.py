@@ -62,8 +62,12 @@ class FebioBackend(SolverBackend):
         binary = _find_febio_binary()
         if not binary:
             return BackendStatus.NOT_INSTALLED, (
-                "FEBio binary not found. Install from https://febio.org/downloads/ "
-                "or set FEBIO_BINARY env var."
+                "FEBio binary not found. Install from https://febio.org/downloads/, "
+                "or build from source (github.com/febiosoftware/FEBio: cmake "
+                "-DUSE_MKL=OFF -DCMAKE_EXE_LINKER_FLAGS='-fopenmp -ldl' "
+                "-DCMAKE_SHARED_LINKER_FLAGS='-fopenmp -ldl' && make; verified "
+                "working recipe, see elasticity_mms KNOWLEDGE) and symlink to "
+                "~/FEBio/bin/febio4, or set FEBIO_BINARY env var."
             )
         return BackendStatus.AVAILABLE, f"FEBio at {binary}"
 

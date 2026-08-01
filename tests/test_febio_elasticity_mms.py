@@ -1,7 +1,12 @@
 """Gen-only tests for the FEBio 3D linear-elasticity MMS family.
 
-No FEBio binary is available on this install, so these tests verify
-everything that CAN be verified offline:
+These tests verify everything that CAN be verified offline (they were
+written when no FEBio binary existed on this install; since 2026-08-01
+FEBio 4.12.0 is built from source here — see the elasticity_mms
+KNOWLEDGE build-recipe pitfall — and the LIVE convergence gate measured
+displacement L2 orders 2.083 / 1.997 for n = 4 -> 8 -> 16 at the
+default amplitude, confirming the theoretical order 2 and the
+source-derived body_force_sign = -1 convention):
 
   - the emitted deck is well-formed FEBio 4.0 XML with no unresolved
     placeholders,
