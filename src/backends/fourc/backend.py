@@ -209,6 +209,12 @@ class FourcBackend(SolverBackend):
                               ["SHELL REISSNER QUAD4", "SHELL KIRCHHOFF TRI3", "SOLIDSHELL HEX8"], ["shell_3d"]),
             PhysicsCapability("thermo", "Pure thermal analysis (standalone heat conduction)", [2, 3],
                               ["THERMO QUAD4", "THERMO HEX8"], ["thermo_2d", "thermo_3d"]),
+            PhysicsCapability("thermo_transient_mms",
+                              "Transient thermal MMS on a fixed mesh for "
+                              "TEMPORAL-order dt-halving studies "
+                              "(One-Step-Theta: order 2 at theta=0.5, "
+                              "order 1 at theta=1)", [2],
+                              ["THERMO QUAD4"], ["temporal_mms_2d"]),
             PhysicsCapability("mixture", "Mixture/composite materials (fiber-reinforced, biological)", [3],
                               ["SOLID HEX8 with MAT_Mixture"], ["mixture_3d"]),
             PhysicsCapability("constraint", "Constraints: MPC, rigid body, periodic BCs, mortar coupling", [2, 3],
@@ -1103,6 +1109,7 @@ class FourcBackend(SolverBackend):
             matched_beam_cantilever_dynamic_input,
             matched_thermo_2d_input,
             matched_thermo_3d_input,
+            matched_thermo_transient_mms_input,
             matched_lubrication_slider_bearing_input,
             matched_mixture_3d_input,
             matched_constraint_3d_input,
@@ -1360,6 +1367,33 @@ class FourcBackend(SolverBackend):
                 numstep=max(1, min(20, round(p.get("T_end", 0.5)
                                              / p.get("dt", 0.1)))),
                 timestep=p.get("dt", 0.1)),
+            # thermo_transient_mms/temporal_mms_2d: unsteady-heat MMS
+            # family graded on TEMPORAL convergence order (E3,
+            # 2026-08-01). Fixed fine mesh keyed off "n" (capped in
+            # the inline builder), dt-halving to the same T_end;
+            # One-Step-Theta shows measured order ~2 at theta=0.5
+            # (Richardson 2.018/2.004) and ~1 at theta=1.0
+            # (0.95/1.00/1.05 vs exact) on this build. The volumetric
+            # MMS source goes through the PLAIN "DESIGN SURF NEUMANN
+            # CONDITIONS" — the THERMO-prefixed Neumann sections are
+            # silently ignored in standalone Thermo (see the
+            # thermo_transient_mms generator's pitfalls).
+            "thermo_transient_mms_temporal_mms_2d":
+                lambda p: matched_thermo_transient_mms_input(
+                    n=int(p.get("n", 48)),
+                    lx=p.get("lx", 1.0), ly=p.get("ly", 1.0),
+                    kappa=p.get("kappa", 1.0),
+                    rho=p.get("rho", 1.0), c=p.get("c", 1.0),
+                    theta=p.get("theta", 0.5),
+                    dt=p.get("dt", 0.02),
+                    t_end=p.get("T_end", p.get("t_end", 0.4)),
+                    temp_offset=p.get("temp_offset", 1.0),
+                    amp=p.get("amp", 1.0),
+                    grad_amp=p.get("grad_amp", 0.5),
+                    mode_x=int(p.get("mode_x", 1)),
+                    mode_y=int(p.get("mode_y", 1)),
+                    omega=p.get("omega", 6.283185307179586),
+                    time_profile=p.get("time_profile", "cos")),
             # Lubrication (Reynolds eq.) slider bearing: the placeholder
             # generator template emitted literal <...> scalars + an
             # external Exodus mesh, aborting 4C's MatchTree (probe
