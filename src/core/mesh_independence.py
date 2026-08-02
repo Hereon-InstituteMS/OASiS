@@ -331,12 +331,36 @@ def probe_field(points, values, probe_points) -> list[float]:
 # ── QoI pickup from results_summary.json ─────────────────────────────────
 
 
+#: results_summary.json keys that describe the DISCRETISATION or the run,
+#: not a physical quantity of interest. They change under refinement BY
+#: CONSTRUCTION (ndofs quadruples, resolution doubles, wall time grows), so
+#: monitoring them would flip every study to NOT CONVERGED — the false
+#: negative the qwen agent-validation campaign (scenario S1) hit live: its
+#: summary carried resolution/ndofs and the verdict failed on "QoI 'ndofs'
+#: changed 74.61%" while every physical quantity had settled. Matched
+#: case-insensitively against the LAST dotted key component.
+_QOI_DENYLIST = frozenset({
+    "resolution", "ndofs", "n_dofs", "dofs", "ndof", "n_dof", "num_dofs",
+    "n_elements", "num_elements", "nelements", "n_cells", "num_cells",
+    "ncells", "n_nodes", "num_nodes", "nnodes", "n_points", "num_points",
+    "npoints", "n_vertices", "num_vertices", "nx", "ny", "nz",
+    "mesh_size", "h", "dx", "n_refinements", "refinement_level", "level",
+    "levels", "elapsed", "runtime", "wall_time", "cpu_time",
+    "iterations", "n_iterations", "num_iterations",
+})
+
+
 def collect_qoi_scalars(work_dir, max_entries: int = 12) -> dict[str, float]:
     """Flatten every finite scalar in the run's ``results_summary.json``
     files into ``{dotted.key: value}``. Catalog templates write their
     quantities of interest there, so a problem-specific QoI (tip
     deflection, max temperature, ...) is monitored without the tool
     knowing the physics. Missing/unreadable files yield ``{}``.
+
+    Discretisation descriptors and run metadata (``resolution``,
+    ``ndofs``, ``n_elements``, ``wall_time``, ...) are EXCLUDED: they
+    change under refinement by construction and would turn every study
+    into a false NOT CONVERGED (see :data:`_QOI_DENYLIST`).
     """
     out: dict[str, float] = {}
 
@@ -349,6 +373,8 @@ def collect_qoi_scalars(work_dir, max_entries: int = 12) -> dict[str, float]:
         elif isinstance(obj, bool):
             return
         elif isinstance(obj, (int, float)):
+            if prefix.rsplit(".", 1)[-1].lower() in _QOI_DENYLIST:
+                return
             f = float(obj)
             if math.isfinite(f) and len(out) < max_entries:
                 out[prefix] = f

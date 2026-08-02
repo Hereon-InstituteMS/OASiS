@@ -1939,9 +1939,12 @@ def register_consolidated_tools(mcp: FastMCP):
                     f"level {lvl} (resolution {mi.format_resolution(res_val)}) "
                     f"did not complete: {(job.error or job.status)[:400]}")
 
+            # plain FILES only: dolfinx VTXWriter can emit a DIRECTORY named
+            # *.vtu, which no mesh reader can open (agent-validation S1 hit
+            # exactly this and burned an iteration on it)
             out_files = [f for f in backend.get_result_files(job)
                          if f.suffix.lower() in (".vtu", ".vtk", ".vtp")
-                         and not f.name.endswith(".pvtu")]
+                         and not f.name.endswith(".pvtu") and f.is_file()]
             if not out_files:
                 return _fail(
                     f"level {lvl} exited cleanly but produced no readable "

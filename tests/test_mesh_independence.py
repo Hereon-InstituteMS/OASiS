@@ -280,6 +280,39 @@ class TestCollectQoi(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             self.assertEqual(mi.collect_qoi_scalars(td), {})
 
+    def test_discretisation_descriptors_are_not_qois(self):
+        # Live agent-validation finding (qwen campaign, scenario S1): a
+        # summary carrying resolution/ndofs made the verdict fail on
+        # "QoI 'ndofs' changed 74.61%" although every physical quantity
+        # had settled. Descriptors that change under refinement BY
+        # CONSTRUCTION must never be monitored.
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "results_summary.json").write_text(json.dumps({
+                "max_T": 2.69, "l2_norm": 2.15,          # physical QoIs
+                "resolution": 32, "ndofs": 4225,          # descriptors
+                "n_elements": 2048, "wall_time": 0.56,
+                "mesh": {"n_cells": 2048, "nx": 32},
+            }))
+            qoi = mi.collect_qoi_scalars(td)
+        self.assertEqual(set(qoi), {"max_T", "l2_norm"})
+
+    def test_descriptor_qois_do_not_flip_the_verdict(self):
+        # End-to-end on the comparison: physical quantities settled while
+        # the descriptor entries differ wildly between the levels' summary
+        # files -> still CONVERGED, because collect_qoi_scalars filtered
+        # the descriptors out.
+        import tempfile
+        levels = []
+        for res, ndofs in ((32, 4225), (64, 16641)):
+            with tempfile.TemporaryDirectory() as td:
+                (Path(td) / "results_summary.json").write_text(json.dumps({
+                    "max_T": 2.6944, "resolution": res, "ndofs": ndofs}))
+                qoi = mi.collect_qoi_scalars(td)
+            levels.append(_level(res, 2.1518, 2.6944, [2.4135], qoi=qoi))
+        c = mi.compare_levels(levels, rel_tol=0.01)
+        self.assertTrue(c["converged"], c)
+
 
 class TestExtractLevelMetrics(unittest.TestCase):
 
@@ -468,6 +501,24 @@ class TestVerifyMeshIndependenceE2E(unittest.TestCase):
         # gate: a mesh-dependent solution is never a trustworthy result
         self.assertFalse(d["trustworthy_result"])
         self.assertIn("NOT VERIFIED", d["verification"])
+
+    def test_directory_named_like_result_file_is_ignored(self):
+        # Live agent-validation finding (qwen campaign, scenario S1):
+        # dolfinx VTXWriter emits a DIRECTORY named *.vtu; the level's
+        # result-file pick must skip directories or the study dies on
+        # "unreadable by meshio: Is a directory". The decoy's stem ends in
+        # a digit so sorted_by_step would rank it LAST (i.e. pick it)
+        # if directories were not filtered out.
+        template = _SKFEM_TEMPLATE.replace(
+            'point_data={"u": u}).write("result.vtu")',
+            'point_data={"u": u}).write("result.vtu")\n'
+            'import os\nos.makedirs("zzz9.vtu", exist_ok=True)')
+        d = self._run(solver="skfem", input_template=template,
+                      resolution=8, job_name="test_meshcheck_decoy_dir",
+                      critic_approved=True)
+        self.assertEqual(d["status"], "completed", d)
+        for lv in d["levels"]:
+            self.assertEqual(lv["result_file"], "result.vtu")
 
     def test_template_without_placeholder_is_refused(self):
         d = self._run(solver="skfem",
