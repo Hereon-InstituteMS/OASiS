@@ -465,10 +465,13 @@ trng = [("triangle", m.t.T)]
 # DG solution: one value per DOF, not per node; write element-wise or project
 # For visualization: project to P1 (nodal average).
 # The module-level skfem.project() is DEPRECATED (it emits
-# DeprecationWarning('will be removed in the next release') on
+# DeprecationWarning('project is deprecated in favor of
+# Basis.project (will be removed in the next release).') on
 # skfem 12.0.1). The supported spelling is the Basis.project
-# INSTANCE method fed by Basis.interpolator; verified to agree
-# with the legacy call to 6.7e-16 on this problem.
+# INSTANCE method fed by Basis.interpolator. The two agree to
+# ~2e-15 on a FINITE DG vector; they cannot be compared on THIS
+# template's own output, because u here is NaN everywhere (see
+# the [Validation] pitfall) and legacy - new is NaN.
 e_p1 = ElementTriP1()
 ib_p1 = Basis(m, e_p1)
 u_proj = ib_p1.project(ib.interpolator(u))
