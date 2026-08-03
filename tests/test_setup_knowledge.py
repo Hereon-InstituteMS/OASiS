@@ -48,7 +48,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from backends._setup import (  # noqa: E402
-    CONFIG_PROBES, SETUP_KNOWLEDGE, get_setup_knowledge, get_setup_pitfalls,
+    CONFIG_PROBES, PORTABILITY_EVIDENCE, SETUP_KNOWLEDGE, get_setup_knowledge,
+    get_setup_pitfalls,
 )
 
 # The sub-kinds an entry may declare. Every pitfall starts with one of these.
@@ -305,6 +306,61 @@ class TestReachability(unittest.TestCase):
             with self.subTest(backend=name):
                 self.assertEqual(get_setup_pitfalls(name),
                                  SETUP_KNOWLEDGE[name]["pitfalls"])
+
+
+class TestPortabilityEvidence(unittest.TestCase):
+    """The record of what was actually re-checked, and what was not.
+
+    The failure this guards against is a file that quietly becomes confident:
+    someone adds claims, nobody adds evidence, and a year later every entry
+    reads as though it were verified everywhere. Requiring the gaps to be
+    written down makes the confident entries mean something."""
+
+    def test_every_evidence_entry_says_what_happened(self):
+        for key, ev in PORTABILITY_EVIDENCE.items():
+            if key == "not_tested":
+                continue
+            with self.subTest(env=key):
+                for field in ("what", "installed", "result"):
+                    self.assertIn(field, ev, f"{key} lacks {field!r}")
+                    self.assertTrue(str(ev[field]).strip())
+
+    def test_the_untested_list_is_not_empty(self):
+        """An honest record of a single machine ALWAYS has gaps. An empty
+        not_tested section means either the section rotted or somebody
+        stopped being careful; neither is a state to merge."""
+        not_tested = PORTABILITY_EVIDENCE.get("not_tested", {})
+        self.assertTrue(
+            not_tested,
+            "not_tested is empty. Everything here was checked on one machine; "
+            "if nothing is listed as untested, the record is wrong.")
+        for key, reason in not_tested.items():
+            with self.subTest(gap=key):
+                self.assertGreater(
+                    len(str(reason)), 60,
+                    f"{key} is listed as untested without saying why or what "
+                    f"that costs the reader")
+
+    def test_untested_configurations_are_reflected_in_the_pitfalls(self):
+        """A gap recorded here but not visible in the pitfall text helps
+        nobody: the agent reads pitfalls, not this dict. Each backend named
+        in not_tested must hedge somewhere in its own entries."""
+        hedges = ("was not possible", "unverified", "not observed",
+                  "limited to", "checked here", "sourced", "scoped",
+                  "Nothing here claims", "rather than confirmed")
+        for gap, backend in (("dealii_debug", "dealii"),
+                             ("dealii_optional_deps", "dealii"),
+                             ("febio_with_mkl", "febio"),
+                             ("sparta_with_kokkos", "sparta")):
+            if gap not in PORTABILITY_EVIDENCE.get("not_tested", {}):
+                continue
+            with self.subTest(gap=gap):
+                blob = " ".join(SETUP_KNOWLEDGE[backend]["pitfalls"])
+                self.assertTrue(
+                    any(h in blob for h in hedges),
+                    f"{gap} is recorded as untested, but {backend}'s pitfalls "
+                    f"state their claims flat. Scope the claim where the "
+                    f"agent will read it.")
 
 
 class TestAgainstRealInstalls(unittest.TestCase):

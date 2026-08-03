@@ -612,20 +612,26 @@ _FEBIO = {
     "pitfalls": [
         "[Integration][Discovery] FEBIO_BINARY is OPTIONAL but is the only "
         "reliable way to choose a build, and it is accepted without "
-        "validation. Unset, OASiS looks in a fixed list of conventional "
-        "locations and then on PATH, taking `febio4`, then `febio3`, then "
-        "`febio` — so an older FEBio earlier in that order wins over the "
-        "build you meant. Set it to any existing file and OASiS reports "
+        "validation. Set it to any existing file and OASiS reports "
         "`available` naming that file, with no check that it is FEBio at all. "
         "Signal of the unvalidated case: `discover(query='list')` reports FEBio "
         "available at a path that is not an FEBio build, and the failure "
-        "arrives later as missing output. Defense: prove the binary answers "
-        "as FEBio before trusting it — `<candidate> -info` on a real FEBio "
-        "prints `FEBio version  = <version>` and `compiled on <date>`, while "
-        "an unknown flag is rejected with `FATAL ERROR: Invalid command line "
-        "option '<flag>'.` (`-v` is NOT a valid FEBio flag; use `-info`). If "
-        "the install is a symlink, resolve it before believing the path: "
-        "`readlink -f \"$(command -v febio4)\"`.",
+        "arrives later as missing output rather than as a complaint about the "
+        "variable. Unset, discovery searches a fixed list of CONVENTIONAL "
+        "LOCATIONS FIRST — a `FEBio/bin/febio4` or `FEBioStudio/bin/febio4` "
+        "under your home directory, then /opt and /usr/local — and only falls "
+        "back to PATH afterwards, where it takes `febio4`, then `febio3`, then "
+        "`febio`. So putting a new build first on PATH does NOT make it win: "
+        "verified by placing a febio4 at the front of PATH and watching "
+        "discovery return the home-directory one anyway. That home-directory "
+        "entry is very often a SYMLINK to a build tree, which is how people "
+        "end up running a binary they deleted and rebuilt somewhere else. "
+        "Defense: resolve the path before believing it — "
+        "`readlink -f \"$(command -v febio4)\"` — and prove the file answers "
+        "as FEBio: `<candidate> -info` on a real FEBio prints `FEBio version "
+        " = <version>` and `compiled on <date>`, while an unknown flag is "
+        "rejected with `FATAL ERROR: Invalid command line option '<flag>'.` "
+        "(`-v` is NOT a valid FEBio flag; use `-info`.)",
 
         "[Integration][BuildConfig] MKL PRESENCE CHANGES WHICH LINEAR SOLVERS "
         "EXIST, and the way to detect it is the DEFAULT SOLVER LINE, not a "
@@ -703,7 +709,9 @@ _SPARTA = {
         "inspecting symbols does not answer the question. Defense: run "
         "CONFIG_PROBES['sparta_packages'] — `make ps` in the source directory "
         "prints `Installed YES/NO: package <NAME>` — and rebuild with the "
-        "package if you need it.",
+        "package if you need it. Scope: only the REFUSAL messages were "
+        "observed, on a build without the package. Nothing here claims what "
+        "an accelerated run does or how much faster it is.",
 
         "[Integration][FirstRun] Bundled example decks reference data files "
         "(`species ar.species Ar`, `collide vss air air.vss`, `read_surf "
@@ -809,6 +817,107 @@ _SKFEM = {
 }
 
 
+# ── portability evidence ─────────────────────────────────────────────────
+#
+# "It works here" is not evidence that it works anywhere. The entries above
+# make version-range claims; this records what was actually done to earn them,
+# so a reader can judge the claims rather than trust them — and so the next
+# person to touch this file knows which claims rest on a re-run and which rest
+# on a single machine.
+#
+# Method: build a virtual environment with nothing in it, install ONLY the
+# backend under test, and re-run that backend's full tier-2 fixture set. A
+# fixture that passes on the development machine and fails on a clean one has
+# found either a portability defect or an undeclared dependency. Both are
+# things a stranger cloning OASiS hits and we do not.
+
+PORTABILITY_EVIDENCE: dict[str, dict] = {
+    "clean_env_pinned": {
+        "what": "empty venv, CPython 3.12, pinned solver versions",
+        "installed": "scikit-fem 12.0.1, NGSolve 6.2.2604, meshio",
+        "result": (
+            "Every scikit-fem and NGSolve tier-2 fixture behaved exactly as "
+            "in the reference environment. No undeclared dependency surfaced."
+        ),
+    },
+    "clean_env_latest": {
+        "what": "empty venv, CPython 3.12, newest solver versions",
+        "installed": "scikit-fem 12.0.2, NGSolve 6.2.2606, meshio",
+        "result": (
+            "Same: every fixture behaved as in the reference environment. "
+            "This is what lets the scikit-fem claims be scoped to 12.0.1 "
+            "through 12.0.2 and the NGSolve claims to 6.2.2604 through "
+            "6.2.2606, instead of to one build."
+        ),
+        "caveat": (
+            "Both clean environments resolved numpy 2.x and a matching "
+            "scipy, while the reference environment is on numpy 1.26.x. The "
+            "solvers were unaffected across that gap, but a pitfall about "
+            "ARRAY behaviour inherits the numpy major version rather than "
+            "the solver version and should record it."
+        ),
+    },
+    "clean_env_dune": {
+        "what": "empty venv, CPython 3.12, no conda involvement",
+        "installed": "dune-fem 2.12.0.2 from PyPI, then mpi4py",
+        "result": (
+            "Found two defects a same-machine re-run cannot find. (1) "
+            "mpi4py is undeclared: the install succeeds and the first import "
+            "refuses to proceed without it. (2) With mpi4py added the import "
+            "works, but the first JIT-compiled solve then fails to load, "
+            "because the sub-build compiled against a different Python that "
+            "was earlier on PATH. Both are in the dune pitfalls above."
+        ),
+    },
+    "clean_env_kratos": {
+        "what": "empty venv, CPython 3.12, host glibc 2.31",
+        "installed": "KratosMultiphysics-all, then KratosMultiphysics 10.4.2",
+        "result": (
+            "The metapackage installed and imported. Forcing 10.4.2 also "
+            "INSTALLED cleanly and then failed to import, which is what "
+            "established that the wheel is mis-tagged rather than simply "
+            "unavailable — pip's platform check is satisfied and the loader's "
+            "is not."
+        ),
+    },
+    "not_tested": {
+        "dealii_debug": (
+            "No Debug deal.II exists on the machine these entries were "
+            "written on, so the Debug half of every build-type claim is "
+            "reasoned from deal.II's own source (the Assert macro and the "
+            "guards in lac/solver_cg.h) and from what the Release build "
+            "demonstrably does NOT do — not from running a Debug build. "
+            "Treat the Debug behaviour as sourced, and the Release "
+            "behaviour as observed."
+        ),
+        "dealii_optional_deps": (
+            "MPI, PETSc, Trilinos, p4est, SLEPc, HDF5, SUNDIALS, SymEngine "
+            "and CGAL are all OFF in the available build, so none of those "
+            "code paths could be exercised at all."
+        ),
+        "febio_with_mkl": (
+            "No MKL-enabled FEBio exists here, so what such a build reports "
+            "as its default linear solver was not observed. The claim is "
+            "limited to what the MKL-less build does report."
+        ),
+        "sparta_with_kokkos": (
+            "The available SPARTA has KOKKOS uninstalled, so only the "
+            "REFUSAL messages could be captured. Nothing here claims what an "
+            "accelerated run does."
+        ),
+        "macos_and_windows": (
+            "Everything in this file was checked on Linux. None of the "
+            "install routes, discovery orders, environment-variable "
+            "behaviours or error messages were reproduced on macOS or "
+            "Windows, and several are platform-specific by construction — "
+            "RUNPATH, glibc symbol versions and manylinux wheel tags have no "
+            "macOS equivalent. Treat the macOS notes in "
+            "src/core/backend_setup.py as extension points, not findings."
+        ),
+    },
+}
+
+
 # ── the registry ─────────────────────────────────────────────────────────
 
 SETUP_KNOWLEDGE: dict[str, dict] = {
@@ -846,9 +955,12 @@ def get_setup_knowledge(backend: str | None = None) -> dict:
                 "Read `install_route` first, then `pitfalls`. Anything tagged "
                 "[Integration][BuildConfig] is a claim that depends on how the "
                 "backend was compiled — run the matching probe in "
-                "`config_probes` before acting on it."
+                "`config_probes` before acting on it. `portability_evidence` "
+                "says which of these claims were re-checked in a clean "
+                "environment and which were not testable at all."
             ),
             "config_probes": CONFIG_PROBES,
+            "portability_evidence": PORTABILITY_EVIDENCE,
             "backends": SETUP_KNOWLEDGE,
         }
     key = backend.strip().lower()
@@ -857,7 +969,8 @@ def get_setup_knowledge(backend: str | None = None) -> dict:
     if not entry:
         return {"error": f"No setup knowledge for '{backend}'",
                 "known": sorted(SETUP_KNOWLEDGE)}
-    return {"backend": key, "config_probes": CONFIG_PROBES, **entry}
+    return {"backend": key, "config_probes": CONFIG_PROBES,
+            "portability_evidence": PORTABILITY_EVIDENCE, **entry}
 
 
 def get_setup_pitfalls(backend: str) -> list[str]:
