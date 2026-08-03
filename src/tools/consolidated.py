@@ -2878,14 +2878,17 @@ def register_consolidated_tools(mcp: FastMCP):
         mono_block, f, n = _run_monolithic_check(monolithic, r.exports)
         val += f; not_run += n
 
-        # Findings that mean the coupling cannot be trusted. A non-matching
-        # interface is deliberately NOT here: it is a legitimate configuration
-        # whose consequence (unchecked conservation) is reported in the coverage
-        # list instead, and whose failure mode is caught by the flux balance.
-        hard = ("NOT CONVERGED", "non-finite", "NOT balanced", "could NOT be evaluated",
-                "exited non-zero", "byte-identical", "ONE-WAY", "unknown participants",
-                "NOT representative", "likely WRONG", "not corroborated")
-        checks_ok = r.converged and not any(any(h in w for h in hard) for w in val)
+        # `val` is the FINDINGS channel and `not_run` the COVERAGE channel, and
+        # every check above puts its output in exactly one of them. So any
+        # finding at all means the coupling cannot be trusted — no substring
+        # matching on message text, which would silently stop working the moment
+        # a message was reworded, and could equally raise a false alarm on a
+        # benign sentence that happened to contain one of the keywords.
+        # A non-matching interface is deliberately a coverage note rather than a
+        # finding: it is a legitimate configuration whose consequence (unchecked
+        # conservation) belongs in the coverage list, and whose failure mode is
+        # caught by the flux balance.
+        checks_ok = r.converged and not val
         result = {"converged": r.converged, "iterations": r.iterations,
                   "residual": r.residual, "history": r.history,
                   "block_residuals": r.block_residuals,

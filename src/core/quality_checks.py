@@ -295,12 +295,34 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
     list must never be read as "conservation was checked and is fine".
     """
     w = []
+
     def _flux(e):
         f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
-        return None if f is None else float(_np.sum(_np.asarray(f, float)))
-    fa, fb = _flux(export_a), _flux(export_b)
-    if fa is None or fb is None:
+        if f is None:
+            return None
+        a = _np.asarray(f, float)
+        # A VECTOR interface flux (traction, momentum) must balance component by
+        # component. Summing every component into one number lets a +x imbalance
+        # cancel a -y one and report perfect conservation across an interface
+        # that conserves nothing.
+        return (a.reshape(-1, a.shape[-1]).sum(axis=0)
+                if a.ndim >= 2 and a.shape[-1] > 1 else _np.array([a.sum()]))
+
+    va, vb = _flux(export_a), _flux(export_b)
+    if va is None or vb is None:
         return w
+    if va.shape != vb.shape:
+        return [f"Interface flux balance could NOT be evaluated: {label_a} exports "
+                f"{va.size} flux component(s) and {label_b} exports {vb.size}. "
+                "Conservation is unchecked."]
+    if va.size > 1:
+        out = []
+        for c in range(va.size):
+            out += check_interface_balance(
+                {"normal_fluxes": [float(va[c])]}, {"normal_fluxes": [float(vb[c])]},
+                f"{label_a}[{c}]", f"{label_b}[{c}]", rtol)
+        return out
+    fa, fb = float(va[0]), float(vb[0])
     # A non-finite net flux makes every comparison below False (nan > rtol is
     # False), so without this the check would report nothing at all on the most
     # broken data it can be handed.
@@ -462,6 +484,14 @@ def check_participant_responsiveness(responsiveness: dict) -> tuple[list[str], l
     the export-vector change is exactly zero at iteration 2 and the coupling
     reports converged with a residual of 0.0 and no other complaint. A real solve
     handed different boundary data does not return byte-identical output.
+
+    WHAT IT DOES NOT CATCH, stated plainly: the test is byte-identity, so a
+    participant whose output depends on its imports only negligibly — a stale
+    field with a token dependence added, or a solver whose interface condition is
+    applied with a near-zero coefficient — reads as responsive. Byte-identity is
+    what the ACCIDENTAL failures look like (a script that never opens
+    imports.json, a cached result re-served); a deliberately disguised one needs
+    the monolithic comparison, not this.
     """
     findings: list[str] = []
     not_checked: list[str] = []
