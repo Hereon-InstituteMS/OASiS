@@ -391,9 +391,15 @@ EXECUTED_API: dict = {
             "jacobi\". No ILU, no AMG, no fieldsplit for the default "
             "storage. It fires at SCHEME CONSTRUCTION, before any "
             "solve. Measured effect on a 12x12 Taylor-Hood Stokes "
-            "problem: linear_iterations 70941 with 'none' and 6351 "
-            "with 'ssor' for gmres, 2116 for bicgstab + 'ssor'. "
-            "Executed 2026-08-03, hit from two independent scripts."),
+            "problem, gmres: linear_iterations 94026 with 'none', "
+            "8587 with 'ssor', 18636 with 'jacobi' — and 'none' "
+            "reproduced the no-parameter default EXACTLY, so the "
+            "default preconditioner on this install IS 'none'. "
+            "(RE-MEASURED by adversarial audit 2026-08-03. An earlier "
+            "revision recorded 70941 with 'none' and 6351 with 'ssor'; "
+            "neither reproduced. The ParameterInvalid string itself is "
+            "unchanged and was re-confirmed.) Executed 2026-08-03, hit "
+            "from two independent scripts."),
         "direct_solver_executed": (
             "solver=('suitesparse', 'umfpack') WORKS on this install: "
             "the scheme built (62.6 s, one new JIT module — a direct "
@@ -729,7 +735,18 @@ EXECUTED_API: dict = {
             "2.0, which is exactly u along y=0.5.\n"
             "  pointSample(uh, [0.25,0.25]) -> 0.75, the exact value.\n"
             "  gridWidth(gridView) -> 0.125 on the 8x8 grid, i.e. h.\n"
-            "  inspectBoundaryIds(gridView) -> 'bndId'.\n"
+            "  inspectBoundaryIds(gridView) -> a GridFunction, NOT the "
+            "string 'bndId'. Corrected by adversarial audit 2026-08-03: "
+            "an earlier revision of this entry reported the return "
+            "value as 'bndId', which is only the .name attribute. What "
+            "you actually get is a dune.fem.space.finiteVolume discrete "
+            "function with ONE dof PER CELL carrying the projected "
+            "boundary id, so read it with np.array(r.as_numpy) — "
+            "measured shape (64,) on the 8x8 grid with unique values "
+            "[0.0, 1.0, 2.0, 2.5, 3.0, 4.0]. 0.0 is an interior cell, "
+            "1..4 are the geometric ids, and the fractional 2.5 is a "
+            "CORNER cell averaging two boundary faces, so do not treat "
+            "these dofs as integer tags.\n"
             "boundarySample and Sampler are importable from the same "
             "module but were NOT exercised."),
     },

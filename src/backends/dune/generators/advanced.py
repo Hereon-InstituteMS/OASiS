@@ -1059,13 +1059,16 @@ KNOWLEDGE = {
                 "dune.fem.scheme.galerkin's solve returns. On the "
                 "12x12 composite Taylor-Hood Stokes matrix, measured "
                 "2026-08-03, it came back 1 for "
-                "solver=('suitesparse','umfpack') at 9.5e-16 relative "
-                "error, against 1150 for 'cg' at 4.2e-11, 2527 for "
-                "'gmres' and 37167 for 'bicgstab'. The Krylov methods "
-                "DO converge — the cost and the five orders of extra "
-                "error are the signal, not a failure. Use "
-                "solver=('suitesparse','umfpack') for 2D problems of "
-                "this size. (Executed 2026-08-03.)"
+                "solver=('suitesparse','umfpack') at 9.465e-16 "
+                "relative error, against 1343 for 'cg' at 3.837e-13, "
+                "94026 for 'gmres' and 43953 for 'bicgstab'. The "
+                "Krylov methods DO converge — the cost, three to five "
+                "orders of magnitude more iterations, is the signal, "
+                "not a failure. Use solver=('suitesparse','umfpack') "
+                "for 2D problems of this size. (RE-MEASURED by "
+                "adversarial audit 2026-08-03; an earlier revision "
+                "recorded 1150 / 2527 / 37167, which did not "
+                "reproduce.)"
             ),
         ],
     },
