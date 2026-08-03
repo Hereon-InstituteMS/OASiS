@@ -3279,8 +3279,9 @@ CONTACT DYNAMIC:           # (1) REQUIRED whenever a contact condition exists
   LINEAR_SOLVER: 2         #     REQUIRED - may reuse id 1
   STRATEGY: "Penalty"
   PENALTYPARAM: 1.0e4      #     REQUIRED for Penalty; 0 is rejected
-MORTAR COUPLING:           # (2) REQUIRED and must be non-empty
-  LM_DUAL_CONSISTENT: "none"
+MORTAR COUPLING:           # (2) REQUIRED for Penalty/Nitsche (this deck).
+  LM_DUAL_CONSISTENT: "none"  #    Under the DEFAULT Lagrange strategy the
+                              #    whole section may be omitted or left empty.
 SOLVER 1:
   SOLVER: "UMFPACK"
   NAME: "Structure_Solver"
