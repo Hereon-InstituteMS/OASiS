@@ -270,14 +270,29 @@ def _is_tensor(k, dim: int) -> bool:
 
 def check_residual(points, cells, values, *, dim: int,
                    source_fn, coeff_fn=None,
+                   advection_fn=None, reaction_fn=None,
                    domain_measure_expected: float | None = None,
                    ) -> ResidualVerdict:
-    """Measure how well `values` satisfies -div(K grad u) = f on this mesh.
+    """Measure how well `values` satisfies the stated scalar problem on this mesh.
 
-    source_fn(x) -> f at coordinates x (array shape (dim, n))
-    coeff_fn(x)  -> K at x: either a scalar field, or a dim x dim nested
-                    sequence of scalar fields for an anisotropic tensor.
-                    None means K = 1.
+    The operator is the general second-order linear scalar one,
+
+        -div(K grad u) + b . grad u + c u = f
+
+    which is not generality for its own sake: it is five of the PDE classes the
+    catalog actually carries, in one assembly. Poisson and steady heat are
+    K only; convection-diffusion adds b; reaction-diffusion adds positive c;
+    Helmholtz is c = -k^2, which is indefinite and must therefore be allowed to
+    be negative. Before this, everything except pure diffusion came back
+    UNSUPPORTED — honest, but no protection at all against a fabricated result
+    on any of them.
+
+    source_fn(x)    -> f at coordinates x (array shape (dim, n))
+    coeff_fn(x)     -> K at x: either a scalar field, or a dim x dim nested
+                       sequence of scalar fields for an anisotropic tensor.
+                       None means K = 1.
+    advection_fn(x) -> b at x, a dim-component field. None means no advection.
+    reaction_fn(x)  -> c at x, a scalar field. None means no reaction term.
 
     The tensor form matters because anisotropic diffusion is where a scalar
     coefficient quietly gives the wrong answer rather than an error: assembling
@@ -324,14 +339,27 @@ def check_residual(points, cells, values, *, dim: int,
 
     @BilinearForm
     def a_form(u, v, w):
+        # Diffusion.
         if coeff_fn is None:
-            return dot(grad(u), grad(v))
-        k = coeff_fn(w.x)
-        if not _is_tensor(k, dim):
-            return k * dot(grad(u), grad(v))
-        gu, gv = grad(u), grad(v)
-        return sum(k[i][j] * gu[j] * gv[i]
-                   for i in range(dim) for j in range(dim))
+            out = dot(grad(u), grad(v))
+        else:
+            k = coeff_fn(w.x)
+            if _is_tensor(k, dim):
+                gu, gv = grad(u), grad(v)
+                out = sum(k[i][j] * gu[j] * gv[i]
+                          for i in range(dim) for j in range(dim))
+            else:
+                out = k * dot(grad(u), grad(v))
+        # Advection: b . grad(u) v
+        if advection_fn is not None:
+            b_ = advection_fn(w.x)
+            gu = grad(u)
+            out = out + sum(b_[i] * gu[i] for i in range(dim)) * v
+        # Reaction: c u v. Negative c is how Helmholtz (-lap u - k^2 u) is
+        # expressed, and it is the indefinite case, so it must be allowed.
+        if reaction_fn is not None:
+            out = out + reaction_fn(w.x) * u * v
+        return out
 
     @LinearForm
     def l_form(v, w):

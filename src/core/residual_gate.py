@@ -54,7 +54,18 @@ _SAFE_NAMES = {
 }
 _SAFE_NAMES.update(pi=np.pi, e=np.e)
 
-SUPPORTED_OPERATORS = ("diffusion", "elasticity")
+# One assembly, five PDE classes. `diffusion` remains the name for the whole
+# scalar family because `advection` and `reaction` are optional terms of it:
+#   poisson / steady heat        K only
+#   convection_diffusion         K, b
+#   reaction_diffusion           K, c > 0
+#   helmholtz                    K, c = -k^2  (indefinite; c may be negative)
+# The aliases exist so an agent can declare the problem by the name it knows it
+# by, rather than having to recognise that its problem is "diffusion".
+SUPPORTED_OPERATORS = ("diffusion", "elasticity", "convection_diffusion",
+                       "reaction_diffusion", "helmholtz", "poisson", "heat")
+_SCALAR_ALIASES = {"convection_diffusion", "reaction_diffusion", "helmholtz",
+                   "poisson", "heat"}
 
 # Nodes only appear in a legitimate numeric expression. Attribute access,
 # subscripting, comprehensions, lambdas, calls to anything not in _SAFE_NAMES,
@@ -190,10 +201,30 @@ def parse_spec(spec: str | dict) -> dict:
         }
 
     measure = spec.get("domain_measure")
+    adv = spec.get("advection")
+    if adv is not None:
+        if not isinstance(adv, (list, tuple)) or len(adv) != dim:
+            raise ResidualSpecError(
+                f"`advection` must be a {dim}-component velocity, e.g. "
+                f"[\"1\", \"0\"]; got {adv!r}")
+        adv = [_compile_expression(str(a), f"advection[{i}]")
+               for i, a in enumerate(adv)]
+    react = spec.get("reaction")
+    if react is not None:
+        # Helmholtz is c = -k^2, so a negative reaction coefficient is correct
+        # and must not be treated as a malformed declaration.
+        react = _compile_expression(str(react), "reaction")
+    if operator == "helmholtz" and react is None:
+        raise ResidualSpecError(
+            "helmholtz needs `reaction`: the operator is -div(K grad u) + c u "
+            "with c = -k^2, so give reaction as the negative squared wave "
+            "number, e.g. \"-16*pi**2\" for k = 4*pi")
     return {
         "operator": operator,
         "dim": dim,
         "source_code": _compile_expression(str(spec["source"]), "source"),
+        "advection_code": adv,
+        "reaction_code": react,
         "coefficient_code": _parse_coefficient(spec.get("coefficient"), dim),
         "domain_measure": float(measure) if measure is not None else None,
         "field": str(spec.get("field", "")),
@@ -305,6 +336,10 @@ def check_run_residual(spec: str | dict, result_files) -> dict:
         points, cells, values, dim=dim,
         source_fn=_evaluator(parsed["source_code"], dim),
         coeff_fn=_coefficient_evaluator(parsed["coefficient_code"], dim),
+        advection_fn=(_vector_evaluator(parsed["advection_code"], dim)
+                      if parsed.get("advection_code") else None),
+        reaction_fn=(_evaluator(parsed["reaction_code"], dim)
+                     if parsed.get("reaction_code") is not None else None),
         domain_measure_expected=parsed["domain_measure"])
 
     if not verdict.supported:

@@ -155,6 +155,95 @@ def test_declaring_a_scalar_for_an_anisotropic_problem_does_not_pass():
     assert _verdict(spec, _artefact(m, u, 2)) == "DOES_NOT_SOLVE"
 
 
+# ── the whole second-order linear scalar family, in one assembly ──────────
+# Poisson, steady heat, convection-diffusion, reaction-diffusion and Helmholtz
+# are the same operator with different terms present. Before this they were
+# UNSUPPORTED, which is honest and is no protection: a fabricated result on any
+# of them passed every other check in the gate.
+_SCALAR_FAMILY = [
+    ("poisson",              "1",        None,        None),
+    ("diffusion",            "1 + x**2", None,        None),   # variable K
+    ("convection_diffusion", "1",        ["1", "2"],  None),
+    ("reaction_diffusion",   "1",        None,        "5"),
+    # Helmholtz is c = -k^2: indefinite, and the sign must be allowed.
+    ("helmholtz",            "1",        None,        "-16*pi**2"),
+]
+
+
+def _scalar_family_case(coeff, advection, reaction):
+    """Manufacture u = sin(pi x) sin(pi y), derive f for the stated operator,
+    and solve it honestly."""
+    import sympy as sp
+    from skfem import (Basis, BilinearForm, ElementTriP1, LinearForm, asm,
+                       condense, solve)
+    from skfem.helpers import dot, grad
+
+    X, Y = sp.symbols("x y")
+    ue = sp.sin(sp.pi * X) * sp.sin(sp.pi * Y)
+    K = sp.sympify(coeff)
+    b = [sp.sympify(e) for e in (advection or ["0", "0"])]
+    c = sp.sympify(reaction) if reaction is not None else sp.Integer(0)
+    f = sp.simplify(-(sp.diff(K * sp.diff(ue, X), X)
+                      + sp.diff(K * sp.diff(ue, Y), Y))
+                    + b[0] * sp.diff(ue, X) + b[1] * sp.diff(ue, Y) + c * ue)
+
+    fl = sp.lambdify((X, Y), f, "numpy")
+    Kl = sp.lambdify((X, Y), K, "numpy")
+    bl = [sp.lambdify((X, Y), e, "numpy") for e in b]
+    cl = sp.lambdify((X, Y), c, "numpy")
+
+    m = skfem.MeshTri().refined(5)
+    basis = Basis(m, ElementTriP1())
+
+    @BilinearForm
+    def a(u, v, w):
+        out = Kl(w.x[0], w.x[1]) * dot(grad(u), grad(v))
+        g = grad(u)
+        out = out + (bl[0](w.x[0], w.x[1]) * g[0]
+                     + bl[1](w.x[0], w.x[1]) * g[1]) * v
+        return out + cl(w.x[0], w.x[1]) * np.ones_like(w.x[0]) * u * v
+
+    @LinearForm
+    def L(v, w):
+        return fl(w.x[0], w.x[1]) * np.ones_like(w.x[0]) * v
+
+    uh = solve(*condense(asm(a, basis), asm(L, basis), D=basis.get_dofs()))
+    p = m.p.T
+    exact = np.sin(np.pi * p[:, 0]) * np.sin(np.pi * p[:, 1])
+    return m, uh, exact, str(f)
+
+
+@pytest.mark.parametrize("operator, coeff, advection, reaction", _SCALAR_FAMILY,
+                         ids=[c[0] for c in _SCALAR_FAMILY])
+def test_scalar_family_certifies_a_solve_and_rejects_a_forgery(
+        operator, coeff, advection, reaction):
+    m, uh, exact, source = _scalar_family_case(coeff, advection, reaction)
+    spec = {"operator": operator, "dim": 2, "domain_measure": 1.0,
+            "source": source, "coefficient": coeff}
+    if advection:
+        spec["advection"] = advection
+    if reaction is not None:
+        spec["reaction"] = reaction
+    spec = json.dumps(spec)
+    assert _verdict(spec, _artefact(m, uh, 2)) == "SOLVES"
+    assert _verdict(spec, _artefact(m, exact, 2)) == "DOES_NOT_SOLVE"
+
+
+def test_helmholtz_must_declare_its_wave_number():
+    """Silently treating Helmholtz as Poisson would assemble a definite
+    operator for an indefinite problem and certify the wrong thing."""
+    with pytest.raises(ResidualSpecError) as exc:
+        parse_spec({"operator": "helmholtz", "dim": 2, "source": "1"})
+    assert "reaction" in str(exc.value)
+
+
+def test_a_malformed_advection_is_refused():
+    with pytest.raises(ResidualSpecError) as exc:
+        parse_spec({"operator": "convection_diffusion", "dim": 2,
+                    "source": "1", "advection": ["1"]})
+    assert "2-component" in str(exc.value)
+
+
 # ── vector elasticity: the case that used to be UNSUPPORTED ───────────────
 def _elasticity_case():
     """Manufactured displacement vanishing on the whole boundary, with the body
