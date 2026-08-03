@@ -287,7 +287,13 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                             rtol: float = 0.05) -> list[str]:
     """Conservation across a coupling interface: the net flux leaving A should equal
     the net flux entering B (global balance). Pure arithmetic on the exchanged
-    normal_fluxes — no physics. `export_*` are InterfaceData-like dicts/objects."""
+    normal_fluxes — no physics. `export_*` are InterfaceData-like dicts/objects.
+
+    Returns findings only. Whether the check COULD run at all is a separate
+    question, answered by `interface_balance_coverage` — a coupling that
+    exchanges no fluxes gets an empty finding list here, and an empty finding
+    list must never be read as "conservation was checked and is fine".
+    """
     w = []
     def _flux(e):
         f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
@@ -295,6 +301,13 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
     fa, fb = _flux(export_a), _flux(export_b)
     if fa is None or fb is None:
         return w
+    # A non-finite net flux makes every comparison below False (nan > rtol is
+    # False), so without this the check would report nothing at all on the most
+    # broken data it can be handed.
+    if not (_np.isfinite(fa) and _np.isfinite(fb)):
+        return [f"Interface flux balance could NOT be evaluated: net({label_a})={fa}, "
+                f"net({label_b})={fb} — a non-finite exchanged flux. Conservation "
+                "is unchecked and the exchanged data is invalid."]
     denom = max(abs(fa), abs(fb), 1e-30)
     rel = abs(fa + fb) / denom            # A exports +flux, B imports -flux → sum≈0
     if rel > rtol:
@@ -312,12 +325,270 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                 "cancel. Note this is the opposite of the BC value you APPLY, "
                 "which is the same number on both sides."
                 if same_sign else "")
+        if not hint:
+            hint = _unit_ratio_hint(fa, fb)
         w.append(
             f"Interface flux NOT balanced: net({label_a})={fa:.4g}, net({label_b})={fb:.4g}, "
             f"imbalance {rel:.1%} > {rtol:.0%} — coupling may be non-conservative (silent error)."
             + hint
         )
     return w
+
+
+# Ratios that show up when two participants agree on the physics and disagree on
+# the units. Naming the suspect turns "your coupling is non-conservative" (which
+# sends the agent hunting a physics bug that is not there) into one thing to
+# check. Deliberately conservative: only near-exact ratios, and always phrased as
+# a candidate, never as a diagnosis.
+_UNIT_RATIOS = [
+    (1e3, "a 1000x factor — the classic W/mW, m/mm, kg/g, kPa/Pa mix-up"),
+    (1e-3, "a 1000x factor — the classic W/mW, m/mm, kg/g, kPa/Pa mix-up"),
+    (1e6, "a 1e6 factor — e.g. Pa/MPa, m^2/mm^2, W/uW"),
+    (1e-6, "a 1e6 factor — e.g. Pa/MPa, m^2/mm^2, W/uW"),
+    (1e9, "a 1e9 factor — e.g. Pa/GPa, m^3/mm^3"),
+    (1e-9, "a 1e9 factor — e.g. Pa/GPa, m^3/mm^3"),
+    (1e4, "a 1e4 factor"), (1e-4, "a 1e4 factor"),
+    (60.0, "a factor of 60 — a per-second / per-minute rate mismatch"),
+    (1 / 60.0, "a factor of 60 — a per-second / per-minute rate mismatch"),
+    (3600.0, "a factor of 3600 — a per-second / per-hour rate mismatch"),
+    (1 / 3600.0, "a factor of 3600 — a per-second / per-hour rate mismatch"),
+]
+
+
+def _unit_ratio_hint(fa: float, fb: float, rtol: float = 0.02) -> str:
+    """Name a UNIT MISMATCH when the two net fluxes differ by a suspicious factor.
+
+    A sign error makes the magnitudes match; a unit error makes them differ by a
+    clean power of ten (or 60 / 3600). Both look identical to a plain imbalance
+    number, and the second one converges to a confidently wrong answer.
+    """
+    if fa == 0.0 or fb == 0.0:
+        return ""
+    ratio = abs(fb) / abs(fa)
+    for target, what in _UNIT_RATIOS:
+        if abs(ratio / target - 1.0) <= rtol:
+            return (f" The magnitudes differ by {what}, not by a small amount: "
+                    "that is the signature of a UNIT MISMATCH between the two "
+                    "participants rather than a conservation error. Check that "
+                    "both sides express the exchanged quantity in the same units "
+                    "before looking for a physics bug.")
+    return ""
+
+
+def check_monolithic_consistency(coupled_qoi: float, monolithic_qoi: float,
+                                 rtol: float = 0.05, qoi: str = "QoI") -> list[str]:
+    """If the same problem can be solved un-split in one code, the coupled answer must
+    match it. The most decisive silent-wrong detector — needs no external benchmark,
+    only a monolithic re-solve. Returns a warning if they disagree beyond rtol.
+
+    Unit mismatches, a wrongly applied interface sign, a participant that never
+    reads its imports and a lossy mesh mapping all end at the same place: a
+    coupled number that is clean, converged and wrong. This is the only check in
+    the file that compares that number against an independent answer to the same
+    question, which is why `couple` reports loudly when it was not run.
+    """
+    w = []
+    if monolithic_qoi is None or coupled_qoi is None:
+        return w
+    if not (_np.isfinite(coupled_qoi) and _np.isfinite(monolithic_qoi)):
+        return [f"{qoi}: coupled={coupled_qoi} vs monolithic re-solve="
+                f"{monolithic_qoi} — a non-finite value, so the two could not be "
+                "compared and the coupled result is not corroborated."]
+    denom = max(abs(monolithic_qoi), 1e-30)
+    rel = abs(coupled_qoi - monolithic_qoi) / denom
+    if rel > rtol:
+        w.append(
+            f"{qoi}: coupled={coupled_qoi:.5g} vs monolithic re-solve={monolithic_qoi:.5g} "
+            f"differ by {rel:.1%} > {rtol:.0%} — the coupled result is likely WRONG."
+        )
+    return w
+
+
+# ── coupling-machinery checks (consume the driver's recorded evidence) ────────
+# Each one answers a question a partitioned coupling can otherwise get wrong
+# while reporting a clean convergence. They return (findings, not_checked):
+# findings flip the verdict, not_checked is reported so that "this check could
+# not look at anything" is never silently indistinguishable from "this check
+# looked and was happy".
+
+def check_coupling_directionality(graph: dict, max_iter: int = 0
+                                  ) -> tuple[list[str], list[str]]:
+    """Is the coupling wired the way the caller thinks it is?
+
+    A partitioned coupling is a directed graph, and the two ways it goes wrong
+    are silent: a participant that declares no partner at all, and an edge to a
+    partner whose name is misspelled. Both make the iteration a one-way transfer
+    that converges quickly and looks excellent — the residual really is zero,
+    because nothing is feeding back.
+
+    A deliberate one-way transfer is declared by asking for a single pass
+    (max_iter=1). Iterating a one-way graph is the confusion this catches.
+    """
+    findings: list[str] = []
+    not_checked: list[str] = []
+    names = list(graph.get("participants") or [])
+    edges = dict(graph.get("declared_edges") or {})
+    if not names or not edges:
+        return findings, ["coupling directionality: the participant graph was "
+                          "not recorded, so one-way/two-way could not be checked"]
+    unknown = {n: [s for s in srcs if s not in names] for n, srcs in edges.items()}
+    unknown = {n: u for n, u in unknown.items() if u}
+    if unknown:
+        findings.append(
+            f"Coupling graph names unknown participants: {unknown} — those edges "
+            f"carry no data. Known participants: {names}.")
+    isolated = [n for n in names if not edges.get(n)]
+    if isolated and max_iter != 1:
+        findings.append(
+            f"ONE-WAY coupling: {isolated} import from nobody, so no information "
+            "flows back to them and iterating to 'convergence' is meaningless — "
+            "the residual falls to zero because nothing changes, not because the "
+            "coupled problem was solved. If one-way IS intended, ask for a single "
+            "pass (max_iter=1), which declares it; otherwise set imports_from on "
+            "both sides.")
+    elif isolated:
+        not_checked.append(
+            f"two-way convergence: {isolated} import from nobody and this was run "
+            "as a declared single pass, so nothing was iterated and no coupled "
+            "fixed point was established")
+    return findings, not_checked
+
+
+def check_participant_responsiveness(responsiveness: dict) -> tuple[list[str], list[str]]:
+    """Did every participant's answer actually depend on what it was given?
+
+    This is the check for the participant that exits 0 having done nothing: it
+    re-emits its initial condition (or a cached first answer) every iteration, so
+    the export-vector change is exactly zero at iteration 2 and the coupling
+    reports converged with a residual of 0.0 and no other complaint. A real solve
+    handed different boundary data does not return byte-identical output.
+    """
+    findings: list[str] = []
+    not_checked: list[str] = []
+    if not responsiveness:
+        return findings, ["participant responsiveness: the driver recorded no "
+                          "per-iteration trace, so a do-nothing participant "
+                          "could not be ruled out"]
+    dead = [n for n, s in responsiveness.items() if s == "unresponsive"]
+    frozen = [n for n, s in responsiveness.items() if s == "imports never changed"]
+    if dead:
+        findings.append(
+            f"Participant(s) {dead} produced byte-identical output while the data "
+            "handed to them CHANGED — their answer does not depend on their "
+            "imports. Either the script never reads imports.json, or it re-serves "
+            "a cached/initial result. Any convergence reported here is the "
+            "coupling standing still, not a solution.")
+    if frozen:
+        not_checked.append(
+            f"participant responsiveness for {frozen}: the data handed to them "
+            "never changed during the run, so whether they read it could not be "
+            "established")
+    return findings, not_checked
+
+
+def check_interface_meshes(export_a, export_b, label_a="A", label_b="B",
+                           rtol: float = 1e-6) -> tuple[list[str], list[str]]:
+    """Compare the two sides' interface discretisations.
+
+    Non-matching interface meshes are legitimate and routine, so this is NOT an
+    error — but it changes what the other numbers mean. Every exchange then goes
+    through an interpolation that is lossy and does not conserve the integrated
+    quantity unless the mapping was built to, and a converged residual is
+    completely silent about that. Nothing here can inspect the caller's mapping,
+    so the honest report is: say the interfaces do not match, and say that
+    conservation across them is established by the flux balance or not at all.
+    That belongs in the coverage list, not in the findings — reporting the
+    geometry as a failure would be as wrong as reporting nothing.
+    """
+    findings: list[str] = []
+    not_checked: list[str] = []
+
+    def _co(e):
+        c = e.get("coordinates") if isinstance(e, dict) else getattr(e, "coordinates", None)
+        return None if c is None else _np.atleast_2d(_np.asarray(c, float))
+
+    def _has_flux(e):
+        f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
+        return f is not None and len(_np.asarray(f, float).ravel()) > 0
+
+    ca, cb = _co(export_a), _co(export_b)
+    if ca is None or cb is None or ca.size == 0 or cb.size == 0:
+        return findings, ["interface mesh conformity: one or both participants "
+                          "exported no interface coordinates, so matching / "
+                          "non-matching discretisation could not be checked"]
+    na, nb = len(ca), len(cb)
+    if na == nb and ca.shape == cb.shape:
+        span = float(_np.max(_np.abs(ca))) or 1.0
+        if float(_np.max(_np.abs(ca - cb))) <= rtol * span:
+            return findings, not_checked          # matching, node-for-node
+    both_flux = _has_flux(export_a) and _has_flux(export_b)
+    note = (f"conservation across a NON-MATCHING interface ({label_a} exports {na} "
+            f"point(s), {label_b} exports {nb}): every exchange passes through an "
+            "interpolation, which is lossy and does not conserve the integrated "
+            "quantity unless the mapping was built to — a nearest-neighbour or "
+            "plain linear map is not. ")
+    note += ("The interface flux balance is the only evidence here that it did "
+             "conserve; the residual is silent about it."
+             if both_flux else
+             "Neither side exported `normal_fluxes`, so NOTHING here checked "
+             "whether the interpolation conserved. Export the normal flux from "
+             "both sides to make that checkable.")
+    return findings, [note]
+
+
+def check_residual_blocks(block_residuals: dict, tol: float,
+                          slack: float = 10.0) -> tuple[list[str], list[str]]:
+    """Is the reported global residual actually representative?
+
+    The driver converges on ONE relative norm over every participant's stacked
+    export vector. When the exchanged quantities live on different scales — the
+    standard case in FSI (forces ~1e3, displacements ~1e-5) and TSI (temperature
+    ~1e3, displacement ~1e-5) — the large block sets the denominator and the small
+    block can still be moving by a large fraction of itself while the global
+    number sits below tolerance. That is a converged-looking, wrong answer with no
+    other symptom.
+    """
+    findings: list[str] = []
+    not_checked: list[str] = []
+    if not block_residuals:
+        return findings, ["per-block convergence: the driver recorded no "
+                          "per-block residuals, so scale masking in the global "
+                          "residual could not be ruled out"]
+    finite = {k: v for k, v in block_residuals.items() if v == v and abs(v) != float("inf")}
+    if not finite:
+        return findings, ["per-block convergence: every per-block residual was "
+                          "non-finite or unavailable"]
+    limit = tol * slack
+    bad = {k: v for k, v in finite.items() if v > limit}
+    if bad:
+        worst = max(bad.items(), key=lambda kv: kv[1])
+        findings.append(
+            "Global residual is NOT representative: block(s) "
+            + ", ".join(f"{k}={v:.2e}" for k, v in sorted(bad.items()))
+            + f" are still changing by more than {limit:.1e} relative, while the "
+            "global norm — which is dominated by the largest-magnitude block — "
+            f"reports convergence. {worst[0]} is the one to look at. Converge each "
+            "exchanged quantity in its own units, or scale the blocks before "
+            "taking the norm.")
+    return findings, not_checked
+
+
+def check_returncodes(returncodes: dict) -> tuple[list[str], list[str]]:
+    """Every participant's LAST run must have exited 0.
+
+    A solver that diverges commonly writes its last iterate and then aborts; the
+    file handshake sees a perfectly well-formed exports.json and couples on it.
+    """
+    findings: list[str] = []
+    if not returncodes:
+        return findings, ["participant exit codes: none were recorded"]
+    bad = {n: rc for n, rc in returncodes.items() if rc != 0}
+    if bad:
+        findings.append(
+            f"Participant(s) exited non-zero: {bad} — the exchanged data on that "
+            "iteration is the output of a FAILED solve, whatever the residual says.")
+    return findings, []
+
 
 
 def check_monolithic_consistency(coupled_qoi: float, monolithic_qoi: float,
