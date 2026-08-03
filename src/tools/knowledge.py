@@ -381,12 +381,26 @@ for iteration in range(max_iter):
 
 ## Relaxation Parameter θ
 
-- **θ = 1.0**: No relaxation. Works for linear problems WITHOUT source terms
-  (e.g. steady heat conduction T=100→0). Converges in 1 iteration.
-- **θ = 0.5**: Required for problems WITH source terms (e.g. Poisson -Δu=f).
-  Without relaxation, DN oscillates and never converges!
-- **θ = 0.7**: Good default for nonlinear problems (elasticity, coupled physics).
-- **Rule of thumb**: If DN oscillates (residual doesn't decrease), reduce θ.
+θ is the under-relaxation factor in step 5 of the loop above.
+
+- **θ = 1.0** is the plain (un-relaxed) fixed-point iteration. Whether it
+  converges is a property of the problem, not a setting you can assume:
+  the DN iteration operator has a spectral radius that depends on the
+  ratio of the two subdomains' stiffness/conductivity and on where the
+  interface sits. If that radius exceeds 1, θ = 1.0 diverges or oscillates
+  forever.
+- **θ < 1** under-relaxes and shrinks the effective spectral radius, which
+  is what makes an otherwise divergent partition converge. Smaller θ buys
+  robustness at the cost of more iterations.
+- **Determine θ for YOUR problem empirically** — run a short relaxation
+  sweep (`poisson_dd_study`) and read the iteration counts. Do not carry a
+  θ over from a different geometry, material contrast or physics.
+- **Aitken / IQN acceleration** adapts the factor per iteration from the
+  observed residuals and removes the manual choice; prefer it when the
+  right θ is unknown.
+- **Diagnostic**: a residual that stalls or alternates in sign between
+  iterations (rather than decreasing monotonically) is the signature of
+  too large a θ, not of a bug in the field transfer.
 
 ## Neumann BC Sign Convention
 
@@ -422,34 +436,16 @@ At the interface between subdomains A and B:
 - Use `interpolate_to_points()` for non-matching mesh interpolation
 - Sort interface nodes by tangential coordinate for consistent ordering
 
-## Verified Results (All Solver Combinations)
-
-### Heat DD (T=100 left, T=0 right, no source)
-- Exact solution: T(x) = 100*(1-x), linear
-
-| Solver A | Solver B | Iterations | Final Residual | T(0.5) Error |
-|----------|----------|------------|----------------|--------------|
-| FEniCS   | 4C       | 1          | 3.4e-16        | 0.0          |
-| FEniCS   | FEniCS   | 1          | 4.3e-15        | 4.3e-15      |
-
-### Poisson DD (-Δu=1, u=0 on boundary, θ=0.5)
-- Reference: single-domain FEniCS solve
-
-| Solver A | Solver B | Iterations | Final Residual |
-|----------|----------|------------|----------------|
-| FEniCS   | 4C       | 2          | 1.2e-16        |
-| FEniCS   | FEniCS   | 7          | 9.7e-05        |
-
-- Without relaxation (θ=1.0): oscillates indefinitely!
-
-### Supported Backend Combinations
+## Supported Backend Combinations
 - FEniCS (Dirichlet) ↔ 4C (Neumann): fully tested, production ready
 - FEniCS (Dirichlet) ↔ FEniCS (Neumann): fully tested, proves solver-agnosticism
 - Any combination works if `_generate_domain_b_input()` supports the backend
 
 ## Common Pitfalls
 
-1. **Missing relaxation**: DN with source oscillates without θ<1. Always test.
+1. **Missing relaxation**: a partitioned DN iteration is not unconditionally
+   convergent. If it oscillates, under-relax (θ<1) or switch on Aitken —
+   and always check convergence rather than assuming θ=1 works.
 2. **Wrong VTU timestep**: 4C writes initial condition + solution. Use LAST file.
 3. **Field name mismatch**: 4C=phi_1, FEniCS=temperature. Handle in extraction.
 4. **Node duplication**: 4C VTU has 4× more nodes than expected. Still works with
@@ -485,13 +481,19 @@ Key changes needed for new physics:
 
 ## Relaxation Parameter Selection Guide
 
-| Scenario | Recommended θ | Reason |
-|----------|--------------|--------|
-| Linear, no source | 1.0 | Exact in 1 iteration |
-| Linear, with source | 0.5 | DN oscillates without relaxation |
-| Nonlinear | 0.7 | Good starting point |
-| Unknown / complex | Aitken | Automatic acceleration |
-| Failing to converge | Reduce θ | Try 0.3, then 0.1 |
+There is no θ that is correct across problems — it depends on the
+subdomain stiffness/conductivity contrast and on the interface position,
+so it must be established for the case at hand.
+
+| Situation | What to do |
+|-----------|------------|
+| θ unknown | Use Aitken/IQN acceleration and let it adapt per iteration |
+| Residual oscillates or stalls | Reduce θ and retry; the iteration is over-relaxed |
+| Residual decreases but slowly | Increase θ or switch on acceleration |
+| Need the θ that is right here | Run `poisson_dd_study` and compare iteration counts |
+
+A run that has not converged is a FAILURE, never a result — report it as
+such rather than quoting the last iterate.
 '''
 
     @mcp.tool()
