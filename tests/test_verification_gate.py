@@ -1,8 +1,10 @@
 """Tests for the verification-gate verdict (_stamp_verification).
 
-OASiS enforces verification IN SOFTWARE: OASiS verifies via numerical checks and
-*attestation* — binding every reported number to run evidence — but does not
-validate. The independent pre-execution critic is MANDATORY: a result is
+OASiS enforces verification IN SOFTWARE: it verifies via numerical checks on the
+RUN (completed, produced output, finite / converged / balanced) but does not
+validate. It does NOT currently bind a reported NUMBER to that run — an audit
+showed an invented value attached to a real run still passes — so these tests
+pin what the gate actually does, not what it was once described as doing. The independent pre-execution critic is MANDATORY: a result is
 trustworthy ONLY when it passes attestation + numerical checks AND the critic
 approved (critic_approved=True). Enforced by verdict, never by error. These tests
 pin exactly that, plus the anti-fabrication labelling and the eval ablation

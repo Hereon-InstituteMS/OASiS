@@ -7,6 +7,7 @@ the ablation toggle, and only references tools that actually exist.
 """
 import functools
 import os
+import pathlib
 import subprocess
 import sys
 from pathlib import Path
@@ -108,3 +109,29 @@ def test_coupling_tools_expose_critic_approved():
     schemas = _registered_tools()
     for name in ("couple", "couple_precice"):
         assert "critic_approved" in schemas[name].get("properties", {})
+def test_every_critic_gated_tool_actually_READS_critic_approved():
+    """A declared parameter that is never read is worse than no parameter.
+
+    An audit found `coupled_solve` accepting `critic_approved` and never
+    referencing it in its body, so an unreviewed run was indistinguishable
+    from a reviewed one — while the test above passed, because it only checked
+    that the parameter EXISTS. Declaring the gate is not enforcing it.
+    """
+    import ast
+    src = pathlib.Path(__file__).resolve().parents[1] / "src" / "tools" / "consolidated.py"
+    tree = ast.parse(src.read_text())
+    bodies = {}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            params = [a.arg for a in (*node.args.args, *node.args.kwonlyargs)]
+            if "critic_approved" not in params:
+                continue
+            reads = sum(
+                1 for n in ast.walk(node)
+                if isinstance(n, ast.Name) and n.id == "critic_approved"
+                and isinstance(n.ctx, ast.Load))
+            bodies[node.name] = reads
+    dead = [name for name, reads in bodies.items() if reads == 0]
+    assert not dead, (
+        "these tools declare critic_approved and never read it, so the "
+        "critic requirement is unenforced for them: " + ", ".join(dead))

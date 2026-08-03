@@ -47,13 +47,22 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
                         critic_approved: bool = False) -> dict:
     """Attach OASiS's verification-gate verdict to a run/coupling result in place.
 
-    The whole point of OASiS: verification is ENFORCED IN SOFTWARE (paper §7 —
-    "verification enforced in software substitutes for the judgment users hoped
-    to delegate"). A result is trustworthy ONLY when it (1) passes attestation +
-    the numerical checks (a real run backs every number, and it is finite /
-    converged / balanced) AND (2) has been reviewed by OASiS's MANDATORY
-    independent critic. OASiS *verifies* and checks integrity; it does not
-    *validate* — physical validity stays the engineer's task.
+    A result is trustworthy ONLY when it (1) passes the numerical checks — the
+    run completed, produced output, and that output is finite / converged /
+    balanced — AND (2) has been reviewed by OASiS's independent critic. OASiS
+    *verifies* and checks integrity; it does not *validate* — physical validity
+    stays the engineer's task.
+
+    SCOPE, STATED HONESTLY. These checks bind the verdict to the RUN. They do
+    NOT bind it to a reported NUMBER: nothing here recomputes a value the agent
+    states, so a plausible invented number attached to a real run still passes.
+    An audit demonstrated exactly that against a live backend. Earlier wording
+    here claimed attestation "binds every reported number to run evidence";
+    that was false and is removed rather than softened. Binding a value to the
+    data it came from requires computing it from the run's own output (see
+    core/attestation.py) and checking the field satisfies the discrete problem
+    (see core/residual_check.py); until those are wired into this path, the
+    verdict means "a real, clean run happened", not "this number came from it".
 
     Enforcement is by VERDICT, never by error: an unverified run still returns
     its output, but is never labelled trustworthy, so a confidently-wrong or
@@ -2098,12 +2107,23 @@ def register_consolidated_tools(mcp: FastMCP):
 
         out = await dispatch[problem]()
         # LEGACY path returns human-readable text, not a gated JSON verdict.
-        # Append an explicit attestation note so a reader never mistakes it for a
-        # gate-verified result (the machine-readable verdict lives on `couple`).
-        note = ("\n\n[OASiS verification: LEGACY coupled_solve — trust is governed "
-                "by the convergence report above (a non-converged run is reported "
-                "as failure, never a result). For an attested, machine-readable "
-                "verification verdict use `couple`.]")
+        # An audit found this tool accepted `critic_approved` and then never
+        # read it — a dead parameter on a tool the server instructions list as
+        # critic-gated, so an unreviewed run was indistinguishable from a
+        # reviewed one. The critic state now governs the verdict shown here.
+        if _ABLATE_CRITIC or critic_approved:
+            note = ("\n\n[OASiS verification: LEGACY coupled_solve — critic-reviewed. "
+                    "Trust is governed by the convergence report above; a "
+                    "non-converged run is reported as failure, never a result. "
+                    "For a machine-readable verification verdict use `couple`.]")
+        else:
+            note = ("\n\n[OASiS verification: NOT VERIFIED — OASiS's independent "
+                    "critic has not reviewed this setup, and OASiS treats no "
+                    "result as trustworthy until it has. Do NOT report the values "
+                    "above as a result: have a critic challenge the parameters, "
+                    "units, discretisation and boundary conditions, then re-run "
+                    "with critic_approved=True. For a machine-readable verdict "
+                    "use `couple`.]")
         return (out + note) if isinstance(out, str) else out
 
     @mcp.tool()
