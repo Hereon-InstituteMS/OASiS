@@ -791,10 +791,20 @@ KNOWLEDGE["_general"] = {
         ),
     },
     "cmake_embedding": {
-        "find_package": "find_package(FEBio) — defined by FEBioConfig.cmake "
-                        "at the FEBio source tree root; detects in-tree-build "
-                        "vs install layout automatically via "
-                        "_FEBIO_IS_SOURCE_TREE.",
+        "find_package": (
+            "find_package(FEBio) — defined by FEBioConfig.cmake at the "
+            "FEBio SOURCE TREE ROOT (not in a lib/cmake subdirectory), "
+            "so REQUIRED alongside it is the hint that says where that "
+            "root is:\n"
+            "  cmake -S . -B build -DFEBio_DIR=/path/to/febio-src\n"
+            "It detects in-tree-build vs install layout automatically "
+            "(_FEBIO_IS_SOURCE_TREE, decided by whether "
+            "<config>/../../../include exists) and then globs for a "
+            "*build* directory containing libfecore.so, so a cmake "
+            "build directory named cbuild or build2 is found as "
+            "readily as one named build. EXECUTED 2026-08-03 against "
+            "the FEBio 4.12.0.86045466d source tree: FEBio_FOUND=1 and "
+            "all eleven imported targets resolve."),
         "imported_targets": [
             "FEBio::FECore     — core FE framework",
             "FEBio::FEBioMech  — solid-mechanics module",
@@ -815,17 +825,27 @@ KNOWLEDGE["_general"] = {
                                 "users (Visual Studio) get correct per-config "
                                 "binaries.",
         "Signal": (
-            "[Output] FEBioConfig.cmake sets FEBio_FOUND=FALSE if ANY of "
-            "the 11 imported targets fails to locate its library — the "
-            "config aborts with `return()` after the first missing lib. "
-            "A partial build (e.g. only Release + FECore + FEBioMech, no "
-            "FEImgLib because OpenCV wasn't installed) makes "
-            "find_package(FEBio) report not-found even though the "
-            "subset would suffice for mechanics-only embedding. "
-            "Workaround: build all 11 libs even if the user only needs a "
-            "subset, OR maintain a local fork of FEBioConfig.cmake with "
-            "the unwanted libs removed from _FEBIO_LIBS. "
-            "(File-walk audit of FEBioConfig.cmake 2026-06-02.)"
+            "[Output] FEBioConfig.cmake demands ALL ELEVEN libraries and "
+            "gives up on the first one it cannot find: it prints "
+            "`FEBio library '<name>' could not be found.` and `Expected "
+            "under: <prefix>`, then sets FEBio_FOUND=FALSE and returns. "
+            "A partial build — say no FEImgLib because OpenCV was not "
+            "installed — makes find_package(FEBio) report not-found even "
+            "though the remaining subset would be enough for "
+            "mechanics-only embedding. "
+            "THE TRAP: the imported targets created BEFORE the missing "
+            "one still exist. Executed 2026-08-03 with libfeimglib.so "
+            "removed from a copy of the prefix: FEBio_FOUND came back 0 "
+            "and `if(TARGET FEBio::FECore)` was nevertheless TRUE. So a "
+            "CMakeLists that calls find_package(FEBio) WITHOUT REQUIRED "
+            "and then tests for a target concludes FEBio is usable and "
+            "fails later at link time. Always branch on FEBio_FOUND, or "
+            "pass REQUIRED and let the configure step fail loudly. "
+            "Workaround for a deliberate partial build: keep a local "
+            "fork of FEBioConfig.cmake with the unwanted names removed "
+            "from _FEBIO_LIBS. "
+            "(Executed 2026-08-03 against FEBio 4.12.0.86045466d, both "
+            "the complete prefix and a prefix with one library removed.)"
         ),
     },
 }
