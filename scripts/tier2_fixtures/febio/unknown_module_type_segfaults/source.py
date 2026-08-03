@@ -106,9 +106,16 @@ def run_module(binary: Path, module: str) -> tuple[int, str, bool]:
 def main() -> int:
     binary = find_febio()
     if binary is None:
-        print("SKIP: FEBio binary not found (set FEBIO_BINARY)")
-        print("unknown_module_segfault_count=skipped_no_binary")
-        return 0
+        # A missing binary is a FAILURE, not a skip. This fixture
+        # exists to verify solver behaviour; with no solver it
+        # verifies nothing, and returning 0 would let the tier-2
+        # floor certify an unrun check. "FAIL:" is in this
+        # fixture's forbid_in_output, so the runner records a
+        # failure even if the exit status were ignored.
+        print("FAIL: FEBio binary not found. This fixture RUNS the "
+              "solver and cannot be satisfied without it. Set "
+              "FEBIO_BINARY or symlink ~/FEBio/bin/febio4.")
+        return 1
 
     crashed = 0
     for m in BAD_MODULES:

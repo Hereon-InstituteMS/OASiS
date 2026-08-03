@@ -80,21 +80,31 @@ def _live_modules(binary: Path) -> set[str]:
 class TestFebioModuleCatalogOffline(unittest.TestCase):
     """No binary required."""
 
-    def test_every_template_module_is_in_the_pinned_list(self) -> None:
-        """Templates may only emit module names the catalog
-        believes exist. Two templates deliberately violate this
-        and are named here — they are known-broken (they segfault
-        FEBio 4.12) and their knowledge entries say so. If a
-        template is fixed, remove it from KNOWN_PHANTOM in the
-        same commit as the knowledge update."""
+    def test_no_template_emits_an_unregistered_module(self) -> None:
+        """GUARD: every shipped template must name a module FEBio
+        actually registers.
+
+        This assertion used to run the other way round. It pinned
+        `offenders == {"heat_3d_bar": "heat",
+        "biphasic_fsi_3d_block": "biphasic-FSI"}`, i.e. the suite
+        REQUIRED those two templates to keep segfaulting the solver
+        and went red if either was repaired. That is a test that
+        certifies a defect. Both templates were repaired on
+        2026-08-03 — heat_3d_bar now emits `thermo-fluid` (FEBio
+        4.12 has no `heat` module and no solid-conduction solver;
+        holding the fluid at rest reduces the thermo-fluid energy
+        equation to Fourier conduction) — so the assertion is now
+        the guard it should always have been: the offender set must
+        be EMPTY.
+
+        An unregistered <Module type> is not diagnosed. FEBio dies
+        with SIGSEGV, no ERROR box, no .log file, and stdout frozen
+        mid-line at `Reading file <name>.feb ...`. So a template
+        that trips this test is not merely wrong, it is
+        undebuggable from the outside."""
         from backends.febio.generators import (
             GENERATORS, FEBIO_MODULES)
 
-        KNOWN_PHANTOM = {
-            # template key -> the non-existent module it emits
-            "heat_3d_bar": "heat",
-            "biphasic_fsi_3d_block": "biphasic-FSI",
-        }
         offenders: dict[str, str] = {}
         for key, gen in GENERATORS.items():
             root = ET.fromstring(gen({}))
@@ -107,12 +117,12 @@ class TestFebioModuleCatalogOffline(unittest.TestCase):
             if mtype not in FEBIO_MODULES:
                 offenders[key] = mtype
         self.assertEqual(
-            offenders, KNOWN_PHANTOM,
-            "the set of templates emitting an unregistered FEBio "
-            "module changed. Adding one is a regression (an "
-            "unregistered <Module type> SEGFAULTS FEBio with no "
-            "diagnostic); removing one is a fix that must be "
-            "accompanied by a knowledge update.")
+            offenders, {},
+            "a shipped template names a module FEBio 4.12 does not "
+            "register. Feeding one to <Module type=...> SEGFAULTS "
+            "the solver with no diagnostic at all. Fix the template "
+            f"to use one of {list(FEBIO_MODULES)}; do NOT re-pin the "
+            "offender.")
 
     def test_analysis_enum_table_covers_every_module(self) -> None:
         from backends.febio.generators import (
@@ -186,6 +196,65 @@ class TestFebioModuleCatalogLive(unittest.TestCase):
             "with no diagnostic, so the pinned list must be "
             "updated (and any affected template knowledge with "
             f"it). live={sorted(live)}")
+
+    def test_repaired_templates_actually_run(self) -> None:
+        """GUARD, the live half of the inversion above.
+
+        `heat_3d_bar` and `biphasic_fsi_3d_block` were the two
+        templates the suite used to require to stay broken. Passing
+        the XML check is not enough — a module name can be
+        registered and the deck still solve nothing. So run them and
+        judge on PROGRESS: the process must not be killed by a
+        signal, a termination banner must appear, and at least one
+        time step must be completed.
+
+        A `N O R M A L   T E R M I N A T I O N` banner alone is
+        explicitly NOT accepted as evidence: a deck with no
+        <Control> and a deck using <linear_solver type="test"/> both
+        produce clean-looking runs that solved nothing (see the
+        tier-2 fixtures missing_control_silent_zero_result and
+        null_test_linear_solver_reports_success)."""
+        import tempfile
+        from backends.febio.generators import GENERATORS
+
+        for key in ("heat_3d_bar", "biphasic_fsi_3d_block"):
+            with self.subTest(template=key):
+                self.assertIn(key, GENERATORS)
+                deck = GENERATORS[key]({})
+                with tempfile.TemporaryDirectory() as td:
+                    feb = Path(td) / f"{key}.feb"
+                    feb.write_text(deck)
+                    p = subprocess.run(
+                        [str(self.binary), "-i", str(feb), "-nosplash"],
+                        capture_output=True, text=True, timeout=600,
+                        cwd=td)
+                    blob = (p.stdout or "") + (p.stderr or "")
+                    log = Path(td) / f"{key}.log"
+                    if log.is_file():
+                        blob += log.read_text(errors="replace")
+
+                self.assertGreaterEqual(
+                    p.returncode, 0,
+                    f"{key}: febio4 was killed by signal "
+                    f"{-p.returncode}. An unregistered <Module type> "
+                    f"segfaults with no diagnostic; this template "
+                    f"must never do that again.")
+                self.assertTrue(
+                    "N O R M A L   T E R M I N A T I O N" in blob
+                    or "E R R O R   T E R M I N A T I O N" in blob,
+                    f"{key}: no termination banner at all — the run "
+                    f"died before FEBio could report anything.")
+                m = re.search(
+                    r"Number of time steps completed\s*\.*\s*:\s*(\d+)",
+                    blob)
+                self.assertIsNotNone(
+                    m, f"{key}: FEBio never printed a completed-step "
+                       f"count, so the solver did not start.")
+                self.assertGreaterEqual(
+                    int(m.group(1)), 1,
+                    f"{key}: 0 time steps completed. The deck parsed "
+                    f"but solved nothing — that is a broken template, "
+                    f"whatever the banner says.")
 
     def test_backend_reports_available_and_versioned(self) -> None:
         """check_availability() must find the same binary this

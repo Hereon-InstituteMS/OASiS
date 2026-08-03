@@ -136,6 +136,30 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #      banner, exit 0 AND a non-zero completed-step count are
     #      all satisfied by a run that solved nothing; found by
     #      the critic pass over the first four fixtures)
+    #
+    # 2026-08-03, SAME DAY, SECOND PASS — the 108 -> 113 raise above
+    # was UNENFORCEABLE as written and has been repaired rather than
+    # rolled back. All five new fixtures printed
+    # "<key>=skipped_no_binary" and returned 0 when febio4 was
+    # absent, and each fixture.json expected only the bare "<key>="
+    # prefix, which that skip string satisfies. On any host without
+    # FEBio the five rows were therefore green while verifying
+    # nothing: the floor certified five checks that had not run. A
+    # floor that certifies nothing is worse than no floor, because it
+    # is read as evidence.
+    #
+    # Repair, applied to all five fixture directories:
+    #   * a missing binary now prints "FAIL: ..." and returns 1
+    #     ("FAIL:" is already in every fixture's forbid_in_output, so
+    #     the failure is recorded even if the exit status is ignored),
+    #   * expect_in_output pins the success TOKEN, not the key prefix
+    #     (e.g. "febio_patch_test=passed",
+    #     "unknown_module_segfault_count=4"), so no skip string can
+    #     satisfy it,
+    #   * "skipped_no_binary" was added to forbid_in_output.
+    # Verified both ways on this host: all five pass with febio4
+    # present and all five fail with FEBIO_BINARY pointing at a
+    # non-existent path.
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/

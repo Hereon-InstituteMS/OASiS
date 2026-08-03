@@ -42,7 +42,12 @@ PHYSICS_TO_MODULE = {
     "linear_elasticity": "solid",
     "hyperelasticity": "solid",
     "biphasic": "biphasic",
-    "heat": "heat",
+    # FEBio 4.12 has no `heat` module and no solid-conduction
+    # solver. Heat conduction is done with the `thermo-fluid`
+    # module and every fluid velocity DOF fixed, which reduces
+    # the energy equation to Fourier conduction. Changed
+    # 2026-08-03 together with the heat_3d_bar template fix.
+    "heat": "thermo-fluid",
     # ── Audit pass 4 (2026-06-02): catch-up after FEBio
     #    refactor passes 181 + 182 added 12 new physics
     #    (active_contraction, damage, fiber_reinforced,

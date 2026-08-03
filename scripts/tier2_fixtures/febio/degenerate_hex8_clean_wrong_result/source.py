@@ -136,9 +136,16 @@ def run(binary: Path, conn: str) -> tuple[int, bool, list[float], str]:
 def main() -> int:
     binary = find_febio()
     if binary is None:
-        print("SKIP: FEBio binary not found (set FEBIO_BINARY)")
-        print("degenerate_hex8=skipped_no_binary")
-        return 0
+        # A missing binary is a FAILURE, not a skip. This fixture
+        # exists to verify solver behaviour; with no solver it
+        # verifies nothing, and returning 0 would let the tier-2
+        # floor certify an unrun check. "FAIL:" is in this
+        # fixture's forbid_in_output, so the runner records a
+        # failure even if the exit status were ignored.
+        print("FAIL: FEBio binary not found. This fixture RUNS the "
+              "solver and cannot be satisfied without it. Set "
+              "FEBIO_BINARY or symlink ~/FEBio/bin/febio4.")
+        return 1
 
     rc_ok, norm_ok, s_ok, _ = run(binary, "1,2,3,4,5,6,7,8")
     rc_bad, norm_bad, s_bad, out_bad = run(binary, "1,2,3,4,5,6,7,7")
