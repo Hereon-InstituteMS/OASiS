@@ -237,12 +237,16 @@ class PorousMediaGenerator(BaseGenerator):
                 (
                     "[Input] CRITICAL: Section names are LOWERCASE in "
                     "porous media.  Use 'porofluid_dynamic' NOT "
-                    "'POROFLUID DYNAMIC'.  Using uppercase will "
-                    "silently fall back to defaults. Signal: input "
-                    "parser banner shows `unknown section: POROFLUID "
-                    "DYNAMIC`, or simulation completes with result "
-                    "fields uniformly equal to the (default) initial "
-                    "state. (Audit 2026-06-02.)"
+                    "'POROFLUID DYNAMIC'.  Using uppercase does NOT "
+                    "silently fall back to defaults -- it is a hard abort "
+                    "before anything runs. Signal: \"Section 'POROFLUID "
+                    "DYNAMIC' is not a valid section name.\" from "
+                    "core/io/src/4C_io_input_file.cpp, exit 1 at parse. "
+                    "(Verified by execution 2026-08-03. An earlier version "
+                    "predicted a silent fallback with uniformly-default "
+                    "result fields and quoted an 'unknown section' banner; "
+                    "neither is real -- that string is not in the binary "
+                    "and the run never starts.)"
                 ),
                 (
                     "[Input] The material hierarchy is deeply nested: "

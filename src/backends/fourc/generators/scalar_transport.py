@@ -149,11 +149,16 @@ class ScalarTransportGenerator(BaseGenerator):
                 (
                     "[Input] The dynamics section name is 'SCALAR TRANSPORT "
                     "DYNAMIC', NOT 'SCATRA DYNAMIC'.  Using the wrong name "
-                    "silently falls back to defaults and produces wrong "
-                    "results. Signal: simulation completes but result fields "
-                    "are uniformly zero / equal to the initial condition, "
-                    "or 4C reports `unknown section: SCATRA DYNAMIC` in the "
-                    "input-parser banner. (Audit 2026-06-02.)"
+                    "does NOT silently fall back to defaults -- it is a hard "
+                    "abort before anything runs. Signal: \"Section 'SCATRA "
+                    "DYNAMIC' is not a valid section name.\" from "
+                    "core/io/src/4C_io_input_file.cpp, exit 1 at parse. "
+                    "(Verified by execution 2026-08-03. An earlier version "
+                    "of this entry predicted a SILENT fallback with "
+                    "uniformly-zero result fields and quoted an 'unknown "
+                    "section: SCATRA DYNAMIC' parser banner; neither is "
+                    "real -- that string is not in the binary and the run "
+                    "never starts.)"
                 ),
                 (
                     "[Input] VELOCITYFIELD must be 'zero' (not omitted) "
