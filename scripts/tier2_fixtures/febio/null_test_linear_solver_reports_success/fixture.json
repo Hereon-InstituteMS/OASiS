@@ -1,0 +1,15 @@
+{
+  "_comment": "Tier-2: verifies febio::biphasic#5 — <linear_solver type=\"test\"/> is a registered FELINEARSOLVER_ID factory whose NumCore/TestSolver.cpp BackSolve() zeroes the solution vector and returns true. FEBio takes zero Newton increments, declares convergence, completes every time step and ends with N O R M A L T E R M I N A T I O N and exit 0. This is the one case found on FEBio 4.12 where the banner, exit status AND a non-zero completed-step count are all satisfied by a run that solved nothing, so it is the counterexample that keeps the silent-failure checklist honest. The fixture runs one confined-compression biphasic deck twice, identical but for the linear solver, and asserts BOTH that the two runs are indistinguishable to the standard acceptance checks and that their stresses disagree (44.5% at step 2: reference sz=-3.60750105073, null solver frozen at -2.00200400802). Verified 2026-08-03 on FEBio 4.12.0.86045466d. CAVEAT shared by every febio fixture: with no febio4 binary installed the fixture prints '<key>=skipped_no_binary' and returns 0, which the prefix-matching expect list accepts — on such a machine the febio tier-2 rows are green without verifying anything. The runner has no per-backend skip routing for febio; treat these rows as meaningful only on a host where check_availability() reports AVAILABLE.",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "null_test_solver="
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

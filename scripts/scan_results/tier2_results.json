@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 112,
-    "passed": 112,
+    "n_fixtures": 113,
+    "passed": 113,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -2103,6 +2103,21 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "module='heat' rc=-11 sigsegv=1 diagnosed=0 log_written=0\nmodule='biphasic-FSI' rc=-11 sigsegv=1 diagnosed=0 log_written=0\nmodule='Solid' rc=-11 sigsegv=1 diagnosed=0 log_written=0\nmodule='SOLID' rc=-11 sigsegv=1 diagnosed=0 log_written=0\npositive_control_solid_reads=1\nunknown_module_segfault_count=4\n"
+    },
+    "febio::biphasic::5": {
+      "key": "febio::biphasic::5",
+      "backend": "febio",
+      "physics": "biphasic",
+      "pitfall_index": 5,
+      "fixture_id": "null_test_linear_solver_reports_success",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "null_test_solver="
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "reference: rc=0 normal=1 steps=2 sz=-3.60750105073\ntest_solver: rc=0 normal=1 steps=2 sz=-2.00200400802\nrelative_sz_difference=0.445044\nboth_pass_standard_acceptance_checks=1\nnull_test_solver=clean_run_not_solved\n"
     }
   }
 }
