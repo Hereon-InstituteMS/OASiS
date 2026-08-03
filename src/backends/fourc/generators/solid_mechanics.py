@@ -28,29 +28,115 @@ class SolidMechanicsGenerator(BaseGenerator):
     def get_knowledge(self) -> dict[str, Any]:
         return {
             "description": (
-                "The solid mechanics module solves quasi-static structural "
-                "problems (no inertia effects) using DYNAMICTYPE: Statics.  "
-                "Supports small-deformation linear elasticity (KINEM: linear, "
-                "MAXITER: 1) and large-deformation nonlinear analysis "
-                "(KINEM: nonlinear, Newton-Raphson iteration).  "
-                "The PROBLEM TYPE is 'Structure', the dynamics section is "
-                "'STRUCTURAL DYNAMIC', and geometry goes into "
-                "'STRUCTURE GEOMETRY'.  In 4C 2026.3 BOTH 2D "
-                "and 3D problems use the SOLID eletype "
-                "(e.g. 'SOLID QUAD4' in 2D with "
-                "'PLANE_ASSUMPTION plane_strain' / 'plane_stress'; "
-                "'SOLID HEX8' in 3D, no PLANE_ASSUMPTION). The "
-                "legacy 'WALL' / 'THICK' / 'STRESS_STRAIN' "
-                "keywords were renamed to 'SOLID' / 'THICKNESS' "
-                "/ 'PLANE_ASSUMPTION' — writing the legacy form "
-                "raises 'Unknown type WALL of finite element'."
+                "Quasi-static structural mechanics.\n"
+                "  PROBLEMTYPE:      Structure\n"
+                "  control section:  STRUCTURAL DYNAMIC "
+                "(DYNAMICTYPE: Statics for no inertia)\n"
+                "  element section:  STRUCTURE ELEMENTS\n"
+                "  3D element line:  <eid> SOLID HEX8 <8 nodes> MAT <m> "
+                "KINEM linear|nonlinear\n"
+                "  2D element line:  VERSION-DEPENDENT, see the "
+                "'2d_element_type' key below - the two spellings share no "
+                "keywords\n"
+                "  material:         MAT_Struct_StVenantKirchhoff with "
+                "YOUNG, NUE, DENS (DENS required even under Statics)\n"
+                "  convergence:      TOLDISP (update norm) + TOLRES "
+                "(residual norm), both must be met\n"
+                "Use 'minimal_working_input_3d' below - it is a complete "
+                "deck that runs as written."
             ),
+            "2d_element_type": (
+                "WHICH element type owns 2D structural cells is "
+                "VERSION-DEPENDENT and the two spellings share no keywords, "
+                "so they cannot be mixed:\n"
+                "  WALL  QUAD4 <n..> MAT m KINEM k EAS e THICK t "
+                "STRESS_STRAIN s GP a b\n"
+                "  SOLID QUAD4 <n..> MAT m KINEM k THICKNESS t "
+                "PLANE_ASSUMPTION p\n"
+                "Decide it, do not guess: `4C --parameters` lists, per "
+                "element type, the cell types it owns. If SOLID's list is "
+                "3D-only (HEX/TET/WEDGE/PYRAMID), 2D belongs to WALL and "
+                "'SOLID QUAD4' aborts with \"Element 'SOLID' does not seem "
+                "to know cell type 'quad4'.\"; if SOLID lists QUAD4/TRI3 "
+                "then 'WALL' aborts with \"Unknown type 'WALL' of finite "
+                "element\". On the build this catalogue was verified "
+                "against, WALL owns 2D and needs all six of its keys."
+            ),
+            "minimal_working_input_3d": """\
+# Complete 3D cantilever. The mesh is GENERATED - not one node coordinate.
+# Runs as written: exit 0, one static step, VTU written.
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURE DOMAIN:                        # box generator (3D cells only)
+  bottom_corner_point: [0.0, 0.0, 0.0]   # REQUIRED
+  top_corner_point: [10.0, 1.0, 1.0]     # REQUIRED
+  subdivisions: [10, 2, 2]               # REQUIRED
+  elements:                              # REQUIRED
+    SOLID:
+      HEX8:
+        MAT: 1
+        KINEM: nonlinear
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1.0e-10
+  TOLRES: 1.0e-09
+  MAXITER: 30
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: 1000.0
+      NUE: 0.3            # validated to lie in [-1, 0.5)
+      DENS: 1.0           # REQUIRED even for Statics
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0.0, 0.0, -1.0]
+    FUNCT: [0, 0, 1]
+    TYPE: "Live"
+DSURF-NODE TOPOLOGY:      # symbolic faces of the generated box
+  - "SIDE structure x- DSURFACE 1"
+  - "SIDE structure x+ DSURFACE 2"
+IO/RUNTIME VTK OUTPUT:    # parent section: REQUIRED for any VTU
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true  # master switch
+  DISPLACEMENT: true      # at least one field flag, or nothing is written
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 1
+      QUANTITY: "dispz"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30   # record mode: abs(diff) prints the true value
+""",
             "required_sections": [
                 "PROBLEM TYPE",
                 "STRUCTURAL DYNAMIC",
                 "SOLVER 1",
                 "MATERIALS",
-                "STRUCTURE GEOMETRY",
+                # Plus ONE mesh route - these three are alternatives, not
+                # three requirements. Only the middle one needs a file.
+                #   inline   : NODE COORDS + STRUCTURE ELEMENTS
+                #              + D*-NODE TOPOLOGY
+                #   Exodus   : STRUCTURE GEOMETRY (FILE + ELEMENT_BLOCKS)
+                #   generated: STRUCTURE DOMAIN (HEX/WEDGE cells only)
+                "one of: NODE COORDS + STRUCTURE ELEMENTS | STRUCTURE GEOMETRY | STRUCTURE DOMAIN",
             ],
             "materials": {
                 "MAT_Struct_StVenantKirchhoff": {
@@ -383,20 +469,40 @@ class SolidMechanicsGenerator(BaseGenerator):
                     "approach rigid. (Audit 2026-06-02.)"
                 ),
                 (
-                    "[API] In 4C 2026.3 BOTH 2D and 3D "
-                    "structural elements use the SOLID eletype "
-                    "factory. 2D elements (SOLID QUAD4 / TRI3 "
-                    "etc.) require THICKNESS and "
-                    "PLANE_ASSUMPTION: 'THICKNESS 1.0 "
-                    "PLANE_ASSUMPTION plane_strain' or "
-                    "'plane_stress'. Signal: writing the "
-                    "legacy 'WALL' category + 'THICK' / "
-                    "'STRESS_STRAIN' keywords raises 'Unknown "
-                    "type WALL of finite element' from "
-                    "parobjectfactory.cpp:153 at problem setup. "
-                    "In ELEMENT_BLOCKS with Exodus meshes use "
-                    "the SOLID: sub-key for both 2D and 3D. "
-                    "(Audit 2026-06-02.)"
+                    "[API] WHICH element type owns 2D structural "
+                    "cells is VERSION-DEPENDENT, and the two "
+                    "spellings share no keywords, so you cannot "
+                    "hedge by writing both:\n"
+                    "  WALL  QUAD4 <n..> MAT m KINEM k EAS e "
+                    "THICK t STRESS_STRAIN s GP a b\n"
+                    "  SOLID QUAD4 <n..> MAT m KINEM k "
+                    "THICKNESS t PLANE_ASSUMPTION p\n"
+                    "Determine which one the installed build "
+                    "registers BEFORE writing anything: "
+                    "`4C --parameters` lists, per element type, "
+                    "the cell types it owns. If SOLID's list is "
+                    "3D-only (HEX/TET/WEDGE/PYRAMID), 2D is "
+                    "WALL's; if SOLID lists QUAD4/TRI3, 2D is "
+                    "SOLID's. 3D is always SOLID and never takes "
+                    "THICKNESS or PLANE_ASSUMPTION. Signal: the "
+                    "element type this build does not register "
+                    "raises \"Unknown type 'WALL' of finite "
+                    "element\" from "
+                    "core/comm/src/4C_comm_parobjectfactory.cpp "
+                    "(note the QUOTES around the type name — the "
+                    "binary's template is \"Unknown type '{}' of "
+                    "finite element\", so an unquoted grep finds "
+                    "nothing), while the right element type with "
+                    "the wrong cell type raises \"Element 'SOLID' "
+                    "does not seem to know cell type 'quad4'.\" "
+                    "with the cell type echoed in lowercase. In "
+                    "ELEMENT_BLOCKS with Exodus meshes the "
+                    "sub-key is whichever element type won. "
+                    "(Verified by execution 2026-08-03: on 4C "
+                    "2026.2.0-dev WALL owns 2D, and the Tier-2 "
+                    "fixture structural_2d_solid_quad4_not_wall "
+                    "probes both spellings rather than "
+                    "hard-coding either.)"
                 ),
                 (
                     "[Input] Neumann conditions for structures "
