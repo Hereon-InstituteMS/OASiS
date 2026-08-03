@@ -463,11 +463,15 @@ import meshio
 pts  = np.column_stack([m.p.T, np.zeros(m.p.shape[1])])
 trng = [("triangle", m.t.T)]
 # DG solution: one value per DOF, not per node; write element-wise or project
-# For visualization: project to P1 (nodal average)
-from skfem.utils import project
+# For visualization: project to P1 (nodal average).
+# The module-level skfem.project() is DEPRECATED (it emits
+# DeprecationWarning('will be removed in the next release') on
+# skfem 12.0.1). The supported spelling is the Basis.project
+# INSTANCE method fed by Basis.interpolator; verified to agree
+# with the legacy call to 6.7e-16 on this problem.
 e_p1 = ElementTriP1()
 ib_p1 = Basis(m, e_p1)
-u_proj = project(u, basis_from=ib, basis_to=ib_p1)
+u_proj = ib_p1.project(ib.interpolator(u))
 mio = meshio.Mesh(pts, trng, point_data={{"u": u_proj}})
 mio.write("result.vtu")
 
@@ -1216,8 +1220,33 @@ KNOWLEDGE = {
                 "2026-06-02.)"
             ),
             (
-                "[API] project(u, basis_from=ib_dg, "
-                "basis_to=ib_p1) for nodal post-processing. "
+                "[Validation] GAP FILLED 2026-08-03: the shipped "
+                "dg_methods_2d template DOES NOT SOLVE — it "
+                "returns NaN everywhere and still exits rc=0. "
+                "Signal: running it unmodified on skfem 12.0.1 "
+                "prints 'MatrixRankWarning: Matrix is exactly "
+                "singular' from scipy at the spsolve line, then "
+                "'DG advection: max(u) = nan, min(u) = nan' with "
+                "DOFs 6144 / elements 2048, and writes "
+                "\"max_value\": NaN / \"min_value\": NaN into "
+                "results_summary.json. Its pure-advection DG "
+                "operator has no inflow boundary term pinning the "
+                "solution, so the matrix is rank-deficient. Do "
+                "NOT take this template's output as a reference; "
+                "add the inflow FacetBasis term (or a small "
+                "reaction/mass shift) and re-check that the "
+                "matrix is non-singular before using it. A gate "
+                "that checks only the return code passes this "
+                "silently — always assert np.isfinite(u).all(). "
+                "(Verified empirically 2026-08-03 by executing "
+                "the shipped template.)"
+            ),
+            (
+                "[API] Basis.project(Basis.interpolator(u)) for "
+                "nodal post-processing (the module-level "
+                "project(u, basis_from=ib_dg, basis_to=ib_p1) "
+                "still works but is deprecated — see the next "
+                "entry). "
                 "Signal: visualizing the ElementTriDG "
                 "GridFunction-equivalent solution directly "
                 "in ParaView with the wrong VTK writer "
