@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.server import Context
 from core.backend import detect_template_language
 from core.registry import get_backend, available_backends, all_backends
+from core.fabrication_gate import inspect_result_artefacts
 from core.quality_checks import check_result_files_finite, check_summary_finite
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
@@ -1639,6 +1640,11 @@ def register_consolidated_tools(mcp: FastMCP):
                 nonfinite = check_result_files_finite(out_files)
             # Also scan the headline numbers (results_summary.json + stdout).
             nonfinite += check_summary_finite(work_dir, _stdout_text)
+            # Structural defects in the solver's own data output. The scans
+            # above look at headline numbers and mesh files; a FIELD that is
+            # mostly NaN, or a wholly degenerate mesh, passed both and was
+            # stamped verified. (Anti-fabrication gate.)
+            nonfinite += inspect_result_artefacts(out_files)
             if nonfinite:
                 result.setdefault("validation", []).extend(nonfinite)
             # The 'finiteness not asserted' honesty note is a coverage gap,
@@ -1764,6 +1770,11 @@ def register_consolidated_tools(mcp: FastMCP):
             # Also scan the HEADLINE numbers (results_summary.json + stdout): a
             # summary can report max_value: Infinity while the mesh stays finite.
             nonfinite += check_summary_finite(work_dir, _stdout_text)
+            # Structural defects in the solver's own data output. The scans
+            # above look at headline numbers and mesh files; a FIELD that is
+            # mostly NaN, or a wholly degenerate mesh, passed both and was
+            # stamped verified. (Anti-fabrication gate.)
+            nonfinite += inspect_result_artefacts(out_files)
             if nonfinite:
                 result.setdefault("validation", []).extend(nonfinite)
             # The 'finiteness not asserted' honesty note is a coverage gap,
