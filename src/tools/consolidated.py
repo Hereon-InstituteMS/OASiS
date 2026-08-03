@@ -300,6 +300,54 @@ def _select_template_variant(query: str, variants: list[str]) -> tuple[str, str]
     return chosen, (" ".join(bits))
 
 
+# Keys an agent needs FIRST to write a working input. Matched as substrings, so
+# `required_sections`, `required_keys` and `requires` all hit "required".
+_LOAD_BEARING_KEYS = (
+    "description", "required", "section", "element", "space", "material",
+    "weak_form", "code_skeleton", "skeleton", "syntax", "boundary", "bc",
+    "solver", "deck", "commands", "start_here", "example", "template",
+    "time_integration", "units",
+)
+
+
+def _fit_json_payload(payload: dict, limit: int) -> tuple[str, list[str]]:
+    """Serialise as much of `payload` as fits, ALWAYS as valid JSON.
+
+    Slicing a serialised dict at a character count is how this broke: three
+    SPARTA physics were returning a `## Knowledge` block cut mid-string, so
+    `json.loads` failed on what the agent received. Not merely losing content —
+    handing a weak model something it cannot parse at all. And it gets worse as
+    the knowledge grows, so every expansion was making the problem it was meant
+    to fix slightly harder.
+
+    Whole keys are dropped instead, load-bearing ones last, and the caller is
+    told which went so it can say so rather than leaving a silent hole.
+    """
+    text = json.dumps(payload, indent=2, default=str)
+    if len(text) <= limit:
+        return text, []
+
+    def rank(key: str) -> int:
+        k = str(key).lower()
+        return 0 if any(t in k for t in _LOAD_BEARING_KEYS) else 1
+
+    ordered = sorted(payload.items(), key=lambda kv: (rank(kv[0]), len(
+        json.dumps(kv[1], default=str))))
+    kept: dict = {}
+    dropped: list[str] = []
+    for key, value in ordered:
+        trial = dict(kept)
+        trial[key] = value
+        if len(json.dumps(trial, indent=2, default=str)) <= limit:
+            kept = trial
+        else:
+            dropped.append(str(key))
+    # Preserve the original key order among those that survived, so the payload
+    # reads the way its author wrote it rather than in size order.
+    kept = {k: v for k, v in payload.items() if k in kept}
+    return json.dumps(kept, indent=2, default=str), dropped
+
+
 def _coupling_setup_text(**kwargs) -> str:
     """Canonical text a coupling review is bound to.
 
@@ -3116,14 +3164,19 @@ def register_consolidated_tools(mcp: FastMCP):
             # Match the TEMPLATE_LIMIT of 12000 set above so the
             # LLM gets the full materials table. Audit 2026-06-01.
             KNOWLEDGE_LIMIT = 16000
-            payload_text = json.dumps(json_payload, indent=2, default=str)
-            payload_truncated = len(payload_text) > KNOWLEDGE_LIMIT
-            payload_body = payload_text[:KNOWLEDGE_LIMIT]
-            payload_suffix = (f"\n... [truncated {len(payload_text) - KNOWLEDGE_LIMIT} chars]"
-                              if payload_truncated else "")
-            parts.append("## Knowledge\n```json\n"
-                         + payload_body + payload_suffix
-                         + "\n```\n")
+            payload_body, dropped_keys = _fit_json_payload(
+                json_payload, KNOWLEDGE_LIMIT)
+            parts.append("## Knowledge\n```json\n" + payload_body + "\n```\n")
+            if dropped_keys:
+                # Name what is missing and how to get it. A silent hole is
+                # indistinguishable from "this backend has nothing to say".
+                parts.append(
+                    f"*This payload was too large to serve whole, so "
+                    f"{len(dropped_keys)} section(s) were left out and the "
+                    f"rest is complete and valid: "
+                    + ", ".join(f"`{k}`" for k in sorted(dropped_keys))
+                    + f". Fetch any of them with "
+                      f"`knowledge(topic='<name>', solver='{solver}')`.*\n")
             if pitfalls_separate:
                 bullets = "\n".join(f"- {p}" for p in pitfalls_separate)
                 parts.append(
