@@ -831,3 +831,91 @@ def test_intra_block_masking_discriminates(tmp_path, monkeypatch):
     assert d["trustworthy_result"] is True, (
         "and the coupling is stamped VERIFIED with one exchanged quantity "
         "oscillating by 100% of itself")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# The critic gate binds a review to a SETUP. Anything that changes what is
+# solved and is not in the digest is a review of one thing approving another.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_rewriting_a_participant_script_after_review_is_refused(tmp_path):
+    """The spec names `["python", "run.py"]`; the physics is inside run.py.
+
+    Without the file contents in the digest, reviewing a correct coupling
+    approved any other coupling that reused the same file names.
+    """
+    parts = _parts(tmp_path)
+    ok = _couple(parts)
+    assert ok["trustworthy_result"] is True
+    x_reviewed = ok["exports"]["A"]["values"][0]
+
+    # same file name, same command, same work_dir — different physics
+    (parts[1].work_dir / "run.py").write_text(_b(offset=900.0))
+    swapped = _couple(parts, reviewed=False)
+    assert swapped["converged"] is True
+    assert abs(swapped["exports"]["A"]["values"][0] - x_reviewed) > 100.0
+    assert swapped["trustworthy_result"] is False
+    assert "changed after it was reviewed" in swapped["critic_review"]
+
+
+def test_script_fingerprint_discriminates(tmp_path, monkeypatch):
+    """Strip the file contents back out of the digest and the swap goes through."""
+    import tools.consolidated as C
+    monkeypatch.setattr(C, "_participant_fingerprints", lambda *_a, **_k: {})
+    parts = _parts(tmp_path)
+    assert _couple(parts)["trustworthy_result"] is True
+    (parts[1].work_dir / "run.py").write_text(_b(offset=900.0))
+    swapped = _couple(parts, reviewed=False)
+    assert swapped["converged"] is True
+    assert swapped["trustworthy_result"] is True, (
+        "without the script fingerprint, a review of one coupling stamps a "
+        "completely different one as VERIFIED")
+
+
+def test_a_participant_script_that_does_not_exist_yet_cannot_be_reviewed(tmp_path):
+    """Fail closed: an absent file is recorded as absent, so writing it later
+    changes the digest."""
+    from tools.consolidated import _participant_fingerprints
+    spec = json.dumps([{"name": "A", "command": [sys.executable, "later.py"],
+                        "work_dir": str(tmp_path)}])
+    before = _participant_fingerprints(spec)
+    (tmp_path / "later.py").write_text("pass\n")
+    after = _participant_fingerprints(spec)
+    assert before != after
+    assert before["A"]["later.py"] == "absent"
+    assert after["A"]["later.py"].startswith("sha256:")
+
+
+def test_data_files_are_part_of_the_setup(tmp_path):
+    """A compiled solver's physics is in its deck, which arrives via data_files."""
+    from tools.consolidated import _participant_fingerprints
+    deck = tmp_path / "deck.yaml"
+    deck.write_text("k: 1.0\n")
+    spec = json.dumps([{"name": "A", "command": ["/bin/true"],
+                        "work_dir": str(tmp_path), "data_files": [str(deck)]}])
+    before = _participant_fingerprints(spec)
+    deck.write_text("k: 1000.0\n")
+    assert _participant_fingerprints(spec) != before
+
+
+def test_submit_critic_review_uses_the_same_definition_as_the_run(tmp_path):
+    """The review path used to build its own setup text, so the two could — and
+    did — cover different sets of arguments."""
+    import tools.consolidated as C
+    parts = _parts(tmp_path)
+    args = {"participants": _spec(parts), "max_iter": 60, "tol": 1e-8,
+            "accelerator": "aitken", "theta": 0.5, "monolithic": "",
+            "probe": True}
+    loop = asyncio.new_event_loop()
+    try:
+        out = json.loads(loop.run_until_complete(_tool("submit_critic_review")(
+            solver="couple",
+            findings="Checked the participant maps, the interface units, the "
+                     "boundary conditions and the discretisation; nothing found "
+                     "that would invalidate the coupled run.",
+            coupling_args=json.dumps(args))))
+        assert out["accepted"] is True
+        d = json.loads(loop.run_until_complete(_tool("couple")(
+            critic_approved=True, **args)))
+    finally:
+        loop.close()
+    assert d["trustworthy_result"] is True, d["critic_review"]

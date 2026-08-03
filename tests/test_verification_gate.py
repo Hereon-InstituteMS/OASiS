@@ -377,7 +377,8 @@ def test_couple_precice_verified_on_clean_logs():
     _review_on_record("couple_precice", _coupling_setup_text(
         participants='[{"name":"A"},{"name":"B"}]', data="[]", exchanges="[]",
         scheme="serial-explicit", dimensions=2, max_time=10.0,
-        time_window=1.0))
+        time_window=1.0, max_iterations=20, convergence_tol=1e-6,
+        relaxation=0.5, mapping="nearest-neighbor"))
     d = _run_precice({"B": "coupling ok, residual 1e-9"}, critic_approved=True)
     assert d["trustworthy_result"] is True
 
@@ -392,7 +393,9 @@ def _reviewed_precice():
     from tools.consolidated import _coupling_setup_text
     _review_on_record("couple_precice", _coupling_setup_text(
         participants='[{"name":"A"},{"name":"B"}]', data="[]", exchanges="[]",
-        scheme="serial-explicit", dimensions=2, max_time=10.0, time_window=1.0))
+        scheme="serial-explicit", dimensions=2, max_time=10.0, time_window=1.0,
+        max_iterations=20, convergence_tol=1e-6, relaxation=0.5,
+        mapping="nearest-neighbor"))
 
 
 def test_couple_precice_clean_exit_without_exchange_is_not_verified():

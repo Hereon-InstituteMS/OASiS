@@ -300,14 +300,94 @@ def _select_template_variant(query: str, variants: list[str]) -> tuple[str, str]
     return chosen, (" ".join(bits))
 
 
+def _file_fingerprint(path: Path) -> str:
+    """Content hash of one file, or size+mtime when it is too big to hash cheaply.
+
+    Either way a change is visible, which is all the digest needs.
+    """
+    import hashlib
+    try:
+        st = path.stat()
+        if st.st_size > 4 << 20:
+            return f"size:{st.st_size}:mtime:{st.st_mtime_ns}"
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as e:
+        return f"unreadable:{type(e).__name__}"
+
+
+def _participant_fingerprints(participants_json: str, monolithic_json: str = "") -> dict:
+    """Fingerprint the FILES a coupling actually executes.
+
+    THE BYPASS THIS CLOSES. A participant spec names a command
+    (["python", "run.py"]) and a work_dir; the physics lives entirely in
+    run.py, which the digest never saw. So a review of one coupling approved
+    any other coupling that reused the same file names: reviewing a correct
+    setup and then rewriting the participant script produced a completely
+    different answer, stamped VERIFIED, with the note "submitted review matches
+    this setup". Demonstrated with a 225x change in the coupled result.
+
+    Every command token that resolves to an existing file (absolute, or
+    relative to that participant's work_dir) is fingerprinted, as are its
+    declared data_files and the monolithic reference command. A file that does
+    not exist yet is recorded as absent, so creating it afterwards changes the
+    digest — a participant whose script does not exist cannot have been
+    reviewed.
+    """
+    out: dict = {}
+    try:
+        specs = json.loads(participants_json) if participants_json else []
+    except (json.JSONDecodeError, TypeError):
+        return out
+    if monolithic_json:
+        try:
+            m = json.loads(monolithic_json)
+            if isinstance(m, dict):
+                specs = list(specs) + [dict(m, name="__monolithic__")]
+        except (json.JSONDecodeError, TypeError):
+            pass
+    if not isinstance(specs, list):
+        return out
+    for s in specs:
+        if not isinstance(s, dict):
+            continue
+        name = str(s.get("name", "?"))
+        wd = Path(str(s.get("work_dir", "."))).expanduser()
+        seen: dict = {}
+        for token in list(s.get("command") or []) + list(s.get("data_files") or []):
+            tok = str(token)
+            for cand in (Path(tok).expanduser(), wd / tok):
+                try:
+                    if cand.is_file():
+                        seen[tok] = _file_fingerprint(cand)
+                        break
+                except OSError:
+                    continue
+            else:
+                # Only record a miss for tokens that LOOK like files, so option
+                # flags do not turn into noise that changes with argv order.
+                if "/" in tok or "." in tok:
+                    seen[tok] = "absent"
+        if seen:
+            out[name] = seen
+    return out
+
+
 def _coupling_setup_text(**kwargs) -> str:
     """Canonical text a coupling review is bound to.
 
-    One definition, used by the coupling tools and reproduced by
-    `submit_critic_review`, so the digest a review is issued for and the digest
-    a run is checked against cannot drift apart.
+    ONE definition, used by the coupling tools and by `submit_critic_review`, so
+    the digest a review is issued for and the digest a run is checked against
+    cannot drift apart. Every argument that changes what is solved belongs in
+    here — including the CONTENTS of the participant scripts, which is what the
+    coupling tools actually execute and what the spec only names.
     """
-    return json.dumps(kwargs, sort_keys=True)
+    payload = dict(kwargs)
+    if payload.get("participants") or payload.get("monolithic"):
+        fp = _participant_fingerprints(str(payload.get("participants") or ""),
+                                       str(payload.get("monolithic") or ""))
+        if fp:
+            payload["__participant_files__"] = fp
+    return json.dumps(payload, sort_keys=True)
 
 
 _MONOLITHIC_NOT_SUPPLIED = (
@@ -1996,8 +2076,15 @@ def register_consolidated_tools(mcp: FastMCP):
                 object of the arguments you will pass. Keys per tool:
                 coupled_solve: problem, solver_a, solver_b, nx, ny, max_iter,
                 tol, relaxation, params; couple: participants, max_iter, tol,
-                accelerator; couple_precice: participants, data, exchanges,
-                scheme, dimensions, max_time, time_window.
+                accelerator, theta, monolithic, probe; couple_precice:
+                participants, data, exchanges, scheme, dimensions, max_time,
+                time_window, max_iterations, convergence_tol, relaxation,
+                mapping. Pass EVERY key for the tool you will call, with the
+                values you will call it with — a missing or different key is a
+                different setup and the run will come back NOT VERIFIED. For
+                `couple` the CONTENTS of each participant's script are part of
+                the setup too, so the scripts must already be written when the
+                review is submitted, and editing one afterwards invalidates it.
             ttl_s: how long the review stays valid (default 1 hour).
 
         Returns: JSON with a `critic_token`. Passing it to run_simulation or
@@ -2018,7 +2105,14 @@ def register_consolidated_tools(mcp: FastMCP):
                 return json.dumps({"accepted": False,
                                    "error": f"coupling_args is not JSON: {exc}"},
                                   indent=2)
-            setup_text = json.dumps(parsed, sort_keys=True)
+            if not isinstance(parsed, dict):
+                return json.dumps({
+                    "accepted": False,
+                    "error": "coupling_args must be a JSON OBJECT of the "
+                             "arguments you will pass."}, indent=2)
+            # Through the same single definition the run tools use, so the
+            # participant-script fingerprints are part of both digests.
+            setup_text = _coupling_setup_text(**parsed)
         else:
             setup_text = setup
         try:
@@ -3070,10 +3164,16 @@ def register_consolidated_tools(mcp: FastMCP):
         _stamp_verification(
             r, evidence_ok=evidence_ok, critic_approved=critic_approved,
             solver="couple_precice",
+            # Every argument that changes what preCICE computes. max_iterations,
+            # convergence_tol, relaxation and mapping were absent, so a review of
+            # one coupling silently approved the same coupling run to a
+            # convergence tolerance five orders of magnitude looser.
             setup_text=_coupling_setup_text(
                 participants=participants, data=data, exchanges=exchanges,
                 scheme=scheme, dimensions=dimensions, max_time=max_time,
-                time_window=time_window),
+                time_window=time_window, max_iterations=max_iterations,
+                convergence_tol=convergence_tol, relaxation=relaxation,
+                mapping=mapping),
             reason="" if evidence_ok else
                    ("participant logs report non-finite (NaN/Inf) values"
                     if nonfinite else
