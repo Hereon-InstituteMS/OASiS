@@ -99,9 +99,8 @@ KNOWLEDGE = {
                 "top-level skfem name containing 'periodic'. So "
                 "the incantation is "
                 "MeshTri1DG.periodic(m, ix, ix0), not "
-                "MeshTri.periodic(...). (Verified empirically "
-                "2026-08-03 on skfem 12.0.1 — catalog-drift "
-                "correction.) Signal: "
+                "MeshTri.periodic(...). The physics motivation is "
+                "unchanged: "
                 "building a regular MeshTri / MeshQuad "
                 "without periodic wrapping and expecting "
                 "outflow = inflow gives an open-boundary "
@@ -112,7 +111,8 @@ KNOWLEDGE = {
                 "facet DOFs (ix and ix0 are the paired DoF "
                 "index arrays) so they share the same "
                 "column in the system matrix. (Audit "
-                "2026-06-02.)"
+                "2026-06-02; class-location corrected "
+                "empirically 2026-08-03 on skfem 12.0.1.)"
             ),
             (
                 "[Numerical] High Peclet: use DG or "
