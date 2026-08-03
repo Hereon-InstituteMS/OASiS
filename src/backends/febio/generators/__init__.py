@@ -26,6 +26,11 @@ from .polar_fluid import GENERATORS as _pf_gen, KNOWLEDGE as _pf_kn
 from .damage import GENERATORS as _dm_gen, KNOWLEDGE as _dm_kn
 from .growth_remodeling import GENERATORS as _gr_gen, KNOWLEDGE as _gr_kn
 from .elasticity_mms import GENERATORS as _mms_gen, KNOWLEDGE as _mms_kn
+from .deck_structure import (
+    DECK_KNOWLEDGE as _deck_kn,
+    FEBIO_MODULES,
+    FEBIO_ANALYSIS_VALUES,
+)
 
 
 GENERATORS: dict[str, callable] = {}
@@ -48,6 +53,11 @@ for _k in (_le_kn, _he_kn, _bi_kn, _ht_kn,
 
 KNOWLEDGE["_general"] = {
     "description": "FEBio general capabilities and C++ embedding surface",
+    # Executed-verified .feb authoring surface (deck_structure.py).
+    # Kept as a sub-block of _general rather than a new top-level
+    # KNOWLEDGE key so the catalog's physics-key count is unchanged
+    # — this is reference material, not a physics row.
+    "deck_authoring": _deck_kn,
     "adaptive_mesh_refinement": {
         "description": (
             "FEAMR module (FEBio::FEAMR library) registers .feb XML tag "
