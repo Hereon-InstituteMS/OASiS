@@ -47,7 +47,7 @@ class Participant:
     # Files the solver needs in work_dir (species/surface/mesh/config data).
     # Staged (copied in) once before the iteration loop. A missing file is a
     # LOUD setup error — the alternative is the solver dying mid-iteration
-    # with an opaque 'Cannot open ...' (the T15 SPARTA failure mode).
+    # with an opaque 'Cannot open ...' (the SPARTA failure mode).
     data_files: list[str] = field(default_factory=list)
 
 

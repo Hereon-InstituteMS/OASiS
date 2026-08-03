@@ -196,9 +196,10 @@ class TSIGenerator(BaseGenerator):
                     "SOLIDSCATRA HEX8 slab with u_z fixed on all nodes "
                     "(exact plane strain) and the temperature field imposed "
                     "volume-wide via DESIGN VOL THERMO DIRICH + a symbolic "
-                    "FUNCT (pass temp_expr) — verified against the 4C "
-                    "binary 2026-08-01, tip displacement within 0.5% of the "
-                    "analytic plane-strain thermal-expansion value."
+                    "FUNCT (pass temp_expr) — verified live against a built "
+                    "4C binary. Validate the displacement you get "
+                    "against the analytic plane-strain "
+                    "thermal-expansion estimate for YOUR parameters."
                 ),
                 (
                     "One-way thermo->structure TSI REQUIRES 'TSI DYNAMIC/"
@@ -206,7 +207,7 @@ class TSIGenerator(BaseGenerator):
                     "default is Displacement (structure->thermo): a "
                     "tsi_oneway deck with the default runs to rc=0 but "
                     "produces exactly ZERO displacement — silently wrong "
-                    "physics (verified 2026-08-01)."
+                    "physics (verified live against a built 4C binary)."
                 ),
                 (
                     "Structure elements MUST be SOLIDSCATRA (not plain SOLID) "

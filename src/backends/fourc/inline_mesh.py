@@ -694,7 +694,7 @@ TSI DYNAMIC:
 # (thermal strain loads the structure). The 4C DEFAULT is Displacement
 # (structure -> thermo): with the default, these one-way decks ran to
 # rc=0 but produced ZERO displacement — silently wrong physics
-# (verified against the 4C binary 2026-08-01).
+# (verified live against a built 4C binary).
 TSI DYNAMIC/PARTITIONED:
   COUPVARIABLE: "Temperature"
 SOLVER 1:
@@ -999,7 +999,7 @@ TSI DYNAMIC:
 # (thermal strain loads the structure). The 4C DEFAULT is Displacement
 # (structure -> thermo): with the default, these one-way decks ran to
 # rc=0 but produced ZERO displacement — silently wrong physics
-# (verified against the 4C binary 2026-08-01).
+# (verified live against a built 4C binary).
 TSI DYNAMIC/PARTITIONED:
   COUPVARIABLE: "Temperature"
 SOLVER 1:
@@ -2098,16 +2098,15 @@ def matched_tsi_plane_strain_input(
 ) -> str:
     """4C thermo-elastic PLANE STRAIN via a pseudo-2D thin slab (one-way TSI).
 
-    Why this exists (T14 evaluation campaign, 2026-07): 4C has NO 2D TSI
-    elements — every TSI corpus test is 3D SOLIDSCATRA. Agents given a 2D
-    plane-strain thermo-mechanical problem tried the two 2D structural
-    eletypes and hit hard errors on the deployed binary:
+    Why this exists: 4C has NO 2D TSI elements — every TSI corpus test is
+    3D SOLIDSCATRA. The two 2D structural eletypes both dead-end when a
+    thermo material is attached:
       * WALL QUAD4  + MAT_Struct_ThermoStVenantK
           -> "Invalid type of material law for wall element" (4C_w1_mat.cpp:179)
-      * SOLID QUAD4 (any material, this build)
+      * SOLID QUAD4 (any material, current builds)
           -> "Element 'SOLID' does not seem to know cell type 'quad4'"
-    Both reproduced 2026-08-01 against /home/alexander/4C/build/4C. The
-    correct route is the standard thin-slab trick implemented here:
+    Both reproduced live against a built 4C binary. The correct route is
+    the standard thin-slab trick implemented here:
 
       - 3D mesh [0,lx]x[0,ly]x[0,t] with ONE SOLIDSCATRA HEX8 layer in z
         (t defaults to ly/ny so elements stay well-shaped),
@@ -2123,9 +2122,10 @@ def matched_tsi_plane_strain_input(
         the imposed field drives the structural solve.
 
     ``temp_expr`` defaults to the linear profile
-    "T_left + (T_right-T_left)*x/lx". Verified against the 4C binary
-    2026-08-01: rc=0, tip displacement matches the analytic plane-strain
-    thermal-expansion estimate (see tests/test_fourc_inline_tsi.py).
+    "T_left + (T_right-T_left)*x/lx". The deck runs rc=0 on a built 4C
+    binary; validate the result yourself against the analytic
+    plane-strain thermal-expansion estimate for the parameters you pass
+    (see tests/test_fourc_inline_tsi.py for the deck-level checks).
     """
     nx = max(1, int(nx)); ny = max(1, int(ny))
     lz = float(thickness) if thickness else float(ly) / ny
@@ -2175,7 +2175,7 @@ TSI DYNAMIC:
 # (thermal strain loads the structure). The 4C DEFAULT is Displacement
 # (structure -> thermo): with the default, these one-way decks ran to
 # rc=0 but produced ZERO displacement — silently wrong physics
-# (verified against the 4C binary 2026-08-01).
+# (verified live against a built 4C binary).
 TSI DYNAMIC/PARTITIONED:
   COUPVARIABLE: "Temperature"
 SOLVER 1:
@@ -2703,7 +2703,7 @@ def matched_thermo_transient_mms_input(n: int = 48,
     condition name) integrates it as a volumetric heat source. The
     THERMO-prefixed Neumann sections are registered under
     "ThermoSurfaceNeumann" and are SILENTLY IGNORED in standalone
-    Thermo (verified empirically 2026-08-01).
+    Thermo (verified empirically against a built 4C binary).
 
     Time-dependent Dirichlet u* on the whole boundary (VAL 1.0 scaled
     by FUNCT 1 = exact solution) and INITIALFIELD field_by_function
@@ -2715,9 +2715,8 @@ def matched_thermo_transient_mms_input(n: int = 48,
     initial rates are computed), ~1 for theta=1 (backward Euler).
     Note the error vs the exact solution saturates at the spatial Q1
     floor; grade the order from Richardson differences of
-    consecutive-dt solutions on the same mesh where needed
-    (live study 2026-08-01: Richardson orders 2.018/2.004 at
-    theta=0.5; 0.95/1.00/1.05 vs exact at theta=1.0).
+    consecutive-dt solutions on the same mesh, which cancels that floor
+    exactly.
 
     Final-time nodal temperatures land in
     <prefix>-vtk-files/thermo-<step>-0.vtu (point_data key

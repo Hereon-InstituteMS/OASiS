@@ -75,15 +75,16 @@ def _sparta_data_dirs(binary: Optional[str] = None,
     `read_surf data.circle`, `collide vss air air.vss`) that live in the
     SPARTA distribution's data/ and examples/ trees, NOT in the knowledge
     JSON. Without staging them the deck dies with e.g.
-    'Cannot open species file ar.species' (verified on macOS build
-    2026-07-14). We locate the distribution relative to the binary
+    'Cannot open species file ar.species' (verified on a macOS build).
+    We locate the distribution relative to the binary
     (src/spa_serial -> repo root) plus SPARTA_ROOT.
 
     Search ORDER matters: explicit per-call ``extra_dirs`` (a task's own
     data dir) come first, then SPARTA_DATA_DIR (colon-separated env, same
     precedence idea), then the distribution. A task-specific circle.surf
     must win over the distribution's example circle.surf of the same name
-    — the two are different geometries (T15 campaign, 2026-07)."""
+    — a task-specific surface and a distribution example that happen to
+    share a filename are different geometries."""
     dirs: list[Path] = []
     for d in extra_dirs:
         p = Path(d).expanduser()
@@ -140,8 +141,7 @@ def stage_deck_data_files(deck: str, work_dir: Path,
     (SpartaBackend.run) AND by the coupled path (the couple() tool),
     which previously did NO staging at all: a SPARTA participant deck
     run by the coupling driver in a fresh work_dir died with
-    'Cannot open species file ar.species' (../particle.cpp:711)
-    (T15 campaign 2026-07, reproduced 2026-08-01).
+    'Cannot open species file ar.species' (../particle.cpp:711).
 
     Resolution per reference:
       1. already present in work_dir -> keep (never overwrite),
@@ -287,9 +287,11 @@ _PHYSICS = {
             "task files via the participant's data_files list.",
             "Half-body surface files (e.g. a half-cylinder arc for a symmetric 2D "
             "case) are OPEN curves: read_surf aborts with 'Watertight check failed "
-            "with N unmatched points' (surf.cpp). Place the open endpoints exactly ON "
-            "a simulation-box face (e.g. box ylo = 0 for an arc ending at y=0) and "
-            "use 'read_surf <file> clip' — verified 2026-08-01.",
+            "with N unmatched points' (surf.cpp). SPARTA requires surfaces to be "
+            "closed unless the open endpoints lie exactly ON a simulation-box face, "
+            "in which case the box closes them: place the endpoints on that face "
+            "(e.g. box ylo = 0 for an arc ending at y=0) and pass the 'clip' "
+            "keyword, 'read_surf <file> clip'.",
             "compute reduce on a fix ave/surf with a SINGLE input column: reference "
             "it as f_ID (per-surf vector), not f_ID[1] — the [1] form aborts with "
             "'Compute reduce fix does not calculate a per-surf array' "

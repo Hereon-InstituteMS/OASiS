@@ -1760,9 +1760,11 @@ FOURC_KNOWLEDGE = {
                 "on all nodes (exact plane strain), the temperature field "
                 "imposed volume-wide via DESIGN VOL THERMO DIRICH + a "
                 "symbolic FUNCT (param temp_expr — pass the partner code's "
-                "temperature solution). Verified against the 4C binary "
-                "2026-08-01: tip displacement within 0.5% of the analytic "
-                "plane-strain thermal-expansion value. (T14 campaign fix.)"
+                "temperature solution). Verified live against a built 4C "
+                "binary: the deck runs and the slab deforms under the "
+                "imposed thermal field. Check the displacement you get "
+                "against the analytic plane-strain thermal-expansion "
+                "estimate for your own parameters."
             ),
             (
                 "[Input] Without CLONING MATERIAL MAP, 4C "
