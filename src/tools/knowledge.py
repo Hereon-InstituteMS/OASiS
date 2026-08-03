@@ -352,164 +352,17 @@ def register_knowledge_tools(mcp: FastMCP):
         return "Validation errors:\n" + "\n".join(f"- {e}" for e in errors)
 
     @mcp.tool()
-    def get_coupling_knowledge() -> str:
-        """Get complete knowledge for cross-solver domain decomposition coupling.
+    def get_coupling_knowledge(solver: str = "") -> str:
+        """Complete knowledge for partitioned multi-code coupling via `couple`.
 
-        Returns theory, implementation patterns, pitfalls, and best practices
-        for Dirichlet-Neumann domain decomposition across independent FEM codes.
-        This is essential reading before using coupled_solve or transfer_field.
+        With no solver: the participant contract, the InterfaceData shapes, how
+        the driver iterates and relaxes, the interface-flux sign convention,
+        which side each backend can take, and the failure modes.
+        With a solver name: a COMPLETE runnable participant script for that
+        backend plus the traps specific to it.
         """
-        return '''\
-# Cross-Solver Coupling via Dirichlet-Neumann Domain Decomposition
-
-## Theory
-
-Dirichlet-Neumann (DN) domain decomposition splits a PDE domain at an interface.
-Two independent solvers handle the subdomains, exchanging boundary data iteratively:
-
-```
-Initialize: guess T_interface (e.g. linear interpolation of BCs)
-
-for iteration in range(max_iter):
-    1. Solve subdomain A (Dirichlet at interface): u_A = solve(BC: T_interface)
-    2. Extract flux: q = -k * du_A/dn at interface
-    3. Solve subdomain B (Neumann at interface): u_B = solve(BC: flux = q)
-    4. Extract temperature: T_new = u_B at interface
-    5. Update: T_interface = θ * T_new + (1-θ) * T_interface
-    6. Check convergence: |T_new - T_old| / |T_new| < tolerance
-```
-
-## Relaxation Parameter θ
-
-- **θ = 1.0**: No relaxation. Works for linear problems WITHOUT source terms
-  (e.g. steady heat conduction T=100→0). Converges in 1 iteration.
-- **θ = 0.5**: Required for problems WITH source terms (e.g. Poisson -Δu=f).
-  Without relaxation, DN oscillates and never converges!
-- **θ = 0.7**: Good default for nonlinear problems (elasticity, coupled physics).
-- **Rule of thumb**: If DN oscillates (residual doesn't decrease), reduce θ.
-
-## Interface flux: TWO different quantities, two different signs
-
-Read this before writing any coupling. Confusing these two is the mistake that
-produces a converged coupling which OASiS then refuses to verify, with nothing
-in the output explaining why.
-
-**(1) The BC VALUE you APPLY in the receiving code — same sign.**
-- Domain A solves with a Dirichlet BC at the interface.
-- The flux out of A is q = -k * ∂u_A/∂n_A, with n_A the outward normal from A.
-- Domain B applies that as its Neumann BC. B's outward normal points away from
-  B, i.e. back toward A, and this second sign flip cancels the first.
-- So the number you hand to B is the number A computed: q_B = q_A.
-- In 4C, `DESIGN LINE NEUMANN VAL` takes that value directly (4C's Neumann
-  value is k * ∂u/∂n on the boundary).
-
-**(2) The `normal_fluxes` array you EXPORT for checking — opposite signs.**
-- Each participant exports the flux through the interface with respect to ITS
-  OWN outward normal.
-- The two outward normals at a shared interface are anti-parallel, so on a
-  conservative interface `sum(normal_fluxes_A) + sum(normal_fluxes_B) ≈ 0`.
-- This is exactly what OASiS's `check_interface_balance` tests. Exporting both
-  sides with the same sign makes a CORRECT coupling fail the balance check:
-  you will get `Interface flux NOT balanced ... imbalance 200%` and a
-  NOT VERIFIED verdict on a coupling that actually converged.
-
-In one line: **apply the same number, export opposite numbers.** (1) is about
-the boundary condition; (2) is about the conservation diagnostic.
-
-## Solver-Specific Details
-
-### FEniCS (Dirichlet subdomain — typically Domain A)
-- Use `mesh.create_rectangle()` for subdomain mesh
-- Apply interface Dirichlet via per-DOF interpolation from coupled values
-- Compute flux via finite difference from neighboring interior nodes
-- Write interface data to `interface_data.json` for transfer
-
-### 4C (Neumann subdomain — typically Domain B)
-- Use TRANSP QUAD4 elements for scalar transport (heat/Poisson)
-- DESIGN LINE NEUMANN CONDITIONS for interface flux
-- Node coordinates must be offset to match subdomain position
-- No IO/RUNTIME VTK OUTPUT section for scatra — use post_vtu conversion
-- Field name in VTU output is `phi_1` (not `temperature`)
-- Always use the LAST VTU file (scatra-00001-0.vtu), not the initial condition
-
-### Field Transfer Between Solvers
-- 4C uses duplicate nodes per element (QUAD4 = 4 nodes per cell → more points)
-- FEniCS uses shared nodes → fewer points
-- Use `extract_interface_from_vtu()` to get interface values from either
-- Use `interpolate_to_points()` for non-matching mesh interpolation
-- Sort interface nodes by tangential coordinate for consistent ordering
-
-## Verified Results (All Solver Combinations)
-
-### Heat DD (T=100 left, T=0 right, no source)
-- Exact solution: T(x) = 100*(1-x), linear
-
-| Solver A | Solver B | Iterations | Final Residual | T(0.5) Error |
-|----------|----------|------------|----------------|--------------|
-| FEniCS   | 4C       | 1          | 3.4e-16        | 0.0          |
-| FEniCS   | FEniCS   | 1          | 4.3e-15        | 4.3e-15      |
-
-### Poisson DD (-Δu=1, u=0 on boundary, θ=0.5)
-- Reference: single-domain FEniCS solve
-
-| Solver A | Solver B | Iterations | Final Residual |
-|----------|----------|------------|----------------|
-| FEniCS   | 4C       | 2          | 1.2e-16        |
-| FEniCS   | FEniCS   | 7          | 9.7e-05        |
-
-- Without relaxation (θ=1.0): oscillates indefinitely!
-
-### Supported Backend Combinations
-- FEniCS (Dirichlet) ↔ 4C (Neumann): fully tested, production ready
-- FEniCS (Dirichlet) ↔ FEniCS (Neumann): fully tested, proves solver-agnosticism
-- Any combination works if `_generate_domain_b_input()` supports the backend
-
-## Common Pitfalls
-
-1. **Missing relaxation**: DN with source oscillates without θ<1. Always test.
-2. **Wrong VTU timestep**: 4C writes initial condition + solution. Use LAST file.
-3. **Field name mismatch**: 4C=phi_1, FEniCS=temperature. Handle in extraction.
-4. **Node duplication**: 4C VTU has 4× more nodes than expected. Still works with
-   extract_interface but interpolation target must match.
-5. **IO/RUNTIME VTK OUTPUT/SCATRA**: May crash 4C. Omit — use post_vtu instead.
-6. **Neumann sign**: Easy to get wrong. Test with linear solution first where
-   exact answer is known.
-
-## Extending to New Problems
-
-The same DN pattern works for:
-- **Elasticity**: Replace temperature with displacement, flux with traction
-- **Coupled thermal-structural**: One-way coupling (heat→stress)
-- **Different physics per subdomain**: e.g. fluid (FEniCS) + structure (4C)
-
-Key changes needed for new physics:
-1. New subdomain script generator (analogous to `_fenics_heat_subdomain_script`)
-2. New 4C input generator (analogous to `_fourc_heat_subdomain_input`)
-3. Appropriate relaxation parameter
-4. Correct field names and transfer format
-
-## Available Coupling Problem Types
-
-| Problem | Description | Solvers |
-|---------|-------------|---------|
-| `heat_dd` | Heat conduction, DN domain decomposition | FEniCS↔4C, FEniCS↔FEniCS |
-| `poisson_dd` | Poisson with source, DN decomposition | FEniCS↔4C, FEniCS↔FEniCS |
-| `one_way` | FEniCS thermal → 4C structural (TSI) | FEniCS + 4C |
-| `tsi_dd` | Two-way iterative TSI coupling | FEniCS + 4C |
-| `poisson_dd_study` | Relaxation parameter comparison | Any backend pair |
-| `l_bracket_tsi` | L-bracket thermal stress concentration | FEniCS + 4C |
-| `heat_dd_precice` | Our DN vs preCICE comparison | Any + preCICE config |
-
-## Relaxation Parameter Selection Guide
-
-| Scenario | Recommended θ | Reason |
-|----------|--------------|--------|
-| Linear, no source | 1.0 | Exact in 1 iteration |
-| Linear, with source | 0.5 | DN oscillates without relaxation |
-| Nonlinear | 0.7 | Good starting point |
-| Unknown / complex | Aitken | Automatic acceleration |
-| Failing to converge | Reduce θ | Try 0.3, then 0.1 |
-'''
+        from tools.coupling_knowledge import coupling_knowledge
+        return coupling_knowledge(solver)
 
     @mcp.tool()
     def get_tsi_knowledge() -> str:

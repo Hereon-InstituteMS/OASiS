@@ -154,6 +154,24 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
                 exports[n] = ifd; relaxed_prev[n] = _stack(ifd); raw_prev[n] = _stack(ifd)
             history.append(float("nan")); continue
 
+        # A participant that changes its export LENGTH between iterations used
+        # to reach _relax and raise a bare numpy broadcast ValueError straight
+        # out of run_coupling — or, when the new length was 1, broadcast
+        # silently and be misreported as a non-convergence with no clue why.
+        # Both are the same setup error, so name it here.
+        for p in participants:
+            m, k = _stack(new_exports[p.name]).size, relaxed_prev[p.name].size
+            if m != k:
+                return CouplingResult(
+                    False, it, float("nan"), {}, history,
+                    error=(f"participant {p.name} changed its export size from "
+                           f"{k} to {m} at iteration {it}. Every participant must "
+                           f"export the SAME number of points, in the same order, "
+                           f"every iteration (and keep normal_fluxes present or "
+                           f"absent consistently) — the driver relaxes export "
+                           f"vectors element by element."),
+                    warnings=warnings)
+
         total_res = 0.0; total_ref = 0.0
         for p in participants:
             n = p.name; raw_new = _stack(new_exports[n]); prev = relaxed_prev[n]

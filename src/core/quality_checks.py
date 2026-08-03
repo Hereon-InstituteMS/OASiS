@@ -283,27 +283,114 @@ def check_convergence(converged: bool, residual: float, tol: float) -> list[str]
     return w
 
 
+def _interface_net_flux(export):
+    """Net flux through an interface from an InterfaceData-like record.
+
+    Returns (net_vector, magnitude_scale, mode) or None when the record carries
+    no `normal_fluxes` at all.
+
+    `normal_fluxes` is a flux DENSITY at that side's OWN interface points, and
+    the two sides of a partitioned coupling rarely sample the same points —
+    that is the whole reason the coupling is partitioned. Summing the raw arrays
+    then compares N_a densities against N_b densities and calls a correct,
+    conservative coupling unbalanced by roughly (N_a-N_b)/N_a. So the density is
+    reduced to a discretisation-independent net:
+
+      * a CURVE of points (a 2D interface): trapezoid over arclength, after
+        sorting the points along the curve. Sorting matters — the trapezoid runs
+        over array order, so an unsorted point list integrates a zig-zag and
+        manufactures a false imbalance out of a correct coupling.
+      * a SURFACE of points (a 3D interface): arclength is meaningless there, so
+        the MEAN density is used. It is discretisation-independent for a
+        reasonably uniform sampling, which is what the raw sum is not.
+      * one point, or no usable coordinates: the raw sum, which is still right
+        whenever both sides sample alike.
+
+    A VECTOR flux (a traction) is handled component-by-component rather than
+    flattened, so an FSI interface is compared as a vector rather than being
+    silently kicked into the raw-sum path by a length mismatch.
+    """
+    g = (lambda k: export.get(k)) if isinstance(export, dict) else \
+        (lambda k: getattr(export, k, None))
+    raw = g("normal_fluxes")
+    if raw is None:
+        return None
+    f = _np.asarray(raw, float)
+    if f.ndim == 0:
+        f = f.reshape(1)
+    n = f.shape[0]
+    if f.ndim == 1:
+        f = f.reshape(n, 1)
+    elif f.ndim > 2:
+        f = f.reshape(n, -1)
+
+    c = g("coordinates")
+    coords = None
+    if c is not None:
+        c = _np.asarray(c, float)
+        if c.ndim == 2 and len(c) == n:
+            coords = c
+
+    scale = float(_np.sum(_np.abs(f)))
+    if coords is None or n < 2:
+        return _np.sum(f, axis=0), max(scale, 1e-30), "sum"
+
+    # how many directions do the points actually span?
+    spread = coords.max(axis=0) - coords.min(axis=0)
+    varying = int(_np.count_nonzero(spread > 1e-12 * max(float(spread.max()), 1.0)))
+    if varying >= 2:
+        return _np.mean(f, axis=0), max(scale / n, 1e-30), "mean"
+
+    ax = int(_np.argmax(spread))
+    order = _np.argsort(coords[:, ax])
+    cs, fs = coords[order], f[order]
+    ds = _np.linalg.norm(_np.diff(cs, axis=0), axis=1)
+    length = float(_np.sum(ds))
+    if length <= 0:
+        return _np.sum(f, axis=0), max(scale, 1e-30), "sum"
+    net = _np.sum(0.5 * (fs[:-1] + fs[1:]) * ds[:, None], axis=0)
+    return net, max(float(_np.sum(_np.abs(f).sum(axis=1) / n)) * length, 1e-30), "integral"
+
+
 def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                             rtol: float = 0.05) -> list[str]:
     """Conservation across a coupling interface: the net flux leaving A should equal
     the net flux entering B (global balance). Pure arithmetic on the exchanged
-    normal_fluxes — no physics. `export_*` are InterfaceData-like dicts/objects."""
+    normal_fluxes — no physics. `export_*` are InterfaceData-like dicts/objects.
+
+    Returns a NOTE (not a failure) when either side omits `normal_fluxes`: the
+    check silently returning nothing meant a run with no conservation evidence
+    at all was stamped exactly like one that passed the check.
+    """
     w = []
-    def _flux(e):
-        f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
-        return None if f is None else float(_np.sum(_np.asarray(f, float)))
-    fa, fb = _flux(export_a), _flux(export_b)
-    if fa is None or fb is None:
-        return w
-    denom = max(abs(fa), abs(fb), 1e-30)
-    rel = abs(fa + fb) / denom            # A exports +flux, B imports -flux → sum≈0
+    ra, rb = _interface_net_flux(export_a), _interface_net_flux(export_b)
+    if ra is None or rb is None:
+        missing = [lbl for lbl, r in ((label_a, ra), (label_b, rb)) if r is None]
+        return [f"Interface conservation was NOT CHECKED: {', '.join(missing)} "
+                f"exported no `normal_fluxes`, so nothing verifies that what "
+                f"leaves one subdomain enters the other. Export the normal flux "
+                f"density on both sides to get this guard."]
+    fa, sa, _ = ra
+    fb, sb, _ = rb
+    if fa.shape != fb.shape:
+        return [f"Interface conservation was NOT CHECKED: {label_a} exports "
+                f"{fa.size} flux component(s) per point and {label_b} exports "
+                f"{fb.size}; they are not comparable."]
+    na, nb = float(_np.linalg.norm(fa)), float(_np.linalg.norm(fb))
+    # Absolute floor from the flux MAGNITUDES, not just the nets. A symmetric
+    # profile integrates to ~0 on both sides; without a floor, float noise on
+    # two ~1e-16 nets is a 100% "imbalance" on a physically perfect interface.
+    floor = 1e-6 * max(sa, sb)
+    denom = max(na, nb, floor, 1e-30)
+    rel = float(_np.linalg.norm(fa + fb)) / denom   # normals anti-parallel → cancel
     if rel > rtol:
         # Name the convention. The most common cause of this warning is not a
         # non-conservative coupling but both sides exporting their flux with
         # the SAME sign — which a correct coupling does if nobody said which
         # normal to use. Saying only "not balanced" sends the agent looking for
         # a physics bug that is not there.
-        same_sign = fa * fb > 0 and abs(abs(fa) - abs(fb)) / denom <= rtol
+        same_sign = (float(_np.dot(fa.ravel(), fb.ravel())) > 0
+                     and abs(na - nb) / denom <= rtol)
         hint = (" The two magnitudes match but the signs agree, which is the "
                 "signature of a SIGN-CONVENTION error rather than a "
                 "conservation error: each participant must export the flux "
@@ -311,9 +398,15 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                 "and those normals are anti-parallel, so the two sums should "
                 "cancel. Note this is the opposite of the BC value you APPLY, "
                 "which is the same number on both sides."
-                if same_sign else "")
+                if same_sign else
+                " Check next: are both sides' `coordinates` ordered along the "
+                "interface, do both use the same units, and is the exported "
+                "quantity a flux DENSITY on both sides?")
+        fmt = (lambda v: f"{float(v[0]):.4g}" if v.size == 1
+               else "[" + ", ".join(f"{x:.4g}" for x in v.ravel()) + "]")
         w.append(
-            f"Interface flux NOT balanced: net({label_a})={fa:.4g}, net({label_b})={fb:.4g}, "
+            f"Interface flux NOT balanced: net({label_a})={fmt(fa)}, "
+            f"net({label_b})={fmt(fb)}, "
             f"imbalance {rel:.1%} > {rtol:.0%} — coupling may be non-conservative (silent error)."
             + hint
         )

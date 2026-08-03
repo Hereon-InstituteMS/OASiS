@@ -1326,15 +1326,13 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps({solver: general}, indent=2)
 
         elif topic == "coupling":
-            from tools.knowledge import register_knowledge_tools
-            # Return coupling knowledge directly
-            return _get_coupling_knowledge()
+            return _get_coupling_knowledge(solver)
 
         elif topic == "tsi":
             return _get_tsi_knowledge()
 
         elif topic == "precice":
-            return _get_precice_knowledge()
+            return _get_precice_knowledge(solver)
 
         elif topic == "input_guide" and solver:
             from tools.examples_search import (
@@ -1528,6 +1526,9 @@ def register_consolidated_tools(mcp: FastMCP):
                 - "physics" — list all physics types per solver
                 - "capabilities" — full capabilities matrix
                 - "recommend" — recommend solver for a physics (set solver= to physics name)
+                - "coupling" — how to couple two codes together: which tool,
+                  which backend can take which side, and the exact knowledge
+                  calls that return a complete runnable participant script
             solver: Filter by solver name, or physics name for "recommend"
         """
         if query == "list":
@@ -1546,10 +1547,19 @@ def register_consolidated_tools(mcp: FastMCP):
                 core = (f"- **{b.display_name()}** ({b.name()}): "
                         f"{status.value} — "
                         f"{b.input_format().value} input")
-                if status.value != "available" and msg:
+                if msg:
                     # Inline a ONE-LINE reason/hint (not a raw traceback) so the
                     # LLM does not have to call a second tool and the list stays
                     # readable.
+                    #
+                    # This used to fire only for UNAVAILABLE backends, so the one
+                    # line that says WHERE an available backend lives — the
+                    # interpreter or binary path check_availability() returns —
+                    # was thrown away. Coupling needs exactly that: `couple`
+                    # takes a `command` argv, and the coupling knowledge
+                    # deliberately ships no host paths and sends the agent here
+                    # to resolve them. Without the location this list is a dead
+                    # end for the first argument of the first participant.
                     core += f"\n  *{_short_reason(msg)}*"
                 lines.append(core)
             return "\n".join(lines) if lines else "No backends registered."
@@ -1584,6 +1594,42 @@ def register_consolidated_tools(mcp: FastMCP):
             for b in all_backends():
                 status, _ = b.check_availability()
                 lines.append(f"| {b.display_name()} | {len(b.supported_physics())} | {b.input_format().value} | {status.value} |")
+            return "\n".join(lines)
+
+        elif query == "coupling":
+            # Coupling had NO discover branch at all, so an agent could only
+            # reach the coupling knowledge by already knowing the topic string
+            # existed. That is a dead end for the multi-code capability that is
+            # the reason this server has more than one backend.
+            from tools.coupling_knowledge import coupling_sides_table
+            lines = [
+                "# Cross-code coupling on this install",
+                "",
+                "Two tools, and one deprecated one:",
+                "- `couple(participants, max_iter, tol, accelerator, theta)` — THE "
+                "general partitioned coupling. You write one solver script per "
+                "subdomain; OASiS iterates, relaxes, checks convergence and "
+                "conservation. Use this for any coupling.",
+                "- `couple_precice(participants, data, exchanges, work_dir, scheme)` "
+                "— the preCICE path, when each side is a real preCICE participant.",
+                "- `coupled_solve(problem, solver_a, solver_b)` — DEPRECATED, fixed "
+                "toy geometries only.",
+                "",
+                "READ THIS FIRST — the participant contract, the InterfaceData "
+                "shapes, relaxation and the flux sign convention:",
+                "    knowledge(topic='coupling')",
+                "",
+                "Then the complete runnable participant script for each side:",
+                "    knowledge(topic='coupling', solver='<backend>')",
+                "    knowledge(topic='precice',  solver='<backend>')   # preCICE path",
+                "    knowledge(topic='tsi')                            # 4C-native TSI",
+                "",
+                coupling_sides_table(),
+            ]
+            avail = {b.name(): b.check_availability()[0].value
+                     for b in all_backends()}
+            lines += ["", "Availability on THIS install:"]
+            lines += [f"- {n}: {s}" for n, s in sorted(avail.items())]
             return "\n".join(lines)
 
         elif query == "recommend":
@@ -1630,7 +1676,8 @@ def register_consolidated_tools(mcp: FastMCP):
                         break
             return "\n".join(results) if results else f"No solver found for '{physics}'"
 
-        return "Usage: discover(query='list'|'physics'|'capabilities'|'recommend', solver='')"
+        return ("Usage: discover(query='list'|'physics'|'capabilities'|"
+                "'recommend'|'coupling', solver='')")
 
     # ═══════════════════════════════════════════════════════════
     # 3. EXAMPLES (replaces 7 example/search tools)
@@ -1855,8 +1902,8 @@ def register_consolidated_tools(mcp: FastMCP):
                 object of the arguments you will pass. Keys per tool:
                 coupled_solve: problem, solver_a, solver_b, nx, ny, max_iter,
                 tol, relaxation, params; couple: participants, max_iter, tol,
-                accelerator; couple_precice: participants, data, exchanges,
-                scheme, dimensions, max_time, time_window.
+                accelerator, theta; couple_precice: participants, data,
+                exchanges, scheme, dimensions, max_time, time_window.
             ttl_s: how long the review stays valid (default 1 hour).
 
         Returns: JSON with a `critic_token`. Passing it to run_simulation or
@@ -2601,7 +2648,7 @@ def register_consolidated_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
-                     accelerator: str = "aitken",
+                     accelerator: str = "aitken", theta: float = 0.5,
                      critic_approved: bool = False) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
 
@@ -2628,10 +2675,22 @@ def register_consolidated_tools(mcp: FastMCP):
           {"field_name": str, "n_points": N, "coordinates": [[x,y(,z)],...],
            "values": [...], "normal_fluxes": [...]  # optional, for conservation check}
 
+        THE DRIVER IS JACOBI, NOT GAUSS-SEIDEL: within one iteration every
+        participant reads the PREVIOUS iteration's exports, and the driver relaxes
+        EVERY participant's export vector. A two-participant Dirichlet-Neumann loop
+        therefore relaxes twice per cycle and converges geometrically — it does not
+        finish in one step even for a linear problem. theta=1.0 (no relaxation)
+        oscillates forever on a balanced interface; start at theta=0.5.
+
         Args:
             participants: JSON list of {"name", "command":[argv...], "work_dir",
-              "imports_from":[partner names]}.
-            max_iter, tol, accelerator: iteration controls ("aitken"|"constant").
+              "imports_from":[partner names], "timeout": seconds}.
+            max_iter, tol: iteration controls.
+            accelerator: "constant" (fixed theta) or "aitken" (theta adapts per
+              participant, starting from theta).
+            theta: relaxation factor, 0 < theta <= 1. Full weight on the new
+              export at 1.0, half-and-half at 0.5. Reduce it when the residual
+              stops falling or oscillates.
 
         Returns: JSON with converged, iterations, residual, exports, and a
             `validation` block (interface-balance + finiteness). A non-converged or
@@ -2649,13 +2708,37 @@ def register_consolidated_tools(mcp: FastMCP):
         parts = []
         for s in specs:
             try:
-                wd = Path(s["work_dir"]); wd.mkdir(parents=True, exist_ok=True)
+                wd = Path(s["work_dir"])
+                # A relative work_dir is resolved against the SERVER process's
+                # cwd, which the agent can neither see nor control, so the run
+                # lands somewhere unpredictable and looks like it worked.
+                if not wd.is_absolute():
+                    return json.dumps({"error":
+                        f"participant {s.get('name','?')}: work_dir must be an "
+                        f"ABSOLUTE path, got {s['work_dir']!r} (a relative path "
+                        f"is resolved against the server's own directory)."})
+                wd.mkdir(parents=True, exist_ok=True)
                 parts.append(Participant(name=s["name"], command=list(s["command"]),
                                          work_dir=wd, imports_from=s.get("imports_from", []),
                                          timeout=int(s.get("timeout", 3600))))
             except (KeyError, TypeError) as e:
                 return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
-        r = run_coupling(parts, max_iter=max_iter, tol=tol, accelerator=accelerator)
+        if not (0.0 < theta <= 1.0):
+            return json.dumps({"error": f"theta must be in (0, 1], got {theta}"})
+        # The driver compares this string with ==, so "Aitken" or a typo used to
+        # fall through to constant relaxation and run a different algorithm than
+        # the one asked for, silently.
+        accelerator = str(accelerator).strip().lower()
+        if accelerator not in ("aitken", "constant"):
+            return json.dumps({"error": f"accelerator must be 'aitken' or "
+                                        f"'constant', got {accelerator!r}"})
+        try:
+            r = run_coupling(parts, max_iter=max_iter, tol=tol,
+                             accelerator=accelerator, theta0=theta)
+        except Exception as exc:                      # never raise out of a tool
+            return json.dumps({"converged": False,
+                               "error": f"coupling driver failed: "
+                                        f"{type(exc).__name__}: {exc}"}, indent=2)
         # CP-2: wire the silent-wrong validators into the coupling result
         val = list(r.warnings)
         val += check_convergence(r.converged, r.residual, tol)
@@ -2665,20 +2748,37 @@ def register_consolidated_tools(mcp: FastMCP):
         if len(names) == 2:
             val += check_interface_balance(r.exports[names[0]], r.exports[names[1]],
                                            names[0], names[1])
+        # A coupling in which nothing is exchanged converges instantly with a
+        # zero residual and passes every other check — the most convincing
+        # silent-wrong result this tool can produce. Name it.
+        deaf = [p.name for p in parts if not p.imports_from]
+        if deaf:
+            val.append(
+                f"NOT COUPLED: participant(s) {', '.join(deaf)} list no "
+                f"`imports_from`, so they never receive partner data and the "
+                f"run is not a coupling at all.")
+        elif r.converged and r.iterations <= 2 and r.residual == 0.0:
+            val.append(
+                "NOT COUPLED: no participant's export changed between "
+                "iterations, giving an exactly zero residual at iteration "
+                f"{r.iterations}. The usual cause is that the participants "
+                "never read imports.json, or read it under the wrong partner "
+                "name, so each one keeps returning its initial guess.")
         checks_ok = r.converged and not any(
-            ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w) for w in val)
+            ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w
+             or "NOT COUPLED" in w) for w in val)
         result = {"converged": r.converged, "iterations": r.iterations,
                   "residual": r.residual, "history": r.history,
                   "exports": r.exports, "error": r.error, "validation": val}
         reason = ("" if checks_ok else
-                  "the coupling did not converge or failed a finiteness / "
-                  "interface-balance check")
+                  "the coupling did not converge, exchanged nothing, or failed "
+                  "a finiteness / interface-balance check")
         _stamp_verification(result, evidence_ok=checks_ok, reason=reason,
                             critic_approved=critic_approved,
                             solver="couple",
                             setup_text=_coupling_setup_text(
                                 participants=participants, max_iter=max_iter,
-                                tol=tol, accelerator=accelerator))
+                                tol=tol, accelerator=accelerator, theta=theta))
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -3776,7 +3876,7 @@ def _save_candidates(candidates: list, session_id: str) -> str:
 # Helper functions for knowledge (copied from original tools)
 # ═══════════════════════════════════════════════════════════════
 
-def _capture_knowledge_fn(fn_name: str) -> str:
+def _capture_knowledge_fn(fn_name: str, *args) -> str:
     """Reach into tools.knowledge.register_knowledge_tools to pull
     out one of the inline get_*_knowledge closure bodies.
 
@@ -3827,22 +3927,27 @@ def _capture_knowledge_fn(fn_name: str) -> str:
                 f"register_knowledge_tools. Captured: "
                 f"{sorted(captured.keys())}")
     try:
-        return captured[fn_name]()
+        return captured[fn_name](*args)
     except Exception as exc:
         return (f"⚠ `{fn_name}()` raised: "
                 f"`{type(exc).__name__}: {exc}`")
 
 
-def _get_coupling_knowledge():
-    """Return coupling knowledge string (or a visible error block)."""
-    return _capture_knowledge_fn("get_coupling_knowledge")
+def _get_coupling_knowledge(solver: str = ""):
+    """Return coupling knowledge string (or a visible error block).
+
+    `solver` is honoured: the payload for a named backend is its complete
+    participant script, which is the whole point of asking for one. It used to
+    be dropped on the floor, so every backend got the same bytes.
+    """
+    return _capture_knowledge_fn("get_coupling_knowledge", solver)
 
 
 def _get_tsi_knowledge():
     return _capture_knowledge_fn("get_tsi_knowledge")
 
 
-def _get_precice_knowledge():
-    return _capture_knowledge_fn("get_precice_knowledge")
+def _get_precice_knowledge(solver: str = ""):
+    return _capture_knowledge_fn("get_precice_knowledge", solver)
 
 
