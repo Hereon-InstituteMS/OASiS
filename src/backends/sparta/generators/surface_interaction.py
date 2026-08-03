@@ -36,6 +36,13 @@ read_surf        data.circle
 surf_collide     wall diffuse {t_wall} {acc}
 # every surface element must be bound to a collision model, or the run aborts
 surf_modify      all collide wall
+# WARNING, measured on this build: at the DEFAULT nrho 1.0 / fnum 0.001 (the
+# non-dimensional numbers the upstream 'circle' example uses) this collide line
+# is INERT — a 500-step run reports 'SurfColl occurs = 74282' but
+# 'Collide occurs = 0 (0K)'. The gas-surface physics is real, the gas-phase
+# collisions are not. Raise nrho (and fnum with it) before reading anything that
+# depends on intermolecular collisions, and check ncoll in stats_style — this is
+# exactly the Ncoll == 0 trap this physics' own pitfalls warn about.
 collide          vss air air.vss
 fix              in emit/face air xlo
 # compute surf is ALWAYS a per-surf ARRAY -> consume it as c_ID[i]

@@ -50,7 +50,20 @@ surf_collide     wall diffuse {t_wall} 1.0
 surf_modify      1 collide wall
 fix              ambi ambipolar e N+ N2+ NO+ O+ O2+
 collide          vss species air.vss relax variable
+# 'vibrate discrete' is safe HERE only because every species in air.species has
+# vibdof <= 2: particle.cpp:177 aborts with 'Discrete vibrational info for
+# species <X> not read in' for any vibdof > 2 species that has no 'vibfile' on
+# its species line. Do not copy this line onto a CO2 deck.
 collide_modify   vremax 1000 yes vibrate discrete rotate smooth
+# WARNING, measured on this build: at these defaults the ambipolar machinery
+# never fires within the deck's own run length. 1000 steps gives
+# 'Collide occurs = 61926' and 'Reactions = 995' (neutral dissociation only),
+# while the ion columns c_cnt[6] (N2+) and c_cnt[8] (N+) are EXACTLY 0 on every
+# stats line and nsreact stays 0. So 'fix ambipolar' and 'collide_modify
+# ambipolar yes' are declared but untested by this run. Raise the stream speed
+# or the run length until an ion column becomes nonzero before believing any
+# plasma result — and note that ambipolar_plasma's own pitfall says the electron
+# count must track the total ion count, which cannot be checked while both are 0.
 collide_modify   ambipolar yes
 react            tce air.tce
 create_particles noelectron n 0

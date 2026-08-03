@@ -32,6 +32,12 @@ mixture          air N O vstream {vstream} 0.0 0.0
 read_surf        data.circle
 surf_collide     wall diffuse 300.0 1.0
 surf_modify      all collide wall
+# WARNING, measured on this build: at the DEFAULT nrho 1.0 / fnum 0.001 this
+# collide line is INERT — a run reports 'SurfColl occurs = 73827' but
+# 'Collide occurs = 0 (0K)'. Grid adaptation driven by a collision-derived
+# quantity (cell Knudsen number, mean free path) is therefore meaningless at
+# these numbers: with no collisions the lambda field is the 1e+20 sentinel.
+# Raise nrho and fnum before adapting on anything but particle count.
 collide          vss air air.vss
 fix              in emit/face air xlo
 # ONE-SHOT static refinement near the surface. 'adapt_grid' acts immediately,
