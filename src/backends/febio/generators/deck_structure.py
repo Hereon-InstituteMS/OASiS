@@ -368,9 +368,16 @@ DECK_KNOWLEDGE = {
             "`displacement`, `velocity`, `acceleration`, `stress`, "
             "`relative volume`, `PK1 stress`, `PK2 stress`, "
             "`nodal stress`, `Lagrange strain`, `contact pressure`, "
-            "`reaction forces`, `fiber vector`, `damage`. There is "
-            "no `von Mises stress` variable — request `stress` "
-            "(the full tensor) and reduce it downstream."),
+            "`reaction forces`, `fiber vector`, `damage`. All "
+            "thirteen EXECUTED 2026-08-03 on a solid deck: each one "
+            "runs to normal termination. There is NO `von Mises "
+            "stress` variable — request `stress` (the full tensor) "
+            "and reduce it downstream. Asking for one that does not "
+            "exist is an INIT-TIME failure, not a parse error: the "
+            "deck reads `...SUCCESS!` first, then FEBio prints "
+            "`FATAL ERROR: Output variable \"von Mises stress\" is "
+            "not defined` and stops. A wrapper watching only for "
+            "`Reading file ...FAILED!` will miss it."),
         "log_variables": (
             "<Output><logfile><node_data data=\"...\"> and "
             "<element_data data=\"...\"> take a SEMICOLON-separated "
@@ -382,9 +389,15 @@ DECK_KNOWLEDGE = {
             "ex..exz (INFINITESIMAL strain, "
             "FEElasticMaterialPoint::SmallStrain — not an "
             "Almansi measure), Ux..Uxz "
-            "(right stretch), `effective stress`. Omitting the "
-            "file= attribute is legal and dumps the table into the "
-            "run's .log instead of a separate CSV."),
+            "(right stretch), `effective stress`. EXECUTED "
+            "2026-08-03: every one of those node and element lists "
+            "runs to normal termination and writes its table. "
+            "Omitting the file= attribute is legal and dumps the "
+            "table into the run's .log instead of a separate CSV. "
+            "Copy-ready: <Output><logfile><node_data data=\"x;y;z\" "
+            "delim=\",\" file=\"pos.csv\"/><element_data "
+            "data=\"sx;sy;sz;J\" delim=\",\" file=\"el.csv\"/>"
+            "</logfile></Output>."),
         "small_strain_shear_bug": (
             "UPSTREAM BUG in FEBio 4.12: the `eyz` and `exz` log "
             "variables are SWAPPED. "
