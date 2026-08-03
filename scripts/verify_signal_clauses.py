@@ -861,6 +861,20 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "SolverBiCGStab", "preconditioner",
             "writeVTK", "VTKWriter", "ParaView",
             "GMRES", "BiCGStab",
+            # ── symbols confirmed to EXIST in the installed
+            #    dune-fem 2.12.0.2 (hasattr / import checked
+            #    2026-08-03; see src/backends/dune/generators/
+            #    verified_api.py::module_inventory_2_12) ─────────
+            "GridMarker", "canAdapt", "adaptiveLeafGridView",
+            "globalRefine", "gridAdapt", "hierarchicalGrid",
+            "finiteVolume", "cartesianDomain", "aluConformGrid",
+            "aluSimplexGrid", "aluCubeGrid", "dimRange",
+            "as_numpy", "writeVTK", "subsampling",
+            "getDunePyDir", "DUNE_PY_DIR", "CONDA_DEFAULT_ENV",
+            "threading", "parameters", "maxiterations",
+            "nonlinear", "linear_iterations", "converged",
+            "Integrands", "inspectBoundaryIds", "gridWidth",
+            "product", "composite", "combined",
             # ── Misc identifiers used in dune.fem catalog ────
             "u_old", "u_new",
             # (rhs/lhs/sigma/epsilon dropped — math notation)

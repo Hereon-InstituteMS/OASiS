@@ -10,6 +10,7 @@ from .nonlinear import GENERATORS as _nonlinear_gen, KNOWLEDGE as _nonlinear_kn
 from .dg_advection import GENERATORS as _dg_gen, KNOWLEDGE as _dg_kn
 from .adaptive_poisson import GENERATORS as _adaptive_gen, KNOWLEDGE as _adaptive_kn
 from .advanced import GENERATORS as _advanced_gen, KNOWLEDGE as _advanced_kn
+from .verified_api import EXECUTED_API as _executed_api
 
 # Merged generator registry: physics_variant -> callable(params) -> str
 GENERATORS: dict[str, callable] = {}
@@ -38,7 +39,7 @@ KNOWLEDGE["_general"] = {
         "dglagrange": "Discontinuous Lagrange",
         "dglegendre": "DG with Legendre basis",
         "dgonb": "DG with orthonormal basis",
-        "raviartThomas": "H(div) conforming (camelCase Python wrapper; the C++ header is lowercase but the Python factory is camelCase)",
+        "raviartThomas": "H(div) conforming (camelCase Python wrapper; the C++ header is lowercase but the Python factory is camelCase — re-confirmed at runtime 2026-08-03: hasattr(dune.fem.space,'raviartThomas') is True, the lowercase spelling is False)",
         "bdm": "Brezzi-Douglas-Marini H(div) elements",
         "bdfm": "Brezzi-Douglas-Fortin-Marini H(div) elements",
         "finiteVolume": "Piecewise-constant FV space",
@@ -173,3 +174,10 @@ KNOWLEDGE["_general"] = {
         ),
     },
 }
+
+# Everything under this key was established BY EXECUTION against the
+# installed dune-fem (see verified_api.py for the install fingerprint,
+# the scripts that were run and what they printed). Merged rather than
+# nested so `knowledge(topic="overview", solver="dune")` surfaces it
+# alongside the older reference material.
+KNOWLEDGE["_general"].update(_executed_api)
