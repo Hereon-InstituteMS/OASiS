@@ -23,85 +23,260 @@ from __future__ import annotations
 _DG_KNOWLEDGE = {
     "description": (
         "Discontinuous Galerkin (DG) for advection-dominated diffusion. "
-        "Upwind numerical flux handles convection; interior-penalty terms handle diffusion."
+        "An upwind numerical flux handles convection; symmetric "
+        "interior-penalty (SIPG) terms handle diffusion. Both the inflow "
+        "value and the diffusive Dirichlet value are imposed WEAKLY through "
+        "boundary integrals — a strong dirichletbc does nothing on a DG "
+        "space."
     ),
-    "weak_form": (
-        "eps*(grad(u),grad(v))*dx "
-        "- avg(eps*grad(u))*jump(v)*dS + alpha/h*jump(u)*jump(v)*dS "
-        "+ upwind_flux(b, u)*jump(v)*dS "
-        "- b*u*grad(v)*dx + b*u_inflow*v*ds"
+    "minimal_working_example": (
+        "# COMPLETE runnable script. Steady advection-diffusion on the unit\n"
+        "# square, DG1 with upwind advection + SIPG diffusion. Verified by\n"
+        "# executing it on dolfinx 0.10.0.\n"
+        "from mpi4py import MPI\n"
+        "from dolfinx import mesh, fem, default_scalar_type\n"
+        "from dolfinx.fem.petsc import assemble_matrix, assemble_vector\n"
+        "from petsc4py import PETSc\n"
+        "import ufl\n"
+        "import numpy as np\n"
+        "\n"
+        "domain = mesh.create_unit_square(MPI.COMM_WORLD, 40, 40,\n"
+        "                                 mesh.CellType.triangle)\n"
+        "fdim = domain.topology.dim - 1\n"
+        "domain.topology.create_connectivity(fdim, domain.topology.dim)\n"
+        "V = fem.functionspace(domain, ('DG', 1))\n"
+        "u, v = ufl.TrialFunction(V), ufl.TestFunction(V)\n"
+        "\n"
+        "eps = 0.005\n"
+        "b = ufl.as_vector([1.0, 0.5])\n"
+        "n = ufl.FacetNormal(domain)\n"
+        "h = ufl.CellDiameter(domain)\n"
+        "h_avg = (h('+') + h('-')) / 2.0\n"
+        "alpha = 10.0                      # >= O(degree^2)\n"
+        "f = fem.Constant(domain, default_scalar_type(1.0))\n"
+        "u_D = fem.Constant(domain, default_scalar_type(0.0))\n"
+        "\n"
+        "bn = ufl.dot(b, n)\n"
+        "bn_out = (bn + abs(bn)) / 2.0     # boundary outflow part\n"
+        "bn_in = (bn - abs(bn)) / 2.0      # boundary inflow part\n"
+        "up = ((bn('+') + abs(bn('+'))) / 2.0 * u('+')\n"
+        "      + (bn('+') - abs(bn('+'))) / 2.0 * u('-'))\n"
+        "\n"
+        "a = (eps * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx\n"
+        "     - eps * ufl.inner(ufl.avg(ufl.grad(u)), ufl.jump(v, n)) * ufl.dS\n"
+        "     - eps * ufl.inner(ufl.jump(u, n), ufl.avg(ufl.grad(v))) * ufl.dS\n"
+        "     + alpha / h_avg * eps * ufl.inner(ufl.jump(u, n), ufl.jump(v, n)) * ufl.dS\n"
+        "     - ufl.inner(u * b, ufl.grad(v)) * ufl.dx\n"
+        "     + up * ufl.jump(v) * ufl.dS\n"
+        "     + bn_out * u * v * ufl.ds\n"
+        "     - eps * ufl.dot(ufl.grad(u), n) * v * ufl.ds\n"
+        "     - eps * ufl.dot(ufl.grad(v), n) * u * ufl.ds\n"
+        "     + alpha / h * eps * u * v * ufl.ds)\n"
+        "L = (f * v * ufl.dx\n"
+        "     - bn_in * u_D * v * ufl.ds\n"
+        "     - eps * ufl.dot(ufl.grad(v), n) * u_D * ufl.ds\n"
+        "     + alpha / h * eps * u_D * v * ufl.ds)\n"
+        "\n"
+        "A = assemble_matrix(fem.form(a))\n"
+        "A.assemble()\n"
+        "rhs = assemble_vector(fem.form(L))\n"
+        "rhs.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)\n"
+        "ksp = PETSc.KSP().create(domain.comm)\n"
+        "ksp.setOperators(A)\n"
+        "ksp.setType('preonly')\n"
+        "ksp.getPC().setType('lu')\n"
+        "uh = fem.Function(V)\n"
+        "ksp.solve(rhs, uh.x.petsc_vec)\n"
+        "uh.x.scatter_forward()\n"
+        "if ksp.getConvergedReason() <= 0:\n"
+        "    raise RuntimeError(f'KSP failed, reason {ksp.getConvergedReason()}')\n"
+        "if not np.all(np.isfinite(uh.x.array)):\n"
+        "    raise RuntimeError('solution contains non-finite values')\n"
+        "print('u range:', uh.x.array.min(), uh.x.array.max())\n"
     ),
-    "function_space": "DG order 1 (or higher) — fully discontinuous Lagrange",
-    "solver": {"ksp_type": "preonly", "pc_type": "lu"},
+    "function_space": {
+        "REQUIRED": (
+            "V = fem.functionspace(domain, ('DG', degree))\n"
+            "domain.topology.create_connectivity(fdim, domain.topology.dim)"
+        ),
+        "OPTIONAL": (
+            "degree 0, 1, 2, ... . degree 0 for pure first-order upwind "
+            "finite volume; degree 1 and 2 verified here."
+        ),
+        "explanation": (
+            "The facet-to-cell connectivity is REQUIRED before any dS "
+            "integral can be assembled."
+        ),
+    },
+    "weak_form": {
+        "REQUIRED": (
+            "bn = ufl.dot(b, n)\n"
+            "up = ((bn('+') + abs(bn('+')))/2 * u('+')\n"
+            "      + (bn('+') - abs(bn('+')))/2 * u('-'))     # upwind trace\n"
+            "a_adv = -ufl.inner(u*b, ufl.grad(v))*ufl.dx + up*ufl.jump(v)*ufl.dS \\\n"
+            "        + (bn + abs(bn))/2 * u * v * ufl.ds      # OUTFLOW part only\n"
+            "a_dif = (eps*ufl.inner(ufl.grad(u), ufl.grad(v))*ufl.dx\n"
+            "         - eps*ufl.inner(ufl.avg(ufl.grad(u)), ufl.jump(v, n))*ufl.dS\n"
+            "         - eps*ufl.inner(ufl.jump(u, n), ufl.avg(ufl.grad(v)))*ufl.dS\n"
+            "         + alpha/h_avg*eps*ufl.inner(ufl.jump(u, n), ufl.jump(v, n))*ufl.dS)"
+        ),
+        "OPTIONAL": (
+            "For pure advection (eps == 0) drop a_dif entirely, including "
+            "its penalty term."
+        ),
+        "explanation": (
+            "REQUIRED: the boundary advection term must use only the OUTFLOW "
+            "part (bn + |bn|)/2. Using the raw bn over the whole boundary "
+            "makes the operator singular."
+        ),
+        "pitfalls": [
+            "[Numerical] Restrict the boundary advection term to the outflow "
+            "part. Signal: with the raw dot(b, n)*u*v*ds over the whole "
+            "boundary the LU factorisation aborts — 'Zero pivot row <k> "
+            "value 2.00577e-17 tolerance 2.22045e-14' — and without a "
+            "converged-reason check the script prints inf and exits 0.",
+            "[API] dot(b, n) inside a dS integral must be restricted. "
+            "Signal: ValueError: Discontinuous type Jacobian must be "
+            "restricted.",
+        ],
+    },
+    "boundary_conditions": {
+        "REQUIRED": (
+            "# inflow value, advective part\n"
+            "L += -(bn - abs(bn))/2 * u_D * v * ufl.ds\n"
+            "# same value for the diffusive part (Nitsche / SIPG on ds)\n"
+            "a += (-eps*ufl.dot(ufl.grad(u), n)*v*ufl.ds\n"
+            "      - eps*ufl.dot(ufl.grad(v), n)*u*ufl.ds\n"
+            "      + alpha/h*eps*u*v*ufl.ds)\n"
+            "L += (-eps*ufl.dot(ufl.grad(v), n)*u_D*ufl.ds\n"
+            "      + alpha/h*eps*u_D*v*ufl.ds)"
+        ),
+        "OPTIONAL": (
+            "Use a tagged ds(marker) to apply different values on different "
+            "walls; leave a wall out of the Nitsche block for a natural "
+            "(zero-flux) diffusive condition."
+        ),
+        "explanation": (
+            "REQUIRED: everything is weak. fem.dirichletbc on a DG space is "
+            "a silent no-op."
+        ),
+        "pitfalls": [
+            "[API] Never use fem.dirichletbc on a DG space. Signal: "
+            "fem.locate_dofs_topological on a DG1 space with boundary facets "
+            "returns an EMPTY dof array, so the BC constrains nothing and "
+            "raises no error.",
+        ],
+    },
+    "solver": {
+        "REQUIRED": (
+            "ksp = PETSc.KSP().create(domain.comm)\n"
+            "ksp.setOperators(A)\n"
+            "ksp.setType('preonly'); ksp.getPC().setType('lu')\n"
+            "ksp.solve(rhs, uh.x.petsc_vec)\n"
+            "if ksp.getConvergedReason() <= 0:      # REQUIRED\n"
+            "    raise RuntimeError(ksp.getConvergedReason())"
+        ),
+        "OPTIONAL": (
+            "GMRES + a block-Jacobi / ILU preconditioner at scale. CG is "
+            "wrong here: the advection makes the operator non-symmetric."
+        ),
+        "explanation": (
+            "The converged-reason check is REQUIRED. A failed factorisation "
+            "leaves inf in the solution vector and the script still exits 0."
+        ),
+        "pitfalls": [
+            "[Numerical] Test ksp.getConvergedReason() > 0 and "
+            "np.isfinite(uh.x.array).all(). Signal: reason -11 "
+            "(KSP_DIVERGED_PC_FAILED) with u printing as min=inf, max=inf "
+            "while the process exit status is 0.",
+        ],
+    },
+    "verification": (
+        "Check the KSP converged reason, then check the solution is finite "
+        "and in a plausible range. With a bounded inflow value and a "
+        "non-negative source, an advection-dominated DG solution should stay "
+        "O(1); values of order 1e13 or inf mean the solve failed. Return "
+        "code 0 proves nothing."
+    ),
     "pitfalls": [
-        (
-            "[Numerical] DG advection flux: upwind — choose "
-            "the value from the upstream side via "
-            "ufl.conditional(ufl.dot(b, n)('+') > 0, u('+'), "
-            "u('-')). Signal: using a centred flux "
-            "0.5*(u('+') + u('-')) on a pure-advection DG "
-            "problem produces unconditional instability — the "
-            "solution amplitude grows exponentially in time "
-            "regardless of mesh size; upwind restores the "
-            "discrete maximum principle. (Audit 2026-06-02.)"
-        ),
-        (
-            "[Numerical] Interior penalty diffusion: alpha >= "
-            "O(p^2) for coercivity; alpha=4 safe for p=1. Signal: "
-            "for the SIPG penalty alpha_0 too small -> "
-            "coercivity_loss + the dolfinx Function L2 norm "
-            "diverges with refinement; alpha_0 too large -> "
-            "cond(K) > 1e14 and the PETScKrylovSolver stagnates. "
-            "Rule of thumb: alpha_0 = 4 * p_plus_1^2 for "
-            "symmetric IP. (Audit 2026-06-02.)"
-        ),
-        (
-            "[API] FacetNormal n is outward; avg/jump operators "
-            "need '+'/'-' sides. Signal: [exact text re-measured "
-            "2026-08-03 on dolfinx 0.10.0 / ufl 2025.2.1] "
-            "writing dot(b, n) without a side suffix in a dS "
-            "integral raises ValueError 'Discontinuous type "
-            "Jacobian must be restricted.' from fem.form; the "
-            "same expression with dot(b, n('+')) compiles. The "
-            "previously quoted string \"side specifier required "
-            "on '+' or '-' for restricted facet integrals\" does "
-            "NOT appear in current UFL."
-        ),
-        (
-            "[API] Inflow BC imposed weakly via boundary "
-            "integral, NOT Dirichlet. Signal: [VERIFIED "
-            "empirically 2026-08-03, dolfinx 0.10.0] a strong "
-            "DirichletBC on a DG space is a silent no-op — "
-            "fem.locate_dofs_topological on a DG1 space with the "
-            "x=0 boundary facets of an 8x8 unit square returns "
-            "ZERO dofs, so the BC constrains nothing at all and "
-            "raises no error. The inflow BC must enter the form "
-            "via + b_n*u_inlet*v*ds(inflow)."
-        ),
-        (
-            "[Numerical] For pure advection (eps = 0): DROP the "
-            "diffusion terms entirely (do not just set eps "
-            "small). Signal: keeping the IP diffusion terms "
-            "with eps = 0 gives a multiplicative-zero in the "
-            "form but the penalty term alpha/h * jump(u) * "
-            "jump(v) * dS REMAINS and over-stabilises the "
-            "pure-advection problem, smearing the solution "
-            "across element faces. Remove the avg/jump/eps "
-            "block entirely for hyperbolic problems. (Audit "
-            "2026-06-02.)"
-        ),
-        (
-            "[Performance] DG mass matrix is block-DIAGONAL "
-            "(one block per cell) — efficient for explicit "
-            "time stepping because the inversion is local. "
-            "Signal: applying a generic scipy.sparse.linalg "
-            "spsolve to invert M each step misses the block-"
-            "diagonal structure; a per-cell local solve (using "
-            "the LocalSolver / scipy.linalg.solve on each cell "
-            "block) is 10-100x faster. For implicit DG, the "
-            "FULL system K is not block-diagonal — only the "
-            "mass is. (Audit 2026-06-02.)"
-        ),
+        "[Numerical] The boundary advection term must be restricted to the "
+        "OUTFLOW part of the boundary, (dot(b,n) + |dot(b,n)|)/2. Writing "
+        "dot(b, n)*u*v*ds over the whole boundary subtracts on the inflow "
+        "facets and destroys coercivity: the assembled operator becomes "
+        "numerically singular. Signal: the smallest singular value of the "
+        "assembled matrix drops to ~1e-18 (condition number ~1e16), PETSc's "
+        "LU aborts with 'Zero pivot in LU factorization: "
+        "https://petsc.org/release/faq/#zeropivot' and 'Zero pivot row 9599 "
+        "value 2.00577e-17 tolerance 2.22045e-14', KSPConvergedReason is -11 "
+        "(KSP_DIVERGED_PC_FAILED), and a script that does not check the "
+        "reason prints 'u: min=inf, max=inf' and exits 0. Restricting the "
+        "term to the outflow part brings the condition number of the same "
+        "matrix down to O(10). (Verified by execution 2026-08-03, dolfinx "
+        "0.10.0 — this is the defect the shipped template used to have.)",
+        "[Numerical] A DG advection-diffusion form also needs the DIFFUSIVE "
+        "Dirichlet value imposed weakly on the boundary — the Nitsche/SIPG "
+        "block -eps*ufl.dot(ufl.grad(u), n)*v*ufl.ds "
+        "- eps*ufl.dot(ufl.grad(v), n)*u*ufl.ds + alpha/h*eps*u*v*ufl.ds in "
+        "the bilinear form, with the matching u_D terms in the linear form. "
+        "With only the advective inflow term the diffusion operator sees a "
+        "pure natural (zero-flux) condition and the boundary value is never "
+        "imposed. Signal: measure the boundary defect with "
+        "fem.assemble_scalar(fem.form((uh - u_D)**2 * ufl.ds)) normalised by "
+        "the interior norm — WITHOUT the Nitsche block it sits at O(1) and "
+        "is UNCHANGED when the mesh is refined 16 -> 32 -> 64 and when the "
+        "DG degree goes from 1 to 2, which is the fingerprint of a condition "
+        "that is not being applied at all; WITH the block the same quantity "
+        "falls with every refinement. The KSP converges either way, so "
+        "nothing in the solver output reveals it. (Verified by execution "
+        "2026-08-03, dolfinx 0.10.0, at DG1 and DG2 in both the "
+        "diffusion-dominated and the advection-dominated regime.)",
+        "[Numerical] ALWAYS check ksp.getConvergedReason() and the "
+        "finiteness of the solution array. Signal: KSPConvergedReason = -11 "
+        "(KSP_DIVERGED_PC_FAILED) with uh.x.array full of inf while the "
+        "process exit status is 0 — a silent wrong answer. (Verified by "
+        "execution 2026-08-03.)",
+        "[Numerical] DG advection flux: upwind — take the value from the "
+        "upstream side, e.g. (bn('+') + abs(bn('+')))/2*u('+') + "
+        "(bn('+') - abs(bn('+')))/2*u('-'). Signal: a centred flux "
+        "0.5*(u('+') + u('-')) on a pure-advection DG problem gives an "
+        "operator without the upwind dissipation; the discrete maximum "
+        "principle is lost and the solution oscillates. (Audit 2026-06-02.)",
+        "[Numerical] Interior-penalty diffusion: alpha must be at least "
+        "O(degree^2) for coercivity; alpha = 10 is safe at degree 1 and 2 on "
+        "the meshes tested here. Signal: too small an alpha loses coercivity "
+        "and the L2 error grows under refinement instead of shrinking; too "
+        "large an alpha inflates the condition number and an iterative "
+        "solver stagnates. (Audit 2026-06-02 — note that PETSc does NOT "
+        "print a condition-number warning of its own; observe the residual "
+        "history or compute the condition number yourself.)",
+        "[API] FacetNormal n is outward; avg/jump operators need '+'/'-' "
+        "sides. Signal: [exact text re-measured 2026-08-03 on dolfinx 0.10.0 "
+        "/ ufl 2025.2.1] writing dot(b, n) without a side suffix in a dS "
+        "integral raises ValueError 'Discontinuous type Jacobian must be "
+        "restricted.' from fem.form; the same expression with "
+        "dot(b, n('+')) compiles. The previously quoted string \"side "
+        "specifier required on '+' or '-' for restricted facet integrals\" "
+        "does NOT appear in current UFL.",
+        "[API] Inflow BC imposed weakly via boundary integral, NOT "
+        "Dirichlet. Signal: [VERIFIED empirically 2026-08-03, dolfinx "
+        "0.10.0] a strong DirichletBC on a DG space is a silent no-op — "
+        "fem.locate_dofs_topological on a DG1 space with the x=0 boundary "
+        "facets of an 8x8 unit square returns ZERO dofs, so the BC "
+        "constrains nothing at all and raises no error. The inflow BC must "
+        "enter the form via the boundary integrals.",
+        "[Numerical] For pure advection (eps = 0): DROP the diffusion terms "
+        "entirely (do not just set eps small). Signal: keeping the IP "
+        "diffusion terms with eps = 0 gives a multiplicative-zero in the "
+        "form but the penalty term alpha/h * jump(u) * jump(v) * dS REMAINS "
+        "and over-stabilises the pure-advection problem, smearing the "
+        "solution across element faces. Remove the avg/jump/eps block "
+        "entirely for hyperbolic problems. (Audit 2026-06-02.)",
+        "[Performance] DG mass matrix is block-DIAGONAL (one block per "
+        "cell) — efficient for explicit time stepping because the inversion "
+        "is local. Signal: applying a generic scipy.sparse.linalg spsolve to "
+        "invert M each step misses the block-diagonal structure; a per-cell "
+        "local solve is far faster. For implicit DG, the FULL system K is "
+        "not block-diagonal — only the mass is. (Audit 2026-06-02.)",
         "[API] Modern UFL has no ufl.Abs symbol — use Python's "
         "builtin abs() (which UFL overloads for Expr operands) "
         "or ufl.algebra.Abs as the explicit fallback. Calling "
@@ -131,11 +306,24 @@ def _dg_methods_2d(params: dict) -> str:
     eps = params.get("diffusion", 0.005)
     bx = params.get("bx", 1.0)
     by = params.get("by", 0.5)
-    alpha = params.get("penalty", 4.0)
+    degree = params.get("degree", 1)
+    alpha = params.get("penalty", 10.0)
     return f'''\
 """Discontinuous Galerkin (DG) advection-diffusion — FEniCSx/dolfinx
-Interior-penalty diffusion + upwind advection.
-eps = {eps}, b = ({bx}, {by})
+Symmetric interior-penalty diffusion + upwind advection.
+eps = {eps}, b = ({bx}, {by}), DG degree {degree}, penalty {alpha}
+
+BOUNDARY TREATMENT — the part that decides whether the operator is
+invertible at all.  Everything is imposed WEAKLY (fem.dirichletbc on a DG
+space is a silent no-op: locate_dofs_topological returns an EMPTY array).
+  * advective outflow:  +(b.n + |b.n|)/2 * u * v * ds     -> bilinear form
+  * advective inflow:   -(b.n - |b.n|)/2 * u_D * v * ds   -> linear form
+  * diffusive Dirichlet: the Nitsche/SIPG block on ds, in both forms
+Using the RAW b.n over the whole boundary instead of its outflow part
+subtracts on the inflow facets, destroys coercivity, and makes the matrix
+numerically singular: PETSc LU then reports a zero pivot, the KSP returns
+reason -11, and a script that does not check the reason prints
+"u: min=inf, max=inf" and exits 0.
 """
 from mpi4py import MPI
 from dolfinx import mesh, fem, default_scalar_type
@@ -151,9 +339,8 @@ domain.topology.create_connectivity(fdim, tdim)
 domain.topology.create_connectivity(fdim, fdim)
 
 # DG function space — fully discontinuous
-V = fem.functionspace(domain, ("DG", 1))
+V = fem.functionspace(domain, ("DG", {degree}))
 
-# Trial/test functions
 u = ufl.TrialFunction(V)
 v = ufl.TestFunction(V)
 
@@ -163,17 +350,21 @@ b = ufl.as_vector([{bx}, {by}])
 n = ufl.FacetNormal(domain)
 h = ufl.CellDiameter(domain)
 h_avg = (h("+") + h("-")) / 2.0
-alpha = {alpha}
+alpha = {alpha}                       # SIPG penalty, must be >= O(degree^2)
 f_rhs = fem.Constant(domain, default_scalar_type(1.0))
-u_D = fem.Constant(domain, default_scalar_type(0.0))  # inflow value
+u_D = fem.Constant(domain, default_scalar_type(0.0))   # boundary value
 
-# Upwind flux for advection
+# Upwind interior flux
 bn = ufl.dot(b, n)
-bn_plus  = (bn("+") + abs(bn("+")) ) / 2.0   # outflow side
-bn_minus = (bn("+") - abs(bn("+")) ) / 2.0   # inflow  side
-adv_flux = bn_plus * u("+") + bn_minus * u("-")   # upwind
+bn_plus  = (bn("+") + abs(bn("+"))) / 2.0    # outflow side of the facet
+bn_minus = (bn("+") - abs(bn("+"))) / 2.0    # inflow  side of the facet
+adv_flux = bn_plus * u("+") + bn_minus * u("-")
 
-# Interior-penalty diffusion bilinear form
+# Boundary split: outflow enters the operator, inflow enters the data
+bn_out = (bn + abs(bn)) / 2.0
+bn_in  = (bn - abs(bn)) / 2.0
+
+# Symmetric interior-penalty diffusion (interior facets)
 a_diff = (
     eps * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     - eps * ufl.inner(ufl.avg(ufl.grad(u)), ufl.jump(v, n)) * ufl.dS
@@ -181,27 +372,33 @@ a_diff = (
     + alpha / h_avg * eps * ufl.inner(ufl.jump(u, n), ufl.jump(v, n)) * ufl.dS
 )
 
-# Upwind advection bilinear form
+# Nitsche block: imposes u = u_D weakly for the DIFFUSIVE part on ds
+a_diff_bdry = (
+    - eps * ufl.dot(ufl.grad(u), n) * v * ufl.ds
+    - eps * ufl.dot(ufl.grad(v), n) * u * ufl.ds
+    + alpha / h * eps * u * v * ufl.ds
+)
+L_diff_bdry = (
+    - eps * ufl.dot(ufl.grad(v), n) * u_D * ufl.ds
+    + alpha / h * eps * u_D * v * ufl.ds
+)
+
+# Upwind advection
 a_adv = (
     - ufl.inner(u * b, ufl.grad(v)) * ufl.dx
     + adv_flux * ufl.jump(v) * ufl.dS
-    + ufl.dot(b, n) * u * v * ufl.ds  # outflow boundary (natural)
+    + bn_out * u * v * ufl.ds          # OUTFLOW ONLY — never the raw bn
 )
+L_adv = - bn_in * u_D * v * ufl.ds     # inflow value is data
 
-# Weakly imposed inflow boundary condition (negative bn face)
-bn_ds = (ufl.dot(b, n) - abs(ufl.dot(b, n))) / 2.0  # only inflow faces
-L_inflow = - bn_ds * u_D * v * ufl.ds
+a = a_diff + a_diff_bdry + a_adv
+L = f_rhs * v * ufl.dx + L_diff_bdry + L_adv
 
-# Full system
-a = a_diff + a_adv
-L = f_rhs * v * ufl.dx + L_inflow
-
-# Assemble and solve (no Dirichlet BCs in DG)
 a_form = fem.form(a)
 L_form = fem.form(L)
 
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
-A = assemble_matrix(a_form)
+A = assemble_matrix(a_form)          # no dirichletbc: DG imposes weakly
 A.assemble()
 b_vec = assemble_vector(L_form)
 b_vec.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
@@ -215,20 +412,27 @@ uh = fem.Function(V, name="concentration")
 solver.solve(b_vec, uh.x.petsc_vec)
 uh.x.scatter_forward()
 
+# ---- checks on the PHYSICS, not on the return code -----------------------
+reason = solver.getConvergedReason()
+if reason <= 0:
+    raise RuntimeError(
+        f"KSP failed with KSPConvergedReason={{reason}} (-11 = "
+        f"DIVERGED_PC_FAILED). The usual cause is a boundary advection term "
+        f"written with the raw dot(b, n) instead of its outflow part.")
+u_arr = uh.x.array
+if not np.all(np.isfinite(u_arr)):
+    raise RuntimeError("solution contains non-finite values — the solve failed")
+
 # Output
 from dolfinx.io import XDMFFile
-
-# Interpolate DG -> P1 for XDMF output
 V_p1 = fem.functionspace(domain, ("Lagrange", 1))
 u_out = fem.Function(V_p1, name="concentration")
 u_out.interpolate(uh)
-
 with XDMFFile(domain.comm, "result.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
     xdmf.write_function(u_out)
 
-u_arr = uh.x.array
-print(f"DG advection-diffusion solved")
+print(f"DG advection-diffusion solved (KSPConvergedReason={{reason}})")
 print(f"u: min={{u_arr.min():.6e}}, max={{u_arr.max():.6e}}")
 print(f"DOFs (DG): {{V.dofmap.index_map.size_global}}")
 '''

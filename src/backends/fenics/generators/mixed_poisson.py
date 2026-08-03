@@ -5,92 +5,291 @@ Variants: 2d
 
 
 KNOWLEDGE = {
-    "description": "Mixed Poisson / Darcy flow using Raviart-Thomas + DG pressure",
-    "weak_form": "(sigma, tau)*dx + (div(tau), p)*dx + (div(sigma), v)*dx = -(f, v)*dx",
-    "function_space": "RT(k) for flux + DG(k-1) for pressure (inf-sup stable pair)",
-    "solver": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"},
+    "description": (
+        "Mixed (dual) Poisson / Darcy flow: solve for the FLUX sigma and the "
+        "pressure u at the same time, sigma = -grad(u) with div(sigma) = f. "
+        "Discretised with H(div)-conforming Raviart-Thomas flux and "
+        "discontinuous pressure, which makes the discrete mass balance hold "
+        "cell by cell."
+    ),
+    "minimal_working_example": (
+        "# COMPLETE runnable script. Darcy flow on the unit square with a\n"
+        "# unit source: prescribed pressure on the left/right walls (a\n"
+        "# NATURAL condition in this formulation) and no-flow on top/bottom\n"
+        "# (an ESSENTIAL condition on sigma.n). Verified by executing it on\n"
+        "# dolfinx 0.10.0.\n"
+        "from mpi4py import MPI\n"
+        "from dolfinx import mesh, fem\n"
+        "from dolfinx.fem.petsc import (assemble_matrix, assemble_vector,\n"
+        "                               apply_lifting, set_bc)\n"
+        "from basix.ufl import element, mixed_element\n"
+        "from petsc4py import PETSc\n"
+        "import ufl\n"
+        "import numpy as np\n"
+        "\n"
+        "k = 1\n"
+        "domain = mesh.create_unit_square(MPI.COMM_WORLD, 32, 32,\n"
+        "                                 mesh.CellType.triangle)\n"
+        "fdim = domain.topology.dim - 1\n"
+        "domain.topology.create_connectivity(fdim, domain.topology.dim)\n"
+        "\n"
+        "RT = element('RT', domain.basix_cell(), k)\n"
+        "DG = element('DG', domain.basix_cell(), k - 1)\n"
+        "W = fem.functionspace(domain, mixed_element([RT, DG]))\n"
+        "(sigma, u) = ufl.TrialFunctions(W)\n"
+        "(tau, v) = ufl.TestFunctions(W)\n"
+        "\n"
+        "n = ufl.FacetNormal(domain)\n"
+        "f = fem.Constant(domain, 1.0)      # source, div(sigma) = f\n"
+        "u_D = fem.Constant(domain, 0.0)    # prescribed pressure, natural BC\n"
+        "\n"
+        "# facet tag 1 = the walls where the PRESSURE is prescribed\n"
+        "sides = mesh.locate_entities_boundary(\n"
+        "    domain, fdim, lambda x: np.isclose(x[0], 0.0) | np.isclose(x[0], 1.0))\n"
+        "mt = mesh.meshtags(domain, fdim, np.sort(sides),\n"
+        "                   np.full(len(sides), 1, dtype=np.int32))\n"
+        "ds = ufl.Measure('ds', domain=domain, subdomain_data=mt)\n"
+        "\n"
+        "a = (ufl.inner(sigma, tau) - u * ufl.div(tau) + ufl.div(sigma) * v) * ufl.dx\n"
+        "L = f * v * ufl.dx - u_D * ufl.dot(tau, n) * ds(1)\n"
+        "\n"
+        "# essential BC: sigma.n = 0 on the remaining walls\n"
+        "flat = mesh.locate_entities_boundary(\n"
+        "    domain, fdim, lambda x: np.isclose(x[1], 0.0) | np.isclose(x[1], 1.0))\n"
+        "W0 = W.sub(0)\n"
+        "V0, _ = W0.collapse()\n"
+        "g = fem.Function(V0)\n"
+        "g.x.array[:] = 0.0\n"
+        "bc = fem.dirichletbc(g, fem.locate_dofs_topological((W0, V0), fdim, flat), W0)\n"
+        "\n"
+        "a_form, L_form = fem.form(a), fem.form(L)\n"
+        "A = assemble_matrix(a_form, bcs=[bc])\n"
+        "A.assemble()\n"
+        "b = assemble_vector(L_form)\n"
+        "apply_lifting(b, [a_form], bcs=[[bc]])\n"
+        "b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)\n"
+        "set_bc(b, [bc])\n"
+        "\n"
+        "opts = PETSc.Options()\n"
+        "opts['mat_mumps_icntl_14'] = 200   # MUMPS working-space headroom\n"
+        "ksp = PETSc.KSP().create(domain.comm)\n"
+        "ksp.setOperators(A)\n"
+        "ksp.setType('preonly')\n"
+        "ksp.getPC().setType('lu')\n"
+        "ksp.getPC().setFactorSolverType('mumps')\n"
+        "ksp.setFromOptions()\n"
+        "ksp.getPC().setFromOptions()\n"
+        "wh = fem.Function(W)\n"
+        "ksp.solve(b, wh.x.petsc_vec)\n"
+        "wh.x.scatter_forward()\n"
+        "if ksp.getConvergedReason() <= 0:\n"
+        "    raise RuntimeError(f'KSP failed, reason {ksp.getConvergedReason()}')\n"
+        "\n"
+        "# physical check: cellwise mass balance div(sigma_h) == f\n"
+        "sig_h, u_h = wh.sub(0), wh.sub(1)\n"
+        "res = np.sqrt(domain.comm.allreduce(fem.assemble_scalar(\n"
+        "    fem.form((ufl.div(sig_h) - f) ** 2 * ufl.dx)), op=MPI.SUM))\n"
+        "scale = np.sqrt(domain.comm.allreduce(fem.assemble_scalar(\n"
+        "    fem.form(f ** 2 * ufl.dx)), op=MPI.SUM))\n"
+        "print('relative mass-balance residual:', res / scale)\n"
+        "p = wh.sub(1).collapse().x.array\n"
+        "print('pressure range:', p.min(), p.max())\n"
+    ),
+    "function_space": {
+        "REQUIRED": (
+            "from basix.ufl import element, mixed_element\n"
+            "RT = element('RT', domain.basix_cell(), k)       # flux,  H(div)\n"
+            "DG = element('DG', domain.basix_cell(), k - 1)   # pressure, L2\n"
+            "W = fem.functionspace(domain, mixed_element([RT, DG]))\n"
+            "(sigma, u) = ufl.TrialFunctions(W)\n"
+            "(tau, v) = ufl.TestFunctions(W)"
+        ),
+        "OPTIONAL": (
+            "k = 1, 2, 3 (all verified on triangles and quadrilaterals). "
+            "'BDM' may replace 'RT' — same stability, more DoFs, one order "
+            "higher in the flux. fem.functionspace(domain, ('RT', k)) builds "
+            "the same space as the basix.ufl.element spelling."
+        ),
+        "explanation": (
+            "REQUIRED pairing: the pressure degree must be exactly one lower "
+            "than the flux degree. RT(k) with DG(k) is not inf-sup stable."
+        ),
+        "pitfalls": [
+            "[Numerical] Pair RT(k) strictly with DG(k-1). Signal: with "
+            "RT(k)+DG(k) the assembled saddle-point matrix acquires extra "
+            "numerical null vectors and the LU factorisation reports a zero "
+            "pivot.",
+        ],
+    },
+    "weak_form": {
+        "REQUIRED": (
+            "a = (ufl.inner(sigma, tau) - u * ufl.div(tau)\n"
+            "     + ufl.div(sigma) * v) * ufl.dx\n"
+            "L = f * v * ufl.dx - u_D * ufl.dot(tau, n) * ds(pressure_tag)"
+        ),
+        "OPTIONAL": (
+            "Heterogeneous permeability: weight the first term, "
+            "ufl.inner(Kinv * sigma, tau), where Kinv is a fem.Function or a "
+            "ufl expression for 1/K."
+        ),
+        "explanation": (
+            "This is sigma = -grad(u) with div(sigma) = f. The pressure "
+            "boundary value u_D enters the RIGHT-HAND SIDE as a facet "
+            "integral against tau.n — it is a NATURAL condition here, the "
+            "reverse of the primal formulation."
+        ),
+    },
+    "boundary_conditions": {
+        "REQUIRED": (
+            "# ESSENTIAL: prescribed normal flux sigma.n, on the flux subspace\n"
+            "W0 = W.sub(0)\n"
+            "V0, _ = W0.collapse()\n"
+            "g = fem.Function(V0)          # a Function on the COLLAPSED space\n"
+            "g.x.array[:] = 0.0            # sigma.n = 0  (no flow)\n"
+            "bc = fem.dirichletbc(g, fem.locate_dofs_topological((W0, V0), fdim, facets), W0)\n"
+            "\n"
+            "# NATURAL: prescribed pressure, a term in L, NOT a dirichletbc\n"
+            "L = f * v * ufl.dx - u_D * ufl.dot(tau, n) * ds(pressure_tag)"
+        ),
+        "OPTIONAL": (
+            "Non-zero flux: interpolate the wanted vector field into g "
+            "instead of zeroing it."
+        ),
+        "explanation": (
+            "REQUIRED: at least part of the boundary must carry the natural "
+            "pressure condition. Prescribing sigma.n on the WHOLE boundary "
+            "leaves the pressure undetermined up to a constant and, unless "
+            "the prescribed fluxes happen to balance the source exactly, "
+            "makes the problem unsolvable."
+        ),
+        "pitfalls": [
+            "[Numerical] Do not put sigma.n on the whole boundary. Signal: "
+            "the run exits 0 but reports min(p) == max(p) at magnitude ~1e13 "
+            "— a constant garbage pressure from an LU solve of a singular "
+            "system.",
+            "[API] The essential BC value must be a Function on the "
+            "COLLAPSED flux subspace. Signal: passing a raw constant with "
+            "the (W0, V0) dof tuple raises TypeError: __init__(): "
+            "incompatible function arguments.",
+        ],
+    },
+    "solver": {
+        "REQUIRED": (
+            "opts = PETSc.Options()\n"
+            "opts['mat_mumps_icntl_14'] = 200\n"
+            "ksp = PETSc.KSP().create(domain.comm)\n"
+            "ksp.setOperators(A)\n"
+            "ksp.setType('preonly')\n"
+            "ksp.getPC().setType('lu')\n"
+            "ksp.getPC().setFactorSolverType('mumps')\n"
+            "ksp.setFromOptions(); ksp.getPC().setFromOptions()\n"
+            "ksp.solve(b, wh.x.petsc_vec)\n"
+            "if ksp.getConvergedReason() <= 0:            # REQUIRED check\n"
+            "    raise RuntimeError(ksp.getConvergedReason())"
+        ),
+        "OPTIONAL": (
+            "'superlu_dist' and 'umfpack' are the alternative factor solvers "
+            "present on the reference install. At scale, replace the direct "
+            "solve with a fieldsplit Schur-complement preconditioner."
+        ),
+        "explanation": (
+            "The system is INDEFINITE (a saddle point), so Krylov methods "
+            "that assume positive definiteness fail on it. The converged-"
+            "reason check is REQUIRED, not optional: a failed factorisation "
+            "leaves inf/garbage in the solution vector and the script still "
+            "exits 0."
+        ),
+        "pitfalls": [
+            "[Numerical] Always test ksp.getConvergedReason() > 0. Signal: "
+            "reason -11 (KSP_DIVERGED_PC_FAILED) with the solution vector "
+            "full of inf, while the process exit status is still 0.",
+            "[Numerical] Plain MUMPS runs out of factorisation workspace on "
+            "higher-order RT. Signal: 'MUMPS error in numerical "
+            "factorization: INFOG(1)=-9'. Raise mat_mumps_icntl_14.",
+        ],
+    },
+    "verification": (
+        "The mixed method is locally conservative by construction: when the "
+        "source lies in the pressure space (e.g. a constant f with DG0), "
+        "div(sigma_h) equals f to machine precision. Assemble "
+        "((div(sigma_h) - f)**2 * dx)**0.5 and compare it against the norm of "
+        "f. A relative residual near machine epsilon is a genuine physical "
+        "check that needs no reference solution; O(1) means the solve failed."
+    ),
     "pitfalls": [
-        (
-            "[Numerical] System is INDEFINITE (saddle point): use "
-            "direct solver or block preconditioner. Signal: "
-            "PETSc CG/GMRES reports `DIVERGED_INDEFINITE_PC` or "
-            "stagnates with residual ~1.0 (no decrease); LU "
-            "succeeds where iterative fails — switch to a "
-            "fieldsplit / Schur-complement preconditioner for "
-            "scale. (Audit 2026-06-02.)"
-        ),
-        (
-            "[Numerical] RT(k) + DG(k-1): inf-sup stable, locally "
-            "conservative (exact div). Signal: when mixing "
-            "non-inf-sup-stable pairs (e.g. RT(k) + DG(k)), "
-            "the discrete LBB constant collapses with mesh "
-            "refinement — pressure norm grows like O(h^-1) "
-            "instead of converging, and the divergence error "
-            "fails to reach machine precision. (Audit "
-            "2026-06-02.)"
-        ),
-        (
-            "[Numerical] BDM(k) + DG(k-1) is an alternative "
-            "H(div) pair with FULL polynomial space — RT(k) is "
-            "the subset with vanishing-divergence boundary "
-            "terms. Signal: BDM gives the same div-conforming "
-            "stability as RT but adds DOFs (~ 2x for k=1 in "
-            "2D); preferred if higher-order convergence in the "
-            "flux variable is needed (BDM is order k+1 in "
-            "L^2 vs RT's order k). Choosing BDM for k=1 with "
-            "DG(0) pressure but expecting RT-like flux "
-            "convergence under-uses the richer space and "
-            "yields the same convergence rate as RT but at "
-            "higher cost — pick by convergence target, not "
-            "stability. (Audit 2026-06-02.)"
-        ),
-        (
-            "[API] Essential BC is on sigma.n (normal flux), NOT "
-            "on pressure. Signal: applying a dolfinx DirichletBC "
-            "on the pressure DOFs at an inflow surface (instead "
-            "of on the flux) gives wildly wrong pressure profile "
-            "and ZERO normal flux at that surface; mass balance "
-            "is violated by an O(1) factor. (Audit 2026-06-02.)"
-        ),
-        (
-            "[Numerical] Pressure determined up to a constant if "
-            "only normal flux BCs. Signal: solver reports a "
-            "near-zero pivot or singular system "
-            "(`KSPSolve: DIVERGED_BREAKDOWN`); add a pressure "
-            "pinning DOF or use a nullspace removal to restore "
-            "uniqueness. (Audit 2026-06-02.)"
-        ),
-        (
-            "[Numerical] For heterogeneous permeability K(x): "
-            "weight the (sigma, tau) bilinear-form term by "
-            "K^{-1}(x), giving (K^{-1}*sigma, tau)*dx. Signal: "
-            "if the K^{-1} weighting is omitted in a layered "
-            "domain (e.g. K = 1e-12 in one half, 1e-6 in the "
-            "other), the discrete flux is continuous across "
-            "the layer boundary instead of jumping by the "
-            "permeability contrast; mass-balance error at the "
-            "interface is O(1). The correct weak form has "
-            "K^{-1} on the velocity term, not just on the "
-            "Darcy-law sigma = -K * grad(p) post-processing. "
-            "(Audit 2026-06-02.)"
-        ),
-        (
-            "[API] Both spellings work for Raviart-Thomas: "
-            "basix.ufl.element('RT', msh.basix_cell(), k) and "
-            "the tuple shorthand fem.functionspace(msh, "
-            "('RT', k)) build the SAME space. Signal: [MEASURED "
-            "2026-08-03, dolfinx 0.10.0, 8x8 unit square] both "
-            "give 208 global dofs at k=1; neither raises. "
-            "IMPORTANT CORRECTION: the previously quoted signal "
-            "(`AttributeError: module 'dolfinx.fem' has no "
-            "attribute 'FiniteElement'` from passing 'RT' to "
-            "FunctionSpace) is not reproducible — 'RT' IS the "
-            "registered basix family name. The names that DO "
-            "raise ValueError 'Unknown element family: ...' are "
-            "the old DOLFIN degree-suffixed spellings such as "
-            "'P1'; and ufl.FiniteElement itself no longer "
-            "exists at all (AttributeError on the ufl module)."
-        ),
+        "[Numerical] Prescribing sigma.n on the ENTIRE boundary is not a "
+        "well-posed problem. The pressure is then determined only up to a "
+        "constant, and unless the prescribed normal fluxes integrate to "
+        "exactly the source, no solution exists at all. Signal: the script "
+        "exits 0 and prints a single constant pressure of enormous magnitude "
+        "— min(p) == max(p) at order 1e13 — because LU on the singular "
+        "saddle-point system returns garbage rather than failing. Fix: leave "
+        "part of the boundary to the NATURAL pressure condition "
+        "(- u_D * dot(tau, n) * ds(tag) in L), or, if the flux really is "
+        "prescribed everywhere, attach a constant nullspace to the pressure "
+        "block and make the data compatible. (Verified by execution "
+        "2026-08-03, dolfinx 0.10.0 — this is the defect the shipped "
+        "template used to have.)",
+        "[Numerical] A direct solve of this saddle point can fail while the "
+        "script still exits 0. Signal: ksp.getConvergedReason() returns -11 "
+        "(KSP_DIVERGED_PC_FAILED) and the solution vector is filled with "
+        "inf, but nothing is printed and the return code is 0. With "
+        "-ksp_error_if_not_converged the underlying cause surfaces as "
+        "'MUMPS error in numerical factorization: INFOG(1)=-9' for the MUMPS "
+        "factoriser, and as '[0] Zero pivot row 0 value 0. tolerance "
+        "2.22045e-14' for PETSc's built-in LU. ALWAYS test "
+        "getConvergedReason() > 0. (Verified by execution 2026-08-03.)",
+        "[Numerical] No single direct solver is robust across all "
+        "RT-degree / cell-type combinations here. Signal: on the same "
+        "problem, plain MUMPS fails with INFOG(1)=-9 at RT2 on triangles "
+        "while succeeding on quadrilaterals, and superlu_dist succeeds at "
+        "RT2 on triangles while failing with reason -11 at RT1 on "
+        "quadrilaterals. Setting mat_mumps_icntl_14 (working-space headroom) "
+        "to a few hundred makes MUMPS succeed for degrees 1-3 on both cell "
+        "types; umfpack also succeeds on all of them but is sequential. "
+        "(Verified by execution 2026-08-03.)",
+        "[Numerical] The system is INDEFINITE (saddle point): use a direct "
+        "solver or a Schur-complement block preconditioner. Signal: PETSc CG "
+        "returns KSP_DIVERGED_INDEFINITE_PC and GMRES stagnates with the "
+        "residual failing to drop, while the same matrix factorises fine "
+        "under LU. (Audit 2026-06-02.)",
+        "[Numerical] RT(k) pairs with DG(k-1), never DG(k). Signal: the "
+        "RT(k)+DG(k) saddle-point matrix has extra numerical null vectors "
+        "and its LU factorisation reports a zero pivot; the pressure error "
+        "does not converge under refinement. (Audit 2026-06-02.)",
+        "[Numerical] BDM(k) + DG(k-1) is the alternative H(div) pair, with "
+        "the FULL polynomial space rather than RT's subspace. Signal: BDM "
+        "gives the same inf-sup stability at roughly twice the k=1 flux DoF "
+        "count in 2D, and buys one extra order in the flux, not in the "
+        "pressure — choosing BDM while measuring only the pressure error "
+        "shows the same rate as RT at higher cost. (Audit 2026-06-02.)",
+        "[API] The essential condition is on sigma.n (the flux), NOT on the "
+        "pressure — the pressure is the NATURAL one here, imposed by the "
+        "facet term - u_D * dot(tau, n) * ds(tag) in the linear form. "
+        "Signal: putting a dolfinx dirichletbc on the pressure subspace "
+        "instead constrains the discontinuous pressure DoFs directly, giving "
+        "a pressure that is pinned to the prescribed value only in the cells "
+        "touching the wall and a normal flux that does not respond to the "
+        "imposed pressure difference at all. (Audit 2026-06-02.)",
+        "[Numerical] For heterogeneous permeability K(x), weight the flux "
+        "term by K^-1: ufl.inner(Kinv * sigma, tau) * dx. Signal: with the "
+        "weighting omitted in a layered domain the computed flux is "
+        "continuous across the layer interface instead of jumping with the "
+        "permeability contrast, and the mass-balance residual at the "
+        "interface is O(1). Putting K only into a post-processed "
+        "sigma = -K grad(p) does not fix the solve. (Audit 2026-06-02.)",
+        "[API] Both spellings work for Raviart-Thomas: "
+        "basix.ufl.element('RT', domain.basix_cell(), k) and the tuple "
+        "shorthand fem.functionspace(domain, ('RT', k)) build the SAME "
+        "space. Signal: both give identical global dof counts at k=1 on the "
+        "same mesh and neither raises. IMPORTANT CORRECTION: the previously "
+        "quoted signal (AttributeError: module 'dolfinx.fem' has no "
+        "attribute 'FiniteElement' from passing 'RT' to FunctionSpace) is "
+        "not reproducible — 'RT' IS the registered basix family name. The "
+        "names that DO raise ValueError 'Unknown element family: ...' are "
+        "the old DOLFIN degree-suffixed spellings such as 'P1'; and "
+        "ufl.FiniteElement itself no longer exists at all (AttributeError on "
+        "the ufl module). (Verified by execution 2026-08-03.)",
     ],
     "materials": {
         "permeability": {"range": [1e-15, 1.0], "unit": "m^2 (Darcy permeability)"},
@@ -116,14 +315,30 @@ def _mixed_poisson_2d(params: dict) -> str:
     nx = params.get("nx", 32)
     ny = params.get("ny", 32)
     rt_order = params.get("rt_order", 1)
+    source = params.get("source", 1.0)
+    pressure_bc = params.get("pressure_bc", 0.0)
     return f'''\
-"""Mixed Poisson: Raviart-Thomas + DG pressure — FEniCSx/dolfinx
-sigma + grad(p) = 0 (Darcy flow / flux formulation)
-div(sigma) = f
-sigma in H(div), p in L2.
+"""Mixed Poisson / Darcy: Raviart-Thomas flux + DG pressure — FEniCSx/dolfinx
+
+    sigma = -grad(u)        (Darcy law, flux)
+    div(sigma) = f          (mass balance)
+    sigma in H(div), u in L2.
+
+BOUNDARY CONDITIONS — the part that decides well-posedness:
+  * ESSENTIAL here is the NORMAL FLUX sigma.n, imposed with a dirichletbc on
+    the flux subspace.  Applied on y=0 and y=1 (no-flow walls).
+  * NATURAL here is the PRESSURE, imposed by the facet term
+    -u_D*dot(tau, n)*ds(1) in the linear form.  Applied on x=0 and x=1.
+  Prescribing sigma.n on the WHOLE boundary is NOT well posed: the pressure
+  is then fixed only up to a constant, and unless the fluxes balance the
+  source exactly there is no solution at all — LU returns a constant garbage
+  pressure of order 1e13 and the script still exits 0.
+
+The run is checked by the cellwise mass balance div(sigma_h) = f, which the
+RT/DG pair satisfies to machine precision when f lies in the pressure space.
 """
 from mpi4py import MPI
-from dolfinx import mesh, fem, io, default_scalar_type
+from dolfinx import mesh, fem, default_scalar_type
 import ufl
 import numpy as np
 from basix.ufl import element, mixed_element
@@ -135,34 +350,40 @@ tdim = domain.topology.dim
 fdim = tdim - 1
 domain.topology.create_connectivity(fdim, tdim)
 
-# Mixed function space: Raviart-Thomas for flux + DG for pressure
-RT = element("RT", domain.topology.cell_name(), {rt_order})
-DG = element("DG", domain.topology.cell_name(), {rt_order - 1})
-ME = mixed_element([RT, DG])
-W = fem.functionspace(domain, ME)
+# Mixed function space: Raviart-Thomas flux + one-degree-lower DG pressure
+RT = element("RT", domain.basix_cell(), {rt_order})
+DG = element("DG", domain.basix_cell(), {rt_order - 1})
+W = fem.functionspace(domain, mixed_element([RT, DG]))
 
-# Trial and test functions
 (sigma, u) = ufl.TrialFunctions(W)
 (tau, v) = ufl.TestFunctions(W)
 
-# Source term
-f = fem.Constant(domain, default_scalar_type(1.0))
+n = ufl.FacetNormal(domain)
+f = fem.Constant(domain, default_scalar_type({source}))        # source term
+u_D = fem.Constant(domain, default_scalar_type({pressure_bc}))  # prescribed pressure
 
-# Bilinear form: (sigma, tau) + (div(tau), u) + (div(sigma), v) = -(f, v)
-a = (ufl.inner(sigma, tau) + ufl.div(tau) * u + ufl.div(sigma) * v) * ufl.dx
-L = -f * v * ufl.dx
+# Facet tag 1 = the walls carrying the natural (pressure) condition
+pressure_facets = mesh.locate_entities_boundary(
+    domain, fdim, lambda x: np.isclose(x[0], 0.0) | np.isclose(x[0], 1.0))
+marker = mesh.meshtags(domain, fdim, np.sort(pressure_facets),
+                       np.full(len(pressure_facets), 1, dtype=np.int32))
+ds = ufl.Measure("ds", domain=domain, subdomain_data=marker)
 
-# Essential BC on sigma.n = 0 on boundary (natural for pressure)
-# For RT elements: normal component DOFs on boundary facets
-boundary_facets = mesh.exterior_facet_indices(domain.topology)
+# Weak form for sigma = -grad(u), div(sigma) = f
+a = (ufl.inner(sigma, tau) - u * ufl.div(tau) + ufl.div(sigma) * v) * ufl.dx
+L = f * v * ufl.dx - u_D * ufl.dot(tau, n) * ds(1)
+
+# Essential BC: sigma.n = 0 on the no-flow walls (flux subspace, collapsed Function)
+noflow_facets = mesh.locate_entities_boundary(
+    domain, fdim, lambda x: np.isclose(x[1], 0.0) | np.isclose(x[1], 1.0))
 W0 = W.sub(0)
 V0, _ = W0.collapse()
 sigma_bc = fem.Function(V0)
 sigma_bc.x.array[:] = 0.0
-bc_dofs = fem.locate_dofs_topological((W0, V0), fdim, boundary_facets)
-bc = fem.dirichletbc(sigma_bc, bc_dofs, W0)
+bc = fem.dirichletbc(sigma_bc,
+                     fem.locate_dofs_topological((W0, V0), fdim, noflow_facets), W0)
 
-# Assemble and solve
+# Assemble
 a_form = fem.form(a)
 L_form = fem.form(L)
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector, apply_lifting, set_bc
@@ -174,33 +395,60 @@ apply_lifting(b, [a_form], bcs=[[bc]])
 b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 set_bc(b, [bc])
 
-# Solve — indefinite system, use direct solver
+# Solve — the system is INDEFINITE (saddle point), so use a direct solver.
+# mat_mumps_icntl_14 raises MUMPS' working-space headroom; without it the
+# factorisation of higher-order RT systems aborts with INFOG(1)=-9 and the
+# KSP returns reason -11 while the script still exits 0.
+opts = PETSc.Options()
+opts["mat_mumps_icntl_14"] = 200
 solver = PETSc.KSP().create(domain.comm)
 solver.setOperators(A)
 solver.setType(PETSc.KSP.Type.PREONLY)
 solver.getPC().setType(PETSc.PC.Type.LU)
 solver.getPC().setFactorSolverType("mumps")
+solver.setFromOptions()
+solver.getPC().setFromOptions()
 
 wh = fem.Function(W)
 solver.solve(b, wh.x.petsc_vec)
+wh.x.scatter_forward()
 
-# Extract flux and pressure
-sigma_h = wh.sub(0).collapse()
-u_h = wh.sub(1).collapse()
-sigma_h.name = "flux"
-u_h.name = "pressure"
+reason = solver.getConvergedReason()
+if reason <= 0:
+    raise RuntimeError(
+        f"KSP failed with KSPConvergedReason={{reason}} (-11 = "
+        f"DIVERGED_PC_FAILED). Try a larger mat_mumps_icntl_14, or "
+        f"setFactorSolverType('superlu_dist') / ('umfpack').")
 
-# Output pressure (DG field)
+# ---- physical check: cellwise mass balance, no reference solution needed ---
+sigma_h = wh.sub(0)
+u_h = wh.sub(1)
+res = np.sqrt(domain.comm.allreduce(
+    fem.assemble_scalar(fem.form((ufl.div(sigma_h) - f) ** 2 * ufl.dx)), op=MPI.SUM))
+scale = np.sqrt(domain.comm.allreduce(
+    fem.assemble_scalar(fem.form(f ** 2 * ufl.dx)), op=MPI.SUM))
+rel_balance = res / scale if scale > 0 else res
+
+p_arr = wh.sub(1).collapse().x.array
+if not np.all(np.isfinite(p_arr)):
+    raise RuntimeError("pressure contains non-finite values — the solve failed")
+if p_arr.max() - p_arr.min() < 1e-14 * max(abs(p_arr).max(), 1.0):
+    raise RuntimeError(
+        "pressure is constant to round-off: the flux BCs probably cover the "
+        "whole boundary, leaving the pressure undetermined.")
+
+# Export pressure (interpolate the DG field to P1 for XDMF)
 P_out = fem.functionspace(domain, ("Lagrange", 1))
 p_out = fem.Function(P_out, name="pressure")
-p_out.interpolate(u_h)
+p_out.interpolate(wh.sub(1).collapse())
 
 from dolfinx.io import XDMFFile
 with XDMFFile(domain.comm, "pressure.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
     xdmf.write_function(p_out)
 
-p_arr = p_out.x.array
-print(f"Mixed Poisson solved: min(p)={{p_arr.min():.6e}}, max(p)={{p_arr.max():.6e}}")
+print(f"Mixed Poisson solved (KSPConvergedReason={{reason}})")
+print(f"pressure: min={{p_arr.min():.6e}}, max={{p_arr.max():.6e}}")
+print(f"relative mass-balance residual ||div(sigma_h)-f||/||f||: {{rel_balance:.3e}}")
 print(f"DOFs: {{W.dofmap.index_map.size_global}}")
 '''

@@ -216,6 +216,44 @@ def _stub_template_tag(content: str, fmt: str) -> str:
 
 
 _PHYSICS_SYNONYMS = {
+    # ── Added 2026-08-03: phrasings a weak model actually types for
+    # the eight FEniCSx physics that had no route at all. Each target
+    # is only returned when the backend really carries that key, so
+    # these are inert for backends that do not.
+    "porous_media": "stokes_darcy",
+    "porous_flow": "stokes_darcy",
+    "poroelastic": "stokes_darcy",
+    "brinkman": "stokes_darcy",
+    "free_flow_porous": "stokes_darcy",
+    "thermoelastic": "thermal_structural",
+    "thermoelasticity": "thermal_structural",
+    "thermomechanical": "thermal_structural",
+    "thermal_expansion": "thermal_structural",
+    "thermal_stress": "thermal_structural",
+    "phase_separation": "cahn_hilliard",
+    "spinodal": "cahn_hilliard",
+    "spinodal_decomposition": "cahn_hilliard",
+    "binary_mixture": "cahn_hilliard",
+    "species_transport": "reaction_diffusion",
+    "multi_species": "reaction_diffusion",
+    "turing": "reaction_diffusion",
+    "chemical_kinetics": "reaction_diffusion",
+    "eigenmodes": "eigenvalue",
+    "eigenmode": "eigenvalue",
+    "modal_analysis": "eigenvalue",
+    "natural_frequency": "eigenvalue",
+    "obstacle": "contact",
+    "obstacle_problem": "contact",
+    "unilateral_contact": "contact",
+    "signorini": "contact",
+    "phase_field_fracture": "fracture",
+    "damage": "fracture",
+    "crack_propagation": "fracture",
+    "griffith": "fracture",
+    "free_surface": "multiphase",
+    "two_phase": "multiphase",
+    "level_set": "multiphase",
+
     # ── Heat / thermal conduction ──────────────────────────────────
     # canonical key 'heat' exists in: fourc, fenics, ngsolve, kratos,
     # dealii, dune, skfem, febio (all 8 backends)
@@ -633,13 +671,29 @@ def _fuzzy_match_physics(backend, query: str) -> str:
         if p.name == query_lower:
             return p.name
 
+    # 1b. Separator-normalised direct match. Catalog keys use
+    # underscores; an LLM writes the physics out in words. Before
+    # 2026-08-03 the loose substring scan below then answered
+    # 'navier stokes' with **stokes**, 'stokes darcy' with
+    # **stokes**, and 'mixed poisson' with **poisson** — the wrong
+    # physics, silently, with a plausible-looking payload. Mapping
+    # spaces/hyphens/dots onto underscores and retrying the EXACT
+    # name match (and the synonym map) can only ever tighten a
+    # match, never loosen one, because it still requires equality
+    # with a real catalog key.
+    normalised = re.sub(r"[\s\-.]+", "_", query_lower)
+    if normalised != query_lower:
+        for p in backend.supported_physics():
+            if p.name == normalised:
+                return p.name
+
     # 2. Synonym map — BEFORE the substring scan so short
     # canonical shorthands ('ns', 'em', 'pd') route to the
     # right physics. Only return the synonym if it actually
     # exists in this backend's catalog; otherwise fall through
     # to the loose matchers (a backend that has 'maxwell' but
     # not the synonym should still match via substring).
-    mapped = _PHYSICS_SYNONYMS.get(query_lower)
+    mapped = _PHYSICS_SYNONYMS.get(query_lower) or _PHYSICS_SYNONYMS.get(normalised)
     if mapped:
         for p in backend.supported_physics():
             if p.name == mapped:
