@@ -5,12 +5,14 @@ Based on the step tutorials (step-1 through step-97), covering all physics
 from Poisson to compressible Euler, Maxwell, FSI, contact, topology optimization.
 deal.II won the 2025 SIAM/ACM CSE Prize.
 
-Counted on the installed source tree 2026-08-03 (deal.II 9.8.0-pre,
-/home/alexander/dealii/examples): the numbering runs to step-97 but has
-GAPS — there are 88 step-* directories, not 97. In particular step-73
-does NOT exist upstream (the AD tutorials are step-71 and step-72); the
-"step-73 (AD-assisted / elasticity)" references that used to appear
-below have been removed.
+IMPORTANT about the tutorial count: the step numbering HAS GAPS, so the
+highest number is not the number of tutorials. Counted on a deal.II 9.8
+source checkout there are 88 examples/step-* directories while the
+numbering runs to step-97. In particular step-73 does NOT exist upstream
+(the AD tutorials are step-71 and step-72); the "step-73 (AD-assisted /
+elasticity)" references that used to appear below have been removed.
+Enumerate examples/step-* in the source checkout you actually have -
+a binary package prefix ships no tutorials at all.
 """
 
 DEALII_KNOWLEDGE = {
@@ -18,19 +20,21 @@ DEALII_KNOWLEDGE = {
     # OVERVIEW
     # ═══════════════════════════════════════════════════════════════════════
     "overview": {
-        "description": ("deal.II is a C++ FEM library with 88 tutorial programs "
-                        "(numbered up to step-97, with gaps — counted on the "
-                        "installed 9.8.0-pre source tree 2026-08-03) and 40+ "
-                        "element types"),
-        "version": ("9.7 (July 2025) upstream release; the deal.II "
-                    "installed on this machine is 9.8.0-pre, a "
-                    "RELEASE-only source build at "
-                    "/home/alexander/dealii/build. Always read the "
-                    "real version from "
-                    "$DEAL_II_DIR/include/deal.II/base/config.h "
-                    "(DEAL_II_PACKAGE_VERSION) rather than trusting "
-                    "this field — knowledge here is version-"
-                    "specific. Checked 2026-08-03."),
+        "description": ("deal.II is a C++ FEM library with ~88 tutorial "
+                        "programs (the numbering runs past step-90 but has "
+                        "gaps, so the highest number is not the count) and "
+                        "40+ element types"),
+        "version": ("Read the real version from the install you are "
+                    "compiling against: DEAL_II_PACKAGE_VERSION in "
+                    "$DEAL_II_DIR/include/deal.II/base/config.h. Do "
+                    "not trust a version written in any catalog, "
+                    "including this one - the API moved a lot across "
+                    "the 9.x line and several entries here carry "
+                    "version gates. Read the BUILD TYPE from the same "
+                    "install too (CMAKE_BUILD_TYPE in CMakeCache.txt, "
+                    "or whether lib/ holds libdeal_II.so, "
+                    "libdeal_II.g.so, or both): it decides whether "
+                    "deal.II's Assert-based diagnostics exist at all."),
         "language": "C++17/20",
         "build_system": "CMake: find_package(deal.II 9.5 REQUIRED)",
         "compilation": "cmake -Bbuild . && cmake --build build -j$(nproc)",
@@ -42,7 +46,10 @@ DEALII_KNOWLEDGE = {
     # ALL TUTORIALS BY PHYSICS
     # ═══════════════════════════════════════════════════════════════════════
     "tutorials": {
-        "description": "97 step tutorials — each a complete, working program teaching one concept",
+        "description": ("step-* tutorials - each a complete, working "
+                        "program teaching one concept. The list below is "
+                        "organised by physics; it is not exhaustive and "
+                        "the numbering has gaps."),
 
         "elliptic_pdes": {
             "Poisson/Laplace": {
@@ -108,7 +115,7 @@ DEALII_KNOWLEDGE = {
             "checkpoint_restart": ["step-83"],
             "non_matching_grids": ["step-89 (mortaring)"],
             # step-73 does not exist upstream (verified against
-            # /home/alexander/dealii/examples 2026-08-03).
+            # a 9.8 examples/ directory).
             "AD": ["step-71 (concepts)", "step-72 (energy functional)"],
             "SUNDIALS": ["step-77 (KINSOL nonlinear)", "step-86 (ARKode time stepping)"],
         },
@@ -124,7 +131,7 @@ DEALII_KNOWLEDGE = {
             "FE_Bernstein(p)": "Bernstein polynomial basis (positive, partition of unity)",
             "FE_Hermite(p)": ("Hermite interpolation (C1 at vertices). deal.II "
                               "reports conforming_space == Conformity::H2, not H1 "
-                              "(measured 2026-08-03); it is listed under H1 here "
+                              "(verified by instantiation); it is listed under H1 here "
                               "because H2 is contained in H1."),
             "FE_SimplexP(p)": "Lagrange on simplices (triangles/tetrahedra)",
             "FE_SimplexP_Bubbles(p)": "Simplex Lagrange + bubble enrichment",
@@ -146,7 +153,7 @@ DEALII_KNOWLEDGE = {
             "FE_Q_DG0(p)": "Lagrange Qp PLUS cell-wise constants (Qp+DG0); the added piecewise-constant mode is discontinuous across element boundaries",
             "FE_RannacherTurek(0)": ("Classical first-order nonconforming element; continuity "
                                      "enforced only in the face-mean sense, not pointwise. deal.II "
-                                     "reports Conformity::L2 (measured 2026-08-03). The constructor "
+                                     "reports Conformity::L2 (verified by instantiation). The constructor "
                                      "is FE_RannacherTurek<dim>(order = 0, n_face_support_points = 2) "
                                      "and only order 0 is implemented. has_support_points() is FALSE, "
                                      "so VectorTools::interpolate_boundary_values segfaults on it in a "
@@ -200,7 +207,7 @@ DEALII_KNOWLEDGE = {
                         "NOT a class template: declared as "
                         "`class FE_P1NC : public FiniteElement<2, 2>`, so the "
                         "constructor is FE_P1NC() and FE_P1NC<2>() fails to compile "
-                        "(verified 2026-08-03). Conformity::L2."),
+                        "(verified by compiling both spellings). Conformity::L2."),
             "FESystem": "Combine multiple FE into vector/tensor systems",
             "hp::FECollection": "Collection of different FE for hp-adaptivity",
         },
@@ -249,33 +256,44 @@ DEALII_KNOWLEDGE = {
         },
         "refinement_types": ["isotropic h", "anisotropic h (step-30)", "hp (step-27, 75)"],
         "strategies": "refine_and_coarsen_fixed_number/fraction, SolutionTransfer for interpolation",
-        "parallel": "p4est-based distributed triangulation (REQUIRES "
-                    "DEAL_II_WITH_MPI=ON + DEAL_II_WITH_P4EST=ON at build "
-                    "time; if either is OFF, parallel::distributed::"
-                    "Triangulation construction raises 'needs deal.II "
-                    "compiled with p4est' at runtime — serial-only fallback "
-                    "uses Triangulation<dim, spacedim>)",
+        "parallel": ("p4est-backed distributed triangulation. REQUIRES "
+                     "DEAL_II_WITH_MPI=ON and DEAL_II_WITH_P4EST=ON at "
+                     "LIBRARY build time. If either is OFF the failure is "
+                     "at COMPILE time (the constructor is `= delete`d, so "
+                     "the message is \"use of deleted function ... "
+                     "parallel::distributed::Triangulation ...\"), NOT a "
+                     "runtime message - the older claim that it raises "
+                     "'needs deal.II compiled with p4est' at runtime is "
+                     "wrong. Serial and thread-parallel fallback: a plain "
+                     "Triangulation<dim, spacedim>, which supports the same "
+                     "adaptive-refinement API."),
         "pitfalls": [
-            "[Integration] Default conda-forge deal.II package "
-            "(dealii-9.1.1-h9661c2c_3 from 2019) ships with "
-            "DEAL_II_WITH_MPI / WITH_P4EST / WITH_PETSC / "
-            "WITH_TRILINOS all UNDEFINED — a serial-only, "
-            "dependency-bare build. Any catalog claim mentioning "
-            "p4est / MPI / PETSc / Trilinos (incl. 'Automatic "
-            "with p4est' here, 'MPI-parallel Poisson with p4est' "
-            "in generators/parallel.py, 'PETSc MUMPS' in solvers, "
-            "'Trilinos Amesos' in preconditioners) requires a "
-            "feature-richer build than conda-forge's default. "
-            "Signal: scan $CONDA_PREFIX/include/deal.II/base/"
-            "config.h for '/* #undef DEAL_II_WITH_P4EST */' — "
-            "the literal '/* #undef DEAL_II_WITH_*' lines flag "
-            "which features are OFF. Verified empirically "
-            "against /home/hermann/miniconda3/envs/ofa-dealii/"
-            "include/deal.II/base/config.h 2026-06-01. "
-            "Rebuild plan: task #30 (deal.II rebuild — unlock "
-            "36/36 templates) is the long-term fix; until then, "
-            "limit example selection to serial-only physics "
-            "(step-3, step-6, step-22 sans MPI, etc.).",
+            "[Integration] Before proposing anything that needs an "
+            "optional dependency (p4est, MPI, PETSc, Trilinos, SLEPc, "
+            "SUNDIALS, ADOL-C, SymEngine, complex values), read the "
+            "feature flags out of the install you are compiling "
+            "against. Signal: in "
+            "$DEAL_II_DIR/include/deal.II/base/config.h a line "
+            "'#define DEAL_II_WITH_P4EST' means ON and "
+            "'/* #undef DEAL_II_WITH_P4EST */' means OFF; grepping "
+            "for the literal '/* #undef DEAL_II_WITH_' lists every "
+            "feature that is OFF in one shot. This is the ONLY "
+            "reliable probe. "
+            "Two probes that give the WRONG answer, both checked by "
+            "execution: (1) including the header. On a source "
+            "install every header ships regardless of "
+            "configuration - '#include "
+            "<deal.II/distributed/tria.h>' and '#include "
+            "<deal.II/lac/slepc_solver.h>' both compile and link "
+            "cleanly with p4est and SLEPc OFF, because the bodies "
+            "sit behind '#ifdef DEAL_II_WITH_<FEATURE>'. (2) "
+            "constructing Utilities::MPI::MPI_InitFinalize. It "
+            "succeeds with MPI OFF and reports n_mpi_processes == 1. "
+            "The real failures are: naming SLEPcWrappers gives "
+            "\"'dealii::SLEPcWrappers' has not been declared\", and "
+            "constructing parallel::distributed::Triangulation gives "
+            "'use of deleted function' - both at COMPILE time, so "
+            "they cannot be caught or worked around at run time.",
         ],
     },
 
@@ -382,7 +400,7 @@ class MyProblem {
             "forgetting them is SILENT: the matrix stays exactly "
             "symmetric and CG converges in the same iteration count; "
             "only the L2 error stops improving under refinement "
-            "(measured on 9.8.0-pre 2026-08-03, see the poisson "
+            "(verified by running the same problem both ways, see the poisson "
             "pitfall catalogue for the numbers)",
             "Use AffineConstraints for both Dirichlet BCs and hanging node constraints",
             "VTU output: call DataOut::build_patches() before write_vtu()",
