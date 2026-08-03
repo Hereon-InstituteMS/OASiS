@@ -48,8 +48,15 @@ class ContactGenerator(BaseGenerator):
                 "CONTACT DYNAMIC",
                 "SOLVER 1",
                 "MATERIALS",
-                "STRUCTURE GEOMETRY",
                 "DESIGN SURF MORTAR CONTACT CONDITIONS 3D",
+                # Plus ONE mesh route - these three are alternatives, not
+                # three requirements, and only the middle one needs a file:
+                #   inline   : NODE COORDS + STRUCTURE ELEMENTS
+                #              + D*-NODE TOPOLOGY
+                #   Exodus   : STRUCTURE GEOMETRY (FILE + ELEMENT_BLOCKS)
+                #   generated: STRUCTURE DOMAIN (HEX/WEDGE cells only)
+                "one of: NODE COORDS + STRUCTURE ELEMENTS "
+                "| STRUCTURE GEOMETRY | STRUCTURE DOMAIN",
             ],
             "materials": {
                 "MAT_Struct_StVenantKirchhoff": {
@@ -103,10 +110,15 @@ class ContactGenerator(BaseGenerator):
                 },
                 "Uzawa": {
                     "description": (
-                        "Augmented Lagrangian (Uzawa iteration): iteratively "
-                        "updates Lagrange multipliers to enforce zero penetration.  "
-                        "More accurate than pure penalty but more expensive "
-                        "(multiple Newton solves per time step)."
+                        "DO NOT SELECT THIS. 'Uzawa' is in the STRATEGY enum "
+                        "that `4C --parameters` prints, but the code does not "
+                        "implement it: choosing it aborts at setup with "
+                        "'This contact strategy is not yet considered!' from "
+                        "contact/src/4C_contact_strategy_factory.cpp. Being "
+                        "present in --parameters means the parser accepts the "
+                        "word, not that the method exists. Use Penalty or "
+                        "Lagrange instead. (Verified by execution "
+                        "2026-08-03.)"
                     ),
                     "key_parameter": "PENALTYPARAM (initial penalty for augmentation)",
                     "typical_range": "1e2 -- 1e4",
@@ -128,9 +140,21 @@ class ContactGenerator(BaseGenerator):
                     "This is the standard and recommended algorithm."
                 ),
                 "LM_SHAPEFCN": (
-                    "'Standard' -- standard Lagrange multiplier shape functions.  "
-                    "Alternative: 'Dual' for dual Lagrange multipliers (more "
-                    "robust for non-matching meshes)."
+                    "'Standard' -- standard Lagrange multiplier shape "
+                    "functions.  'Dual' is the DEFAULT and is what STRATEGY "
+                    "Lagrange with the default SYSTEM: Condensed requires."
+                ),
+                "LM_DUAL_CONSISTENT": (
+                    "Default 'boundary'. MUST be set to 'none' for any "
+                    "STRATEGY other than Lagrange while LM_SHAPEFCN is Dual, "
+                    "or 4C aborts with 'Consistent dual shape functions in "
+                    "boundary elements only for Lagrange multiplier "
+                    "strategy.' Setting LM_SHAPEFCN: 'Standard' instead is an "
+                    "equally valid escape. The MORTAR COUPLING section must "
+                    "also be PRESENT and NON-EMPTY: 'MORTAR COUPLING: {}' "
+                    "still aborts. (Verified by execution 2026-08-03 across "
+                    "the four LM_SHAPEFCN x LM_DUAL_CONSISTENT combinations "
+                    "under STRATEGY Penalty.)"
                 ),
             },
             "contact_conditions": {
