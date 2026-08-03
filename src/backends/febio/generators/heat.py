@@ -69,33 +69,77 @@ def _heat_3d_bar(params: dict) -> str:
 
 KNOWLEDGE = {
     "heat": {
-        "description": "Steady-state heat conduction (FEBio Module type='heat')",
+        "description": (
+            "NOT AVAILABLE on FEBio 4.12 — this row is retained "
+            "only to carry the falsification. FEBio 4.12.0 "
+            "registers exactly ten modules (solid, biphasic, "
+            "solute, multiphasic, fluid, fluid-FSI, "
+            "multiphasic-FSI, fluid-solutes, thermo-fluid, "
+            "polar fluid) and `heat` is not one of them. The "
+            "shipped heat_3d_bar template CRASHES the solver. "
+            "For conduction-type problems use another OASiS "
+            "backend (4C, deal.II, FEniCSx, NGSolve all have "
+            "verified heat templates); the closest FEBio "
+            "physics is the `thermo-fluid` module, which solves "
+            "heat transport in a compressible fluid, not "
+            "conduction in a solid."),
         "input_format": "FEBio XML v4.0",
-        "solver": "Linear or non-linear thermal solver",
-        "materials": {
-            "isotropic Fourier": {
-                "density": "Mass density",
-                "capacity": "Specific heat capacity",
-                "conductivity": "Thermal conductivity",
-            },
-        },
+        "status": (
+            "FALSIFIED 2026-08-03 by live execution on FEBio "
+            "4.12.0.86045466d. Every element of the previous "
+            "entry — the `heat` module, the `isotropic Fourier` "
+            "material, the `prescribed temperature` BC — was "
+            "checked against the binary's own factory registry "
+            "(`printf 'list\\nquit\\n' | febio4 -nosplash`) and "
+            "against real runs. None of them exist."),
+        "materials": {},
         "pitfalls": [
-            "[Syntax] Module type MUST be 'heat' (NOT 'solid'). "
-            "Signal: stderr contains 'invalid module type' from "
-            "FEBio when the wrong Module type is used.",
-            "[Syntax] Temperature BCs use 'prescribed temperature' "
-            "type (NOT 'prescribed displacement'). "
-            "Signal: FEBio reports 'invalid BC type' at parse time.",
-            "[Syntax] The thermal conductivity material in "
-            "FEBio 4.0 is the <isotropic Fourier> type — NOT "
-            "<thermal>, <conductive>, or <Fourier>. The exact "
-            "attribute spelling 'isotropic Fourier' (lowercase "
-            "noun, capitalized proper noun, space-separated) is "
-            "required. "
-            "Signal: emitting <material type='Fourier'> or "
-            "<material type='isotropic_Fourier'> (underscore) "
-            "raises an FEBio 'unknown material' parse error "
-            "naming the supplied type string verbatim.",
+            (
+                "[Syntax] There is no `heat` module in FEBio "
+                "4.12, and an unregistered <Module type=...> "
+                "value is not diagnosed — it is a hard crash. "
+                "FEBioModuleSection.cpp passes the string "
+                "straight to FEModelBuilder::SetActiveModule() "
+                "with no existence check. Signal: stdout stops "
+                "mid-line at `Reading file <name>.feb ...` with "
+                "no `SUCCESS!`, no `FAILED!`, no ERROR box and "
+                "no .log file, and the process dies with SIGSEGV "
+                "(exit status 139). Verified identically for "
+                "type=\"heat\", type=\"biphasic-FSI\", and for "
+                "mere case errors such as type=\"Solid\". A "
+                "wrapper that only greps stderr for the word "
+                "`error` sees a completely silent failure. "
+                "(Live-verified 2026-08-03, FEBio 4.12.0; "
+                "fixture scripts/tier2_fixtures/febio/"
+                "unknown_module_type_segfaults.)"
+            ),
+            (
+                "[Syntax] `isotropic Fourier` is not a "
+                "registered material on FEBio 4.12 — the "
+                "FEMATERIAL_ID factory list has 159 entries and "
+                "contains no Fourier conduction law at all. "
+                "Signal: `tag \"material\" (line N) : invalid "
+                "value for attribute \"type\"` and `Reading file "
+                "...FAILED!`, identical for the spellings "
+                "`isotropic Fourier`, `Fourier` and "
+                "`isotropic_Fourier` — the previous catalog "
+                "entry's claim that only the underscore/short "
+                "spellings fail is wrong, all three fail. "
+                "(Live-verified 2026-08-03, FEBio 4.12.0.)"
+            ),
+            (
+                "[Syntax] There is no `prescribed temperature` "
+                "boundary condition in the FEBC_ID registry. The "
+                "only temperature BCs are `thermo-fluid."
+                "prescribed fluid temperature`, `thermo-fluid."
+                "zero fluid temperature` and `thermo-fluid."
+                "natural temperature`, all scoped to the "
+                "thermo-fluid module and acting on a fluid "
+                "temperature DOF, not a solid one. Signal: "
+                "`tag \"bc\" (line N) : invalid value for "
+                "attribute \"type\"`. (Live-verified 2026-08-03, "
+                "FEBio 4.12.0.)"
+            ),
         ],
     },
 }
