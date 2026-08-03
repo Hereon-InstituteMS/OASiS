@@ -55,6 +55,10 @@ def load_febio_backend():
     cb.InputFormat = _InputFormat
     cb.SolverBackend = _SolverBackend
     cb.JobHandle = _JobHandle
+    # core.backend grew a `sorted_by_step` helper after this stub
+    # was written; backend.py imports it at module scope, so the
+    # stub must expose it or the import fails with ImportError.
+    cb.sorted_by_step = lambda paths: sorted(paths)
     sys.modules["core.backend"] = cb
     sys.modules["core"] = types.ModuleType("core")
     sys.modules["core"].backend = cb

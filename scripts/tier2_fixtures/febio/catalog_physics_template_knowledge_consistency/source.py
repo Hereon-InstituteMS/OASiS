@@ -62,6 +62,23 @@ PHYSICS_TO_MODULE = {
     "polar_fluid": "polar fluid",
     "rigid_body": "solid",
     "viscoelasticity": "solid",
+    # ── Audit pass 5 (2026-08-03): elasticity_mms was added by
+    #    the MMS extension pass and never entered here, so its
+    #    template mapped to no physics and the fixture failed
+    #    with "cannot map template key to known physics".
+    "elasticity_mms": "solid",
+}
+
+# The ten module names FEBio 4.12.0 actually registers, read off
+# the installed binary with `printf 'list -m\nquit\n' | febio4
+# -nosplash`. `<Module type=...>` outside this set is not
+# diagnosed by FEBio — it SEGFAULTS (see the
+# unknown_module_type_segfaults fixture), so a template carrying
+# one is strictly worse than no template.
+REGISTERED_MODULES = {
+    "solid", "biphasic", "solute", "multiphasic", "fluid",
+    "fluid-FSI", "multiphasic-FSI", "fluid-solutes",
+    "thermo-fluid", "polar fluid",
 }
 
 
@@ -92,6 +109,11 @@ def _load_febio_backend():
     cb.InputFormat = _InputFormat
     cb.SolverBackend = _SolverBackend
     cb.JobHandle = _JobHandle
+    # core.backend grew a `sorted_by_step` helper after this stub
+    # was written; backend.py imports it at module scope, so the
+    # stub must expose it or the whole fixture dies on ImportError
+    # (which the fixture then reports as a Traceback → FAIL).
+    cb.sorted_by_step = lambda paths: sorted(paths)
     sys.modules["core.backend"] = cb
     sys.modules["core"] = types.ModuleType("core")
     sys.modules["core"].backend = cb
@@ -161,6 +183,7 @@ def main() -> int:
 
     xml_errors = []
     module_mismatches = []
+    unregistered_modules = []
     # Iterate physics keys in length-descending order so
     # 'fluid_fsi' and 'biphasic_fsi' match before their
     # 'fluid' / 'biphasic' prefixes (audit pass 4 fix).
@@ -209,8 +232,19 @@ def main() -> int:
             module_mismatches.append(
                 f"{key}: Module type='{actual}' "
                 f"expected='{expected}'")
+        if actual not in REGISTERED_MODULES:
+            unregistered_modules.append(key)
     print(f"template_xml_errors={xml_errors}")
     print(f"template_module_mismatches={module_mismatches}")
+    # PINNED, not gated: these two templates emit module names
+    # that FEBio 4.12 does not register, so running them
+    # segfaults the solver. The set is pinned in fixture.json so
+    # (a) adding a third phantom module trips the fixture and
+    # (b) fixing either of these two also trips it, forcing the
+    # catalog knowledge to be updated in the same commit.
+    # Verified 2026-08-03 against FEBio 4.12.0.86045466d.
+    print(f"templates_with_unregistered_module="
+          f"{sorted(unregistered_modules)}")
 
     ok = (not missing_templates
           and not missing_knowledge

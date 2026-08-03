@@ -1,17 +1,18 @@
 {
-  "_comment": "Tier-2 for febio linear_elasticity#: FEBio backend self-consistency gate. FEBio binary is not installed in this sandbox (no conda/pip/apt package; gated download from febio.org), so runtime verification against the input parser is unavailable. The fixture instead pins INTERNAL consistency: (a) every PhysicsCapability in supported_physics() has a matching _TEMPLATES['<physics>_<variant>'] entry — generate_input() must not raise ValueError for advertised physics × variants; (b) every PhysicsCapability has a _FEBIO_KNOWLEDGE['<physics>'] entry — get_knowledge() must not return {}; (c) every shipped template emits well-formed XML with <febio_spec version='4.0'> root; (d) every template's <Module type='X'> matches the physics-required module (solid for elasticity/hyperelasticity, biphasic for biphasic, heat for heat). Catalog falsifications #29 + #30: the previous backend advertised 4 physics but had 1 template + 2 knowledge entries — 3 ValueError paths + 2 empty-dict get_knowledge paths. Fix shipped alongside (3 template stubs + 2 knowledge entries). Verified 2026-06-01.",
+  "_comment": "Tier-2 for febio linear_elasticity#: FEBio backend self-consistency gate. Pins INTERNAL consistency: (a) every PhysicsCapability in supported_physics() has a matching _TEMPLATES['<physics>_<variant>'] entry — generate_input() must not raise ValueError for advertised physics × variants; (b) every PhysicsCapability has a _FEBIO_KNOWLEDGE['<physics>'] entry — get_knowledge() must not return {}; (c) every shipped template emits well-formed XML with <febio_spec version='4.0'> root; (d) every template's <Module type='X'> matches the physics-required module. Catalog falsifications #29 + #30: the previous backend advertised 4 physics but had 1 template + 2 knowledge entries — 3 ValueError paths + 2 empty-dict get_knowledge paths. Fix shipped alongside (3 template stubs + 2 knowledge entries). Verified 2026-06-01. AUDIT PASS 5 (2026-08-03, first pass with FEBio actually installed): three staleness bugs fixed. (1) The core.backend stub was missing sorted_by_step, which core.backend grew after this fixture was written — backend.py imports it at module scope, so the whole fixture had been dying on ImportError and emitting a Traceback, i.e. FAILING unnoticed. (2) elasticity_mms was absent from PHYSICS_TO_MODULE, so its template mapped to no physics; counts rise 16->17 physics / 16->17 templates / 16->18 knowledge keys (17 physics + _general). (3) NEW pinned observable templates_with_unregistered_module: <Module type> is now checked against the ten module names FEBio 4.12.0 actually registers (read off the binary with `printf 'list -m\\nquit\\n' | febio4 -nosplash`), and the two templates naming a module that does not exist — heat_3d_bar ('heat') and biphasic_fsi_3d_block ('biphasic-FSI', which in 4.12 is a MATERIAL inside the fluid-FSI module, not a module) — are pinned by name. Both SEGFAULT the solver; see the unknown_module_type_segfaults fixture. Pinning rather than gating means a third phantom module trips the fixture AND fixing either of these two also trips it, forcing the catalog knowledge to move in the same commit.",
   "backend": "febio",
   "physics": "linear_elasticity",
   "pitfall_index": 0,
   "mode": "python",
   "expect_in_output": [
-    "physics_count=16",
-    "templates_count=16",
-    "knowledge_count=16",
+    "physics_count=17",
+    "templates_count=17",
+    "knowledge_count=18",
     "missing_templates=[]",
     "missing_knowledge=[]",
     "template_xml_errors=[]",
-    "template_module_mismatches=[]"
+    "template_module_mismatches=[]",
+    "templates_with_unregistered_module=['biphasic_fsi_3d_block', 'heat_3d_bar']"
   ],
   "forbid_in_output": [
     "Traceback",
