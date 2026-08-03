@@ -370,6 +370,19 @@ _FENICS = {
         "pulls its own MPI and PETSc and will fight whatever is already there."
     ),
     "pitfalls": [
+        "[Integration][Install] THERE IS NO PIP ROUTE, and pip says so "
+        "clearly — this is the one wrong route that fails honestly, so do not "
+        "waste time looking for a wheel. Signal, for both plausible names: "
+        "`ERROR: Could not find a version that satisfies the requirement "
+        "fenics-dolfinx (from versions: none)` and `ERROR: No matching "
+        "distribution found for fenics-dolfinx`, and the same pair for "
+        "`dolfinx`. dolfinx is a compiled C++ library sitting on MPI and "
+        "PETSc, and conda-forge is how you get a consistent set of those "
+        "three; which PETSc you end up with then decides the scalar type, so "
+        "after installing, confirm what you actually got with "
+        "CONFIG_PROBES['dolfinx_scalar'] rather than assuming. Use "
+        "install_route.",
+
         "[Integration][Discovery] FENICS_PYTHON is OPTIONAL. Unset, OASiS "
         "searches conda envs whose NAME contains `fenics` or `dolfinx` "
         "(case-insensitive) and uses the first whose `import dolfinx` "
@@ -474,6 +487,14 @@ _FOURC = {
         "The result is <4C-root>/build/4C plus lib4C.so beside it."
     ),
     "pitfalls": [
+        "[Integration][Install] THERE IS NO PACKAGE OF ANY KIND — not pip, not "
+        "conda, not a distribution binary. Source build is the only route, and "
+        "pip fails honestly if you try. Signal: `ERROR: Could not find a "
+        "version that satisfies the requirement fourc (from versions: none)` / "
+        "`ERROR: No matching distribution found for fourc`, and the same for "
+        "`4C`. Budget accordingly: the dependency set (Trilinos, Kokkos, "
+        "MueLu, NOX, qhull, HDF5, MPI) is the slow part, not 4C itself.",
+
         "[Integration][Discovery] FOURC_BINARY is accepted WITHOUT being "
         "checked — any existing file is taken as 4C. Point it at the wrong "
         "executable and OASiS reports `available` naming that file, then hands "
@@ -752,6 +773,20 @@ _FEBIO = {
         "toolchain; it also changes which linear solvers exist (below)."
     ),
     "pitfalls": [
+        "[Integration][Install] `pip install febio` APPEARS TO WORK AND DOES "
+        "NOT GIVE YOU FEBIO. There is a PyPI package called `febio` — version "
+        "0.1.3, 'A Python API for FEBio', a third-party wrapper from a "
+        "different author — and pip installs it happily, so the command looks "
+        "like a success and leaves you with something of the right name that "
+        "is not the solver. It is also long unmaintained and cannot import on "
+        "Python 3 at all. Signal: `pip install febio` reports "
+        "`Successfully built febio` / `Successfully installed febio-0.1.3`, "
+        "and then `import febio` fails with `ModuleNotFoundError: No module "
+        "named 'MatDef'` — a Python-2 implicit relative import inside the "
+        "package's own `__init__.py`. FEBio the solver is a C++ binary and has "
+        "no PyPI distribution at all; nothing you pip-install is it. Use one "
+        "of the two routes in install_route.",
+
         "[Integration][Discovery] FEBIO_BINARY is OPTIONAL but is the only "
         "reliable way to choose a build, and it is accepted without "
         "validation. Set it to any existing file and OASiS reports "
@@ -840,6 +875,14 @@ _SPARTA = {
         "SPARTA_BINARY exists."
     ),
     "pitfalls": [
+        "[Integration][Install] THERE IS NO PACKAGE — source build only, and "
+        "pip fails honestly. Signal: `ERROR: Could not find a version that "
+        "satisfies the requirement sparta (from versions: none)` / `ERROR: No "
+        "matching distribution found for sparta`. Note the build does not "
+        "install anything onto PATH: it leaves the executable in the source "
+        "directory, which is why SPARTA_BINARY exists and why discovery has to "
+        "guess at conventional locations.",
+
         "[Integration][Discovery] SPARTA_BINARY is OPTIONAL and unvalidated. "
         "Unset, OASiS looks for `spa_serial`, `spa_mpi` or `sparta` on PATH "
         "and then in conventional build locations. Set to any existing file, "
