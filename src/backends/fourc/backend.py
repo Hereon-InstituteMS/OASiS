@@ -1296,7 +1296,7 @@ class FourcBackend(SolverBackend):
             # heated-beam input. Existed in inline_mesh since the
             # coupled_solve era but was never exposed as a variant —
             # and carried the silent COUPVARIABLE default bug (ran
-            # rc=0, zero displacement) until 2026-08-01.
+            # rc=0, zero displacement) until that was fixed.
             "tsi_oneway_3d":
                 lambda p: matched_tsi_oneway_input(
                     nx=min(int(p.get("nx", 4)), 8),
