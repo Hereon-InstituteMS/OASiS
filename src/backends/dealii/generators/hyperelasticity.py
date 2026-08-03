@@ -451,7 +451,7 @@ KNOWLEDGE = {
         "Pass colorize=true to get distinct IDs (0-5 in 3D: "
         "left=0, right=1, bottom=2, top=3, front=4, back=5). "
         "Without this, AffineConstraints applied to boundary_id=0 "
-        "clamps ALL faces. Signal: GridTools::get_boundary_ids(tria) "
+        "clamps ALL faces. Signal: tria.get_boundary_ids() "
         "returns `{0}` (single id) instead of the expected set; "
         "DataOut shows displacement field zero everywhere because "
         "the entire boundary is over-constrained.",
