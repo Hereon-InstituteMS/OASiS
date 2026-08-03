@@ -129,7 +129,7 @@ KNOWLEDGE = {
                 "to 6 digits, while the 2*mu RHS gives "
                 "4.800000e-04 (0.31x). CORRECTION to the prior "
                 "text: the error factor (3*lam+2*mu)/(2*mu) = "
-                "(1-nu)/(1-2*nu) is only 2.50 / 3.25 / 4.50 at "
+                "(1+nu)/(1-2*nu) is only 2.50 / 3.25 / 4.50 at "
                 "nu = 0.25 / 0.30 / 0.35 — i.e. ~3x for typical "
                 "metals, NOT '~30-100x'. It reaches 14.5 only at "
                 "nu=0.45 and 749.5 at nu=0.499, so the large "
