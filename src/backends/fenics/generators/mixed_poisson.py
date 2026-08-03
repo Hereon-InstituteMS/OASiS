@@ -75,13 +75,21 @@ KNOWLEDGE = {
             "(Audit 2026-06-02.)"
         ),
         (
-            "[API] Use basix.ufl.element('RT', cell, k) for "
-            "Raviart-Thomas in dolfinx. Signal: passing a "
-            "legacy fenics-style string like 'RT' to "
-            "FunctionSpace gives `AttributeError: module "
-            "'dolfinx.fem' has no attribute 'FiniteElement'` or "
-            "an obscure cpp-side `unknown element family` "
-            "error from basix. (Audit 2026-06-02.)"
+            "[API] Both spellings work for Raviart-Thomas: "
+            "basix.ufl.element('RT', msh.basix_cell(), k) and "
+            "the tuple shorthand fem.functionspace(msh, "
+            "('RT', k)) build the SAME space. Signal (MEASURED "
+            "2026-08-03, dolfinx 0.10.0, 8x8 unit square): both "
+            "give 208 global dofs at k=1; neither raises. "
+            "IMPORTANT CORRECTION: the previously quoted signal "
+            "(`AttributeError: module 'dolfinx.fem' has no "
+            "attribute 'FiniteElement'` from passing 'RT' to "
+            "FunctionSpace) is not reproducible — 'RT' IS the "
+            "registered basix family name. The names that DO "
+            "raise ValueError 'Unknown element family: ...' are "
+            "the old DOLFIN degree-suffixed spellings such as "
+            "'P1'; and ufl.FiniteElement itself no longer "
+            "exists at all (AttributeError on the ufl module)."
         ),
     ],
     "materials": {

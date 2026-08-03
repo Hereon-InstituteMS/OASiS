@@ -469,8 +469,18 @@ class FenicsBackend(SolverBackend):
                         "- NonlinearProblem requires petsc_options_prefix kwarg\n"
                         "- Use problem.solve() directly, NOT separate NewtonSolver\n"
                         "- LinearProblem also requires petsc_options_prefix\n"
-                        "- element.interpolation_points is a property, not a method\n"
+                        # 2026-08-03 adversarial re-verification against dolfinx
+                        # 0.10.0 / basix 0.10.0: `interpolation_points` is NOT an
+                        # attribute of a basix.ufl element at all any more (neither
+                        # property nor method) — AttributeError:
+                        # '_BasixElement' object has no attribute
+                        # 'interpolation_points'. The points now live on the
+                        # wrapped basix element as the `points` property.
+                        "- element has NO .interpolation_points in basix 0.10; "
+                        "use element.basix_element.points (ndarray property)\n"
                         "- For VTU output use VTXWriter or XDMFFile, read with pyvista (not meshio)\n"
+                        "- fem.assemble_scalar returns the RANK-LOCAL value; wrap "
+                        "in comm.allreduce(..., op=MPI.SUM) for a global norm\n"
                     )
         except Exception:
             pass

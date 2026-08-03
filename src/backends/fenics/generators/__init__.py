@@ -351,7 +351,9 @@ GENERAL_KNOWLEDGE = {
             "subregion, 1 elsewhere).",
             "2. submesh, emap, v_map, g_map = mesh.create_submesh(parent, "
             "tdim, subcells) — RETURNS 4-TUPLE, not just submesh; the "
-            "EntityMap `emap` is REQUIRED for cross-mesh form assembly.",
+            "EntityMap `emap` is REQUIRED for cross-mesh form assembly. "
+            "(Re-verified 2026-08-03: dolfinx 0.10.0 returns "
+            "tuple[Mesh, EntityMap, EntityMap, NDArray[int32]].)",
             "3. V = parent FunctionSpace, W = submesh FunctionSpace.",
             "4. integration_entities = fem.compute_integration_domains("
             "IntegralType.cell, parent.topology, marker.find(2)).",
@@ -359,11 +361,15 @@ GENERAL_KNOWLEDGE = {
             "integration_entities)]} — marker_id (e.g. 3) chosen at "
             "UFL form-definition time as dx(3); it's the form-side tag, "
             "NOT the MeshTags value (2 above).",
-            "6. fem.create_form(form, [V, W], coefficients={}, "
-            "constants={}, subdomains=subdomain_data, "
-            "entity_maps=[emap], parent_mesh=V.mesh) — the "
-            "extended-signature variant; vanilla create_form lacks "
-            "entity_maps + parent_mesh args.",
+            "6. fem.create_form(form, [V, W], V.mesh, subdomain_data, "
+            "{}, {}, entity_maps=[emap]) — the dolfinx 0.10 signature is "
+            "create_form(form, function_spaces, msh, subdomains, "
+            "coefficient_map, constant_map, entity_maps=None). There is NO "
+            "`parent_mesh=` kwarg (the mesh is the 3rd POSITIONAL arg) and no "
+            "`coefficients=` / `constants=` kwargs (they are `coefficient_map` "
+            "/ `constant_map`, both positional-or-keyword and both REQUIRED). "
+            "(Signature re-verified against the installed dolfinx 0.10.0 on "
+            "2026-08-03; the older kwarg spelling raises TypeError.)",
             "UFL-side idiom (cpp/demo/codim_0_assembly/mixed_codim0.py): "
             "the bilinear form is written as "
             "`a_mixed = inner(p, v) * dx(domain=mesh, subdomain_id=3)` "
