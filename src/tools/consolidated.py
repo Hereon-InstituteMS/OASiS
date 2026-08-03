@@ -227,6 +227,79 @@ def _residual_blocks_verification(result: dict) -> bool:
     return (result.get("residual_check") or {}).get("verdict") == "DOES_NOT_SOLVE"
 
 
+# Qualifiers a request can carry that MUST NOT be silently dropped, each with
+# the variant-name tokens that satisfy it and the ones that contradict it.
+_VARIANT_QUALIFIERS = [
+    ("3d", ("3d", "three_d", "3D"), ("2d", "1d")),
+    ("2d", ("2d", "two_d", "plane"), ("3d", "1d")),
+    ("transient", ("transient", "unsteady", "time_dependent", "dynamic"),
+     ("steady", "stationary", "static")),
+    ("steady", ("steady", "stationary", "static"),
+     ("transient", "unsteady", "dynamic")),
+    ("nonlinear", ("nonlinear", "non_linear"), ()),
+]
+_QUALIFIER_WORDS = {
+    "3d": ("3d", "three-dimensional", "three dimensional"),
+    "2d": ("2d", "two-dimensional", "plane stress", "plane strain"),
+    "transient": ("transient", "unsteady", "time-dependent", "time dependent",
+                  "time-varying", "evolving"),
+    "steady": ("steady", "stationary", "static", "steady-state"),
+    "nonlinear": ("nonlinear", "non-linear", "large deformation", "finite strain"),
+}
+
+
+def _select_template_variant(query: str, variants: list[str]) -> tuple[str, str]:
+    """Choose the template variant the request actually asked for.
+
+    THE BUG THIS FIXES. Three call sites read `template_variants[0]` and nothing
+    else, so `prepare_simulation(solver, "3d linear elasticity")` returned the
+    2D plane-stress template and said nothing about it. A usability measurement
+    found this on four of six realistic tasks: a correct deck already existed as
+    a working generator and no tool could reach it. That is not a knowledge gap
+    — adding prose cannot fix it, because a weak model handed a deck labelled
+    "2D (plane stress)" for a 3D task will ship the 2D deck whatever text sits
+    above it.
+
+    Returns (variant, note). The note is never empty: it always names the
+    alternatives, and when the request carried a qualifier that NO variant
+    satisfies it says so in those words rather than substituting quietly.
+    Substituting quietly is the failure mode — a weak model cannot detect it.
+    """
+    if not variants:
+        return "", ""
+    q = (query or "").lower()
+    asked = [name for name, words in _QUALIFIER_WORDS.items()
+             if any(w in q for w in words)]
+
+    chosen, unmet = variants[0], []
+    for name in asked:
+        satisfies, contradicts = next(
+            (s, c) for n, s, c in _VARIANT_QUALIFIERS if n == name)
+        hit = next((v for v in variants
+                    if any(t in v.lower() for t in satisfies)
+                    and not any(t in v.lower() for t in contradicts)), None)
+        if hit:
+            chosen = hit
+        else:
+            unmet.append(name)
+
+    bits = []
+    if unmet:
+        bits.append(
+            "⚠ You asked for " + " and ".join(f"**{u}**" for u in unmet)
+            + f", and no template variant provides it. Serving `{chosen}`, "
+            f"which does NOT satisfy that — adapt it rather than running it "
+            f"as-is.")
+    elif asked:
+        bits.append(f"Selected `{chosen}` for: {', '.join(asked)}.")
+    if len(variants) > 1:
+        others = [v for v in variants if v != chosen]
+        bits.append(f"Other variants available: {', '.join(others)} — request "
+                    f"one by name via `examples(action='template', "
+                    f"variant='<name>')`.")
+    return chosen, (" ".join(bits))
+
+
 def _coupling_setup_text(**kwargs) -> str:
     """Canonical text a coupling review is bound to.
 
@@ -1565,7 +1638,7 @@ def register_consolidated_tools(mcp: FastMCP):
 
     @mcp.tool()
     def examples(keyword: str, solver: str = "fourc", action: str = "search",
-                 max_results: int = 3) -> str:
+                 max_results: int = 3, variant: str = "") -> str:
         """Find and retrieve example input files from solver test suites.
 
         IMPORTANT: Always call this before writing new input files to study
@@ -1657,14 +1730,17 @@ def register_consolidated_tools(mcp: FastMCP):
                 matched = _fuzzy_match_physics(backend, keyword)
                 for p in backend.supported_physics():
                     if p.name == matched:
-                        for v in p.template_variants[:1]:
+                        _sel, _note = _select_template_variant(
+                            keyword, list(p.template_variants))
+                        for v in ([_sel] if _sel else []):
                             try:
                                 content = backend.generate_input(p.name, v, {})
                                 truncated = len(content) > EX_TEMPLATE_LIMIT
                                 body = content[:EX_TEMPLATE_LIMIT]
                                 suffix = (f"\n... [truncated {len(content) - EX_TEMPLATE_LIMIT} chars]"
                                           if truncated else "")
-                                results.append(f"### Template: `{p.name}/{v}`\n```\n{body}{suffix}\n```\n")
+                                _n = f"{_note}\n\n" if _note else ""
+                                results.append(f"### Template: `{p.name}/{v}`\n{_n}```\n{body}{suffix}\n```\n")
                             except Exception as exc:
                                 # Same rationale as the
                                 # prepare_simulation generator-
@@ -1703,11 +1779,21 @@ def register_consolidated_tools(mcp: FastMCP):
             matched = _fuzzy_match_physics(backend, keyword)
             for p in backend.supported_physics():
                 if p.name == matched:
-                    variant = p.template_variants[0] if p.template_variants else "2d"
+                    avail = list(p.template_variants)
+                    if variant and variant not in avail:
+                        return (f"No variant `{variant}` for "
+                                f"`{matched}` in {solver}. Available: "
+                                + (", ".join(avail) if avail else "none"))
+                    if variant:
+                        chosen, note = variant, ""
+                    else:
+                        chosen, note = _select_template_variant(keyword, avail)
+                        chosen = chosen or "2d"
                     try:
-                        content = backend.generate_input(p.name, variant, {})
+                        content = backend.generate_input(p.name, chosen, {})
                         fmt = detect_template_language(content, backend.input_format().value)
-                        return f"```{fmt}\n{content}\n```"
+                        head = f"Template `{matched}/{chosen}`. {note}\n\n" if note else ""
+                        return f"{head}```{fmt}\n{content}\n```"
                     except Exception as e:
                         return f"Error generating template: {e}"
             return f"No template for '{keyword}' in {solver}"
@@ -3083,15 +3169,21 @@ def register_consolidated_tools(mcp: FastMCP):
         TEMPLATE_LIMIT = 12000
         for p in backend.supported_physics():
             if p.name == matched_physics and p.template_variants:
+                # Honour the qualifiers in the request. Reading variants[0] and
+                # nothing else served a 2D plane-stress deck for "3d linear
+                # elasticity" while a 3d variant sat unreachable in the catalog.
+                variant, variant_note = _select_template_variant(
+                    physics, list(p.template_variants))
                 try:
-                    content = backend.generate_input(matched_physics, p.template_variants[0], {})
+                    content = backend.generate_input(matched_physics, variant, {})
                     fmt = backend.input_format().value
                     truncated = len(content) > TEMPLATE_LIMIT
                     body = content[:TEMPLATE_LIMIT]
                     suffix = (f"\n... [truncated {len(content) - TEMPLATE_LIMIT} chars]"
                               if truncated else "")
                     stub_tag = _stub_template_tag(content, fmt)
-                    parts.append(f"## Template ({p.template_variants[0]}){stub_tag}\n```{fmt}\n{body}{suffix}\n```\n")
+                    note = f"\n{variant_note}\n" if variant_note else ""
+                    parts.append(f"## Template ({variant}){stub_tag}\n{note}```{fmt}\n{body}{suffix}\n```\n")
                 except Exception as exc:
                     # Surface the failure: the catalog claims a
                     # template exists (p.template_variants is
@@ -3103,9 +3195,9 @@ def register_consolidated_tools(mcp: FastMCP):
                     # class regressions both from the LLM and
                     # the developer running it. (Audit 2026-06-02.)
                     parts.append(
-                        f"## Template ({p.template_variants[0]})\n"
+                        f"## Template ({variant})\n"
                         f"⚠ Template generation FAILED for "
-                        f"`{matched_physics}/{p.template_variants[0]}`: "
+                        f"`{matched_physics}/{variant}`: "
                         f"`{type(exc).__name__}: {exc}`\n\n"
                         f"This is a catalog generator bug — the "
                         f"physics is advertised in "
