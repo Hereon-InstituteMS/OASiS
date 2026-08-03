@@ -58,7 +58,7 @@ _REQUIRED_SECTIONS = (
     "solver_control_measured",
     "integrate_measured",
     "jit_compilation_measured",
-    "measured_convergence_2d_poisson",
+    "convergence_behaviour_2d_poisson",
     "runtime_constants_measured",
     "vtk_output_measured",
     "phantom_apis_checked",
@@ -181,31 +181,46 @@ class TestMeasuredNumbersSurvive(unittest.TestCase):
         self.assertIn("0.405284734569", blob)
         self.assertIn("5.3e-02", blob)
 
-    def test_measured_convergence_orders_recorded(self) -> None:
-        """The MMS orders the Tier-2 gate re-measures."""
-        conv = EXECUTED_API["measured_convergence_2d_poisson"]
-        cube = conv["cube_grid_structuredGrid"]
-        simplex = conv["simplex_grid_aluConformGrid"]
-        # cube Q_k, k = 1..3 — L2 order k+1, H1 order k
-        for k, l2_last, h1_last in ((1, "1.999", "1.000"),
-                                    (2, "2.999", "2.000"),
-                                    (3, "3.999", "3.000")):
-            row = cube[f"k={k}"]
-            self.assertIn(l2_last, row,
-                          f"cube k={k} finest L2 EOC missing")
-            self.assertIn(h1_last, row,
-                          f"cube k={k} finest H1 EOC missing")
-            self.assertIn(f"theory {k + 1}", row)
-        for k, l2_last in ((1, "1.993"), (2, "2.999")):
-            self.assertIn(l2_last, simplex[f"k={k}"],
-                          f"simplex k={k} finest L2 EOC missing")
-        # finest absolute errors — the fixture's floors derive from
-        # these, so they must not drift silently
-        for needle in ("4.556318e-04", "3.846536e-06",
-                       "2.180413e-08", "1.312335e-03",
-                       "8.602468e-06"):
-            self.assertIn(needle, str(conv),
-                          f"measured finest L2 error {needle} is gone")
+    def test_no_measured_convergence_orders_in_reachable_knowledge(self):
+        """The inverse of what this test used to assert.
+
+        An earlier revision PINNED the measured MMS orders and the
+        finest absolute errors into EXECUTED_API, which meant the
+        knowledge an agent reaches through
+        knowledge(topic="overview", solver="dune") contained the answer
+        to a convergence study — and that a future purge could not
+        remove it without failing this file. Adversarial audit
+        2026-08-03 inverted it: the numbers belong to the Tier-2 gate
+        that re-measures them, not to the catalog. This is now the
+        guard that keeps them out.
+        """
+        blob = json.dumps(EXECUTED_API, default=str)
+        forbidden = (
+            # per-order observed EOCs
+            "1.989", "1.997", "2.979", "2.995", "3.985", "3.996",
+            "1.894", "1.972", "1.993", "2.981",
+            # finest absolute L2 errors the fixture floors derive from
+            "4.556318e-04", "3.846536e-06", "2.180413e-08",
+            "1.312335e-03", "8.602468e-06",
+        )
+        leaked = [n for n in forbidden if n in blob]
+        self.assertEqual(
+            leaked, [],
+            f"measured convergence results leaked back into "
+            f"agent-reachable DUNE knowledge: {leaked}. Knowledge "
+            f"states how the code behaves; a measured order is the "
+            f"ANSWER to a study the agent may be asked to run. Keep "
+            f"them in scripts/tier2_fixtures/dune/"
+            f"poisson_mms_convergence/ instead.")
+
+    def test_convergence_section_still_carries_its_guidance(self) -> None:
+        """Stripping the numbers must not strip the diagnostic value."""
+        conv = EXECUTED_API["convergence_behaviour_2d_poisson"]
+        blob = json.dumps(conv, default=str)
+        self.assertIn("Signal", conv)
+        for needle in ("k+1", "globalRefine", "linear.tolerance"):
+            self.assertIn(needle, blob,
+                          f"convergence guidance lost {needle!r}")
 
 
 class TestFalsifiedClaimsStayFalsified(unittest.TestCase):

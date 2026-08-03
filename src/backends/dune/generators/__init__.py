@@ -44,7 +44,14 @@ KNOWLEDGE["_general"] = {
         "bdfm": "Brezzi-Douglas-Fortin-Marini H(div) elements",
         "finiteVolume": "Piecewise-constant FV space",
         "rannacherTurek": "Rannacher-Turek non-conforming",
-        "p1Bubble": "Mini element (P1 + bubble)",
+        "p1Bubble": (
+            "Mini element (P1 + bubble) — SIMPLICES ONLY. On a "
+            "structuredGrid (YaspGrid cubes) the JIT build fails with "
+            "'static assertion failed: p1Bubble interpolation is only "
+            "implemented for simplicial grids.' after several minutes "
+            "of C++ compilation; on aluConformGrid over the same "
+            "4x4 cartesianDomain it builds (executed 2026-08-03, "
+            "dune-fem 2.12.0.2)"),
         "composite": "Multi-field composite spaces",
         "product": "Product of multiple spaces",
     },

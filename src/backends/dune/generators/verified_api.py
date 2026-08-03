@@ -133,9 +133,16 @@ EXECUTED_API: dict = {
             "out what the mesh is made of — use gridView.type, or "
             "{e.type for e in gridView.elements}, or compare "
             "gridView.size(0) against the expected cube count.",
-            "Q1/Q2 elements on a cube grid are reported as 'Lagrange1 "
-            "/ Lagrange2 on a triangle'. NOTE that dof counts do NOT "
-            "distinguish the two: continuous Lagrange on the 16-cube "
+            "The UFL element hides the POLYNOMIAL DEGREE too, not just "
+            "the cell: lagrange(gridView, order=1|2|3) all report "
+            "ufl.finiteelement.FiniteElement('Lagrange', triangle, 1, "
+            "...) and all print '<Lagrange1 on a triangle>', and they "
+            "share ONE compiled Space module. Read the order back from "
+            "space.size, never from the UFL element (corrected by "
+            "adversarial audit 2026-08-03: an earlier revision of this "
+            "entry claimed Q2 was reported as 'Lagrange2', which it is "
+            "not). NOTE that dof counts do NOT "
+            "distinguish cube from simplex: continuous Lagrange on the 16-cube "
             "grid and on the 32-triangle aluConformGrid over the same "
             "cartesianDomain both have 25 dofs at order 1 and 81 at "
             "order 2, because they share the same vertices (measured "
@@ -146,8 +153,12 @@ EXECUTED_API: dict = {
             "basix element will branch on a lie.",
         ],
         "Signal": (
-            "[API] repr(space) / space.ufl_element() says 'on a "
-            "triangle' while gridView.type says 'quadrilateral'. This "
+            "[API] str(space.ufl_element()) says 'on a "
+            "triangle' while gridView.type says 'quadrilateral'. "
+            "(repr(space) itself is only the pybind object, "
+            "'<dune.generated.femspace_<hash>.Space object at 0x...>' "
+            "— corrected 2026-08-03; print the ufl_element, not the "
+            "space.) This "
             "is normal and is NOT a bug to fix — it means the UFL cell "
             "carries no cell-shape information in dune-fem. Read the "
             "geometry from the gridView, never from the UFL element. "
@@ -516,6 +527,10 @@ EXECUTED_API: dict = {
             "+ aluCubeGrid in 2D and aluSimplexGrid + aluCubeGrid in "
             "3D took 439 s wall END TO END, of which the four "
             "'DUNE-INFO: Compiling HierarchicalGrid (new)' builds "
+            "-- see also the p1Bubble note in _general['spaces']: a "
+            "space the grid does not support burns the full build "
+            "time and then fails on a C++ static_assert, not on a "
+            "Python check -- "
             "dominated (the structuredGrid parts were already warm). "
             "With everything warm, a complete 8x8 Poisson run — grid, "
             "space, scheme, solve — took 0.89 s. The "
@@ -529,15 +544,27 @@ EXECUTED_API: dict = {
         "what_triggers_a_rebuild": (
             "Module names are md5 hashes of the generated C++ (the "
             "type name for spaces/schemes, the emitted integrands for "
-            "a form). MEASURED to trigger a new module: a different "
-            "Lagrange order (each of k=1,2,3 built its own Space and "
-            "Scheme), a different grid class (each ALUGrid variant "
+            "a form). MEASURED to trigger a new module: "
+            "a different grid class (each ALUGrid variant "
             "built its own HierarchicalGrid), and ANY change to the "
             "form — including changing a bare float literal in it "
             "(7.3125 -> 9.8125 cost 25.204 s and added one .so). "
             "MEASURED not to trigger one: re-running the identical "
-            "form (0.051 s, no new .so) and changing the .value of a "
-            "dune.ufl.Constant (0.00056 s, no new .so). Storage "
+            "form (0.051 s, no new .so), changing the .value of a "
+            "dune.ufl.Constant (0.00056 s, no new .so), and "
+            "— corrected by adversarial audit 2026-08-03, an earlier "
+            "revision of this entry said the opposite — CHANGING THE "
+            "LAGRANGE ORDER. lagrange(gridView, order=k) for "
+            "k = 1, 2, 3, 5, 6 on one 4x4 structuredGrid all resolved "
+            "to the SAME generated module, "
+            "dune.generated.femspace_90f0a952..._0faf32f1..., with the "
+            "correct sizes 25/81/169/441/625 and the .so count "
+            "unchanged at 208 throughout — including k = 5 and 6, "
+            "which had never been built on that install. The C++ "
+            "LagrangeDiscreteFunctionSpace is instantiated with a "
+            "dynamic polynomial order, so one module covers the range. "
+            "Whether the SCHEME rebuilds per order was not "
+            "separated out. Storage "
             "backends other than the default numpy were not "
             "exercised."),
         "Signal": (
@@ -708,7 +735,17 @@ EXECUTED_API: dict = {
             "aluConformGrid, both with and without a lagrange space "
             "already built on the view (with a space alive the space "
             "resized too: structuredGrid 25 -> 81 dofs, "
-            "aluConformGrid 25 -> 41). "
+            "aluConformGrid 25 -> 41). WHAT THAT ROW DOES NOT SAY, and "
+            "the reason it is a silent-wrong trap rather than a "
+            "convenience (added by adversarial audit 2026-08-03): "
+            "resizing a live space through the hierarchical grid ZEROES "
+            "the discrete functions on it. Measured on an 8x8 "
+            "structuredGrid with uh = space.interpolate(1.0): before "
+            "globalRefine(1, gridView.hierarchicalGrid) space.size 81 "
+            "and max(uh.as_numpy) 1.0; after, space.size 289 and "
+            "max(uh.as_numpy) 0.0 — no exception, no warning. Only the "
+            "adapt path (dune.fem.adapt([uh]) on an adaptive ALUGrid "
+            "view) prolongs. "
             "Passing a DISCRETE FUNCTION — the form that also "
             "prolongs it — only works on an adaptive ALUGrid view: "
             "  adaptiveLeafGridView(aluConformGrid): "
@@ -769,13 +806,29 @@ EXECUTED_API: dict = {
             "release of the generated hierarchicalgrid module, i.e. "
             "grid destruction after main."),
         "reproducibility": (
-            "INTERMITTENT: the identical script run three times gave "
-            "exit codes 134, 0, 134 with byte-identical stdout. A "
-            "minimal script (one adaptiveLeafGridView(aluConformGrid) "
-            "plus globalRefine, or two of them) exited 0 on every "
-            "attempt, so this is NOT 'ALUGrid teardown always "
-            "aborts' — it needs the bigger mix and it does not fire "
-            "every time. Measured 2026-08-03."),
+            "It depends on WHICH refinement path ran, and it is not "
+            "always intermittent. Measured 2026-08-03 (the first "
+            "sentence) and re-measured under adversarial audit the "
+            "same day (the rest):\n"
+            "  * A script that calls dune.fem.globalRefine(level, uh) "
+            "on adaptiveLeafGridView(aluConformGrid(...)) — the "
+            "discrete-function form, which builds a "
+            "BasicVirtualizedRestrictProlong — aborted on 7 of 7 runs "
+            "with byte-identical stdout (md5 equal across all six "
+            "repeats). The backtrace is in "
+            "~BasicVirtualizedRestrictProlong<ALUGrid<2,2,...>>, "
+            "released from the generated femspace module at "
+            "interpreter teardown.\n"
+            "  * A script that refines the same mix of grids through "
+            "globalRefine(level, gridView.hierarchicalGrid) instead "
+            "exited 0 on 3 of 3 runs.\n"
+            "  * The original campaign script — a larger mix — gave "
+            "134 / 0 / 134 over three runs, so that one IS "
+            "intermittent.\n"
+            "Treat it as: reliable for the restrict-prolong path, "
+            "intermittent for bigger mixes, absent for plain "
+            "hierarchical-grid refinement. Either way the results are "
+            "printed before the abort."),
         "Signal": (
             "[Integration] A DUNE-fem run can produce every correct "
             "result and STILL exit non-zero, because the abort "
@@ -808,62 +861,55 @@ EXECUTED_API: dict = {
             "(Executed 2026-08-03.)"),
     },
 
-    # ── the strongest evidence available: measured orders ───────────
-    "measured_convergence_2d_poisson": {
+    # ── convergence behaviour, stated WITHOUT the measured answer ────
+    #
+    # An earlier revision of this section shipped the full measured EOC
+    # table (per-order L2/H1 orders and the finest absolute errors) for
+    # a named manufactured solution. That is the ANSWER to a convergence
+    # study, and it was reachable from
+    # knowledge(topic="overview", solver="dune") — an agent asked to run
+    # such a study could read the result out of the tool instead of
+    # computing it. The numbers stay where they belong: in the Tier-2
+    # gate that re-measures them on every run,
+    # scripts/tier2_fixtures/dune/poisson_mms_convergence/ (fixture.json
+    # records the calibration, source.py re-derives it). Removed by
+    # adversarial audit 2026-08-03 after the contamination guard in
+    # tests/test_knowledge_not_contaminated.py flagged ten hits in this
+    # file under the pattern r"\bEOCs?\b[^.\n]{0,40}\d\.\d{2,}".
+    "convergence_behaviour_2d_poisson": {
         "description": (
-            "Manufactured-solution convergence study run on this "
-            "install 2026-08-03. -div(grad u) = f on [0,1]^2, "
-            "u* = sin(pi x) sin(pi y) + 0.3 x^2 y, f = -div(grad(u*)) "
-            "built symbolically by UFL (so no hand-derived source can "
-            "be mistranscribed), exact Dirichlet data on the whole "
-            "boundary via DirichletBC(space, u_exact), solver='cg' "
-            "with linear.tolerance 1e-12, uniform refinement "
-            "n = 4, 8, 16, 32, error norms via "
-            "dune.fem.integrate(..., order=2k+4)."),
-        "cube_grid_structuredGrid": {
-            "k=1": ("L2 EOC 1.989 / 1.997 / 1.999 (theory 2); "
-                    "H1 EOC 0.995 / 0.999 / 1.000 (theory 1); "
-                    "finest L2 4.556318e-04 at 1089 dofs"),
-            "k=2": ("L2 EOC 2.979 / 2.995 / 2.999 (theory 3); "
-                    "H1 EOC 1.998 / 2.000 / 2.000 (theory 2); "
-                    "finest L2 3.846536e-06 at 4225 dofs"),
-            "k=3": ("L2 EOC 3.985 / 3.996 / 3.999 (theory 4); "
-                    "H1 EOC 2.996 / 2.999 / 3.000 (theory 3); "
-                    "finest L2 2.180413e-08 at 9409 dofs"),
-        },
-        "simplex_grid_aluConformGrid": {
-            "k=1": ("L2 EOC 1.894 / 1.972 / 1.993 (theory 2); "
-                    "H1 EOC 0.955 / 0.988 / 0.997 (theory 1); "
-                    "finest L2 1.312335e-03 at 1089 dofs"),
-            "k=2": ("L2 EOC 2.981 / 2.995 / 2.999 (theory 3); "
-                    "H1 EOC 1.954 / 1.988 / 1.997 (theory 2); "
-                    "finest L2 8.602468e-06 at 4225 dofs"),
-        },
-        "reading": (
-            "Both element families hit theory. At equal dof count the "
-            "cube grid is the more accurate of the two here (k=1, "
-            "1089 dofs: 4.56e-04 on cubes vs 1.31e-03 on triangles) "
-            "— note the aluConformGrid built from the same "
-            "cartesianDomain has twice the elements but the SAME "
-            "vertices, hence the same dof count. Why Q1 on cubes "
-            "beats P1 on those triangles for this solution was not "
-            "investigated, and it is certainly not a general "
-            "ranking — it is this MMS on this pair of meshes."),
-        "cost": (
-            "The whole study (5 order/grid combinations x 4 levels = "
-            "20 solves, including the JIT builds for the simplex "
-            "spaces and schemes) took 914 s wall on a loaded "
-            "32-core box."),
+            "Lagrange order k on 2D Poisson with exact Dirichlet data "
+            "reaches the textbook rates on this install — L2 order "
+            "k+1, H1 order k — on BOTH structuredGrid (cubes, k = 1, 2, "
+            "3) and aluConformGrid (simplices, k = 1, 2). No observed "
+            "orders or error magnitudes are reproduced here on purpose; "
+            "measure them yourself. What this entry is for is the "
+            "SETUP that makes such a study valid on dune-fem, and the "
+            "two ways it silently goes wrong."),
+        "how_to_set_one_up": (
+            "Build f symbolically from the chosen u* with "
+            "f = -div(grad(u_exact)) so no hand-derived source can be "
+            "mistranscribed; impose the exact data with "
+            "DirichletBC(space, u_exact) and CHECK it is in the "
+            "galerkin([...]) list; compute the norms with "
+            "dune.fem.integrate(..., order >= 2k+4) or leave order "
+            "unset; and set linear.tolerance well below the finest "
+            "discretisation error you expect. Refine by REBUILDING the "
+            "grid at each level — dune.fem.globalRefine(level, uh) is a "
+            "silent no-op on a YaspGrid (see "
+            "adaptation_measured.Signal_globalRefine), so a study "
+            "written that way reports the same error at every level."),
         "Signal": (
             "[Numerical] If a DUNE-fem convergence table shows an "
             "observed L2 order near 0 instead of k+1, and the errors "
             "sit at an O(1) mesh-independent plateau, suspect the "
             "boundary conditions before the discretisation — the "
             "silent Dirichlet trap produces exactly that curve. If "
-            "the order is right but the level-to-level ratio flattens "
-            "at the finest level, suspect linear.tolerance (set it "
-            "well below the finest discretisation error; 1e-12 was "
-            "enough down to L2 2.2e-08 here). (Executed 2026-08-03.)"),
+            "every level reports the IDENTICAL error, the refinement "
+            "never happened — assert gridView.size(0) grew. If the "
+            "order is right but the level-to-level ratio flattens at "
+            "the finest level, suspect linear.tolerance. (Executed "
+            "2026-08-03.)"),
     },
 
     # ── phantom APIs the catalog used to name ───────────────────────
@@ -1028,7 +1074,9 @@ EXECUTED_PITFALLS: list[str] = [
         "ufl.triangle / ufl.tetrahedron. Signal: on "
         "structuredGrid([0,0],[1,1],[4,4]) — 16 elements of type "
         "'quadrilateral' — space.cell() returns 'triangle' and "
-        "repr(space) prints '<Lagrange1 on a triangle>'. Read the cell "
+        "str(space.ufl_element()) prints '<Lagrange1 on a triangle>' "
+        "AT EVERY ORDER (order 2 and 3 print 'Lagrange1' too, so the "
+        "UFL element hides the degree as well as the cell). Read the cell "
         "shape from gridView.type or from "
         "{e.type for e in gridView.elements}, never from the UFL "
         "element — and NOT from the dof count either: continuous "

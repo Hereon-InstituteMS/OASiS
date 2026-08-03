@@ -118,8 +118,21 @@ def main() -> int:
         '"raviartthomas"',
     )
     catalog_root = _catalog_root()
+    # A missing catalog tree must FAIL, not pass vacuously. The
+    # predecessor of this fixture hard-coded one developer's absolute
+    # paths; replacing them with a relative walk fixed the paths but
+    # left the same hole — rglob over a nonexistent directory yields
+    # nothing, catalog_lowercase stays 0, and the check reports OK.
+    # Proved by execution during the adversarial audit 2026-08-03:
+    # with src/backends/dune renamed away the fixture still exited 0.
+    catalog_files = sorted(catalog_root.rglob("*.py"))
+    if not catalog_files:
+        print(f"FAIL: catalog tree {catalog_root} has no .py files — "
+              f"the lowercase-regression half of this fixture would "
+              f"pass vacuously", file=sys.stderr)
+        return 2
     catalog_lowercase = 0
-    for p in sorted(catalog_root.rglob("*.py")):
+    for p in catalog_files:
         body = p.read_text(encoding="utf-8")
         benign_spans = []
         for lit in benign_literals:

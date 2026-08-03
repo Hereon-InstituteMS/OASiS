@@ -224,15 +224,19 @@ t_val  = {traction}
 gridView = structuredGrid([0, 0], [1, 1], [{nx}, {nx}])
 space = lagrange(gridView, dimRange=2, order={order})
 
-# Solution field (displacement, initially zero)
-uh = space.interpolate([0, 0], name="displacement")
-
-v = TestFunction(space)
-x = SpatialCoordinate(space)
+# Write the residual in the TRIAL function. dune-fem differentiates the
+# UFL form symbolically to build the tangent, so it needs a form with
+# TWO arguments; the natural "residual written with the current
+# iterate" spelling — F = I + grad(uh) — has only the test function and
+# is rejected at scheme construction with
+#   ValueError: Integrands model requires form with at least two arguments.
+u   = TrialFunction(space)
+v   = TestFunction(space)
+x   = SpatialCoordinate(space)
 
 # Deformation gradient F = I + grad(u)
 I   = Identity(2)
-F   = I + grad(uh)
+F   = I + grad(u)
 C   = F.T * F
 Ic  = tr(C)
 J   = det(F)
@@ -249,15 +253,24 @@ P = mu_val * (F - F_inv_T) + lam_val * ln(J) * F_inv_T
 res = inner(P, grad(v)) * dx
 
 # Neumann traction on right boundary (x=1): t = [t_val, 0]
-n = FacetNormal(space)
 res -= conditional(lt(1.0 - x[0], 0.01), t_val * v[0], 0.0) * ds
 
 # Dirichlet: u = 0 on left boundary (x=0)
 dbc = DirichletBC(space, as_vector([0, 0]), conditional(lt(x[0], 0.01), 1, 0))
 
-# DUNE automatically computes Jacobian (tangent stiffness) and does Newton
-scheme = galerkin([res == 0, dbc], solver="cg")
-scheme.solve(target=uh)
+# DUNE automatically computes Jacobian (tangent stiffness) and does Newton.
+# The finite-strain tangent is NOT symmetric, so cg is the wrong Krylov
+# method here — use bicgstab (or gmres).
+scheme = galerkin([res == 0, dbc], solver="bicgstab",
+                  parameters={{"nonlinear.tolerance": 1e-8,
+                               "nonlinear.maxiterations": 50,
+                               "linear.tolerance": 1e-10,
+                               "linear.maxiterations": 20000}})
+uh = space.interpolate([0, 0], name="displacement")
+info = scheme.solve(target=uh)
+print(f"Newton iterations: {{info['iterations']}}, "
+      f"linear: {{info['linear_iterations']}}, "
+      f"converged: {{info['converged']}}")
 
 vals = np.array(uh.as_numpy).reshape(-1, 2)
 u_x_max = float(vals[:, 0].max())

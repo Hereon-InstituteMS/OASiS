@@ -11,18 +11,25 @@ def _adaptive_poisson_2d(params: dict) -> str:
     n_adapt_steps = params.get("adapt_steps", 10)
     return f'''\
 """Adaptive Poisson: -Δu = f with h-refinement — DUNE-fem (ALUGrid)"""
-from dune.grid import structuredGrid
-from dune.fem.space import lagrange
+import dune.fem
+from dune.grid import cartesianDomain
+from dune.alugrid import aluConformGrid
+from dune.fem.view import adaptiveLeafGridView
+from dune.fem.space import lagrange, finiteVolume
 from dune.fem.scheme import galerkin
 from dune.ufl import DirichletBC
 from ufl import (TrialFunction, TestFunction, SpatialCoordinate, dot, grad, dx,
                  conditional, lt, sqrt)
-from dune.fem.function import gridFunction
 import numpy as np
 import json
 
-# Use structured grid (ALUGrid if available for true adaptivity)
-gridView = structuredGrid([0, 0], [1, 1], [8, 8])
+# Local h-refinement needs an ADAPTIVE view over an ALUGrid. Neither
+# half is optional: on a YaspGrid (structuredGrid) dune.fem.adapt and
+# globalRefine(level, uh) do nothing at all and raise nothing, and on a
+# PLAIN ALUGrid leaf view dune.fem.adapt raises "the grid views for all
+# discrete functions need to support adaptivity".
+gridView = adaptiveLeafGridView(
+    aluConformGrid(cartesianDomain([0, 0], [1, 1], [8, 8]), dimgrid=2))
 
 space = lagrange(gridView, order={order})
 x = SpatialCoordinate(space)
@@ -42,34 +49,45 @@ dbc = DirichletBC(space, 0)
 scheme = galerkin([a == b, dbc], solver="cg")
 uh = space.interpolate(0, name="solution")
 
-# Adaptive refinement loop
-for adapt_step in range({n_adapt_steps}):
-    scheme.solve(target=uh)
-    vals = np.array(uh.as_numpy)
-    max_val = float(vals.max())
-    n_dofs = len(vals)
-    print(f"Adapt step {{adapt_step+1}}: DOFs={{n_dofs}}, max(u)={{max_val:.8f}}")
+# The indicator must be a DISCRETE FUNCTION on the adaptive view:
+# dune.fem.mark(..., gridView=gv) raises AttributeError unconditionally
+# in dune-fem 2.12.0.2 (upstream typo in GridMarker.__init__), so the
+# marker has to take the grid view from the indicator itself.
+fv = finiteVolume(gridView)
 
-    # Residual-based error estimator
-    # eta_K^2 = h_K^2 * ||f + Delta(u)||^2_K + h_K * ||[grad(u).n]||^2_edges
-    # For structured grid, we use a simplified approach: refine globally
-    try:
-        gridView.hierarchicalGrid.globalRefine(1)
-        space.update()
-        uh.interpolate(uh)
-    except Exception:
-        # If grid does not support refinement, break
-        print(f"Grid does not support further refinement at step {{adapt_step+1}}")
+# Adaptive refinement loop — replace the gradient-jump proxy below with
+# a residual estimator eta_K^2 = h_K^2*||f + Delta u||^2_K
+# + h_K*||[grad(u).n]||^2_edges for your problem.
+for adapt_step in range({n_adapt_steps}):
+    info = scheme.solve(target=uh)
+    vals = np.array(uh.as_numpy)
+    print(f"Adapt step {{adapt_step+1}}: elements={{gridView.size(0)}}, "
+          f"DOFs={{len(vals)}}, max(u)={{float(vals.max()):.8f}}, "
+          f"converged={{info['converged']}}")
+    if adapt_step == {n_adapt_steps} - 1:
         break
+    indicator = fv.interpolate(sqrt(dot(grad(uh), grad(uh))), name="indicator")
+    theta = float(np.array(indicator.as_numpy).max()) * 0.5
+    before = gridView.size(0)
+    dune.fem.mark(indicator, theta)
+    dune.fem.adapt([uh])          # resizes the space AND prolongs uh
+    if gridView.size(0) <= before:
+        # Refinement that silently does nothing is the failure this
+        # template exists to avoid — do not swallow it.
+        raise RuntimeError(
+            f"adaptation refined nothing: {{before}} -> {{gridView.size(0)}} "
+            f"elements at step {{adapt_step+1}}")
 
 vals = np.array(uh.as_numpy)
 max_val = float(vals.max())
 n_dofs = len(vals)
-print(f"Final: DOFs={{n_dofs}}, max(u)={{max_val:.10f}}")
+print(f"Final: elements={{gridView.size(0)}}, DOFs={{n_dofs}}, "
+      f"max(u)={{max_val:.10f}}")
 
 gridView.writeVTK("result", pointdata={{"phi": uh}})
 summary = {{
     "max_value": max_val, "n_dofs": n_dofs,
+    "n_elements": gridView.size(0),
     "adapt_steps": {n_adapt_steps}, "order": {order},
 }}
 with open("results_summary.json", "w") as f:

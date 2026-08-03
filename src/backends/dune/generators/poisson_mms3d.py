@@ -305,11 +305,14 @@ KNOWLEDGE = {
             "1.059(pre-asymptotic)/1.990/1.998. "
             "RE-VERIFIED 2026-08-03 after the env was rebuilt at "
             "dune-fem 2.12.0.2: the template still generates, runs "
-            "and converges — defaults order=1, n0=4, 3 levels gave "
-            "L2 2.2962392637e-02 / 5.7393104844e-03 / "
-            "1.4350319304e-03 with EOCs 2.000 and 2.000, and H1 EOCs "
-            "1.002 and 1.000. Nothing in this family needed changing "
-            "for 2.12."),
+            "and converges at the expected orders on the defaults. "
+            "Nothing in this family needed changing for 2.12. (The "
+            "measured numbers from that re-run are deliberately NOT "
+            "reproduced here — a convergence order is the answer to a "
+            "study an agent may be asked to perform. Removed by "
+            "adversarial audit 2026-08-03; the 2026-08-01 sentence "
+            "above is older contamination that a separate purge branch "
+            "owns.)"),
         "mms_setup": {
             "source_term": (
                 "f = -div(kappa*grad(u_exact)) built symbolically in UFL "
