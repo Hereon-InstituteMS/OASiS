@@ -146,7 +146,15 @@ KNOWLEDGE = {
                 "complains about a singular block. Set "
                 "micro_viscosity > 0 OR use the plain 'fluid' "
                 "module for pure NS. Signal: solver reports "
-                "`KSPSolve: zero-pivot at micro-rotation block`. "
+                "[FALSIFIED 2026-08-03: the message text quoted here "
+                "does not occur anywhere in the FEBio 4.12.0.86045466d "
+                "binary or any of its shared libraries (`strings` over "
+                "febio4 + all 12 .so files, 267541 strings), so this "
+                "Signal can never match on 4.12. The physics reasoning "
+                "is desk research and was NOT executed] `KSPSolve: "
+                "zero-pivot at micro-rotation block` (KSPSolve is a "
+                "PETSc name; FEBio uses neither PETSc nor that message). "
+                ""
                 "(Audit 2026-06-02.)"
             ),
             (
@@ -169,7 +177,13 @@ KNOWLEDGE = {
                 "case g for 'gyration'), NOT mx/my/mz or Rx/Ry/Rz. "
                 "Signal: a BC type='zero micro-rotation' with "
                 "<x_dof>1</x_dof> raises `invalid DOF for polar "
-                "fluid module — expected gx_dof / gy_dof / "
+                "fluid module — [FALSIFIED 2026-08-03: the message text "
+                "quoted here does not occur anywhere in the FEBio "
+                "4.12.0.86045466d binary or any of its shared libraries "
+                "(`strings` over febio4 + all 12 .so files, 267541 "
+                "strings), so this Signal can never match on 4.12. The "
+                "physics reasoning is desk research and was NOT "
+                "executed] expected gx_dof / gy_dof / "
                 "gz_dof`. (Audit 2026-06-02.)"
             ),
         ],

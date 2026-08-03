@@ -122,12 +122,27 @@ KNOWLEDGE = {
                             "(<a> = primary fiber axis, "
                             "<d> = secondary axis defining the plane)",
             },
-            "transversely isotropic": {
-                "fiber": "Nested fiber model (fiber-exp-pow, "
-                         "fiber-pow-linear)",
-                "matrix": "Nested isotropic matrix (neo-Hookean, "
-                          "Mooney-Rivlin, ...)",
-            },
+            "_transversely_isotropic_falsified_2026_08_03": (
+                "CORRECTION. `transversely isotropic` was listed "
+                "here as a material type. It is NOT registered in "
+                "FEBio 4.12 — executed 2026-08-03, a deck using it "
+                "is rejected with `tag \"material\" (line N) : "
+                "invalid value for attribute \"type\"`. The "
+                "registered trans-iso FEMATERIAL_ID factories on "
+                "this build are `trans iso Mooney-Rivlin`, `trans "
+                "iso Veronda-Westmann`, `trans iso MR-Estrada`, "
+                "`neo-Hookean transiso`, `trans-iso hyperelastic`, "
+                "`uncoupled trans-iso hyperelastic`, `coupled "
+                "trans-iso Mooney-Rivlin`, `coupled trans-iso "
+                "Veronda-Westmann`, `2D trans iso Mooney-Rivlin`, "
+                "`2D trans iso Veronda-Westmann`. VERIFIED WORKING: "
+                "<material id=\"1\" name=\"M1\" type=\"trans iso "
+                "Mooney-Rivlin\"><density>1</density><c1>1</c1>"
+                "<c2>0</c2><k>1000</k><c3>1</c3><c4>10</c4>"
+                "<c5>100</c5><lam_max>1.2</lam_max><fiber "
+                "type=\"vector\"><vector>0,0,1</vector></fiber>"
+                "</material> runs a one-hex8 deck to "
+                "N O R M A L   T E R M I N A T I O N."),
         },
         "pitfalls": [
             (
@@ -147,7 +162,14 @@ KNOWLEDGE = {
                 "an IfPos(I4-1, ..., 0). A specimen under pure "
                 "compression yields ~matrix-only response. Signal: "
                 "for an HGO material under uniaxial compression, the "
-                "elastic_strain output channel in the .xplt plotfile "
+                "[CORRECTED 2026-08-03: there is no `elastic_strain` "
+                "and no `elastic strain` plot variable in FEBio "
+                "4.12 — requesting one reads SUCCESS and then "
+                "aborts at init with `FATAL ERROR: Output "
+                "variable \"elastic strain\" is not defined` / "
+                "`Model initialization failed`, verified live. Use "
+                "`stress` or `Lagrange strain`] output channel in "
+                "the .xplt plotfile "
                 "shows stiffness < its tension-side counterpart by "
                 "factor ~ (1 + k1*k2*E_f^2 / c) — sometimes 10-100x "
                 "for stiff fibers. This is physical, not a bug, but "
@@ -172,10 +194,20 @@ KNOWLEDGE = {
                 "k too low gives visible volume change under "
                 "uniaxial stretch (Jacobian J = det(F) deviates "
                 "from 1 by > 1%, visible in FEBio plotfile "
-                "displacement output written by write_vtu); k "
+                "displacement output [CORRECTED 2026-08-03: "
+                "`write_vtu` is not a FEBio concept — FEBio writes "
+                "a binary .xplt, and text output only via "
+                "<Output><logfile>. Read J with "
+                "<element_data data=\"J\"/>]); k "
                 "too high gives cond(K) > 1e14 and the FEBio "
                 "NOX nonlinear SolverControl stalls with "
-                "`DIVERGED_FNORM_NAN` after the BFGS / "
+                "`DIVERGED_FNORM_NAN` [FALSIFIED 2026-08-03: this "
+                "string does not occur anywhere in the FEBio 4.12 "
+                "binary or its libraries — it is a Trilinos/NOX "
+                "name, not a FEBio one. FEBio's real NaN diagnostic "
+                "is `NAN detected in solution vector at index N.` "
+                "followed by `Node id = N, dof = D ('x')`, verified "
+                "live] after the BFGS / "
                 "quasi-Newton update. (Audit 2026-06-02.)"
             ),
         ],

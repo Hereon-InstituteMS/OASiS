@@ -123,7 +123,24 @@ KNOWLEDGE = {
                              "(T0 lc=N), "
                              "'active fiber stress' (sigma_max, "
                              "Ca50, n), "
-                             "'Guccione cardiac contraction'.",
+                             "'prescribed trans iso active "
+                             "contraction', 'prescribed isotropic "
+                             "active contraction', 'prescribed "
+                             "fiber active contraction' and their "
+                             "'uncoupled ...' twins ("
+                             "'uncoupled active fiber stress' too). "
+                             "CORRECTED 2026-08-03: 'Guccione "
+                             "cardiac contraction', previously "
+                             "listed here, is NOT registered in "
+                             "FEBio 4.12 — executed, it is rejected "
+                             "inside a solid mixture with `tag "
+                             "\"solid\" (line N) : invalid value "
+                             "for attribute \"type\"`. The list "
+                             "above was re-checked name by name "
+                             "against the binary's own `list` "
+                             "factory dump on 2026-08-03; every "
+                             "remaining entry is a registered "
+                             "FEMATERIAL_ID.",
             },
         },
         "pitfalls": [
@@ -133,6 +150,16 @@ KNOWLEDGE = {
                 "as the top-level material. Signal: emitting "
                 "<material type='prescribed uniaxial active "
                 "contraction'> at top level raises FEBio "
+                "FALSIFIED 2026-08-03 by execution on FEBio "
+                "4.12.0: a top-level <material type=\"prescribed "
+                "uniaxial active contraction\"> is NOT a parse "
+                "error. The deck READS SUCCESSFULLY and then dies "
+                "at solve time with `NAN detected in solution vector "
+                "at index 0.` / `Node id = 5, dof = 0 ('x')` and "
+                "`E R R O R   T E R M I N A T I O N`, exit 1 — a "
+                "run-time blow-up, not a diagnosed input error, "
+                "which is strictly harder to attribute. The "
+                "previously quoted "
                 "`material must have a passive base in a solid "
                 "mixture` at parse time. (Audit 2026-06-02.)"
             ),

@@ -1,10 +1,12 @@
 """FEBio plasticity generators and knowledge.
 
 FEBio Module type: 'solid' with rate-independent plasticity materials.
-J2 (von Mises) plasticity with isotropic + kinematic hardening, plus
-specialised models: 'Hill orthotropic', 'plastic flow curve' (user-
-defined isotropic hardening), and the reactive-plastic combination
-material for cyclic / multi-scale work.
+The registered plasticity FEMATERIAL_ID factories on FEBio 4.12 are
+'von-Mises plasticity' (E, v, Y, H), 'reactive plasticity' and
+'reactive plastic damage' — verified against the binary's own `list`
+dump on 2026-08-03. 'J2 plasticity', 'Hill orthotropic plasticity'
+and 'plastic flow curve' are NOT registered and are rejected at
+parse; they were removed from this file on 2026-08-03.
 
 Common in biomechanics for cortical bone yielding, calcified tissue
 post-yield response, surgical-tool plastic deformation, and metal
@@ -13,7 +15,7 @@ implants in orthopedic-load benchmarks.
 
 
 def _plasticity_3d_uniaxial(params: dict) -> str:
-    """Uniaxial tension test on a hex8 cube — J2 plasticity with linear
+    """Uniaxial tension test on a hex8 cube — von-Mises plasticity with linear
     isotropic hardening. Bottom face fixed, top face pulled in z with
     prescribed displacement past the yield strain. Plastic flow
     activates above sigma_yield and follows the hardening modulus E_h.
@@ -32,15 +34,15 @@ def _plasticity_3d_uniaxial(params: dict) -> str:
     <step_size>0.05</step_size>
     <solver type="solid">
       <symmetric_stiffness>symmetric</symmetric_stiffness>
-      <max_ups>0</max_ups>
+      <qn_method type="full Newton"/>
     </solver>
   </Control>
   <Material>
-    <material id="1" type="J2 plasticity">
+    <material id="1" name="Material1" type="von-Mises plasticity">
       <density>1.0</density>
       <E>{E}</E>
       <v>{nu}</v>
-      <Y0>{sig_y}</Y0>
+      <Y>{sig_y}</Y>
       <H>{E_h}</H>
     </material>
   </Material>
@@ -58,15 +60,11 @@ def _plasticity_3d_uniaxial(params: dict) -> str:
     <Elements type="hex8" mat="1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="load_top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
+    <NodeSet name="load_top">5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="fix_bottom">
@@ -87,8 +85,6 @@ def _plasticity_3d_uniaxial(params: dict) -> str:
     <plotfile type="febio">
       <var type="displacement"/>
       <var type="stress"/>
-      <var type="elastic strain"/>
-      <var type="plastic strain"/>
     </plotfile>
   </Output>
 </febio_spec>
@@ -108,21 +104,35 @@ KNOWLEDGE = {
         "input_format": "FEBio XML v4.0",
         "solver": "Solid solver with stress-update return-mapping integration",
         "materials": {
-            "J2 plasticity": {
+            "von-Mises plasticity": {
                 "E": "Young's modulus", "v": "Poisson's ratio",
-                "Y0": "Initial yield stress (von Mises)",
+                "Y": "Initial yield stress (von Mises). NOT `Y0`.",
                 "H": "Linear isotropic hardening modulus (dY/dep)",
+                "_verified": (
+                    "LIVE-VERIFIED 2026-08-03 on FEBio "
+                    "4.12.0.86045466d: <material id=\"1\" "
+                    "name=\"M1\" type=\"von-Mises plasticity\">"
+                    "<density>1</density><E>1000</E><v>0.3</v>"
+                    "<Y>10</Y><H>10</H></material> reads SUCCESS "
+                    "and runs to N O R M A L   T E R M I N A T I O N."),
             },
-            "Hill orthotropic plasticity": {
-                "F, G, H, L, M, N": "Hill anisotropic yield "
-                                    "coefficients in the material "
-                                    "frame",
-            },
-            "plastic flow curve": {
-                "elastic": "Nested elastic material",
-                "Y0, Y1, ..., Yn at ep0, ep1, ..., epn": "User-"
-                    "defined piecewise-linear hardening curve",
-            },
+            "_falsified_2026_08_03": (
+                "CORRECTION. This block previously listed three "
+                "materials — `J2 plasticity`, `Hill orthotropic "
+                "plasticity` and `plastic flow curve`. NONE of "
+                "the three is registered in FEBio 4.12: they do "
+                "not appear in the `list` factory dump under "
+                "FEMATERIAL_ID, and a deck using any of them is "
+                "rejected at parse with `tag \"material\" (line "
+                "N) : invalid value for attribute \"type\"` "
+                "(executed for `J2 plasticity` and `Hill "
+                "orthotropic plasticity`). The registered "
+                "plasticity FEMATERIAL_ID factories on this build "
+                "are exactly: `von-Mises plasticity`, `reactive "
+                "plasticity`, `reactive plastic damage`. Enumerate "
+                "them yourself with "
+                "`printf 'list\\nquit\\n' | febio4 -nosplash | "
+                "grep FEMATERIAL_ID`."),
         },
         "pitfalls": [
             (
@@ -130,19 +140,32 @@ KNOWLEDGE = {
                 "transition. A single step jumping from below-"
                 "yield to far-above-yield can mis-locate the "
                 "plastic region. Signal: stress vs strain curve "
-                "shows a kink at sigma > Y0 (yield is detected "
+                "shows a kink at sigma > Y (yield is detected "
                 "late); reducing step_size moves the kink to "
-                "Y0 within ~1%. (Audit 2026-06-02.)"
+                "Y within ~1%. (Audit 2026-06-02 — physics "
+                "reasoning, NOT executed; only the parameter "
+                "spelling was corrected to `Y` on 2026-08-03.)"
             ),
             (
-                "[Input] J2 plasticity uses Y0 (initial yield) + H "
-                "(linear hardening modulus) — NOT yield_stress + "
-                "hardening_modulus (those are the human names). "
-                "Signal: parser warns `unknown material parameter "
-                "yield_stress`, or computed yield happens at the "
-                "wrong stress level because the parameter was "
-                "silently defaulted to a built-in 0.0. (Audit "
-                "2026-06-02.)"
+                "[Input] The plasticity material is "
+                "`von-Mises plasticity` and its yield parameter is "
+                "`Y`. Signal: the wrong parameter name is a HARD "
+                "parse error naming the tag, not a warning and not "
+                "a silent default — `<yield_stress>250</yield_stress>` "
+                "gives `tag \"yield_stress\" (line N) : "
+                "unrecognized tag` and `Reading file ...FAILED!`. "
+                "CORRECTED 2026-08-03 by execution on FEBio "
+                "4.12.0: the previous entry claimed the material "
+                "was `J2 plasticity`, the parameter was `Y0`, and "
+                "the failure was a WARNING reading `unknown "
+                "material parameter yield_stress` followed by a "
+                "silent default to 0.0. All three are false. "
+                "`J2 plasticity` is not a registered type; `Y0` is "
+                "rejected with `tag \"Y0\" (line N) : unrecognized "
+                "tag`; and the string `unknown material parameter` "
+                "does not occur anywhere in the 4.12 binary or its "
+                "libraries, so that Signal could never have "
+                "matched. Nothing is ever silently defaulted here."
             ),
             (
                 "[Numerical] H << E gives near-perfect plasticity "
@@ -156,15 +179,16 @@ KNOWLEDGE = {
             ),
             (
                 "[Numerical] Cyclic loading needs kinematic "
-                "(Bauschinger) hardening — pure isotropic J2 "
+                "(Bauschinger) hardening — pure isotropic "
+                "von-Mises "
                 "gives a symmetric yield surface that does not "
                 "shift in the deviatoric plane and cannot "
                 "reproduce reverse-yield softening seen in "
                 "tension-compression tests. Signal: simulated "
                 "tension/compression cycle gives near-identical "
-                "yield stress on the return leg (~|Y0|) when "
+                "yield stress on the return leg (~|Y|) when "
                 "experiments show reduced yield (~|Y0 - "
-                "Bauschinger_shift|). (Audit 2026-06-02.)"
+                "Bauschinger_shift|). (Audit 2026-06-02 — physics reasoning, NOT executed.)"
             ),
         ],
     },

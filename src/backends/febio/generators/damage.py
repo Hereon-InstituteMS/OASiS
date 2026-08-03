@@ -2,12 +2,16 @@
 
 FEBio Module type: 'solid' with continuum damage materials. Two main
 families:
-  - 'damage' (general wrapper around any elastic base) — scalar
-    damage variable D evolves with strain history; effective stress
-    sigma_eff = (1 - D) * sigma_elastic.
-  - 'reactive damage' — damage tied to a chemical-reaction
-    progress variable.
-  - Family-specific damage models: 'Simo damage', 'Yu damage'.
+  - 'elastic damage' (general wrapper around any elastic base) —
+    scalar damage variable D evolves with strain history; effective
+    stress sigma_eff = (1 - D) * sigma_elastic. Requires three child
+    properties: <elastic>, <damage type="CDF ..."> and
+    <criterion type="DC ...">.
+  - Pre-combined variants: 'damage neo-Hookean', 'damage
+    Mooney-Rivlin', 'damage fiber exponential', ...
+  - CORRECTED 2026-08-03: the type strings 'damage', 'Simo damage'
+    and 'reactive damage' named here previously are NOT registered
+    in FEBio 4.12 and are rejected at parse.
 
 Canonical for tissue tearing thresholds, cartilage degradation under
 repeated loading, soft-tissue rupture benchmarks, and fatigue cycling
@@ -118,25 +122,60 @@ KNOWLEDGE = {
         "input_format": "FEBio XML v4.0",
         "solver": "Standard solid solver with internal damage state variable",
         "materials": {
-            "damage": {
-                "elastic": "Nested undamaged elastic material "
+            "elastic damage": {
+                "elastic": "REQUIRED nested elastic material "
                            "(neo-Hookean / HGO / Mooney-Rivlin / ...)",
-                "D_inf": "Asymptotic damage at infinite strain "
-                         "(0 < D_inf <= 1); typical range "
-                         "0.3-0.9.",
-                "beta": "Damage-rate exponent — higher beta means "
-                        "damage saturates faster as strain "
-                        "accumulates.",
+                "damage": "REQUIRED nested damage CDF. Registered "
+                          "types on FEBio 4.12 all start with "
+                          "`CDF `: `CDF Simo`, `CDF log-normal`, "
+                          "`CDF Weibull`, `CDF step`, `CDF quintic`, "
+                          "`CDF gamma`, `CDF user`.",
+                "criterion": "REQUIRED nested damage criterion. "
+                             "Registered types all start with "
+                             "`DC `: `DC Simo`, `DC strain energy "
+                             "density`, `DC specific strain energy`, "
+                             "`DC von Mises stress`, `DC Drucker "
+                             "shear stress`, `DC max shear stress`, "
+                             "`DC max normal stress`, `DC max normal "
+                             "Lagrange strain`.",
+                "_verified": (
+                    "LIVE-VERIFIED 2026-08-03 on FEBio "
+                    "4.12.0.86045466d — this exact material runs a "
+                    "one-hex8 prescribed-compression deck to "
+                    "N O R M A L   T E R M I N A T I O N: "
+                    "<material id=\"1\" name=\"M1\" type=\"elastic "
+                    "damage\"><density>1</density><elastic "
+                    "type=\"neo-Hookean\"><density>1</density>"
+                    "<E>1000</E><v>0.3</v></elastic><damage "
+                    "type=\"CDF Simo\"><a>0.9</a><b>0.1</b></damage>"
+                    "<criterion type=\"DC strain energy density\"/>"
+                    "</material>. All three child properties are "
+                    "mandatory; omitting one gives `Component "
+                    "\"<name>\" needs to have property \"<prop>\" "
+                    "defined (line N)`."),
             },
-            "Simo damage": {
-                "alpha": "Saturation parameter",
-                "beta": "Rate parameter",
-            },
-            "reactive damage": {
-                "elastic": "Nested elastic",
-                "kinetic": "Chemical-reaction kinetics model that "
-                           "drives damage evolution.",
-            },
+            "_falsified_2026_08_03": (
+                "CORRECTION. This block previously listed `damage`, "
+                "`Simo damage` and `reactive damage` as material "
+                "types. NONE of the three is a registered "
+                "FEMATERIAL_ID on FEBio 4.12 — `damage` exists only "
+                "as a PLOT variable (FEPLOTDATA_ID) and as a "
+                "mesh-adaptor criterion, not as a material. All "
+                "three were executed on 2026-08-03 and every one "
+                "was rejected with `tag \"material\" (line N) : "
+                "invalid value for attribute \"type\"` and "
+                "`Reading file ...FAILED!`. The registered "
+                "damage-bearing FEMATERIAL_ID factories on this "
+                "build include: `elastic damage`, `uncoupled "
+                "elastic damage`, `damage neo-Hookean`, `damage "
+                "Mooney-Rivlin`, `damage trans iso Mooney-Rivlin`, "
+                "`damage fiber power`, `damage fiber exponential`, "
+                "`damage fiber exp-linear`, `viscoelastic damage`, "
+                "`uncoupled viscoelastic damage`, `reactive "
+                "viscoelastic damage`, `reactive plastic damage`. "
+                "Enumerate them yourself with `printf "
+                "'list\\nquit\\n' | febio4 -nosplash | grep "
+                "FEMATERIAL_ID`."),
         },
         "pitfalls": [
             (
@@ -151,12 +190,21 @@ KNOWLEDGE = {
                 "(Audit 2026-06-02.)"
             ),
             (
-                "[Input] The 'damage' wrapper requires a nested "
+                "[Input] The `elastic damage` wrapper (CORRECTED "
+                "2026-08-03: NOT `damage`, which is not a "
+                "registered material — see the materials block) "
+                "requires a nested "
                 "elastic material — it cannot stand alone. "
                 "Forgetting the <elastic> child or putting the "
                 "elastic parameters at the top level produces a "
                 "parse error. Signal: FEBio aborts with "
-                "`damage material requires <elastic> child` or "
+                "[FALSIFIED 2026-08-03: the message text quoted here "
+                "does not occur anywhere in the FEBio 4.12.0.86045466d "
+                "binary or any of its shared libraries (`strings` over "
+                "febio4 + all 12 .so files, 267541 strings), so this "
+                "Signal can never match on 4.12. The physics reasoning "
+                "is desk research and was NOT executed] `damage material "
+                "requires <elastic> child` or "
                 "`unknown material parameter E in damage material`. "
                 "(Audit 2026-06-02.)"
             ),
@@ -166,7 +214,13 @@ KNOWLEDGE = {
                 "Setting D_inf == 1 means complete loss of "
                 "stiffness — FEBio struggles past D ~ 0.99 "
                 "because the effective stiffness goes to zero and "
-                "Newton stalls. Signal: NOX residual stops "
+                "Newton stalls. Signal: [FALSIFIED 2026-08-03: FEBio "
+                "does not use NOX — neither `NOX` nor `DIVERGED` occurs "
+                "anywhere in the 4.12 binary or its libraries. On a "
+                "failed Newton step FEBio prints `------- failed to "
+                "converge at time : <t>` and, if the step cannot be "
+                "retried, `E R R O R   T E R M I N A T I O N` with exit "
+                "1] NOX residual stops "
                 "decreasing once max(D) approaches 0.99; use "
                 "D_inf <= 0.95 in practice. (Audit 2026-06-02.)"
             ),
