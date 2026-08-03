@@ -93,34 +93,66 @@ CONFIG_PROBES: dict[str, dict[str, str]] = {
         ),
     },
     "febio_build": {
-        "what": "which linear solvers this FEBio was compiled with",
-        "command": "<febio-binary> -info 2>&1 | head -30",
+        "what": "which linear solver this FEBio was compiled with",
+        # `< /dev/null` is REQUIRED, not tidiness. -info prints and then falls
+        # through to FEBio's interactive prompt, so without a closed stdin the
+        # command never returns.
+        "command": "<febio-binary> -info < /dev/null 2>&1 | head -30",
         "reading": (
-            "The line `Default linear solver: skyline` means no vendor solver "
-            "was linked. A build with MKL reports a pardiso-family default. "
-            "-info does NOT print a feature list — do not grep it for MMG."
+            "`Default linear solver: skyline` means no vendor solver was "
+            "linked; `Default linear solver: pardiso` means an MKL/PARDISO "
+            "build. Those are the only two possibilities — FEBio's NumCore.cpp "
+            "selects between exactly those two strings on `#ifdef PARDISO`. "
+            "-info does NOT print a feature list, so do not grep it for MKL, "
+            "MMG, HYPRE or LEVMAR; those return nothing on every build."
         ),
     },
     "sparta_packages": {
         "what": "which optional SPARTA packages are compiled in",
         "command": "cd <sparta-src> && make ps",
         "reading": (
-            "Prints `Installed YES/NO: package <NAME>` per package. A package "
-            "listed NO means its commands and its `kk`-suffixed styles do not "
-            "exist in the binary."
+            "Prints `Installed YES/NO: package <NAME>`. IMPORTANT LIMIT: this "
+            "covers ONLY the make-level packages, which are `fft` and `python` "
+            "— the Makefile's PACKAGE variable literally lists just those two. "
+            "It says nothing about KOKKOS, which is not a make package at all. "
+            "For KOKKOS use `sparta_kokkos` below."
+        ),
+    },
+    "sparta_kokkos": {
+        "what": "whether this SPARTA binary has KOKKOS acceleration",
+        # The runtime refusal is the reliable answer. `make ps` cannot see
+        # KOKKOS, and the binary contains Kokkos-named symbols either way
+        # because accelerator_kokkos.h defines stub classes when the package
+        # is absent.
+        "command": "<sparta-binary> -kokkos on < /dev/null 2>&1 | head -3",
+        "reading": (
+            "`ERROR: Cannot use -kokkos on without KOKKOS installed` means no "
+            "KOKKOS. A KOKKOS build accepts the switch. Naming is also a "
+            "strong hint: KOKKOS builds come from a separate CMake "
+            "configuration and are named `spa_kokkos_omp` / `spa_kokkos_cuda` "
+            "rather than `spa_serial` / `spa_mpi`. Do NOT try to answer this "
+            "by looking for Kokkos symbols in the binary — they are present "
+            "even when the package is absent."
         ),
     },
     "kratos_glibc": {
         "what": "whether a Kratos wheel can actually load on this host",
+        # Must sweep EVERY shared object in the package, not just the main
+        # extension module. On one release the extension module needed only
+        # GLIBC_2.14 while libKratosCore.so needed 2.17 — checking one file
+        # answers the wrong question.
         "command": (
             "ldd --version | head -1   # host glibc\n"
-            "objdump -T <site-packages>/KratosMultiphysics/.libs/"
-            "Kratos.cpython-*.so | grep -o 'GLIBC_2\\.[0-9]*' | sort -uV | tail -1"
+            "find <site-packages>/KratosMultiphysics -name '*.so*' "
+            "-exec objdump -T {} + 2>/dev/null "
+            "| grep -o 'GLIBC_2\\.[0-9]*' | sort -uV | tail -1"
         ),
         "reading": (
-            "If the highest GLIBC_ symbol the wheel requires exceeds the host "
-            "glibc, the import fails at runtime even though pip installed it "
-            "without complaint."
+            "If the highest GLIBC_ symbol required anywhere in the package "
+            "exceeds the host glibc, the import fails at runtime even though "
+            "pip installed it without complaint — pip checks the wheel's "
+            "declared manylinux tag, not its actual symbol requirements, so a "
+            "mis-tagged wheel passes that check."
         ),
     },
 }
@@ -523,37 +555,53 @@ _KRATOS = {
         "imported."
     ),
     "install_route": (
-        "pip, but the version matters more than the command:\n"
-        "    python -m pip install KratosMultiphysics-all\n"
-        "That metapackage resolves the application set together and, at the "
-        "time of checking, lands on the 10.3.x line. Installing "
-        "`KratosMultiphysics` alone lets pip take the newest wheel, which is "
-        "where the glibc problem below starts. Verify immediately after "
-        "installing:\n"
+        "pip. Install, then IMMEDIATELY prove the import works — that check is "
+        "the whole install procedure, because a Kratos wheel can install "
+        "cleanly and still be unloadable (below).\n"
+        "    python -m pip install KratosMultiphysics "
+        "KratosStructuralMechanicsApplication KratosLinearSolversApplication\n"
         "    python -c 'import KratosMultiphysics as KM; "
-        "print(KM.KratosGlobals.Kernel.Version())'"
+        "print(KM.KratosGlobals.Kernel.Version())'\n"
+        "If that import fails on an older Linux, see the glibc pitfall — the "
+        "fix is a version change, not an environment variable.\n"
+        "The `KratosMultiphysics-all` metapackage resolves the whole "
+        "application set together and is convenient, but be aware of what it "
+        "currently does: it lands on 10.3.0 because the newer 10.3.1 "
+        "metapackage is unsatisfiable on PyPI (it requires application wheels "
+        "at 10.3.1 that were never published), so pip backtracks to the last "
+        "consistent set. That is an upstream packaging accident, not a "
+        "recommendation — it pins you to an older line than the newest working "
+        "release. Prefer naming the applications you actually need."
     ),
     "pitfalls": [
-        "[Integration][Install] THE 10.4.x WHEELS ARE MIS-TAGGED AND WILL "
-        "INSTALL ON A HOST THEY CANNOT RUN ON. "
+        "[Integration][Install] SOME KRATOS WHEELS ARE MIS-TAGGED AND WILL "
+        "INSTALL ON A HOST THEY CANNOT RUN ON. The affected range observed "
+        "here is 10.4.0 through 10.4.2 — NOT the whole 10.4 line. "
         "`kratosmultiphysics-10.4.2-1-cp312-cp312-manylinux_2_28_x86_64.whl` "
         "declares manylinux_2_28, so pip accepts it on any host with glibc >= "
-        "2.28 — but the shipped `Kratos.cpython-*.so` requires GLIBC_2.32 and "
-        "GLIBC_2.34. On glibc 2.31 the install reports success and the import "
-        "fails. Signal: `ImportError: /lib/x86_64-linux-gnu/libc.so.6: version "
+        "2.28, but its `Kratos.cpython-*.so` needs GLIBC_2.32 "
+        "(`__libc_single_threaded`) and GLIBC_2.34 (`pthread_once`). Tagged "
+        "honestly as manylinux_2_34 pip would have refused it. On glibc 2.31 "
+        "the install reports success and the import dies. Signal: "
+        "`ImportError: /lib/x86_64-linux-gnu/libc.so.6: version "
         "`GLIBC_2.32' not found (required by "
         "<site-packages>/KratosMultiphysics/.libs/Kratos.cpython-312-x86_64-"
         "linux-gnu.so)`. CRITICAL — the very next line Kratos prints is "
         "MISLEADING: `Unable to find KratosCore. Please make sure that your "
         "LD_LIBRARY_PATH or DYLD_LIBRARY_PATH environment variable includes "
         "the path to the Kratos libraries.` No value of LD_LIBRARY_PATH can "
-        "fix this; the library is found, it just cannot load against this "
-        "glibc. Do not spend time on that suggestion. Defense: check the host "
-        "glibc with `ldd --version | head -1` and downgrade — the 10.3.0 wheel "
-        "is `manylinux2014_x86_64.manylinux_2_17_x86_64` and needs no symbol "
-        "above GLIBC_2.16, so it loads on effectively any current Linux: "
-        "`python -m pip install 'KratosMultiphysics==10.3.0'`. Use "
-        "CONFIG_PROBES['kratos_glibc'] to check a wheel before trusting it.",
+        "fix this. The variable IS honoured — set it and the path in the error "
+        "changes — which is exactly why it wastes time: the library is found, "
+        "it simply cannot load against this glibc. Defense, in order: (1) "
+        "check the host with `ldd --version | head -1`; (2) try the NEWEST "
+        "release before assuming you must go backwards — upstream fixed this, "
+        "and 10.4.3 imports on glibc 2.31 with nothing above GLIBC_2.17, "
+        "verified in a clean environment; (3) only if the newest is also "
+        "broken, fall back to the 10.3.x line, whose wheel is "
+        "`manylinux2014_x86_64.manylinux_2_17_x86_64`. Do NOT pin to an old "
+        "release as a reflex — the mis-tag is a bug that gets fixed, so the "
+        "right response is to check, not to freeze. Use "
+        "CONFIG_PROBES['kratos_glibc'] on the installed package.",
 
         "[Integration][Discovery] Kratos is IMPORTED from whichever Python is "
         "running OASiS, and there is no interpreter override — so 'installed' "
@@ -616,33 +664,45 @@ _DUNE = {
         "backwards; follow this entry.",
 
         "[Integration][Install] mpi4py is an UNDECLARED dependency — pip will "
-        "not pull it, and DUNE refuses to import without it. In a clean "
-        "virtual environment `pip install dune-fem` completes successfully and "
-        "the very first `import dune.fem` stops with an instruction rather "
-        "than a traceback. Signal, verbatim and easy to miss because it does "
-        "not look like an error: `Please run` / `    pip install mpi4py` / "
+        "not pull it, and DUNE refuses to import without it. Confirmed from "
+        "the wheel metadata: neither dune-fem's nor dune-common's "
+        "Requires-Dist mentions mpi4py, yet the modules were built against "
+        "MPI. In a clean virtual environment `pip install dune-fem` completes "
+        "successfully and the very first `import dune.fem` fails. It IS a "
+        "traceback — a RuntimeError chained off a ModuleNotFoundError — so do "
+        "not expect a tidy one-line message. Signal, and this FIRST line is "
+        "the one worth grepping for rather than the tail: `The Dune modules "
+        "were configured using MPI. For the Python bindings to work, the "
+        "Python package 'mpi4py' is required.` The end of the same traceback "
+        "spells out the fix: `Please run` / `    pip install mpi4py` / "
         "`before rerunning your Dune script.` Defense: install the pair "
         "together — `python -m pip install dune-fem mpi4py`. mpi4py needs an "
         "MPI implementation with a working `mpicc` to build against.",
 
         "[Integration][FirstRun] DUNE JIT-COMPILES AGAINST WHATEVER PYTHON ITS "
-        "CMAKE FINDS, WHICH IS NOT NECESSARILY THE ONE RUNNING IT. The "
-        "generated modules are built by a CMake sub-build whose FindPython3 "
-        "can pick up a different interpreter that happens to be earlier on "
-        "PATH — a conda base environment is the usual culprit. Compilation "
-        "then SUCCEEDS and the failure appears at import, which makes it look "
-        "like a DUNE bug rather than an environment one. Signal: `ImportError: "
-        "<env>/.cache/dune-py/python/dune/generated/<module>.so: undefined "
-        "symbol: PyThreadState_GetUnchecked` — that symbol is CPython 3.13+, "
-        "so seeing it while running 3.12 means the build used 3.13 headers. "
-        "Any `undefined symbol: Py*` from a file under .cache/dune-py is this "
-        "same problem. Reproduced in a clean venv on this host with a conda "
-        "3.13 first on PATH. Defense: make the intended interpreter "
-        "unambiguous to CMake before the first import — set "
-        "`Python3_ROOT_DIR` to the environment prefix, set VIRTUAL_ENV (venv) "
-        "or CONDA_PREFIX (conda) to that same prefix and clear the other one, "
-        "and put its bin directory first on PATH. Then delete the poisoned "
-        "cache, because it will otherwise be reused.",
+        "CMAKE FINDS, WHICH IS NOT NECESSARILY THE ONE RUNNING IT — and the "
+        "precondition is one that automation hits and humans usually do not. "
+        "The generated modules are built by a CMake sub-build whose FindPython3 "
+        "picks an interpreter from the environment; if VIRTUAL_ENV is NOT set "
+        "— i.e. you invoked `<venv>/bin/python` by absolute path WITHOUT "
+        "activating the environment — and a different Python is earlier on "
+        "PATH, that other Python wins. A conda base environment on PATH is the "
+        "usual culprit. Note the shape of this: a normally ACTIVATED venv is "
+        "safe, which is why interactive users rarely see it and a tool "
+        "invoking an interpreter path routinely does. Compilation then "
+        "SUCCEEDS and the failure appears at import, so it looks like a DUNE "
+        "bug rather than an environment one. Signal: `ImportError: "
+        "<env-prefix>/.cache/dune-py/python/dune/generated/<module>.so: "
+        "undefined symbol: PyThreadState_GetUnchecked` — that symbol is "
+        "CPython 3.13+, so seeing it while running 3.12 means the build used "
+        "3.13 headers. Any `undefined symbol: Py*` from a file under "
+        ".cache/dune-py is this same problem. Reproduced in a clean venv here "
+        "with a conda 3.13 first on PATH and VIRTUAL_ENV unset. Defense, "
+        "verified to fix it: set VIRTUAL_ENV to the venv prefix (or "
+        "CONDA_PREFIX for a conda env, clearing the other), put its bin "
+        "directory first on PATH, DELETE the poisoned cache — it is reused "
+        "otherwise — and re-run. Setting `Python3_ROOT_DIR` as well is "
+        "harmless but was not needed: the fix works without it.",
 
         "[Integration][FirstRun] The DUNE JIT cache is NOT under ~/.cache — it "
         "lives inside the environment prefix, at `<env-prefix>/.cache/dune-py`. "
@@ -715,24 +775,28 @@ _FEBIO = {
         "rejected with `FATAL ERROR: Invalid command line option '<flag>'.` "
         "(`-v` is NOT a valid FEBio flag; use `-info`.)",
 
-        "[Integration][BuildConfig] MKL PRESENCE CHANGES WHICH LINEAR SOLVERS "
-        "EXIST, and the way to detect it is the DEFAULT SOLVER LINE, not a "
-        "feature list. `febio4 -info` prints a banner, `compiled on <date>`, "
-        "`FEBio version  = <version>`, `Starting without configuration file` "
-        "and `Default linear solver: skyline` — and nothing else. It does NOT "
-        "list build features, so grepping its output for MKL, MMG, HYPRE or "
-        "LEVMAR returns nothing whether or not they are compiled in, and any "
-        "instruction to detect a feature that way is unusable. Signal of a "
-        "no-MKL build: `Default linear solver: skyline`, confirmed here "
-        "against a CMakeCache with `USE_MKL:BOOL=OFF` and "
-        "`MKLROOT:FILEPATH=MKLROOT-NOTFOUND`, and by `ldd <binary>` showing "
-        "libgomp but no MKL library. Consequence to scope: any claim that "
-        "recommends or benchmarks the pardiso solver applies only to an "
-        "MKL-enabled build. It was not possible to check the MKL-enabled "
-        "behaviour here — no such build exists on this host — so pardiso "
-        "claims are recorded as unverified rather than confirmed. Defense: run "
-        "CONFIG_PROBES['febio_build'] and, for certainty about what was asked "
-        "for at configure time, `grep -E '^USE_|^MKLROOT' "
+        "[Integration][BuildConfig] MKL PRESENCE CHANGES THE DEFAULT LINEAR "
+        "SOLVER, and the way to detect it is that one line, not a feature "
+        "list. `febio4 -info` prints `compiled on <date>` and `FEBio version "
+        " = <version>`, then a banner, then `Starting without configuration "
+        "file` and `Default linear solver: <name>`. It does NOT list build "
+        "features, so grepping its output for MKL, MMG, HYPRE or LEVMAR "
+        "returns nothing whether or not they are compiled in; any instruction "
+        "to detect a feature that way is unusable. Signal of a no-MKL build: "
+        "`Default linear solver: skyline`, confirmed here against a CMakeCache "
+        "with `USE_MKL:BOOL=OFF` and `MKLROOT:FILEPATH=MKLROOT-NOTFOUND`, and "
+        "by `ldd <binary>` showing libgomp and no MKL library. Signal of an "
+        "MKL build: `Default linear solver: pardiso`. That second string was "
+        "NOT observed — no MKL-enabled FEBio exists on the machine this was "
+        "checked on — but it does not need to be guessed either: FEBio's "
+        "NumCore.cpp selects the default with `#ifdef PARDISO` "
+        "SetDefaultSolverType(\"pardiso\") `#else` "
+        "SetDefaultSolverType(\"skyline\"), so those two strings are the only "
+        "possibilities and the mapping is exact. Consequence to scope: any "
+        "claim recommending or benchmarking the pardiso solver applies only to "
+        "an MKL-enabled build, and none of its RUNTIME behaviour was checked "
+        "here. Defense: run CONFIG_PROBES['febio_build'] and, for what was "
+        "asked at configure time, `grep -E '^USE_|^MKLROOT' "
         "<febio-build-dir>/CMakeCache.txt`.",
 
         "[Integration][FirstRun] FEBio's own errors are clearly worded and "
@@ -746,7 +810,15 @@ _FEBIO = {
         "'<flag>'.` Note also that FEBio with NO arguments at all does not "
         "exit — it prints its banner and drops into its own interactive "
         "`febio>` prompt, which in an automated context is indistinguishable "
-        "from a hang. Always pass `-i <file>`.",
+        "from a hang. Always pass `-i <file>`. WORSE, AND THIS TRAPS THE "
+        "OBVIOUS PROBE: `-info` and `-h` do NOT exit either. They print and "
+        "then fall through to the same prompt, because FEBio returns "
+        "`prompt()` whenever no input file was given. So `febio4 -info` in a "
+        "script hangs forever unless stdin is already at EOF — which it "
+        "happens to be in some shells, making the bug intermittent and "
+        "confusing. Always redirect: `febio4 -info < /dev/null`. Note also "
+        "that `-v` is a genuine error rather than a prompt — it prints "
+        "`FATAL ERROR: Invalid command line option '-v'.` and exits 1.",
     ],
 }
 
@@ -780,24 +852,33 @@ _SPARTA = {
         "`SPARTA (24 Sep 2025)`, followed by `Running on N MPI task(s)`. "
         "Confirm that before trusting the path.",
 
-        "[Integration][BuildConfig] KOKKOS IS A COMPILE-TIME PACKAGE AND IS "
-        "ABSENT FROM A DEFAULT BUILD — every accelerated style depends on it. "
-        "Three distinct messages, all captured from real runs on a build "
-        "without it. Signal, command-line switch: `ERROR: Cannot use -kokkos "
-        "on without KOKKOS installed (../sparta.cpp:381)`. Signal, deck "
-        "command: `ERROR: Package kokkos command without KOKKOS package "
-        "enabled (../input.cpp:1507)`. Signal, style suffix: SPARTA answers "
-        "`ERROR: Unknown command: suffix kk (../input.cpp:244)` — note that "
-        "`suffix` is not a SPARTA command at all, so advice to 'use suffix kk' "
-        "is wrong regardless of the build; the switch is `-kokkos on` together "
-        "with `-sf kk`. Beware a misleading check: Kokkos-named symbols are "
-        "present in the binary even when the package is not installed, so "
-        "inspecting symbols does not answer the question. Defense: run "
-        "CONFIG_PROBES['sparta_packages'] — `make ps` in the source directory "
-        "prints `Installed YES/NO: package <NAME>` — and rebuild with the "
-        "package if you need it. Scope: only the REFUSAL messages were "
-        "observed, on a build without the package. Nothing here claims what "
-        "an accelerated run does or how much faster it is.",
+        "[Integration][BuildConfig] KOKKOS IS A SEPARATE BUILD AND IS ABSENT "
+        "FROM A DEFAULT ONE — every accelerated style depends on it. FOUR "
+        "distinct refusals, all captured from real runs on a build without it. "
+        "Signal, command-line switch: `ERROR: Cannot use -kokkos on without "
+        "KOKKOS installed (../sparta.cpp:381)`. Signal, deck command: `ERROR: "
+        "Package kokkos command without KOKKOS package enabled "
+        "(../input.cpp:1507)`. Signal, suffix switch: `ERROR: Using suffix kk "
+        "without KOKKOS package enabled (../sparta.cpp:521)`. Signal, `suffix` "
+        "as a DECK command: `ERROR: Unknown command: suffix kk "
+        "(../input.cpp:244)` — and that last one deserves care, because "
+        "SPARTA's own documentation contradicts it. There IS a doc/suffix.txt "
+        "describing a `suffix` command with styles off/on/kk, and it is listed "
+        "in the command index; the binary nevertheless has no such command, "
+        "because it was documented and never implemented. Anyone checking the "
+        "docs will think this entry is mistaken — it is not; the runtime "
+        "refusal is what governs. The working spelling is the command-line "
+        "pair `-kokkos on -sf kk`. Defense: use "
+        "CONFIG_PROBES['sparta_kokkos'], NOT the package probe — `make ps` "
+        "cannot answer this, because its PACKAGE list is only `fft python` and "
+        "KOKKOS is not a make package. Getting KOKKOS means a separate CMake "
+        "build producing a differently named binary (`spa_kokkos_omp` / "
+        "`spa_kokkos_cuda`), not a rebuild of this one. And do not try to "
+        "settle it by looking for Kokkos symbols: they are present precisely "
+        "BECAUSE the package is absent, since accelerator_kokkos.h defines "
+        "stub classes in its #else branch. Scope: only the REFUSAL messages "
+        "were observed, on a build without the package. Nothing here claims "
+        "what an accelerated run does or how much faster it is.",
 
         "[Integration][FirstRun] Bundled example decks reference data files "
         "(`species ar.species Ar`, `collide vss air air.vss`, `read_surf "
@@ -982,9 +1063,12 @@ PORTABILITY_EVIDENCE: dict[str, dict] = {
             "code paths could be exercised at all."
         ),
         "febio_with_mkl": (
-            "No MKL-enabled FEBio exists here, so what such a build reports "
-            "as its default linear solver was not observed. The claim is "
-            "limited to what the MKL-less build does report."
+            "No MKL-enabled FEBio exists here, so nothing about how the "
+            "pardiso solver BEHAVES at run time was observed. The one thing "
+            "that did not need observing is which string such a build prints "
+            "as its default solver: NumCore.cpp picks between exactly two "
+            "literals on `#ifdef PARDISO`, so that mapping is read from the "
+            "source rather than guessed."
         ),
         "sparta_with_kokkos": (
             "The available SPARTA has KOKKOS uninstalled, so only the "

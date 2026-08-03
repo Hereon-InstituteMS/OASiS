@@ -51,16 +51,54 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
-# Prefer the Debug-built deal.II at ~/Schreibtisch/dealii-debug
-# (Assert macros enabled — unlocks the Assert-gated Signal families
-# like ExcDimensionMismatch). Falls back to the conda Release install
-# (~/miniconda3/envs/ofa-dealii) which leaves Assert as a no-op.
+# Which deal.II do the deal.II fixtures compile against?
+#
+# Prefer a DEBUG build wherever one exists, because Assert is compiled out in
+# Release and the Assert-gated Signal families (ExcDimensionMismatch,
+# ExcIndexRange, ExcDivideByZero, …) simply cannot be produced by a Release
+# library. A fixture asserting such a Signal against a Release deal.II is not
+# testing anything.
+#
+# This used to be two hardcoded paths from one developer's machine
+# (~/Schreibtisch/dealii-debug and ~/miniconda3/envs/ofa-dealii). Neither
+# exists on this host, and neither would exist on a stranger's, so the runner
+# silently pointed every deal.II fixture at a directory that was not there.
+# Now: honour an explicit override, then ask the deal.II backend's own
+# discovery — the same code path the MCP server uses, so the fixtures and the
+# server cannot disagree about which install is in play — and only then fall
+# back to the historical guesses.
 _DEBUG_PREFIX = Path.home() / "Schreibtisch" / "dealii-debug"
 _RELEASE_PREFIX = Path.home() / "miniconda3" / "envs" / "ofa-dealii"
-DEFAULT_DEALII_PREFIX = (
-    _DEBUG_PREFIX if (_DEBUG_PREFIX / "lib" / "libdeal_II.g.so").is_file()
-    else _RELEASE_PREFIX
-)
+
+
+def _has_debug_library(p: Path) -> bool:
+    return any((p / "lib").glob("libdeal_II.g.so*")) or \
+        any((p / "lib").glob("libdeal.ii.g.so*"))
+
+
+def _discover_dealii_prefix() -> Path:
+    env = os.environ.get("DEALII_PREFIX") or os.environ.get("DEAL_II_DIR")
+    if env and Path(env).is_dir():
+        return Path(env)
+    if _has_debug_library(_DEBUG_PREFIX):
+        return _DEBUG_PREFIX
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+        from backends.dealii.backend import _find_dealii  # type: ignore
+        found = _find_dealii()
+        if found is not None:
+            # A source tree keeps its libraries under build/.
+            for candidate in (Path(found) / "build", Path(found)):
+                if candidate.is_dir() and any(
+                        (candidate / "lib").glob("libdeal_II*.so*")):
+                    return candidate
+            return Path(found)
+    except Exception:
+        pass
+    return _RELEASE_PREFIX
+
+
+DEFAULT_DEALII_PREFIX = _discover_dealii_prefix()
 
 
 @dataclass
