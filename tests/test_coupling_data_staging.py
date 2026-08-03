@@ -1,12 +1,10 @@
-"""Data-file staging for the COUPLED path (T15 campaign fix, 2026-08).
+"""Data-file staging for the COUPLED path.
 
-The T15 evaluation campaign (rarefied conjugate heat transfer, SPARTA DSMC
-<-> FEM solid) showed that the coupled path did no data staging at all:
-SpartaBackend.run() staged species/surf files for single runs (#42), but
-couple()/run_coupling executed raw participant commands in fresh work_dirs,
-so SPARTA died with 'Cannot open species file ar.species'
-(../particle.cpp:711) unless the agent hand-copied every file. Several
-agents gave up and substituted kinetic-theory formulas for the DSMC run.
+The coupled path used to do no data staging at all: SpartaBackend.run()
+staged species/surf files for single runs (#42), but couple()/run_coupling
+executed raw participant commands in fresh work_dirs, so SPARTA died with
+'Cannot open species file ar.species' (../particle.cpp:711) unless every
+file had been hand-copied first.
 
 Fixes under test:
   1. Participant.data_files — the driver stages listed files into work_dir
@@ -116,7 +114,7 @@ def test_stage_deck_refs_from_extra_dirs(tmp_path):
 
 def test_task_data_dir_beats_distribution(tmp_path, monkeypatch):
     """A task-specific circle.surf must win over a distribution file of
-    the same name — they are different geometries (T15)."""
+    the same name — they are different geometries."""
     dist = tmp_path / "dist"
     (dist / "data").mkdir(parents=True)
     (dist / "data" / "circle.surf").write_text("distribution circle\n")

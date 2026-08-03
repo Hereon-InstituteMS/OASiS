@@ -1,11 +1,10 @@
-"""Gen-only tests for the DUNE-fem poisson_3d_varcoeff generator (E5).
+"""Gen-only tests for the DUNE-fem poisson_3d_varcoeff generator.
 
-Created 2026-08-01 (deliverable E5): 3D VARIABLE-COEFFICIENT Poisson on
-[0, L]^3 with manufactured solution, exact Dirichlet data, Lagrange
-order as a parameter, uniform refinement and per-level L2/H1 error
-lines. This is the first genuinely hard DUNE-fem family (the existing
-poisson_2d is a single constant-force instance with no error
-measurement).
+3D VARIABLE-COEFFICIENT Poisson on [0, L]^3 with manufactured
+solution, exact Dirichlet data, Lagrange order as a parameter, uniform
+refinement and per-level L2/H1 error lines. This is the first genuinely
+hard DUNE-fem family (the existing poisson_2d is a single
+constant-force instance with no error measurement).
 
 These tests do NOT require dune.fem — they pin the *generator*
 contract only:
@@ -27,19 +26,11 @@ contract only:
     kappa-positivity/ellipticity guard) and the generator refuses to
     emit code for them.
 
-The live execution gate is the convergence run on this install
-(conda env dune-fem-env, dune-fem 2.10, 2026-08-01), dev-draw
-parameters L=2, a=2, b=1, c=1.5, d=0.5, amp=1.3, kappa=(2, -0.75,
-0.5, 1.0), 4 levels:
-
-  order=1 (n0=4): L2 EOCs 1.984 / 1.996 / 1.999 (theory 2),
-                  H1 EOCs 1.028 / 1.007 / 1.002 (theory 1)
-  order=2 (n0=2): L2 EOCs 1.628(pre-asymptotic) / 2.923 / 2.982
-                  (theory 3),
-                  H1 EOCs 1.059(pre-asymptotic) / 1.990 / 1.998
-                  (theory 2)
-
-(recorded also in the module KNOWLEDGE).
+The live execution gate (outside pytest, dune-fem 2.10) is a
+refinement run that must show the emitted L2/H1 EOCs approaching the
+theoretical rates for the chosen Lagrange order k -- L2 -> k+1 and
+H1 -> k. The EOCs themselves are outputs of that run and are
+deliberately NOT recorded here or in the module KNOWLEDGE.
 """
 from __future__ import annotations
 
