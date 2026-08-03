@@ -28,8 +28,9 @@ def _damage_3d_cycle(params: dict) -> str:
     E = params.get("E", 1000.0)
     nu = params.get("nu", 0.3)
     eps_max = params.get("max_strain", 0.1)
-    D_inf = params.get("D_inf", 0.5)
-    beta = params.get("damage_rate", 2.0)
+    Dmax = params.get("Dmax", 0.9)
+    alpha = params.get("alpha", 2.0)
+    mu = params.get("mu", 0.5)
     return f'''\
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <febio_spec version="4.0">
@@ -43,15 +44,19 @@ def _damage_3d_cycle(params: dict) -> str:
     </solver>
   </Control>
   <Material>
-    <material id="1" type="damage">
+    <material id="1" name="Material1" type="elastic damage">
       <density>1.0</density>
-      <D_inf>{D_inf}</D_inf>
-      <beta>{beta}</beta>
       <elastic type="neo-Hookean">
         <density>1.0</density>
         <E>{E}</E>
         <v>{nu}</v>
       </elastic>
+      <damage type="CDF Weibull">
+        <Dmax>{Dmax}</Dmax>
+        <alpha>{alpha}</alpha>
+        <mu>{mu}</mu>
+      </damage>
+      <criterion type="DC strain energy density"/>
     </material>
   </Material>
   <Mesh>
@@ -68,15 +73,11 @@ def _damage_3d_cycle(params: dict) -> str:
     <Elements type="hex8" mat="1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="fix_bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="load_top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
+    <NodeSet name="load_top">5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="fix_bottom">
@@ -179,61 +180,33 @@ KNOWLEDGE = {
         },
         "pitfalls": [
             (
-                "[Numerical] Damage is HISTORY-DEPENDENT and "
-                "MONOTONIC: once D has been incremented in an "
-                "element, it cannot decrease. Re-running with a "
-                "smaller load does NOT 'heal' the damage. Signal: "
-                "running the same model twice with cumulative "
-                "displacement-history boundary conditions gives a "
-                "different post-unload state than a single longer "
-                "run — that's the history coupling, not a bug. "
-                "(Audit 2026-06-02.)"
+                "[Numerical] Damage is IRREVERSIBLE and, once it reaches its cap, SATURATED: a second identical load cycle is softer than the first only while D is still below Dmax, and identical to it afterwards. "
+                "WRONG: expecting every further cycle to soften, or reading two identical cycles as proof that damage is not working. "
+                "RIGHT: to see cycle-by-cycle softening, keep Dmax high enough and the damage-CDF scale (<mu> on `CDF Weibull`) large enough that D is still climbing at the end of cycle 1. "
+                "Signal: none — measure the peak stress of each cycle from <element_data data=\"sz\"/> on a 0 -> A -> 0 -> A history. Executed on two meshes at Dmax = 0.0, 0.3, 0.6 and 0.9: at Dmax = 0 and 0.3 the two cycles had bit-identical peaks (D had already saturated at its cap during cycle 1), while at Dmax = 0.6 and 0.9 cycle 2 was markedly softer than cycle 1, more so the higher the cap. "
+                "(Executed 2026-08-03, FEBio 4.12.0.86045466d.)"
             ),
             (
-                "[Input] The `elastic damage` wrapper (CORRECTED "
-                "2026-08-03: NOT `damage`, which is not a "
-                "registered material — see the materials block) "
-                "requires a nested "
-                "elastic material — it cannot stand alone. "
-                "Forgetting the <elastic> child or putting the "
-                "elastic parameters at the top level produces a "
-                "parse error. Signal: FEBio aborts with "
-                "[FALSIFIED 2026-08-03: the message text quoted here "
-                "does not occur anywhere in the FEBio 4.12.0.86045466d "
-                "binary or any of its shared libraries (`strings` over "
-                "febio4 + all 12 .so files, 267541 strings), so this "
-                "Signal can never match on 4.12. The physics reasoning "
-                "is desk research and was NOT executed] `damage material "
-                "requires <elastic> child` or "
-                "`unknown material parameter E in damage material`. "
-                "(Audit 2026-06-02.)"
+                "[Input] `elastic damage` needs THREE properties, not one, and each missing one is reported by its own name. There is no material type called \"damage\". "
+                "WRONG: <material id=\"1\" name=\"M1\" type=\"damage\">, or an `elastic damage` material with the elastic parameters written flat at the top level. "
+                "RIGHT, complete and runnable: <material id=\"1\" name=\"M1\" type=\"elastic damage\"><density>1.0</density><elastic type=\"neo-Hookean\"><density>1</density><E>10</E><v>0.3</v></elastic><damage type=\"CDF Weibull\"><Dmax>0.9</Dmax><alpha>2.0</alpha><mu>0.5</mu></damage><criterion type=\"DC strain energy density\"/></material>. "
+                "Signal: for the unregistered type, `tag \"material\" (line N) : invalid value for attribute \"type\"`. For a missing property, `Component \"M1\" needs to have property \"elastic\" defined (line N)` — and the quoted property name changes to \"damage\" or \"criterion\" depending on which one is absent, so the message tells you exactly what to add. For flat parameters, `tag \"E\" (line N) : unrecognized tag`. All five variants executed. Note the criterion names are prefixed DC — `DC strain energy density`, `DC von Mises stress`, `DC max shear stress` and so on — so the bare physics name is rejected. "
+                "(Executed 2026-08-03, FEBio 4.12.0.86045466d.)"
             ),
             (
-                "[Numerical] D_inf < 1 leaves residual stiffness "
-                "(1 - D_inf) * E_elastic at infinite strain. "
-                "Setting D_inf == 1 means complete loss of "
-                "stiffness — FEBio struggles past D ~ 0.99 "
-                "because the effective stiffness goes to zero and "
-                "Newton stalls. Signal: [FALSIFIED 2026-08-03: FEBio "
-                "does not use NOX — neither `NOX` nor `DIVERGED` occurs "
-                "anywhere in the 4.12 binary or its libraries. On a "
-                "failed Newton step FEBio prints `------- failed to "
-                "converge at time : <t>` and, if the step cannot be "
-                "retried, `E R R O R   T E R M I N A T I O N` with exit "
-                "1] NOX residual stops "
-                "decreasing once max(D) approaches 0.99; use "
-                "D_inf <= 0.95 in practice. (Audit 2026-06-02.)"
+                "[Numerical] The damage cap is spelled <Dmax> on the <damage> CDF property, it is RANGE-CHECKED to the closed interval [0, 1], and Dmax = 1 is legal — it does not stall the solver on its own. What does bite is the softening: a fully damaged region loses its stiffness and its elements can invert. "
+                "WRONG: <Dmax>1.2</Dmax> or a negative value. "
+                "RIGHT: <damage type=\"CDF Weibull\"><Dmax>0.9</Dmax><alpha>2.0</alpha><mu>0.5</mu></damage>. "
+                "Signal: an out-of-range cap gives `Invalid value for parameter:` followed by `.Dmax` — note the EMPTY name before the dot, because the CDF property is unnamed, so do not search for a material name there — then `Model initialization failed` and exit 1. This fires at initialisation, AFTER the deck reads `...SUCCESS!`. Executed at Dmax = 1.0 (accepted, runs), 1.2 and -0.1 (both rejected). "
+                "The softening failure is separate and is MESH-DEPENDENT, which is the part worth knowing: the same deck at the same Dmax ran to completion on a coarse mesh and failed on a finer one with `48 negative jacobians detected.` followed by `------- failed to converge at time : <t>`. So a damage model that converges is not thereby validated — refine and re-run before trusting it. "
+                "(Executed 2026-08-03, FEBio 4.12.0.86045466d.)"
             ),
             (
-                "[Numerical] On a cyclic load test, the reload "
-                "stiffness on cycle n+1 is (1 - D_n) times the "
-                "initial stiffness. If beta is too high (rapid "
-                "damage saturation), the second loading cycle "
-                "already shows ~D_inf damage and no further "
-                "softening accumulates. Signal: the stress-strain "
-                "loop on cycle 2 looks identical to cycle 3 — "
-                "damage has saturated; reducing beta restores "
-                "cycle-by-cycle softening. (Audit 2026-06-02.)"
+                "[Numerical] The damage-rate parameters on `CDF Weibull` are <alpha> (the Weibull shape) and <mu> (the scale) — there is no parameter called beta. Choose them so that D is still climbing over the strain range you care about; if the CDF saturates early, every cycle after the first is identical and the model looks elastic-with-a-constant-knockdown rather than progressively damaging. "
+                "WRONG: <beta>2.0</beta> on the damage property, or a <mu> so small that D reaches Dmax within the first few load steps. "
+                "RIGHT: <damage type=\"CDF Weibull\"><Dmax>0.9</Dmax><alpha>2.0</alpha><mu>0.5</mu></damage>, then confirm by comparing consecutive cycle peaks. "
+                "Signal: none — the saturated case runs perfectly cleanly and its giveaway is that consecutive cycle peaks are EQUAL to printed precision. Executed: with a small scale the cycle-2 peak equalled the cycle-1 peak exactly while still sitting below the undamaged reference, i.e. the knockdown was already fully applied during cycle 1. The registered alternatives in this slot are `CDF Simo`, `CDF log-normal`, `CDF Weibull`, `CDF step`, `CDF quintic`, `CDF gamma` and `CDF user`. "
+                "(Executed 2026-08-03, FEBio 4.12.0.86045466d.)"
             ),
         ],
     },
