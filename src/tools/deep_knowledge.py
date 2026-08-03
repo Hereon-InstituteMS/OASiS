@@ -468,8 +468,8 @@ _FENICS_KNOWLEDGE = {
             "Not all element families support all cell types — check Basix docs for compatibility. Measured on basix 0.10: CR and Regge are simplex-only; iso is not implemented on tetrahedra; Lagrange on pyramid stops at degree 2",
             "Bubble element minimum degree depends on cell type: 3 for triangle, 4 for tet, 2 for quad, 2 for hex",
             "Serendipity and DPC elements only available on quads/hexes",
-            "[API] Some families are reachable ONLY through the basix.ElementFamily ENUM, not the family string. Hermite is the concrete case: basix.ufl.element('Hermite', 'triangle', 3) raises ValueError 'Unknown element family: Hermite with cell type triangle', while basix.ufl.element(basix.ElementFamily.Hermite, basix.CellType.triangle, 3) builds the 10-dof C1 element. (Verified empirically 2026-08-03, basix 0.10.0.)",
-            "[API] 'CG' still resolves (with a DeprecationWarning '\"CG\" element name is deprecated. Consider using \"Lagrange\" or \"P\" instead') — it is NOT rejected. 'P' also resolves. The name that genuinely raises ValueError 'Unknown element family: P1 with cell type triangle' is the old DOLFIN degree-suffixed form 'P1'. (Verified empirically 2026-08-03 — corrects an older catalog claim that 'CG' raises.)",
+            "[API] Some families are reachable ONLY through the basix.ElementFamily ENUM, not the family string. Hermite is the concrete case. Signal: basix.ufl.element('Hermite', 'triangle', 3) raises ValueError 'Unknown element family: Hermite with cell type triangle', while basix.ufl.element(basix.ElementFamily.Hermite, basix.CellType.triangle, 3) builds the 10-dof C1 element. (Verified empirically 2026-08-03, basix 0.10.0.)",
+            "[API] 'CG' still resolves. Signal: basix.ufl.element('CG', 'triangle', 1) returns a valid element and only emits a DeprecationWarning ( '\"CG\" element name is deprecated. Consider using \"Lagrange\" or \"P\" instead') — it is NOT rejected. 'P' also resolves. The name that genuinely raises ValueError 'Unknown element family: P1 with cell type triangle' is the old DOLFIN degree-suffixed form 'P1'. (Verified empirically 2026-08-03 — corrects an older catalog claim that 'CG' raises.)",
         ],
     },
 
@@ -710,7 +710,7 @@ _FENICS_KNOWLEDGE = {
             "Direct solvers fail silently for very large problems — check ksp_monitor for divergence",
             "NewtonSolver deprecated in 0.10 — use NonlinearProblem.solve() instead. It is not merely advisory: constructing dolfinx.nls.petsc.NewtonSolver(comm, problem) around a 0.10 NonlinearProblem emits a DeprecationWarning AND then fails with AttributeError: 'NonlinearProblem' object has no attribute 'a' (verified 2026-08-03). Any pitfall text below that names NewtonSolver.solve as its signal is describing a 0.9-era code path.",
             "snes_atol default is 1e-50 (effectively disabled) — you MUST set it explicitly. Measured defaults on petsc4py 3.24.4: (rtol, atol, stol, max_it) = (1e-8, 1e-50, 1e-8, 50) (verified 2026-08-03)",
-            "[API] pc_type 'bddc' / 'fieldsplit' / hypre 'ams' cannot be used as bare option dicts — each needs extra setup (MATIS operator, field splits, discrete-gradient operator respectively) and otherwise aborts in KSPSetUp with PETSc error 62 / 77 / 83 (verified 2026-08-03)",
+            "[API] pc_type 'bddc' / 'fieldsplit' / hypre 'ams' cannot be used as bare option dicts — each needs extra setup (MATIS operator, field splits, discrete-gradient operator respectively). Signal: LinearProblem(..., petsc_options={'pc_type': 'bddc'}) aborts inside KSPSetUp with PETSc error code 62; 'fieldsplit' with error 77; hypre 'ams' with error 83 (verified 2026-08-03)",
         ],
         "by_physics": {
             "poisson": "CG + hypre/GAMG (or LU for small)",
@@ -771,7 +771,7 @@ _FENICS_KNOWLEDGE = {
             "Periodic BCs require dolfinx_mpc extension — not natively in DOLFINx (confirmed: no periodic-constraint API anywhere in dolfinx 0.10)",
             "Dirichlet value type must match: np.array([0.0]*gdim, dtype=default_scalar_type) for a vector space, scalar for a scalar space. A scalar on a vector space raises RuntimeError 'Rank mismatch between Constant and function space in DirichletBC' (verified 2026-08-03 — it is a dolfinx rank check, NOT a numpy broadcast error)",
             "For enclosed flows (all Dirichlet velocity): pin pressure at one DOF to remove nullspace",
-            "[API] locate_dofs_topological on a DG FunctionSpace returns an EMPTY dof array for boundary facets, so a strong DirichletBC on a DG space is a silent no-op. Impose inflow/boundary data weakly through a ds integral instead. (Verified empirically 2026-08-03: DG1 on a 8x8 unit square, x=0 facets -> 0 dofs located.)",
+            "[API] A strong DirichletBC on a DG FunctionSpace is a silent no-op — impose inflow/boundary data weakly through a ds integral instead. Signal: fem.locate_dofs_topological on a DG1 space with the x=0 boundary facets of an 8x8 unit square returns an EMPTY array (0 dofs), so the BC constrains nothing and no error is raised. (Verified empirically 2026-08-03.)",
         ],
     },
 
@@ -929,8 +929,8 @@ _FENICS_KNOWLEDGE = {
         },
         "pitfalls": [
             "[API] In recent dolfinx, mesh.topology.create_connectivity(fdim, tdim) is no longer a hard prerequisite for locate_entities_boundary / locate_dofs_topological — connectivity is built lazily on first need. Calling it explicitly is harmless and is the safer tutorial pattern, but its ABSENCE no longer triggers an exception in current dolfinx. Signal: in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns dof indices without that step. EXCEPTION worth knowing (re-verified 2026-08-03 on 0.10.0): dolfinx.mesh.exterior_facet_indices(mesh.topology) is still eager and raises RuntimeError 'Facet to cell connectivity has not been computed.' on a fresh mesh — so the common 'grab all boundary facets' idiom DOES need create_connectivity(fdim, tdim) even though locate_* does not. ds and dS assembly do not. (Verified empirically 2026-06-01; scope re-measured 2026-08-03.)",
-            "[API] dolfinx.default_scalar_type for Constants and Function arrays so dtype matches the PETSc build (float64 if PETSc is real, complex128 if PETSc is complex). Signal (re-measured 2026-08-03 on a REAL conda-forge build): assembling a ufl form that carries an imaginary coefficient raises ValueError 'Unexpected complex value in real expression.' from fem.form, and writing a complex value into a real Function array raises TypeError \"float() argument must be a string or a real number, not 'complex'\". Note fem.Constant(mesh, 1+2j) itself does NOT raise — the failure surfaces at form compilation / array assignment, not at Constant construction.",
-            "[API] VTXWriter (ADIOS2 backend) supports only Lagrange / DG element families. Mixed / Nedelec / BDM / RT Functions cannot be written. Signal (exact text, re-measured 2026-08-03 on 0.10.0): VTXWriter construction raises RuntimeError 'Only (discontinuous) Lagrange functions are supported. Interpolate Functions before output.' — the older quoted strings 'Cannot interpolate function to the VTX output basis' / 'ADIOS2 VTX only supports Lagrange elements' do NOT appear in current dolfinx, and the error fires at VTXWriter(...) construction, not at .write().",
+            "[API] dolfinx.default_scalar_type for Constants and Function arrays so dtype matches the PETSc build (float64 if PETSc is real, complex128 if PETSc is complex). Signal: [re-measured 2026-08-03 on a REAL conda-forge build] assembling a ufl form that carries an imaginary coefficient raises ValueError 'Unexpected complex value in real expression.' from fem.form, and writing a complex value into a real Function array raises TypeError \"float() argument must be a string or a real number, not 'complex'\". Note fem.Constant(mesh, 1+2j) itself does NOT raise — the failure surfaces at form compilation / array assignment, not at Constant construction.",
+            "[API] VTXWriter (ADIOS2 backend) supports only Lagrange / DG element families. Mixed / Nedelec / BDM / RT Functions cannot be written. Signal: [exact text, re-measured 2026-08-03 on 0.10.0] VTXWriter construction raises RuntimeError 'Only (discontinuous) Lagrange functions are supported. Interpolate Functions before output.' — the older quoted strings 'Cannot interpolate function to the VTX output basis' / 'ADIOS2 VTX only supports Lagrange elements' do NOT appear in current dolfinx, and the error fires at VTXWriter(...) construction, not at .write().",
             "[Physics] Pure-Neumann Poisson admits the constant null space — the solution is determined only up to a constant. Either pin one DOF (DirichletBC on a single point) or add a Lagrange multiplier enforcing mean(u) = 0. Signal: LinearProblem.solve returns successfully (CG with pc_type='none' even converges without raising), but the resulting Function array has a HUGE additive offset accommodating the null space — np.array shows max ≈ min ≈ O(1e6) with tiny std (e.g. max=2.18e+06, std=112 on an 8x8 unit square with f=1). The 'KSP fails' alternative does NOT typically fire; you observe the bug as the un-pinned constant. (Verified empirically 2026-06-01.)",
             "[Syntax] For non-unit kappa coefficients: define as fem.Constant for spatially uniform, or fem.Function (interpolated) for spatially varying. Plain Python floats inside ufl forms work for unit coefficients but lose unit metadata. Signal: ufl form runs but the assembled stiffness scale disagrees with the analytic kappa-scaled stiffness by exactly the kappa value (when float coefficient was forgotten).",
         ],
@@ -986,8 +986,8 @@ _FENICS_KNOWLEDGE = {
             "trial' does not appear in current dolfinx.)",
             "[Syntax] Dirichlet BC value for a vector elasticity "
             "space must be np.array([0.0]*gdim, dtype="
-            "default_scalar_type) — not scalar 0. Signal "
-            "(re-measured 2026-08-03 on dolfinx 0.10.0): "
+            "default_scalar_type) — not scalar 0. Signal: ["
+            "[re-measured 2026-08-03 on dolfinx 0.10.0] "
             "fem.dirichletbc(0.0, dofs, V) on a vector space "
             "raises RuntimeError 'Rank mismatch between Constant "
             "and function space in DirichletBC'. This is a "
@@ -996,9 +996,9 @@ _FENICS_KNOWLEDGE = {
             "shape () into shape (gdim,)' does NOT appear.",
             "[Physics] Plane strain vs plane stress: lambda must "
             "be adjusted. Plane stress uses lambda_star = "
-            "2*lambda*mu/(lambda+2*mu). Signal (MEASURED "
+            "2*lambda*mu/(lambda+2*mu). Signal: [MEASURED "
             "2026-08-03, cantilever 1.0 x 0.2, P2 vector "
-            "Lagrange, 40x8 triangles, end traction): the "
+            "Lagrange, 40x8 triangles, end traction] the "
             "plane-STRAIN tip deflection is a factor (1 - nu^2) "
             "of the plane-STRESS one — 0.90941 measured vs "
             "0.9100 predicted at nu=0.3, and 0.79100 vs 0.7975 "
@@ -1010,7 +1010,7 @@ _FENICS_KNOWLEDGE = {
             "[Numerical] Near-incompressible (nu > 0.49): a mixed "
             "(u, p) formulation is the robust choice, but the "
             "severity of locking depends strongly on ELEMENT "
-            "ORDER and mesh, not just on nu. MEASURED 2026-08-03 "
+            "ORDER and mesh, not just on nu. Signal: [MEASURED 2026-08-03] "
             "(same cantilever, tip deflection vs a P2/P1 "
             "Taylor-Hood reference): "
             "P1 triangles lock by 7.2x / 16.5x / 19.5x at "
@@ -1026,9 +1026,9 @@ _FENICS_KNOWLEDGE = {
             "[Numerical] For GAMG/AMG: provide the near-nullspace "
             "(rigid body modes — 3 translations + 3 rotations in "
             "3D) via A.setNearNullSpace(PETSc.NullSpace()."
-            "create(vectors=rbm)). Signal (MEASURED 2026-08-03, "
+            "create(vectors=rbm)). Signal: [MEASURED 2026-08-03, "
             "dolfinx 0.10.0; P1 tetrahedral cantilever 2x1x1, "
-            "CG + GAMG, rtol 1e-8): WITHOUT the near-nullspace "
+            "CG + GAMG, rtol 1e-8] WITHOUT the near-nullspace "
             "the solve still CONVERGES (reason 2) in 31 / 38 / "
             "41 iterations at 1911 / 7623 / 19575 dofs; WITH the "
             "6 rigid-body modes it takes 16 / 16 / 23. "
@@ -1052,9 +1052,9 @@ _FENICS_KNOWLEDGE = {
             "nu=0.3 against a predicted 0.9100 (verified "
             "empirically 2026-08-03).",
             "[API] dolfinx.fem.functionspace rejects element "
-            "family names that basix does not register. Signal "
-            "(re-measured 2026-08-03 on dolfinx 0.10.0 / basix "
-            "0.10.0): the DOLFIN degree-suffixed name 'P1' "
+            "family names that basix does not register. Signal: ["
+            "[re-measured 2026-08-03 on dolfinx 0.10.0 / basix "
+            "0.10.0] the DOLFIN degree-suffixed name 'P1' "
             "raises ValueError 'Unknown element family: P1 with "
             "cell type triangle'. 'CG' however STILL WORKS — it "
             "only emits a DeprecationWarning ('\"CG\" element "
@@ -1375,10 +1375,10 @@ _FENICS_KNOWLEDGE = {
                 "[Numerical] Without stabilization, the Galerkin "
                 "method oscillates whenever the CELL Peclet "
                 "number Pe_h = |b|*h/(2*kappa) exceeds ~1. "
-                "Signal (MEASURED 2026-08-03, dolfinx 0.10.0, "
+                "Signal: [MEASURED 2026-08-03, dolfinx 0.10.0, "
                 "P1 on the unit square, b=(1,0), kappa=1e-3, "
                 "u=0 at x=0 and u=1 at x=1 — an exponential "
-                "outflow layer): the Galerkin undershoot is "
+                "outflow layer] the Galerkin undershoot is "
                 "-6.28 / -3.00 / -1.72 / -1.41 / -1.02 / -0.56 "
                 "/ -0.08 at N = 8 / 16 / 32 / 64 / 128 / 256 / "
                 "512 (Pe_h = 62.5 down to 0.98). "
@@ -1400,9 +1400,9 @@ _FENICS_KNOWLEDGE = {
                 "1/Pe_h) using ufl.CellDiameter inside the "
                 "dolfinx fem.form. A single global tau Constant "
                 "does not vanish as h -> 0 and leaves a fixed "
-                "streamline-diffusion floor. Signal (MEASURED "
+                "streamline-diffusion floor. Signal: [MEASURED "
                 "2026-08-03; MMS u = sin(pi x) sin(pi y), "
-                "b=(1,1), kappa=0.01, N = 8..128): with the "
+                "b=(1,1), kappa=0.01, N = 8..128] with the "
                 "per-cell CellDiameter tau the L2 rates are "
                 "1.91 / 1.57 / 1.62 / 1.84 (P1, approaching 2 "
                 "as Pe_h drops below 1) — O(h^2) as claimed. "
@@ -1483,9 +1483,9 @@ _FENICS_KNOWLEDGE = {
             "load_stepping": "For large deformations: apply load in increments, solving at each step",
         },
         "pitfalls": [
-            "[VERSION NOTE 2026-08-03] Several signals below name dolfinx.nls.petsc.NewtonSolver.solve. On dolfinx 0.10.0 that class is DEPRECATED and cannot be driven by the 0.10 NonlinearProblem at all — NewtonSolver(comm, problem) emits a DeprecationWarning and then raises AttributeError: 'NonlinearProblem' object has no attribute 'a'. Read those signals as PETSc SNES signals instead: use NonlinearProblem(..., petsc_options_prefix=..., petsc_options={'snes_monitor': ''}) and inspect problem.solver.getConvergedReason() / getIterationNumber().",
+            "[API] Several signals below name dolfinx.nls.petsc.NewtonSolver.solve, which is a dolfinx 0.9-era code path. Signal: on dolfinx 0.10.0, NewtonSolver(MPI.COMM_WORLD, problem) around a 0.10 NonlinearProblem emits a DeprecationWarning and then raises AttributeError: 'NonlinearProblem' object has no attribute 'a'. (Verified empirically 2026-08-03.) Read those signals as PETSc SNES signals instead: use NonlinearProblem(..., petsc_options_prefix=..., petsc_options={'snes_monitor': ''}) and inspect problem.solver.getConvergedReason() / getIterationNumber().",
             "[Numerical] Large load steps cause Newton divergence in hyperelasticity. Use incremental load stepping: ramp the dirichletbc value or body-force fem.Constant across N steps, solving at each level. Signal: the SNES converged reason goes negative (DIVERGED_LINE_SEARCH / DIVERGED_MAX_IT) with the residual at the last iter still O(1); reducing the per-step load increment by 2-4x recovers convergence. (Claim inherited; the NewtonSolver-specific wording was corrected 2026-08-03 — see the version note above.)",
-            "[Numerical] Near-incompressible regime (nu > 0.49) can make the pure-displacement formulation lock — use a dolfinx mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) FunctionSpace or the F-bar method (uniform-pressure projection). CAUTION on magnitude (2026-08-03): the previously quoted signal ('Cook-membrane tip deflection at nu = 0.4999 with pure P2 displacement is O(1e-3) of analytic') is not supported by measurement in the linear analogue — a P2 cantilever at nu=0.4999 came within 0-6% of the P2/P1 Taylor-Hood reference on every mesh tested, while P1 was 9x-20x too stiff. Expect the severe locking at P1, not at P2; measure the ratio for your own geometry rather than assuming orders of magnitude. (Linear-elasticity measurement 2026-08-03; the hyperelastic Cook membrane itself was NOT re-run.)",
+            "[Numerical] Near-incompressible regime (nu > 0.49) can make the pure-displacement formulation lock — use a dolfinx mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) FunctionSpace or the F-bar method (uniform-pressure projection). Signal: [CAUTION on magnitude, 2026-08-03] the previously quoted signal ('Cook-membrane tip deflection at nu = 0.4999 with pure P2 displacement is O(1e-3) of analytic') is not supported by measurement in the linear analogue — a P2 cantilever at nu=0.4999 came within 0-6% of the P2/P1 Taylor-Hood reference on every mesh tested, while P1 was 9x-20x too stiff. Expect the severe locking at P1, not at P2; measure the ratio for your own geometry rather than assuming orders of magnitude. (Linear-elasticity measurement 2026-08-03; the hyperelastic Cook membrane itself was NOT re-run.)",
             "[Physics] Neo-Hookean / any compressible hyperelastic model requires J = det(F) > 0 everywhere. A locally inverted element gives J <= 0 and the log(J) term blows up. Signal: NewtonSolver.solve raises RuntimeError / FloatingPointError, or the residual jumps to nan, when det(F) at any quadrature point hits 0 or goes negative. Defensive check: ufl.conditional(J > 0, ..., raise_an_error). (Claim inherited.)",
             "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.variable.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01; re-verified 2026-08-03 on ufl 2025.2.1.)",
             "[Numerical] Near-incompressibility split: decompose F = F_iso * F_vol where F_vol = (J^(1/3))*I (via ufl.det and ufl.Identity); then W = W_iso(F_iso) + U(J) with a quadratic-in-(J-1) volumetric penalty U(J) = kappa/2 * (J - 1)^2. Avoids volumetric locking in pure-displacement settings AND retains a well-conditioned tangent. Signal: dolfinx fem.assemble_scalar of the post-processed pressure (= dU/dJ) gives a bounded value; without the split, the discrete pressure Function at Gauss points oscillates wildly element-to-element. (Claim inherited.)",
@@ -1601,10 +1601,10 @@ _FENICS_KNOWLEDGE = {
                 "enough for coercivity, but the standard "
                 "'alpha = 4*(k+1)^2' rule of thumb is a "
                 "STABILITY floor, not an accuracy optimum. "
-                "Signal (MEASURED 2026-08-03, dolfinx 0.10.0; "
+                "Signal: [MEASURED 2026-08-03, dolfinx 0.10.0; "
                 "C0-IP MMS u = sin(pi x) sin(pi y) on the unit "
                 "square, simply-supported, L2 error at N = "
-                "8/16/32/64): P2 with alpha = 36 (= 4*(k+1)^2) "
+                "8/16/32/64] P2 with alpha = 36 (= 4*(k+1)^2) "
                 "gives 8.40e-2 -> 1.80e-3 at rate ~1.96, while "
                 "alpha = 1 gives 1.92e-2 -> 2.96e-4 at rate "
                 "2.00 — same order, ~6x smaller error. "
@@ -1624,7 +1624,7 @@ _FENICS_KNOWLEDGE = {
                 "weight) should use ufl.CellDiameter / "
                 "ufl.FacetArea so the penalty tracks the local "
                 "element size on graded / locally refined "
-                "meshes. Signal (MEASURED 2026-08-03): on a "
+                "meshes. Signal: [MEASURED 2026-08-03] on a "
                 "UNIFORM refinement sequence, hard-coding "
                 "h = 1/8 as a fem.Constant while refining from "
                 "N=16 to N=128 does NOT break convergence — the "
@@ -1653,8 +1653,8 @@ _FENICS_KNOWLEDGE = {
             (
                 "[Numerical] Alternative: split into two "
                 "2nd-order equations (mixed method with auxiliary "
-                "variable). Signal (MEASURED 2026-08-03, dolfinx "
-                "0.10.0): writing the naive single 4th-order "
+                "variable). Signal: [MEASURED 2026-08-03, dolfinx "
+                "0.10.0] writing the naive single 4th-order "
                 "form inner(div(grad(u)), div(grad(v)))*dx on a "
                 "C0 Lagrange space raises NOTHING — it compiles "
                 "and assembles cleanly (P2 on an 8x8 unit "
@@ -1698,12 +1698,12 @@ _FENICS_KNOWLEDGE = {
             (
                 "[Numerical] Need a fine mesh, and '~10 points "
                 "per wavelength' is a FLOOR that is far too "
-                "loose for P1. Signal (MEASURED 2026-08-03, "
+                "loose for P1. Signal: [MEASURED 2026-08-03, "
                 "dolfinx 0.10.0; MMS u = sin(k x/sqrt2) "
                 "sin(k y/sqrt2) on the unit square with "
                 "Dirichlet data interpolated from the exact "
                 "solution, P1, non-resonant k chosen so k^2/pi^2 "
-                "stays away from any m^2+n^2): "
+                "stays away from any m^2+n^2] "
                 "at k = 12.17 the relative L2 error is 5.8e-1 at "
                 "8.3 pts/wavelength, 1.0e-1 at 16.5, 2.6e-2 at "
                 "33, 1.6e-3 at 132 (rates 2.46/2.01/2.00/2.00). "
@@ -1727,10 +1727,10 @@ _FENICS_KNOWLEDGE = {
             ),
             (
                 "[Numerical] System is INDEFINITE — standard CG "
-                "diverges. Use GMRES or direct solver. Signal "
-                "(re-verified 2026-08-03, dolfinx 0.10.0, "
+                "diverges. Use GMRES or direct solver. Signal: ["
+                "[re-verified 2026-08-03, dolfinx 0.10.0, "
                 "k = 20 on a 32x32 unit square, ksp_type='cg' "
-                "pc_type='icc'): PETSc stops after 3 iterations "
+                "pc_type='icc'] PETSc stops after 3 iterations "
                 "with converged reason -10 = "
                 "KSP_DIVERGED_INDEFINITE_PC. For ~< 100k DOFs "
                 "use LU; for larger meshes use GMRES + a shifted-"
@@ -1787,7 +1787,7 @@ _FENICS_KNOWLEDGE = {
         "solver": "GMRES + AMS (auxiliary-space Maxwell solver from hypre) for curl-curl",
         "pitfalls": [
             "[Physics] MUST use H(curl) elements (Nedelec / N1curl) for Maxwell — standard Lagrange spaces lack the tangential continuity that the physical fields require. Signal: dolfinx.fem.form does NOT fail at form construction (ufl.curl is accepted on vector Lagrange and even on scalar Lagrange in 2D), so the bug is silent at compile/assemble time. The observable failure is numerical: the post-processed B = curl(A) field has spurious normal jumps at element interfaces, and convergence against an analytic test (e.g., uniform B in a cavity) plateaus at ~10% error regardless of refinement. (Verified empirically 2026-06-01 — prior catalog wording 'violates physical constraints' implied a syntactic/assembly-time rejection; in current dolfinx the form compiles fine and the bug surfaces in the field values.)",
-            "[Syntax] Complex-valued Maxwell: PETSc must be compiled with --with-scalar-type=complex. Signal (exact text re-measured 2026-08-03 on a REAL conda-forge build, dolfinx 0.10.0 / PETSc 3.24.4): building the form raises ValueError 'Unexpected complex value in real expression.' at dolfinx.fem.form(...) — before assemble_vector is ever reached. Writing a complex value into a real Function array raises TypeError \"float() argument must be a string or a real number, not 'complex'\". The previously quoted strings 'cannot convert complex to float' / 'imaginary part discarded' do NOT appear. Check with numpy.issubdtype(dolfinx.default_scalar_type, numpy.complexfloating) before building the form.",
+            "[Syntax] Complex-valued Maxwell: PETSc must be compiled with --with-scalar-type=complex. Signal: [exact text re-measured 2026-08-03 on a REAL conda-forge build, dolfinx 0.10.0 / PETSc 3.24.4] building the form raises ValueError 'Unexpected complex value in real expression.' at dolfinx.fem.form(...) — before assemble_vector is ever reached. Writing a complex value into a real Function array raises TypeError \"float() argument must be a string or a real number, not 'complex'\". The previously quoted strings 'cannot convert complex to float' / 'imaginary part discarded' do NOT appear. Check with numpy.issubdtype(dolfinx.default_scalar_type, numpy.complexfloating) before building the form.",
             "[Numerical] PML (Perfectly Matched Layer): requires coordinate stretching of the form x_i → x_i*(1 + i*sigma(x_i)/omega) inside the PML region. A real-only stretching (real sigma) gives a lossy real boundary, NOT a radiating PML. Signal: a fem.Function evaluated in the PML region decays by orders of magnitude only when the coordinate-stretch coefficient is constructed with numpy.complex128 ScalarType — with a real-only stretch the dolfinx.fem.assemble_vector output shows a standing-wave reflection back into the domain.",
             "[Numerical] Low-frequency breakdown: curl-curl + omega^2-mass formulation becomes ill-conditioned as omega → 0 because the gradient kernel of curl is no longer regularised by the mass term. Use mixed (A, phi) formulation with a Lagrange multiplier on the divergence. Signal: KSP iteration count for GMRES + AMS preconditioner explodes as omega is reduced below ~10^-3 of the lowest cavity eigenvalue; condition number printed by PETSc grows as 1/omega^2.",
             "[API] Edge elements (basix.ElementFamily.N1E / 'Nedelec 1st kind H(curl)') have DOF ordering by edge, not by node. Setting tangential BCs requires interpolating onto the edge basis, not the nodal basis. Signal: dirichletbc on an HCurl space defined with a vector-valued function silently sets only the first component on each edge, leaving the tangential trace 90 degrees off from intended; post-processed E field has non-zero normal component on the conductor boundary.",
@@ -1889,7 +1889,7 @@ _FENICS_KNOWLEDGE = {
             "[Integration] Eigenvalue problems in dolfinx use SLEPc (the eigenvalue counterpart of PETSc). SLEPc must be installed; PETSc must be configured with --download-slepc (or built against an external SLEPc). The Python binding is slepc4py.SLEPc.EPS. Signal: 'from slepc4py import SLEPc; SLEPc.EPS' resolves successfully when properly installed; ImportError 'No module named slepc4py' (or similar) when missing. (Verified empirically 2026-06-01 in the ofa-fenicsx conda env — slepc4py is present with EPS.)",
             "[Numerical] Shift-and-invert spectral transformation (SINVERT) is essential for interior eigenvalues. SLEPc.EPS().setST(...) with a SLEPc.ST configured to SINVERT centers the spectrum on the target value. Signal: searching for eigenvalues near k^2_estimate on the dolfinx-assembled stiffness Matrix without SINVERT returns extreme eigenvalues (highest or lowest) instead; with SINVERT and target = k^2_estimate the returned eigenvalues cluster near the target. (Claim inherited — not yet empirically separated.)",
             "[API] eps.setDimensions(nev, ncv) requests nev eigenvalues with ncv search-space size (ncv >= 2*nev is the SLEPc default heuristic). Too-small ncv slows convergence or fails. Signal: eps.solve() reports 'converged' with fewer than requested eigenvalues, or returns an error code != 0 from eps.getConvergedReason(); doubling ncv typically fixes it. (Claim inherited.)",
-            "[Numerical] For a generalised eigenvalue problem A*x = lambda*B*x with Dirichlet BC, the Dirichlet rows of A and of the mass matrix B must not both be given the SAME diagonal value, or every constrained DOF contributes a spurious eigenvalue at A_ii/B_ii. Signal (MEASURED 2026-08-03, dolfinx 0.10.0, P1 Laplacian on a 24x24 unit square, SLEPc krylovschur + shift-and-invert; analytic Dirichlet eigenvalues 19.739, 49.348, 49.348, 78.957): assembling A with bcs (default diag=1) and B ALSO with bcs (default diag=1) returns 1, 1, 1, 1, 19.82, 49.71, 49.92, 80.3 — the spurious modes sit at lambda = 1, NOT at lambda = 0 as previously written, and the true spectrum follows them. Two clean recipes, both verified: assemble B with bcs=[] (no BC at all), or assemble B with bcs=[bc] and diag=0.0 to push the constrained modes to infinity — both give 19.82, 49.71, 49.92, 80.3 with no spurious entries. NOTE the kwarg is `diag`, not `diagonal`: dolfinx 0.10's assemble_matrix signature is (a, bcs=None, diag=1, constants=None, coeffs=None, kind=None), and `diagonal=0.0` raises TypeError 'assemble_matrix() got an unexpected keyword argument'. (Verified empirically 2026-08-03 — corrects the previous 'spurious ZERO eigenvalues' wording.)",
+            "[Numerical] For a generalised eigenvalue problem A*x = lambda*B*x with Dirichlet BC, the Dirichlet rows of A and of the mass matrix B must not both be given the SAME diagonal value, or every constrained DOF contributes a spurious eigenvalue at A_ii/B_ii. Signal: [MEASURED 2026-08-03, dolfinx 0.10.0, P1 Laplacian on a 24x24 unit square, SLEPc krylovschur + shift-and-invert; analytic Dirichlet eigenvalues 19.739, 49.348, 49.348, 78.957] assembling A with bcs (default diag=1) and B ALSO with bcs (default diag=1) returns 1, 1, 1, 1, 19.82, 49.71, 49.92, 80.3 — the spurious modes sit at lambda = 1, NOT at lambda = 0 as previously written, and the true spectrum follows them. Two clean recipes, both verified: assemble B with bcs=[] (no BC at all), or assemble B with bcs=[bc] and diag=0.0 to push the constrained modes to infinity — both give 19.82, 49.71, 49.92, 80.3 with no spurious entries. NOTE the kwarg is `diag`, not `diagonal`: dolfinx 0.10's assemble_matrix signature is (a, bcs=None, diag=1, constants=None, coeffs=None, kind=None), and `diagonal=0.0` raises TypeError 'assemble_matrix() got an unexpected keyword argument'. (Verified empirically 2026-08-03 — corrects the previous 'spurious ZERO eigenvalues' wording.)",
             "[Integration] Complex-valued eigenvalues require dolfinx + PETSc + SLEPc all compiled with --with-scalar-type=complex. The default conda-forge fenics-dolfinx build is REAL: dolfinx.default_scalar_type is numpy.float64 (verified empirically 2026-06-01). For complex Helmholtz / Maxwell eigenproblems either rebuild with complex scalar OR split into (re, im) real-pair formulation. Signal: dolfinx.default_scalar_type returns numpy.float64 in a real build; numpy.issubdtype(dolfinx.default_scalar_type, np.complexfloating) is False — assembling a ufl form with an imaginary coefficient then yields a wrong real-valued Function with the imaginary part silently dropped. (Verified empirically in the ofa-fenicsx env.)",
         ],
     },
@@ -1969,10 +1969,10 @@ _FENICS_KNOWLEDGE = {
             (
                 "[Numerical] Low-order displacement formulations "
                 "LOCK as nu -> 0.5 — a mixed (u, p) method is "
-                "the robust fix. Signal (MEASURED 2026-08-03, "
+                "the robust fix. Signal: [MEASURED 2026-08-03, "
                 "dolfinx 0.10.0; cantilever 1.0 x 0.2 with end "
                 "traction, tip deflection against a P2/P1 "
-                "Taylor-Hood reference): "
+                "Taylor-Hood reference] "
                 "P1 triangles are 7.2x / 3.2x / 1.6x / 1.2x too "
                 "stiff at nu=0.49 on 10x2 / 20x4 / 40x8 / 80x16 "
                 "meshes; 16.5x / 11.4x / 5.5x / 2.4x at "
@@ -1990,9 +1990,9 @@ _FENICS_KNOWLEDGE = {
                 "[Numerical] Inf-sup (LBB) condition: "
                 "pressure FunctionSpace must be STRICTLY "
                 "SMALLER than the displacement "
-                "FunctionSpace. Signal (measured on the "
+                "FunctionSpace. Signal: [measured on the "
                 "Stokes analogue 2026-08-03, dolfinx "
-                "0.10.0): SVD of the bc-applied saddle-point "
+                "0.10.0] SVD of the bc-applied saddle-point "
                 "matrix on an 8x8 unit square gives "
                 "numerical null dimension 1 for P2/P1 "
                 "Taylor-Hood (the constant pressure alone) "
@@ -2390,7 +2390,7 @@ _FENICS_KNOWLEDGE = {
             "neighbourhood_collectives": "MPI Neighbourhood collectives for efficient halo exchange",
         },
         "pitfalls": [
-            "[Numerical] fem.assemble_scalar is NOT collective — it returns each rank's local piece. Forgetting comm.allreduce(..., op=MPI.SUM) makes every L2 error, energy and volume integral wrong in parallel while looking perfectly plausible in serial. This is the single most common silent parallel bug in dolfinx scripts. (Verified empirically 2026-08-03.)",
+            "[Numerical] fem.assemble_scalar is NOT collective — it returns each rank's local piece, so forgetting comm.allreduce(..., op=MPI.SUM) makes every L2 error, energy and volume integral wrong in parallel while looking perfectly plausible in serial. Signal: running fem.assemble_scalar(fem.form(1.0*ufl.dx(domain=msh))) on a 16x16 unit square under mpirun -np 2 returns 0.505859 on rank 0 and 0.494141 on rank 1 instead of 1.0 on both; dolfinx's own docstring states 'The returned value is local and not accumulated across processes.' (Verified empirically 2026-08-03.)",
             "MUST use MPI communicator consistently — do not mix serial and parallel operations",
             "Output: only rank 0 should print; use if MPI.COMM_WORLD.rank == 0:",
             "Some operations (e.g., Gmsh model creation) should be done on rank 0 only",

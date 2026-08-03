@@ -57,8 +57,8 @@ _DG_KNOWLEDGE = {
         ),
         (
             "[API] FacetNormal n is outward; avg/jump operators "
-            "need '+'/'-' sides. Signal (exact text re-measured "
-            "2026-08-03 on dolfinx 0.10.0 / ufl 2025.2.1): "
+            "need '+'/'-' sides. Signal: [exact text re-measured "
+            "2026-08-03 on dolfinx 0.10.0 / ufl 2025.2.1] "
             "writing dot(b, n) without a side suffix in a dS "
             "integral raises ValueError 'Discontinuous type "
             "Jacobian must be restricted.' from fem.form; the "
@@ -69,8 +69,8 @@ _DG_KNOWLEDGE = {
         ),
         (
             "[API] Inflow BC imposed weakly via boundary "
-            "integral, NOT Dirichlet. Signal (VERIFIED "
-            "empirically 2026-08-03, dolfinx 0.10.0): a strong "
+            "integral, NOT Dirichlet. Signal: [VERIFIED "
+            "empirically 2026-08-03, dolfinx 0.10.0] a strong "
             "DirichletBC on a DG space is a silent no-op — "
             "fem.locate_dofs_topological on a DG1 space with the "
             "x=0 boundary facets of an 8x8 unit square returns "
@@ -1000,8 +1000,8 @@ _NONLINEAR_PDE_KNOWLEDGE = {
         (
             "[API] Jacobian computed via ufl.derivative(F, u, du) "
             "— automatic, no hand differentiation needed, and "
-            "you do NOT have to pass it. Signal (MEASURED "
-            "2026-08-03, dolfinx 0.10.0): J is an OPTIONAL "
+            "you do NOT have to pass it. Signal: [MEASURED "
+            "2026-08-03, dolfinx 0.10.0] J is an OPTIONAL "
             "keyword ('J: ufl.form.Form | ... | None = None' in "
             "the 0.10 signature). NonlinearProblem(F, u, "
             "bcs=bcs, petsc_options_prefix='...') with no J at "
@@ -1217,8 +1217,8 @@ _MAGNETOSTATICS_KNOWLEDGE = {
         ),
         (
             "[Numerical] In 3D: MUST use H(curl) Nedelec elements "
-            "(not Lagrange!) for correct curl. Signal (MEASURED "
-            "2026-08-03, dolfinx 0.10.0, 4x4x4 unit cube): the "
+            "(not Lagrange!) for correct curl. Signal: [MEASURED "
+            "2026-08-03, dolfinx 0.10.0, 4x4x4 unit cube] the "
             "bug is SILENT at assembly time — "
             "inner(curl(u), curl(v))*dx on a vector-Lagrange P1 "
             "space compiles and assembles a perfectly ordinary "
