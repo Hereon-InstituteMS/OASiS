@@ -3445,8 +3445,9 @@ RESULT DESCRIPTION:
             "  SOLID HEX8 (2 required keys) -> WALL QUAD4 (6 required keys)\n"
             "  and THE MESH ITSELF: 8 nodes instead of 16, all with z = 0.0, "
             "different connectivity, different design-entity map. A 3D node "
-            "list carried over unchanged aborts with 'Node 8 has a non-zero "
-            "coordinate 1.1 in direction 2 but discretization is 2D!'.\n"
+            "list carried over unchanged aborts with 'Node <id> has a "
+            "non-zero coordinate <value> in direction 2 but "
+            "discretization is 2D!', naming the first offending node.\n"
             "NUMDOF/ONOFF/VAL/FUNCT of 3 entries are TOLERATED in a 2D DIRICH "
             "block, so that is not what breaks."
         ),
