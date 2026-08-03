@@ -1349,6 +1349,153 @@ FOURC_KNOWLEDGE = {
                 "LINE2/LINE3/LINE4 cell type and TRIADS. "
                 "(Audit 2026-06-02.)"
             ),
+
+            # ───────────────────────────────────────────────────
+            # 2026-08-03 EXECUTION SWEEP on the DEPLOYED binary
+            # /home/alexander/4C/build/4C = 4C 2026.2.0-dev,
+            # git 89519cf. Where these disagree with the entries
+            # above (which were written against 4C 2026.3.0-dev)
+            # the disagreement is a VERSION boundary, not a
+            # correction — both spellings are kept and the probe
+            # that tells them apart is given.
+            # ───────────────────────────────────────────────────
+            (
+                "[API] The 2D structural element name is "
+                "VERSION-DEPENDENT and the two spellings share no "
+                "keywords. On 4C 2026.2.0-dev the SOLID factory "
+                "registers 3D cell types ONLY (hex8, hex18, hex20, "
+                "hex27, tet4, tet10, wedge6, pyramid5, nurbs27) and "
+                "2D lives in the separate WALL factory, whose input "
+                "line is '<id> WALL QUAD4 <n1..n4> MAT <m> KINEM "
+                "<linear|nonlinear> EAS <none|full> THICK <t> "
+                "STRESS_STRAIN <plane_strain|plane_stress> GP <a> "
+                "<b>'. All six of MAT / KINEM / EAS / THICK / "
+                "STRESS_STRAIN / GP are required, GP is a "
+                "two-integer vector, and there is no THICKNESS or "
+                "PLANE_ASSUMPTION keyword. From 4C 2026.3 the 2D "
+                "families were folded into SOLID with the "
+                "THICKNESS / PLANE_ASSUMPTION spelling instead. "
+                "Decide which build you are on before writing a 2D "
+                "deck — `4C --parameters` lists the element under "
+                "legacy_element_specs with its exact required "
+                "parameters. Signal: 'Element 'SOLID' does not seem "
+                "to know cell type 'quad4'.' from "
+                "fem_general_element_definition means you are on a "
+                "WALL-era build; \"Unknown type 'WALL' of finite "
+                "element\" from parobjectfactory means you are on a "
+                "SOLID-era build; \"Required value 'GP' not found in "
+                "input line\" from input_spec_builders means WALL "
+                "was right but the GP pair was omitted. (Verified by "
+                "execution 2026-08-03: on 4C 2026.2.0-dev the full "
+                "WALL QUAD4 line ran to exit 0, 'SOLID QUAD4' failed "
+                "with the cell-type message with and without DIM: 2, "
+                "and the upstream deck tests/input_files/"
+                "test_struct.4C.yaml — one of only 3 of the 1974 "
+                "decks that use SOLID QUAD4, against 109 that use "
+                "WALL — fails on this build for the same reason.)"
+            ),
+            (
+                "[Numerical] On the WALL element EAS and "
+                "STRESS_STRAIN are not cosmetic — both silently "
+                "change the answer by percent-level amounts and "
+                "neither emits a warning. Signal: for a fixed 2D "
+                "cantilever deck, switching EAS none -> full moved "
+                "the tip deflection by 23% and plane_strain -> "
+                "plane_stress moved it by 6.7%; if a 2D result "
+                "disagrees with a reference by a stable few percent "
+                "with no convergence trouble, compare these two "
+                "keywords before refining the mesh. (Verified by "
+                "execution 2026-08-03, single WALL QUAD4 under a "
+                "line Neumann load, tip dispy: EAS none / "
+                "plane_strain 4.33333333333346064e-03; EAS full / "
+                "plane_strain 5.33749404753981662e-03; EAS none / "
+                "plane_stress 4.62222222222248135e-03. All three "
+                "exited 0.)"
+            ),
+            (
+                "[Input] DENS is a REQUIRED parameter of "
+                "MAT_Struct_StVenantKirchhoff in every analysis "
+                "type, including Statics — it has no default in "
+                "global_legacy_module_validmaterials. The often-"
+                "repeated advice that density 'is only needed for "
+                "dynamics' is about whether the value matters, not "
+                "about whether the key may be omitted. Signal: "
+                "omitting DENS gives \"Failed to match "
+                "specification in section 'MATERIALS'\" from "
+                "global_data_read plus \"Expected parameter "
+                "'DENS'\" from input_spec_builders, exit 1, even "
+                "for DYNAMICTYPE: Statics. (Verified by execution "
+                "2026-08-03: a Statics HEX8 deck whose "
+                "MAT_Struct_StVenantKirchhoff carried only YOUNG "
+                "and NUE.)"
+            ),
+            (
+                "[Input] NUE is validated against the half-open "
+                "range [-1, 0.5) — the incompressible limit NUE: "
+                "0.5 is REJECTED, not merely ill-conditioned. Use "
+                "0.4999 with a locking-free element technology, or "
+                "a MAT_ElastHyper split with a volumetric summand, "
+                "for near-incompressible behaviour. Signal: "
+                "\"Candidate parameter 'NUE' does not pass "
+                "validation: in_range[-1,0.5)\" inside the "
+                "'Failed to match specification in section "
+                "'MATERIALS'' report from global_data_read, exit 1. "
+                "(Verified by execution 2026-08-03: NUE 0.49 ran to "
+                "exit 0; NUE 0.5 and NUE 0.6 were both rejected at "
+                "parse.)"
+            ),
+            (
+                "[Numerical] MAT_ElastHyper combined with KINEM "
+                "linear is accepted by both the parser and the "
+                "element factory, and it fails in two different "
+                "ways depending on how far the structure deforms: "
+                "at moderate strain it just returns quietly wrong "
+                "numbers, and past roughly unit stretch it dies "
+                "with SIGFPE because the linearised right "
+                "Cauchy-Green tensor stops being admissible for "
+                "the invariant-based strain-energy evaluation. "
+                "Neither failure names KINEM. Signal: a "
+                "hyperelastic run that differs from its KINEM "
+                "nonlinear twin by a few percent and grows with "
+                "load is the quiet branch; the loud branch is "
+                "'Signal: Floating point exception (8)' / 'Signal "
+                "code: Invalid floating point operation (7)' with "
+                "shell exit status 136 and a stack whose top "
+                "frames are Mat::ElastHyper::evaluate and "
+                "DisplacementBasedLinearKinematicsFormulation — "
+                "the FE-trapping build option turns the NaN into a "
+                "hard kill instead of a NaN-filled result file. "
+                "(Verified by execution 2026-08-03, HEX8 unit cube, "
+                "CoupNeoHooke + VolSussmanBathe: tip dispy at load "
+                "50 was 2.04240098889810623e-01 linear vs "
+                "2.07913934875450096e-01 nonlinear (1.8% low), at "
+                "load 100 4.08487004522754327e-01 vs "
+                "4.20495844658128337e-01 (2.9% low), both exit 0; "
+                "at load 300 the linear variant was killed by "
+                "SIGFPE while the nonlinear variant finished at "
+                "1.19488815226590517e+00.)"
+            ),
+            (
+                "[Numerical] KINEM linear on an ordinary "
+                "St-Venant-Kirchhoff solid never errors — it "
+                "simply drops the geometric nonlinearity and "
+                "over-predicts compliance, and the run looks "
+                "perfectly healthy. There is no diagnostic to grep "
+                "for, so the only defence is a converged "
+                "comparison. Signal: run the identical deck with "
+                "KINEM nonlinear; a stable relative difference "
+                "that grows with load magnitude (and vanishes as "
+                "load -> 0) is the signature of a wrongly linear "
+                "kinematics choice rather than of a mesh or solver "
+                "problem. (Verified by execution 2026-08-03, HEX8 "
+                "unit cube: at a small load the two agreed to "
+                "0.06% (4.48190476190476333e-03 vs "
+                "4.48471241704053586e-03); at a load producing "
+                "unit-order displacement KINEM linear over-"
+                "predicted by 5.7% (1.34457142857142875e+00 vs "
+                "1.27200961795990475e+00). Both exited 0 with no "
+                "warning.)"
+            ),
         ],
     },
 
@@ -1699,6 +1846,53 @@ FOURC_KNOWLEDGE = {
                 "T - INITTEMP drives the contraction). "
                 "Set INITIALFIELD to match INITTEMP. "
                 "(Audit 2026-06-02.)"
+            ),
+            (
+                "[Input] In a STANDALONE PROBLEMTYPE: Thermo run "
+                "the THERMO-prefixed boundary-condition sections "
+                "are a trap: 'DESIGN SURF THERMO DIRICH "
+                "CONDITIONS' is a perfectly valid section name, "
+                "parses without complaint, and is then SILENTLY "
+                "DROPPED — the temperature field stays at its "
+                "initial value and the run reports success. The "
+                "sections that actually reach the thermo "
+                "discretisation are the PLAIN ones: 'DESIGN SURF "
+                "DIRICH CONDITIONS', 'DESIGN LINE DIRICH "
+                "CONDITIONS', 'DESIGN SURF NEUMANN CONDITIONS'. "
+                "The THERMO-prefixed variants belong to the "
+                "coupled TSI path. This extends the previously "
+                "recorded THERMO-prefixed NEUMANN finding to "
+                "DIRICH. Signal: a standalone Thermo run that "
+                "exits 0 with a uniformly zero (or uniformly "
+                "initial) temperature field despite prescribed "
+                "temperatures; there is NO warning, so pin it "
+                "with a RESULT DESCRIPTION THERMAL entry, which "
+                "converts the silent wrong answer into "
+                "'is WRONG --> actresult= "
+                "0.00000000000000000e+00' and exit 1. (Verified "
+                "by execution 2026-08-03, single THERMO HEX8 with "
+                "T=0 on one face and T=100 on the opposite face: "
+                "with DESIGN SURF THERMO DIRICH CONDITIONS the "
+                "node on the hot face read 0.0 and the run "
+                "finished normally with exit 0 once the RESULT "
+                "DESCRIPTION was removed; changing the section "
+                "name to DESIGN SURF DIRICH CONDITIONS and "
+                "nothing else gave exactly 100.0 to 1e-8.)"
+            ),
+            (
+                "[Syntax] MAT_Fourier.CONDUCT is tensor-typed on "
+                "the deployed 2026.2.0-dev build as well as on "
+                "2026.3 — the isotropic case must still be "
+                "written as a 'constant:' list, "
+                "'CONDUCT: {constant: [k]}'. A bare scalar is "
+                "rejected. Signal: 'CONDUCT: 1.0' produces "
+                "\"Failed to match specification in section "
+                "'MATERIALS'\" from global_data_read; the wrapped "
+                "form reaches fill_complete on discretisation "
+                "'thermo'. (Re-verified by execution 2026-08-03 "
+                "against 4C 2026.2.0-dev git 89519cf — the "
+                "originally 2026-06-01 claim still holds on this "
+                "build.)"
             ),
         ],
     },
@@ -2609,13 +2803,40 @@ SOLVER 2:
         "description": "YAML-based input files (.4C.yaml) — can use inline mesh or Exodus file",
 
         "mandatory_sections": [
-            "PROBLEM SIZE (DIM: 2 or 3)",
             "PROBLEM TYPE (PROBLEMTYPE: Structure/Scalar_Transport/Fluid/...)",
             "Dynamics section matching problem type (STRUCTURAL DYNAMIC, etc.)",
             "At least one SOLVER",
             "MATERIALS",
             "Mesh (NODE COORDS + ELEMENTS, or STRUCTURE GEOMETRY with FILE)",
         ],
+
+        # 2026-08-03 correction, verified by execution: PROBLEM SIZE
+        # used to be listed above as mandatory. It is declared
+        # {.required = false} in
+        # src/global_legacy_module/4C_global_legacy_module_validparameters.cpp
+        # and a deck with no PROBLEM SIZE section runs to completion.
+        # Its only load-bearing field is DIM (default 3); ELEMENTS /
+        # NODES / MATERIALS / NPATCHES / NUMDF are read and ignored.
+        "optional_sections": {
+            "PROBLEM SIZE": (
+                "Optional. DIM defaults to 3. ELEMENTS / NODES / "
+                "MATERIALS / NPATCHES / NUMDF are parsed into a "
+                "parameter list and never consumed — the 4C source "
+                "comments them as unused. Verified by execution "
+                "2026-08-03 (omitted entirely, and with deliberately "
+                "wrong counts: identical results, exit 0)."),
+            "DISCRETISATION": (
+                "Optional. NUMFLUIDDIS / NUMALEDIS / NUMTHERMDIS all "
+                "default to 1 in "
+                "global_legacy_module_validparameters. Present in "
+                "558 of the 1974 tests/input_files decks, absent "
+                "from the rest."),
+            "TITLE": "Optional free-text description.",
+            "IO": "Optional; every key has a default.",
+            "RESULT DESCRIPTION": (
+                "Optional, but it is the only built-in numerical "
+                "self-check — see the result_description block."),
+        },
 
         "boundary_conditions": {
             "structural": {
@@ -2938,17 +3159,282 @@ TRANSPORT ELEMENTS:
             "Mixing both (mpirun + OMP_NUM_THREADS) is "
             "supported but oversubscribes if "
             "N_mpi * N_omp > N_cores. (Audit 2026-06-02.)",
+
+            # ───────────────────────────────────────────────────
+            # 2026-08-03 EXECUTION SWEEP.
+            # Every entry below was produced by writing a minimal
+            # input, running the deployed binary
+            # /home/alexander/4C/build/4C (4C 2026.2.0-dev, git
+            # 89519cf) and recording what actually happened. The
+            # provenance note on each entry names the probe.
+            # ───────────────────────────────────────────────────
+            "[Input] RESULT DESCRIPTION is 4C's own numerical "
+            "self-check and is the cheapest way to make a run "
+            "assert its own correctness — 1925 of the 1974 files "
+            "in tests/input_files carry one. A failing entry "
+            "aborts the run with a non-zero exit code, so an "
+            "agent can gate on the process status instead of "
+            "parsing output. Required keys per entry: the field "
+            "group name, DIS, one of NODE / LINE / SURFACE / "
+            "VOLUME (or SPECIAL), QUANTITY, VALUE, TOLERANCE. "
+            "See the result_description block for the full "
+            "group and QUANTITY vocabulary. Signal: a passing "
+            "check prints 'is CORRECT, abs(diff)= ... < ...' and "
+            "exits 0; a failing one prints 'is WRONG --> "
+            "actresult= ..., givenresult= ..., abs(diff)= ... > "
+            "...' followed by 'Result check failed with N errors "
+            "out of M tests' from utils_result_test and exits 1. "
+            "(Verified by execution 2026-08-03: HEX8 cantilever, "
+            "VALUE set to the true 5.50797296442576741e-03 → "
+            "exit 0 'is CORRECT'; VALUE set to 999.0 → exit 1 "
+            "'is WRONG'.)",
+
+            "[Output] A failing RESULT DESCRIPTION check writes "
+            "its diagnostic to raw std::cout while the run is "
+            "torn down by MPI_Abort, so the 'is WRONG' line and "
+            "the 'Result check failed' line are LOST from a "
+            "block-buffered pipe — all a caller sees is "
+            "'Checking results of N tests:' and then nothing. "
+            "Capture the run through a line-buffered pipe "
+            "(stdbuf -oL -eL 4C in.4C.yaml out) or to a file, "
+            "otherwise a failed verification looks like an "
+            "unexplained crash. Signal: output that ends "
+            "exactly at 'Checking results of N tests:' with exit "
+            "code 1 and no further text is a swallowed "
+            "utils_result_test failure, not a solver crash. "
+            "(Verified by execution 2026-08-03: identical input "
+            "run twice — plain pipe truncated after 'Checking "
+            "results of 1 tests:'; under stdbuf -oL the same run "
+            "printed the full 'is WRONG --> actresult= "
+            "5.50797296442576741e-03, givenresult= "
+            "9.99000000000000000e+02' line.)",
+
+            "[Input] A loose TOLERANCE in RESULT DESCRIPTION "
+            "turns the self-check into a rubber stamp — 4C only "
+            "compares abs(actresult - VALUE) > TOLERANCE, so a "
+            "wide tolerance reports 'is CORRECT' for an answer "
+            "that is wrong by orders of magnitude. Size "
+            "TOLERANCE against the quantity, not against the "
+            "solver tolerance. TOLERANCE <= 0 is rejected "
+            "outright, and omitting TOLERANCE is a parse error, "
+            "so the only failure mode left is a tolerance that "
+            "is merely too big. Signal: 'is CORRECT, abs(diff)= "
+            "<large> < <even larger>' where abs(diff) is the "
+            "same order as the quantity itself means the check "
+            "is not constraining anything; TOLERANCE: 0 raises "
+            "'Tolerance for result test must be strictly "
+            "positive!' from utils_result_test. (Verified by "
+            "execution 2026-08-03: VALUE 0.0 with TOLERANCE 1.0 "
+            "on a true answer of 5.5e-03 → exit 0 'is CORRECT'; "
+            "TOLERANCE: 0.0 → exit 1 with the strictly-positive "
+            "throw; TOLERANCE omitted → 'Could not match this "
+            "input' + \"Expected parameter 'TOLERANCE'\" from "
+            "input_spec_builders.)",
+
+            "[Input] A RESULT DESCRIPTION entry that names a "
+            "discretisation which does not exist is NOT silently "
+            "skipped — the run aborts. utils_result_test counts "
+            "how many entries were actually evaluated and throws "
+            "'expected N tests but performed M' when the count "
+            "falls short, so a typo in DIS cannot fake a passing "
+            "verification. A bad NODE or a bad QUANTITY throws "
+            "from the field-specific tester instead. Signal: "
+            "'expected 1 tests but performed 0' = wrong DIS "
+            "name; 'Node 99999 does not belong to "
+            "discretization structure' = wrong NODE; \"Quantity "
+            "'banana' not supported in structure testing\" = "
+            "wrong QUANTITY, all with exit code 1. (Verified by "
+            "execution 2026-08-03: DIS 'structur' → 'expected 1 "
+            "tests but performed 0' from utils_result_test; "
+            "NODE 99999 → structure_new_resulttest node throw; "
+            "QUANTITY 'banana' → structure_new_resulttest "
+            "quantity throw.)",
+
+            "[Input] PROBLEM SIZE is OPTIONAL and its "
+            "ELEMENTS / NODES / MATERIALS / NPATCHES counts are "
+            "read into a parameter list and then never used — "
+            "the 4C source marks them 'unused parameters ... "
+            "Misuse is possible'. Do not spend effort making "
+            "them consistent, and never treat a mismatch as the "
+            "cause of a failure. The one field that DOES matter "
+            "is DIM, which defaults to 3. Signal: a run that "
+            "completes normally with PROBLEM SIZE claiming 999 "
+            "ELEMENTS for a 1-element mesh proves the counts are "
+            "inert; conversely, a 2D deck that behaves as if it "
+            "were 3D means DIM was left at its default in "
+            "global_legacy_module_validparameters. (Verified by "
+            "execution 2026-08-03: the same HEX8 deck run with "
+            "no PROBLEM SIZE section at all, and with "
+            "ELEMENTS: 999 / NODES: 7 against a real 1-element "
+            "8-node mesh, both completed with exit 0 and "
+            "identical results.)",
+
+            "[Input] A FUNCT index referenced from a condition "
+            "must have a matching FUNCT<N> section — 4C does not "
+            "fall back to a constant. The reference is 1-based "
+            "and 0 means 'no function, use VAL directly'. Signal: "
+            "'Function with index 7 (i.e. input FUNCT7) not "
+            "available.' from function_manager, exit 1, raised "
+            "at the first evaluation rather than at parse time. "
+            "(Verified by execution 2026-08-03: Neumann "
+            "condition with FUNCT: [0, 7, 0] and no FUNCT7 "
+            "section.)",
+
+            "[Input] Condition arrays must match NUMDOF exactly, "
+            "and NUMDOF itself must match the nodal DOF count "
+            "for Dirichlet — but NOT for Neumann. A Dirichlet "
+            "block with NUMDOF smaller than the element's DOFs "
+            "passes the YAML spec and only fails later inside "
+            "the DBC extractor; a Neumann block may declare MORE "
+            "entries than the element has DOFs (the classic "
+            "NUMDOF: 6 structural convention) and the surplus is "
+            "ignored, but declaring FEWER is fatal. Signal: "
+            "\"Candidate parameter 'ONOFF' has incorrect size\" "
+            "(plus the same for VAL and FUNCT) from "
+            "input_spec_builders when the arrays disagree with "
+            "NUMDOF; '2 DOFs given but 3 expected in Surface "
+            "Dirichlet boundary condition' from "
+            "fem_discretization_utils_dbc when NUMDOF disagrees "
+            "with the element; 'Fewer functions or curves "
+            "defined than the element has dofs.' from "
+            "solid_3D_ele_surface_evaluate for an under-sized "
+            "Neumann block. (Verified by execution 2026-08-03 on "
+            "a HEX8 deck: ONOFF/VAL/FUNCT of length 2 under "
+            "NUMDOF: 3 → parse error; NUMDOF: 2 with matching "
+            "length-2 arrays → DBC runtime throw; Neumann "
+            "NUMDOF: 6 → exit 0 and bit-identical displacement "
+            "to NUMDOF: 3; Neumann NUMDOF: 2 → surface-evaluate "
+            "throw.)",
+
+            "[Input] DESIGN ... CONDITIONS entity IDs are "
+            "1-based in the input and must exist in the matching "
+            "D<X>-NODE TOPOLOGY section; 4C does not silently "
+            "drop a condition on an empty entity. Note the "
+            "diagnostic reports the 0-based internal id, so "
+            "'E: 5' is reported as 'DSurface 4'. Signal: "
+            "'DSurface 4 not in range [0:2[' followed by "
+            "'DSurface condition on non existent DSurface?Could "
+            "not read set from entity type.' from fem_condition, "
+            "exit 1. (Verified by execution 2026-08-03: "
+            "DESIGN SURF DIRICH CONDITIONS on E: 5 with only "
+            "DSURFACE 1 and 2 declared in DSURF-NODE TOPOLOGY.)",
+
+            "[Input] The TYPE of a DESIGN ... NEUMANN CONDITION "
+            "is validated in two separate places and the two "
+            "vocabularies differ. The parser accepts "
+            "Dead | Live | PressureGrad | orthopressure | "
+            "pseudo_orthopressure, but the 3D SOLID element only "
+            "implements Live, orthopressure and "
+            "pseudo_orthopressure — 'Dead' and 'PressureGrad' "
+            "parse cleanly and then abort at the first element "
+            "evaluation. Use Live for a follower-free traction. "
+            "Signal: \"Candidate deprecated_selection 'TYPE' has "
+            "wrong value, possible values: Dead|Live|"
+            "PressureGrad|orthopressure|pseudo_orthopressure\" "
+            "for a value outside the parser enum; 'Unknown type "
+            "of SurfaceNeumann condition' from "
+            "solid_3D_ele_surface_evaluate for Dead or "
+            "PressureGrad on a SOLID element. (Verified by "
+            "execution 2026-08-03: TYPE 'Follower' → parser "
+            "enumeration; TYPE 'Dead' → surface-evaluate throw; "
+            "TYPE 'Live' → exit 0.)",
+
+            "[Output] Runtime VTK output needs BOTH the parent "
+            "IO/RUNTIME VTK OUTPUT section with a positive "
+            "INTERVAL_STEPS and the per-field sub-section "
+            "(IO/RUNTIME VTK OUTPUT/STRUCTURE with "
+            "OUTPUT_STRUCTURE: true). Either half alone produces "
+            "ZERO files, exit code 0 and no warning whatsoever — "
+            "INTERVAL_STEPS defaults to -1 in inpar_io, which "
+            "means 'never'. This is the most common way to run a "
+            "successful simulation and end up with nothing to "
+            "post-process. Signal: a run that finishes normally "
+            "while the output directory contains only "
+            "<prefix>.control and <prefix>.mesh.* and no .vtu / "
+            ".pvd — check INTERVAL_STEPS and the per-field "
+            "sub-section before blaming the solver. (Verified by "
+            "execution 2026-08-03, 2-step HEX8 deck: both "
+            "sections present → 3 structure-*.vtu files; parent "
+            "only → 0 files, exit 0; sub-section only, no "
+            "INTERVAL_STEPS → 0 files, exit 0; neither → 0 "
+            "files, exit 0.)",
+
+            "[Output] EVERY_ITERATION does exist, but under "
+            "IO/RUNTIME VTK OUTPUT — not under plain IO. Putting "
+            "it in IO is a hard parse error, which is the "
+            "friendly case; the dangerous neighbour is "
+            "RESTARTEVERY, which exists in BOTH sections. The "
+            "structural time integrator reads RESTARTEVERY from "
+            "STRUCTURAL DYNAMIC (structure_new_timint_basedataio), "
+            "so an IO-level RESTARTEVERY parses, runs, exits 0 "
+            "and writes no restart records at all; the mistake "
+            "only surfaces on the restart attempt, possibly "
+            "hours later. The same per-field placement applies to "
+            "FLUID DYNAMIC, SCALAR TRANSPORT DYNAMIC and "
+            "PARTICLE DYNAMIC. Signal: EVERY_ITERATION under IO "
+            "gives 'Could not match this input' from "
+            "input_spec_builders; a misplaced RESTARTEVERY gives "
+            "a clean run whose output contains no "
+            "<prefix>.result.<field>.s<N> file, and the later "
+            "restart fails with \"No restart entry for "
+            "discretization 'structure' step 2 in control file. "
+            "Control file corrupt?\" from io_control. (Verified "
+            "by execution 2026-08-03: RESTARTEVERY: 2 under IO → "
+            "exit 0, only .control and .mesh.structure.s0 "
+            "written, --restart=2 then failed with the "
+            "io_control message; the same value under STRUCTURAL "
+            "DYNAMIC → .result.structure.s2 written and "
+            "--restart=2 resumed at step 3 of 4 and finished "
+            "with exit 0.)",
+
+            "[API] `4C --parameters` dumps the complete, "
+            "version-exact input schema of the installed binary "
+            "as YAML on stdout — 2.9 MB on 4C 2026.2.0-dev — "
+            "with seven top-level keys: metadata (commit_hash, "
+            "version), sections, legacy_element_specs, "
+            "legacy_particle_specs, cell_types, $references, "
+            "legacy_string_sections. Every parameter carries its "
+            "name, type, required flag and default. Prefer "
+            "querying this over guessing a keyword or trusting a "
+            "catalogue written against a different 4C release. "
+            "Signal: the dump begins 'metadata:' / "
+            "'commit_hash:' / 'version:'; if a section or key an "
+            "agent wants to write is absent from this dump, it "
+            "does not exist in the installed build regardless of "
+            "what any documentation says. (Verified by execution "
+            "2026-08-03: `4C --parameters` exited 0 and emitted "
+            "2 926 462 bytes whose legacy_element_specs listed "
+            "WALL with required MAT / KINEM / EAS / THICK / "
+            "STRESS_STRAIN / GP entries.)",
         ],
 
         "element_type_per_physics": {
             "FLUID (2D)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
             "FLUID (3D)": ["HEX8", "HEX20", "HEX27", "TET4", "TET10", "NURBS27"],
-            "SOLID (2D structure)": ["QUAD4", "QUAD8", "QUAD9",
-                                     "TRI3", "TRI6"],
+            "SOLID (2D structure, 4C >= 2026.3)": ["QUAD4", "QUAD8",
+                                                   "QUAD9", "TRI3",
+                                                   "TRI6"],
             # NOTE: 4C 2026.3 unified the legacy WALL 2D eletype
             # into the SOLID eletype factory. Writing 'WALL QUAD4'
             # raises 'Unknown type WALL of finite element' from
             # parobjectfactory.cpp:153 — see SOL_MECH [API] pitfall.
+            #
+            # 2026-08-03: the boundary runs the OTHER way on older
+            # builds. On 4C 2026.2.0-dev the SOLID factory registers
+            # 3D cell types only and 2D is the WALL eletype below —
+            # verified by execution, and by 109 of the 1974 decks in
+            # that tree's tests/input_files using WALL against 3 using
+            # SOLID QUAD4 (those 3 do not run). Probe the installed
+            # build rather than assuming; see structural_mechanics
+            # pitfall #7 and the Tier-2 fixture
+            # scripts/tier2_fixtures/fourc/
+            # structural_2d_solid_quad4_not_wall, which prints a
+            # VERDICT: 2D_ELEMENT=<WALL|SOLID> line.
+            "WALL (2D structure, 4C <= 2026.2)": [
+                "QUAD4", "QUAD8", "QUAD9", "TRI3", "TRI6",
+                "NURBS4", "NURBS9",
+                "-- required keys: MAT, KINEM, EAS, THICK, "
+                "STRESS_STRAIN, GP (2 ints)"],
             "SOLID (3D structure)": ["HEX8", "HEX20", "HEX27", "TET4", "TET10",
                                      "WEDGE6", "PYRAMID5"],
             "TRANSP (scalar transport)": ["QUAD4", "QUAD9", "HEX8", "HEX27",
@@ -2967,6 +3453,138 @@ TRANSPORT ELEMENTS:
                 "but less accurate for pressure in fluid problems."
             ),
         },
+    },
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # RESULT DESCRIPTION — 4C's built-in numerical self-check
+    #
+    # Added 2026-08-03. Sources read:
+    #   src/global_legacy_module/4C_global_legacy_module.cpp
+    #       valid_result_lines()          -> the 18 field groups
+    #   src/core/utils/src/result_test/4C_utils_result_test.cpp
+    #       ResultTest::test_*/test_all() -> compare + abort logic
+    #   src/structure_new/src/utils/4C_structure_new_resulttest.cpp
+    #       get_nodal_result()            -> STRUCTURE QUANTITY names
+    # Every behavioural claim below was then reproduced by running
+    # /home/alexander/4C/build/4C (4C 2026.2.0-dev, git 89519cf) on a
+    # minimal HEX8 cantilever and a minimal HEX8 Thermo cube.
+    # NOTE: deliberately has no "pitfalls" key — the actionable
+    # pitfalls live in input_format.pitfalls so the Signal-verification
+    # harness harvests them under a registered physics name.
+    # ═══════════════════════════════════════════════════════════════════════
+    "result_description": {
+        "description": (
+            "RESULT DESCRIPTION is a list of point-wise assertions "
+            "that 4C evaluates after the time loop. It is the "
+            "cheapest way for an agent to make a run verify itself: "
+            "a violated assertion aborts the process with a non-zero "
+            "exit code, so correctness can be gated on the process "
+            "status rather than on parsing solver output. 1925 of "
+            "the 1974 decks in tests/input_files carry one."
+        ),
+        "section_name": "RESULT DESCRIPTION",
+        "yaml_example": """
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"        # discretisation name, lowercase
+      NODE: 3                 # 1-based node id (or LINE/SURFACE/VOLUME)
+      QUANTITY: "dispy"
+      VALUE: -0.007071067811865476
+      TOLERANCE: 1e-11        # must be > 0
+  - THERMAL:
+      DIS: "thermo"
+      NODE: 2
+      QUANTITY: "temp"
+      VALUE: 100.0
+      TOLERANCE: 1e-8
+""",
+        "field_groups": [
+            "STRUCTURE", "FLUID", "XFLUID", "ALE", "THERMAL",
+            "LUBRICATION", "POROFLUIDMULTIPHASE", "SCATRA", "SSI",
+            "SSTI", "STI", "RED_AIRWAY", "ARTNET", "FSI", "PARTICLE",
+            "PARTICLEWALL", "RIGIDBODY", "CARDIOVASCULAR0D",
+        ],
+        "field_group_notes": (
+            "The thermal group is spelled THERMAL, not THERMO — the "
+            "same asymmetry as the THERMAL DYNAMIC section name "
+            "versus the THERMO element type. A wrong group name is "
+            "rejected at parse time and 4C echoes the full list of "
+            "18 valid groups, which makes the error self-correcting. "
+            "Verified by execution 2026-08-03: a THERMO group on a "
+            "Thermo problem printed \"Expected group 'STRUCTURE' ... "
+            "'THERMAL' ... 'CARDIOVASCULAR0D'\"; THERMAL matched."
+        ),
+        "required_keys": {
+            "DIS": (
+                "Discretisation name, lowercase: 'structure', "
+                "'fluid', 'thermo', 'ale', 'scatra', ... Required "
+                "for every group except when SPECIAL: true is used."),
+            "NODE | LINE | SURFACE | VOLUME": (
+                "Exactly one geometric selector, 1-based. NODE is by "
+                "far the most common. FLUID and "
+                "POROFLUIDMULTIPHASE also accept ELEMENT."),
+            "QUANTITY": "Field-component name, see quantities below.",
+            "VALUE": "The expected number (double).",
+            "TOLERANCE": (
+                "Absolute tolerance, strictly positive. The check is "
+                "abs(actresult - VALUE) > TOLERANCE."),
+        },
+        "optional_keys": {
+            "NAME": "Free-text label echoed in the report line.",
+            "OP": "STRUCTURE only; comparison operator, default unknown.",
+            "SPECIAL": (
+                "bool; selects a whole-field special test instead of a "
+                "point test (STRUCTURE, SCATRA, POROFLUIDMULTIPHASE)."),
+        },
+        "structure_quantities": [
+            "dispx", "dispy", "dispz",
+            "velx", "vely", "velz",
+            "accx", "accy", "accz",
+            "reactx", "reacty", "reactz",
+            "press", "stress", "strain",
+        ],
+        "structure_quantities_source": (
+            "src/structure_new/src/utils/4C_structure_new_resulttest.cpp "
+            "get_nodal_result(); an unlisted name raises \"Quantity "
+            "'<name>' not supported in structure testing\"."),
+        "exit_semantics": {
+            "all_pass": (
+                "One 'is CORRECT, abs(diff)= ... < ...' line per "
+                "entry, then normal shutdown, exit code 0."),
+            "any_fail": (
+                "'is WRONG --> actresult= ..., givenresult= ..., "
+                "abs(diff)= ... > ...' per failing entry, then "
+                "FOUR_C_THROW 'Result check failed with N errors out "
+                "of M tests', MPI_Abort, exit code 1."),
+            "not_evaluated": (
+                "If fewer entries were evaluated than were listed "
+                "(typically a wrong DIS name), 4C throws 'expected N "
+                "tests but performed M' — an unmatched entry can "
+                "never masquerade as a pass."),
+            "no_section": (
+                "'Checking results of 0 tests:' / 'OK (0)', exit 0. "
+                "Absence of the section means absence of checking, "
+                "not a passing check."),
+        },
+        "capture_note": (
+            "Run the binary through a line-buffered pipe "
+            "(stdbuf -oL -eL) or redirect to a file. The failure "
+            "diagnostic is written to raw std::cout and is discarded "
+            "by MPI_Abort when stdout is block-buffered, leaving only "
+            "'Checking results of N tests:' and exit code 1."
+        ),
+        "agent_recipe": (
+            "1. Run once with a deliberately huge TOLERANCE (e.g. "
+            "1e30) and a placeholder VALUE — the 'is CORRECT, "
+            "abs(diff)= X' line then reports X = the true magnitude "
+            "of the quantity, at full 17-digit precision, for free. "
+            "2. Copy X into VALUE and set TOLERANCE to a physically "
+            "meaningful band. 3. From then on the deck is "
+            "self-verifying and any regression flips the exit code. "
+            "This is exactly how the 2026-08-03 execution sweep "
+            "extracted reference values without post-processing a "
+            "single VTU file."
+        ),
     },
 
     # ═══════════════════════════════════════════════════════════════════════

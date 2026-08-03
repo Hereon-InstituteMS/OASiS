@@ -1107,6 +1107,55 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # ── 4C particle PD bond / neighbor diagnostics ────
             "neighbor_count", "bond_count",
             "PDWaveSpeed", "DeltaConvergence",
+            # ── 4C RESULT DESCRIPTION self-verification vocab ──
+            #    (2026-08-03: harvested from
+            #    src/global_legacy_module/4C_global_legacy_module.cpp
+            #    valid_result_lines() and
+            #    src/core/utils/src/result_test/4C_utils_result_test.cpp;
+            #    every name below is a literal string the binary
+            #    matches or echoes, so a post-execution critic can
+            #    grep for it.)
+            "RESULT_DESCRIPTION", "QUANTITY", "TOLERANCE",
+            "XFLUID", "THERMAL", "LUBRICATION",
+            "POROFLUIDMULTIPHASE", "SCATRA", "RED_AIRWAY",
+            "ARTNET", "PARTICLEWALL", "RIGIDBODY",
+            "CARDIOVASCULAR0D", "SPECIAL",
+            "dispx", "dispy", "dispz",
+            "velx", "vely", "velz",
+            "accx", "accy", "accz",
+            "reactx", "reacty", "reactz",
+            "utils_result_test", "structure_new_resulttest",
+            # ── 4C source-file stems reached by the 2026-08-03
+            #    execution sweep (bare stems, because the Signal
+            #    tokenizer splits on the leading '4C_' digit) ──
+            "solid_3D_ele_surface_evaluate",
+            "structure_new_integrator",
+            "structure_new_timint_basedataio",
+            "fem_condition", "fem_discretization_utils_dbc",
+            "fem_general_element_definition",
+            "function_manager", "io_control",
+            "inpar_io", "inpar_structure",
+            "global_legacy_module_validmaterials",
+            "global_legacy_module_validparameters",
+            # ── 4C input keys whose SECTION placement is
+            #    load-bearing (all verified by execution) ───────
+            "RESTARTEVERY", "INTERVAL_STEPS", "EVERY_ITERATION",
+            "OUTPUT_STRUCTURE", "OUTPUT_DATA_FORMAT",
+            "MAXTIME", "NUMSTEP", "TIMESTEP", "NUMDOF",
+            "ONOFF", "PROBLEMTYPE", "DYNAMICTYPE",
+            "LINEAR_SOLVER", "TOLDISP", "TOLRES",
+            "ELEMENTS", "NODES", "MATERIALS", "NPATCHES",
+            # ── 4C element / material spellings that the
+            #    installed build accepts or rejects verbatim ────
+            "STRESS_STRAIN", "PLANE_ASSUMPTION", "THICKNESS",
+            "eas_full", "eas_mild", "shell_ans", "shell_eas_ans",
+            "plane_strain", "plane_stress",
+            "orthopressure", "pseudo_orthopressure",
+            "PressureGrad", "Live", "Dead",
+            "MAT_Struct_StVenantKirchhoff", "MAT_ElastHyper",
+            "MAT_Fourier", "ELAST_CoupNeoHooke",
+            "ELAST_VolSussmanBathe", "CONDUCT", "CAPA",
+            "MATIDS", "NUMMAT",
         })
     elif backend == "febio":
         code_symbols.update({
