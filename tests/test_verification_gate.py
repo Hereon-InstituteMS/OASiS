@@ -342,10 +342,22 @@ def test_run_simulation_error_is_not_verified(tmp_path):
     assert d["verification"].startswith("NOT VERIFIED")
 
 
-def _run_precice(logs, converged=True, **kw):
+def _run_precice(logs, converged=True, exchanged=True, exit_ok=True, **kw):
+    """Stand in for run_precice_coupling.
+
+    Its return contract changed: `converged` used to be a synonym for "every
+    process exited 0" (which two scripts that never call preCICE also satisfy),
+    and is now derived from preCICE's own per-window iteration record, alongside
+    `exit_codes_ok` and `exchanged`. The stub mirrors the real shape so the
+    assertions below still test the gate rather than the stub.
+    """
     caps = _capture_tools()
     import core.precice_config as PC
     stub = lambda *a, **k: {"converged": converged,
+                            "coupling_converged": converged,
+                            "exchanged": exchanged,
+                            "exit_codes_ok": exit_ok,
+                            "evidence": [], "config_notes": [],
                             "returncodes": {"A": 0, "B": 0}, "logs": logs}
     import tempfile
     with mock.patch.object(PC, "check_precice_available", lambda: (True, "ok")), \
@@ -374,3 +386,39 @@ def test_couple_precice_flags_nan_in_logs_despite_converged():
     d = _run_precice({"B": "residual nan detected"}, converged=True,
                      critic_approved=True)
     assert d["trustworthy_result"] is False   # log NaN downgrades, fails safe
+
+
+def _reviewed_precice():
+    from tools.consolidated import _coupling_setup_text
+    _review_on_record("couple_precice", _coupling_setup_text(
+        participants='[{"name":"A"},{"name":"B"}]', data="[]", exchanges="[]",
+        scheme="serial-explicit", dimensions=2, max_time=10.0, time_window=1.0))
+
+
+def test_couple_precice_clean_exit_without_exchange_is_not_verified():
+    """Every participant exiting 0 is not a coupling.
+
+    Two scripts that never call preCICE at all exit 0, and the verdict used to be
+    driven by `converged`, which was itself just "all exited 0".
+    """
+    _reviewed_precice()
+    d = _run_precice({"B": "done"}, exchanged=False, critic_approved=True)
+    assert d["trustworthy_result"] is False
+    assert any("NO EXCHANGE" in v for v in d.get("validation", []))
+
+
+def test_couple_precice_nonconvergence_recorded_by_precice_is_not_verified():
+    """An implicit scheme that exhausts max-iterations logs it and EXITS 0."""
+    _reviewed_precice()
+    d = _run_precice({"B": "done"}, converged=False, critic_approved=True)
+    assert d["trustworthy_result"] is False
+    assert any("NOT CONVERGED" in v for v in d.get("validation", []))
+
+
+def test_couple_precice_unmeasured_convergence_is_reported_not_assumed():
+    """An explicit scheme measures no convergence: say so, do not imply it."""
+    _reviewed_precice()
+    d = _run_precice({"B": "done"}, converged=None, critic_approved=True)
+    assert d["trustworthy_result"] is True          # nothing here is WRONG
+    assert any("convergence" in c for c in d.get("checks_not_run", []))
+    assert "COVERAGE" in d["verification"]          # and the verdict says so

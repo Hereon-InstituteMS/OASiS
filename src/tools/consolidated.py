@@ -2897,6 +2897,10 @@ def register_consolidated_tools(mcp: FastMCP):
                              work_dir: str, scheme: str = "serial-explicit",
                              dimensions: int = 2, max_time: float = 10.0,
                              time_window: float = 1.0, timeout: int = 1800,
+                             max_iterations: int = 20,
+                             convergence_tol: float = 1e-6,
+                             relaxation: float = 0.5,
+                             mapping: str = "nearest-neighbor",
                              extra_env: str = "",
                              critic_approved: bool = False) -> str:
         """GENERAL preCICE coupling of ARBITRARY codes/paradigms, end-to-end.
@@ -2918,12 +2922,29 @@ def register_consolidated_tools(mcp: FastMCP):
             exchanges: list of {"data","from","to"} — one per coupled field.
             work_dir:  directory to run in (config + participant cwd).
             scheme:    serial-explicit|serial-implicit|parallel-explicit|parallel-implicit.
+                       An EXPLICIT scheme takes one pass per time window and measures
+                       no convergence at all — it cannot establish a coupled fixed
+                       point, and the verdict here says so rather than implying one.
             dimensions, max_time, time_window, timeout: coupling controls.
+            max_iterations, convergence_tol, relaxation: implicit-scheme controls
+                       (ignored for explicit). These were previously not forwarded
+                       at all, so every implicit coupling ran on the defaults
+                       whatever the caller asked for.
+            mapping:   nearest-neighbor|nearest-projection. Mapped with
+                       constraint="consistent", which preserves nodal values and
+                       NOT integrals — a flux/force field on a non-matching
+                       interface is therefore not conserved, and the tool says so.
             extra_env: optional JSON dict of extra env (e.g. {"LD_LIBRARY_PATH":...,
                        "PYTHONPATH":...}) for the participant processes.
 
-        Returns: JSON {converged, returncodes, config, logs}. A non-zero participant
-            return code is reported as a failed coupling, never as a trustworthy result.
+        Returns: JSON {exit_codes_ok, exchanged, coupling_converged, returncodes,
+            config, logs, evidence, validation, checks_not_run}. Every participant
+            exiting 0 is NOT by itself a coupling: an implicit scheme that exhausts
+            max-iterations without meeting its convergence measure logs that and
+            exits 0, and two scripts that never call preCICE at all exit 0 too. The
+            verdict is built from preCICE's own per-window record, and an explicit
+            scheme — which measures no convergence — is reported as unmeasured
+            rather than as converged.
         """
         from core.precice_config import run_precice_coupling, check_precice_available
         _get_journal().record("tool_call", "couple_precice", solver="general", physics="coupling")
@@ -2940,33 +2961,75 @@ def register_consolidated_tools(mcp: FastMCP):
         try:
             r = run_precice_coupling(parts, ds, exs, Path(work_dir), scheme=scheme,
                                      dimensions=dimensions, max_time=max_time,
-                                     time_window=time_window, timeout=timeout, extra_env=env)
+                                     time_window=time_window, timeout=timeout,
+                                     extra_env=env, max_iterations=max_iterations,
+                                     convergence_tol=convergence_tol,
+                                     mapping=mapping,
+                                     initial_relaxation=relaxation)
+        except ValueError as e:
+            return json.dumps({"error": f"preCICE configuration refused: {e}"})
         except Exception as e:
             return json.dumps({"error": f"coupling failed: {e}"})
-        conv = bool(r.get("converged"))
-        # The preCICE orchestrator returns only exit codes + log tails (not the
-        # exchanged field values), so we cannot run check_finite on the data.
-        # Best-effort: a whole-word NaN/Inf in any participant log is a broken
-        # exchange. This only ever DOWNGRADES the verdict (fails safe toward "not
-        # verified"), never upgrades it — the anti-fabrication direction.
+        # The orchestrator returns exit codes, preCICE's own per-window record and
+        # log tails — not the exchanged field values, so check_finite cannot run on
+        # the data. Best-effort: a whole-word NaN/Inf in any participant log is a
+        # broken exchange. This only ever DOWNGRADES the verdict (fails safe toward
+        # "not verified"), never upgrades it — the anti-fabrication direction.
         import re as _re
         _logs = " ".join(str(v) for v in (r.get("logs") or {}).values())
         nonfinite = bool(_re.search(r"\b(nan|-?inf|-?infinity)\b", _logs, _re.I))
+        val: list[str] = []
+        not_run: list[str] = []
         if nonfinite:
-            r["validation"] = ["participant logs report non-finite (NaN/Inf) "
-                               "values — the exchanged fields are invalid."]
+            val.append("participant logs report non-finite (NaN/Inf) "
+                       "values — the exchanged fields are invalid.")
+        if not r.get("exit_codes_ok"):
+            val.append(f"participant exit codes: {r.get('returncodes')} — a "
+                       "non-zero (or unknown) exit is a failed participant.")
+        if not r.get("exchanged"):
+            val.append("NO EXCHANGE: preCICE's own record shows no completed "
+                       "coupling time window for every participant. Exiting 0 is "
+                       "not evidence of a coupling — a script that never calls "
+                       "preCICE exits 0 too.")
+        conv = r.get("coupling_converged")
+        if conv is False:
+            val.append("NOT CONVERGED: preCICE recorded a time window in which the "
+                       "implicit scheme hit max-iterations without meeting its "
+                       "convergence measure. preCICE logs that and exits 0.")
+        elif conv is None:
+            not_run.append(
+                "coupling convergence: preCICE recorded no convergence measure"
+                + (" — an EXPLICIT scheme takes one pass per time window by "
+                   "construction, so nothing here established that the coupled "
+                   "state settled. Use serial-implicit / parallel-implicit if you "
+                   "need that." if "explicit" in scheme else
+                   " for this implicit scheme, so whether it converged is unknown."))
+        for d in (r.get("evidence") or []):
+            (not_run if "NOT established" in d else val).append(
+                f"preCICE record: {d}" if "NOT established" in d else d)
+        for note in (r.get("config_notes") or []):
+            not_run.append(f"config: {note}")
+        if val:
+            r["validation"] = val
+        r["checks_not_run"] = not_run
+        evidence_ok = (bool(r.get("exit_codes_ok")) and bool(r.get("exchanged"))
+                       and conv is not False and not nonfinite and not r.get("error"))
         _stamp_verification(
-            r, evidence_ok=conv and not nonfinite, critic_approved=critic_approved,
+            r, evidence_ok=evidence_ok, critic_approved=critic_approved,
             solver="couple_precice",
             setup_text=_coupling_setup_text(
                 participants=participants, data=data, exchanges=exchanges,
                 scheme=scheme, dimensions=dimensions, max_time=max_time,
                 time_window=time_window),
-            reason="" if (conv and not nonfinite) else
+            reason="" if evidence_ok else
                    ("participant logs report non-finite (NaN/Inf) values"
                     if nonfinite else
-                    "a participant returned non-zero or the coupling did not "
-                    "converge, so no result is backed by a valid run"))
+                    "preCICE's own record does not show a completed, converged "
+                    "exchange between all participants (see `validation`)"))
+        if not_run:
+            r["verification"] += (
+                " COVERAGE — these checks could NOT run, so the verdict above does "
+                "not cover what they would have caught: " + " | ".join(not_run))
         return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
