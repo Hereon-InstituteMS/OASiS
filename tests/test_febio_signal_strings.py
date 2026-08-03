@@ -55,6 +55,10 @@ sys.path.insert(0, str(_REPO / "src"))
 
 _PRINTABLE = set(string.printable[:-5].encode())
 
+# Everywhere a runtime value can sit inside a FEBio message. Used to cut
+# a quoted Signal into the static runs that must exist in the binary.
+_PLACEHOLDER = re.compile(r'"[^"]*"|<[^>]*>|\.\.\.|\b[A-Z]\b|%\w')
+
 
 def _find_febio() -> Path | None:
     env = os.environ.get("FEBIO_BINARY")
@@ -253,24 +257,30 @@ class TestSignalStringsExistInBinary(unittest.TestCase):
                 continue
             if s.startswith("<") or s.startswith("--"):
                 continue
-            # FEBio messages are printf templates, so only the static
-            # runs survive substitution. Everything FEBio echoes back
-            # from the deck arrives through a %s and appears inside
-            # double quotes in the message — `tag "yield_stress"
-            # (line N) : unrecognized tag` has ONE static part,
-            # `tag ... unrecognized tag`. Drop the quoted slots first,
-            # then split on everything else a runtime value could
-            # occupy.
-            s = re.sub(r'"[^"]*"', ' ', s)
+            # FEBio messages are printf templates, so only the STATIC
+            # runs between substitutions survive into the binary.
+            # Replace every place a runtime value can sit with a
+            # separator, so the static runs on either side are checked
+            # independently and never joined across a hole:
+            #   "..."   a %s slot, always double-quoted in FEBio output
+            #   <...>   our own placeholder notation
+            #   ...     an elision
+            #   N X D   a bare capital standing for a number
+            #   %d %s   a template written out literally
+            # Without the separator, `Component "" needs to have
+            # property "solver" defined` would be searched for as one
+            # run and reported as a phantom although both halves are
+            # real. With it, the check needs no per-word escape hatch —
+            # and that hatch was the hole: every long word of "element
+            # inversion detected in porous domain" occurs somewhere in
+            # the corpus, so an invented sentence passed.
+            s = _PLACEHOLDER.sub("|", s)
             for frag in re.split(r"[^A-Za-z_ ]+", s):
                 frag = frag.strip()
                 if len(re.sub(r"[^A-Za-z]", "", frag)) < 6:
                     continue
                 if frag.lower() in lower:
                     continue
-                if all(len(w) < 6 or w.lower() in lower
-                       for w in frag.split()):
-                    continue          # every long word exists on its own
                 phantoms.append(f"{topic}#{i}: {frag!r} (in {lit!r})")
         self.assertEqual(
             phantoms, [],
