@@ -54,7 +54,7 @@ _SAFE_NAMES = {
 }
 _SAFE_NAMES.update(pi=np.pi, e=np.e)
 
-SUPPORTED_OPERATORS = ("diffusion",)
+SUPPORTED_OPERATORS = ("diffusion", "elasticity")
 
 # Nodes only appear in a legitimate numeric expression. Attribute access,
 # subscripting, comprehensions, lambdas, calls to anything not in _SAFE_NAMES,
@@ -164,6 +164,31 @@ def parse_spec(spec: str | dict) -> dict:
     if dim not in (2, 3):
         raise ResidualSpecError(f"dim must be 2 or 3, got {dim}")
 
+    if operator == "elasticity":
+        src = spec["source"]
+        if not isinstance(src, (list, tuple)) or len(src) != dim:
+            raise ResidualSpecError(
+                f"elasticity needs a {dim}-component body force; give `source` "
+                f"as a list of {dim} expressions, e.g. [\"0\", \"-9.81*rho\"]")
+        for key in ("young", "poisson"):
+            if key not in spec:
+                raise ResidualSpecError(
+                    f"elasticity needs `{key}`; OASiS cannot assemble the "
+                    f"operator without the material constants")
+        return {
+            "operator": operator,
+            "dim": dim,
+            "source_code": [_compile_expression(str(s), f"source[{i}]")
+                            for i, s in enumerate(src)],
+            "coefficient_code": None,
+            "young": float(spec["young"]),
+            "poisson": float(spec["poisson"]),
+            "domain_measure": (float(spec["domain_measure"])
+                               if spec.get("domain_measure") is not None else None),
+            "field": str(spec.get("field", "")),
+            "result_file": spec.get("result_file"),
+        }
+
     measure = spec.get("domain_measure")
     return {
         "operator": operator,
@@ -173,6 +198,34 @@ def parse_spec(spec: str | dict) -> dict:
         "domain_measure": float(measure) if measure is not None else None,
         "field": str(spec.get("field", "")),
         "result_file": spec.get("result_file"),
+    }
+
+
+def _vector_evaluator(codes, dim: int):
+    """Evaluate a dim-component body force into an array of shape (dim, n)."""
+    comps = [_evaluator(c, dim) for c in codes]
+    def evaluate(coords):
+        return np.array([c(coords) for c in comps])
+    return evaluate
+
+
+def _as_result(verdict, field_name: str, artefact) -> dict:
+    """One place that turns a ResidualVerdict into the gate's dict, so the
+    scalar and vector paths cannot drift apart in what they report."""
+    if not verdict.supported:
+        return {"verdict": "UNSUPPORTED", "detail": verdict.detail,
+                "field": field_name, "artefact": artefact.name}
+    return {
+        "verdict": {"solves": "SOLVES", "does_not_solve": "DOES_NOT_SOLVE",
+                    "inconclusive": "INCONCLUSIVE"}.get(
+                        verdict.status,
+                        "SOLVES" if verdict.solver_like else "DOES_NOT_SOLVE"),
+        "relative_residual": verdict.relative_residual,
+        "n_interior_dofs": verdict.n_interior,
+        "domain_measure": verdict.domain_measure,
+        "field": field_name,
+        "artefact": artefact.name,
+        "detail": verdict.detail,
     }
 
 
@@ -227,12 +280,27 @@ def check_run_residual(spec: str | dict, result_files) -> dict:
                            f"does not substitute another")}
     name = wanted or next(iter(fields))
     values = np.asarray(fields[name], float)
+    dim = parsed["dim"]
+
+    if parsed["operator"] == "elasticity":
+        from .residual_check import check_elasticity_residual
+        if values.ndim != 2:
+            return {"verdict": "REFUSED",
+                    "detail": (f"'{name}' is not a vector field; elasticity "
+                               f"needs a {dim}-component displacement")}
+        ev = check_elasticity_residual(
+            points, cells, values, dim=dim,
+            source_fn=_vector_evaluator(parsed["source_code"], dim),
+            young=parsed["young"], poisson=parsed["poisson"],
+            domain_measure_expected=parsed["domain_measure"])
+        return _as_result(ev, name, chosen)
+
     if values.ndim > 1:
         return {"verdict": "UNSUPPORTED",
-                "detail": (f"'{name}' is a vector field; the residual check "
-                           f"covers scalar diffusion only")}
+                "detail": (f"'{name}' is a vector field but the declared "
+                           f"operator is scalar diffusion; declare "
+                           f"operator='elasticity' for a displacement field")}
 
-    dim = parsed["dim"]
     verdict = check_residual(
         points, cells, values, dim=dim,
         source_fn=_evaluator(parsed["source_code"], dim),

@@ -111,6 +111,124 @@ def _require_skfem():
         return False
 
 
+def check_elasticity_residual(points, cells, values, *, dim: int,
+                              source_fn, young: float, poisson: float,
+                              domain_measure_expected: float | None = None,
+                              ) -> ResidualVerdict:
+    """Does this displacement field solve linear elastostatics on this mesh?
+
+    Scalar diffusion is the easy case and it was the only one covered, which
+    meant the anti-fabrication check silently did nothing on exactly the
+    problems where fabrication matters — elasticity is the most common thing
+    anyone actually runs. UNSUPPORTED is honest, but it is not protection.
+
+    Same discriminator as the scalar case: assemble -div(sigma(u)) = f on the
+    SUBMITTED mesh and measure how far the submitted displacement is from
+    satisfying it. A genuine solve sits at the round-off floor; an analytic
+    field sampled at the nodes misses by the truncation error.
+
+    values is the nodal displacement, shape (n_points, dim). source_fn(x)
+    returns the body force, shape (dim, n).
+    """
+    if not _require_skfem():
+        return ResidualVerdict(False, None, None, 0, None,
+                               "scikit-fem unavailable; cannot assemble",
+                               status="unsupported")
+    from skfem import (Basis, BilinearForm, ElementTetP1, ElementTriP1,
+                       ElementVector, LinearForm, asm)
+    from skfem.models.elasticity import lame_parameters, linear_elasticity
+
+    pts = np.asarray(points, float)
+    vals = np.asarray(values, float)
+    if vals.ndim != 2 or vals.shape[1] < dim:
+        return ResidualVerdict(False, None, None, 0, None,
+                               f"expected a {dim}-component displacement field, "
+                               f"got shape {vals.shape}", status="unsupported")
+    vals = vals[:, :dim]
+    if pts.shape[0] != vals.shape[0]:
+        return ResidualVerdict(False, None, None, 0, None,
+                               "field length does not match point count",
+                               status="unsupported")
+
+    mesh = _build_mesh(pts, cells, dim)
+    if mesh is None:
+        return ResidualVerdict(False, None, None, 0, None,
+                               f"no cells of dimension {dim} that OASiS can "
+                               f"assemble on", status="unsupported")
+
+    scalar_elem = ElementTriP1() if dim == 2 else ElementTetP1()
+    basis = Basis(mesh, ElementVector(scalar_elem))
+
+    one = LinearForm(lambda v, w: v[0])
+    measure = float(asm(one, basis).sum())
+    if domain_measure_expected is not None:
+        rel = abs(measure - domain_measure_expected) / max(
+            abs(domain_measure_expected), 1e-30)
+        if rel > DOMAIN_TOL:
+            return ResidualVerdict(
+                True, None, False, 0, measure,
+                f"mesh covers measure {measure:.6g}, but the stated domain has "
+                f"{domain_measure_expected:.6g}: this is not the problem's domain",
+                status="does_not_solve")
+
+    lam, mu = lame_parameters(young, poisson)
+    A = asm(linear_elasticity(lam, mu), basis)
+
+    @LinearForm
+    def l_form(v, w):
+        f = source_fn(w.x)
+        return sum(f[i] * v[i] for i in range(dim))
+
+    b = asm(l_form, basis)
+
+    # Scatter the nodal field onto the vector basis using the basis's own dof
+    # map rather than assuming an interleaving. Guessing the component order is
+    # how a check like this silently measures the wrong thing.
+    u = np.zeros(A.shape[0])
+    nd = basis.nodal_dofs
+    if nd.shape != (dim, pts.shape[0]):
+        return ResidualVerdict(False, None, None, 0, measure,
+                               f"basis has {nd.shape} nodal dofs, field has "
+                               f"{vals.shape}", status="unsupported")
+    for c in range(dim):
+        u[nd[c]] = vals[:, c]
+
+    boundary = basis.get_dofs().flatten()
+    interior = np.setdiff1d(np.arange(A.shape[0]), boundary)
+    if interior.size == 0:
+        return ResidualVerdict(True, None, False, 0, measure,
+                               "no interior degrees of freedom to test",
+                               status="does_not_solve")
+
+    r = A @ u - b
+    num = float(np.linalg.norm(r[interior]))
+    scale = float(np.linalg.norm((abs(A) @ np.abs(u))[interior]))
+    den = max(float(np.linalg.norm(b[interior])), scale)
+    rho = num / den if den > 0 else (0.0 if num == 0 else float("inf"))
+    floor = max(ROUNDOFF_FLOOR_MIN,
+                ROUNDOFF_SAFETY * math.sqrt(interior.size) * np.finfo(float).eps)
+
+    if rho <= floor:
+        return ResidualVerdict(
+            True, rho, True, int(interior.size), measure,
+            f"the displacement satisfies the discrete elasticity equations at "
+            f"this system's round-off floor ({rho:.3e} <= {floor:.3e})",
+            status="solves")
+    if rho >= FORGERY_RESIDUAL_MIN:
+        return ResidualVerdict(
+            True, rho, False, int(interior.size), measure,
+            f"the displacement does NOT satisfy the discrete elasticity "
+            f"equations (relative residual {rho:.3e} >= "
+            f"{FORGERY_RESIDUAL_MIN:.0e}); it was not obtained by solving this "
+            f"problem on this mesh", status="does_not_solve")
+    return ResidualVerdict(
+        True, rho, None, int(interior.size), measure,
+        f"INCONCLUSIVE: relative residual {rho:.3e} lies between this system's "
+        f"round-off floor ({floor:.3e}) and the level no solver leaves "
+        f"({FORGERY_RESIDUAL_MIN:.0e}); neither certified nor rejected",
+        status="inconclusive")
+
+
 def _build_mesh(points: np.ndarray, cells, dim: int):
     """Construct a scikit-fem mesh from submitted points/cells.
 

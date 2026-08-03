@@ -155,6 +155,98 @@ def test_declaring_a_scalar_for_an_anisotropic_problem_does_not_pass():
     assert _verdict(spec, _artefact(m, u, 2)) == "DOES_NOT_SOLVE"
 
 
+# ── vector elasticity: the case that used to be UNSUPPORTED ───────────────
+def _elasticity_case():
+    """Manufactured displacement vanishing on the whole boundary, with the body
+    force derived from it symbolically."""
+    import sympy as sp
+    from skfem import (Basis, ElementTriP1, ElementVector, LinearForm, asm,
+                       condense, solve)
+    from skfem.models.elasticity import lame_parameters, linear_elasticity
+
+    E, nu = 1000.0, 0.3
+    lam, mu = lame_parameters(E, nu)
+    X, Y = sp.symbols("x y")
+    ux = sp.sin(sp.pi * X) * sp.sin(sp.pi * Y)
+    uy = sp.Rational(1, 2) * ux
+    eps = [[sp.diff(ux, X), (sp.diff(ux, Y) + sp.diff(uy, X)) / 2],
+           [(sp.diff(ux, Y) + sp.diff(uy, X)) / 2, sp.diff(uy, Y)]]
+    tr = eps[0][0] + eps[1][1]
+    sig = [[2 * mu * eps[0][0] + lam * tr, 2 * mu * eps[0][1]],
+           [2 * mu * eps[1][0], 2 * mu * eps[1][1] + lam * tr]]
+    f1 = sp.simplify(-(sp.diff(sig[0][0], X) + sp.diff(sig[0][1], Y)))
+    f2 = sp.simplify(-(sp.diff(sig[1][0], X) + sp.diff(sig[1][1], Y)))
+    fn = [sp.lambdify((X, Y), f, "numpy") for f in (f1, f2)]
+
+    def src(A):
+        return np.array([fn[0](A[0], A[1]) * np.ones_like(A[0]),
+                         fn[1](A[0], A[1]) * np.ones_like(A[0])])
+
+    m = skfem.MeshTri().refined(5)
+    basis = Basis(m, ElementVector(ElementTriP1()))
+
+    @LinearForm
+    def L(v, w):
+        f = src(w.x)
+        return f[0] * v[0] + f[1] * v[1]
+
+    uh = solve(*condense(asm(linear_elasticity(lam, mu), basis), asm(L, basis),
+                         D=basis.get_dofs()))
+    nd = basis.nodal_dofs
+    p = m.p.T
+    genuine = np.column_stack([uh[nd[0]], uh[nd[1]]])
+    exact = np.column_stack([np.sin(np.pi * p[:, 0]) * np.sin(np.pi * p[:, 1]),
+                             0.5 * np.sin(np.pi * p[:, 0]) * np.sin(np.pi * p[:, 1])])
+    spec = json.dumps({"operator": "elasticity", "dim": 2, "young": E,
+                       "poisson": nu, "domain_measure": 1.0,
+                       "source": [str(f1), str(f2)]})
+    return m, p, genuine, exact, spec
+
+
+def _vector_artefact(m, p, values):
+    d = Path(tempfile.mkdtemp())
+    path = d / "solution.vtu"
+    meshio.write_points_cells(
+        str(path), np.column_stack([p, np.zeros(len(p))]),
+        [("triangle", m.t.T)],
+        point_data={"u": np.column_stack([values, np.zeros(len(p))])})
+    return [path]
+
+
+def test_elasticity_genuine_solve_and_forgery():
+    m, p, genuine, exact, spec = _elasticity_case()
+    assert _verdict(spec, _vector_artefact(m, p, genuine)) == "SOLVES"
+    assert _verdict(spec, _vector_artefact(m, p, exact)) == "DOES_NOT_SOLVE"
+
+
+def test_elasticity_discriminates_on_the_equations_not_on_accuracy():
+    """The genuine solve differs from the exact field by the discretisation
+    error, so this cannot be passing merely because one equals the other."""
+    m, p, genuine, exact, _ = _elasticity_case()
+    assert np.abs(genuine - exact).max() > 1e-4
+
+
+def test_elasticity_zero_field_is_refused():
+    m, p, genuine, _, spec = _elasticity_case()
+    zeros = np.zeros_like(genuine)
+    assert _verdict(spec, _vector_artefact(m, p, zeros)) == "DOES_NOT_SOLVE"
+
+
+@pytest.mark.parametrize("spec, why", [
+    ({"operator": "elasticity", "dim": 2, "source": ["0", "0"]}, "young"),
+    ({"operator": "elasticity", "dim": 2, "source": ["0", "0"], "young": 1.0},
+     "poisson"),
+    ({"operator": "elasticity", "dim": 2, "source": "0", "young": 1.0,
+      "poisson": 0.3}, "2-component body force"),
+    ({"operator": "elasticity", "dim": 3, "source": ["0", "0"], "young": 1.0,
+      "poisson": 0.3}, "3-component body force"),
+])
+def test_elasticity_declarations_must_be_complete(spec, why):
+    with pytest.raises(ResidualSpecError) as exc:
+        parse_spec(spec)
+    assert why in str(exc.value)
+
+
 # ── declarations that must be refused, never quietly accepted ─────────────
 @pytest.mark.parametrize("spec, why", [
     ({"operator": "navier_stokes", "source": "0", "dim": 2}, "assemble"),
