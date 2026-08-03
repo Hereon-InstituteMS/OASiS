@@ -1113,6 +1113,21 @@ EXECUTED_API: dict = {
             "under site-packages/dune.) On a 24x24 P1 structuredGrid "
             "the stiffness matrix came back 625x625 with 5329 "
             "nonzeros."),
+        "bc_argument_is_silently_ignored": (
+            "assemble(form, bc) ACCEPTS a dune.ufl.DirichletBC and "
+            "SILENTLY IGNORES it. Measured 2026-08-03 on a 16x16 P1 "
+            "structuredGrid: assemble(form).as_numpy and "
+            "assemble(form, DirichletBC(space,[0])).as_numpy both came "
+            "back with nnz 2401 and max|difference| exactly 0.0 — the "
+            "constrained matrix is byte-identical to the unconstrained "
+            "one. Nothing raises and nothing warns. Signal: you passed "
+            "a BC to assemble() and the solution does not respect it; "
+            "verify by assembling twice, with and without the bc "
+            "argument, and comparing nnz and max|A1-A2| — if the "
+            "difference is 0.0 the argument did nothing. Constraints "
+            "are applied by the SCHEME, so build a galerkin([a == L, "
+            "bc]) and take its matrix if you need a constrained "
+            "operator."),
         "no_boundary_conditions": (
             "assemble() knows nothing about DirichletBCs — the matrix "
             "is the raw Galerkin matrix. That is what makes it the "
