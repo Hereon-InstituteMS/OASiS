@@ -2129,7 +2129,7 @@ def matched_tsi_plane_strain_input(
 ) -> str:
     """4C thermo-elastic PLANE STRAIN via a pseudo-2D thin slab (one-way TSI).
 
-    Why this exists (T14 evaluation campaign, 2026-07): 4C has NO 2D TSI
+    Why this exists: 4C has NO 2D TSI
     elements — every TSI corpus test is 3D SOLIDSCATRA. Agents given a 2D
     plane-strain thermo-mechanical problem tried the two 2D structural
     eletypes and hit hard errors on the deployed binary:
@@ -2137,7 +2137,7 @@ def matched_tsi_plane_strain_input(
           -> "Invalid type of material law for wall element" (4C_w1_mat.cpp:179)
       * SOLID QUAD4 (any material, this build)
           -> "Element 'SOLID' does not seem to know cell type 'quad4'"
-    Both reproduced 2026-08-01 against /home/alexander/4C/build/4C. The
+    Both reproduced against the deployed 4C binary. The
     correct route is the standard thin-slab trick implemented here:
 
       - 3D mesh [0,lx]x[0,ly]x[0,t] with ONE SOLIDSCATRA HEX8 layer in z

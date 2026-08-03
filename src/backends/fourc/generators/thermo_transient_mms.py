@@ -10,7 +10,7 @@ theoretical order 2 for theta = 0.5 (Crank-Nicolson), 1 for theta = 1
 (backward Euler).
 
 All facts below verified live against the deployed 4C binary
-(/home/alexander/4C/build/4C) on 2026-08-01.
+(the deployed 4C binary) on 2026-08-01.
 """
 
 from __future__ import annotations

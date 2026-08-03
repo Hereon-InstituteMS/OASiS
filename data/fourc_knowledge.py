@@ -1696,7 +1696,7 @@ STRUCTURE ELEMENTS:
 
             # ───────────────────────────────────────────────────
             # 2026-08-03 EXECUTION SWEEP on the DEPLOYED binary
-            # /home/alexander/4C/build/4C = 4C 2026.2.0-dev,
+            # deployed 4C binary = 4C 2026.2.0-dev,
             # git 89519cf. Where these disagree with the entries
             # above (which were written against 4C 2026.3.0-dev)
             # the disagreement is a VERSION boundary, not a
@@ -4347,7 +4347,7 @@ TRANSPORT ELEMENTS:
             # 2026-08-03 EXECUTION SWEEP.
             # Every entry below was produced by writing a minimal
             # input, running the deployed binary
-            # /home/alexander/4C/build/4C (4C 2026.2.0-dev, git
+            # the deployed 4C binary (2026.2.0-dev, git
             # 89519cf) and recording what actually happened. The
             # provenance note on each entry names the probe.
             # ───────────────────────────────────────────────────
@@ -4712,7 +4712,7 @@ TRANSPORT ELEMENTS:
     #   src/structure_new/src/utils/4C_structure_new_resulttest.cpp
     #       get_nodal_result()            -> STRUCTURE QUANTITY names
     # Every behavioural claim below was then reproduced by running
-    # /home/alexander/4C/build/4C (4C 2026.2.0-dev, git 89519cf) on a
+    # the deployed 4C binary (2026.2.0-dev, git 89519cf) on a
     # minimal HEX8 cantilever and a minimal HEX8 Thermo cube.
     # NOTE: deliberately has no "pitfalls" key — the actionable
     # pitfalls live in input_format.pitfalls so the Signal-verification

@@ -1287,8 +1287,8 @@ class FourcBackend(SolverBackend):
             # plane-strain thermo-mechanics. 4C has NO 2D TSI elements
             # (module solid_scatra_3D_ele; every TSI corpus test is 3D)
             # and the 2D structural eletypes both dead-end with the
-            # thermo material on the deployed binary (T14 campaign
-            # 2026-07: WALL QUAD4 -> "Invalid type of material law for
+            # thermo material on the deployed binary
+            # (WALL QUAD4 -> "Invalid type of material law for
             # wall element"; SOLID QUAD4 -> "Element 'SOLID' does not
             # seem to know cell type 'quad4'"). One SOLIDSCATRA HEX8
             # layer with u_z fixed everywhere is exact plane strain;
