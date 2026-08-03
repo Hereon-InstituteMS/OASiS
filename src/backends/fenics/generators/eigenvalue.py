@@ -5,6 +5,17 @@ Variants: 2d
 
 
 KNOWLEDGE = {
+    # ─────────────────────────────────────────────────────────────────
+    # _SERVING_STATUS (added 2026-08-03)
+    # This dict is SHADOWED and is NOT what an agent receives.
+    # fenics/backend.py:get_knowledge() returns
+    # src/tools/deep_knowledge.py::_FENICS_KNOWLEDGE['eigenvalue'] for this
+    # physics and never falls through to here. Editing the pitfalls
+    # below changes nothing an agent can see. The claims here were NOT
+    # re-verified in the 2026-08-03 execution pass for exactly that
+    # reason — treat them as unverified history, and make corrections
+    # in deep_knowledge.py instead.
+    # ─────────────────────────────────────────────────────────────────
     "description": (
         "Generalised eigenvalue problems A x = lambda M x via SLEPc "
         "(the eigenvalue counterpart of PETSc). A is the stiffness matrix, "
@@ -212,16 +223,23 @@ KNOWLEDGE = {
         "corrects an earlier catalog claim that diag=0.0 works out of the "
         "box.)",
         "[Numerical] Assembling M with bcs=[] (no BC at all) does NOT give "
-        "the constrained discrete spectrum. It solves a different pencil "
-        "whose eigenvalues merely approach the constrained ones as the mesh "
-        "is refined. Signal: on a coarse mesh the eigenvalues from M with "
-        "bcs=[] differ from those of the exactly-reduced interior-DoF "
-        "problem in the second significant digit, while M with diag=0.0 "
-        "reproduces the reduced problem to machine precision and returns "
+        "the constrained discrete spectrum when M is the CONSISTENT mass "
+        "matrix: its boundary-interior blocks are non-zero, so it is a "
+        "different pencil whose eigenvalues merely approach the constrained "
+        "ones as the mesh is refined. Signal: on a coarse mesh the "
+        "eigenvalues from M with bcs=[] differ from those of the "
+        "exactly-reduced interior-DoF problem in the second significant "
+        "digit, and the gap closes under refinement — which is why the error "
+        "is easy to miss on a fine mesh — while M with diag=0.0 reproduces "
+        "the reduced problem to machine precision at EVERY mesh and returns "
         "exactly as many finite eigenvalues as there are unconstrained DoFs. "
-        "(Verified by execution 2026-08-03 against a dense scipy eigensolve "
-        "of the interior block — this corrects an earlier catalog claim that "
-        "bcs=[] is a clean recipe.)",
+        "SCOPE: with a mass-LUMPED M the boundary-interior blocks vanish and "
+        "bcs=[] is exact, but the constrained modes then reappear at "
+        "lambda = 1/M_ii and interleave with the physical spectrum. "
+        "diag=0.0 + SINVERT is correct in both cases. (Verified by execution "
+        "2026-08-03 against a dense scipy eigensolve of the interior block — "
+        "this corrects an earlier catalog claim that bcs=[] is a clean "
+        "recipe.)",
         "[API] dolfinx 0.10's assemble_matrix takes `diag`, not `diagonal`. "
         "Signal: TypeError: assemble_matrix() got an unexpected keyword "
         "argument 'diagonal'. The 0.10 signature is (a, bcs=None, diag=1, "

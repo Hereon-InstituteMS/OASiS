@@ -5,6 +5,17 @@ Variants: 2d
 
 
 KNOWLEDGE = {
+    # ─────────────────────────────────────────────────────────────────
+    # _SERVING_STATUS (added 2026-08-03)
+    # This dict is SHADOWED and is NOT what an agent receives.
+    # fenics/backend.py:get_knowledge() returns
+    # src/tools/deep_knowledge.py::_FENICS_KNOWLEDGE['reaction_diffusion'] for this
+    # physics and never falls through to here. Editing the pitfalls
+    # below changes nothing an agent can see. The claims here were NOT
+    # re-verified in the 2026-08-03 execution pass for exactly that
+    # reason — treat them as unverified history, and make corrections
+    # in deep_knowledge.py instead.
+    # ─────────────────────────────────────────────────────────────────
     "description": "Two-species reaction-diffusion system (coupled, transient, nonlinear)",
     "weak_form": "((u-u_old)/dt, phi_u)*dx + D1*(grad(u),grad(phi_u))*dx = (R_u, phi_u)*dx (+ same for v)",
     "function_space": "Mixed: P1 + P1 (one per species) via mixed_element",

@@ -188,24 +188,33 @@ KNOWLEDGE = {
             "    raise RuntimeError(ksp.getConvergedReason())"
         ),
         "OPTIONAL": (
-            "'superlu_dist' and 'umfpack' are the alternative factor solvers "
-            "present on the reference install. At scale, replace the direct "
-            "solve with a fieldsplit Schur-complement preconditioner."
+            "'umfpack' is the alternative factor solver that was clean on "
+            "every (cell type, degree, mesh) combination tried here. "
+            "'superlu_dist' is NOT a safe blind fallback — see the pitfall "
+            "below. At scale, replace the direct solve with a fieldsplit "
+            "Schur-complement preconditioner."
         ),
         "explanation": (
             "The system is INDEFINITE (a saddle point), so Krylov methods "
-            "that assume positive definiteness fail on it. The converged-"
-            "reason check is REQUIRED, not optional: a failed factorisation "
-            "leaves inf/garbage in the solution vector and the script still "
-            "exits 0."
+            "that assume positive definiteness fail on it. BOTH checks are "
+            "REQUIRED: the converged reason catches a failed factorisation "
+            "(which otherwise leaves inf in the solution while the script "
+            "exits 0), and the mass-balance check catches a factorisation "
+            "that reports success and returns a wrong answer."
         ),
         "pitfalls": [
             "[Numerical] Always test ksp.getConvergedReason() > 0. Signal: "
             "reason -11 (KSP_DIVERGED_PC_FAILED) with the solution vector "
             "full of inf, while the process exit status is still 0.",
-            "[Numerical] Plain MUMPS runs out of factorisation workspace on "
-            "higher-order RT. Signal: 'MUMPS error in numerical "
-            "factorization: INFOG(1)=-9'. Raise mat_mumps_icntl_14.",
+            "[Numerical] The converged reason is NOT sufficient on its own. "
+            "Signal: superlu_dist returns reason 4 (converged) on this "
+            "saddle point while ||div(sigma_h) - f|| / ||f|| comes back at "
+            "order 1-100 instead of machine epsilon. Only the mass-balance "
+            "check catches it.",
+            "[Numerical] MUMPS can run out of factorisation workspace on "
+            "some meshes. Signal: 'MUMPS error in numerical factorization: "
+            "INFOG(1)=-9'. Setting mat_mumps_icntl_14 to a few hundred "
+            "recovers those cases.",
         ],
     },
     "verification": (
@@ -233,21 +242,36 @@ KNOWLEDGE = {
         "[Numerical] A direct solve of this saddle point can fail while the "
         "script still exits 0. Signal: ksp.getConvergedReason() returns -11 "
         "(KSP_DIVERGED_PC_FAILED) and the solution vector is filled with "
-        "inf, but nothing is printed and the return code is 0. With "
-        "-ksp_error_if_not_converged the underlying cause surfaces as "
+        "inf, but nothing is printed and the return code is 0. Setting "
+        "ksp.setErrorIfNotConverged(True) surfaces the underlying cause: "
         "'MUMPS error in numerical factorization: INFOG(1)=-9' for the MUMPS "
-        "factoriser, and as '[0] Zero pivot row 0 value 0. tolerance "
+        "factoriser, and '[0] Zero pivot row 0 value 0. tolerance "
         "2.22045e-14' for PETSc's built-in LU. ALWAYS test "
-        "getConvergedReason() > 0. (Verified by execution 2026-08-03.)",
-        "[Numerical] No single direct solver is robust across all "
-        "RT-degree / cell-type combinations here. Signal: on the same "
-        "problem, plain MUMPS fails with INFOG(1)=-9 at RT2 on triangles "
-        "while succeeding on quadrilaterals, and superlu_dist succeeds at "
-        "RT2 on triangles while failing with reason -11 at RT1 on "
-        "quadrilaterals. Setting mat_mumps_icntl_14 (working-space headroom) "
-        "to a few hundred makes MUMPS succeed for degrees 1-3 on both cell "
-        "types; umfpack also succeeds on all of them but is sequential. "
-        "(Verified by execution 2026-08-03.)",
+        "getConvergedReason() > 0 — and do not stop there, because a "
+        "converged reason is not proof of a correct answer here (next "
+        "pitfall). (Verified by execution 2026-08-03.)",
+        "[Numerical] No direct solver was robust across every "
+        "(cell type, RT degree, mesh size) combination here, and the "
+        "failures are SPORADIC — they do not follow a monotone rule in "
+        "degree or mesh size, so you cannot predict them, you have to check "
+        "for them. Signal: over a clean-process sweep of triangles and "
+        "quadrilaterals at RT degree 1/2/3 and several mesh sizes, MUMPS "
+        "returned KSPConvergedReason -11 on a few isolated triangle cases "
+        "(underlying cause 'MUMPS error in numerical factorization: "
+        "INFOG(1)=-9', a workspace shortage, which setting "
+        "mat_mumps_icntl_14 to a few hundred fixed on exactly those cases); "
+        "superlu_dist returned -11 on a different, non-overlapping set; and "
+        "umfpack was clean on all of them but is sequential. WORST CASE, and "
+        "the reason the mass-balance check is mandatory: superlu_dist also "
+        "produced several quadrilateral cases with KSPConvergedReason 4 "
+        "(converged) and a mass-balance residual of order 1-100 with a "
+        "visibly wrong pressure range — a silent wrong answer that no solver "
+        "status reveals. Do not use superlu_dist as a blind fallback. "
+        "(Verified by execution 2026-08-03, each configuration in its own "
+        "process. NOTE: an adversarial re-check that swept different mesh "
+        "sizes saw MUMPS succeed everywhere and concluded the workspace "
+        "option was inert — it is not inert, it is only exercised on the "
+        "configurations that fail, which is the point of this pitfall.)",
         "[Numerical] The system is INDEFINITE (saddle point): use a direct "
         "solver or a Schur-complement block preconditioner. Signal: PETSc CG "
         "returns KSP_DIVERGED_INDEFINITE_PC and GMRES stagnates with the "
@@ -432,6 +456,19 @@ rel_balance = res / scale if scale > 0 else res
 p_arr = wh.sub(1).collapse().x.array
 if not np.all(np.isfinite(p_arr)):
     raise RuntimeError("pressure contains non-finite values — the solve failed")
+# The RT/DG pair is locally conservative by construction: when the source lies
+# in the pressure space this residual is at machine epsilon. Anything larger
+# means the factorisation returned a wrong answer WITHOUT reporting it — the
+# converged reason alone does not catch that (superlu_dist has been observed
+# returning reason 4 with a residual of order 1-100 on this system).
+if rel_balance > 1e-8:
+    raise RuntimeError(
+        f"mass balance violated: ||div(sigma_h)-f||/||f|| = {{rel_balance:.3e}} "
+        f"but the RT/DG pair is exactly conservative for a source in the "
+        f"pressure space. KSPConvergedReason was {{reason}}, so the solver "
+        f"did not report the failure. Try another "
+        f"setFactorSolverType(...) — 'umfpack' was clean on every case "
+        f"tested — or check that the source really lies in the DG space.")
 if p_arr.max() - p_arr.min() < 1e-14 * max(abs(p_arr).max(), 1.0):
     raise RuntimeError(
         "pressure is constant to round-off: the flux BCs probably cover the "

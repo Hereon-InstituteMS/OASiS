@@ -5,6 +5,17 @@ Variants: 2d, 3d, l_domain, rectangle
 
 
 KNOWLEDGE = {
+    # ─────────────────────────────────────────────────────────────────
+    # _SERVING_STATUS (added 2026-08-03)
+    # This dict is SHADOWED and is NOT what an agent receives.
+    # fenics/backend.py:get_knowledge() returns
+    # src/tools/deep_knowledge.py::_FENICS_KNOWLEDGE['poisson'] for this
+    # physics and never falls through to here. Editing the pitfalls
+    # below changes nothing an agent can see. The claims here were NOT
+    # re-verified in the 2026-08-03 execution pass for exactly that
+    # reason — treat them as unverified history, and make corrections
+    # in deep_knowledge.py instead.
+    # ─────────────────────────────────────────────────────────────────
     "description": "Poisson equation -kappa * laplacian(u) = f solved with FEniCSx/dolfinx",
     "weak_form": "kappa * (grad(u), grad(v)) * dx = (f, v) * dx",
     "function_space": "Lagrange order 1 or 2",
