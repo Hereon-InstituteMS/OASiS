@@ -493,7 +493,14 @@ nesting of sections: subsections are spelled with a slash IN the name, e.g.
 
 4C's error messages are fmt templates: the binary contains
 `Section '{}' is not a valid section name.`, not the rendered text. To check
-whether a message can occur at all, grep the binary for the TEMPLATE form.
+whether a message can occur at all, grep for the TEMPLATE form, e.g.
+
+    strings -n 6 <path-to-4C> <path-to-lib4C.so> \\
+        | grep -F "Section '{}' is not a valid section name."
+
+A few messages are assembled at runtime and are NOT findable this way (for
+instance "Expected parameter 'DENS'"), and a few come from the C++ runtime
+rather than from 4C, so a zero hit is weak evidence, not proof.
 
 An unknown section name is fatal before anything runs:
     Section 'XFLUID DYNAMIC' is not a valid section name.
@@ -560,13 +567,20 @@ Design entities are then attached SYMBOLICALLY — no node ids anywhere:
 The word after SIDE/EDGE/CORNER/VOLUME is the DISCRETISATION name (structure,
 thermo, fluid, ale, scatra...), not the section name, and it is CASE
 SENSITIVE and lowercase - "SIDE STRUCTURE x- DSURFACE 1" aborts with
-"Could not find discretization 'STRUCTURE'." Mixing a DOMAIN section with a
-NODE COORDS section fails with the non-obvious "Node 1 does not belong to
-discretization structure". The generator makes
-HEX8/20/27 and WEDGE6/15 ONLY — asking it for QUAD4 aborts with
-"The discretization type quad4, is not implemented. Currently only
-HEX(8,20,27) and WEDGE(6,15) are implemented for the box geometry
-generation." So Route C is 3D-only; for 2D use Route A.
+"Could not find discretization 'STRUCTURE'." Mixing a DOMAIN section with a NODE COORDS
+section does NOT fail - the extra nodes are ignored and the run exits 0. It
+only surfaces if a RESULT DESCRIPTION happens to reference a node id the
+generator renumbered, as "Node 1 does not belong to discretization
+structure". Pick one route. The generator makes
+HEX8/20/27 and WEDGE6/15 ONLY, so Route C is 3D-only and any 2D problem
+must use Route A. Asking it for a 2D cell fails in three different places
+depending on how you ask: "SOLID: QUAD4:" gives "Could not match this input"
+(SOLID owns no quad4 at all); "WALL: QUAD4:" with the default
+auto_partition: false gives "This map-partition is only available for
+HEX-elements!"; and "WALL: QUAD4:" with auto_partition: true finally gives
+the explicit "The discretization type quad4, is not implemented. Currently
+only HEX(8,20,27) and WEDGE(6,15) are implemented for the box geometry
+generation."
 
 ## 2. THE ELEMENT LINE — what each element type demands
 
@@ -580,10 +594,16 @@ the element does not own is fatal ("After parsing, the line still contains
 | SOLID  | HEX8 HEX18 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 NURBS27 | MAT, KINEM |
 | WALL   | QUAD4 QUAD8 QUAD9 TRI3 TRI6 | MAT, KINEM, EAS, THICK, STRESS_STRAIN, GP |
 | THERMO | QUAD4 QUAD8 QUAD9 TRI3 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 LINE2 | MAT |
-| TRANSP | same 2D+3D range as THERMO plus NURBS2/3/8 | MAT, TYPE |
-| FLUID  | QUAD4..NURBS27 | MAT, NA |
-| SOLIDSCATRA | HEX8 HEX27 TET4 TET10 NURBS27 | MAT, KINEM, TYPE |
-| ALE2 / ALE3 | 2D / 3D range | MAT |
+| TRANSP | QUAD4 QUAD8 QUAD9 TRI3 TRI6 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 LINE2 LINE3 | MAT, TYPE (`TYPE Std` for plain convection-diffusion) |
+| FLUID  | QUAD4 QUAD8 QUAD9 TRI3 TRI6 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 | MAT, NA (`NA Euler` for a fixed mesh, `NA ALE` for a moving one) |
+| SOLIDSCATRA | HEX8 HEX27 TET4 TET10 | MAT, KINEM, TYPE |
+| ALE2 (2D) | QUAD4 QUAD8 QUAD9 TRI3 TRI6 | MAT |
+| ALE3 (3D) | HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 | MAT |
+
+The tables list the ordinary cell types only. Every element type above
+also declares NURBS cells, which are omitted here because they need the
+separate NURBS apparatus (SHAPEFCT, KNOTVECTORS, CP lines) described
+below and are not drop-in replacements.
 
 SOLID owns NO 2D cell type on this build — 2D structural cells belong to
 WALL. Getting this backwards gives
@@ -610,8 +630,12 @@ options are: linear|nonlinear".
 
 NURBS cells of any element type additionally need PROBLEM TYPE/SHAPEFCT:
 "Nurbs", a "<DIS> KNOTVECTORS" section, and control points written as
-"CP <id> COORD x y z <weight>" instead of "NODE". Plain NODE lines with a
-NURBS element SEGFAULT with no message at all.
+"CP <id> COORD x y z <weight>" instead of "NODE". Omitting SHAPEFCT gives
+"Received discretization which is not Nurbs!"; omitting the knotvectors gives
+"cannot get ele knots when filled is false". Some element/cell combinations
+fail hard instead: WALLNURBS with plain NODE lines segfaults with no message
+at all (exit 139). Treat NURBS as a separate exercise, not a drop-in cell
+type.
 An element type that does not exist at all gives
 "Unknown type 'BOGUS' of finite element".
 A missing required key gives
@@ -626,9 +650,12 @@ element is written as a YAML MAP - inside ELEMENT_BLOCKS (Route B) or inside
 `STRUCTURE DOMAIN: elements:` (Route C), as
 `INTEGRATION: {RESIDUUM: hex_27point, MASS: hex_8point}`. On an inline
 `STRUCTURE ELEMENTS` string line there is NO syntax that works, and it fails
-in two different ways: with both sub-keys present it aborts with
-"Key 'INTEGRATION' cannot be found in the container."; with only one sub-key,
-or bare, it produces NO 4C diagnostic at all - the process dies with
+in two different ways, and the discriminator is the SYNTAX, not how many
+sub-keys you write. Plain whitespace tokens
+("INTEGRATION RESIDUUM hex_27point MASS hex_8point") abort with
+"Key 'INTEGRATION' cannot be found in the container."; anything using the
+brace form, and the bare keyword, produce NO 4C diagnostic at all - the
+process dies with
 "terminate called after throwing an instance of 'std::bad_any_cast'" and
 shell exit status 134. That line comes from the C++ runtime's terminate
 handler in libstdc++, not from 4C, so grepping the 4C binary for it finds
@@ -765,9 +792,13 @@ complete deck plus the three sections contact adds.
    key as a nested mapping.
 5. Solvers are SOLVER 1, SOLVER 2, ... and every LINEAR_SOLVER integer in the
    deck must name one that exists.
-6. NUMDOF must match the physics: 3 for 3D structure, 2 for 2D structure,
-   1 for thermal and scalar transport. ONOFF/VAL/FUNCT must each have exactly
-   NUMDOF entries.
+6. ONOFF, VAL and FUNCT must each have exactly NUMDOF entries - THAT is what
+   4C enforces, and an inconsistent block is rejected with "Could not match
+   this input". The physical count (3 for 3D structure, 2 for 2D structure, 1
+   for thermal and scalar transport) is what you SHOULD write, but a
+   self-consistent oversized block - NUMDOF: 3 with three-entry arrays on a
+   scalar field - runs with exit 0 and the same answer. So a wrong NUMDOF is
+   a silent modelling error, not a caught one.
 7. Convergence is controlled by TOLDISP+TOLRES (structure) or TOLTEMP+TOLRES
    (thermal); both members of the pair must be met by default
    (NORMCOMBI_RESFDISP / NORMCOMBI_RESFTEMP: "And"). ONLY the structural
@@ -796,7 +827,6 @@ complete deck plus the three sections contact adds.
   configured inside PARTICLE DYNAMIC.
 - `SOLID QUAD4` in 2D when SOLID owns no 2D cell type — use WALL with all
   six of its keys.
-- Missing VELOCITYFIELD: zero for pure diffusion in scalar transport.
 - Missing DENS in a structural material (zero mass matrix = singular).
 - Forgetting KINEM: nonlinear for large-deformation problems.
 - In a standalone PROBLEMTYPE: Thermo run, using the THERMO-prefixed

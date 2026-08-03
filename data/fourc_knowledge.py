@@ -1288,10 +1288,21 @@ DESIGN LINE DIRICH CONDITIONS:
     ONOFF: [1, 1]
     VAL: [0.0, 0.0]
     FUNCT: [0, 0]
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN LINE NEUMANN CONDITIONS:
+  - E: 2                  # right edge: pulled in +x
+    NUMDOF: 2
+    ONOFF: [1, 0]
+    VAL: [10.0, 0.0]
+    FUNCT: [1, 0]
+    TYPE: "Live"
 DLINE-NODE TOPOLOGY:
   - "NODE 1 DLINE 1"
   - "NODE 4 DLINE 1"
-NODE COORDS:
+  - "NODE 2 DLINE 2"
+  - "NODE 3 DLINE 2"
+NODE COORDS:              # in a 2D problem every z MUST be 0.0
   - "NODE 1 COORD 0.0 0.0 0.0"
   - "NODE 2 COORD 1.0 0.0 0.0"
   - "NODE 3 COORD 1.0 1.0 0.0"
@@ -1299,6 +1310,13 @@ NODE COORDS:
 STRUCTURE ELEMENTS:
   # WALL, not SOLID, and all six keys are required
   - "1 WALL QUAD4 1 2 3 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 2
+      QUANTITY: "dispx"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30   # record mode: abs(diff) prints the true value
 """,
 
         # ---- CONVERGENCE: the keys and what they print ----
@@ -1486,7 +1504,7 @@ STRUCTURE ELEMENTS:
             "GenAlpha": "Generalized-alpha implicit time integration",
             "GenAlphaLieGroup": "Generalized-alpha for SO(3) rotation group (beams/shells)",
             "OneStepTheta": "One-step-theta implicit scheme",
-            "ExplEuler": "Explicit forward Euler",
+            "ExplicitEuler": "Explicit forward Euler (the enum is ExplicitEuler; 'ExplEuler' is rejected)",
             "CentrDiff": "Explicit central differences (wave propagation)",
             "AdamsBashforth2": "Explicit 2nd order Adams-Bashforth",
             "AdamsBashforth4": "Explicit 4th order Adams-Bashforth",
@@ -1494,7 +1512,11 @@ STRUCTURE ELEMENTS:
 
         "kinematics": {
             "linear": "Small strain / linear kinematics (ε = sym(∇u))",
-            "nonlinearTotLag": "Total Lagrangian / finite deformation (F = I + ∇u)",
+            # The KINEM key on an element line takes 'linear' or
+            # 'nonlinear' and NOTHING else. 'nonlinearTotLag' is what 4C
+            # echoes back internally after parsing 'nonlinear'; writing it
+            # is rejected.
+            "nonlinear": "Total Lagrangian / finite deformation (F = I + grad u). Write 'KINEM nonlinear'; 'nonlinearTotLag' is rejected.",
         },
 
         "element_types": {
@@ -1505,8 +1527,8 @@ STRUCTURE ELEMENTS:
                 "SOLID TET4": "4-node tetrahedron (P1)",
                 "SOLID TET10": "10-node tetrahedron (P2)",
                 "SOLID WEDGE6": "6-node wedge/prism",
-                "SOLID WEDGE15": "15-node wedge (P2)",
-                "SOLID PYRAMID5": "5-node pyramid",
+                "SOLID HEX18": "18-node hexahedron",
+                                "SOLID PYRAMID5": "5-node pyramid",
                 "SOLIDSCATRA HEX8": "8-node hex with scalar transport coupling (for TSI)",
             },
             "2D_wall": {
@@ -1533,7 +1555,7 @@ STRUCTURE ELEMENTS:
                 "WALL QUAD9": "9-node full biquadratic quad, same six required keys.",
                 "WALL TRI3":  "3-node triangle, same six required keys.",
                 "WALL TRI6":  "6-node quadratic triangle, same six required keys.",
-                "WALL NURBS4 / NURBS9": "Isogeometric 2D cells, same six required keys.",
+                "WALL NURBS4 / NURBS9": "DO NOT USE. `4C --parameters` lists these under WALL but they are not registered; the element type is WALLNURBS, and asking for them under WALL gives the misleading \"Unknown type 'WALL' of finite element\".",
             },
             "1D_beam": {
                 "BEAM3R": "Simo-Reissner beam (shear-deformable, geometrically exact)",
@@ -1542,10 +1564,10 @@ STRUCTURE ELEMENTS:
             },
             "shell": {
                 "SHELL7P": "7-parameter shell (EAS, ANS options, thickness locking-free)",
-                "SHELL_KL_NURBS": "Kirchhoff-Love NURBS shell (isogeometric)",
+                "SHELL_KIRCHHOFF_LOVE_NURBS": "Kirchhoff-Love NURBS shell (isogeometric). Spelled out in full; 'SHELL_KL_NURBS' is not registered.",
             },
             "other": {
-                "MEMBRANE": "Membrane element (no bending stiffness)",
+                "MEMBRANE3 / MEMBRANE4 / MEMBRANE6 / MEMBRANE9": "Membrane elements, no bending stiffness. The node count is part of the element NAME; a bare 'MEMBRANE' is not registered.",
                 "TRUSS3": "Truss element (axial force only)",
                 "TORSION3": "Torsional spring element",
                 "RIGIDSPHERE": "Rigid sphere for DEM contact",
@@ -1562,17 +1584,33 @@ STRUCTURE ELEMENTS:
             "shell_eas_ans": "Combined EAS + ANS for shells",
         },
 
+        # STRUCTURAL DYNAMIC/NLNSOL. These are the EXACT enum spellings;
+        # the plausible-looking variants newtonfull / newtonmod / newtonls /
+        # newtonuzawalin / nox_nln are NOT accepted.
         "nonlinear_solvers": {
-            "newtonfull": "Full Newton-Raphson (assemble tangent every iteration)",
-            "newtonmod": "Modified Newton (reuse tangent, cheaper per iteration)",
-            "newtonls": "Newton with line search (backtracking)",
-            "newtonuzawalin": "Linear Uzawa for constrained problems",
-            "newtonuzawanonlin": "Nonlinear Uzawa",
+            "fullnewton": "Full Newton-Raphson (assemble tangent every iteration). The default.",
+            "modnewton": "Modified Newton (reuse tangent, cheaper per iteration)",
+            "lsnewton": "Newton with line search (backtracking)",
+            "newtonlinuzawa": "Linear Uzawa for constrained problems",
+            "augmentedlagrange": "Augmented-Lagrange solver",
             "ptc": "Pseudo-transient continuation (robust for difficult convergence)",
-            "nox_nln": "NOX nonlinear solver framework (Trilinos)",
+            "noxnln": "NOX nonlinear solver framework (Trilinos); configure it via the STRUCT NOX sections",
+            "singlestep": "Single-step (no iteration)",
+            "vague": "Unset sentinel; do not select",
         },
 
-        "wall_element_params": "KINEM linear/nonlinear, EAS none/full, THICK 1.0, STRESS_STRAIN plane_strain/plane_stress, GP 2 2",
+        # Full 2D element line, so it can be copied rather than assembled.
+        # See structure_elements_section/WALL above for the key rules.
+        "wall_element_params": (
+            "A complete WALL line, in section STRUCTURE ELEMENTS:\n"
+            '  - "1 WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none '
+            'THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"\n'
+            "All six keys are required. KINEM linear|nonlinear; EAS "
+            "none|full (full is 4-node only); THICK is the out-of-plane "
+            "thickness; STRESS_STRAIN plane_strain|plane_stress; GP is two "
+            "integers, '2 2' for QUAD4, '3 3' for QUAD9, and '<n> 0' for "
+            "TRI3/TRI6."
+        ),
 
         "pitfalls": [
             (
@@ -1611,9 +1649,10 @@ STRUCTURE ELEMENTS:
                 "[Input] STRUCTURE ELEMENTS: WALL does NOT own NURBS4/NURBS9 even "
                 "though `4C --parameters` lists them under WALL. The "
                 "registered element type for isogeometric 2D cells is "
-                "WALLNURBS. Signal: 'Unknown type 'WALL' of finite "
-                "element' - which names the wrong "
-                "thing: 'Unknown type 'WALL' of finite element'. Any NURBS "
+                "WALLNURBS. Signal: \"Unknown type 'WALL' of finite "
+                "element\" — a misleading message, since WALL itself is a "
+                "perfectly known element type; what is unregistered is the "
+                "WALL-plus-NURBS combination. Any NURBS "
                 "element additionally needs PROBLEM TYPE/SHAPEFCT: "
                 "\"Nurbs\", a '<DIS> KNOTVECTORS' section, and control "
                 "points written as 'CP <id> COORD x y z <weight>' inside "
@@ -1636,11 +1675,13 @@ STRUCTURE ELEMENTS:
             (
                 "[Input] SOLIDSCATRA element is REQUIRED for "
                 "TSI coupling — plain SOLID cannot couple "
-                "with the thermal field. Signal: a TSI "
-                "problem with SOLID elements (not "
-                "SOLIDSCATRA) raises 'no SCATRA "
-                "discretisation found' from "
-                "4C_tsi_factory.cpp at setup; the "
+                "with the thermal field. Signal: 'Unsupported "
+                "solid element type!' from tsi/4C_tsi_utils.cpp. "
+                "(An earlier version of this entry quoted 'no SCATRA "
+                "discretisation found' from '4C_tsi_factory.cpp'; "
+                "THAT STRING IS NOT IN THE BINARY and there is no file "
+                "of that name. Corrected against a real run that swapped "
+                "SOLIDSCATRA for SOLID in a working TSI deck.) the "
                 "structure has no SCATRA-side mass matrix "
                 "to clone into a thermal discretisation. "
                 "Replace 'SOLID' with 'SOLIDSCATRA' for "
@@ -1648,17 +1689,20 @@ STRUCTURE ELEMENTS:
                 "(Audit 2026-06-02.)"
             ),
             (
-                "[Numerical] For statics: MAXITER = 1 for "
-                "linear problems, 10+ for nonlinear. "
-                "Signal: MAXITER = 1 on a nonlinear "
-                "problem stops after the first Newton "
-                "iterate with residual still O(1) — "
-                "result looks like the linear solution "
-                "but is wrong for KINEM nonlinear. "
-                "MAXITER > 1 on a linear problem wastes "
-                "iterations (residual is already at "
-                "tolerance after step 1). Match MAXITER "
-                "to KINEM. (Audit 2026-06-02.)"
+                "[Numerical] NEVER set MAXITER = 1, not even for a "
+                "linear problem. Exhausting MAXITER is an ABORT, not an "
+                "early exit, and the counter reaches 1 before the "
+                "convergence test is credited — so MAXITER: 1 kills a "
+                "perfectly converged linear deck whose residual is already "
+                "at 1e-12. Leave it at the default 50, or set 10-30. There "
+                "is no cost to a generous MAXITER: Newton stops at the "
+                "tolerance, not at the cap. Signal: 'Failed.......Number of "
+                "Iterations = 1 < 1' in the final status block followed by "
+                "'The nonlinear solver did not converge!' and exit 1. "
+                "(An earlier version of this entry RECOMMENDED MAXITER = 1 "
+                "for linear problems; both KINEM linear and KINEM nonlinear "
+                "decks were run with it and both aborted. Corrected by "
+                "execution.)"
             ),
             (
                 "[Numerical] PREDICT: TangDis is "
@@ -1668,35 +1712,46 @@ STRUCTURE ELEMENTS:
                 "iterate. Signal: PREDICT: ConstDis "
                 "(constant displacement) on a "
                 "geometrically-nonlinear problem "
-                "gives slow Newton convergence (5-10 "
-                "iters per step vs 2-3 with TangDis); "
-                "the tangent predictor jumps closer to "
-                "the equilibrium each step. (Audit "
-                "2026-06-02.)"
+                "costs a few more Newton iterations per "
+                "step than TangDis, because the tangent predictor starts "
+                "closer to equilibrium. The gap is modest — a step or two — "
+                "not a change of order, so reach for TangDis to trim "
+                "iterations, not to rescue a diverging solve. (Audit "
+                "2026-06-02; the original entry claimed 5-10 versus 2-3, "
+                "which a direct comparison on a 3D deck did not support.)"
             ),
             (
-                "[Input] Body forces: DESIGN SURF NEUMANN "
-                "(2D) or DESIGN VOL NEUMANN (3D) with "
-                "NUMDOF matching the spatial dimension. "
-                "Signal: a body-force section with "
-                "NUMDOF = 6 on a 3D solid raises 'NUMDOF "
-                "mismatch — expected 3 got 6'; gravity "
-                "and per-volume forces use 3 components "
-                "in 3D (FX, FY, FZ) and 2 in 2D. "
-                "NUMDOF = 6 is for beam DOFs. (Audit "
-                "2026-06-02.)"
+                "[Input] Body forces go in DESIGN SURF NEUMANN (2D) or "
+                "DESIGN VOL NEUMANN (3D), with 3 components in 3D and 2 in "
+                "2D; NUMDOF = 6 is the beam/shell case (3 forces + 3 "
+                "moments). But 4C does NOT enforce that count on a solid: a "
+                "3D Neumann block written with NUMDOF: 6 and six-entry "
+                "arrays runs to completion, the extra entries simply unused. "
+                "What IS enforced is internal consistency — ONOFF, VAL and "
+                "FUNCT must each have exactly NUMDOF entries. Signal: an "
+                "inconsistent block is rejected at parse with 'Could not "
+                "match this input' plus an echo of the block; an oversized "
+                "but self-consistent block produces NO diagnostic at all, so "
+                "getting the count wrong is a silent modelling error rather "
+                "than a caught one. (An earlier version quoted 'NUMDOF "
+                "mismatch — expected 3 got 6'; THAT STRING IS NOT IN THE "
+                "BINARY and the deck exits 0. Corrected by execution.)"
             ),
             (
                 "[API] Beam elements need SPECIAL BEAM3* "
                 "type — NOT SOLID or WALL. Signal: "
                 "writing 'SOLID LINE2' or 'WALL LINE2' "
-                "for beam elements raises 'Unknown type' "
-                "from parobjectfactory.cpp — the SOLID/"
-                "WALL factories only register volume/"
-                "surface element families. Use BEAM3R / "
-                "BEAM3K / BEAM3EB with the appropriate "
-                "LINE2/LINE3/LINE4 cell type and TRIADS. "
-                "(Audit 2026-06-02.)"
+                "for beam elements raises \"Element 'SOLID' does not seem "
+                "to know cell type 'line2'.\" from "
+                "fem/general/element/4C_fem_general_element_definition.cpp "
+                "— the SOLID/WALL factories register volume/surface cell "
+                "types only, so the ELEMENT TYPE is recognised and the CELL "
+                "TYPE is not. Use BEAM3R / BEAM3K / BEAM3EB with the "
+                "appropriate LINE2/LINE3 cell type and TRIADS. (An earlier "
+                "version attributed this to 'Unknown type' from "
+                "parobjectfactory.cpp; that path is never reached here, "
+                "because the element type itself does exist. Corrected by "
+                "execution.)"
             ),
 
             # ───────────────────────────────────────────────────
@@ -2291,9 +2346,10 @@ RESULT DESCRIPTION:
                 "DESIGN * NEUMANN condition as the source; for a prescribed "
                 "boundary VALUE use DIRICH instead. Swapping the two gives a "
                 "run that succeeds and answers a different question — "
-                "NEUMANN imposes a flux, DIRICH imposes the scalar. There is "
-                "Signal: none - the run exits 0 either way, so pin the "
-                "expected boundary value with a RESULT DESCRIPTION entry."
+                "NEUMANN imposes a flux, DIRICH imposes the scalar. "
+                "Signal: none — the run exits 0 either way, so pin the "
+                "expected boundary value with a RESULT DESCRIPTION entry, "
+                "which turns the wrong choice into 'is WRONG' and exit 1."
             ),
         ],
     },
@@ -3164,9 +3220,12 @@ RESULT DESCRIPTION:
             "deck, and all three are mandatory:\n"
             "  1. CONTACT DYNAMIC  — must set LINEAR_SOLVER; must set "
             "PENALTYPARAM if STRATEGY is Penalty\n"
-            "  2. MORTAR COUPLING  — must be present AND non-empty; "
-            "'MORTAR COUPLING: {}' still aborts. One line is enough: "
-            "LM_DUAL_CONSISTENT: \"none\"\n"
+            "  2. MORTAR COUPLING  — REQUIRED whenever STRATEGY is anything "
+            "other than the default Lagrange (Penalty, Nitsche, ...), "
+            "and then one line is enough: LM_DUAL_CONSISTENT: "
+            "\"none\". Under the DEFAULT STRATEGY (Lagrange) the "
+            "section may be omitted entirely or left empty and the run "
+            "still works.\n"
             "  3. DESIGN SURF MORTAR CONTACT CONDITIONS 3D (2D: DESIGN LINE "
             "MORTAR CONTACT CONDITIONS 2D) — EXACTLY ONE entry with "
             "Side: \"Master\" and EXACTLY ONE with Side: \"Slave\", both "
@@ -3286,27 +3345,110 @@ RESULT DESCRIPTION:
       TOLERANCE: 1.0e30    # record mode: prints abs(diff) = the true value
 """,
 
-        # ---- 2D: FIVE changes, not two ----
-        "how_to_make_it_2d": (
-            "Five things change together. Changing only some of them "
-            "produces a design-entity error, not a helpful message.\n"
-            "  1. ADD at the top:  PROBLEM SIZE:\\n  DIM: 2\n"
-            "     (omitting this on an otherwise correct 2D deck aborts "
-            "inside the mortar search with 'auxiliary_plane called for "
-            "unknown element type')\n"
-            "  2. DESIGN SURF MORTAR CONTACT CONDITIONS 3D  ->  "
+        # ---- COMPLETE RUNNABLE 2D DECK. Copy this whole thing. ----
+        # Do NOT try to derive this from the 3D deck by renaming sections:
+        # a 2D mesh is a different mesh (every z must be 0), so the node
+        # list, the connectivity and the design-entity map all change too.
+        # This deck was run as written.
+        "minimal_working_input_2d": """\
+# Complete 2D plane-strain contact deck: two unit squares, the upper one
+# pressed into the lower one across an initial 0.1 gap. Self-contained.
+PROBLEM SIZE:
+  DIM: 2                   # REQUIRED in 2D; without it the mortar search
+PROBLEM TYPE:              # fails with 'auxiliary_plane called for unknown
+  PROBLEMTYPE: "Structure" # element type'
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 0.1
+  NUMSTEP: 10
+  MAXTIME: 1.0
+  TOLDISP: 1.0e-08
+  TOLRES: 1.0e-06
+  MAXITER: 50
+  LINEAR_SOLVER: 1
+CONTACT DYNAMIC:
+  LINEAR_SOLVER: 2
+  STRATEGY: "Penalty"
+  PENALTYPARAM: 1.0e4
+MORTAR COUPLING:
+  LM_DUAL_CONSISTENT: "none"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+SOLVER 2:
+  SOLVER: "UMFPACK"
+  NAME: "Contact_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: 1000.0
+      NUE: 0.3
+      DENS: 1.0
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN LINE DIRICH CONDITIONS:     # LINE, not SURF, in 2D
+  - E: 1
+    NUMDOF: 2                      # 2 in 2D
+    ONOFF: [1, 1]
+    VAL: [0.0, 0.0]
+    FUNCT: [0, 0]
+  - E: 4
+    NUMDOF: 2
+    ONOFF: [1, 1]
+    VAL: [0.0, -0.3]
+    FUNCT: [0, 1]
+DESIGN LINE MORTAR CONTACT CONDITIONS 2D:   # '... 2D', not '... 3D'
+  - E: 2
+    InterfaceID: 1
+    Side: "Master"
+  - E: 3
+    InterfaceID: 1
+    Side: "Slave"
+DLINE-NODE TOPOLOGY:               # DLINE, not DSURFACE
+  - "NODE 1 DLINE 1"
+  - "NODE 2 DLINE 1"
+  - "NODE 3 DLINE 2"
+  - "NODE 4 DLINE 2"
+  - "NODE 5 DLINE 3"
+  - "NODE 6 DLINE 3"
+  - "NODE 7 DLINE 4"
+  - "NODE 8 DLINE 4"
+NODE COORDS:                       # every z MUST be 0.0 in a 2D problem
+  - "NODE 1 COORD 0.0 0.0 0.0"
+  - "NODE 2 COORD 1.0 0.0 0.0"
+  - "NODE 3 COORD 1.0 1.0 0.0"
+  - "NODE 4 COORD 0.0 1.0 0.0"
+  - "NODE 5 COORD 0.0 1.1 0.0"
+  - "NODE 6 COORD 1.0 1.1 0.0"
+  - "NODE 7 COORD 1.0 2.1 0.0"
+  - "NODE 8 COORD 0.0 2.1 0.0"
+STRUCTURE ELEMENTS:                # WALL, not SOLID, and all six keys
+  - "1 WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+  - "2 WALL QUAD4 5 6 7 8 MAT 1 KINEM nonlinear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 5
+      QUANTITY: "dispy"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30
+""",
+
+        "what_differs_between_the_2d_and_3d_decks": (
+            "CONTACT DYNAMIC and MORTAR COUPLING are byte-identical. "
+            "Everything else changes:\n"
+            "  PROBLEM SIZE: DIM: 2                    (added)\n"
+            "  DESIGN SURF MORTAR CONTACT CONDITIONS 3D -> "
             "DESIGN LINE MORTAR CONTACT CONDITIONS 2D\n"
-            "  3. DESIGN SURF DIRICH CONDITIONS  ->  "
-            "DESIGN LINE DIRICH CONDITIONS\n"
-            "  4. DSURF-NODE TOPOLOGY -> DLINE-NODE TOPOLOGY, and every "
-            "'DSURFACE n' -> 'DLINE n'\n"
-            "  5. the element lines: 2D structural cells belong to WALL, not "
-            "SOLID, and WALL needs all six of its keys:\n"
-            "       \"1 WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none "
-            "THICK 1.0 STRESS_STRAIN plane_strain GP 2 2\"\n"
-            "CONTACT DYNAMIC and MORTAR COUPLING are byte-identical in 2D "
-            "and 3D. NUMDOF/ONOFF/VAL/FUNCT of 3 entries are tolerated in a "
-            "2D DIRICH block, so that is not the thing that breaks."
+            "  DESIGN SURF DIRICH CONDITIONS -> DESIGN LINE DIRICH CONDITIONS\n"
+            "  DSURF-NODE TOPOLOGY -> DLINE-NODE TOPOLOGY, DSURFACE n -> DLINE n\n"
+            "  SOLID HEX8 (2 required keys) -> WALL QUAD4 (6 required keys)\n"
+            "  and THE MESH ITSELF: 8 nodes instead of 16, all with z = 0.0, "
+            "different connectivity, different design-entity map. A 3D node "
+            "list carried over unchanged aborts with 'Node 8 has a non-zero "
+            "coordinate 1.1 in direction 2 but discretization is 2D!'.\n"
+            "NUMDOF/ONOFF/VAL/FUNCT of 3 entries are TOLERATED in a 2D DIRICH "
+            "block, so that is not what breaks."
         ),
 
         # ---- REQUIRED vs OPTIONAL, stated, not implied ----
@@ -3375,8 +3517,10 @@ RESULT DESCRIPTION:
         "mortar_coupling_keys": {
             "_note": (
                 "Section MORTAR COUPLING, 15 keys, all optional in the "
-                "schema. The section itself is NOT optional when contact is "
-                "active, and an empty mapping does not count. The DEFAULT "
+                "schema. Under the DEFAULT STRATEGY (Lagrange) the section "
+                "really is optional — omitting it or writing it empty runs "
+                "fine. Under any OTHER strategy it becomes mandatory, "
+                "because the DEFAULT "
                 "combination (LM_SHAPEFCN: Dual + LM_DUAL_CONSISTENT: "
                 "boundary) is invalid for every STRATEGY except Lagrange. "
                 "Minimum for Penalty/Nitsche: LM_DUAL_CONSISTENT: \"none\"."
@@ -3543,7 +3687,11 @@ RESULT DESCRIPTION:
                 "section, writing it empty as 'MORTAR COUPLING: {}', or "
                 "writing it with defaults (LM_SHAPEFCN: Dual, "
                 "LM_DUAL_CONSISTENT: boundary) all abort at setup under "
-                "Penalty, Nitsche, Ehl or MultiScale. Two independent "
+                "Penalty, Nitsche, Ehl or MultiScale — but ALL THREE ARE "
+                "FINE under the default Lagrange strategy, which was "
+                "verified by running a Lagrange deck with no MORTAR "
+                "COUPLING section at all and again with an empty one. Two "
+                "independent "
                 "one-line fixes, both confirmed: set 'LM_DUAL_CONSISTENT: "
                 "\"none\"' OR set 'LM_SHAPEFCN: \"Standard\"'. Signal: "
                 "'Consistent dual shape functions in boundary elements only "
@@ -3626,8 +3774,8 @@ RESULT DESCRIPTION:
             ),
             (
                 "[Input] CONTACT DYNAMIC: STRATEGY: \"Nitsche\" needs THREE things "
-                "Penalty does not, and fails differently for each, so the Signal: tells "
-                "you which one is missing. (a) "
+                "Penalty does not, and each has its own message, so the "
+                "Signal: below tells you which one is missing. (a) "
                 "Without 'ALGORITHM: \"GPTS\"' in MORTAR COUPLING it aborts "
                 "with 'Unrecognized strategy: "
                 "\"CONTACT::SolvingStrategy::nitsche\"' — the same message "
