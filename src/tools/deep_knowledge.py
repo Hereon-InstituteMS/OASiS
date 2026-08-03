@@ -362,7 +362,7 @@ _FENICS_KNOWLEDGE = {
                 # triangle 3, tetrahedron 4, quadrilateral 2, hexahedron 2
                 # (the old '3 for hex' was wrong; hex degree 2 builds a
                 # 1-dof bubble, degree 3 gives 8 dofs).
-                "orders": "Minimum degree per cell type: 3 for triangle, 4 for tet, 2 for quad, 2 for hex (below that: RuntimeError 'Bubble element on a <cell> must have degree at least N'). Verified 2026-08-03.",
+                "orders": "Minimum degree per cell type: 2 for interval, 3 for triangle, 4 for tet, 2 for quad, 2 for hex (below that: RuntimeError 'Bubble element on a <cell> must have degree at least N'). Verified 2026-08-03; the interval minimum was added 2026-08-03 after a full degree sweep — cell_types listed interval but its minimum was missing.",
                 "cell_types": "interval, triangle, quadrilateral, tetrahedron, hexahedron",
                 "api": "basix.ufl.element('Bubble', cell, degree)",
                 "use_cases": "MINI element for Stokes (Lagrange + Bubble enrichment), stabilization",
@@ -392,7 +392,7 @@ _FENICS_KNOWLEDGE = {
                 "ufl_name": "'S' or 'serendipity'",
                 "continuity": "C0",
                 "orders": "1, 2, 3, ...",
-                "cell_types": "quadrilateral, hexahedron",
+                "cell_types": "quadrilateral, hexahedron (interval also builds: dim 2 at degree 1, 3 at degree 2). Simplices/prism/pyramid raise ValueError 'Unknown element family: serendipity with cell type triangle'. Cell types swept by execution 2026-08-03.",
                 "api": "basix.ufl.element('S', cell, degree)",
                 "notes": "Fewer DOFs than tensor-product Lagrange on quads/hexes. S2 has no interior node on quad.",
             },
@@ -401,7 +401,7 @@ _FENICS_KNOWLEDGE = {
                 "ufl_name": "'DPC'",
                 "continuity": "Discontinuous",
                 "orders": "0, 1, 2, ...",
-                "cell_types": "quadrilateral, hexahedron",
+                "cell_types": "quadrilateral, hexahedron (interval also builds: dim 1 at degree 0, 2 at degree 1). Simplices/prism/pyramid raise ValueError 'Unknown element family: DPC with cell type triangle'. Cell types swept by execution 2026-08-03.",
                 "api": "basix.ufl.element('DPC', cell, degree)",
                 "notes": "Complete polynomial on quads/hexes (not tensor-product). Used in compatible DG schemes.",
             },
@@ -467,7 +467,7 @@ _FENICS_KNOWLEDGE = {
             "Element variant matters for high order (>= 5): use gll_warped to avoid ill-conditioning. The chebyshev_* variants are DISCONTINUOUS-ONLY — asking for them on continuous Lagrange raises RuntimeError 'This variant of Lagrange is only supported for discontinuous elements' (verified 2026-08-03)",
             "Not all element families support all cell types — check Basix docs for compatibility. Measured on basix 0.10: CR and Regge are simplex-only; iso is not implemented on tetrahedra; Lagrange on pyramid stops at degree 2",
             "Bubble element minimum degree depends on cell type: 3 for triangle, 4 for tet, 2 for quad, 2 for hex",
-            "Serendipity and DPC elements only available on quads/hexes",
+            "Serendipity and DPC elements are the tensor-product families: quadrilateral and hexahedron (plus the degenerate interval case, which also builds). Both raise ValueError 'Unknown element family: <fam> with cell type triangle' on simplices, prisms and pyramids. (Cell-type support swept by execution on basix 0.10.0, 2026-08-03 — the earlier wording 'only available on quads/hexes' omitted interval.)",
             "[API] Some families are reachable ONLY through the basix.ElementFamily ENUM, not the family string. Hermite is the concrete case. Signal: basix.ufl.element('Hermite', 'triangle', 3) raises ValueError 'Unknown element family: Hermite with cell type triangle', while basix.ufl.element(basix.ElementFamily.Hermite, basix.CellType.triangle, 3) builds the 10-dof C1 element. (Verified empirically 2026-08-03, basix 0.10.0.)",
             "[API] 'CG' still resolves. Signal: basix.ufl.element('CG', 'triangle', 1) returns a valid element and only emits a DeprecationWarning ( '\"CG\" element name is deprecated. Consider using \"Lagrange\" or \"P\" instead') — it is NOT rejected. 'P' also resolves. The name that genuinely raises ValueError 'Unknown element family: P1 with cell type triangle' is the old DOLFIN degree-suffixed form 'P1'. (Verified empirically 2026-08-03 — corrects an older catalog claim that 'CG' raises.)",
         ],
@@ -536,7 +536,7 @@ _FENICS_KNOWLEDGE = {
             #                     Maybe you need to create_entities(1).
             "PREREQUISITE": "mesh.topology.create_entities(1) MUST be called before either refine entry point on a freshly built mesh, otherwise RuntimeError 'Missing entities of dimension 1, need to call create_entities(1)' (uniform_refine) / 'Missing IndexMap in Topology. Maybe you need to create_entities(1).' (refine). Verified 2026-08-03.",
             "uniform_refine": "mesh.topology.create_entities(1); m2 = dolfinx.mesh.uniform_refine(mesh) — refines all cells uniformly, returns a Mesh (32 -> 128 cells on a 4x4 unit square)",
-            "refine": "mesh.topology.create_entities(1); m2, parent_cells, parent_facets = dolfinx.mesh.refine(mesh, edges=None) — returns a 3-TUPLE (Mesh, parent-cell array, parent-facet array), not a bare Mesh (verified 2026-08-03)",
+            "refine": "mesh.topology.create_entities(1); m2, parent_cells, parent_facets = dolfinx.mesh.refine(mesh, edges=None) — returns a 3-TUPLE, not a bare Mesh. Measured element types on 0.10.0 (2026-08-03): (Mesh, ndarray, NoneType) for the default call — the third slot is None unless facet parents are requested, so do not assume it is an array",
             "partitioner": "Optional custom partitioner for distributing refined mesh",
         },
         "mesh_operations": {
@@ -1111,12 +1111,17 @@ _FENICS_KNOWLEDGE = {
             "(Verified empirically 2026-06-01 — Tier-2 fixture "
             "stokes_basix_element_construction in scripts/"
             "tier2_fixtures/fenics/. Re-verified 2026-08-03 on "
-            "dolfinx 0.10.0: the three dims are still exactly "
-            "187 / 139 / 75, and the instability is now measured "
-            "rather than advisory — SVD of the bc-applied Stokes "
-            "matrix on the same 8x8 mesh gives numerical null "
-            "dimension 1 for Taylor-Hood (the constant pressure "
-            "alone) versus 8 for P1/P1.)",
+            "dolfinx 0.10.0: on the 4x4 mesh the three dims are "
+            "still exactly 187 / 139 / 75, and the instability is "
+            "now measured rather than advisory — SVD of the "
+            "bc-applied Stokes matrix on an 8x8 mesh gives "
+            "numerical null dimension 1 for Taylor-Hood (the "
+            "constant pressure alone) versus 8 for P1/P1. "
+            "MIND THE MESH: the dims and the SVD were measured on "
+            "DIFFERENT meshes. On 8x8 the same three pairs give "
+            "659 / 499 / 243, not 187 / 139 / 75. Corrected "
+            "2026-08-03 — the earlier wording said 'the same 8x8 "
+            "mesh' for both, which does not reproduce.)",
             "[Numerical] Pressure for enclosed (all-Dirichlet on "
             "velocity) flows is determined only up to an "
             "additive constant. Pin one pressure DOF with a "
@@ -1487,7 +1492,7 @@ _FENICS_KNOWLEDGE = {
             "[Numerical] Large load steps cause Newton divergence in hyperelasticity. Use incremental load stepping: ramp the dirichletbc value or body-force fem.Constant across N steps, solving at each level. Signal: the SNES converged reason goes negative (DIVERGED_LINE_SEARCH / DIVERGED_MAX_IT) with the residual at the last iter still O(1); reducing the per-step load increment by 2-4x recovers convergence. (Claim inherited; the NewtonSolver-specific wording was corrected 2026-08-03 — see the version note above.)",
             "[Numerical] Near-incompressible regime (nu > 0.49) can make the pure-displacement formulation lock — use a dolfinx mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) FunctionSpace or the F-bar method (uniform-pressure projection). Signal: [CAUTION on magnitude, 2026-08-03] the previously quoted signal ('Cook-membrane tip deflection at nu = 0.4999 with pure P2 displacement is O(1e-3) of analytic') is not supported by measurement in the linear analogue — a P2 cantilever at nu=0.4999 came within 0-6% of the P2/P1 Taylor-Hood reference on every mesh tested, while P1 was 9x-20x too stiff. Expect the severe locking at P1, not at P2; measure the ratio for your own geometry rather than assuming orders of magnitude. (Linear-elasticity measurement 2026-08-03; the hyperelastic Cook membrane itself was NOT re-run.)",
             "[Physics] Neo-Hookean / any compressible hyperelastic model requires J = det(F) > 0 everywhere. A locally inverted element gives J <= 0 and the log(J) term blows up. Signal: NewtonSolver.solve raises RuntimeError / FloatingPointError, or the residual jumps to nan, when det(F) at any quadrature point hits 0 or goes negative. Defensive check: ufl.conditional(J > 0, ..., raise_an_error). (Claim inherited.)",
-            "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.variable.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01; re-verified 2026-08-03 on ufl 2025.2.1.)",
+            "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.classes.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. NOTE the spelling: the class lives in the ufl.variable MODULE, so repr(type(...)) prints \"<class 'ufl.variable.Variable'>\", but the attribute ufl.variable is the FUNCTION variable() and shadows the submodule — writing `ufl.variable.Variable` raises AttributeError: 'function' object has no attribute 'Variable'. Use ufl.classes.Variable. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01; spelling re-checked by execution 2026-08-03 on ufl 2025.2.1.)",
             "[Numerical] Near-incompressibility split: decompose F = F_iso * F_vol where F_vol = (J^(1/3))*I (via ufl.det and ufl.Identity); then W = W_iso(F_iso) + U(J) with a quadratic-in-(J-1) volumetric penalty U(J) = kappa/2 * (J - 1)^2. Avoids volumetric locking in pure-displacement settings AND retains a well-conditioned tangent. Signal: dolfinx fem.assemble_scalar of the post-processed pressure (= dU/dJ) gives a bounded value; without the split, the discrete pressure Function at Gauss points oscillates wildly element-to-element. (Claim inherited.)",
             "[API] PETSc SNES newtonls residual monitor: pass 'snes_monitor': '' (or 'snes_monitor_short') in dolfinx.nls.petsc.NewtonSolver options. The monitor prints the residual norm per iter to stderr; if it stalls, halve the load increment and re-run. Signal: stderr shows '0 SNES Function norm ...' lines from PETSc; a stalled iteration shows the norm plateauing at a fixed O(1) value over many iterations rather than dropping by 10x per step. (Claim inherited.)",
         ],
@@ -2263,12 +2268,43 @@ _FENICS_KNOWLEDGE = {
             "generator_execution": (
                 "All 35 (physics, variant) pairs exposed by "
                 "src/backends/fenics/generators were generated "
-                "and RUN on the installed dolfinx. 34 finished "
-                "inside a 300 s budget with return code 0; "
-                "navier_stokes/3d also converges (3 Newton "
-                "iterations, 49072 dofs) but needs more than "
-                "300 s, so it must not be run under a 5-minute "
-                "timeout."
+                "and RUN on the installed dolfinx; all 35 exit "
+                "with return code 0. RETURN CODE WAS THE ONLY "
+                "CRITERION APPLIED IN THAT PASS — the outputs "
+                "were not checked for physical sanity, and a "
+                "2026-08-03 audit re-run found THREE templates "
+                "that exit 0 while producing wrong numbers. Do "
+                "not treat 'rc=0' from this catalog as evidence "
+                "that a template is correct:\n"
+                "  - dg_methods/2d: prints 'DG advection-"
+                "diffusion solved' and u: min=inf, max=inf. The "
+                "raw PETSc KSP returns converged reason -11 "
+                "(KSP_DIVERGED_PC_FAILED) and the script never "
+                "inspects it.\n"
+                "  - mixed_poisson/2d: imposes sigma.n = 0 on the "
+                "ENTIRE boundary, so the pressure is determined "
+                "only up to a constant and no nullspace is "
+                "attached; it reports min(p) = max(p) = "
+                "-1.035309e+13 (KSP reason 4, LU on a singular "
+                "saddle-point system).\n"
+                "  - eigenvalue/2d: assembles BOTH A and the mass "
+                "matrix M with the same Dirichlet diagonal "
+                "(diag=1.0) and asks for SMALLEST_REAL, so the "
+                "two lowest reported eigenvalues are the spurious "
+                "constraint modes 1.0000000000003 and "
+                "1.0000000000031; the true fundamental 19.79 is "
+                "third. This is exactly the failure documented in "
+                "the eigenvalue pitfall of this catalog, and the "
+                "generator's inline comment claiming diag=0.0 "
+                "leaves M singular is wrong — assembling M with "
+                "diag=0.0, or with bcs=[], both give the clean "
+                "spectrum 19.82 / 49.71 / 49.92 / 80.30.\n"
+                "Timing note: navier_stokes/3d converges (3 "
+                "Newton iterations, 49072 dofs). The earlier "
+                "claim that it 'needs more than 300 s' is "
+                "hardware-dependent and did not reproduce — it "
+                "completed in 230 s on the audit machine. Budget "
+                "by measurement, not by this number."
             ),
             "corrections_landed": (
                 "element_catalog (CR cells, Hermite api, Bubble "
