@@ -52,12 +52,52 @@ CAMPAIGN_TOKENS = [
 # numbers such an entry would carry are caught by MEASURED_ORDER_PATTERNS.
 
 # "we measured this order on this install" — the answer to a convergence study.
+#
+# The first four patterns were written from the contamination an audit had
+# already found, and matched only that phrasing. An adversarial re-audit then
+# found the same class of content passing straight through, in different words:
+# `prepare_simulation('ngsolve','poisson')` was returning
+# "1.669e-01 / 3.923e-02 / 8.013e-03 / 1.763e-03 (rates 2.09, 2.29, 2.18)" —
+# a complete measured convergence table, handed to the agent by the tool being
+# evaluated. It said "rates" rather than "observed orders" and that was the
+# whole of its disguise.
+#
+# So these match the SHAPE of a measurement rather than one way of introducing
+# it: a list of rates, a run of slash-separated error values, and a dated
+# provenance stamp for one of our own runs.
 MEASURED_ORDER_PATTERNS = [
     r"observed\s+orders?\s*[:=]?\s*\d+\.\d+",
     r"\bEOCs?\b[^.\n]{0,40}\d\.\d{2,}",
     r"Richardson\s+orders?\s+\d+\.\d+",
     r"verified\s+live[^.\n]{0,60}\d\.\d{2,}",
+    # "(rates 2.09, 2.29, 2.18)" — a measured sequence, whatever it is called.
+    r"\brates?\s+\d+\.\d{2,}\s*,\s*\d+\.\d{2,}",
+    # "1.669e-01 / 3.923e-02 / 8.013e-03" — a convergence table. Three or more
+    # slash-separated values in a row is our error series, not a citation.
+    r"\d\.\d{2,}e[-+]\d+\s*/\s*\d\.\d{2,}e[-+]\d+\s*/\s*\d\.\d{2,}e[-+]\d+",
 ]
+
+# TWO PATTERNS THAT WERE TRIED AND DELIBERATELY NOT KEPT
+#
+# A gate has to be precise or it gets switched off, and a gate that fires on
+# correct content teaches people to ignore it. Both of these were measured
+# against the purged branch before being rejected:
+#
+#   r"(?:verified empirically|live-verified|measured)\s+\d{4}-\d{2}-\d{2}"
+#     — 98 hits on the ALREADY-PURGED branch. A date stamp records when we
+#       checked something; it is untidy provenance, but an agent cannot read an
+#       answer out of it. Making the merge gate fail in 98 places for that would
+#       force a mass edit that buys no safety.
+#
+#   r"/home/[a-z][a-z0-9_-]*/"
+#     — 16,435 hits, most of them in `src/backends/_installed_api.py`, a
+#       generated manifest of where things are installed ON THIS MACHINE. That
+#       file is supposed to contain local paths; that is its job. Six genuinely
+#       misplaced paths in deal.II prose are a real finding, but they are a
+#       code-review item, not something this pattern can isolate.
+#
+# What is kept above catches measured ANSWERS, and is clean on the purged
+# branch — so a failure means new contamination, every time.
 
 ALLOWED_SUFFIXES = {".py", ".json", ".md", ".txt", ".yaml", ".yml"}
 # Tests and fixtures legitimately discuss our campaigns; knowledge does not.

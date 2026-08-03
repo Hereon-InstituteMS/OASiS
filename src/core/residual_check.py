@@ -56,14 +56,49 @@ import numpy as np
 class ResidualVerdict:
     supported: bool
     relative_residual: float | None
-    solver_like: bool | None          # residual consistent with a real solve
+    # True = consistent with a real solve, False = positively not,
+    # None = neither could be established (see status).
+    solver_like: bool | None
     n_interior: int
     domain_measure: float | None
     detail: str
+    status: str = ""                  # solves | does_not_solve | inconclusive
 
 
-# Below this, the field satisfies the discrete system as a solver would leave it.
-SOLVER_RESIDUAL_MAX = 1e-8
+# WHY THERE ARE TWO THRESHOLDS AND A BAND BETWEEN THEM
+#
+# A single cut-off cannot work, and measuring showed exactly how it fails. The
+# residual of an analytic field sampled at the nodes falls as h^4 relative to
+# the system's own scale — 6.3e-4, 4.1e-5, 2.7e-6, 1.7e-7, 1.1e-8, 6.7e-10 over
+# six uniform refinements — while a genuine direct solve stays at round-off,
+# about 1e-16, whatever the mesh. So a fixed 1e-8 cut-off silently starts
+# CERTIFYING the forgery once the mesh is fine enough, and at the other end it
+# accuses an honest run that used an iterative solver with a 1e-8 tolerance.
+# Both errors are bad; the second is worse, because it condemns correct work.
+#
+# What actually separates the two is not a number but a scaling: a real solve
+# sits at the round-off floor of this system, which depends on its size and not
+# on h. So the pass threshold is that floor, and a verdict is only returned when
+# the evidence supports it:
+#
+#   at or below the round-off floor  -> SOLVES        (only a solve gets here)
+#   at or above FORGERY_RESIDUAL_MIN -> DOES NOT SOLVE(no solver leaves this)
+#   in between                       -> INCONCLUSIVE  (neither credited nor
+#                                                      accused)
+#
+# The band is where a loosely-converged honest solve and a fine-mesh forgery
+# genuinely overlap. Neither is given the benefit of the doubt: the run is not
+# certified as solving its equations, and it is not accused of not solving them.
+# Refusing to answer when the evidence is ambiguous is the whole difference
+# between a check and a guess.
+
+# No solver leaves a residual this large. Above it, the field was not obtained
+# by solving this system.
+FORGERY_RESIDUAL_MIN = 1e-6
+# Never demand better than this, however small the system.
+ROUNDOFF_FLOOR_MIN = 1e-14
+# Round-off grows with system size; this multiplies sqrt(n) * machine epsilon.
+ROUNDOFF_SAFETY = 10.0
 # Domain measure must match the stated domain to this relative tolerance.
 DOMAIN_TOL = 1e-6
 
@@ -101,6 +136,20 @@ def _build_mesh(points: np.ndarray, cells, dim: int):
     return None
 
 
+def _is_tensor(k, dim: int) -> bool:
+    """Is this coefficient a dim x dim tensor rather than a scalar field?
+
+    Checked structurally, not by numpy shape: each entry is itself a field over
+    the quadrature points, so a tensor is a nested sequence of arrays and a
+    scalar field is one array whose leading dimension happens to be the element
+    count. Those are indistinguishable by shape alone on some meshes.
+    """
+    if isinstance(k, (list, tuple)):
+        return len(k) == dim and all(
+            isinstance(row, (list, tuple)) and len(row) == dim for row in k)
+    return False
+
+
 def check_residual(points, cells, values, *, dim: int,
                    source_fn, coeff_fn=None,
                    domain_measure_expected: float | None = None,
@@ -108,7 +157,15 @@ def check_residual(points, cells, values, *, dim: int,
     """Measure how well `values` satisfies -div(K grad u) = f on this mesh.
 
     source_fn(x) -> f at coordinates x (array shape (dim, n))
-    coeff_fn(x)  -> scalar K at x, or None for K = 1
+    coeff_fn(x)  -> K at x: either a scalar field, or a dim x dim nested
+                    sequence of scalar fields for an anisotropic tensor.
+                    None means K = 1.
+
+    The tensor form matters because anisotropic diffusion is where a scalar
+    coefficient quietly gives the wrong answer rather than an error: assembling
+    with the trace, or with K[0][0], produces a perfectly well-formed operator
+    for a different problem, and every residual measured against it is
+    meaningless in the direction that lets a forgery through.
     """
     if not _require_skfem():
         return ResidualVerdict(False, None, None, 0, None,
@@ -149,8 +206,14 @@ def check_residual(points, cells, values, *, dim: int,
 
     @BilinearForm
     def a_form(u, v, w):
-        k = coeff_fn(w.x) if coeff_fn is not None else 1.0
-        return k * dot(grad(u), grad(v))
+        if coeff_fn is None:
+            return dot(grad(u), grad(v))
+        k = coeff_fn(w.x)
+        if not _is_tensor(k, dim):
+            return k * dot(grad(u), grad(v))
+        gu, gv = grad(u), grad(v)
+        return sum(k[i][j] * gu[j] * gv[i]
+                   for i in range(dim) for j in range(dim))
 
     @LinearForm
     def l_form(v, w):
@@ -171,14 +234,46 @@ def check_residual(points, cells, values, *, dim: int,
 
     r = A @ vals - b
     num = float(np.linalg.norm(r[interior]))
-    den = float(np.linalg.norm(b[interior]))
-    rho = num / den if den > 0 else float("inf")
-    solver_like = rho <= SOLVER_RESIDUAL_MAX
 
+    # Normalising by ||b|| alone is wrong, and wrong in the direction that
+    # accuses honest work. A source-free problem driven purely by Dirichlet data
+    # — Laplace with non-zero boundary values, one of the most ordinary things
+    # in finite elements — has b = 0 on the interior rows, so the ratio was
+    # inf and a solve accurate to 2e-15 was reported as "not obtained by
+    # solving this problem".
+    #
+    # The scale that does not vanish is the size of the terms BEFORE they
+    # cancel: |A| |u| is what the residual is small compared to. Using the
+    # larger of that and ||b|| keeps the familiar meaning when a source is
+    # present and stays finite when it is not.
+    scale = float(np.linalg.norm((abs(A) @ np.abs(vals))[interior]))
+    den = max(float(np.linalg.norm(b[interior])), scale)
+    rho = num / den if den > 0 else (0.0 if num == 0 else float("inf"))
+
+    floor = max(ROUNDOFF_FLOOR_MIN,
+                ROUNDOFF_SAFETY * math.sqrt(interior.size) * np.finfo(float).eps)
+
+    if rho <= floor:
+        return ResidualVerdict(
+            True, rho, True, int(interior.size), measure,
+            f"the field satisfies the discrete equations at the round-off "
+            f"floor of this system (relative residual {rho:.3e} <= "
+            f"{floor:.3e}): it was obtained by solving them",
+            status="solves")
+    if rho >= FORGERY_RESIDUAL_MIN:
+        return ResidualVerdict(
+            True, rho, False, int(interior.size), measure,
+            f"the field does NOT satisfy the discrete equations (relative "
+            f"residual {rho:.3e} >= {FORGERY_RESIDUAL_MIN:.0e}, far above "
+            f"anything a solver leaves); it was not obtained by solving this "
+            f"problem on this mesh",
+            status="does_not_solve")
     return ResidualVerdict(
-        True, rho, solver_like, int(interior.size), measure,
-        ("the field satisfies the discrete equations to solver tolerance"
-         if solver_like else
-         f"the field does NOT satisfy the discrete equations "
-         f"(relative residual {rho:.3e} > {SOLVER_RESIDUAL_MAX:.0e}); it was "
-         f"not obtained by solving this problem on this mesh"))
+        True, rho, None, int(interior.size), measure,
+        f"INCONCLUSIVE: the relative residual is {rho:.3e}, between this "
+        f"system's round-off floor ({floor:.3e}) and the level no solver "
+        f"leaves ({FORGERY_RESIDUAL_MIN:.0e}). A loosely-converged solve and a "
+        f"very fine-mesh analytic field both land here, so OASiS neither "
+        f"certifies nor rejects this field. Solve to a tighter tolerance to "
+        f"obtain a verdict",
+        status="inconclusive")

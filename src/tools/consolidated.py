@@ -200,6 +200,13 @@ def _residual_coverage_note(result: dict) -> str:
                 f"{result['residual_check'].get('relative_residual'):.2e}), so "
                 "it was obtained by solving them rather than merely being a "
                 "well-formed field.")
+    if verdict == "INCONCLUSIVE":
+        return ("NOTE: whether this output solves the declared problem could "
+                "NOT be established — its residual falls in the band where a "
+                "loosely-converged solve and a very fine-mesh analytic field "
+                "are indistinguishable ("
+                + str(result["residual_check"].get("detail", ""))[:200]
+                + "). It is neither certified nor rejected.")
     if verdict in ("UNSUPPORTED", "REFUSED"):
         return ("NOTE: OASiS could not check whether this output solves the "
                 "declared problem ("

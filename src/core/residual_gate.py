@@ -96,6 +96,15 @@ def _compile_expression(text: str, label: str):
     return compile(tree, f"<{label}>", "eval")
 
 
+def _tensor_evaluator(codes, dim: int):
+    """Evaluate a dim x dim grid of expressions into nested field arrays."""
+    cell = [[_evaluator(codes[i][j], dim) for j in range(dim)]
+            for i in range(dim)]
+    def evaluate(coords):
+        return [[cell[i][j](coords) for j in range(dim)] for i in range(dim)]
+    return evaluate
+
+
 def _evaluator(code, dim: int):
     """Turn a compiled expression into f(X) over coordinates of shape (dim, n)."""
     def evaluate(coords):
@@ -107,6 +116,28 @@ def _evaluator(code, dim: int):
         # A constant expression evaluates to a scalar; the forms need an array.
         return value * np.ones_like(coords[0]) if np.isscalar(value) else value
     return evaluate
+
+
+def _parse_coefficient(coefficient, dim: int):
+    """A coefficient is a scalar expression, or a dim x dim nested list of them.
+
+    Anisotropic diffusion has to be expressible: collapsing a tensor to a scalar
+    assembles a well-formed operator for a DIFFERENT problem, and a residual
+    measured against the wrong operator is wrong in the permissive direction.
+    """
+    if coefficient in (None, "", "1", "1.0"):
+        return None
+    if isinstance(coefficient, (list, tuple)):
+        rows = list(coefficient)
+        if len(rows) != dim or any(
+                not isinstance(r, (list, tuple)) or len(r) != dim for r in rows):
+            raise ResidualSpecError(
+                f"a tensor coefficient must be {dim}x{dim}; got "
+                f"{len(rows)} row(s) of "
+                f"{[len(r) if isinstance(r, (list, tuple)) else '?' for r in rows]}")
+        return [[_compile_expression(str(rows[i][j]), f"coefficient[{i}][{j}]")
+                 for j in range(dim)] for i in range(dim)]
+    return _compile_expression(str(coefficient), "coefficient")
 
 
 def parse_spec(spec: str | dict) -> dict:
@@ -138,13 +169,18 @@ def parse_spec(spec: str | dict) -> dict:
         "operator": operator,
         "dim": dim,
         "source_code": _compile_expression(str(spec["source"]), "source"),
-        "coefficient_code": (
-            _compile_expression(str(spec["coefficient"]), "coefficient")
-            if spec.get("coefficient") not in (None, "", "1", "1.0") else None),
+        "coefficient_code": _parse_coefficient(spec.get("coefficient"), dim),
         "domain_measure": float(measure) if measure is not None else None,
         "field": str(spec.get("field", "")),
         "result_file": spec.get("result_file"),
     }
+
+
+def _coefficient_evaluator(code, dim: int):
+    if code is None:
+        return None
+    return (_tensor_evaluator(code, dim) if isinstance(code, list)
+            else _evaluator(code, dim))
 
 
 def check_run_residual(spec: str | dict, result_files) -> dict:
@@ -200,15 +236,18 @@ def check_run_residual(spec: str | dict, result_files) -> dict:
     verdict = check_residual(
         points, cells, values, dim=dim,
         source_fn=_evaluator(parsed["source_code"], dim),
-        coeff_fn=(_evaluator(parsed["coefficient_code"], dim)
-                  if parsed["coefficient_code"] is not None else None),
+        coeff_fn=_coefficient_evaluator(parsed["coefficient_code"], dim),
         domain_measure_expected=parsed["domain_measure"])
 
     if not verdict.supported:
         return {"verdict": "UNSUPPORTED", "detail": verdict.detail,
                 "field": name, "artefact": chosen.name}
     return {
-        "verdict": "SOLVES" if verdict.solver_like else "DOES_NOT_SOLVE",
+        "verdict": {"solves": "SOLVES",
+                    "does_not_solve": "DOES_NOT_SOLVE",
+                    "inconclusive": "INCONCLUSIVE"}.get(
+                        verdict.status,
+                        "SOLVES" if verdict.solver_like else "DOES_NOT_SOLVE"),
         "relative_residual": verdict.relative_residual,
         "n_interior_dofs": verdict.n_interior,
         "domain_measure": verdict.domain_measure,
