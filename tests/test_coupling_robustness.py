@@ -1,0 +1,594 @@
+"""What a partitioned coupling gets WRONG quietly, and that OASiS now says so.
+
+Every case here was first run against the previous machinery and reported as a
+clean success, or reported nothing at all. They are the adversarial suite for
+`couple`: sign convention, unit mismatch, non-matching interfaces, a participant
+that exits 0 having done nothing, a crash mid-iteration, NaN in the exchanged
+data, non-convergence, one-way/two-way confusion, stale data, and relaxation.
+
+TWO RULES THESE TESTS ENFORCE ABOUT THEMSELVES.
+
+  * A test that passes whether or not the check exists is decoration. The
+    `*_discriminates` tests therefore stub the check out and assert the verdict
+    flips back to trustworthy — the check is what makes the difference, in this
+    suite, mechanically.
+  * A check that cannot look at anything must never report a pass. Findings
+    (`validation`) and coverage (`checks_not_run`) are separate channels, and
+    the second is asserted to reach the verdict text.
+
+The participants are deliberately small, opaque maps rather than FEM solves: the
+driver is physics-agnostic and these tests are about the driver. Cross-code runs
+with dolfinx / NGSolve / scikit-fem / 4C are how the physics side is exercised.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from core.coupling_driver import Participant, run_coupling          # noqa: E402
+from core.quality_checks import (                                    # noqa: E402
+    check_coupling_directionality, check_interface_balance,
+    check_interface_meshes, check_monolithic_consistency,
+    check_participant_responsiveness, check_residual_blocks,
+    check_returncodes,
+)
+
+
+# ── participants ─────────────────────────────────────────────────────────────
+# A: x <- 0.5*y + 1 ;  B: y <- 0.5*x + 2  =>  fixed point x = 8/3, y = 10/3.
+# Each also exports a normal flux with respect to its own outward normal, so the
+# two cancel at the fixed point exactly as a conservative interface must.
+_A = """\
+import json
+from pathlib import Path
+imp = json.loads(Path("imports.json").read_text() or "{}")
+y = imp["B"]["values"][0] if "B" in imp else 0.0
+x = 0.5 * y + 1.0
+json.dump({"field_name": "x", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [x], "normal_fluxes": [x]}, open("exports.json", "w"))
+"""
+_B = """\
+import json
+from pathlib import Path
+imp = json.loads(Path("imports.json").read_text() or "{}")
+x = imp["A"]["values"][0] if "A" in imp else 0.0
+json.dump({"field_name": "y", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [OFFSET + SCALE * x + 2.0], "normal_fluxes": [-x]},
+          open("exports.json", "w"))
+"""
+# The un-split solve of the SAME system, in one place: substitute and solve.
+_MONO = """\
+import json
+x = (1.0 + 0.5 * 2.0) / (1.0 - 0.25)
+json.dump({"field_name": "x", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [x]}, open("monolithic.json", "w"))
+"""
+
+
+def _b(offset: float = 0.0, scale: float = 0.5) -> str:
+    return _B.replace("OFFSET", repr(offset)).replace("SCALE", repr(scale))
+
+
+def _mk(tmp_path: Path, name: str, body: str) -> Path:
+    d = tmp_path / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "run.py").write_text(body)
+    return d
+
+
+def _parts(tmp_path, a_body=_A, b_body=None, a_from=("B",), b_from=("A",)):
+    b_body = _b() if b_body is None else b_body
+    return [
+        Participant("A", [sys.executable, "run.py"], _mk(tmp_path, "A", a_body),
+                    imports_from=list(a_from)),
+        Participant("B", [sys.executable, "run.py"], _mk(tmp_path, "B", b_body),
+                    imports_from=list(b_from)),
+    ]
+
+
+# ── the tool, invoked for real ───────────────────────────────────────────────
+def _tool(name: str):
+    from mcp.server.fastmcp import FastMCP
+    from tools.consolidated import register_consolidated_tools
+    mcp = FastMCP("t")
+    register_consolidated_tools(mcp)
+    return mcp._tool_manager._tools[name].fn
+
+
+@pytest.fixture(autouse=True)
+def _fresh_critic(monkeypatch):
+    import tools.consolidated as C
+    from core.critic_gate import CriticRegistry
+    monkeypatch.setattr(C, "_CRITIC_REGISTRY", CriticRegistry())
+
+
+def _spec(parts):
+    return json.dumps([{"name": p.name, "command": p.command,
+                        "work_dir": str(p.work_dir),
+                        "imports_from": p.imports_from} for p in parts])
+
+
+def _couple(parts, *, reviewed=True, **kw):
+    """Call the real `couple` tool, with a critic review on record by default.
+
+    Without the review every verdict is NOT VERIFIED for that reason alone, and
+    a check could be removed without any test noticing. The interesting question
+    is whether the NUMERICAL checks flip the verdict, so the critic is satisfied
+    and then held constant.
+    """
+    from tools.consolidated import _coupling_setup_text, _CRITIC_REGISTRY
+    from core.critic_gate import setup_digest
+    kw.setdefault("max_iter", 60)
+    kw.setdefault("tol", 1e-8)
+    args = dict(participants=_spec(parts), **kw)
+    if reviewed:
+        setup = _coupling_setup_text(
+            participants=args["participants"], max_iter=args["max_iter"],
+            tol=args["tol"], accelerator=args.get("accelerator", "aitken"),
+            theta=args.get("theta", 0.5), monolithic=args.get("monolithic", ""))
+        _CRITIC_REGISTRY.submit_review(
+            solver="couple", digest=setup_digest("couple", setup),
+            findings="Reviewed the participant maps, the units on both sides "
+                 "of the interface, the boundary conditions and the "
+                 "interface discretisation; no issue found that would "
+                 "invalidate the coupled run.")
+    loop = asyncio.new_event_loop()
+    try:
+        return json.loads(loop.run_until_complete(_tool("couple")(
+            critic_approved=True, **args)))
+    finally:
+        loop.close()
+
+
+def _hits(d, needle):
+    return [w for w in (d.get("validation") or []) if needle in w]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# The control: a CORRECT coupling must come back clean. Every check below is
+# worthless if it also fires on this.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_a_correct_coupling_is_verified_and_produces_no_findings(tmp_path):
+    d = _couple(_parts(tmp_path))
+    assert d["converged"] is True
+    assert abs(d["exports"]["A"]["values"][0] - 8 / 3) < 1e-6
+    assert d["validation"] == [], d["validation"]
+    assert d["trustworthy_result"] is True
+    assert d["responsiveness"] == {"A": "responsive", "B": "responsive"}
+    assert d["returncodes"] == {"A": 0, "B": 0}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 4 + 9. A participant that exits 0 having done nothing / re-serves a cached
+# answer. The coupling "converges" at iteration 2 with residual exactly 0.
+# ═══════════════════════════════════════════════════════════════════════════
+_NOOP = """\
+import json
+json.dump({"field_name": "y", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [0.0], "normal_fluxes": [0.0]}, open("exports.json", "w"))
+"""
+
+
+def test_do_nothing_participant_converges_but_is_not_a_result(tmp_path):
+    d = _couple(_parts(tmp_path, b_body=_NOOP))
+    # It really does converge, and the residual really is zero. That is the
+    # problem: nothing about the iteration itself is wrong.
+    assert d["converged"] is True and d["residual"] == 0.0
+    assert d["responsiveness"]["B"] == "unresponsive"
+    assert _hits(d, "byte-identical")
+    assert d["trustworthy_result"] is False
+
+
+# Values-only exchange: no fluxes, so the interface-balance check has nothing to
+# look at and the responsiveness check is the ONLY thing standing between a
+# do-nothing participant and a VERIFIED verdict. That is the case the
+# discrimination test has to use.
+_A_NOFLUX = _A.replace(', "normal_fluxes": [x]', "")
+_NOOP_NOFLUX = """\
+import json
+json.dump({"field_name": "y", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [0.0]}, open("exports.json", "w"))
+"""
+
+
+def test_do_nothing_detection_discriminates(tmp_path, monkeypatch):
+    """Remove the check and the same run is stamped trustworthy."""
+    with_check = _couple(_parts(tmp_path / "w", a_body=_A_NOFLUX,
+                                b_body=_NOOP_NOFLUX))
+    assert with_check["converged"] is True
+    assert with_check["trustworthy_result"] is False
+
+    import core.quality_checks as Q
+    monkeypatch.setattr(Q, "check_participant_responsiveness",
+                        lambda *_a, **_k: ([], []))
+    without = _couple(_parts(tmp_path / "o", a_body=_A_NOFLUX,
+                             b_body=_NOOP_NOFLUX))
+    assert without["converged"] is True
+    assert without["trustworthy_result"] is True, (
+        "with the responsiveness check stubbed out, a participant that did "
+        "nothing produces a VERIFIED coupling — which is what the check is for")
+
+
+def test_a_genuinely_converged_participant_is_not_called_unresponsive(tmp_path):
+    """The check must key on 'output frozen while input moved', not on 'output
+    stopped moving' — otherwise every converged run trips it."""
+    d = _couple(_parts(tmp_path), tol=1e-14, max_iter=90)
+    assert d["responsiveness"] == {"A": "responsive", "B": "responsive"}
+    assert not _hits(d, "byte-identical")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 8. One-way vs two-way confusion.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_partner_name_typo_is_refused_not_silently_dropped(tmp_path):
+    parts = _parts(tmp_path, b_from=("Bee",))
+    r = run_coupling(parts, max_iter=5, tol=1e-8)
+    assert r.converged is False
+    assert "no such participant" in (r.error or "")
+    assert r.iterations == 0, "nothing must run before the graph is checked"
+
+
+def test_partner_name_typo_would_otherwise_converge_cleanly(tmp_path):
+    """Discrimination: with the edge dropped instead of refused — which is what
+    the driver used to do — the run converges and looks excellent."""
+    parts = _parts(tmp_path, b_from=())          # the dropped-edge outcome
+    r = run_coupling(parts, max_iter=20, tol=1e-8)
+    assert r.converged is True and r.residual < 1e-8
+    assert abs(r.exports["A"]["values"][0] - 8 / 3) > 0.5, (
+        "and the answer it converges to is not the coupled one")
+
+
+def test_one_way_graph_is_flagged_when_iterated(tmp_path):
+    d = _couple(_parts(tmp_path, b_from=()))
+    assert d["converged"] is True                 # it converges beautifully
+    assert _hits(d, "ONE-WAY")
+    assert d["trustworthy_result"] is False
+
+
+def test_one_way_declared_as_a_single_pass_is_not_flagged():
+    graph = {"participants": ["A", "B"], "declared_edges": {"A": ["B"], "B": []}}
+    iterated, _ = check_coupling_directionality(graph, max_iter=20)
+    single, not_run = check_coupling_directionality(graph, max_iter=1)
+    assert iterated and not single
+    assert not_run, "a declared single pass must still say no fixed point was found"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 5. A participant that crashes mid-iteration but leaves exports.json behind.
+# ═══════════════════════════════════════════════════════════════════════════
+_CRASH_AFTER_WRITE = _b() + """
+import sys
+from pathlib import Path
+n = int(Path("n.txt").read_text()) + 1 if Path("n.txt").exists() else 1
+Path("n.txt").write_text(str(n))
+if n >= 3:
+    sys.stderr.write("solver diverged\\n")
+    sys.exit(1)
+"""
+
+
+def test_nonzero_exit_is_refused_even_with_a_well_formed_export(tmp_path):
+    parts = _parts(tmp_path, b_body=_CRASH_AFTER_WRITE)
+    r = run_coupling(parts, max_iter=20, tol=1e-14)
+    assert r.converged is False
+    assert "exited with code 1" in (r.error or "")
+    assert r.iterations == 3
+    assert check_returncodes(r.returncodes)[0], "and the validator names it"
+
+
+def test_returncode_check_discriminates():
+    assert check_returncodes({"A": 0, "B": 1})[0]
+    assert not check_returncodes({"A": 0, "B": 0})[0]
+    # "no exit codes recorded" is NOT a pass.
+    findings, not_run = check_returncodes({})
+    assert not findings and not_run
+
+
+def test_a_participant_that_hangs_is_killed_and_reported(tmp_path):
+    hang = "import time\ntime.sleep(600)\n"
+    parts = _parts(tmp_path, b_body=hang)
+    parts[1].timeout = 2
+    r = run_coupling(parts, max_iter=3, tol=1e-8)
+    assert r.converged is False and "timed out" in (r.error or "")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 6. NaN / Inf in the exchanged data.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_nonfinite_flux_is_not_silently_passed_by_the_balance_check():
+    """`nan > rtol` is False, so an unguarded comparison reports NOTHING on the
+    most broken data the check can be handed."""
+    a = {"normal_fluxes": [1.0, 1.0]}
+    bad = {"normal_fluxes": [float("nan"), -1.0]}
+    good = {"normal_fluxes": [-1.0, -1.0]}
+    assert check_interface_balance(a, bad)
+    assert "could NOT be evaluated" in check_interface_balance(a, bad)[0]
+    assert not check_interface_balance(a, good)
+
+
+def test_nonfinite_export_is_reported_by_the_tool(tmp_path):
+    nan_b = _b().replace('"normal_fluxes": [-x]', '"normal_fluxes": [float("nan")]')
+    d = _couple(_parts(tmp_path, b_body=nan_b), max_iter=5)
+    assert any("non-finite" in w for w in d["validation"])
+    assert d["trustworthy_result"] is False
+
+
+def test_nonfinite_warnings_do_not_bury_every_other_finding(tmp_path):
+    """One NaN used to produce a warning per participant per iteration — about
+    eighty near-identical lines, with every specific finding lost among them."""
+    nan_b = _b().replace('"normal_fluxes": [-x]', '"normal_fluxes": [float("nan")]')
+    parts = _parts(tmp_path, b_body=nan_b)
+    r = run_coupling(parts, max_iter=40, tol=1e-8)
+    assert len(r.warnings) <= 6, r.warnings
+    assert any("suppressed" in w for w in r.warnings)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 7. Non-convergence, and the residual that is not representative.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_nonconvergence_is_reported_as_failure_not_as_a_result(tmp_path):
+    d = _couple(_parts(tmp_path, b_body=_b(scale=3.0)),
+                max_iter=8, tol=1e-12, accelerator="constant", theta=1.0)
+    assert d["converged"] is False
+    assert _hits(d, "NOT CONVERGED")
+    assert d["trustworthy_result"] is False
+
+
+def test_a_large_settled_block_cannot_hide_a_small_moving_one():
+    """The FSI/TSI conditioning trap: one global relative norm is set by the
+    largest-magnitude block, so a small quantity can be 100% wrong underneath a
+    converged residual."""
+    blocks = {"A.values[0]": 1e-12, "A.values[1]": 0.4, "B.normal_fluxes": 1e-12}
+    findings, not_run = check_residual_blocks(blocks, tol=1e-8)
+    assert findings and "A.values[1]" in findings[0]
+    assert not not_run
+    clean, _ = check_residual_blocks({k: 1e-12 for k in blocks}, tol=1e-8)
+    assert not clean
+    # and an empty record is NOT a pass
+    assert check_residual_blocks({}, tol=1e-8)[1]
+
+
+def test_block_residuals_are_recorded_per_component(tmp_path):
+    """A TSI interface carries temperature and displacement inside ONE `values`
+    array on wildly different scales; per-array residuals would still lump them."""
+    two = _A.replace('"values": [x], "normal_fluxes": [x]',
+                     '"values": [[x, 1e-9 * x]], "normal_fluxes": [x]')
+    parts = _parts(tmp_path, a_body=two)
+    parts[1].work_dir  # noqa: B018 - keep B as-is; it reads values[0] via [0]
+    b2 = _b().replace('imp["A"]["values"][0]', 'imp["A"]["values"][0][0]')
+    parts = _parts(tmp_path, a_body=two, b_body=b2)
+    r = run_coupling(parts, max_iter=30, tol=1e-10)
+    assert "A.values[0]" in r.block_residuals
+    assert "A.values[1]" in r.block_residuals
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 1 + 2. Sign convention and unit mismatch: same imbalance number, opposite
+# diagnoses, and the agent is sent looking in a different place by each.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_matching_magnitudes_with_agreeing_signs_reads_as_a_sign_convention_error():
+    w = check_interface_balance({"normal_fluxes": [3.0]}, {"normal_fluxes": [3.0]})
+    assert w and "SIGN-CONVENTION" in w[0]
+    assert "same number on both sides" in w[0]
+
+
+def test_a_clean_power_of_ten_reads_as_a_unit_mismatch():
+    w = check_interface_balance({"normal_fluxes": [-100.0]},
+                                {"normal_fluxes": [0.1]})
+    assert w and "UNIT MISMATCH" in w[0]
+    assert "SIGN-CONVENTION" not in w[0]
+
+
+def test_an_ordinary_imbalance_names_neither():
+    w = check_interface_balance({"normal_fluxes": [-100.0]},
+                                {"normal_fluxes": [83.0]})
+    assert w and "UNIT MISMATCH" not in w[0] and "SIGN-CONVENTION" not in w[0]
+
+
+def test_balance_check_says_nothing_when_it_cannot_look(tmp_path):
+    """Values-only exchange is common and legitimate. What must not happen is an
+    empty finding list reading as 'conservation was checked and is fine'."""
+    a = _A.replace(', "normal_fluxes": [x]', "")
+    b = _b().replace(', "normal_fluxes": [-x]', "")
+    d = _couple(_parts(tmp_path, a_body=a, b_body=b))
+    assert d["converged"] is True
+    assert not _hits(d, "balance")
+    assert any("flux balance" in c and "NOT checked" in c
+               for c in d["checks_not_run"])
+    assert "COVERAGE" in d["verification"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 3. Non-matching interface discretisations.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_non_matching_interfaces_are_reported_with_what_that_costs():
+    a = {"coordinates": [[0.5, y / 4] for y in range(5)],
+         "normal_fluxes": [1.0] * 5}
+    b = {"coordinates": [[0.5, y / 2] for y in range(3)],
+         "normal_fluxes": [-1.0] * 3}
+    findings, not_run = check_interface_meshes(a, b, "A", "B")
+    assert not findings, "a non-matching interface is legitimate, not an error"
+    assert not_run and "NON-MATCHING" in not_run[0]
+    assert "flux balance" in not_run[0]
+
+
+def test_non_matching_without_any_flux_says_conservation_was_not_checked():
+    a = {"coordinates": [[0.5, y / 4] for y in range(5)]}
+    b = {"coordinates": [[0.5, y / 2] for y in range(3)]}
+    _, not_run = check_interface_meshes(a, b, "A", "B")
+    assert not_run and "NOTHING here checked" in not_run[0]
+
+
+def test_matching_interfaces_produce_no_note():
+    co = [[0.5, y / 4] for y in range(5)]
+    findings, not_run = check_interface_meshes({"coordinates": co},
+                                               {"coordinates": co})
+    assert not findings and not not_run
+
+
+def test_missing_coordinates_is_not_checked_rather_than_matching():
+    findings, not_run = check_interface_meshes({}, {})
+    assert not findings and not_run
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# An export whose layout changes between iterations.
+# ═══════════════════════════════════════════════════════════════════════════
+_GROWING = """\
+import json
+from pathlib import Path
+n = int(Path("n.txt").read_text()) + 1 if Path("n.txt").exists() else 1
+Path("n.txt").write_text(str(n))
+k = 1 if n < 2 else 3
+json.dump({"field_name": "y", "n_points": k,
+           "coordinates": [[0.0, 0.0]] * k, "values": [2.0] * k},
+          open("exports.json", "w"))
+"""
+
+
+def test_an_export_that_changes_length_is_refused(tmp_path):
+    parts = _parts(tmp_path, b_body=_GROWING)
+    r = run_coupling(parts, max_iter=5, tol=1e-8)
+    assert r.converged is False
+    assert "changed its export length" in (r.error or "")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 10. Relaxation. theta had no way in through the tool at all, and the
+# accelerator was not Aitken.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_theta_reaches_the_driver_and_the_applied_value_is_reported(tmp_path):
+    d = _couple(_parts(tmp_path), accelerator="constant", theta=0.25)
+    assert d["relaxation"]["mode"] == "constant"
+    assert d["relaxation"]["theta0"] == 0.25
+    assert d["relaxation"]["applied"] == 0.25
+
+
+def test_constant_relaxation_actually_uses_the_given_theta(tmp_path):
+    """Discrimination for the parameter itself: a theta that is ignored gives
+    the same iteration count for every value."""
+    n = {}
+    for th in (0.25, 0.5, 1.0):
+        parts = _parts(tmp_path / f"t{th}")
+        r = run_coupling(parts, max_iter=200, tol=1e-10,
+                         accelerator="constant", theta0=th)
+        assert r.converged
+        n[th] = r.iterations
+    assert len(set(n.values())) == 3, n
+
+
+def test_aitken_recovers_from_a_theta0_that_does_not_converge(tmp_path):
+    """The point of the accelerator, and the regression that mattered: Aitken
+    was handed the previous raw export where the formula wants the previous
+    residual, and relaxed each participant by a different theta."""
+    body = _b(scale=-1.0)          # x <- 0.5y+1, y <- -x+2 : oscillates at theta=1
+    fixed = run_coupling(_parts(tmp_path / "c", b_body=body), max_iter=60,
+                         tol=1e-10, accelerator="constant", theta0=1.0)
+    assert not fixed.converged, "theta0=1 must be the bad choice here"
+    ait = run_coupling(_parts(tmp_path / "a", b_body=body), max_iter=60,
+                       tol=1e-10, accelerator="aitken", theta0=1.0)
+    assert ait.converged, "Aitken must find a theta that works from a bad start"
+    assert 0.05 <= ait.theta["applied"] <= 1.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# THE STRONGEST CHECK: compare against the same problem solved un-split.
+# ═══════════════════════════════════════════════════════════════════════════
+def _mono_spec(tmp_path, body=_MONO, timeout=60):
+    d = tmp_path / "MONO"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "run.py").write_text(body)
+    return json.dumps({"command": [sys.executable, "run.py"],
+                       "work_dir": str(d), "timeout": timeout})
+
+
+def test_monolithic_check_catches_a_coupling_that_passes_everything_else(tmp_path):
+    """A consistent offset in what one side reads — the K vs degC mistake.
+
+    The iteration converges, the interface flux balances exactly, every export
+    is finite, both participants respond to their inputs, the graph is two-way
+    and the interfaces match. The answer is wrong by a factor of four, and the
+    un-split re-solve is the only thing here that can see it.
+    """
+    parts = _parts(tmp_path, b_body=_b(offset=-5.0))
+    clean = _couple(parts)
+    assert clean["converged"] is True
+    assert clean["validation"] == [], clean["validation"]
+    assert clean["trustworthy_result"] is True          # nothing else objects
+    assert abs(clean["exports"]["A"]["values"][0] - 8 / 3) > 1.0
+
+    checked = _couple(_parts(tmp_path / "m", b_body=_b(offset=-5.0)),
+                      monolithic=_mono_spec(tmp_path))
+    assert checked["monolithic_check"]["status"] == "checked"
+    assert _hits(checked, "likely WRONG")
+    assert checked["trustworthy_result"] is False
+
+
+def test_monolithic_check_agrees_with_a_correct_coupling(tmp_path):
+    d = _couple(_parts(tmp_path), monolithic=_mono_spec(tmp_path))
+    assert d["monolithic_check"]["status"] == "checked"
+    assert d["monolithic_check"]["A"]["relative_l2"] < 1e-6
+    assert d["validation"] == [], d["validation"]
+    assert d["trustworthy_result"] is True
+
+
+def test_monolithic_check_refuses_to_compare_a_different_quantity(tmp_path):
+    """B exports y, the reference solves for x. Comparing them would report a
+    large disagreement that means nothing at all."""
+    d = _couple(_parts(tmp_path), monolithic=_mono_spec(tmp_path))
+    assert "A" in d["monolithic_check"] and "B" not in d["monolithic_check"]
+    assert any("nothing to compare" in c for c in d["checks_not_run"])
+
+
+def test_absence_of_a_monolithic_reference_is_stated_in_the_verdict(tmp_path):
+    d = _couple(_parts(tmp_path))
+    assert d["monolithic_check"] == {"status": "not supplied"}
+    assert any("monolithic consistency: NOT CHECKED" in c
+               for c in d["checks_not_run"])
+    assert "COVERAGE" in d["verification"]
+    assert d["trustworthy_result"] is True, (
+        "not supplying the reference is not evidence of a wrong answer — it is "
+        "an unchecked one, and the verdict must say which")
+
+
+def test_a_failed_reference_solve_is_not_read_as_agreement(tmp_path):
+    """The coupling is not innocent because its reference could not be produced."""
+    d = _couple(_parts(tmp_path),
+                monolithic=_mono_spec(tmp_path, body="import sys; sys.exit(2)"))
+    assert d["monolithic_check"]["status"] == "reference solve failed"
+    assert not _hits(d, "likely WRONG")
+    assert any("NOT CHECKED" in c for c in d["checks_not_run"])
+    assert "COVERAGE" in d["verification"]
+
+
+def test_monolithic_consistency_unit():
+    assert check_monolithic_consistency(96.9, 50.0)
+    assert not check_monolithic_consistency(50.0, 50.5)
+    assert check_monolithic_consistency(float("nan"), 50.0)
+    assert "not corroborated" in check_monolithic_consistency(float("nan"), 50.0)[0]
+    assert not check_monolithic_consistency(None, 50.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Coverage is a separate channel from findings, in the verdict itself.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_checks_that_could_not_run_never_flip_the_verdict_but_always_appear(tmp_path):
+    a = _A.replace(', "normal_fluxes": [x]', "")
+    b = _b().replace(', "normal_fluxes": [-x]', "")
+    d = _couple(_parts(tmp_path, a_body=a, b_body=b))
+    assert d["trustworthy_result"] is True
+    assert d["verification"].startswith("VERIFIED")
+    assert "COVERAGE" in d["verification"]
+    for note in d["checks_not_run"]:
+        assert note in d["verification"]
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))

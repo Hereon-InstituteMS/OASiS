@@ -382,13 +382,28 @@ def _run_monolithic_check(monolithic: str, exports: dict,
                 ["monolithic consistency: NOT CHECKED — the reference solve's "
                  "values are empty or non-finite."])
 
-    report: dict = {"status": "checked", "reference_points": int(ref_vals.size)}
+    ref_field = str(ref.get("field_name", "") or "")
+    report: dict = {"status": "checked", "reference_points": int(ref_vals.size),
+                    "reference_field": ref_field}
     findings: list[str] = []
     not_run: list[str] = []
     for name, ex in exports.items():
         vals = _np.asarray(ex.get("values", []), float).ravel()
         if vals.size == 0:
             not_run.append(f"monolithic consistency for {name}: it exported no values")
+            continue
+        # Compare like with like. Participants on the two sides of an interface
+        # do not always export the same quantity (a Dirichlet-Neumann pair
+        # exports the same temperature; a force/displacement pair does not), and
+        # comparing a displacement against a temperature reference would report
+        # a large, entirely meaningless disagreement.
+        got_field = str(ex.get("field_name", "") or "")
+        if ref_field and got_field and got_field != ref_field:
+            not_run.append(
+                f"monolithic consistency for {name}: it exports {got_field!r} "
+                f"while the reference solve provides {ref_field!r}, so there is "
+                "nothing to compare. Have the reference write the field this "
+                "participant exports if you want it covered.")
             continue
         target = vals
         if ref_vals.size == vals.size:
@@ -2834,7 +2849,12 @@ def register_consolidated_tools(mcp: FastMCP):
         f, n = check_returncodes(r.returncodes); val += f; not_run += n
         f, n = check_coupling_directionality(r.graph, max_iter); val += f; not_run += n
         f, n = check_participant_responsiveness(r.responsiveness); val += f; not_run += n
-        f, n = check_residual_blocks(r.block_residuals, tol); val += f; not_run += n
+        # Only interesting when the GLOBAL norm claims convergence: that is the
+        # case where a still-moving small block is invisible. When the global
+        # residual already says NOT CONVERGED it says everything, and repeating
+        # it per block just buries the findings that are specific.
+        if r.converged:
+            f, n = check_residual_blocks(r.block_residuals, tol); val += f; not_run += n
         names = list(r.exports)
         if len(names) == 2:
             a, b = r.exports[names[0]], r.exports[names[1]]

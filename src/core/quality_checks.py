@@ -591,24 +591,6 @@ def check_returncodes(returncodes: dict) -> tuple[list[str], list[str]]:
 
 
 
-def check_monolithic_consistency(coupled_qoi: float, monolithic_qoi: float,
-                                 rtol: float = 0.05, qoi: str = "QoI") -> list[str]:
-    """If the same problem can be solved un-split in one code, the coupled answer must
-    match it. The most decisive silent-wrong detector — needs no external benchmark,
-    only a monolithic re-solve. Returns a warning if they disagree beyond rtol."""
-    w = []
-    if monolithic_qoi is None or coupled_qoi is None:
-        return w
-    denom = max(abs(monolithic_qoi), 1e-30)
-    rel = abs(coupled_qoi - monolithic_qoi) / denom
-    if rel > rtol:
-        w.append(
-            f"{qoi}: coupled={coupled_qoi:.5g} vs monolithic re-solve={monolithic_qoi:.5g} "
-            f"differ by {rel:.1%} > {rtol:.0%} — the coupled result is likely WRONG."
-        )
-    return w
-
-
 def is_stub_output(content: str) -> str | None:
     """Detect a placeholder/stub generator output that advertises physics but does
     NOT produce a runnable, solving deck. Returns a reason string if stub, else None.
