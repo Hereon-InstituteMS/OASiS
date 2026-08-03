@@ -269,7 +269,7 @@ KNOWLEDGE: dict = {
 
             "[Numerical] Taylor-Hood P2-P1 on triangles is "
             "inf-sup stable (LBB satisfied); equal-order P1-P1 "
-            "without stabilization is not. Measured 2026-08-03 "
+            "without stabilization is not. Signal: measured 2026-08-03 "
             "on skfem 12.0.1 with a manufactured Stokes solution "
             "(stream function psi = x^2(1-x)^2 y^2(1-y)^2, "
             "p = x - 1/2, source derived with sympy) on "
