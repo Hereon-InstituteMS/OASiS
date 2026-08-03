@@ -268,11 +268,75 @@ KNOWLEDGE = {
         "Fourier": "FESeries::Fourier — decay of Fourier coefficients indicates regularity",
         "Legendre": "FESeries::Legendre — expansion in Legendre polynomials",
         "decay_rate": "Fast decay → smooth → increase p, slow decay → singular → refine h",
+        "_api_that_compiles_today": (
+            "The hp API moved repeatedly across the 9.x line, so the "
+            "spellings below are the ones verified to compile and run "
+            "on deal.II 9.8 in 3D. Header: "
+            "<deal.II/numerics/smoothness_estimator.h>. Build the "
+            "series object from the collection rather than by hand: "
+            "FESeries::Legendre<dim> legendre = "
+            "SmoothnessEstimator::Legendre::default_fe_series("
+            "fe_collection); then "
+            "SmoothnessEstimator::Legendre::coefficient_decay("
+            "legendre, dof_handler, solution, smoothness_indicators). "
+            "default_fe_series() sizes the series for THAT collection, "
+            "which is what removes the usual mismatch bug."
+        ),
     },
     "hp_decision": {
-        "p_adaptivity_from_reference": "Compare smoothness to reference values",
-        "choose_p_over_h": "Prefer p-refinement when both flagged",
+        "_required_order": (
+            "Verified working 3D sequence, in this order: "
+            "(1) KellyErrorEstimator::estimate -> per-cell error; "
+            "(2) GridRefinement::refine_and_coarsen_fixed_number on "
+            "those errors -> sets the h-flags; "
+            "(3) SmoothnessEstimator::Legendre::coefficient_decay -> "
+            "per-cell smoothness; "
+            "(4) hp::Refinement::p_adaptivity_from_relative_threshold("
+            "dof_handler, smoothness, ...) -> sets FUTURE FE indices "
+            "on top of the h-flags; "
+            "(5) hp::Refinement::choose_p_over_h(dof_handler); "
+            "(6) hp::Refinement::limit_p_level_difference(dof_handler); "
+            "(7) triangulation.execute_coarsening_and_refinement()."
+        ),
+        "choose_p_over_h": (
+            "REQUIRED whenever both h- and p-flags can be set on the "
+            "same cell, which is exactly what steps (2) and (4) above "
+            "produce. Without it a cell flagged for BOTH is refined in "
+            "h AND raised in p at once, which is not what the "
+            "smoothness estimate asked for and inflates the DoF count. "
+            "Verified on a 3D hp run: before the call a large number "
+            "of cells carried an h-flag and a comparable number "
+            "carried a p-flag with a substantial overlap; after the "
+            "call the h-flag count dropped sharply, the p-flag count "
+            "was untouched, and the both-flagged count was exactly "
+            "zero. Signal: count cells with (refine_flag_set() AND "
+            "future_fe_index_set()) before and after — it must be 0 "
+            "after."
+        ),
+        "limit_p_level_difference": (
+            "Caps the polynomial-degree jump across a face. Skipping "
+            "it is legal but produces large p-jumps at interfaces, "
+            "where the hanging-node projection is least accurate."
+        ),
+        "p_adaptivity_from_relative_threshold": (
+            "Sets FUTURE fe indices from the smoothness indicator "
+            "relative to the range on the current mesh. Note it acts "
+            "on future_fe_index, not active_fe_index — the change "
+            "takes effect at execute_coarsening_and_refinement()."
+        ),
         "fixed_number": "Refine fraction of cells with largest error",
+        "verified_in_3d": (
+            "A complete 3D hp-adaptive Poisson solver on a re-entrant "
+            "domain (GridGenerator::hyper_L<3>, which yields hexes) "
+            "with hp::FECollection of FE_Q(1..4), matched "
+            "hp::QCollection, KellyErrorEstimator + Legendre "
+            "smoothness and the sequence above ran for several cycles: "
+            "the active_fe_index histogram spread from all-p1 on cycle "
+            "0 to a mixture across p1..p4, the constraint count grew "
+            "with the mixture, and every cycle's CG solve converged. "
+            "hp-adaptivity in 3D is not exotic; it works out of the "
+            "box with no optional dependencies."
+        ),
     },
     "pitfalls": [
         "[API] Do NOT execute_coarsening_and_refinement() after the "

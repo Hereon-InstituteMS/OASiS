@@ -23,26 +23,21 @@
   },
   "truly_missing": {
     "elements": [
-      "FE_ABF",
       "FE_DGBDM",
       "FE_DGNedelec",
       "FE_DGPMonomial",
       "FE_DGPNonparametric",
       "FE_DGQArbitraryNodes",
-      "FE_DGQLegendre",
       "FE_DGRaviartThomas",
       "FE_DGVector",
       "FE_Enriched",
       "FE_FaceP",
-      "FE_Hermite",
       "FE_NedelecNodal",
       "FE_NedelecSZ",
-      "FE_P1NC",
       "FE_Poly",
       "FE_PolyFace",
       "FE_PolyTensor",
       "FE_PyramidDGP",
-      "FE_PyramidP",
       "FE_PyramidPoly",
       "FE_Q_Base",
       "FE_RT_Bubbles",
@@ -51,13 +46,11 @@
       "FE_SimplexPoly",
       "FE_TraceQ",
       "FE_WedgeDGP",
-      "FE_WedgeP",
       "FE_WedgePoly"
     ],
     "mesh_generators": [
       "alfeld_split_of_simplex_mesh",
       "concentric_hyper_shells",
-      "convert_hypercube_to_simplex_mesh",
       "convert_simplex_to_hypercube_mesh",
       "create_triangulation",
       "create_triangulation_with_removed_cells",
@@ -86,8 +79,6 @@
       "replicate_triangulation",
       "subdivided_cylinder",
       "subdivided_hyper_L",
-      "subdivided_hyper_cube_with_simplices",
-      "subdivided_hyper_rectangle_with_simplices",
       "subdivided_parallelepiped",
       "surface_mesh_to_volumetric_mesh",
       "truncated_cone",
@@ -97,11 +88,20 @@
   },
   "uncategorised": {
     "elements": [
+      "FE_ABF",
       "FE_DGQHermite",
-      "FE_SimplexDGP"
+      "FE_DGQLegendre",
+      "FE_Hermite",
+      "FE_P1NC",
+      "FE_PyramidP",
+      "FE_SimplexDGP",
+      "FE_WedgeP"
     ],
     "mesh_generators": [
-      "simplex"
+      "convert_hypercube_to_simplex_mesh",
+      "simplex",
+      "subdivided_hyper_cube_with_simplices",
+      "subdivided_hyper_rectangle_with_simplices"
     ]
   },
   "shared_counts": {

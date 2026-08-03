@@ -468,6 +468,57 @@ CRITICAL_KNOWLEDGE: dict = {
         "under-integrate."
     ),
 
+    "step_6b_simplex_wedge_and_pyramid_meshes": {
+        "when": (
+            "Any mesh that is not made of quadrilaterals/hexahedra — "
+            "an unstructured Gmsh/TetGen mesh, or "
+            "GridGenerator::subdivided_hyper_cube_with_simplices / "
+            "subdivided_hyper_rectangle_with_simplices, or a "
+            "hex mesh converted with "
+            "GridGenerator::convert_hypercube_to_simplex_mesh."
+        ),
+        "the_three_things_that_must_change_together": [
+            "ELEMENT: FE_SimplexP(p) (continuous) or FE_SimplexDGP(p) "
+            "(discontinuous) instead of FE_Q / FE_DGQ. FE_WedgeP and "
+            "FE_PyramidP exist for the 3D transition cells. All of "
+            "them instantiate and carry point support, so "
+            "interpolate_boundary_values works on them.",
+            "QUADRATURE: QGaussSimplex<dim>(n) instead of "
+            "QGauss<dim>(n), and QGaussSimplex<dim-1> for faces.",
+            "MAPPING: MappingFE<dim>(FE_SimplexP<dim>(1)) — and it "
+            "must be passed EXPLICITLY as the first argument to "
+            "FEValues, FEFaceValues, VectorTools::* , "
+            "KellyErrorEstimator::estimate and DataOut::build_patches. "
+            "The default MappingQ1 is a hypercube mapping and is "
+            "silently wrong on a simplex.",
+        ],
+        "signal": (
+            "ONE CHECK CATCHES ALL THREE MISTAKES: sum fe_values.JxW(q) "
+            "over every cell and every quadrature point and compare it "
+            "with the exact volume of the domain. On a correct "
+            "setup it matches to round-off. Verified on a unit cube "
+            "meshed with tetrahedra, changing one ingredient at a "
+            "time: correct setup gave exactly the domain volume and a "
+            "solution matching the known peak value of the reference "
+            "problem; using QGauss instead of QGaussSimplex gave a "
+            "total 'volume' SIX times too large (the ratio of the "
+            "reference cube's volume to the reference tetrahedron's "
+            "1/6) and the solve then CONVERGED to a silently wrong "
+            "answer, nearly twice the correct peak — this is the "
+            "dangerous one; omitting MappingFE gave a NEGATIVE total "
+            "volume and the solver then failed with "
+            "SolverControl::NoConvergence. Nothing was raised in any "
+            "of the wrong cases."
+        ),
+        "quadrature_weights_are_the_giveaway": (
+            "If you want an even cheaper check, sum the weights of the "
+            "quadrature rule alone: QGaussSimplex<3> weights sum to "
+            "1/6 (the volume of the reference tetrahedron) and "
+            "QGauss<3> weights sum to 1 (the reference cube). A rule "
+            "whose weights sum to 1 has no business on a tet mesh."
+        ),
+    },
+
     "step_7_complete_runnable_example": {
         "main_cc": MINIMAL_COMPLETE_PROGRAM,
         "CMakeLists_txt": MINIMAL_COMPLETE_CMAKE,

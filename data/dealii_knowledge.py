@@ -411,7 +411,14 @@ class MyProblem {
             "Ghost cell communication needed for assembly of off-process DOFs",
         ],
         "performance": [
-            "Matrix-free requires tensor-product elements (FE_Q, NOT FE_SimplexP)",
+            "Matrix-free: MatrixFree::reinit works with FE_Q, FE_DGQ AND "
+            "(since the simplex support landed) FE_SimplexP on a "
+            "tetrahedral mesh — verified in 3D, where FEEvaluation "
+            "reproduced the assembled matrix-vector product to "
+            "round-off. It ABORTS (exit 134, uncatchable) on the "
+            "moment-based vector families FE_RaviartThomas / FE_BDM. "
+            "Test the element you intend to use on a tiny mesh before "
+            "committing to it",
             "For hp: set active_fe_index per cell BEFORE distributing DOFs",
             "SolverCG requires SPD system — use SolverGMRES for indefinite (Stokes)",
             "Block systems (Stokes): use DoFRenumbering::component_wise + BlockSparseMatrix",

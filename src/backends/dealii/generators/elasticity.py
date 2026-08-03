@@ -463,7 +463,11 @@ KNOWLEDGE = {
         "type 3) reads back as 4 quad cells and an 8-triangle mesh "
         "(type 2) as 8 triangle cells. The real constraint is downstream: a simplex "
         "mesh needs FE_SimplexP / FE_SimplexDGP plus QGaussSimplex, "
-        "and MatrixFree does not support simplices. (This entry "
+        "and everything downstream (FEValues, VectorTools, DataOut, "
+        "KellyErrorEstimator) needs that mapping passed EXPLICITLY. "
+        "(MatrixFree itself does support FE_SimplexP on a tet mesh "
+        "on deal.II 9.8 — verified; this entry used to say it did "
+        "not.) (This entry "
         "asserted 'ONLY QUADS — no triangles', false since deal.II "
         "9.3 added simplex support.)",
         "[API] Gmsh element order != FE polynomial degree. ALWAYS use "
