@@ -1102,10 +1102,17 @@ EXECUTED_API: dict = {
             "assembles to an object of type LinearOperator whose only "
             "conversion attribute is .as_numpy — measured "
             "[a for a in dir(A) if 'numpy' in a or 'petsc' in a or "
-            "'istl' in a] == ['as_numpy']. .as_numpy is a scipy sparse "
-            "matrix in COO layout: call .tocsr() before slicing or "
-            "fancy-indexing it. On a 24x24 P1 structuredGrid the "
-            "stiffness matrix came back 625x625 with 5329 nonzeros."),
+            "'istl' in a] == ['as_numpy']. .as_numpy is ALREADY a scipy "
+            "csr_matrix — measured .format == 'csr', type csr_matrix, "
+            "and A.tocsr() is A is True — so slice and fancy-index it "
+            "directly; no conversion is needed. (An earlier revision of "
+            "this entry said COO and required .tocsr(); RETRACTED by "
+            "adversarial audit 2026-08-03. "
+            "dune/fem/operator/__init__.py imports only "
+            "scipy.sparse.csr_matrix and 'coo_matrix' occurs nowhere "
+            "under site-packages/dune.) On a 24x24 P1 structuredGrid "
+            "the stiffness matrix came back 625x625 with 5329 "
+            "nonzeros."),
         "no_boundary_conditions": (
             "assemble() knows nothing about DirichletBCs — the matrix "
             "is the raw Galerkin matrix. That is what makes it the "

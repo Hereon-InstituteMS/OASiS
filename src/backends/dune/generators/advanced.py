@@ -116,8 +116,9 @@ space = lagrange(gridView, order=order)
 u = TrialFunction(space)
 v = TestFunction(space)
 
-# dune.fem.assemble(bilinear form) -> LinearOperator; .as_numpy is a
-# scipy sparse matrix (COO — call .tocsr() before slicing).
+# dune.fem.assemble(bilinear form) -> LinearOperator; .as_numpy is
+# ALREADY a scipy csr_matrix, so it can be sliced directly. The
+# .tocsr() below is a measured no-op kept only for explicitness.
 A = assemble(dot(grad(u), grad(v)) * dx).as_numpy.tocsr()   # stiffness
 M = assemble(u * v * dx).as_numpy.tocsr()                   # mass
 
@@ -771,8 +772,9 @@ KNOWLEDGE = {
         "required_vs_optional": {
             "REQUIRED": [
                 "dune.fem.assemble(form) — it returns a LinearOperator "
-                "whose .as_numpy is a scipy sparse matrix in COO "
-                "format, so call .tocsr() before slicing",
+                "whose .as_numpy is ALREADY a scipy csr_matrix "
+                "(measured 2026-08-03: .format == 'csr' and "
+                "A.tocsr() is A), so you can slice it directly",
                 "removal (not zeroing) of the constrained rows and "
                 "columns",
                 "sigma=0.0 with which='LM' — shift-invert, otherwise "
@@ -832,10 +834,23 @@ KNOWLEDGE = {
                 "give the analytic pi^2(m^2+n^2) values to 1e-03.)"
             ),
             (
-                "[API] .as_numpy on an assembled operator is a COO "
-                "matrix. Signal: fancy-indexing it, A[mask][:, mask], "
-                "raises or returns something unusable; call .tocsr() "
-                "first. (Executed 2026-08-03.)"
+                "[API] .as_numpy on an assembled operator is ALREADY a "
+                "scipy csr_matrix, so slice it directly. RETRACTED "
+                "2026-08-03 by adversarial audit: an earlier revision "
+                "of this entry claimed it was COO and that "
+                "fancy-indexing 'raises or returns something unusable' "
+                "without a .tocsr() first. Measured on dune-fem "
+                "2.12.0.2 / scipy 1.18.0: A.as_numpy.format == 'csr', "
+                "type csr_matrix, A[mask][:, mask] returned a (49, 49) "
+                "csr_matrix with 285 nonzeros and raised nothing, "
+                "identical to A.tocsr()[mask][:, mask] with "
+                "max|difference| 0.0, and A.tocsr() is A is True — the "
+                "call is a no-op. The installed package confirms it: "
+                "dune/fem/operator/__init__.py imports only "
+                "scipy.sparse.csr_matrix for the as_numpy backend and "
+                "the string 'coo_matrix' occurs nowhere under "
+                "site-packages/dune. Keeping .tocsr() is harmless but "
+                "it is not required. (Executed 2026-08-03.)"
             ),
             (
                 "[Numerical] eigsh without a shift returns the WRONG "

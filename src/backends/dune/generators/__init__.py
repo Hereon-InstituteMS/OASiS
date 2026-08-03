@@ -344,9 +344,10 @@ gridView.writeVTK("result", pointdata={"u": uh})
             "('istl',...), ('petsc',...), ('eigen',...), "
             "('viennacl',...)."),
         "scipy": (
-            "dune.fem.assemble(form).as_numpy gives a scipy sparse "
-            "matrix (COO — .tocsr() it) for anything dune-fem does not "
-            "solve itself, e.g. eigenvalue problems."),
+            "dune.fem.assemble(form).as_numpy gives a scipy csr_matrix "
+            "(already CSR — .tocsr() is a measured no-op) for anything "
+            "dune-fem does not solve itself, e.g. eigenvalue "
+            "problems."),
     },
     "adaptivity": (
         "gv = adaptiveLeafGridView(aluConformGrid(...)); build the "
