@@ -8,7 +8,18 @@ def _free_molecular_box_2d(params: dict) -> str:
     your specific problem.
 
     Collisionless thermal argon in a 2d box with specularly reflecting walls.
-    There is deliberately NO collide command: this is the Kn -> infinity limit.
+    There is deliberately no collide command.
+
+    The DEFAULTS ARE NOT IN THE FREE-MOLECULAR LIMIT and must be changed
+    before the name of this template is true of the run. At nrho 7.07043e22
+    with lx = ly = 1e-4 m the VHS mean free path for argon is ~1.9e-5 m, i.e.
+    Kn_box ~ 0.19 — transitional. Measured on the installed build: adding the
+    single line 'collide vss gas ar.vss' to this exact deck yields
+    'Collide attempts = 6212' and 'Collide occurs = 4893' over the default
+    500 steps with 1000 particles. Omitting collide at these numbers is
+    therefore suppressing ~4.9 real collisions per particle, not modelling a
+    collisionless gas. For a genuine Kn >> 1 run lower nrho (and fnum with
+    it) by several orders of magnitude, or enlarge the box.
     """
     nx = params.get("nx", 20)
     ny = params.get("ny", 20)
@@ -21,8 +32,10 @@ def _free_molecular_box_2d(params: dict) -> str:
     nsteps = params.get("nsteps", 500)
     return f"""\
 # Free-molecular (collisionless) argon in a 2d box - SPARTA DSMC
-# No 'collide' command => Ncoll is 0 by construction. That is the definition
-# of this regime, not a defect; check Ncoll to prove it.
+# No 'collide' command => Ncoll is 0 by construction, so Ncoll == 0 here proves
+# nothing about the regime. Kn_box at the DEFAULT nrho/box above is only ~0.19:
+# these numbers are transitional, not collisionless. Lower nrho and fnum by
+# several decades (or enlarge the box) before calling a run free-molecular.
 seed             12345
 dimension        2
 boundary         rr rr p
@@ -148,12 +161,19 @@ KNOWLEDGE = {
             "[Numerical] compute lambda/grid and compute dt/grid read from a "
             "fix ave/grid that has produced no output yet, so on the first "
             "stats line they return SPARTA's no-data sentinel, not a physical "
-            "value. Reading the step-0 row gives a mean free path of 1e+20 m "
-            "and a cell Knudsen number of 1e+25. "
-            "Signal: an absurd 1e+20-scale value in the lambda or Kn column on "
-            "the first stats line only; it becomes physical from the first "
-            "output step of the fix onward. Never sample diagnostics at "
-            "step 0.",
+            "value. The sentinel is BIG = 1e+20 (compute_lambda_grid.cpp:37), "
+            "written into lambda whenever a cell's number density is zero; the "
+            "Kn column then carries lambda/cell-size, so its magnitude depends "
+            "on your cell size (1e+24 at a 1e-4 m cell, 1e+25 at 1e-5 m). "
+            "Step 0 is NOT the only exposure: any cell that holds no particles "
+            "keeps the sentinel on EVERY stats line, so on a grid refined past "
+            "one particle per cell the maximum stays at 1e+20 forever while "
+            "the minimum looks healthy. "
+            "Signal: an absurd 1e+20-scale value in the lambda or Kn column. "
+            "Never sample diagnostics at step 0, and reduce with BOTH 'compute "
+            "reduce min' and 'compute reduce max' — a max still pinned at "
+            "1e+20 after the fix has produced output means empty cells, not a "
+            "warm-up transient.",
 
             "[Numerical] A timestep larger than the mean collision time runs "
             "cleanly and inflates transport — SPARTA has no CFL check and "
@@ -177,17 +197,20 @@ KNOWLEDGE = {
 
             "[Physics] 'compute <ID> temp' sums the kinetic energy of every "
             "particle WITHOUT subtracting any mean velocity, so it reports "
-            "T_thermal + m*|vstream|^2/(dim*kB) — a translational temperature "
+            "T_thermal + m*|vstream|^2/(3*kB) — a translational temperature "
             "inflated by the bulk motion. The inflation is proportional to "
             "SPECIES MASS and to the SQUARE of the stream speed, so it is "
             "enormous for a heavy species at hypersonic speed and negligible "
-            "for a light species or a slow flow; it is independent of "
-            "dimension and of whether collisions are on. It is also purely "
+            "for a light species or a slow flow. The divisor is 3*kB in BOTH "
+            "2d and 3d — compute_temp.cpp normalises by 3, not by 'dimension', "
+            "because even a 2d run carries three velocity components — so it "
+            "is independent of dimension and of whether collisions are on. It "
+            "is also purely "
             "translational: for a molecular gas it drifts as translation "
             "exchanges energy with rotation. "
             "Signal: put 'compute <ID> temp' and a reduced 'compute <ID> "
             "thermal/grid <grp> <mix> temp' in the same stats_style; a gap of "
-            "about m*|vstream|^2/(dim*kB) between them means the first column "
+            "about m*|vstream|^2/(3*kB) between them means the first column "
             "is not a thermal temperature. With vstream 0 the two agree.",
 
             "[Numerical] compute thermal/grid removes the per-cell MEAN "

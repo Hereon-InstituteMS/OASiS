@@ -227,9 +227,13 @@ UNIVERSAL_PITFALLS = [
     "from dt = 1.0 SECOND, so a deck that omits the 'timestep' command on a "
     "micron- or millimetre-scale domain does not fail, it HANGS — every "
     "particle has to be traced across millions of cells in a single step. "
-    "Signal: the run produces the setup banner and then nothing at all, with "
-    "log.sparta stuck before the first stats line and no error. Check for a "
-    "'timestep' line before blaming the machine.",
+    "Signal: the run never reaches its first stats line and never returns. "
+    "Measured on the installed build with a 1e-3 m box: killed at 15 s, and "
+    "BOTH log.sparta and the captured screen output are ZERO BYTES — SPARTA's "
+    "stdio is block-buffered, so when you redirect or pipe the run (which is "
+    "how any driver runs it) you do not even get the setup banner to look at. "
+    "An empty log.sparta from a process that is still alive means no "
+    "'timestep' line, not a broken machine.",
 
     "[Numerical] DSMC is a Monte-Carlo method: changing only the 'seed' value "
     "changes every tallied number. Two runs that differ by a few percent in a "

@@ -37,8 +37,14 @@ mixture          species copy noelectron
 mixture          noelectron delete e
 mixture          noelectron N2 frac 0.8
 mixture          noelectron O2 frac 0.2
-# circle.surf has a UNIQUE basename in the distribution; 'data.circle' does
-# NOT — eleven example directories ship different geometries under that name.
+# Measured on this distribution, not assumed: 'circle.surf' appears in TWO
+# example dirs (adjust_temp, surf_react_heatflux) but both copies are
+# byte-identical (md5 5db86f1f991caaae4a9e693640cd027a), so basename
+# resolution cannot pick a wrong one. 'data.circle' appears in TWELVE dirs of
+# which ELEVEN are identical and exactly ONE differs (examples/ambi, 46584 B
+# vs 1977 B) — and because the stager takes the alphabetically first match,
+# examples/adapt wins and the ambi geometry is the one that loses. Use
+# circle.surf here.
 read_surf        circle.surf group 1
 surf_collide     wall diffuse {t_wall} 1.0
 surf_modify      1 collide wall

@@ -494,24 +494,46 @@ SIGNAL_COVERAGE_MIN = {
                        #                  restructured into per-physics modules
                        #                  under backends/sparta/generators/,
                        #                  the shape every FEM backend already
-                       #                  uses. 155 Signal-tagged pitfalls
-                       #                  across 10 physics: 9 physics-specific
-                       #                  sets (rarefied_flow 9,
+                       #                  uses. RECOUNTED 2026-08-03 (audit):
+                       #                  165 Signal-tagged pitfalls counted
+                       #                  across 10 physics = 65 physics-
+                       #                  specific (rarefied_flow 9,
                        #                  surface_interaction 10,
                        #                  conjugate_heat_transfer 7,
                        #                  adaptive_grid 6, axisymmetric 6,
-                       #                  collision_relaxation 5,
+                       #                  collision_relaxation 6,
                        #                  hypersonic_flow 6, particle_emission
                        #                  6, chemistry 4, ambipolar_plasma 5)
                        #                  plus 10 cross-cutting deck-level
                        #                  entries attached to every row.
-                       #                  Every Signal literal is a string the
-                       #                  installed binary actually contains
-                       #                  (checked with strings -n 6 against
-                       #                  the format-invariant substring, since
-                       #                  most are printf templates).
+                       #                  The earlier "155 / collision_relaxation
+                       #                  5" arithmetic was wrong.
+                       #                  DISTINCT Signal TEXTS are 74, not 75:
+                       #                  hypersonic_flow[0] and
+                       #                  particle_emission[0] are two different
+                       #                  pitfalls carrying the SAME Signal
+                       #                  literal (the fix emit/face periodic-
+                       #                  boundary abort), so 65 physics-
+                       #                  specific entries yield only 64 unique
+                       #                  Signal texts.
+                       #                  Message literals quoted inside those
+                       #                  Signals: 71 distinct, 71/71 present in
+                       #                  the installed binary (49 ERROR/WARNING
+                       #                  strings + 22 other console lines).
+                       #                  strings -n 6 canNOT check the
+                       #                  '(../file.cpp:NN)' suffix — the error
+                       #                  handler appends it at runtime — and a
+                       #                  FLERR-line audit against the SPARTA
+                       #                  sources found 1 of 48 such locations
+                       #                  wrong (compute_reduce.cpp:280, the
+                       #                  per-grid twin, quoted for the per-surf
+                       #                  message, which is at :293).
                        #                  The old floor was 0.0 with 0 Signal
                        #                  clauses in src/backends/sparta/.
+                       #                  NOTE the floor is not tight: at 165
+                       #                  counted rows, losing exactly ONE
+                       #                  physics-specific Signal leaves 99.394%
+                       #                  and still passes; two or more fail.
 }
 
 

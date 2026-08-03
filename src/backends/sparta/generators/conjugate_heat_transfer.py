@@ -124,8 +124,10 @@ KNOWLEDGE = {
             "f_ID[1], f_ID[2], ... The upstream compute surf feeding it is the "
             "opposite: always an array, so always indexed. "
             "Signal: 'ERROR: Compute reduce fix does not calculate a per-surf "
-            "array (../compute_reduce.cpp:280)' when you index a "
-            "single-value fix.",
+            "array (../compute_reduce.cpp:293)' when you index a "
+            "single-value fix. Do not confuse it with line 280, which is the "
+            "per-GRID twin of the same message ('... does not calculate a "
+            "per-grid array') raised by a fix ave/grid.",
 
             "[Physics] The DSMC surface flux is statistically noisy and the "
             "wall temperature responds to it, so a short fix ave/surf window "

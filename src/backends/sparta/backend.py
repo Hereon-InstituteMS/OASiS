@@ -316,13 +316,23 @@ class SpartaBackend(SolverBackend):
         out = dict(kn)
         out["variants"] = list(info["variants"])
         out["worked_example"] = (
-            f"upstream SPARTA example directory '{info['example']}' — full "
-            f"decks via examples(query='{info['example']}', solver='sparta')")
+            f"upstream SPARTA example directory '{info['example']}' — read the "
+            f"decks from the installed distribution at examples/"
+            f"{info['example']}/in.*. NOTE: the examples() MCP tool does not "
+            f"index SPARTA (every keyword returns 'No examples found for ... "
+            f"in sparta', and action='template' returns 'Unknown solver: "
+            f"sparta'), so do not route this through it. The 37 bundled decks "
+            f"are in sparta_knowledge.json['example_templates'] but no MCP "
+            f"tool currently reads them.")
         out["command_reference"] = (
             "one-line syntax for the commands this physics needs is in "
-            "'key_commands' above; the full SPARTA doc page for ANY command is "
-            "available on demand via "
-            "SpartaBackend.get_command_reference('<command>')")
+            "'key_commands' above. The full SPARTA doc page for any command is "
+            "in sparta_knowledge.json['commands'] and is returned by the "
+            "python method SpartaBackend.get_command_reference('<command>') — "
+            "which is NOT exposed as an MCP tool on this build, so an MCP "
+            "client cannot call it. Until it is wired up, treat 'key_commands' "
+            "plus knowledge(topic='input_guide', solver='sparta') as the whole "
+            "of the syntax you have.")
         out.update(_CROSS_CUTTING)
         return out
 
@@ -336,7 +346,16 @@ class SpartaBackend(SolverBackend):
         """
         cmds = _KB.get("commands", {})
         key = command.strip()
+        # ' '->'_' and '/'->'_' must also be tried TOGETHER. Applying them only
+        # separately made every real slash form fall through to the bare
+        # key.split()[0] page: 'fix ave/surf', 'fix emit/face', 'fix surf/temp'
+        # and 'fix ave/time' all returned the generic 'fix' page and
+        # 'compute thermal/grid' the generic 'compute' page, silently, even
+        # though fix_ave_surf / fix_emit_face / fix_surf_temp /
+        # compute_thermal_grid all exist as keys. Slashes are the real deck
+        # syntax (upstream decks use 'fix emit/face' 25 times).
         for cand in (key, key.replace(" ", "_"), key.replace("/", "_"),
+                     key.replace(" ", "_").replace("/", "_"),
                      key.replace("_", " "),
                      key.split()[0] if key.split() else key):
             if cand in cmds:
@@ -355,10 +374,16 @@ class SpartaBackend(SolverBackend):
             raise ValueError(f"Unknown physics '{physics}'. "
                              f"Available: {', '.join(sorted(_PHYSICS))}")
         variant = variant or info["variants"][0]
-        for key in (f"{physics}_{variant}", f"{physics}_{info['variants'][0]}"):
-            gen = GENERATORS.get(key)
-            if gen:
-                return gen(params or {})
+        # Resolve the EXACT variant only. A second, unconditional lookup of
+        # f"{physics}_{info['variants'][0]}" used to sit here, which meant any
+        # unrecognised variant silently returned the default deck for that
+        # physics — generate_input('chemistry', 'box_2d') handed back the 3d
+        # chemistry deck and generate_input('hypersonic_flow', 'box_2d') handed
+        # back the circle deck, with no error and nothing in the deck saying so.
+        # It also made the ValueError at the end of this method unreachable.
+        gen = GENERATORS.get(f"{physics}_{variant}")
+        if gen:
+            return gen(params or {})
         # fall back to the bundled upstream example deck for this variant
         decks = _KB.get("example_templates", {}).get(variant, {})
         if decks:
@@ -390,6 +415,16 @@ class SpartaBackend(SolverBackend):
             joined.append(buf + line)
             buf = ""
         if buf:
+            # A '&' with no line after it leaves the last command incomplete.
+            # SPARTA does NOT wave this through: 'run 10 &' as the final line
+            # of an otherwise valid deck aborts with
+            # 'ERROR: Illegal run command (../run.cpp:103)'. Joining without
+            # this check turned that abort into a silent validate_input pass.
+            errors.append(
+                "Deck ends with a dangling '&' line continuation — the last "
+                "command is never completed. SPARTA aborts on this (e.g. "
+                "'run 10 &' as the final line gives 'ERROR: Illegal run "
+                "command (../run.cpp:103)').")
             joined.append(buf.rstrip())
         nonblank = joined
         if not nonblank:
