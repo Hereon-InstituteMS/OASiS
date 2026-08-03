@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#18 — CORRECTION fixture from the 2026-08-03 adversarial re-audit. The original pitfall text told the reader to capture 4C 'through a line-buffered pipe (stdbuf -oL -eL 4C in.4C.yaml out) or to a file'. The 'or to a file' half is FALSE and actively harmful: stdout to a regular file is fully buffered, so MPI_Abort discards the RESULT DESCRIPTION verdict exactly as it does for a pipe, and an agent that follows the advice sees a failed verification as an unexplained crash. Re-measured on 4C 2026.2.0-dev (git 89519cf): 'BIN in out > f.log 2>&1' produced grep -c 'is WRONG' = 0 on three consecutive runs of a deliberately failing deck, while 'stdbuf -oL -eL BIN in out > f.log 2>&1' produced both the 'is WRONG' line and the 'Result check failed with 1 errors out of 1 tests' line. The fixture asserts the zero explicitly (IS_WRONG_LINES_IN_3_RUNS=0) so a future build that changes libc buffering, or an edit that reinstates the file advice, both show up.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 18,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "plain_pipe: EXIT=1 ENDS_AT_CHECKING=yes",
+    "plain_file_redirect: IS_WRONG_LINES_IN_3_RUNS=0",
+    "stdbuf_file_redirect: EXIT=1 IS_WRONG=1 RESULT_CHECK_FAILED=1"
+  ],
+  "forbid_in_output": [
+    "4C binary not found",
+    "stdbuf_file_redirect: EXIT=1 IS_WRONG=0"
+  ]
+}
