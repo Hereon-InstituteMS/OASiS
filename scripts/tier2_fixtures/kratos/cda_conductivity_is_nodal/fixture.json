@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for kratos poisson: FALSIFIES the pre-2026-08-03 catalog claim 'Properties (CONDUCTIVITY, DENSITY, SPECIFIC_HEAT) go on Properties object, NOT on nodes'. On Kratos 10.4.0 LaplacianElement2D3N reads the diffusivity NODALLY via ConvectionDiffusionSettings.GetDiffusionVariable; the Properties value is ignored. Swap test reading LHS[0][0]: nodal 1 + Properties 1 -> 1.0; nodal 1 + Properties 999 -> 1.0; nodal 999 + Properties 1 -> 999.0. This also resolves a direct contradiction inside the catalog: KNOWLEDGE['curved_mms'] pitfall #1 said nodal (right), KNOWLEDGE['poisson'] said Properties (wrong). Verified by execution 2026-08-03.",
+  "backend": "kratos",
+  "physics": "poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "properties_conductivity_ignored=True",
+    "nodal_conductivity_drives_diffusion=True",
+    "lhs00_prop1_nodal999=999.0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

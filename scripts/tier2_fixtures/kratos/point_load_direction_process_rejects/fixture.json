@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for kratos structural_dynamics / linear_elasticity: resolves a contradiction BETWEEN two catalog entries about POINT_LOAD. On Kratos 10.4.0 StructuralMechanicsApplication has no AssignVectorByDirectionProcess attribute (so linear_elasticity was right about that), AND the core module KratosMultiphysics.assign_vector_by_direction_process does crash on POINT_LOAD with 'Error: Trying to fix/free dof of variable POINT_LOAD_X but this dof does not exist in node #1!' (so structural_dynamics was right about that). assign_vector_variable_process sets POINT_LOAD = [0, -100, 0] cleanly. Verified by execution 2026-08-03.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "sma_has_AssignVectorByDirectionProcess=False",
+    "core_by_direction_raises=True",
+    "raises_about_fix_free_dof=True",
+    "assign_vector_variable_works=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

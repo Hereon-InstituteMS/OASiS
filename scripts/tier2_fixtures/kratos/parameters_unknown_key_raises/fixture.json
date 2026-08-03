@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for kratos structural_dynamics: FALSIFIES the pre-2026-08-03 catalog claim that a wrong Bossak key name is 'silently ignored and the scheme runs without damping'. Kratos Parameters::ValidateAndAssignDefaults rejects unknown keys, so a real dynamic StructuralMechanicsAnalysis with 'alpha_m' instead of 'damp_factor_m' aborts with 'Error: The item with name \"alpha_m\" is present in this Parameters but NOT in the default values' before the first time step, while the same case with 'damp_factor_m' runs to completion. Verified by execution 2026-08-03 on Kratos 10.4.0.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "validate_unknown_key_raises=True",
+    "validate_message_mentions_not_in_default_values=True",
+    "wrong_key_aborts_the_run=True",
+    "wrong_key_is_silently_ignored=False",
+    "correct_key_runs=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

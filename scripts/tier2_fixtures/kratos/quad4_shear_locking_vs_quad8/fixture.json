@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for kratos structural_dynamics: CONFIRMS the shear-locking pitfall with numbers, and doubles as the correctness gate for the Kratos structural path (checks the converged answer against the Timoshenko cantilever solution, not merely rc=0). Kratos 10.4.0, plane-stress cantilever L=10 h=1 t=1 E=2e11 nu=0, tip shear 1000 N, LinearElasticPlaneStress2DLaw, sparse_lu; Timoshenko reference -2.012e-5. SmallDisplacementElement2D4N 10x1 -> -1.340e-5 (66.6%, i.e. 33% too stiff); SmallDisplacementElement2D8N on the SAME 10x1 element grid -> -2.010e-5 (99.9%); quad4 refined to 80x8 -> 99.2%. Verified by execution 2026-08-03.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "quad4_locks_20_to_40_percent=True",
+    "quad8_recovers_within_2_percent=True",
+    "quad4_converges_under_refinement=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
