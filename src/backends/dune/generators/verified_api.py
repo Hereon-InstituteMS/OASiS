@@ -11,7 +11,7 @@ still applies):
 
     dune-fem / dune-common / dune-grid / dune-geometry / dune-istl /
     dune-localfunctions / dune-alugrid  all at 2.12.0.2
-    (conda env dune-fem-env, CPython 3.12.13, Linux x86-64)
+    (CPython 3.12.13, Linux x86-64)
 
 WHY THIS MODULE EXISTS. DUNE-fem shares UFL with FEniCS/dolfinx, so a
 model that knows dolfinx writes DUNE-fem weak forms correctly on the
@@ -54,6 +54,18 @@ KNOWN_ABSENT_DUNE_PATHS: frozenset[str] = frozenset({
     "dune.fem.space.product_space",
     # the Python factory is raviartThomas (camelCase)
     "dune.fem.space.raviartthomas",
+    # companion packages the catalog used to advertise. Measured
+    # 2026-08-03: every one of these raises ModuleNotFoundError on a
+    # conda-forge dune-fem 2.12.0.2 install, which is exactly WHY the
+    # catalog has to be allowed to name them — the claim being made is
+    # that they are absent.
+    "dune.femdg",
+    "dune.fem.dg",
+    "dune.vem",
+    "dune.polygongrid",
+    "dune.spgrid",
+    "dune.uggrid",
+    "dune.mmesh",
 })
 
 # JIT-generated module names (dune.generated.<kind>_<md5>) appear inside
@@ -68,9 +80,9 @@ JIT_GENERATED_PATH_PREFIXES: tuple[str, ...] = ("dune.generated",)
 EXECUTED_API: dict = {
     "install_under_test": (
         "dune-fem 2.12.0.2 (dune-common/grid/geometry/istl/"
-        "localfunctions/alugrid all 2.12.0.2), CPython 3.12.13, conda "
-        "env dune-fem-env, Linux x86-64. All numbers below were "
-        "measured on this install between 2026-08-03 and 2026-08-03. "
+        "localfunctions/alugrid all 2.12.0.2), CPython 3.12.13, "
+        "Linux x86-64, conda-forge build. All numbers below were "
+        "measured on that install on 2026-08-03. "
         "NOTE for readers of older catalog text: entries dated "
         "2026-08-01 in this backend say 'dune-fem 2.10'; the env has "
         "since been rebuilt at 2.12.0.2 and the API facts below were "
@@ -108,7 +120,7 @@ EXECUTED_API: dict = {
             "aluConformGrid/aluSimplexGrid. (Executed 2026-08-03: "
             "16 vs 32 elements for n=4. dune.grid also exposes "
             "ugGrid, albertaGrid and onedGrid, which were NOT "
-            "exercised in this campaign.)"),
+            "exercised here.)"),
     },
 
     # ── the single most misleading thing in the whole API ───────────
@@ -368,6 +380,20 @@ EXECUTED_API: dict = {
             "Python — dune/fem/discretefunction/_solvers.py just "
             "forwards it as the parameter 'linear.method' — so the "
             "error surfaces at scheme construction, from C++."),
+        "valid_preconditioner_strings": (
+            "linear.preconditioning.method takes a SHORT enumeration "
+            "and it is NOT the list people expect: "
+            "galerkin(..., parameters={'linear.preconditioning.method': "
+            "'ilu'}) raises RuntimeError: \"ParameterInvalid "
+            "[getEnumeration:.../dune/fem/io/parameter/reader.hh:300]: "
+            "Parameter 'fem.solver.linear.preconditioning.method' "
+            "invalid. Valid values are: none, sor, ssor, gauss-seidel, "
+            "jacobi\". No ILU, no AMG, no fieldsplit for the default "
+            "storage. It fires at SCHEME CONSTRUCTION, before any "
+            "solve. Measured effect on a 12x12 Taylor-Hood Stokes "
+            "problem: linear_iterations 70941 with 'none' and 6351 "
+            "with 'ssor' for gmres, 2116 for bicgstab + 'ssor'. "
+            "Executed 2026-08-03, hit from two independent scripts."),
         "direct_solver_executed": (
             "solver=('suitesparse', 'umfpack') WORKS on this install: "
             "the scheme built (62.6 s, one new JIT module — a direct "
@@ -486,12 +512,12 @@ EXECUTED_API: dict = {
             "object and scheme type. Executed 2026-08-03."),
         "cache_location": (
             "dune.packagemetadata.getDunePyDir() returned "
-            "'<sys.prefix>/.cache/dune-py' — on this install "
-            "'/home/.../envs/dune-fem-env/.cache/dune-py', with the "
+            "'<sys.prefix>/.cache/dune-py', with the "
             "compiled modules in "
-            "'<that>/python/dune/generated/*.so' — it grows without "
-            "bound: measured 164 .so files / 580 MB of generated "
-            "artefacts at the end of this campaign (2026-08-03). "
+            "'<that>/python/dune/generated/*.so'. It grows without "
+            "bound — one .so per distinct grid/space/integrands/scheme, "
+            "each a few MB — so budget disk for it and delete the "
+            "directory when you want a clean rebuild. "
             "Resolution order is "
             "$DUNE_PY_DIR/dune-py, then <sys.prefix>/.cache/dune-py "
             "if inVirtualEnvironment(), then ~/.cache/dune-py. "
@@ -503,15 +529,14 @@ EXECUTED_API: dict = {
             "packagemetadata.inVirtualEnvironment() returns 1 as soon "
             "as CONDA_DEFAULT_ENV is present in os.environ, and only "
             "falls back to the sys.prefix != sys.base_prefix test "
-            "otherwise. In a conda env those two prefixes are EQUAL "
-            "(measured here: both "
-            "/home/.../envs/dune-fem-env), so CONDA_DEFAULT_ENV is "
+            "otherwise. In a conda env those two prefixes are EQUAL, "
+            "so CONDA_DEFAULT_ENV is "
             "the only thing putting the cache inside the env. "
             "Measured 2026-08-03 with the identical interpreter: "
             "CONDA_DEFAULT_ENV set -> "
             "'<env>/.cache/dune-py'; `env -u CONDA_DEFAULT_ENV` -> "
-            "'~/.cache/dune-py'; DUNE_PY_DIR=/tmp/xyz -> "
-            "'/tmp/xyz/dune-py'. A harness that spawns "
+            "'~/.cache/dune-py'; DUNE_PY_DIR=<dir> -> "
+            "'<dir>/dune-py'. A harness that spawns "
             "<env>/bin/python WITHOUT conda activation therefore "
             "starts from a cold cache in $HOME and pays the full "
             "build again, while an interactive `conda activate` "
@@ -668,6 +693,47 @@ EXECUTED_API: dict = {
     },
 
     # ── adaptation ──────────────────────────────────────────────────
+    # ── time series and file format, measured ───────────────────────
+    "vtk_time_series_measured": {
+        "description": (
+            "How to write one file per time step, and which output "
+            "encodings exist. Executed 2026-08-03."),
+        "number_kwarg": (
+            "gridView.writeVTK(name, pointdata={...}, number=step) "
+            "appends a ZERO-PADDED five-digit index to the base name. "
+            "Measured: number=0,1,2 produced series00000.vtu, "
+            "series00001.vtu, series00002.vtu. No .pvd collection file "
+            "is written by this call, so ParaView has to open the "
+            "sequence by pattern."),
+        "outputType": (
+            "outputType=dune.grid.OutputType.<name> selects the "
+            "encoding; the enum members are ascii, base64, "
+            "appendedraw and appendedbase64. "
+            "outputType=OutputType.ascii was executed and produced a "
+            "readable .vtu."),
+        "Signal": (
+            "[API] Calling gridView.writeVTK with the SAME name every "
+            "time step overwrites the file and you end up with one "
+            "frame. Signal: the output directory holds a single .vtu "
+            "after a 100-step run. Pass number=step — measured to give "
+            "name00000.vtu, name00001.vtu, ... — or embed the step in "
+            "the name yourself. (Executed 2026-08-03 on dune-fem "
+            "2.12.0.2.)"),
+        "sampling_without_vtk": (
+            "dune.fem.utility gives you numbers straight out of a "
+            "discrete function, which is usually what a check needs "
+            "rather than a picture. All executed 2026-08-03 on an 8x8 "
+            "structuredGrid holding the interpolant of u = x + 2y:\n"
+            "  lineSample(uh, [0.0,0.5], [1.0,0.5], 5) -> "
+            "(points, values) with 5 samples; the values ran 1.0 to "
+            "2.0, which is exactly u along y=0.5.\n"
+            "  pointSample(uh, [0.25,0.25]) -> 0.75, the exact value.\n"
+            "  gridWidth(gridView) -> 0.125 on the 8x8 grid, i.e. h.\n"
+            "  inspectBoundaryIds(gridView) -> 'bndId'.\n"
+            "boundarySample and Sampler are importable from the same "
+            "module but were NOT exercised."),
+    },
+
     "adaptation_measured": {
         "description": (
             "The 2.12 mark/adapt cycle, executed 2026-08-03."),
@@ -822,7 +888,8 @@ EXECUTED_API: dict = {
             "  * A script that refines the same mix of grids through "
             "globalRefine(level, gridView.hierarchicalGrid) instead "
             "exited 0 on 3 of 3 runs.\n"
-            "  * The original campaign script — a larger mix — gave "
+            "  * A larger mix of grids and refinement paths in one "
+            "script gave "
             "134 / 0 / 134 over three runs, so that one IS "
             "intermittent.\n"
             "Treat it as: reliable for the restrict-prolong path, "
@@ -848,15 +915,15 @@ EXECUTED_API: dict = {
             "dune.fem.threading.max and .use are ATTRIBUTES (read and "
             "assign them); .useMax is a CALLABLE "
             "(<built-in method useMax of PyCapsule object>, "
-            "callable() is True). Executed 2026-08-03 on a 32-core "
-            "box: threading.max == 32 but threading.use == 1 by "
-            "DEFAULT. Assigning dune.fem.threading.use = 2 took "
+            "callable() is True). Executed 2026-08-03: threading.max "
+            "reports the machine's core count but threading.use == 1 "
+            "by DEFAULT. Assigning dune.fem.threading.use = 2 took "
             "effect immediately (read back as 2), and calling "
-            "dune.fem.threading.useMax() set use to 32."),
+            "dune.fem.threading.useMax() raised use to threading.max."),
         "Signal": (
             "[Performance] dune-fem assembles and solves on ONE "
             "thread unless you say otherwise — threading.use defaults "
-            "to 1 even when threading.max reports 32. If a DUNE run "
+            "to 1 whatever threading.max reports. If a DUNE run "
             "pegs a single core while the machine idles, that is why. "
             "(Executed 2026-08-03.)"),
     },
@@ -910,6 +977,197 @@ EXECUTED_API: dict = {
             "order is right but the level-to-level ratio flattens at "
             "the finest level, suspect linear.tolerance. (Executed "
             "2026-08-03.)"),
+    },
+
+    # ── natural (Neumann / Robin) boundary conditions ───────────────
+    "natural_bc_measured": {
+        "description": (
+            "How a flux or Robin condition is written on dune-fem "
+            "2.12.0.2 — there is no facet-tag mechanism, so the "
+            "boundary term is masked with a UFL conditional on the "
+            "coordinate. Executed 2026-08-03."),
+        "neumann_recipe": (
+            "L = g * conditional(gt(x[0], 1-tol), 1.0, 0.0) * v * ds, "
+            "added to the right-hand side of "
+            "galerkin([a == L, <dirichlet bcs>]). Verified on "
+            "-Laplace(u) = 0 with u=0 on x=0 and du/dn = 1 on x=1, "
+            "whose answer is u = x: the P1 solution came back with "
+            "||u_h - x||_L2 = 3.233e-16 on an 8x8 structuredGrid, i.e. "
+            "exact. The tolerance in the conditional is compared "
+            "against the FACET QUADRATURE POINTS, which for a "
+            "structuredGrid facet on x=1 are exactly at x=1."),
+        "robin_recipe": (
+            "du/dn + alpha*(u - u_inf) = 0 becomes "
+            "a += alpha * mask * u * v * ds and "
+            "L += alpha * u_inf * mask * v * ds. Verified with "
+            "alpha=3, u_inf=2 on the same geometry, whose answer is "
+            "u = alpha*u_inf/(1+alpha) * x = 1.5*x: "
+            "||u_h - 1.5*x||_L2 = 3.238e-16."),
+        "Signal_unmasked_ds": (
+            "[Numerical] Forgetting the coordinate mask applies the "
+            "flux to the WHOLE boundary and nothing warns you. "
+            "Signal: on the u=x problem above, writing g*v*ds instead "
+            "of g*mask*v*ds gave max(u_h) = 2.163782 where the correct "
+            "answer is 1.0 — converged, no exception, roughly double. "
+            "A flux term whose result is a small integer multiple of "
+            "the expected one is almost always this. (Executed "
+            "2026-08-03 on dune-fem 2.12.0.2.)"),
+        "ds_with_a_subdomain_id_DOES_work": (
+            "ds(id) is supported and the ids are GEOMETRIC and "
+            "1-BASED, not user-assigned. dune/fem/misc/"
+            "boundaryidprovider.hh gives, for YaspGrid, "
+            "boundaryId = intersection.boundary() ? "
+            "intersection.indexInInside()+1 : 0 — so on a 2D "
+            "structuredGrid the four ids are 1 = x-min (left), "
+            "2 = x-max (right), 3 = y-min (bottom), 4 = y-max (top). "
+            "Measured on an 8x8 grid by assembling 1*v*ds(k): "
+            "ds(1)..ds(4) each summed to exactly 1.0 (one unit edge), "
+            "ds(5) summed to 0.0, plain ds summed to 4.0. Solving "
+            "-Laplace(u)=0 with u=0 on x=0 and unit flux on ds(2) "
+            "returned max(u_h) = 1.00000000, the exact answer u = x. "
+            "ALUGrid uses a DIFFERENT provider "
+            "(intersection.impl().boundaryId(), i.e. whatever the "
+            "mesh file carries), so the 1..2*dim numbering above is a "
+            "YaspGrid fact, not a DUNE-wide one — on an ALUGrid "
+            "cartesianDomain ds(1) also measured 1.0, but do not "
+            "assume the mapping for an imported mesh."),
+        "Signal_ds_with_a_tag": (
+            "[Numerical] A ds(id) term whose id happens to be a "
+            "CONSTRAINED boundary contributes nothing, and looks "
+            "exactly like an unsupported feature. Signal: "
+            "g*v*ds(1) as the only right-hand side, with the "
+            "Dirichlet condition ALSO on x=0, gave "
+            "max(u_h) = 0.00000000 — every test function on id 1 had "
+            "been eliminated by the constraint. The same form on "
+            "ds(2) gave max(u_h) = 1.00000000. Before concluding that "
+            "ds(id) is broken, check which physical edge that id is: "
+            "for a 2D YaspGrid it is indexInInside()+1, so 1=left, "
+            "2=right, 3=bottom, 4=top. ds(0) is not a wildcard — it "
+            "raises AssertionError at dune/ufl/linear.py:208, "
+            "`assert type(id) is int and id > 0`. (Executed "
+            "2026-08-03 on dune-fem 2.12.0.2; this entry REPLACES an "
+            "earlier claim in this catalog that ds(id) is silently "
+            "empty, which came from a test that put its Dirichlet "
+            "condition on the very edge it was integrating over.)"),
+        "Signal_component_bc_corner": (
+            "[Numerical] Two COMPONENT-WISE DirichletBCs on edges that "
+            "MEET lose one of the two constraints at the shared corner "
+            "dof. Signal: with DirichletBC(space,[0,None],x[0]<tol) "
+            "and DirichletBC(space,[None,0],x[1]<tol) on a vector "
+            "space, the dof at (0,0) came back u_x = 1.910e-06 instead "
+            "of 0 while u_y was 0 — and swapping the two BCs in the "
+            "list changed nothing. Two component-wise BCs on the SAME "
+            "edge DO merge (both components measured 0). The resulting "
+            "global error is O(h^2), so it looks like discretisation "
+            "error; detect it by reading the constrained dof back and "
+            "comparing it with what you asked for. (Executed "
+            "2026-08-03 on dune-fem 2.12.0.2, 4x4 and 8x8 grids.)"),
+        "Signal_pointwise_indicator": (
+            "[API] A DirichletBC indicator is evaluated PER BOUNDARY "
+            "FACET, not per dof, so an indicator that is true only at "
+            "a point selects nothing. Signal: adding "
+            "DirichletBC(space,[0,0], And(x[0]<tol, x[1]<tol)) to pin "
+            "one corner node changed the solution by exactly zero — "
+            "the corner dof kept the value it had without that BC, to "
+            "all printed digits. Use edge-sized indicators. (Executed "
+            "2026-08-03.)"),
+    },
+
+    # ── matrices out of dune-fem ────────────────────────────────────
+    "assemble_measured": {
+        "description": (
+            "dune.fem.assemble(form, space=None, gridView=None, "
+            "order=None) is the supported way to get a MATRIX out of "
+            "dune-fem without going through a scheme. Executed "
+            "2026-08-03."),
+        "what_it_returns": (
+            "A bilinear form (both a TrialFunction and a TestFunction) "
+            "assembles to an object of type LinearOperator whose only "
+            "conversion attribute is .as_numpy — measured "
+            "[a for a in dir(A) if 'numpy' in a or 'petsc' in a or "
+            "'istl' in a] == ['as_numpy']. .as_numpy is a scipy sparse "
+            "matrix in COO layout: call .tocsr() before slicing or "
+            "fancy-indexing it. On a 24x24 P1 structuredGrid the "
+            "stiffness matrix came back 625x625 with 5329 nonzeros."),
+        "no_boundary_conditions": (
+            "assemble() knows nothing about DirichletBCs — the matrix "
+            "is the raw Galerkin matrix. That is what makes it the "
+            "right tool for eigenvalue problems, where the constrained "
+            "rows must be DELETED rather than replaced by identity "
+            "rows."),
+        "Signal": (
+            "[API] There is no eigen/eigs/eigenvalue entry point in "
+            "dune.fem at all, and `import dune.fem.solver` raises "
+            "ModuleNotFoundError. Signal: any spectral problem has to "
+            "go dune.fem.assemble -> .as_numpy.tocsr() -> "
+            "scipy.sparse.linalg.eigsh (or PETSc/SLEPc through the "
+            "petsc storage). Verified end to end: interior submatrices "
+            "of a 24x24 P1 grid gave the analytic Dirichlet Laplacian "
+            "eigenvalues pi^2(m^2+n^2) to within 6e-03 relative. "
+            "(Executed 2026-08-03 on dune-fem 2.12.0.2.)"),
+    },
+
+    # ── which dune sub-packages actually exist here ─────────────────
+    "companion_modules_measured": {
+        "description": (
+            "Which dune sub-packages a plain conda-forge dune-fem "
+            "install exposes, measured with importlib on 2026-08-03. "
+            "This matters because several capabilities the catalog "
+            "used to advertise live in SEPARATE packages."),
+        "importable": [
+            "dune.fem, dune.grid, dune.ufl, dune.geometry, "
+            "dune.istl, dune.common (core)",
+            "dune.alugrid — the adaptive/simplicial grid manager",
+            "dune.fem.utility (gridWidth, inspectBoundaryIds, "
+            "lineSample, pointSample, boundarySample, Sampler, "
+            "algorithm)",
+            "dune.fem.view (adaptiveLeafGridView, filteredGridView, "
+            "geometryGridView)",
+            "dune.fem.operator (galerkin, molGalerkin, h1, linear, "
+            "linearOperator, load)",
+            "dune.fem.model, dune.fem.plotting, dune.generator",
+        ],
+        "NOT_importable_here": [
+            "dune.femdg AND dune.fem.dg — ModuleNotFoundError. "
+            "dune-fem-dg is a separate package; the SSP Runge-Kutta "
+            "steppers, the Bassi-Rebay / CDG / LDG operators and the "
+            "limiters it provides are NOT available from a plain "
+            "dune-fem install. Write the DG operator with the ordinary "
+            "galerkin scheme and your own explicit stepper instead.",
+            "dune.vem — ModuleNotFoundError. No Virtual Element "
+            "Method here.",
+            "dune.polygongrid, dune.spgrid, dune.uggrid, dune.mmesh — "
+            "ModuleNotFoundError.",
+            "dune.fem.solver — ModuleNotFoundError; solvers are chosen "
+            "with the scheme's solver= argument.",
+            "dune.fem.parameter as a MODULE — ModuleNotFoundError; it "
+            "is an ATTRIBUTE of dune.fem (append, exists, get, log, "
+            "write).",
+        ],
+        "measured_inventories": {
+            "dune.grid": (
+                "albertaGrid, cartesianDomain, equidistantCoordinates, "
+                "equidistantOffsetCoordinates, gridFunction, onedGrid, "
+                "reader, string2dgf, structuredGrid, "
+                "tensorProductCoordinates, ugGrid, yaspGrid, Marker, "
+                "OutputType, Partitions, PartitionType"),
+            "dune.grid.reader": (
+                "dgf, dgfString, gmsh, meshio, structured"),
+            "dune.grid.OutputType": (
+                "ascii, base64, appendedraw, appendedbase64"),
+            "dune.fem.comm": (
+                "rank, size, barrier, broadcast, gather, scatter, sum, "
+                "min, max — measured rank 0 / size 1 in a serial run"),
+        },
+        "Signal": (
+            "[API] Capabilities named in DUNE's own documentation are "
+            "not necessarily in your install. Signal: 'import "
+            "dune.femdg' and 'import dune.vem' both raise "
+            "ModuleNotFoundError on a conda-forge dune-fem 2.12.0.2 "
+            "env, so any plan that depends on dune-fem-dg's SSP-RK "
+            "steppers or on VEM spaces fails at the first import — "
+            "check with importlib before designing around them. "
+            "(Executed 2026-08-03.)"),
     },
 
     # ── phantom APIs the catalog used to name ───────────────────────
@@ -1141,5 +1399,57 @@ EXECUTED_PITFALLS: list[str] = [
         "getDunePyDir() returned the conda env's .cache/dune-py, "
         "~/.dune does not exist, and building five ALUGrid variants "
         "cold took 439 s.)"
+    ),
+    (
+        "[Numerical] ds(id) works, but the ids are GEOMETRIC and "
+        "1-based, not names you assign — and an id that lands on a "
+        "constrained edge contributes nothing, which is easy to "
+        "misread as 'ds(id) is unsupported'. Signal: for a 2D "
+        "YaspGrid, dune/fem/misc/boundaryidprovider.hh maps "
+        "boundaryId = intersection.indexInInside()+1, so 1=left, "
+        "2=right, 3=bottom, 4=top. Measured on an 8x8 grid: "
+        "assembling 1*v*ds(k) summed to exactly 1.0 for k=1..4, 0.0 "
+        "for k=5, and 4.0 for plain ds; solving -Laplace(u)=0 with "
+        "u=0 on x=0 and unit flux on ds(2) gave max(u_h) = "
+        "1.00000000, the exact u = x, while the SAME form on ds(1) "
+        "gave 0.00000000 because id 1 IS the constrained edge. ds(0) "
+        "raises AssertionError at dune/ufl/linear.py:208. ALUGrid "
+        "uses a different provider, so do not carry the numbering "
+        "over to an imported mesh. (Executed 2026-08-03 on dune-fem "
+        "2.12.0.2.)"
+    ),
+    (
+        "[Numerical] An UNMASKED ds integral applies the flux to the "
+        "whole boundary. Signal: on -Laplace(u)=0 with u=0 on x=0 and "
+        "du/dn=1 on x=1 — whose answer is u=x, so max(u)=1 — writing "
+        "the flux as g*v*ds instead of g*mask*v*ds returned "
+        "max(u_h) = 2.163782, converged, no exception. A Neumann "
+        "result that is a small multiple of what you expect is almost "
+        "always a missing mask. The correctly masked version gave "
+        "||u_h - x||_L2 = 3.233e-16. (Executed 2026-08-03.)"
+    ),
+    (
+        "[API] A zero right-hand side written as "
+        "inner(as_vector([0, 0]), v)*dx raises "
+        "\"ValueError: This integral is missing an integration "
+        "domain.\" from ufl/measure.py::__rmul__. Signal: UFL folds "
+        "the product to Zero() and a Zero carries no domain, so the "
+        "measure has nothing to attach to. Use dune.ufl.Constant "
+        "values (inner(as_vector([Constant(0.0, name='fx'), "
+        "Constant(0.0, name='fy')]), v)*dx) or write the equation as "
+        "`a == 0`, which dune-fem accepts as long as `a` still holds "
+        "both a trial and a test function. (Executed 2026-08-03 on "
+        "dune-fem 2.12.0.2.)"
+    ),
+    (
+        "[API] dune.femdg and dune.vem are NOT part of dune-fem. "
+        "Signal: 'import dune.femdg' and 'import dune.vem' both raise "
+        "ModuleNotFoundError on a conda-forge dune-fem 2.12.0.2 "
+        "install, as do dune.fem.dg, dune.polygongrid, dune.spgrid and "
+        "dune.uggrid. The SSP Runge-Kutta steppers, Bassi-Rebay / CDG "
+        "operators and limiters those packages provide are therefore "
+        "unavailable: write the DG operator with the ordinary galerkin "
+        "scheme and your own explicit stepper. dune.alugrid IS "
+        "importable. (Executed 2026-08-03.)"
     ),
 ]

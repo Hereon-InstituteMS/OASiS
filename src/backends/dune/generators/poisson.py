@@ -55,15 +55,96 @@ summary = {{"max_value": max_val, "n_dofs": len(vals), "element_type": "Q1 quad"
 with open("results_summary.json", "w") as f:
     json.dump(summary, f, indent=2)
 print("DUNE-fem Poisson solve complete.")
+print("DUNE_TEMPLATE_COMPLETE")
 '''
 
 
 KNOWLEDGE = {
     "poisson": {
         "description": "Poisson with DUNE-fem using UFL (same forms as FEniCS)",
+
+        "required_calls_in_order": [
+            "gridView = dune.grid.structuredGrid([0,0],[1,1],[n,n])",
+            "space = dune.fem.space.lagrange(gridView, order=k)",
+            "u, v = ufl.TrialFunction(space), ufl.TestFunction(space)",
+            "a = ufl.dot(ufl.grad(u), ufl.grad(v))*ufl.dx",
+            "b = f*v*ufl.dx",
+            "dbc = dune.ufl.DirichletBC(space, <value>[, <indicator>])",
+            "scheme = dune.fem.scheme.galerkin([a == b, dbc], "
+            "solver='cg')   <- dbc MUST be in this list",
+            "uh = space.interpolate(0, name='solution')",
+            "info = scheme.solve(target=uh)   <- writes INTO uh",
+        ],
+        "required_vs_optional": {
+            "REQUIRED": [
+                "every DirichletBC as an ELEMENT of the galerkin list — "
+                "there is no bc.apply()",
+                "an initial guess of the right shape: interpolate(0) "
+                "for a scalar space, interpolate([0,0]) for dimRange=2",
+                "target=uh on solve(); the return value is an info "
+                "dict, not the solution",
+            ],
+            "OPTIONAL": [
+                "solver='cg' — the default works too; cg is the right "
+                "choice because the Poisson matrix is SPD",
+                "parameters={'linear.tolerance': ..., "
+                "'linear.maxiterations': ...}",
+                "an indicator argument to DirichletBC — omitting it "
+                "applies the value to the WHOLE boundary",
+                "gridView.writeVTK(...)",
+            ],
+        },
+        "boundary_conditions": {
+            "Dirichlet (essential)": (
+                "dune.ufl.DirichletBC(space, value, indicator). The "
+                "indicator is a UFL conditional on SpatialCoordinate "
+                "evaluated PER BOUNDARY FACET, e.g. "
+                "conditional(lt(x[0], 1e-8), 1, 0). Omit it for the "
+                "whole boundary. Vector spaces take a LIST whose None "
+                "entries leave that component free."),
+            "Neumann (natural)": (
+                "Add a boundary integral to the right-hand side, "
+                "masked by a conditional: "
+                "b += g*conditional(gt(x[0], 1-1e-8), 1.0, 0.0)*v*ds. "
+                "Verified exact on -Laplace(u)=0, u=0 on x=0, "
+                "du/dn=1 on x=1 (answer u=x): "
+                "||u_h - x||_L2 = 3.233e-16."),
+            "Robin": (
+                "a += alpha*mask*u*v*ds and b += alpha*u_inf*mask*v*ds "
+                "for du/dn + alpha*(u - u_inf) = 0. Verified exact "
+                "with alpha=3, u_inf=2 (answer u=1.5x): "
+                "||u_h - 1.5x||_L2 = 3.238e-16."),
+            "ds(id) — geometric boundary ids": (
+                "ds(id) IS supported. The ids are geometric and "
+                "1-based, not user-assigned: for a 2D YaspGrid "
+                "(structuredGrid) they are 1=left (x-min), 2=right "
+                "(x-max), 3=bottom (y-min), 4=top (y-max), because "
+                "dune/fem/misc/boundaryidprovider.hh returns "
+                "intersection.indexInInside()+1. Measured on an 8x8 "
+                "grid: 1*v*ds(k) sums to exactly 1.0 for k=1..4, to "
+                "0.0 for k=5, and plain 1*v*ds sums to 4.0. ds(0) "
+                "raises AssertionError. ALUGrid uses a different "
+                "provider (the mesh file's own ids), so verify the "
+                "mapping before relying on it for an imported mesh. "
+                "The coordinate-conditional form above is the "
+                "portable option."),
+        },
         "solver": "galerkin([a == b, dbc], solver='cg') — Newton-Krylov internally",
         "spaces": "lagrange(gridView, order=k) — Lagrange any order",
         "mesh": "structuredGrid (YaspGrid), ALUGrid (adaptive), Gmsh import",
+        "verification_you_can_run": (
+            "Two checks that need no reference solution. (1) PATCH "
+            "TEST: pick any polynomial of degree <= k, impose it as "
+            "DirichletBC(space, p) on the whole boundary with "
+            "f = -div(grad(p)), and the discrete solution must equal "
+            "it to solver tolerance — measured 1e-15 relative on the "
+            "vector version of this test. (2) LINEAR NEUMANN: u=0 on "
+            "x=0 and du/dn=1 on x=1 with f=0 gives u=x exactly; "
+            "measured ||u_h - x||_L2 = 3.2e-16. Either check fails "
+            "loudly if a boundary condition was dropped, which is the "
+            "single most common DUNE-fem mistake. For an order study, "
+            "expect the textbook rates (L2 order k+1, H1 order k) and "
+            "MEASURE them — do not assume."),
         "pitfalls": [
             (
                 "[API] DUNE-fem uses UFL — same syntax as "

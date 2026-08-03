@@ -48,6 +48,7 @@ gridView.writeVTK("result", pointdata={{"concentration": u_n}})
 summary = {{"time": t, "max_value": float(vals.max()), "n_dofs": len(vals)}}
 with open("results_summary.json", "w") as f:
     json.dump(summary, f, indent=2)
+print("DUNE_TEMPLATE_COMPLETE")
 '''
 
 

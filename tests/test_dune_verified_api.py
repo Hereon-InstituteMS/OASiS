@@ -63,6 +63,10 @@ _REQUIRED_SECTIONS = (
     "vtk_output_measured",
     "phantom_apis_checked",
     "module_inventory_2_12",
+    # added by the 2026-08-03 knowledge expansion
+    "natural_bc_measured",
+    "assemble_measured",
+    "companion_modules_measured",
 )
 
 
@@ -194,7 +198,9 @@ class TestMeasuredNumbersSurvive(unittest.TestCase):
         that re-measures them, not to the catalog. This is now the
         guard that keeps them out.
         """
-        blob = json.dumps(EXECUTED_API, default=str)
+        from backends.dune.generators import KNOWLEDGE  # noqa: E402
+        blob = json.dumps(EXECUTED_API, default=str) + json.dumps(
+            KNOWLEDGE, default=str)
         forbidden = (
             # per-order observed EOCs
             "1.989", "1.997", "2.979", "2.995", "3.985", "3.996",
@@ -202,6 +208,13 @@ class TestMeasuredNumbersSurvive(unittest.TestCase):
             # finest absolute L2 errors the fixture floors derive from
             "4.556318e-04", "3.846536e-06", "2.180413e-08",
             "1.312335e-03", "8.602468e-06",
+            # the 3D variable-coefficient family's own rate sequences,
+            # which survived the 2026-08-03 audit inside
+            # KNOWLEDGE["poisson_mms"]["expected_order"] because that
+            # audit only swept verified_api.py. Widening the guard to
+            # the whole KNOWLEDGE dict is what caught them.
+            "1.984/1.996", "1.028/1.007", "1.628(pre-asymptotic)",
+            "1.059(pre-asymptotic)",
         )
         leaked = [n for n in forbidden if n in blob]
         self.assertEqual(
@@ -307,6 +320,8 @@ class TestTier2FixtureWiring(unittest.TestCase):
         "dirichletbc_not_in_scheme_list_silent": "IN THE LIST",
         "solver_name_not_validated": "fem.solver.linear.method",
         "ufl_cell_reports_simplex_on_cube_grid": "SIMPLEX UFL cell",
+        "boundary_ids_are_geometric_and_one_based": "ds(id) works",
+        "companion_modules_not_installed": "dune.femdg",
     }
 
     @classmethod
@@ -321,7 +336,9 @@ class TestTier2FixtureWiring(unittest.TestCase):
         self.assertTrue(_FIXTURES.is_dir())
         for name in (*self._EXPECTED,
                      "poisson_mms_convergence",
-                     "raviartThomas_camelcase_not_lowercase"):
+                     "raviartThomas_camelcase_not_lowercase",
+                     "preconditioner_enumeration_is_short",
+                     "componentwise_bc_corner_drops_a_constraint"):
             d = _FIXTURES / name
             self.assertTrue((d / "fixture.json").is_file(),
                             f"missing fixture.json for {name}")
@@ -380,4 +397,139 @@ class TestTier2FixtureWiring(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    unittest.main()
+
+
+class TestEveryPhysicsEntryIsSelfSufficient(unittest.TestCase):
+    """Structural gate, not a content gate.
+
+    Project-owner requirement (2026-08-03): the DUNE knowledge has to be
+    usable by a SMALL model that will not infer, will not hunt for a
+    second payload and will not recover from a partial answer. Three
+    properties make that possible and are pinned here:
+
+      * every physics entry opens with a COMPLETE runnable script, not
+        a fragment — before this gate the scripts existed only inside
+        the GENERATORS callables, which knowledge(topic="physics") does
+        not reach;
+      * the load-bearing keys come FIRST in the entry, because a model
+        that stops reading early must still have the answer;
+      * every entry names the other lookups, so nothing depends on the
+        reader already knowing a topic= string.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from backends.dune.generators import GENERATORS, KNOWLEDGE
+        cls.GENERATORS = GENERATORS
+        cls.KNOWLEDGE = KNOWLEDGE
+        cls.physics = [k for k in KNOWLEDGE if k != "_general"]
+
+    def test_every_physics_entry_leads_with_a_runnable_example(self):
+        for name in self.physics:
+            with self.subTest(name):
+                entry = self.KNOWLEDGE[name]
+                keys = list(entry)
+                self.assertEqual(
+                    keys[0], "READ_THIS_FIRST",
+                    f"{name}: the orientation line must come first")
+                self.assertEqual(
+                    keys[1], "minimal_working_example",
+                    f"{name}: the complete script must be the second "
+                    f"key; a model that stops reading after two keys "
+                    f"has to already have something it can run")
+                script = entry["minimal_working_example"]
+                self.assertIsInstance(script, str)
+                for needle in ("import", "print("):
+                    self.assertIn(needle, script,
+                                  f"{name}: example is not a script")
+                self.assertIn(
+                    "DUNE_TEMPLATE_COMPLETE", script,
+                    f"{name}: the example must print the terminal "
+                    f"sentinel — a DUNE run can exit 134 after "
+                    f"printing every correct result, so the sentinel "
+                    f"is what distinguishes 'finished' from 'died'")
+
+    def test_every_physics_entry_names_the_other_lookups(self):
+        for name in self.physics:
+            with self.subTest(name):
+                where = self.KNOWLEDGE[name].get("where_else_to_look")
+                self.assertIsInstance(
+                    where, dict,
+                    f"{name}: nothing tells the reader how to reach "
+                    f"the rest of the catalog")
+                blob = json.dumps(where)
+                for needle in ("topic='overview'", "topic='pitfalls'",
+                               "topic='physics'"):
+                    self.assertIn(needle, blob,
+                                  f"{name}: {needle} not advertised")
+
+    def test_general_leads_with_start_here(self):
+        general = self.KNOWLEDGE["_general"]
+        self.assertEqual(list(general)[0], "START_HERE")
+        start = general["START_HERE"]
+        self.assertIn("complete_runnable_poisson", start)
+        script = start["complete_runnable_poisson"]
+        for needle in ("from dune.grid import structuredGrid",
+                       "from dune.fem.scheme import galerkin",
+                       "scheme.solve(target=uh)"):
+            self.assertIn(needle, script)
+        self.assertIn("REQUIRED_imports", start)
+        self.assertIn("OPTIONAL_imports", start)
+
+    def test_every_generator_emits_the_terminal_sentinel(self):
+        for variant, gen in self.GENERATORS.items():
+            with self.subTest(variant):
+                script = gen({})
+                self.assertIn(
+                    "DUNE_TEMPLATE_COMPLETE", script,
+                    f"{variant} does not print the terminal sentinel")
+                self.assertTrue(
+                    script.rstrip().endswith(
+                        'print("DUNE_TEMPLATE_COMPLETE")'),
+                    f"{variant}: the sentinel must be the LAST "
+                    f"statement, otherwise it does not prove the run "
+                    f"reached the end")
+
+
+class TestAdvertisedButAbsentStaysRetired(unittest.TestCase):
+    """dune-fem-dg and dune-vem are not importable on a dune-fem install.
+
+    The catalog advertised "Comprehensive DG methods via dune-fem-dg"
+    and "VEM (Virtual Element Method) support" as backend capabilities,
+    and named DIRK23 / SDIRK22 / Heun / SSP-RK steppers with no API
+    anywhere. Execution on 2026-08-03 refuted the premise: `import
+    dune.femdg`, `import dune.fem.dg` and `import dune.vem` all raise
+    ModuleNotFoundError. This keeps the capability claims from creeping
+    back as bare assertions.
+    """
+
+    def _catalog_text(self) -> str:
+        root = _REPO / "src" / "backends" / "dune"
+        return "\n".join(p.read_text(encoding="utf-8")
+                         for p in sorted(root.rglob("*.py")))
+
+    def test_dune_fem_dg_is_named_only_as_absent(self) -> None:
+        text = self._catalog_text()
+        self.assertTrue(
+            re.search(r"dune\.femdg.{0,400}ModuleNotFoundError", text,
+                      re.S) or
+            re.search(r"ModuleNotFoundError.{0,400}dune\.femdg", text,
+                      re.S),
+            "the catalog no longer records that dune.femdg is "
+            "unimportable on this install")
+        for m in re.finditer(r"pip install dune-fem-dg", text):
+            self.fail("the catalog tells the reader to pip install "
+                      "dune-fem-dg as if that made it part of this "
+                      "backend; it is a separate package and was "
+                      "measured absent")
+
+    def test_vem_claim_is_negative(self) -> None:
+        from backends.dune.generators import KNOWLEDGE
+        vem = KNOWLEDGE["_general"]["vem"]
+        self.assertIn("NOT AVAILABLE", vem)
+        self.assertIn("ModuleNotFoundError", vem)
+
+
+if __name__ == "__main__":                                  # pragma: no cover
     unittest.main()

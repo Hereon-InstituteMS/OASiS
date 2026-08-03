@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dune::poisson (ds(id) works; ids are geometric and 1-based). dune/fem/misc/boundaryidprovider.hh returns intersection.indexInInside()+1 for YaspGrid, so on a 2D structuredGrid the boundary ids are 1=x-min, 2=x-max, 3=y-min, 4=y-max — geometric, not user-assigned. The fixture measures the partition directly (sum of 1*v*ds(k) is 1.0 for k=1..4, 0.0 for k=5, 4.0 for plain ds) and then solves -Laplace(u)=0 with u=0 on x=0 twice: unit flux on ds(1) — the CLAMPED edge — contributes nothing and gives an identically zero solution, while the same flux on ds(2) reproduces the exact u=x. That asymmetry is the trap: an earlier revision of this catalog concluded from the first case alone that dune-fem has no facet tagging. ds(0) is rejected with AssertionError at dune/ufl/linear.py:208. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03; the per-id lengths were also measured as 1.0 each on aluConformGrid, but ALUGrid uses a different BoundaryIdProvider so the numbering is not assumed there.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 16,
+  "mode": "python",
+  "timeout_seconds": 1500,
+  "expect_in_output": [
+    "ds1_boundary_length=1.0000",
+    "ds2_boundary_length=1.0000",
+    "ds3_boundary_length=1.0000",
+    "ds4_boundary_length=1.0000",
+    "ds5_boundary_length=0.0000",
+    "ds_all_boundary_length=4.0000",
+    "flux_on_clamped_edge_max_abs=0.000000",
+    "flux_on_free_edge_max=1.000000",
+    "ds0_rejected=True",
+    "dune_boundary_ids_are_geometric_and_one_based=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

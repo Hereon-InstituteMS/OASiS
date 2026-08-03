@@ -93,15 +93,89 @@ summary = {{
 with open("results_summary.json", "w") as f:
     json.dump(summary, f, indent=2)
 print("Adaptive Poisson solve complete.")
+print("DUNE_TEMPLATE_COMPLETE")
 '''
 
 
 KNOWLEDGE = {
     "adaptive_poisson": {
         "description": "h-adaptive Poisson with residual error estimator and ALUGrid",
+
+        "required_calls_in_order": [
+            "from dune.alugrid import aluConformGrid",
+            "from dune.fem.view import adaptiveLeafGridView",
+            "gridView = adaptiveLeafGridView(aluConformGrid("
+            "cartesianDomain([0,0],[1,1],[n,n]), dimgrid=2))"
+            "   <- BOTH halves are required",
+            "space = lagrange(gridView, order=k)   "
+            "<- build the space ON THE ADAPTIVE VIEW",
+            "scheme = galerkin([a == b, dbc], solver='cg'); "
+            "uh = space.interpolate(0, name='u'); "
+            "scheme.solve(target=uh)",
+            "fv = dune.fem.space.finiteVolume(gridView)",
+            "indicator = fv.interpolate(<estimator expression>, "
+            "name='ind')   <- a DISCRETE FUNCTION, not a UFL expression",
+            "dune.fem.mark(indicator, tol)   <- statement 1, returns "
+            "statistics, NOT a marker",
+            "dune.fem.adapt([uh])   <- statement 2, resizes the space "
+            "and PROLONGS uh",
+            "assert gridView.size(0) > before   <- the only way to "
+            "know it did anything",
+        ],
+        "required_vs_optional": {
+            "REQUIRED": [
+                "an ALUGrid (dune.alugrid) — YaspGrid/structuredGrid "
+                "cannot refine locally",
+                "adaptiveLeafGridView() around it — a plain ALUGrid "
+                "leaf view makes dune.fem.adapt raise",
+                "a DISCRETE FUNCTION indicator (finiteVolume space) — "
+                "the marker reads the grid view off the indicator",
+                "mark and adapt as TWO separate statements with "
+                "nothing passed between them",
+                "an assertion that the element count actually grew",
+            ],
+            "OPTIONAL": [
+                "coarsenTolerance / minLevel / maxLevel / minVolume / "
+                "maxVolume kwargs on dune.fem.mark",
+                "dune.fem.doerflerMark(indicator, theta) for bulk "
+                "(Doerfler) marking instead of a threshold — present "
+                "in dune.fem, NOT exercised here",
+                "dune.fem.loadBalance for parallel runs",
+            ],
+            "MUST NOT": [
+                "dune.fem.mark(..., gridView=gv) — raises "
+                "AttributeError unconditionally on 2.12.0.2 (upstream "
+                "defect); omit the kwarg",
+                "feeding mark()'s return value into adapt()",
+                "dune.fem.globalRefine(level, uh) on a YaspGrid — "
+                "silent no-op",
+            ],
+        },
+        "verification_you_can_run": (
+            "Adaptivity has one failure mode that dwarfs the others: "
+            "doing nothing. Record gridView.size(0), space.size and "
+            "max(uh.as_numpy) BEFORE and AFTER every adapt call and "
+            "assert the element count grew — the working cycle was "
+            "measured to take a 32-element aluConformGrid to 48 "
+            "elements with the P1 space going 25 -> 33 dofs and uh "
+            "prolonged onto it. Then check the physics: for a source "
+            "with a sharp feature the refined elements must cluster "
+            "around it, and max(u) must settle as the mesh grows. If "
+            "max(uh.as_numpy) drops to 0 after a refinement you used "
+            "the globalRefine-through-the-hierarchical-grid path, "
+            "which ZEROES live discrete functions."),
         "solver": "galerkin scheme on adaptive grid with mark/refine/coarsen cycle",
         "spaces": "lagrange(gridView, order=k) on adaptiveLeafGridView",
-        "mesh": "ALUGrid (pip install dune-alugrid) for local h-refinement",
+        "mesh": "ALUGrid (conda-forge dune-alugrid) for local h-refinement",
+        "exit_code_warning": (
+            "Adaptive DUNE runs frequently exit 134 AFTER printing "
+            "every correct result: the abort happens in ALUGrid "
+            "destructors during interpreter teardown, and the "
+            "restrict-prolong path (globalRefine(level, uh) on an "
+            "adaptive ALUGrid view) did it on 7 of 7 runs with "
+            "byte-identical stdout. Judge such a run by its results "
+            "file and by the terminal sentinel line the templates "
+            "print, not by the return code."),
         "pitfalls": [
             (
                 "[API] ALUGrid supports TRUE LOCAL "

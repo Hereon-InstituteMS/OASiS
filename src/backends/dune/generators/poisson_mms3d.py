@@ -19,10 +19,11 @@ a machine-readable error line
     level <l> n <n> dofs <d> L2 <e_l2> H1 <e_h1>
 
 followed by observed EOC lines. Expected orders for Lagrange order k:
-L2 -> k+1, H1-seminorm -> k. Verified live on this install (dune-fem
-conda env, 2026-08-01): order=1 L2 EOCs ~2.0, order=2 L2 EOCs ~3.0 —
-the measured values from the gate run are recorded in KNOWLEDGE
-["poisson_mms"]["expected_order"].
+L2 -> k+1, H1-seminorm -> k. The template has been executed on this
+install and reaches those orders; the observed values are deliberately
+NOT recorded here or in KNOWLEDGE — an observed convergence order is
+the ANSWER to a study an agent may be asked to run, so it belongs in
+the Tier-2 gate that re-measures it, not in agent-reachable knowledge.
 
 DESIGN PRINCIPLE (project rule "no anchoring"): every problem dimension
 is a parameter with placeholder defaults — domain size, MMS frequencies
@@ -283,6 +284,7 @@ summary = {{
 with open("results_summary.json", "w") as fh:
     json.dump(summary, fh, indent=2)
 print("DUNE-fem 3D variable-coefficient Poisson MMS study complete.")
+print("DUNE_TEMPLATE_COMPLETE")
 '''
 
 
@@ -296,23 +298,21 @@ KNOWLEDGE = {
             "per-level L2/H1 error lines"),
         "input_format": "Python script (dune.fem + UFL)",
         "expected_order": (
-            "L2 order k+1 and H1-seminorm order k for Lagrange order k. "
-            "Verified live (dune-fem 2.10 conda env dune-fem-env, "
-            "2026-08-01, dev-draw params L=2, a=2, b=1, c=1.5, d=0.5, "
-            "amp=1.3, kappa=(2,-0.75,0.5,1), 4 levels): order=1 L2 EOCs "
-            "1.984/1.996/1.999 and H1 EOCs 1.028/1.007/1.002; order=2 "
-            "L2 EOCs 1.628(pre-asymptotic)/2.923/2.982 and H1 EOCs "
-            "1.059(pre-asymptotic)/1.990/1.998. "
-            "RE-VERIFIED 2026-08-03 after the env was rebuilt at "
-            "dune-fem 2.12.0.2: the template still generates, runs "
-            "and converges at the expected orders on the defaults. "
-            "Nothing in this family needed changing for 2.12. (The "
-            "measured numbers from that re-run are deliberately NOT "
-            "reproduced here — a convergence order is the answer to a "
-            "study an agent may be asked to perform. Removed by "
-            "adversarial audit 2026-08-03; the 2026-08-01 sentence "
-            "above is older contamination that a separate purge branch "
-            "owns.)"),
+            "THEORETICAL orders only: L2 order k+1 and H1-seminorm "
+            "order k for Lagrange order k. The family was executed on "
+            "dune-fem 2.10 (2026-08-01) and re-executed after the env "
+            "was rebuilt at 2.12.0.2 (2026-08-03); it generates, runs "
+            "and converges at those orders on the defaults, and "
+            "nothing needed changing for 2.12. "
+            "NO OBSERVED ORDERS OR ERROR MAGNITUDES ARE REPRODUCED "
+            "HERE, from either run. A measured convergence order is "
+            "the ANSWER to a study an agent may be asked to perform, "
+            "so it stays in the Tier-2 gate that re-measures it. "
+            "(The 2026-08-01 rate sequences were still present in this "
+            "field after the 2026-08-03 audit — it had stripped the "
+            "same class of leak from verified_api.py but not from "
+            "here — and were removed 2026-08-03 in the knowledge "
+            "expansion.)"),
         "mms_setup": {
             "source_term": (
                 "f = -div(kappa*grad(u_exact)) built symbolically in UFL "

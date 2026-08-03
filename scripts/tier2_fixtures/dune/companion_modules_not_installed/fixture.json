@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dune::poisson (advertised-but-absent companion packages). The DUNE catalog advertised dune-fem-dg DG operators/SSP-RK steppers and dune-vem VEM spaces as backend capabilities. Neither is importable from a conda-forge dune-fem 2.12.0.2 env: 'import dune.femdg', 'import dune.fem.dg' and 'import dune.vem' all raise ModuleNotFoundError, as does 'import dune.fem.solver'. dune.alugrid, dune.fem.view, dune.fem.utility and dune.fem.operator ARE importable, and dune.fem.parameter is reachable as an ATTRIBUTE of dune.fem while the module import fails. No grid, no space, no JIT — this fixture runs in under a second. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 19,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "dune_femdg_importable=False",
+    "dune_fem_dg_importable=False",
+    "dune_vem_importable=False",
+    "dune_alugrid_importable=True",
+    "dune_fem_parameter_module_importable=False",
+    "dune_fem_parameter_attribute=True",
+    "dune_companion_module_inventory_verified=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

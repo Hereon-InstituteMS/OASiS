@@ -42,6 +42,7 @@ gridView.writeVTK("result", pointdata={{"solution": uh}})
 summary = {{"max_value": float(vals.max()), "n_dofs": len(vals)}}
 with open("results_summary.json", "w") as f:
     json.dump(summary, f, indent=2)
+print("DUNE_TEMPLATE_COMPLETE")
 '''
 
 
@@ -52,6 +53,33 @@ KNOWLEDGE = {
             "galerkin scheme handles Newton automatically when the "
             "form is NONLINEAR IN THE TRIAL FUNCTION; scheme.solve() "
             "returns info['iterations'] = the Newton count"),
+        "required_vs_optional": {
+            "REQUIRED": [
+                "the residual written in the TRIAL function — dune-fem "
+                "differentiates the UFL form to build the tangent",
+                "galerkin([res == 0, bc]) with res holding BOTH a "
+                "trial and a test function",
+                "a Krylov method that tolerates non-symmetry "
+                "(bicgstab or gmres) unless you know the tangent is "
+                "SPD",
+            ],
+            "OPTIONAL": [
+                "parameters={'nonlinear.tolerance': ..., "
+                "'nonlinear.maxiterations': ...}",
+                "'nonlinear.linesearch' — only when the initial guess "
+                "is poor",
+                "a better initial guess via space.interpolate(...)",
+            ],
+        },
+        "verification_you_can_run": (
+            "Read info['iterations'] (Newton steps) and "
+            "info['converged'] from scheme.solve. A correct tangent "
+            "gives quadratic convergence: a handful of iterations, and "
+            "the count barely grows with mesh size. Double-digit "
+            "iteration counts, or a count that grows with refinement, "
+            "mean the Jacobian does not match the residual — which on "
+            "dune-fem almost always means the residual was written in "
+            "the current iterate instead of the trial function."),
         "pitfalls": [
             (
                 "[API] DUNE-fem LINEARIZES AND APPLIES "
