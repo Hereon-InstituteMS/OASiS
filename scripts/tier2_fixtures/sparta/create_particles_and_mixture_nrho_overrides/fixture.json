@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: the three silent ways a SPARTA deck ends up at the wrong density.\n\n  * create_particles n <N>0> ignores global nrho and makes exactly N;\n  * a nrho keyword on the MIXTURE overrides global nrho;\n  * global nrho/fnum issued after create_particles is too late -> 0 particles;\n  * a region argument scales the requested count by the volume fraction and\n    suppresses SPARTA's own 'Created unexpected # of particles' warning.\n\nAll four exit 0 with no warning.\n",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 10,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "n_zero_honours_nrho=True",
+    "n_nonzero_overrides_nrho=True",
+    "mixture_nrho_overrides_global=True",
+    "global_after_create_particles_gives_zero=True",
+    "region_scales_the_requested_count=True",
+    "all_runs_exit_zero=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

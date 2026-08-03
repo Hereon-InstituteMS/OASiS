@@ -81,11 +81,19 @@ from core.registry import get_backend, load_all_backends  # noqa: E402
 
 load_all_backends()
 backend = get_backend("sparta")
-kn = backend.get_knowledge("rarefied_flow")
-surface = kn.get("command_surface", {})
+# The command surface is a LOOKUP table, not part of the per-physics payload:
+# serving the 121-page doc index (and a host-path 'installed_build' block) on
+# every knowledge() call was the reason SPARTA's payload dwarfed every other
+# backend's. It now lives in sparta_knowledge.json and is reached on demand.
+import json  # noqa: E402
+kb = json.loads((REPO / "src" / "backends" / "sparta"
+                 / "sparta_knowledge.json").read_text())
+surface = kb.get("command_surface", {})
 print(f"n_true_commands={surface.get('n_true_commands')}")
 print(f"n_docpage_only={len(surface.get('not_commands_doc_page_names_only') or [])}")
-print(f"installed_version={kn.get('installed_build', {}).get('version')}")
+print(f"installed_version={kb.get('installed_build', {}).get('version')}")
+ref = backend.get_command_reference("compute_grid")
+print(f"command_reference_resolves={'syntax' in ref or 'description' in ref}")
 
 good = PREAMBLE + "run 10\n"
 bad = PREAMBLE + "compute_grid all all n\nrun 10\n"

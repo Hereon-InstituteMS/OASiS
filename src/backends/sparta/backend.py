@@ -8,9 +8,13 @@ which no continuum FEM solver can do. This makes SPARTA the particle half of gen
 forced multi-paradigm couplings (e.g. DSMC gas <-> FEM solid conjugate heat transfer via
 preCICE).
 
-The full command knowledge (121 commands: syntax, examples, descriptions, all categories)
-is distilled verbatim from the SPARTA documentation into sparta_knowledge.json and served
-through get_knowledge(); the 37 worked example decks are bundled as input templates.
+Knowledge layout (restructured): the agent-facing knowledge lives in
+``generators/``, one module per physics, each exposing a KNOWLEDGE dict whose
+pitfalls carry an observable ``Signal:`` clause plus parameterised deck
+generators — the same shape the FEM backends use. ``sparta_knowledge.json``
+remains the verbatim SPARTA documentation index (121 doc pages) and the bundled
+upstream example decks; it is a LOOKUP table for validate_input and for
+on-demand syntax queries, not something pushed at the agent on every call.
 """
 
 import asyncio
@@ -29,6 +33,11 @@ from core.backend import (
     PhysicsCapability, JobHandle,
 )
 from core.registry import register_backend
+
+from .generators import (  # noqa: F401
+    BUILD_FACTS, GENERATORS, HARD_ORDERING_ERRORS, KNOWLEDGE,
+    READING_OUTPUT, SILENTLY_ACCEPTED,
+)
 
 logger = logging.getLogger("oasis.sparta")
 
@@ -83,7 +92,7 @@ def _sparta_data_dirs(binary: Optional[str] = None,
     data dir) come first, then SPARTA_DATA_DIR (colon-separated env, same
     precedence idea), then the distribution. A task-specific circle.surf
     must win over the distribution's example circle.surf of the same name
-    — the two are different geometries (T15 campaign, 2026-07)."""
+    — the two are different geometries."""
     dirs: list[Path] = []
     for d in extra_dirs:
         p = Path(d).expanduser()
@@ -140,8 +149,7 @@ def stage_deck_data_files(deck: str, work_dir: Path,
     (SpartaBackend.run) AND by the coupled path (the couple() tool),
     which previously did NO staging at all: a SPARTA participant deck
     run by the coupling driver in a fresh work_dir died with
-    'Cannot open species file ar.species' (../particle.cpp:711)
-    (T15 campaign 2026-07, reproduced 2026-08-01).
+    'Cannot open species file ar.species' (../particle.cpp:711).
 
     Resolution per reference:
       1. already present in work_dir -> keep (never overwrite),
@@ -208,232 +216,40 @@ def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
     stage_deck_data_files(deck, work_dir, binary=binary)
 
 
-# ── Execution-verified DSMC pitfalls (campaign 2026-08-03, SPARTA 24 Sep 2025) ──
-# Every entry below was produced by running BOTH a wrong variant and a right
-# variant of a small case with spa_serial and reading the numbers out of
-# log.sparta. These are the failures that leave rc=0 and a plausible-looking
-# output while the physics is wrong — the ones an AI driving SPARTA cannot
-# catch by checking the exit code.
-#
-# Verification case for the transport numbers: 2d argon Fourier channel,
-# boundary p ss p, box 2e-5 x 1e-4 m, 4x60 grid, nrho 7.07043e23, fnum 1e11,
-# ylo wall diffuse 300 K, yhi wall diffuse 1000 K, collide vss, dt 1e-9 s,
-# 3000 steps; wall energy flux read via compute boundary + fix ave/time.
-_VERIFIED_DSMC_PITFALLS = [
-    "[Physics] Omitting the collide command is NEVER an error — the gas is simply "
-    "collisionless (free-molecular), and in a wall-bounded conduction problem the wall "
-    "heat flux comes out far too large. HOW far is set by the Knudsen number, NOT by a "
-    "fixed factor: on one 2d argon Fourier channel, holding particles/cell constant and "
-    "rescaling the grid and dt with density, the free/collisional cold-wall flux ratio "
-    "measured 1.91 at nrho 7.07e22, 9.01 at nrho 7.07e23 and ~73 at nrho 7.07e24. The "
-    "free-molecular flux is exactly linear in density while the collisional flux "
-    "saturates toward the continuum limit, so the ratio scales like 1/Kn and tends to 1 "
-    "as the gas rarefies. Do not carry any single number across problems. Reference "
-    "point at nrho 7.07043e23, fnum 1e11, 4x60 grid, dt 1e-9, walls 300/1000 K: with "
-    "'collide vss' cold-wall flux ~2.0e5 W/m2, without it ~1.76e6 W/m2. Both rc=0. "
-    "Signal: Ncoll is identically 0 in every stats line. Put ncoll in stats_style and "
-    "check it is nonzero before believing any transport number. "
-    "(Verified by execution 2026-08-03; the fixed '8.4x' was falsified and replaced by "
-    "the density sweep on 2026-08-03 (re-audit).)",
-
-    "[Physics] Without a collide command, create_particles also gives every particle "
-    "ZERO rotational and vibrational energy even when the mixture asks for trot/tvib, "
-    "so internal-energy diagnostics silently read 0. Measured with 'mixture ... trot "
-    "100': with collide, step-0 Trot = 99.02 K; without collide, Trot = 0.000 at step 0 "
-    "and at every later step. "
-    "Signal: a Trot/Tvib column that is exactly 0.000 rather than noisy. "
-    "(Verified by execution 2026-08-03.)",
-
-    "[Numerical] 'create_particles <mix> n <N>' with a NONZERO N creates exactly N "
-    "simulation particles and SILENTLY overrides 'global nrho' — the realised density "
-    "becomes N*fnum/V, not the nrho you set. Only 'n 0' honours nrho and fnum. Measured "
-    "against a requested nrho of 7.07043e23: n 0 -> realised 7.0704e23 (exact); "
-    "n 50000 -> 5.0e23 (1.41x low); n 5000 -> 5.0e22, i.e. 14x TOO LOW. All rc=0, no "
-    "warning. Most upstream example decks use an explicit n, so copying one silently "
-    "changes your density. "
-    "Signal: compute the realised nrho as Np*fnum/V and compare it with the nrho you "
-    "asked for. (Verified by execution 2026-08-03.)",
-
-    "[Numerical] In a 2d run the grid-cell volume is dx*dy PER 1 METRE OF DEPTH and the "
-    "z extent given to create_box is IGNORED (src/grid.cpp:307). Sizing fnum for a thin "
-    "slab therefore overshoots the particle count by 1/(zhi-zlo). Measured: identical "
-    "decks with z = +/-0.5 and z = +/-0.5e-4 both report 'Created 70704 particles'. A "
-    "deck sized for a 1e-4-thick slab asked for 1e8 particles and never finished, "
-    "leaving an EMPTY log.sparta. "
-    "Signal: a 2d run that hangs with no stats table, or a particle count 1/(zhi-zlo) "
-    "times your hand calculation. (Verified by execution 2026-08-03.)",
-
-    "[Numerical] An fnum that leaves well under one simulation particle per cell still "
-    "runs cleanly and still reports a plausible collision rate, but every PER-CELL "
-    "diagnostic becomes garbage. Measured on a 60x60 argon box: fnum 1e11 -> 19.64 "
-    "particles/cell, lambda = 1.8865e-6 m, Kn_cell = 1.132; fnum 2e13 -> 0.098 "
-    "particles/cell, lambda = 3.33e17 m, Kn_cell = 2.0e23 — 23 orders of magnitude "
-    "wrong, rc=0, silent. fnum 2e12 (0.98 particles/cell) is still fine at "
-    "lambda = 1.94e-6 m, so the collapse is specifically at sub-particle-per-cell "
-    "occupancy. "
-    "Signal: 'compute <c> grid all all n' + 'compute reduce ave/min c_c[1]' — require "
-    "the cell minimum to be >= 1, not just the average. (Verified by execution "
-    "2026-08-03.)",
-
-    "[Numerical] Grid cells much larger than the local mean free path run cleanly and "
-    "give an over-diffusive answer. Measured on the Fourier channel: 4x60 grid (cells "
-    "~1 mean free path) -> cold-wall flux 2.0917e5 W/m2, mid-gas T = 660.3 K; 4x3 grid "
-    "(cells 17.7 mean free paths) -> 4.6193e5 W/m2 (2.21x too high) and T = 606.1 K. "
-    "Both rc=0, no warning, and the coarse run even has MORE particles per cell "
-    "(1178 vs 59), so a particle-count check does not catch it. "
-    "Signal: compute Kn_cell yourself with 'compute <C> lambda/grid ... knall' and "
-    "require it >= 1. (Verified by execution 2026-08-03.)",
-
-    "[Numerical] A timestep larger than the mean collision time runs cleanly and "
-    "inflates transport. Measured on the Fourier channel (tau = 4.96e-9 s): dt = 1e-9 "
-    "(0.2 tau) -> 2.0917e5 W/m2; dt = 1e-8 (2.0 tau) -> 2.2042e5 (+5.4%); dt = 5e-8 "
-    "(10.1 tau) -> 4.3788e5 (+109%). All rc=0. 'compute <D> dt/grid all 0.25 0.1 ...' "
-    "reports a recommended dt of 4.955e-10 s (cell minimum 4.60e-10 s) in the good AND "
-    "the bad run — SPARTA never applies or even compares it for you. "
-    "Signal: reduce compute dt/grid with compute reduce min and assert your timestep is "
-    "below it. (Verified by execution 2026-08-03.)",
-
-    "[Numerical] A homogeneous equilibrium box is WORTHLESS as a timestep or grid "
-    "convergence test — this was a candidate pitfall the campaign had to reject. At "
-    "dt = 10 tau the inferred collision frequency 2*Ncollave/Np/dt = 2.0186e8 /s is "
-    "indistinguishable from 1/tau = 2.0187e8 /s at dt = 0.2 tau; a 6x6 grid gives "
-    "Ncollave = 7133.07 against 7123.80 for 60x60 (0.13%, within noise). Only Kn_cell "
-    "moves (1.132 vs 0.113). Both errors show up ONLY in a gradient-driven quantity, so "
-    "verify dt and cell size on a wall-bounded or flow-driven case. "
-    "Signal: a dt/grid study whose collision statistics are flat is measuring nothing. "
-    "(Established by execution 2026-08-03.)",
-
-    "[Physics] Wall fluxes in a driven DSMC run need several flow-through times; the "
-    "first stats block is not an answer. Measured cold-wall energy flux by step: "
-    "250 -> 5.858e5, 500 -> 3.162e5, 750 -> 2.392e5, 1000 -> 2.079e5, steady mean over "
-    "2250-3000 -> 2.092e5 W/m2. Reading at step 250 overestimates by 2.80x, at step 500 "
-    "by 1.51x, and the run looks perfectly healthy throughout. "
-    "Signal: the two opposed wall fluxes are equal and opposite only after convergence "
-    "(5.858e5 vs -5.064e5 at step 250; 2.016e5 vs -1.977e5 at step 3000) — use that "
-    "balance as the steady-state test. (Verified by execution 2026-08-03.)",
-
-    "[Physics] surf_collide specular transfers EXACTLY ZERO energy: modelling a thermal "
-    "wall with 'specular' gives a wall flux of 0.000 at every output for the whole run "
-    "while the hit counts stay healthy, and the gas simply never equilibrates with the "
-    "wall (frozen at 638 K between a nominal 300 K and 1000 K pair of walls). specular "
-    "takes no temperature argument at all, which is the tell. "
-    "Signal: a wall energy-flux column that is exactly 0.000 while Nscoll is large. "
-    "Use 'surf_collide <ID> diffuse <Tsurf> <acc>' for a thermal wall. "
-    "(Verified by execution 2026-08-03.)",
-
-    "[Syntax] The react command does not check that the file it is handed is a reaction "
-    "file: pointing it at a VSS parameter file loads ZERO reactions and the run "
-    "proceeds with chemistry silently disabled. Measured: rc=0, no warning, Nreact = 0 "
-    "at every stats output while Ncoll = 7114. "
-    "Signal: the run header line 'Gas reaction tallies: style tce #-of-reactions 0' — "
-    "that block appears ONLY when a react command was parsed, so '#-of-reactions 0' in "
-    "it is the tell. Do NOT use 'Gas reactions = 0 (0K)' / 'Reactions = 0 (0K)' as the "
-    "signal: SPARTA prints that line at the end of EVERY run, including runs with no "
-    "react command at all, so it carries no information. Note also that a file SPARTA "
-    "cannot open does fail loudly — 'ERROR on proc 0: Cannot open reaction file <f> "
-    "(../react_bird.cpp:552)'; the silent case is specifically a readable file that "
-    "parses to zero reactions. "
-    "(Verified by execution 2026-08-03; signal corrected 2026-08-03 (re-audit) after a control run "
-    "with no react command printed the same 'Gas reactions = 0 (0K)' line.)",
-
-    "[Syntax] The doc-page names in this catalog's 'commands' index are NOT input-script "
-    "commands. 55 of the 121 keys (every compute_* and fix_* page, dump_image, "
-    "surf_react_adsorb) are documentation filenames; in a deck you write 'compute <ID> "
-    "grid ...', 'fix <ID> ave/surf ...', 'dump <ID> image ...', 'surf_react <ID> adsorb "
-    "...'. The installed build accepts exactly 66 commands (see "
-    "sparta_knowledge.json -> command_surface.true_commands). "
-    "Signal: 'ERROR: Unknown command: compute_grid 1 all all nrho (../input.cpp:244)'. "
-    "(Verified by execution 2026-08-03.)",
-]
-
-
-# ── physics capability -> {relevant commands, example template dir, pitfalls} ──
-# Each maps DSMC physics to the SPARTA commands and a verified worked example deck.
+# ── physics capability -> deck family, worked example and default variant ──
+# The agent-facing knowledge (descriptions, key commands, Signal-carrying
+# pitfalls) lives in generators/<physics>.py. This table only records what the
+# backend itself needs: the spatial dims, the upstream example directory that
+# demonstrates the physics, and the generator variant to offer by default.
 _PHYSICS = {
-    "rarefied_flow": dict(
-        desc="Rarefied / free-molecular gas flow (high Knudsen) via DSMC particles",
-        dims=[2, 3], example="free",
-        commands=["global", "species", "mixture", "create_box", "create_grid",
-                  "create_particles", "collide", "fix", "run", "stats"],
-        pitfalls="Grid cell size must be smaller than the local mean free path; "
-                 "timestep must be a fraction of the mean collision time."),
-    "collision_relaxation": dict(
-        desc="Particle-particle collisions with VSS/VHS model + internal energy relaxation",
-        dims=[2, 3], example="collide",
-        commands=["collide", "species", "mixture", "collide_modify"],
-        pitfalls="VSS parameters come from a species .vss file; without 'collide vss' the "
-                 "gas is collisionless (free-molecular only)."),
-    "hypersonic_flow": dict(
-        desc="Hypersonic rarefied flow over a body (shock, surface heat flux) — DSMC",
-        dims=[2, 3], example="adjust_temp",
-        commands=["read_surf", "surf_collide", "surf_react", "compute", "fix",
-                  "bound_modify", "create_particles", "fix emit/face"],
-        pitfalls="Resolve the shock/boundary layer with fine cells near the surface; "
-                 "run to statistical steady state before sampling surface heat flux."),
-    "surface_interaction": dict(
-        desc="Gas-surface interaction: diffuse/specular/CLL collision + surface reactions",
-        dims=[2, 3], example="adjust_temp",
-        commands=["read_surf", "surf_collide", "surf_react", "surf_modify",
-                  "compute surf", "fix surf/temp"],
-        pitfalls="surf_collide diffuse needs a wall temperature + accommodation; for "
-                 "conjugate heat transfer the wall T is updated each coupling window."),
-    "chemistry": dict(
-        desc="Gas-phase chemical reactions (TCE / QK) during DSMC collisions",
-        dims=[2, 3], example="chem",
-        commands=["react", "react_modify", "species", "collide", "mixture"],
-        pitfalls="Reaction file format (tce/qk) must match the 'react' style; ensure all "
-                 "product species are declared in the species file."),
-    "axisymmetric": dict(
-        desc="2D axisymmetric DSMC (revolved geometry, radial weighting)",
-        dims=[2], example="axi",
-        commands=["dimension", "global ... axisymmetric", "fix", "global weight"],
-        pitfalls="Use 'global ... axisymmetric yes' and radial particle weighting; the "
-                 "y=0 axis needs the correct boundary condition."),
-    "particle_emission": dict(
-        desc="Particle injection / emission from faces or surfaces (inflow boundary)",
-        dims=[2, 3], example="emit",
-        commands=["fix emit/face", "fix emit/surf", "mixture", "create_particles"],
-        pitfalls="Emission rate is set by the mixture number density + face area; mismatch "
-                 "with the freestream causes a non-physical inflow."),
-    "adaptive_grid": dict(
-        desc="Static/dynamic grid adaptation to resolve gradients (refine near shocks)",
-        dims=[2, 3], example="adapt",
-        commands=["adapt_grid", "fix adapt", "balance_grid", "compute"],
-        pitfalls="Over-refinement explodes particle count; cap refinement levels and "
-                 "rebalance the grid across MPI ranks after adaptation."),
-    "ambipolar_plasma": dict(
-        desc="Weakly-ionized (ambipolar) flow: electrons follow ions (DSMC plasma)",
-        dims=[2, 3], example="ambi",
-        commands=["fix ambipolar", "species", "collide", "react"],
-        pitfalls="Ambipolar electrons are attached to ions; the species file must define "
-                 "the electron and ion species consistently."),
-    "conjugate_heat_transfer": dict(
-        desc="DSMC gas <-> FEM solid conjugate heat transfer (the forced two-code coupling; "
-             "SPARTA writes surface heat flux, reads back wall temperature via preCICE)",
-        dims=[2, 3], example="adjust_temp",
-        commands=["surf_collide diffuse", "compute surf ... etot", "fix surf/temp",
-                  "fix field/surf", "read_surf"],
-        pitfalls=[
-            "The wall temperature is a coupling unknown updated each preCICE window; "
-            "the DSMC heat flux is statistically noisy — average over the (long) solid "
-            "thermal timescale. Explicit serial coupling is stable because solid "
-            "thermal inertia damps DSMC fluctuations.",
-            "Data files (ar.species, *.vss, *.surf) must be IN the run directory — "
-            "SPARTA opens them relative to cwd and dies with 'Cannot open species "
-            "file ...' (particle.cpp). The couple() tool auto-stages files referenced "
-            "by any in.* deck in a participant work_dir (searching the participant's "
-            "data_dir, then SPARTA_DATA_DIR, then the distribution); pass explicit "
-            "task files via the participant's data_files list.",
-            "Half-body surface files (e.g. a half-cylinder arc for a symmetric 2D "
-            "case) are OPEN curves: read_surf aborts with 'Watertight check failed "
-            "with N unmatched points' (surf.cpp). Place the open endpoints exactly ON "
-            "a simulation-box face (e.g. box ylo = 0 for an arc ending at y=0) and "
-            "use 'read_surf <file> clip' — verified 2026-08-01.",
-            "compute reduce on a fix ave/surf with a SINGLE input column: reference "
-            "it as f_ID (per-surf vector), not f_ID[1] — the [1] form aborts with "
-            "'Compute reduce fix does not calculate a per-surf array' "
-            "(compute_reduce.cpp).",
-        ]),
+    "rarefied_flow": dict(dims=[2, 3], example="free",
+                          variants=["box_2d", "channel_2d"]),
+    "collision_relaxation": dict(dims=[2, 3], example="collide",
+                                 variants=["box_2d", "internal_energy_2d"]),
+    "hypersonic_flow": dict(dims=[2, 3], example="adjust_temp",
+                            variants=["circle_2d"]),
+    "surface_interaction": dict(dims=[2, 3], example="circle",
+                                variants=["circle_2d"]),
+    "chemistry": dict(dims=[2, 3], example="chem", variants=["box_3d"]),
+    "axisymmetric": dict(dims=[2], example="axi", variants=["body_2d"]),
+    "particle_emission": dict(dims=[2, 3], example="emit",
+                              variants=["channel_2d"]),
+    "adaptive_grid": dict(dims=[2, 3], example="adapt", variants=["circle_2d"]),
+    "ambipolar_plasma": dict(dims=[2, 3], example="ambi",
+                             variants=["circle_2d"]),
+    "conjugate_heat_transfer": dict(dims=[2, 3], example="adjust_temp",
+                                    variants=["circle_2d"]),
+}
+
+# Cross-cutting reference blocks, trimmed to what an agent needs while writing
+# a deck. Deliberately EXCLUDES anything host-specific: no binary paths, no
+# distribution paths, no machine-local data directories. Those belong to
+# _find_sparta_binary()/_sparta_data_dirs(), not to knowledge served to a model.
+_CROSS_CUTTING = {
+    "hard_ordering_errors": HARD_ORDERING_ERRORS,
+    "more": "build facts (compiled styles, accelerator status), the full "
+            "output-reading reference and the list of things SPARTA accepts "
+            "silently are in knowledge(topic='overview', solver='sparta')",
 }
 
 
@@ -465,74 +281,117 @@ class SpartaBackend(SolverBackend):
     def supported_physics(self) -> list[PhysicsCapability]:
         out = []
         for name, info in _PHYSICS.items():
+            kn = KNOWLEDGE.get(name, {})
             out.append(PhysicsCapability(
                 name=name,
-                description=info["desc"],
+                description=kn.get("description", name),
                 spatial_dims=info["dims"],
                 element_types=["DSMC-particles", "cartesian-grid"],
-                template_variants=[info["example"]],
+                template_variants=list(info["variants"]),
             ))
         return out
 
     def get_knowledge(self, physics: str) -> dict:
-        info = _PHYSICS.get(physics)
-        if not info:
-            # unknown physics: return the raw command index so the model can still look up
+        """Structured, physics-scoped knowledge.
+
+        Shape and size deliberately match the FEM backends: a short
+        description, the commands THIS physics needs (one line each, not the
+        verbatim manual page), the ordered deck skeleton, and the pitfalls —
+        each with an observable ``Signal:``. The 121-page command index and the
+        37 bundled example decks stay in sparta_knowledge.json and are reached
+        on demand (``examples``/``get_command_reference``), because pushing
+        them here cost tens of kilobytes per call and pushed the pitfalls past
+        the client-side truncation point.
+        """
+        if physics == "_general":
+            return KNOWLEDGE["_general"]
+        kn = KNOWLEDGE.get(physics)
+        if not kn:
             return {"error": f"unknown physics '{physics}'",
                     "available_physics": sorted(_PHYSICS.keys()),
-                    "all_commands": sorted(_KB.get("commands", {}).keys())}
+                    "all_commands": sorted(
+                        _KB.get("command_surface", {}).get("true_commands")
+                        or _KB.get("commands", {}).keys())}
+        info = _PHYSICS[physics]
+        out = dict(kn)
+        out["variants"] = list(info["variants"])
+        out["worked_example"] = (
+            f"upstream SPARTA example directory '{info['example']}' — full "
+            f"decks via examples(query='{info['example']}', solver='sparta')")
+        out["command_reference"] = (
+            "one-line syntax for the commands this physics needs is in "
+            "'key_commands' above; the full SPARTA doc page for ANY command is "
+            "available on demand via "
+            "SpartaBackend.get_command_reference('<command>')")
+        out.update(_CROSS_CUTTING)
+        return out
+
+    def get_command_reference(self, command: str) -> dict:
+        """Verbatim SPARTA doc entry for one command, fetched on demand.
+
+        This is the escape hatch that lets get_knowledge() stay small: the
+        121-entry documentation index is still shipped in
+        sparta_knowledge.json, it is just no longer pushed at the agent
+        wholesale on every knowledge() call.
+        """
         cmds = _KB.get("commands", {})
-        # resolve the relevant command docs (verbatim syntax+examples+description)
-        relevant = {}
-        for c in info["commands"]:
-            base = c.split()[0].replace("/", "_")
-            for key in (c, base, c.replace(" ", "_")):
-                if key in cmds:
-                    relevant[key] = cmds[key]
-                    break
-        tmpl = _KB.get("example_templates", {}).get(info["example"], {})
-        own = ([info["pitfalls"]] if isinstance(info["pitfalls"], str)
-               else list(info["pitfalls"]))
-        return {
-            "description": info["desc"],
-            "spatial_dims": info["dims"],
-            # pitfalls as a LIST (the physics-specific ones first, then the
-            # execution-verified DSMC set that applies to every SPARTA run) —
-            # a bare string made catalog tests see it as "no pitfalls" (and the
-            # signal counter count characters).
-            "pitfalls": own + _VERIFIED_DSMC_PITFALLS,
-            "relevant_commands": relevant,
-            "worked_example": {"dir": info["example"], "decks": tmpl},
-            "solver": "SPARTA DSMC; run: spa_serial -in <script>",
-            "unit_systems": "SI (global ... gridcut ... ; fnum sets real-particles-per-simulator)",
-            # Cross-cutting, execution-verified against the installed build
-            # (campaign 2026-08-03). See sparta_knowledge.json for the full text.
-            "installed_build": _KB.get("installed_build", {}),
-            "command_surface": _KB.get("command_surface", {}),
-            "required_setup_sequence": _KB.get("required_setup_sequence", {}),
-            "surfaces": _KB.get("surfaces", {}),
-            "reading_output": _KB.get("reading_output", {}),
-        }
+        key = command.strip()
+        for cand in (key, key.replace(" ", "_"), key.replace("/", "_"),
+                     key.replace("_", " "),
+                     key.split()[0] if key.split() else key):
+            if cand in cmds:
+                # the entry carries its own "command" field (the deck form,
+                # e.g. "compute grid"); "doc_page" is the index key we matched.
+                return {"doc_page": cand, **cmds[cand]}
+        return {"error": f"no documentation entry for '{command}'",
+                "note": "compute/fix/dump STYLES are documented under their "
+                        "page name, e.g. 'compute_grid' for 'compute <ID> "
+                        "grid ...'",
+                "available": sorted(cmds)[:40]}
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
         info = _PHYSICS.get(physics)
         if not info:
             raise ValueError(f"Unknown physics '{physics}'. "
                              f"Available: {', '.join(sorted(_PHYSICS))}")
-        decks = _KB.get("example_templates", {}).get(variant or info["example"], {})
-        if not decks:
-            raise ValueError(f"No example template for '{variant or info['example']}'")
-        # pick the primary input deck (in.<name>), apply simple param substitution
-        primary = sorted(decks, key=lambda k: (("in." not in k), len(k)))[0]
-        deck = decks[primary]
-        for k, v in (params or {}).items():
-            deck = deck.replace(f"${{{k}}}", str(v))
-        return deck
+        variant = variant or info["variants"][0]
+        for key in (f"{physics}_{variant}", f"{physics}_{info['variants'][0]}"):
+            gen = GENERATORS.get(key)
+            if gen:
+                return gen(params or {})
+        # fall back to the bundled upstream example deck for this variant
+        decks = _KB.get("example_templates", {}).get(variant, {})
+        if decks:
+            primary = sorted(decks, key=lambda k: (("in." not in k), len(k)))[0]
+            deck = decks[primary]
+            for k, v in (params or {}).items():
+                deck = deck.replace(f"${{{k}}}", str(v))
+            return deck
+        available = ", ".join(sorted(
+            k for k in GENERATORS if k.startswith(physics + "_")))
+        raise ValueError(f"Unknown variant '{variant}' for physics "
+                         f"'{physics}'. Available: {available}")
 
     def validate_input(self, content: str) -> list[str]:
         errors = []
-        nonblank = [l for l in content.splitlines()
-                    if l.strip() and not l.strip().startswith("#")]
+        # SPARTA continues a command onto the next line when the line ends in
+        # '&' (src/input.cpp). Joining those first is not cosmetic: without it
+        # the continuation line's first word ('combine', 'maxlevel', ...) is
+        # read as a command name and every multi-line fix adapt / adapt_grid
+        # deck is falsely rejected.
+        joined, buf = [], ""
+        for raw in content.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.endswith("&"):
+                buf += line[:-1].rstrip() + " "
+                continue
+            joined.append(buf + line)
+            buf = ""
+        if buf:
+            joined.append(buf.rstrip())
+        nonblank = joined
         if not nonblank:
             errors.append("Empty SPARTA input script")
             return errors

@@ -487,12 +487,31 @@ SIGNAL_COVERAGE_MIN = {
                        #                 FEM backend at 100% Signal: coverage.
                        #                 Trajectory: 0.0% -> 100.0% in
                        #                 a SINGLE pass.)
-    "sparta":   0.0,   # SPARTA (DSMC particle code, the 9th backend) carries one
-                       #   curated rarefied-gas pitfall per physics (10 total) that
-                       #   predate the Signal: convention. Baseline locked at 0.0
-                       #   so it can't REGRESS; enriching them with Signal:
-                       #   observable-symptom markers is follow-up work (it is a
-                       #   fundamentally different, non-FEM code).
+    "sparta":  99.0,   # measured 100.0 — SPARTA (the 9th backend, a DSMC
+                       #                  particle code) reached FULL Signal
+                       #                  coverage when its flat
+                       #                  sparta_knowledge.json dump was
+                       #                  restructured into per-physics modules
+                       #                  under backends/sparta/generators/,
+                       #                  the shape every FEM backend already
+                       #                  uses. 155 Signal-tagged pitfalls
+                       #                  across 10 physics: 9 physics-specific
+                       #                  sets (rarefied_flow 9,
+                       #                  surface_interaction 10,
+                       #                  conjugate_heat_transfer 7,
+                       #                  adaptive_grid 6, axisymmetric 6,
+                       #                  collision_relaxation 5,
+                       #                  hypersonic_flow 6, particle_emission
+                       #                  6, chemistry 4, ambipolar_plasma 5)
+                       #                  plus 10 cross-cutting deck-level
+                       #                  entries attached to every row.
+                       #                  Every Signal literal is a string the
+                       #                  installed binary actually contains
+                       #                  (checked with strings -n 6 against
+                       #                  the format-invariant substring, since
+                       #                  most are printf templates).
+                       #                  The old floor was 0.0 with 0 Signal
+                       #                  clauses in src/backends/sparta/.
 }
 
 

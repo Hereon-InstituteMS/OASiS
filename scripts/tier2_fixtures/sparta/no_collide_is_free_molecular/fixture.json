@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for sparta rarefied_flow: the flagship DSMC 'clean run, meaningless physics' pitfall. Deleting the single line 'collide vss air ar.vss' from a 2d argon Fourier-channel deck leaves rc=0, a healthy stats table and no warning, but Ncoll is identically 0 and the cold-wall energy flux is ~8.4x too large (~1.78e6 vs ~2.0e5 W/m2) with the mid-gas temperature ~120 K off (~535 vs ~657 K). Verified by execution 2026-08-03 with SPARTA (24 Sep 2025), spa_serial; independently re-run by the parent before merge. Skips cleanly (exit 0, 'SKIP:') when no SPARTA binary is present.",
+  "_comment": "Tier-2 for sparta rarefied_flow: the flagship DSMC 'clean run, meaningless physics' pitfall. Deleting the single line 'collide vss air ar.vss' from a 2d argon Fourier-channel deck leaves rc=0, a healthy stats table and no warning, but Ncoll is identically 0 and the cold-wall energy flux is several times too large with the mid-gas temperature far off. The SIZE of the error scales with the Knudsen number and is not a transferable constant, so the assertion is a direction plus an order of magnitude, not a fixed ratio. Skips cleanly (exit 0, 'SKIP:') when no SPARTA binary is present.",
   "backend": "sparta",
   "physics": "rarefied_flow",
-  "pitfall_index": 1,
+  "pitfall_index": 13,
   "mode": "python",
   "timeout_seconds": 600,
   "expect_in_output": [

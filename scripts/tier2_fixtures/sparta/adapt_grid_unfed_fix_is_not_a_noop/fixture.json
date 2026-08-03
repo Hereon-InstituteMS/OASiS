@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for sparta adaptive_grid: 'adapt_grid ... value f_<fixID>' before the fix has produced output reads every cell as 0. With the default 'thresh more less' SPARTA prints '  no grid adaptation performed' and no 'cells refined' line (rc=0, no warning); after a run the same command refines 395 of 400 cells. The zeros are NOT harmless: a 'coarsen' action on the same unfed fix coarsens 100 cells. Also gates the bracket rule \u2014 a single-value fix ave/grid is a per-grid VECTOR, so 'value f_ID[1]' aborts with 'Adapt fix does not calculate a per-grid array'.",
+  "backend": "sparta",
+  "physics": "adaptive_grid",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "unfed_fix_prints_no_adaptation_line=True",
+    "unfed_fix_run_still_exits_zero=True",
+    "fed_fix_actually_refines=True",
+    "coarsen_on_unfed_fix_is_not_a_noop=True",
+    "bracketed_single_value_fix_aborts=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

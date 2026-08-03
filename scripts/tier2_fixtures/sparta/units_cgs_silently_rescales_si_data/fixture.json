@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: 'units cgs' on a deck whose data files are SI is silent.\n\nThe two decks differ by ONE leading line. SPARTA's units command changes only\nthe value of Boltzmann's constant it multiplies your numbers by; it does not\nconvert the shipped ar.species / ar.vss data, which are SI. Both runs exit 0\nand print no warning, the particle count and the compute-temp column are\nidentical, and only the collision statistics and the Cell-touches diagnostic\nbetray that the physics has changed.\n",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 12,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "both_runs_exit_zero=True",
+    "no_warning_in_either_log=True",
+    "cgs_collision_rate_is_far_higher=True",
+    "compute_temp_is_identical=True",
+    "cell_touches_tell_present=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

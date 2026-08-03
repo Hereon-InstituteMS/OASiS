@@ -175,26 +175,88 @@ class TestKratosConstitutiveLawNames(unittest.TestCase):
 
 
 class TestSpartaVerifiedKnowledge(unittest.TestCase):
-    """SPARTA gained a verified command surface, setup sequence, output guide
-    and pitfall set on 2026-08-03; the backend must keep serving them."""
+    """SPARTA's knowledge was restructured from one flat JSON dump into
+    per-physics modules under src/backends/sparta/generators/, the shape every
+    FEM backend already uses. Two things must hold afterwards: the payload an
+    agent receives stays small, structured and free of host paths, and the
+    execution-verified claims keep being served."""
 
-    def _knowledge(self) -> dict:
+    def _backend(self):
         from core.registry import get_backend, load_all_backends
         load_all_backends()
         backend = get_backend("sparta")
         self.assertIsNotNone(backend, "sparta backend not registered")
-        return backend.get_knowledge("rarefied_flow")
+        return backend
 
-    def test_installed_build_block(self) -> None:
-        build = self._knowledge()["installed_build"]
-        self.assertEqual(build["version"], "24 Sep 2025")
-        self.assertIn("spa_serial", build["binary"])
-        self.assertEqual(build["compiled_styles"]["collide"], ["vss"])
-        self.assertIn("diffuse", build["compiled_styles"]["surf_collide"])
-        self.assertIn("kokkos_kk_styles", build["documented_but_absent_here"])
+    def _knowledge(self) -> dict:
+        return self._backend().get_knowledge("rarefied_flow")
 
+    def _kb_file(self) -> dict:
+        import json
+        return json.loads((_REPO / "src" / "backends" / "sparta"
+                           / "sparta_knowledge.json").read_text())
+
+    # ── payload shape ────────────────────────────────────────────────────
+    def test_knowledge_is_structured_not_a_manual_dump(self) -> None:
+        """The old payload was ~43 KB per physics, 27 KB of it a verbatim copy
+        of the SPARTA manual under 'relevant_commands'. That pushed the
+        pitfalls past the client-side truncation point, so half the knowledge
+        never reached the agent."""
+        backend = self._backend()
+        for cap in backend.supported_physics():
+            kn = backend.get_knowledge(cap.name)
+            self.assertNotIn("relevant_commands", kn,
+                             f"{cap.name}: the verbatim manual dump is back")
+            self.assertIn("key_commands", kn)
+            self.assertIn("deck_skeleton", kn)
+            self.assertIn("pitfalls", kn)
+            self.assertLess(
+                len(_all_text(kn)), 25_000,
+                f"{cap.name}: knowledge payload grew back past 25 KB")
+
+    def test_knowledge_carries_no_absolute_host_path(self) -> None:
+        """'installed_build' used to hard-code four absolute paths from the
+        machine the campaign ran on and served them for all ten physics."""
+        import re
+        host = re.compile(r"/home/[A-Za-z0-9_.-]+|/Users/[A-Za-z0-9_.-]+")
+        backend = self._backend()
+        for name in [c.name for c in backend.supported_physics()] + ["_general"]:
+            hits = host.findall(_all_text(backend.get_knowledge(name)))
+            self.assertEqual(hits, [], f"{name}: host paths leaked into knowledge")
+        build = self._kb_file()["installed_build"]
+        for key in ("distribution_root", "data_dir", "examples_dir"):
+            self.assertNotIn(key, build,
+                             f"sparta_knowledge.json['installed_build'] "
+                             f"re-added the host path key {key!r}")
+
+    def test_every_pitfall_carries_a_signal(self) -> None:
+        backend = self._backend()
+        missing = []
+        for cap in backend.supported_physics():
+            for i, pit in enumerate(backend.get_knowledge(cap.name)["pitfalls"]):
+                if "Signal:" not in str(pit):
+                    missing.append((cap.name, i))
+        self.assertEqual(missing, [], "pitfalls without an observable Signal:")
+
+    def test_every_physics_offers_an_executable_generator(self) -> None:
+        from backends.sparta.generators import GENERATORS
+        backend = self._backend()
+        for cap in backend.supported_physics():
+            self.assertTrue(cap.template_variants, f"{cap.name}: no variants")
+            for v in cap.template_variants:
+                self.assertIn(f"{cap.name}_{v}", GENERATORS)
+                deck = backend.generate_input(cap.name, v, {})
+                self.assertIn("run ", deck)
+                self.assertIn("seed ", deck)
+                self.assertIn("timestep ", deck,
+                              f"{cap.name}/{v}: no timestep line — SPARTA's "
+                              f"default dt is 1.0 s and the deck would hang")
+                self.assertEqual(backend.validate_input(deck), [],
+                                 f"{cap.name}/{v}: generated deck fails validation")
+
+    # ── the verbatim command index moved, it did not disappear ───────────
     def test_command_surface_separates_commands_from_doc_pages(self) -> None:
-        surface = self._knowledge()["command_surface"]
+        surface = self._kb_file()["command_surface"]
         self.assertEqual(surface["n_true_commands"], 66)
         true_cmds = surface["true_commands"]
         self.assertEqual(len(true_cmds), 66)
@@ -209,45 +271,92 @@ class TestSpartaVerifiedKnowledge(unittest.TestCase):
             self.assertIn(fake, doc_only)
             self.assertNotIn(fake, true_cmds)
 
-    def test_setup_sequence_and_surface_errors(self) -> None:
-        kn = self._knowledge()
-        errs = kn["required_setup_sequence"]["hard_errors_verified"]
+    def test_command_reference_is_reachable_on_demand(self) -> None:
+        ref = self._backend().get_command_reference("compute_grid")
+        self.assertNotIn("error", ref)
+        self.assertEqual(ref["doc_page"], "compute_grid")
+        self.assertEqual(ref["command"], "compute grid")
+        self.assertIn("syntax", ref)
+
+    def test_installed_build_block_kept_its_style_inventory(self) -> None:
+        build = self._kb_file()["installed_build"]
+        self.assertEqual(build["version"], "24 Sep 2025")
+        self.assertEqual(build["compiled_styles"]["collide"], ["vss"])
+        self.assertIn("diffuse", build["compiled_styles"]["surf_collide"])
+        self.assertIn("kokkos_kk_styles", build["documented_but_absent_here"])
+        facts = self._knowledge()["build"] if "build" in self._knowledge() else {}
+        del facts  # served through knowledge(topic='overview'), see below
+        general = self._backend().get_knowledge("_general")
+        self.assertEqual(general["build"]["compiled_collide_styles"], ["vss"])
+        self.assertIn("KOKKOS", general["build"]["accelerators"])
+
+    # ── ordering / output knowledge survived the move ────────────────────
+    def test_setup_ordering_errors_are_served(self) -> None:
+        errs = self._knowledge()["hard_ordering_errors"]
         self.assertIn("create_grid.cpp:44", errs["create_grid before create_box"])
         self.assertIn("random_mars.cpp:91", errs["no seed command"])
-        silent = kn["required_setup_sequence"]["silently_accepted_do_not_rely_on_an_error"]
-        self.assertIn("nrho=1.0", silent["no global nrho/fnum"])
-        surf = kn["surfaces"]
-        self.assertIn("surf.cpp:343", surf["hard_errors_verified"]
-                      ["surfaces with no collision model"])
-        self.assertIn("create_grid -> read_surf -> surf_collide -> surf_modify",
-                      surf["mandatory_order"])
+        general = self._backend().get_knowledge("_general")
+        self.assertIn("nrho = 1.0",
+                      general["silently_accepted"]["no global nrho/fnum"])
 
     def test_output_reading_block(self) -> None:
-        out = self._knowledge()["reading_output"]
-        self.assertIn("not a cumulative total", out["counters_are_per_step"])
-        self.assertIn("mode vector", out["boundary_tally_idiom"])
-        self.assertIn("compute reduce", out["surface_tally_idiom"])
-        self.assertIn("NEVER makes that comparison", out["recommended_timestep_idiom"])
+        out = self._knowledge()["output_idioms"]
+        self.assertIn("mode vector", out["boundary tally idiom"])
+        self.assertIn("VECTOR", out["vector vs array rule"])
+        general = self._backend().get_knowledge("_general")["reading_output"]
+        self.assertIn("reduce sum", general["per-surf tally idiom"])
 
+    # ── claims execution established, in their CORRECTED form ────────────
     def test_verified_pitfalls_are_served_for_every_physics(self) -> None:
-        from core.registry import get_backend, load_all_backends
-        load_all_backends()
-        backend = get_backend("sparta")
-        markers = ("Omitting the collide command is NEVER an error",
-                   "SILENTLY overrides 'global nrho'",
-                   "the z extent given to create_box is IGNORED",
-                   "surf_collide specular transfers EXACTLY ZERO energy")
+        """These wordings replaced earlier ones that a critic pass falsified by
+        execution — see FORBIDDEN_SPARTA below for what they replaced."""
+        backend = self._backend()
+        markers = (
+            "silently overrides 'global nrho'",
+            "the z extent handed to create_box is ignored",
+            "no default timestep worth having",
+            "does NOT convert the species, VSS, reaction or surface files",
+        )
         for cap in backend.supported_physics():
             text = "\n".join(backend.get_knowledge(cap.name)["pitfalls"])
             for marker in markers:
                 self.assertIn(marker, text,
-                              f"sparta physics {cap.name!r} lost the verified pitfall "
-                              f"{marker!r}")
+                              f"sparta physics {cap.name!r} lost the verified "
+                              f"pitfall {marker!r}")
+        surf = "\n".join(backend.get_knowledge("surface_interaction")["pitfalls"])
+        self.assertIn("reverses the normal velocity component", surf)
+
+    def test_falsified_sparta_wordings_stay_dead(self) -> None:
+        """Each string here was in the catalog and was disproved by running the
+        installed binary. None may come back."""
+        FORBIDDEN_SPARTA = [
+            ("rarefied_flow", "Omitting the collide command is NEVER an error",
+             "collide_modify, fix vibmode and react tce each abort with a hard "
+             "error when no collide style is defined"),
+            ("axisymmetric",
+             "Use 'global ... axisymmetric yes' and radial particle weighting",
+             "there is no such keyword: 'global axisymmetric yes' gives "
+             "'Illegal global command (../update.cpp:1805)'; axisymmetry is the "
+             "boundary letter 'a' on the lower y face"),
+            ("chemistry", "Reaction file format (tce/qk) must match the 'react' "
+             "style",
+             "'react qk <a tce file>' is accepted without error or warning and "
+             "fires reactions"),
+            ("surface_interaction",
+             "for conjugate heat transfer the wall T is updated each coupling "
+             "window",
+             "vague and untestable; replaced by the fix surf/temp ordering and "
+             "bracket rules, each with its own error string"),
+        ]
+        backend = self._backend()
+        for physics, forbidden, why in FORBIDDEN_SPARTA:
+            text = _all_text(backend.get_knowledge(physics))
+            self.assertNotIn(forbidden, text,
+                             f"sparta {physics}: falsified wording came back "
+                             f"({forbidden!r}) — execution showed: {why}")
 
     def test_validate_input_rejects_doc_page_command_forms(self) -> None:
-        from core.registry import get_backend, load_all_backends
-        load_all_backends()
-        backend = get_backend("sparta")
+        backend = self._backend()
         preamble = ("seed 1\ndimension 2\nboundary p p p\n"
                     "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 2 2 1\n")
         self.assertEqual(backend.validate_input(preamble + "run 10\n"), [])
@@ -256,15 +365,31 @@ class TestSpartaVerifiedKnowledge(unittest.TestCase):
             errs = backend.validate_input(preamble + bad + "\nrun 10\n")
             self.assertTrue(errs, f"validate_input accepted the doc-page form {bad!r}")
 
-    def test_verified_running_drops_the_nonexistent_surf_deck(self) -> None:
-        import json
-        kb = json.loads((_REPO / "src" / "backends" / "sparta"
-                         / "sparta_knowledge.json").read_text())
-        self.assertNotIn(
-            "surf", kb["verified_running"],
-            "examples/surf/ has in.surf.add / .move / .remove / .rotate / .slide "
-            "but NO in.surf, so 'surf' could never have been executed as written.")
-        self.assertIn("free", kb["verified_running"])
+    def test_validate_input_understands_line_continuations(self) -> None:
+        """SPARTA continues a command when the line ends in '&'. Without
+        joining, the continuation line's first word is read as a command and
+        every multi-line 'fix adapt' deck is falsely rejected."""
+        backend = self._backend()
+        deck = ("seed 1\ndimension 2\nboundary p p p\n"
+                "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 2 2 1\n"
+                "fix ad adapt 100 all refine coarsen value c_x[2] 2.0 4.5 &\n"
+                "    combine min thresh less more cells 2 2 1\n"
+                "run 10\n")
+        self.assertEqual(backend.validate_input(deck), [])
+
+    def test_verified_running_lists_only_decks_that_exist(self) -> None:
+        """An entry belongs here only if examples/<name>/in.<name> exists.
+        'surf' and 'emit' both failed that test and were removed; the same
+        check must not silently regress."""
+        kb = self._kb_file()
+        for absent in ("surf", "emit", "adjust_temp"):
+            self.assertNotIn(
+                absent, kb["verified_running"],
+                f"examples/{absent}/ ships in.{absent}.* variants but no file "
+                f"called in.{absent}, so it could never have been executed "
+                f"as written.")
+        self.assertEqual(sorted(kb["verified_running"]),
+                         ["ambi", "axi", "chem", "circle", "collide", "free"])
 
 
 if __name__ == "__main__":

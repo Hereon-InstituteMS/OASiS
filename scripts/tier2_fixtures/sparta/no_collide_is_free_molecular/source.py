@@ -1,18 +1,19 @@
-"""Tier-2: forgetting `collide` in a SPARTA deck is silent, and wrong by 8x.
+"""Tier-2: forgetting `collide` in a SPARTA deck is silent and changes the answer.
 
 This is the flagship "clean run, meaningless physics" DSMC pitfall. The wrong
 variant differs from the right one by ONE deleted line; both exit 0, both print
-a healthy stats table, and neither warns.
+a healthy stats table, and neither warns. Ncoll is identically 0 in the
+collisionless run, and the wall heat flux comes out far too large.
 
-Case: 2d argon Fourier channel. boundary p ss p, box 2e-5 x 1e-4 m, 4x60 grid,
-nrho 7.07043e23, fnum 1e11, ylo wall diffuse 300 K, yhi wall diffuse 1000 K,
-dt 1e-9 s, 3000 steps. Wall energy flux via compute boundary + fix ave/time
-(mode vector, which compute boundary requires).
+The SIZE of the error is set by the Knudsen number, not by any fixed factor —
+the free-molecular flux is linear in density while the collisional one
+saturates toward the continuum limit. The assertion below is therefore a
+DIRECTION and an order of magnitude ("more than 5x too high on this case"),
+not a number to carry to another problem.
 
-Measured 2026-08-03 with SPARTA (24 Sep 2025), spa_serial:
-    with    collide vss : cold wall ~2.0e5  W/m2, mid-gas T ~657 K
-    without collide     : cold wall ~1.78e6 W/m2, mid-gas T ~535 K   (~8.4x)
-and Ncoll is identically 0 in the collisionless run.
+Case: 2d argon Fourier channel. boundary p ss p, 4x60 grid, ylo wall diffuse
+300 K, yhi wall diffuse 1000 K. Wall energy flux via compute boundary + fix
+ave/time (mode vector, which compute boundary requires).
 """
 from __future__ import annotations
 

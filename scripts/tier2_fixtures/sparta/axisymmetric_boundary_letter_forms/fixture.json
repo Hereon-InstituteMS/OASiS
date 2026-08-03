@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for sparta axisymmetric: there is no 'global ... axisymmetric' keyword; axisymmetry is the boundary letter 'a' on the LOWER y face only, so the single-letter 'boundary p a p' is always an error and the two-letter 'boundary o ar p' is required. Feeds eight wrong variants to the binary and matches each error string, confirms both correct forms run, and shows the 2d-only restriction is checked at RUN SETUP \u2014 a 3d deck with 'boundary o ar p' and no 'run' exits 0.",
+  "backend": "sparta",
+  "physics": "axisymmetric",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "all_expected_errors_matched=True",
+    "both_two_letter_forms_accepted=True",
+    "two_d_check_is_deferred_to_run_setup=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

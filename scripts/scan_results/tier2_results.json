@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 108,
-    "passed": 108,
+    "n_fixtures": 118,
+    "passed": 118,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -2042,6 +2042,192 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "skfem_version=12.0.1\nP2_u_h32_l2err=1.399774e-04_tol=5e-04\nP1_p_h32_l2err=4.439802e-04_tol=2e-02\nP2_u_eoc_h16_to_h32=2.996_expected=3.0\nP1_p_eoc_h16_to_h32=2.636_expected=2.0\n"
+    },
+    "sparta::adaptive_grid::0": {
+      "key": "sparta::adaptive_grid::0",
+      "backend": "sparta",
+      "physics": "adaptive_grid",
+      "pitfall_index": 0,
+      "fixture_id": "adapt_grid_unfed_fix_is_not_a_noop",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "unfed_fix_prints_no_adaptation_line=True",
+        "unfed_fix_run_still_exits_zero=True",
+        "fed_fix_actually_refines=True",
+        "coarsen_on_unfed_fix_is_not_a_noop=True",
+        "bracketed_single_value_fix_aborts=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "before_run_rc=0 banner=True noop_line=True refined=None\nafter_run_rc=0 banner=True noop_line=False refined=395\ncoarsen_before_run_rc=0 cells_coarsened=100\nbracketed_fix_rc=1 err=['ERROR: Adapt fix does not calculate a per-grid array (../adapt_grid.cpp:484)']\nunfed_fix_prints_no_adaptation_line=True\nunfed_fix_run_still_exits_zero=True\nfed_fix_actually_refines=True\ncoarsen_on_unfed_fix_is_not_a_noop=True\nbracketed_single_value_fix_aborts=True\n"
+    },
+    "sparta::axisymmetric::0": {
+      "key": "sparta::axisymmetric::0",
+      "backend": "sparta",
+      "physics": "axisymmetric",
+      "pitfall_index": 0,
+      "fixture_id": "axisymmetric_boundary_letter_forms",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "all_expected_errors_matched=True",
+        "both_two_letter_forms_accepted=True",
+        "two_d_check_is_deferred_to_run_setup=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "global_axisymmetric_keyword: rc=1 matched=True err=['ERROR: Illegal global command (../update.cpp:1805)']\nsingle_letter_a_sets_both_faces: rc=1 matched=True err=['ERROR: Only ylo boundary can be axi-symmetric (../domain.cpp:176)']\na_on_yhi: rc=1 matched=True err=['ERROR: Only ylo boundary can be axi-symmetric (../domain.cpp:176)']\nylo_not_zero: rc=1 matched=True err=['ERROR: Box ylo must be 0.0 for axi-symmetric model (../create_box.cpp:56)']\nyhi_periodic: rc=1 matched=True err=['ERROR: Y cannot be periodic for axi-symmetric (../domain.cpp:181)']\nthree_d_with_run: rc=1 matched=True err=['ERROR: Axi-symmetry only allowed for 2d simulation (../domain.cpp:80)']\nweight_radius_without_axisymmetry: rc=1 matched=True err=['ERROR: Cannot use weight cell radius unless axisymmetric (../grid.cpp:1997"
+    },
+    "sparta::surface_interaction::5": {
+      "key": "sparta::surface_interaction::5",
+      "backend": "sparta",
+      "physics": "surface_interaction",
+      "pitfall_index": 5,
+      "fixture_id": "compute_surf_array_and_mixture_groups",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "bare_compute_grid_is_not_a_vector=True",
+        "default_mixture_has_one_group=True",
+        "named_group_is_still_one_group=True",
+        "group_self_gives_per_species_columns=True",
+        "single_value_fix_is_a_vector=True",
+        "single_value_fix_indexed_aborts=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "bare_compute_rc=1 err=['ERROR: Compute reduce compute does not calculate a per-grid vector (../compute_reduce.cpp:229)']\nindexed_compute_rc=0 value=9.99\ndefault_mixture_col2_rc=1 err=['ERROR: Compute reduce compute array is accessed out-of-range (../compute_reduce.cpp:236)']\nnamed_group_col2_rc=1 err=['ERROR: Compute reduce compute array is accessed out-of-range (../compute_reduce.cpp:236)']\ngroup_self_cols=5.320 4.670\nspecies_mixture_cols=5.320 4.670\nfix_single_value_bare_rc=0\nfix_single_value_indexed_rc=1 err=['ERROR: Compute reduce fix does not calculate a per-grid array (../compute_reduce.cpp:280)']\nbare_compute_grid_is_not_a_vector=True\nindexed_compute_grid_works=True\ndefault_mixture_has_one_group=True\nnamed_group_is_still_one_group=True\ngroup_self_gives_per_species_columns=True\nbuilt"
+    },
+    "sparta::rarefied_flow::4": {
+      "key": "sparta::rarefied_flow::4",
+      "backend": "sparta",
+      "physics": "rarefied_flow",
+      "pitfall_index": 4,
+      "fixture_id": "compute_temp_includes_streaming_velocity",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "all_runs_exit_zero=True",
+        "no_warnings=True",
+        "offset_matches_m_v2_over_3kB=True",
+        "thermal_grid_stays_near_thermal=True",
+        "slow_flow_offset_is_negligible=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "vstream_0_compute_temp=271.429\nvstream_0_thermal_grid=236.409\nvstream_1000_compute_temp=1871.225\nvstream_1000_thermal_grid=237.900\nvstream_10_compute_temp=271.580\npredicted_offset_m_v2_over_3kB=1600.7\nmeasured_offset=1599.8\nall_runs_exit_zero=True\nno_warnings=True\noffset_matches_m_v2_over_3kB=True\nthermal_grid_stays_near_thermal=True\nslow_flow_offset_is_negligible=True\n"
+    },
+    "sparta::rarefied_flow::10": {
+      "key": "sparta::rarefied_flow::10",
+      "backend": "sparta",
+      "physics": "rarefied_flow",
+      "pitfall_index": 10,
+      "fixture_id": "create_particles_and_mixture_nrho_overrides",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "n_zero_honours_nrho=True",
+        "n_nonzero_overrides_nrho=True",
+        "mixture_nrho_overrides_global=True",
+        "global_after_create_particles_gives_zero=True",
+        "region_scales_the_requested_count=True",
+        "all_runs_exit_zero=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "created_n0=999\ncreated_n500=500\ncreated_mixture_nrho_1e21=14\ncreated_global_after=0\ncreated_n500_in_half_region=250\nall_runs_exit_zero=True\nn_zero_honours_nrho=True\nn_nonzero_overrides_nrho=True\nmixture_nrho_overrides_global=True\nglobal_after_create_particles_gives_zero=True\nregion_scales_the_requested_count=True\n"
+    },
+    "sparta::rarefied_flow::18": {
+      "key": "sparta::rarefied_flow::18",
+      "backend": "sparta",
+      "physics": "rarefied_flow",
+      "pitfall_index": 18,
+      "fixture_id": "docpage_names_are_not_commands",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "n_true_commands=66",
+        "n_docpage_only=55",
+        "installed_version=24 Sep 2025",
+        "validate_accepts_good_deck=True",
+        "validate_rejects_docpage_form=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "docpage_forms_rejected_by_binary=['compute_grid', 'dump_image', 'fix_ave_surf', 'suffix', 'surf_react_adsorb']\nall_docpage_forms_rejected=True\nreal_forms_accepted=['balance_grid', 'compute']\nall_real_forms_accepted=True\nn_true_commands=66\nn_docpage_only=55\ninstalled_version=24 Sep 2025\ncommand_reference_resolves=True\nvalidate_accepts_good_deck=True\nvalidate_rejects_docpage_form=True\n"
+    },
+    "sparta::rarefied_flow::9": {
+      "key": "sparta::rarefied_flow::9",
+      "backend": "sparta",
+      "physics": "rarefied_flow",
+      "pitfall_index": 9,
+      "fixture_id": "generators_execute_on_installed_build",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "knowledge_has_no_host_paths=True",
+        "all_pitfalls_carry_a_signal=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "absolute_host_paths_in_knowledge=[]\nknowledge_has_no_host_paths=True\nknowledge_payload_max_bytes=17203\nknowledge_payload_mean_bytes=14322\npitfalls_without_signal=[]\nall_pitfalls_carry_a_signal=True\nrarefied_flow/box_2d: rc=0 validate=[] missing_data=[] err=[]\nrarefied_flow/channel_2d: rc=0 validate=[] missing_data=[] err=[]\ncollision_relaxation/box_2d: rc=0 validate=[] missing_data=[] err=[]\ncollision_relaxation/internal_energy_2d: rc=0 validate=[] missing_data=[] err=[]\nhypersonic_flow/circle_2d: rc=0 validate=[] missing_data=[] err=[]\nsurface_interaction/circle_2d: rc=0 validate=[] missing_data=[] err=[]\nchemistry/box_3d: rc=0 validate=[] missing_data=[] err=[]\naxisymmetric/body_2d: rc=0 validate=[] missing_data=[] err=[]\nparticle_emission/channel_2d: rc=0 validate=[] missing_data=[] err"
+    },
+    "sparta::rarefied_flow::13": {
+      "key": "sparta::rarefied_flow::13",
+      "backend": "sparta",
+      "physics": "rarefied_flow",
+      "pitfall_index": 13,
+      "fixture_id": "no_collide_is_free_molecular",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "both_runs_exit_zero=True",
+        "ncoll_identically_zero_without_collide=True",
+        "flux_overestimated_by_more_than_5x=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "sparta_version_line=SPARTA (24 Sep 2025)\nrc_with_collide=0\nrc_without_collide=0\nboth_runs_exit_zero=True\ncold_wall_flux_with_collide=2.0917e+05\ncold_wall_flux_without_collide=1.7615e+06\nflux_ratio_without_over_with=8.421\nmid_gas_T_with_collide=660.3\nmid_gas_T_without_collide=538.5\nmax_ncoll_with_collide=1816\nmax_ncoll_without_collide=0\nncoll_identically_zero_without_collide=True\nflux_overestimated_by_more_than_5x=True\n"
+    },
+    "sparta::chemistry::0": {
+      "key": "sparta::chemistry::0",
+      "backend": "sparta",
+      "physics": "chemistry",
+      "pitfall_index": 0,
+      "fixture_id": "react_file_is_parsed_in_pairs",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "odd_line_file_loads_silently_with_zero_reactions=True",
+        "even_line_junk_file_aborts_loudly=True",
+        "real_reaction_file_parses=True",
+        "qk_style_on_a_tce_file_is_accepted=True",
+        "undeclared_species_do_not_change_the_parsed_count=True",
+        "tally_block_only_appears_with_a_react_command=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "ar_vss_one_data_line: rc=0 n_reactions=0 err=[]\nair_vss_many_lines:   rc=1 err=['ERROR: Invalid reaction formula in file (../react_bird.cpp:641)']\njunk_odd_lines:       rc=0 n_reactions=0 err=[]\njunk_even_lines:      rc=1 err=['ERROR: Invalid reaction formula in file (../react_bird.cpp:641)']\nreal_tce_file:        rc=0 n_reactions=45\nqk_style_on_tce_file: rc=0 n_reactions=45 err=[]\nfew_species_declared: rc=0 n_reactions=45\nno_react_command:     rc=0 tally_block=False\nodd_line_file_loads_silently_with_zero_reactions=True\neven_line_junk_file_aborts_loudly=True\nreal_reaction_file_parses=True\nqk_style_on_a_tce_file_is_accepted=True\nundeclared_species_do_not_change_the_parsed_count=True\ntally_block_only_appears_with_a_react_command=True\n"
+    },
+    "sparta::rarefied_flow::12": {
+      "key": "sparta::rarefied_flow::12",
+      "backend": "sparta",
+      "physics": "rarefied_flow",
+      "pitfall_index": 12,
+      "fixture_id": "units_cgs_silently_rescales_si_data",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "both_runs_exit_zero=True",
+        "no_warning_in_either_log=True",
+        "cgs_collision_rate_is_far_higher=True",
+        "compute_temp_is_identical=True",
+        "cell_touches_tell_present=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "rc_si=0\nrc_cgs=0\nboth_runs_exit_zero=True\nmax_ncoll_si=14\nmax_ncoll_cgs=32133\ncgs_collision_rate_is_far_higher=True\ncompute_temp_si=271.42855\ncompute_temp_cgs=271.42855\ncompute_temp_is_identical=True\ncell_touches_si=1.0346\ncell_touches_cgs=108.8740\ncell_touches_tell_present=True\nwarnings_si=0 warnings_cgs=0\nno_warning_in_either_log=True\n"
     }
   }
 }

@@ -1958,11 +1958,7 @@
  ],
  "installed_build": {
   "version": "24 Sep 2025",
-  "version_source": "src/version.h; also printed as 'SPARTA (24 Sep 2025)' on line 1 of stdout and of log.sparta for every run",
-  "binary": "/home/alexander/Schreibtisch/sparta/src/spa_serial (serial only \u2014 no spa_mpi on this host, so nothing about MPI/partitioning is verified here)",
-  "distribution_root": "/home/alexander/Schreibtisch/sparta",
-  "data_dir": "/home/alexander/Schreibtisch/sparta/data (ar.species, air.species, *.vss, ...)",
-  "examples_dir": "/home/alexander/Schreibtisch/sparta/examples (37 example subdirectories, 120 in.* decks; the earlier '38 upstream decks' was wrong on both readings \u2014 counted 2026-08-03 (re-audit))",
+  "version_source": "src/version.h; also printed as 'SPARTA (<date>)' on line 1 of stdout and of log.sparta for every run",
   "invocation": "cd <run dir> && spa_serial -in in.<case>   # writes log.sparta in cwd",
   "compiled_styles": {
    "collide": [
@@ -2013,7 +2009,10 @@
    "compute reaction/tally": "stale doc heading in doc/compute_gas_reaction_tally.txt; the compiled styles are 'gas/reaction/tally' and 'surf/reaction/tally'.",
    "suffix": "documented in doc/suffix.txt but NOT a command in this build's parser -> 'ERROR: Unknown command: suffix kk (../input.cpp:244)'. Use the -suffix command-line switch (pointless here: no accelerator package is compiled in)."
   },
-  "verified_by": "execution campaign 2026-08-03, ~96 cases; every claim in this block was produced by feeding the binary a deck and reading its output."
+  "binary": "serial build (spa_serial); no MPI build and no KOKKOS styles on this install, so nothing about MPI decomposition or /kk styles is verified here. Located at runtime via SPARTA_BINARY, PATH, or SPARTA_ROOT.",
+  "data_files": "species/VSS/reaction/surface files ship in the SPARTA distribution's data/ and examples/ trees; the backend stages them into the run directory automatically. Resolve them via SPARTA_DATA_DIR or SPARTA_ROOT, never by hard-coded path.",
+  "examples": "37 example subdirectories, 120 in.* decks in the distribution's examples/ tree.",
+  "verified_by": "execution against the installed build: every claim in this block was produced by feeding the binary a deck and reading its output."
  },
  "command_surface": {
   "n_true_commands": 66,
@@ -2213,5 +2212,5 @@
   "dump_format": "dump particle / grid / surf write LAMMPS-style text snapshots: ITEM: TIMESTEP, ITEM: NUMBER OF ATOMS|CELLS|SURFS, ITEM: BOX BOUNDS <xflag yflag zflag> (the boundary flags, e.g. 'oo rr pp'), then ITEM: ATOMS|CELLS|SURFS followed by the requested column names \u2014 the column meaning is self-documenting in the file.",
   "dump_surf_raw_compute_trap": "dump surf DOES accept a raw c_ID[i] with no fix ave/surf, so the deck runs cleanly \u2014 but the value is the tally accumulated since the compute was last invoked, so it depends on the DUMP FREQUENCY and is not time-averaged. Measured: raw c_1[1] at step 100 had 26 of 50 elements exactly 0 (max 1.031e-20, mean 2.003e-21); the fix-ave'd f_1[2] at step 300 had 39 of 50 nonzero (mean 2.445e-21). The averaged field converges; the raw one does not."
  },
- "verified_running_note": "'surf' was removed on 2026-08-03: examples/surf/ contains in.surf.add, in.surf.move, in.surf.remove, in.surf.rotate and in.surf.slide but NO file called in.surf, so the entry could never have been executed as written. 'emit' was removed on 2026-08-03 (re-audit) for exactly the same reason \u2014 examples/emit/ contains in.emit.face, in.emit.face.region, in.emit.surf.boundary, in.emit.surf.flow, in.emit.surf.flow.region, in.emit.surf.normal and in.emit.surf.normal.region, and NO file called in.emit; the 2026-08-03 pass applied the existence check to 'surf' only and did not repeat it for the other entries. The remaining six (free, collide, chem, axi, circle, ambi) each DO have an in.<name>, and all six were executed 2026-08-03 (re-audit): rc=0, final Np = 10000 / 10000 / 11169 / 33881 / 43387 / 147778. Note that free, circle and emit-family decks report Ncoll = 0 legitimately (free has no collide line; circle and the emit decks use nrho 1.0, i.e. free-molecular), so Ncoll = 0 is not by itself a defect in those examples."
+ "verified_running_note": "An entry belongs here only if examples/<name>/in.<name> EXISTS and was executed to rc=0. 'surf' and 'emit' were removed because examples/surf/ and examples/emit/ ship only in.surf.* / in.emit.* variants and no file called in.surf or in.emit \u2014 the name in this list is not a deck name. 'adjust_temp' is likewise not a runnable name: that directory ships in.circle.adjust, in.circle.constant, in.sphere.adjust and in.sphere.constant. Note that free, circle and the emit-family decks report Ncoll = 0 legitimately (free has no collide line; circle and the emit decks run at nrho 1.0, i.e. free-molecular), so Ncoll = 0 is not by itself a defect in those examples."
 }
