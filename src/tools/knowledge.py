@@ -388,16 +388,33 @@ for iteration in range(max_iter):
 - **θ = 0.7**: Good default for nonlinear problems (elasticity, coupled physics).
 - **Rule of thumb**: If DN oscillates (residual doesn't decrease), reduce θ.
 
-## Neumann BC Sign Convention
+## Interface flux: TWO different quantities, two different signs
 
-At the interface between subdomains A and B:
-- Domain A solves with Dirichlet BC at interface
-- The flux from A is: q = -k * ∂u_A/∂n_A (outward normal from A)
-- Domain B receives this flux as its Neumann BC
-- In 4C: DESIGN LINE NEUMANN VAL receives the flux value directly
-  (4C convention: the Neumann value is k * ∂u/∂n on the boundary)
-- The outward normal at B's interface boundary points AWAY from B (toward A)
-- Therefore: q_4C = q_FEniCS (same sign — the physical flux is continuous)
+Read this before writing any coupling. Confusing these two is the mistake that
+produces a converged coupling which OASiS then refuses to verify, with nothing
+in the output explaining why.
+
+**(1) The BC VALUE you APPLY in the receiving code — same sign.**
+- Domain A solves with a Dirichlet BC at the interface.
+- The flux out of A is q = -k * ∂u_A/∂n_A, with n_A the outward normal from A.
+- Domain B applies that as its Neumann BC. B's outward normal points away from
+  B, i.e. back toward A, and this second sign flip cancels the first.
+- So the number you hand to B is the number A computed: q_B = q_A.
+- In 4C, `DESIGN LINE NEUMANN VAL` takes that value directly (4C's Neumann
+  value is k * ∂u/∂n on the boundary).
+
+**(2) The `normal_fluxes` array you EXPORT for checking — opposite signs.**
+- Each participant exports the flux through the interface with respect to ITS
+  OWN outward normal.
+- The two outward normals at a shared interface are anti-parallel, so on a
+  conservative interface `sum(normal_fluxes_A) + sum(normal_fluxes_B) ≈ 0`.
+- This is exactly what OASiS's `check_interface_balance` tests. Exporting both
+  sides with the same sign makes a CORRECT coupling fail the balance check:
+  you will get `Interface flux NOT balanced ... imbalance 200%` and a
+  NOT VERIFIED verdict on a coupling that actually converged.
+
+In one line: **apply the same number, export opposite numbers.** (1) is about
+the boundary condition; (2) is about the conservation diagnostic.
 
 ## Solver-Specific Details
 
