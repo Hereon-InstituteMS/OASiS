@@ -42,11 +42,26 @@ from core.backend_setup import (  # noqa: E402
 class TestRouteCatalogInvariants(unittest.TestCase):
 
     def test_every_backend_has_at_least_one_route(self) -> None:
-        self.assertEqual(
-            sorted(SETUP_ROUTES),
-            sorted(["skfem", "ngsolve", "kratos", "dune", "fenics",
-                    "dealii", "fourc", "febio"]),
-            "Route catalog must cover all 8 backends.")
+        """Every REGISTERED backend needs an install route.
+
+        This used to compare against a hardcoded list of eight names, which
+        is how SPARTA — the ninth backend, and the only one with no route at
+        all — went unnoticed: adding a backend did not fail any test, so a
+        user asking how to install it got nothing back. Deriving the
+        expectation from the registry means the next backend added cannot
+        repeat that."""
+        from core.registry import all_backends, load_all_backends
+
+        load_all_backends()
+        registered = {b.name() for b in all_backends()}
+        self.assertTrue(registered, "no backends registered at all")
+        missing = sorted(registered - set(SETUP_ROUTES))
+        self.assertFalse(
+            missing,
+            f"registered backend(s) with no install route: {missing}. "
+            f"Add one to SETUP_ROUTES in src/core/backend_setup.py — a "
+            f"backend a user cannot be told how to install is a backend "
+            f"they cannot use.")
         for be, routes in SETUP_ROUTES.items():
             self.assertGreater(len(routes), 0, be)
 
@@ -173,22 +188,47 @@ class TestSetupSessionRegressions(unittest.TestCase):
 
     def test_prefer_unavailable_route_is_explicit_error(self) -> None:
         """Finding 2: plan(dune, route='source') used to silently
-        return the conda route. dune has only a conda route — asking
-        for anything else must error, not substitute."""
+        return a different route. Asking for a route a backend does not
+        have must error and name what it does have, not substitute."""
         p = plan_setup("dune", prefer="source")
         self.assertIn("error", p)
         self.assertIn("source", p["error"])
-        self.assertIn("conda", str(p["error"]))
+        # The error must name the kinds that DO exist, so the caller can
+        # pick one without a second round-trip.
+        available = {r["kind"] for r in SETUP_ROUTES["dune"]}
+        self.assertTrue(
+            any(k in str(p["error"]) for k in available),
+            f"error must name an available route kind {sorted(available)}: "
+            f"{p['error']}")
 
-    def test_dune_conda_route_not_marked_verified_on_linux(self) -> None:
-        """Finding 1: dune-fem is not on conda-forge (confirmed
-        2026-06-12 via api.anaconda.org) — the route must not claim
-        verified_on_this_os until that changes."""
-        dune_conda = [r for r in SETUP_ROUTES["dune"]
-                      if r["kind"] == "conda"][0]
-        self.assertFalse(dune_conda["os_support"]["linux"]["verified"])
-        notes = " ".join(dune_conda["os_support"]["linux"]["notes"])
-        self.assertIn("conda-forge", notes)
+    def test_dune_route_is_pip_and_documents_the_absent_conda_package(self):
+        """dune-fem has no conda-forge package, so there is no conda route
+        to mark verified or unverified — there is only the pip route.
+
+        This test replaced one that asserted the conda route existed but
+        was flagged unverified. That was the wrong shape: a route the user
+        cannot execute is not a route, and leaving it in the catalog meant
+        `setup_backend(action='plan', solver='dune')` could still offer it.
+        Confirmed by execution: `conda search -c conda-forge
+        --override-channels dune-fem` answers "No match found for:
+        dune-fem". What the catalog must keep is the KNOWLEDGE that the
+        conda path is a dead end, so nobody re-adds it."""
+        kinds = {r["kind"] for r in SETUP_ROUTES["dune"]}
+        self.assertIn("pip", kinds,
+                      "dune's working route is pip (PyPI), not conda")
+        self.assertNotIn(
+            "conda", kinds,
+            "a conda route for dune cannot work — conda-forge has no "
+            "dune-fem package")
+        notes = " ".join(
+            n for r in SETUP_ROUTES["dune"]
+            for n in r["os_support"]["linux"]["notes"])
+        self.assertIn("conda-forge", notes,
+                      "the absent conda-forge package must stay documented "
+                      "so the dead route is not re-added")
+        self.assertIn("mpi4py", notes,
+                      "mpi4py is an undeclared dependency of the dune "
+                      "wheels; without it the first import stops")
 
     def test_smoke_dune_honours_ok_false(self) -> None:
         """Finding 3: the dune smoke script exits 0 even on

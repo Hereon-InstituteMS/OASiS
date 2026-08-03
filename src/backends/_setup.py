@@ -212,7 +212,9 @@ _DEALII = {
         "value. That residual is the whole diagnostic on a Release build: nan "
         "means singular or non-SPD, finite means raise the iteration cap. On a "
         "Debug build you would instead get ExcDivideByZero naming the "
-        "breakdown directly.",
+        "breakdown directly. Check which build you have with "
+        "CONFIG_PROBES['dealii_build_type'] before deciding which of those two "
+        "diagnostics you are entitled to expect.",
 
         "[Integration][BuildConfig] DO NOT detect deal.II features by testing "
         "whether a header exists — on a source build it always does. The "

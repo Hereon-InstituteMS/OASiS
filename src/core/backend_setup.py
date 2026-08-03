@@ -162,17 +162,41 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
     "kratos": [
         {
             "kind": "pip",
-            "description": "pip install KratosMultiphysics + core apps",
+            "description": "pip install KratosMultiphysics-all "
+                           "(the metapackage — see the glibc note)",
             "commands": [[sys.executable, "-m", "pip", "install",
                           "KratosMultiphysics-all"]],
             "typical_minutes": 5,
             "os_support": {
                 "linux": {"verified": True, "system_deps": [],
-                          "notes": ["KratosMultiphysics-all bundles the "
-                                    "application wheels; for a minimal "
-                                    "install use KratosMultiphysics + "
-                                    "KratosStructuralMechanicsApplication "
-                                    "etc. individually."]},
+                          "notes": [
+                              "KratosMultiphysics-all bundles the "
+                              "application wheels and resolves them as a "
+                              "set. Installing KratosMultiphysics ALONE "
+                              "lets pip take the newest wheel, which is "
+                              "where the next problem starts.",
+                              "GLIBC: the 10.4.x wheel is tagged "
+                              "manylinux_2_28 but its Kratos.cpython-*.so "
+                              "requires GLIBC_2.32 and GLIBC_2.34. pip "
+                              "accepts it on any host with glibc >= 2.28, "
+                              "the install reports success, and the import "
+                              "then fails with \"version `GLIBC_2.32' not "
+                              "found\" — followed by a Kratos message "
+                              "blaming LD_LIBRARY_PATH, which cannot fix "
+                              "it. Check `ldd --version | head -1`; on "
+                              "glibc < 2.32 pin "
+                              "'KratosMultiphysics==10.3.0', whose wheel is "
+                              "manylinux_2_17 and needs nothing above "
+                              "GLIBC_2.16. Verified in a clean venv.",
+                              "The PFEM applications have no PyPI wheel at "
+                              "all — `pip download "
+                              "KratosPfemFluidDynamicsApplication` answers "
+                              "\"No matching distribution found\". They "
+                              "need a source build.",
+                              "Kratos must be installed into the SAME "
+                              "interpreter that runs OASiS; the backend has "
+                              "no path override.",
+                          ]},
                 "darwin": {"verified": False, "system_deps": [],
                            "notes": ["Wheel coverage on macOS arm64 is "
                                      "partial — verify which application "
@@ -182,24 +206,47 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
     ],
     "dune": [
         {
-            "kind": "conda",
-            "description": "conda-forge dune-fem in a dedicated env "
-                           "(the supported path — PyPI is NOT)",
-            "commands": [["conda", "create", "-n", "ofa-dune", "-y",
-                          "-c", "conda-forge", "dune-fem", "python=3.11"]],
+            "kind": "pip",
+            "description": "pip install dune-fem + mpi4py (PyPI is the "
+                           "working source; conda-forge has no dune-fem)",
+            # mpi4py is listed explicitly because it is an UNDECLARED
+            # dependency of the dune wheels: pip install dune-fem alone
+            # succeeds, and the first `import dune.fem` then stops with
+            # "Please run / pip install mpi4py / before rerunning your
+            # Dune script." Verified in a clean venv.
+            "commands": [[sys.executable, "-m", "pip", "install",
+                          "dune-fem", "mpi4py"]],
             "typical_minutes": 10,
             "os_support": {
-                "linux": {"verified": False, "system_deps": ["conda"],
-                          "notes": ["2026-06-12: 'dune-fem' is NOT on "
-                                    "conda-forge (conda create fails with "
-                                    "PackagesNotFoundError; confirmed via "
-                                    "api.anaconda.org). Route kept in case "
-                                    "the package (re)appears; until then "
-                                    "dune needs a source build."]},
-                "darwin": {"verified": False, "system_deps": ["conda"],
-                           "notes": ["conda-forge has osx-arm64 dune-fem "
-                                     "packages; JIT compilation at first "
-                                     "use needs Xcode CLT."]},
+                "linux": {"verified": True,
+                          "system_deps": ["cmake", "g++", "libopenmpi-dev"],
+                          "notes": [
+                              "DUNE compiles C++ on demand at first use, so "
+                              "a C++ toolchain and CMake must be present and "
+                              "the first solve takes tens of seconds.",
+                              "The JIT builds against whatever Python CMake "
+                              "finds, which is not necessarily the one "
+                              "running it — a conda base earlier on PATH is "
+                              "the usual culprit, and the symptom is an "
+                              "`undefined symbol: Py...` ImportError from a "
+                              "file under <env-prefix>/.cache/dune-py. Make "
+                              "the interpreter unambiguous (Python3_ROOT_DIR "
+                              "+ VIRTUAL_ENV or CONDA_PREFIX) before the "
+                              "first import.",
+                              "mpi4py needs a working mpicc to build.",
+                              "There is NO conda route: `conda search -c "
+                              "conda-forge --override-channels dune-fem` "
+                              "answers `No match found for: dune-fem. "
+                              "Search: *dune-fem*`, and an install attempt "
+                              "ends in PackagesNotFoundError. A conda ENV is "
+                              "still a convenient way to get a toolchain, "
+                              "but the DUNE packages inside it come from "
+                              "PyPI either way.",
+                          ]},
+                "darwin": {"verified": False, "system_deps": ["cmake"],
+                           "notes": ["JIT compilation at first use needs "
+                                     "Xcode CLT. EXTENSION POINT — not "
+                                     "verified on macOS."]},
             },
         },
     ],
@@ -233,11 +280,24 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
             "os_support": {
                 "linux": {"verified": False,
                           "system_deps": [],
-                          "notes": ["Run manually: sudo apt install -y "
-                                    "libdeal.ii-dev. (This machine "
-                                    "instead uses the conda-forge "
-                                    "dealii package — see the conda "
-                                    "route.)"]},
+                          "notes": [
+                              "Run manually: sudo apt install -y "
+                              "libdeal.ii-dev.",
+                              "CHECK THE VERSION before relying on it — "
+                              "Ubuntu 20.04's package is 9.1.1, old enough "
+                              "that many current APIs are missing: `grep "
+                              "DEAL_II_PACKAGE_VERSION "
+                              "/usr/include/deal.II/base/config.h`. Worse, "
+                              "a system deal.II is what find_package silently "
+                              "falls back to when DEAL_II_DIR is wrong or "
+                              "unset, so an old one present alongside a newer "
+                              "build is an active hazard, not just a spare.",
+                              "Distribution packages are Release builds, so "
+                              "every deal.II Assert is compiled out and no "
+                              "assertion message can ever appear. Build from "
+                              "source with -DCMAKE_BUILD_TYPE=DebugRelease if "
+                              "you need those diagnostics.",
+                          ]},
                 "darwin": {"verified": False, "system_deps": [],
                            "notes": ["brew install dealii exists; "
                                      "EXTENSION POINT for verified "
@@ -272,10 +332,24 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
                                           "libopenmpi-dev",
                                           "libtrilinos-*-dev (or the "
                                           "4C-dependencies bundle)"],
-                          "notes": ["This machine's working build: "
-                                    "~/Schreibtisch/4C-src/4C/build/4C "
-                                    "with deps at "
-                                    "/opt/4C-dependencies."]},
+                          "notes": [
+                              "The build produces <4C-root>/build/4C plus "
+                              "lib4C.so beside it, and links ~50 further "
+                              "libraries from the dependency prefix.",
+                              "SHARED LIBRARIES: check whether the build "
+                              "embedded a RUNPATH covering both directories "
+                              "— `readelf -d <4C-binary> | grep RUNPATH`. If "
+                              "it did, no LD_LIBRARY_PATH is needed. If not, "
+                              "you need BOTH: the BUILD directory (for "
+                              "lib4C.so) and the dependency prefix's lib "
+                              "(for libteuchoscomm.so.16 and friends). The "
+                              "dependency prefix alone is not enough — the "
+                              "loader then fails on lib4C.so.",
+                              "4C takes `4C <input> <output-prefix>`; the "
+                              "output prefix is mandatory and omitting it "
+                              "aborts with a core dump rather than a usage "
+                              "message.",
+                          ]},
                 "darwin": {"verified": False,
                            "system_deps": ["cmake", "ninja",
                                            "open-mpi (brew)"],
@@ -319,9 +393,64 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
             "os_support": {
                 "linux": {"verified": True,
                           "system_deps": ["cmake", "ninja-build", "g++"],
-                          "notes": []},
+                          "notes": [
+                              "Working configure line without an Intel "
+                              "toolchain: cmake -S FEBio -B FEBio/cbuild "
+                              "-DUSE_MKL=OFF "
+                              "-DCMAKE_EXE_LINKER_FLAGS='-fopenmp -ldl' "
+                              "-DCMAKE_SHARED_LINKER_FLAGS='-fopenmp -ldl'",
+                              "USE_MKL=OFF changes which linear solvers "
+                              "exist. Detect it from a run, not from a "
+                              "feature list: `febio4 -info` prints no build "
+                              "options at all, so grepping it for MKL or MMG "
+                              "returns nothing either way. The line "
+                              "`Default linear solver: skyline` is what an "
+                              "MKL-less build reports.",
+                              "After building, either set FEBIO_BINARY to "
+                              "the executable or symlink it somewhere "
+                              "discovery looks; `febio4 -v` is NOT a valid "
+                              "flag (use -info).",
+                          ]},
                 "darwin": {"verified": False, "system_deps": [],
                            "notes": []},
+            },
+        },
+    ],
+    "sparta": [
+        {
+            "kind": "source",
+            "description": "make serial (or make mpi) from the SPARTA repo "
+                           "— no wheel or package exists",
+            # No inline commands: the build leaves the binary in src/ and
+            # does not install it anywhere, so the useful part is the
+            # follow-up (SPARTA_BINARY), not a one-shot command.
+            "commands": [],
+            "typical_minutes": 20,
+            "os_support": {
+                "linux": {"verified": True,
+                          "system_deps": ["g++", "make", "libopenmpi-dev"],
+                          "notes": [
+                              "git clone https://github.com/sparta-sparta/"
+                              "sparta.git && cd sparta/src && make serial",
+                              "The binary is left in that same src directory "
+                              "as spa_serial (or spa_mpi for `make mpi`) and "
+                              "is NOT put on PATH — set SPARTA_BINARY to it, "
+                              "or let discovery find the conventional "
+                              "location.",
+                              "Optional packages are compile-time. `make ps` "
+                              "lists them as `Installed YES/NO: package "
+                              "<NAME>`. KOKKOS is NOT in a default build, and "
+                              "without it `-kokkos on`, the `package kokkos` "
+                              "command and every kk-suffixed style are "
+                              "refused.",
+                              "Example decks reference data files from the "
+                              "distribution's data/ and examples/ trees; "
+                              "point SPARTA_DATA_DIR at them or run from a "
+                              "directory that has them.",
+                          ]},
+                "darwin": {"verified": False, "system_deps": [],
+                           "notes": ["EXTENSION POINT — not verified on "
+                                     "macOS."]},
             },
         },
     ],
