@@ -85,7 +85,7 @@ mcp = FastMCP(
         "- **NGSolve**: Python. Maxwell, Helmholtz, DG/HDG, high-order, eigenvalues, symbolic PDE.\n"
         "- **scikit-fem**: Pure Python. Assembly-level control, 50+ element types, Stokes, biharmonic.\n"
         "- **Kratos Multiphysics**: Python/JSON. Structural, fluid, FSI, DEM, MPM, CoSimulation (39 catalog physics rows on this install).\n"
-        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, VEM, h/p-adaptivity (install: `conda create -n ofa-dune -c conda-forge dune-fem` — the conda-forge channel is the supported path, not PyPI).\n"
+        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, h/p-adaptivity (install: `pip install dune-fem`; also install `mpi4py`, which the wheel needs but does not declare. This line previously recommended `conda create -n ofa-dune -c conda-forge dune-fem` and called conda-forge the supported path rather than PyPI — that is backwards: the channel returns `No match found for: dune-fem`, and every working install on this machine came from PyPI, which `conda list` reports as `pypi_0`. Call `knowledge(topic='install')` before trying to install anything.).\n"
         "- **FEBio**: XML. Biomechanics (biphasic / multiphasic tissue, active contraction). Install the binary from https://febio.org/downloads/ or set the FEBIO_BINARY env var.\n\n"
         "## Workflow\n"
         "1. Understand the physics the user wants to solve\n"
