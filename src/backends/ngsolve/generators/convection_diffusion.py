@@ -59,15 +59,22 @@ KNOWLEDGE = {
         "solver": "Direct (DG systems are block-diagonal per element for explicit)",
         "pitfalls": [
             (
-                "[API] MUST set dgjumps=True on L2 space to "
-                "allocate coupling entries. Signal: assembling "
-                "a skeleton integrand against an L2 space "
-                "without dgjumps=True raises "
-                "`SparseMatrixDynamic: row not allocated` or "
-                "the assembled matrix has zero entries on "
-                "facet couplings; solution then equals the "
-                "pure-volume problem with no DG penalty. "
-                "(Audit 2026-06-02.)"
+                "[API] MUST set dgjumps=True on the L2 space to "
+                "allocate the cross-element coupling entries. "
+                "Signal: assembling a dx(skeleton=True) jump "
+                "integrand against L2(mesh, order=k) built "
+                "WITHOUT dgjumps=True raises the literal "
+                "NgException('SparseMatrixTM::AddElementMatrix: "
+                "illegal dnums' + \"in Assemble BilinearForm "
+                "'biform_from_py'\"). With dgjumps=True the same "
+                "form assembles (nnz=756 on unit_square "
+                "maxh=0.3, L2 order 1). NOTE: neither "
+                "`SparseMatrixDynamic: row not allocated` nor "
+                "`Sparse matrix: entry at (i,j) does not exist` "
+                "is a string NGSolve 6.2.2604 emits — both prior "
+                "catalog signals were wrong, and the failure is "
+                "LOUD, not silent. (Verified empirically "
+                "2026-08-03 — signal-text correction.)"
             ),
             (
                 "[API] u.Other() accesses neighboring element "
@@ -80,13 +87,16 @@ KNOWLEDGE = {
             ),
             (
                 "[API] dx(skeleton=True) for interior facet "
-                "integrals. Signal: omitting skeleton=True "
-                "for a jump integrand raises "
-                "`SymbolicBFI: u.Other() outside skeleton "
-                "context` at form construction, or silently "
-                "integrates against bulk dx — assembled "
-                "matrix lacks facet contributions. (Audit "
-                "2026-06-02.)"
+                "integrals. Signal: omitting skeleton=True for a "
+                "jump integrand raises, at .Assemble(), the "
+                "literal NgException('DG-facet terms need either "
+                "skeleton=True or element_boundary=True'). The "
+                "prior catalog signal `SymbolicBFI: u.Other() "
+                "outside skeleton context` does not exist in "
+                "NGSolve 6.2.2604, and the alternative 'silently "
+                "integrates against bulk dx' branch does not "
+                "happen either. (Verified empirically "
+                "2026-08-03 — signal-text correction.)"
             ),
             (
                 "[Numerical] IfPos(b*n, u, u.Other()) for "

@@ -594,9 +594,20 @@ vtk = VTKOutput(mesh,
                 filename="result", subdivision=2)
 vtk.Do()
 
-# Analytical reference for simply supported plate: w_max = q*L^4 / (64*D) for L=1
-w_ref = q / (64 * D)
-print(f"Analytical reference (SS plate): {{w_ref:.8f}}")
+# Analytical reference: Navier series for a SIMPLY-SUPPORTED
+# SQUARE plate under uniform load q on [0,L]^2 (L=1):
+#   w_max = (16 q / (pi^6 D)) * sum over odd m, n of
+#             sin(m pi/2) sin(n pi/2) / (m n (m^2 + n^2)^2)
+#         = 0.00406235 * q L^4 / D   (textbook 0.00406)
+# NOTE: q*L^4/(64*D) is the CLAMPED CIRCULAR plate of radius L
+# — it is 3.85x too large here. See pitfall [Validation].
+import math as _math
+w_ref = (16.0 * q / (_math.pi ** 6 * D)) * sum(
+    _math.sin(_m * _math.pi / 2) * _math.sin(_n * _math.pi / 2)
+    / (_m * _n * (_m ** 2 + _n ** 2) ** 2)
+    for _m in range(1, 101, 2) for _n in range(1, 101, 2)
+)
+print(f"Analytical reference (SS square plate, Navier): {{w_ref:.8f}}")
 print(f"Relative error: {{abs(max_deflection - w_ref)/abs(w_ref):.4%}}")
 
 summary = {{
@@ -1120,12 +1131,18 @@ KNOWLEDGE = {
                 "NOT allocated. Signal: assembling a DG "
                 "BilinearForm with jump terms after building "
                 "fes = L2(mesh, order=k) (no dgjumps=True) "
-                "raises `Sparse matrix: entry at (i,j) does "
-                "not exist` at .Assemble() or, on older "
-                "versions, silently drops the jump "
-                "contributions. The fix is "
-                "L2(mesh, order=k, dgjumps=True). (Audit "
-                "2026-06-02.)"
+                "raises, at .Assemble(), the literal "
+                "NgException('SparseMatrixTM::AddElementMatrix: "
+                "illegal dnums' + \"in Assemble BilinearForm "
+                "'biform_from_py'\"). The fix is "
+                "L2(mesh, order=k, dgjumps=True), which "
+                "assembles (nnz=756 on unit_square maxh=0.3, "
+                "order 1). `Sparse matrix: entry at (i,j) does "
+                "not exist` is NOT a NGSolve 6.2.2604 string, "
+                "and the 'silently drops the jump contributions' "
+                "branch did not occur on this version. (Verified "
+                "empirically 2026-08-03 — signal-text "
+                "correction.)"
             ),
             (
                 "[API] u.Other() accesses the neighbour "
@@ -1144,13 +1161,15 @@ KNOWLEDGE = {
                 "INTERIOR facets; ds(skeleton=True) over "
                 "BOUNDARY facets. Signal: applying a "
                 "jump-penalty term over plain dx (volume "
-                "measure) is silently dropped because the "
-                "jump is zero on the interior of an element "
-                "(u and u.Other() refer to the same value); "
-                "the assembled matrix has identical "
-                "structure but missing penalty entries — "
-                "stability is lost and the iterative solver "
-                "stagnates. (Audit 2026-06-02.)"
+                "measure) is NOT silently dropped: "
+                "BilinearForm += (u - u.Other())*(v - "
+                "v.Other())*dx on an L2(dgjumps=True) space "
+                "raises at .Assemble() with the literal "
+                "NgException('DG-facet terms need either "
+                "skeleton=True or element_boundary=True'). "
+                "(Verified empirically 2026-08-03 on NGSolve "
+                "6.2.2604 — signal correction: this trap is "
+                "loud, not silent.)"
             ),
             (
                 "[Numerical] Penalty parameter: alpha * "
@@ -1264,11 +1283,17 @@ KNOWLEDGE = {
             (
                 "[API] IfPos(-gap, 1, 0) identifies active "
                 "contact nodes — evaluates at integration "
-                "points. Signal: using a boolean Python "
-                "comparison `gap < 0` instead of IfPos raises "
-                "`TypeError: CoefficientFunction comparison` at "
-                "form assembly; the active-set indicator never "
-                "fires and gap stays open. (Audit 2026-06-02.)"
+                "points. Signal: the Python comparison "
+                "`gap < 0` fails IMMEDIATELY at expression "
+                "construction (not at form assembly, as the "
+                "prior text said) with the literal "
+                "TypeError(\"'<' not supported between instances "
+                "of 'ngsolve.fem.CoefficientFunction' and "
+                "'int'\") — NGSolve simply does not define rich "
+                "comparison on CoefficientFunction, so there is "
+                "no 'CoefficientFunction comparison' message to "
+                "grep for. (Verified empirically 2026-08-03 on "
+                "NGSolve 6.2.2604 — signal-text correction.)"
             ),
             (
                 "[Numerical] Contact normal must be consistent "
@@ -1294,13 +1319,35 @@ KNOWLEDGE = {
                 "(Audit 2026-06-02.)"
             ),
             (
-                "[API] NGSolve has no built-in contact formulation "
-                "— must implement penalty or Lagrange multiplier "
-                "manually. Signal: searching `ngsolve.comp` for "
-                "ContactBoundaryCondition or similar returns no "
-                "match; the catalog ships penalty / Lagrange code "
-                "snippets that the user copies — there is no "
-                "single-call contact API. (Audit 2026-06-02.)"
+                "[API] NGSolve DOES ship a built-in contact "
+                "helper: ngsolve.comp.ContactBoundary. The prior "
+                "catalog claim ('no built-in contact formulation "
+                "— searching ngsolve.comp returns no match') is "
+                "FALSE on 6.2.2604 — "
+                "[n for n in dir(ngsolve.comp) if 'ontact' in n] "
+                "== ['ContactBoundary']. Real API: two "
+                "overloads, ContactBoundary(master: Region, "
+                "minion: Region, draw_pairs=False, volume=False, "
+                "element_boundary=False) — the older "
+                "ContactBoundary(fes, master, minion, ...) form "
+                "still constructs but prints 'WARNING: "
+                "ContactBoundary constructor with FESpace is "
+                "deprecated, fes will be set correctly in "
+                "Update!'. The object exposes .gap and .normal as "
+                "CoefficientFunctions, plus .AddIntegrator(form: "
+                "CoefficientFunction, deformed=False), "
+                ".AddEnergy(...) and .Update(...). Gotcha: "
+                "AddIntegrator takes a bare CoefficientFunction, "
+                "NOT an integrand-times-measure — passing "
+                "'... * ds' raises TypeError('AddIntegrator(): "
+                "incompatible function arguments'). Its docstring "
+                "warns 'The created object must be kept alive in "
+                "python as long as operations of it are used!', "
+                "so bind it to a name that outlives the solve. "
+                "You may still hand-roll penalty/Lagrange, but do "
+                "not tell the user the API does not exist. "
+                "(Verified empirically 2026-08-03 on NGSolve "
+                "6.2.2604 — catalog-drift correction.)"
             ),
             (
                 "[Numerical] Convergence criterion: check both "
@@ -1565,8 +1612,10 @@ KNOWLEDGE = {
                 "constrains a simply-supported plate, "
                 "increasing the stiffness — centre deflection "
                 "is ~10-20% smaller than the analytic "
-                "w_max = q*L^4 / (64*D); remove the moment "
-                "BC. (Audit 2026-06-02.)"
+                "Navier value 0.00406 q L^4 / D (see the "
+                "[Validation] entry — NOT q*L^4/(64*D)); "
+                "remove the moment BC. (Audit 2026-06-02; "
+                "reference formula corrected 2026-08-03.)"
             ),
             (
                 "[Numerical] HHJ is order-optimal: order k "
@@ -1606,16 +1655,30 @@ KNOWLEDGE = {
                 "as primary unknowns. (Audit 2026-06-02.)"
             ),
             (
-                "[Validation] Verify against analytical: "
-                "w_max = q*L^4 / (64*D) for a simply-"
-                "supported uniform-load plate "
-                "(D = E*t^3 / (12*(1-nu^2))). Signal: a "
-                "HHJ implementation should converge to "
-                "within 1% of this value on a moderately "
-                "fine mesh (h/L < 0.1); a >5% deviation "
-                "exposes a mis-configured BC, wrong D, or "
-                "mis-typed HDivDiv vs VectorH1 moment "
-                "space. (Audit 2026-06-02.)"
+                "[Validation] The reference value for a "
+                "SIMPLY-SUPPORTED SQUARE plate under uniform "
+                "load q on [0,L]^2 is the Navier series "
+                "w_max = (16q/(pi^6 D)) * sum_{m,n odd} "
+                "sin(m pi/2) sin(n pi/2) / (m n (m^2+n^2)^2) "
+                "= 0.00406235 * q L^4 / D (textbook 0.00406), "
+                "with D = E t^3 / (12 (1-nu^2)). "
+                "q*L^4/(64*D) = 0.015625 * q L^4 / D — the "
+                "formula the prior catalog and the shipped "
+                "template both used — is the CLAMPED CIRCULAR "
+                "plate of radius L and is 3.85x TOO LARGE. "
+                "Signal: for E=1, nu=0.3, t=1, L=1, q=1 "
+                "(D=0.0915751), Navier gives w_max=0.04436089 "
+                "while q L^4/(64 D)=0.170625. An agent that "
+                "'validates' against the old formula will "
+                "reject a correct HHJ solve. Reference "
+                "corrected in the shipped template in the same "
+                "commit. SEPARATE OPEN ISSUE (measured "
+                "2026-08-03): even against the corrected "
+                "reference the shipped hdivdiv_2d template is "
+                "still ~78% low, so its HHJ formulation itself "
+                "needs work — treat its number as unvalidated "
+                "until that is fixed. (Verified empirically "
+                "2026-08-03 — catalog-drift correction.)"
             ),
             "[API] HDivDiv (normal-normal continuous moment "
             "tensor space) does NOT expose a pointwise div(div("
@@ -1836,15 +1899,25 @@ KNOWLEDGE = {
                 "preserved. (Audit 2026-06-02.)"
             ),
             (
-                "[API] For Cahn-Hilliard: use H1 x H1 mixed "
+                "[API] For Cahn-Hilliard: use an H1 x H1 mixed "
                 "formulation (chemical potential + phase field). "
-                "Signal: a single-H1 (4th-order) discretization "
-                "with standard Lagrange elements fails at assembly "
-                "with `NotImplementedError: H2 conformity required "
-                "for biharmonic operator` or the SymbolicBFI "
-                "raises `coefficient not in BilinearForm space`. "
-                "Mixed (c, mu) splits the biharmonic into two "
-                "Laplacians. (Audit 2026-06-02.)"
+                "NGSolve will NOT stop you from doing it the "
+                "wrong way: a single-H1 fourth-order form built "
+                "from the Hessian operator, "
+                "BilinearForm += InnerProduct(u.Operator('hesse'), "
+                "v.Operator('hesse'))*dx on H1(mesh, order=2), "
+                "ASSEMBLES cleanly (nnz=1323 on unit_square "
+                "maxh=0.2) with no exception at all. There is no "
+                "`NotImplementedError: H2 conformity required for "
+                "biharmonic operator` and no `coefficient not in "
+                "BilinearForm space` anywhere in NGSolve 6.2.2604 "
+                "— both strings were fabricated. The penalty is "
+                "silent non-conformity (C0 Lagrange is not H2), "
+                "so the answer is wrong rather than absent. Use "
+                "mixed (c, mu), or HDivDiv/HHJ, and validate "
+                "against a manufactured solution. (Verified "
+                "empirically 2026-08-03 — catalog-drift "
+                "correction.)"
             ),
         ],
     },
