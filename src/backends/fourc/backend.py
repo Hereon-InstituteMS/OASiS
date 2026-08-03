@@ -28,6 +28,52 @@ logger = logging.getLogger("oasis.fourc")
 FOURC_ROOT = Path(os.environ["FOURC_ROOT"]) if os.environ.get("FOURC_ROOT") else None
 
 
+_FOURC_IDENT_CACHE: dict[str, tuple[bool, str]] = {}
+
+
+def _identifies_as_fourc(binary) -> tuple[bool, str]:
+    """Does this executable actually identify itself as 4C?
+
+    Cheap and conservative. 4C prints its usage to stderr and exits non-zero
+    when run with no arguments, and that text names the program — so the check
+    is "run it with no arguments and look for 4C's own vocabulary". Anything
+    that produces neither is not 4C.
+
+    Deliberately fails OPEN on an inability to look (timeout, permission,
+    OSError): a check that cannot run must not condemn a working install. It
+    fails CLOSED only when the program ran and said something that is not 4C,
+    which is the case that matters — `/bin/true` runs, says nothing, and used to
+    be reported as an available solver.
+
+    Cached per path, because `check_availability` is called repeatedly by
+    `discover` and every knowledge surface, and this spawns a process.
+    """
+    import subprocess
+
+    key = str(binary)
+    if key in _FOURC_IDENT_CACHE:
+        return _FOURC_IDENT_CACHE[key]
+
+    verdict: tuple[bool, str]
+    try:
+        r = subprocess.run([key], capture_output=True, text=True, timeout=20)
+        blob = ((r.stdout or "") + (r.stderr or "")).lower()
+        if not blob.strip():
+            verdict = (False, "produced no output at all when run with no "
+                              "arguments; 4C prints its usage")
+        elif any(t in blob for t in ("4c", "baci", "dat file", "input file")):
+            verdict = (True, "identified itself")
+        else:
+            verdict = (False, "its output names no 4C vocabulary: "
+                              + " ".join(blob.split())[:120])
+    except (subprocess.TimeoutExpired, OSError, ValueError) as exc:
+        # Could not look — do not accuse.
+        verdict = (True, f"identity not checked ({type(exc).__name__})")
+
+    _FOURC_IDENT_CACHE[key] = verdict
+    return verdict
+
+
 def _find_fourc_binary() -> Optional[Path]:
     """Locate the 4C binary."""
     env_path = os.environ.get("FOURC_BINARY")
@@ -81,6 +127,20 @@ class FourcBackend(SolverBackend):
         local_gen = Path(__file__).parent / "generators" / "__init__.py"
         if not local_gen.exists():
             return BackendStatus.MISCONFIGURED, "4C generators not found in oasis"
+
+        # Confirm the binary IS 4C, not merely that a file exists and is
+        # executable. `FOURC_BINARY=/bin/true` used to report
+        # "available — 4C at /bin/true", so a stale path, a wrong build, or a
+        # same-named program on PATH was indistinguishable from a working
+        # install. An agent consults `discover`, believes it, and every run then
+        # fails for a reason the availability report has already ruled out —
+        # which is the worst place to be wrong.
+        ident_ok, ident_why = _identifies_as_fourc(binary)
+        if not ident_ok:
+            return BackendStatus.MISCONFIGURED, (
+                f"the binary at {binary} does not identify itself as 4C "
+                f"({ident_why}). Point FOURC_BINARY at a real 4C build; a file "
+                f"that merely exists and is executable is not a solver.")
         return BackendStatus.AVAILABLE, f"4C at {binary}"
 
     def input_format(self) -> InputFormat:
