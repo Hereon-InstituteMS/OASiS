@@ -208,6 +208,131 @@ def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
     stage_deck_data_files(deck, work_dir, binary=binary)
 
 
+# ── Execution-verified DSMC pitfalls (campaign 2026-08-03, SPARTA 24 Sep 2025) ──
+# Every entry below was produced by running BOTH a wrong variant and a right
+# variant of a small case with spa_serial and reading the numbers out of
+# log.sparta. These are the failures that leave rc=0 and a plausible-looking
+# output while the physics is wrong — the ones an AI driving SPARTA cannot
+# catch by checking the exit code.
+#
+# Verification case for the transport numbers: 2d argon Fourier channel,
+# boundary p ss p, box 2e-5 x 1e-4 m, 4x60 grid, nrho 7.07043e23, fnum 1e11,
+# ylo wall diffuse 300 K, yhi wall diffuse 1000 K, collide vss, dt 1e-9 s,
+# 3000 steps; wall energy flux read via compute boundary + fix ave/time.
+_VERIFIED_DSMC_PITFALLS = [
+    "[Physics] Omitting the collide command is NEVER an error — the gas is simply "
+    "collisionless (free-molecular), and in a wall-bounded conduction problem the wall "
+    "heat flux comes out 8.4x too large. Measured: with 'collide vss' cold-wall flux "
+    "2.092e5 W/m2, hot-wall -2.037e5 W/m2, mid-gas T = 660.3 K; with the collide line "
+    "deleted, 1.7615e6 and -1.7495e6 W/m2 and T = 538.5 K. Both rc=0. "
+    "Signal: Ncoll is identically 0 in every stats line. Put ncoll in stats_style and "
+    "check it is nonzero before believing any transport number. "
+    "(Verified by execution 2026-08-03.)",
+
+    "[Physics] Without a collide command, create_particles also gives every particle "
+    "ZERO rotational and vibrational energy even when the mixture asks for trot/tvib, "
+    "so internal-energy diagnostics silently read 0. Measured with 'mixture ... trot "
+    "100': with collide, step-0 Trot = 99.02 K; without collide, Trot = 0.000 at step 0 "
+    "and at every later step. "
+    "Signal: a Trot/Tvib column that is exactly 0.000 rather than noisy. "
+    "(Verified by execution 2026-08-03.)",
+
+    "[Numerical] 'create_particles <mix> n <N>' with a NONZERO N creates exactly N "
+    "simulation particles and SILENTLY overrides 'global nrho' — the realised density "
+    "becomes N*fnum/V, not the nrho you set. Only 'n 0' honours nrho and fnum. Measured "
+    "against a requested nrho of 7.07043e23: n 0 -> realised 7.0704e23 (exact); "
+    "n 50000 -> 5.0e23 (1.41x low); n 5000 -> 5.0e22, i.e. 14x TOO LOW. All rc=0, no "
+    "warning. Most upstream example decks use an explicit n, so copying one silently "
+    "changes your density. "
+    "Signal: compute the realised nrho as Np*fnum/V and compare it with the nrho you "
+    "asked for. (Verified by execution 2026-08-03.)",
+
+    "[Numerical] In a 2d run the grid-cell volume is dx*dy PER 1 METRE OF DEPTH and the "
+    "z extent given to create_box is IGNORED (src/grid.cpp:307). Sizing fnum for a thin "
+    "slab therefore overshoots the particle count by 1/(zhi-zlo). Measured: identical "
+    "decks with z = +/-0.5 and z = +/-0.5e-4 both report 'Created 70704 particles'. A "
+    "deck sized for a 1e-4-thick slab asked for 1e8 particles and never finished, "
+    "leaving an EMPTY log.sparta. "
+    "Signal: a 2d run that hangs with no stats table, or a particle count 1/(zhi-zlo) "
+    "times your hand calculation. (Verified by execution 2026-08-03.)",
+
+    "[Numerical] An fnum that leaves well under one simulation particle per cell still "
+    "runs cleanly and still reports a plausible collision rate, but every PER-CELL "
+    "diagnostic becomes garbage. Measured on a 60x60 argon box: fnum 1e11 -> 19.64 "
+    "particles/cell, lambda = 1.8865e-6 m, Kn_cell = 1.132; fnum 2e13 -> 0.098 "
+    "particles/cell, lambda = 3.33e17 m, Kn_cell = 2.0e23 — 23 orders of magnitude "
+    "wrong, rc=0, silent. fnum 2e12 (0.98 particles/cell) is still fine at "
+    "lambda = 1.94e-6 m, so the collapse is specifically at sub-particle-per-cell "
+    "occupancy. "
+    "Signal: 'compute <c> grid all all n' + 'compute reduce ave/min c_c[1]' — require "
+    "the cell minimum to be >= 1, not just the average. (Verified by execution "
+    "2026-08-03.)",
+
+    "[Numerical] Grid cells much larger than the local mean free path run cleanly and "
+    "give an over-diffusive answer. Measured on the Fourier channel: 4x60 grid (cells "
+    "~1 mean free path) -> cold-wall flux 2.0917e5 W/m2, mid-gas T = 660.3 K; 4x3 grid "
+    "(cells 17.7 mean free paths) -> 4.6193e5 W/m2 (2.21x too high) and T = 606.1 K. "
+    "Both rc=0, no warning, and the coarse run even has MORE particles per cell "
+    "(1178 vs 59), so a particle-count check does not catch it. "
+    "Signal: compute Kn_cell yourself with 'compute <C> lambda/grid ... knall' and "
+    "require it >= 1. (Verified by execution 2026-08-03.)",
+
+    "[Numerical] A timestep larger than the mean collision time runs cleanly and "
+    "inflates transport. Measured on the Fourier channel (tau = 4.96e-9 s): dt = 1e-9 "
+    "(0.2 tau) -> 2.0917e5 W/m2; dt = 1e-8 (2.0 tau) -> 2.2042e5 (+5.4%); dt = 5e-8 "
+    "(10.1 tau) -> 4.3788e5 (+109%). All rc=0. 'compute <D> dt/grid all 0.25 0.1 ...' "
+    "reports a recommended dt of 4.955e-10 s (cell minimum 4.60e-10 s) in the good AND "
+    "the bad run — SPARTA never applies or even compares it for you. "
+    "Signal: reduce compute dt/grid with compute reduce min and assert your timestep is "
+    "below it. (Verified by execution 2026-08-03.)",
+
+    "[Numerical] A homogeneous equilibrium box is WORTHLESS as a timestep or grid "
+    "convergence test — this was a candidate pitfall the campaign had to reject. At "
+    "dt = 10 tau the inferred collision frequency 2*Ncollave/Np/dt = 2.0186e8 /s is "
+    "indistinguishable from 1/tau = 2.0187e8 /s at dt = 0.2 tau; a 6x6 grid gives "
+    "Ncollave = 7133.07 against 7123.80 for 60x60 (0.13%, within noise). Only Kn_cell "
+    "moves (1.132 vs 0.113). Both errors show up ONLY in a gradient-driven quantity, so "
+    "verify dt and cell size on a wall-bounded or flow-driven case. "
+    "Signal: a dt/grid study whose collision statistics are flat is measuring nothing. "
+    "(Established by execution 2026-08-03.)",
+
+    "[Physics] Wall fluxes in a driven DSMC run need several flow-through times; the "
+    "first stats block is not an answer. Measured cold-wall energy flux by step: "
+    "250 -> 5.858e5, 500 -> 3.162e5, 750 -> 2.392e5, 1000 -> 2.079e5, steady mean over "
+    "2250-3000 -> 2.092e5 W/m2. Reading at step 250 overestimates by 2.80x, at step 500 "
+    "by 1.51x, and the run looks perfectly healthy throughout. "
+    "Signal: the two opposed wall fluxes are equal and opposite only after convergence "
+    "(5.858e5 vs -5.064e5 at step 250; 2.016e5 vs -1.977e5 at step 3000) — use that "
+    "balance as the steady-state test. (Verified by execution 2026-08-03.)",
+
+    "[Physics] surf_collide specular transfers EXACTLY ZERO energy: modelling a thermal "
+    "wall with 'specular' gives a wall flux of 0.000 at every output for the whole run "
+    "while the hit counts stay healthy, and the gas simply never equilibrates with the "
+    "wall (frozen at 638 K between a nominal 300 K and 1000 K pair of walls). specular "
+    "takes no temperature argument at all, which is the tell. "
+    "Signal: a wall energy-flux column that is exactly 0.000 while Nscoll is large. "
+    "Use 'surf_collide <ID> diffuse <Tsurf> <acc>' for a thermal wall. "
+    "(Verified by execution 2026-08-03.)",
+
+    "[Syntax] The react command does not check that the file it is handed is a reaction "
+    "file: pointing it at a VSS parameter file loads ZERO reactions and the run "
+    "proceeds with chemistry silently disabled. Measured: rc=0, no warning, Nreact = 0 "
+    "at every stats output while Ncoll = 7114. "
+    "Signal: the run header line 'Gas reaction tallies: style tce #-of-reactions 0' and "
+    "'Reactions = 0 (0K)' — the ONLY place the problem is visible. "
+    "(Verified by execution 2026-08-03.)",
+
+    "[Syntax] The doc-page names in this catalog's 'commands' index are NOT input-script "
+    "commands. 55 of the 121 keys (every compute_* and fix_* page, dump_image, "
+    "surf_react_adsorb) are documentation filenames; in a deck you write 'compute <ID> "
+    "grid ...', 'fix <ID> ave/surf ...', 'dump <ID> image ...', 'surf_react <ID> adsorb "
+    "...'. The installed build accepts exactly 66 commands (see "
+    "sparta_knowledge.json -> command_surface.true_commands). "
+    "Signal: 'ERROR: Unknown command: compute_grid 1 all all nrho (../input.cpp:244)'. "
+    "(Verified by execution 2026-08-03.)",
+]
+
+
 # ── physics capability -> {relevant commands, example template dir, pitfalls} ──
 # Each maps DSMC physics to the SPARTA commands and a verified worked example deck.
 _PHYSICS = {
@@ -352,18 +477,27 @@ class SpartaBackend(SolverBackend):
                     relevant[key] = cmds[key]
                     break
         tmpl = _KB.get("example_templates", {}).get(info["example"], {})
+        own = ([info["pitfalls"]] if isinstance(info["pitfalls"], str)
+               else list(info["pitfalls"]))
         return {
             "description": info["desc"],
             "spatial_dims": info["dims"],
-            # pitfalls as a LIST (one curated DSMC pitfall per physics), matching
-            # every other backend — a bare string made catalog tests see it as
-            # "no pitfalls" (and the signal counter count characters).
-            "pitfalls": [info["pitfalls"]] if isinstance(info["pitfalls"], str)
-                        else list(info["pitfalls"]),
+            # pitfalls as a LIST (the physics-specific ones first, then the
+            # execution-verified DSMC set that applies to every SPARTA run) —
+            # a bare string made catalog tests see it as "no pitfalls" (and the
+            # signal counter count characters).
+            "pitfalls": own + _VERIFIED_DSMC_PITFALLS,
             "relevant_commands": relevant,
             "worked_example": {"dir": info["example"], "decks": tmpl},
             "solver": "SPARTA DSMC; run: spa_serial -in <script>",
             "unit_systems": "SI (global ... gridcut ... ; fnum sets real-particles-per-simulator)",
+            # Cross-cutting, execution-verified against the installed build
+            # (campaign 2026-08-03). See sparta_knowledge.json for the full text.
+            "installed_build": _KB.get("installed_build", {}),
+            "command_surface": _KB.get("command_surface", {}),
+            "required_setup_sequence": _KB.get("required_setup_sequence", {}),
+            "surfaces": _KB.get("surfaces", {}),
+            "reading_output": _KB.get("reading_output", {}),
         }
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
@@ -383,22 +517,30 @@ class SpartaBackend(SolverBackend):
 
     def validate_input(self, content: str) -> list[str]:
         errors = []
-        cmds = _KB.get("commands", {})
         nonblank = [l for l in content.splitlines()
                     if l.strip() and not l.strip().startswith("#")]
         if not nonblank:
             errors.append("Empty SPARTA input script")
             return errors
-        # a valid DSMC deck needs a run/grid; check first tokens are known commands
-        known = set(cmds.keys()) | {c.split("_")[0] for c in cmds}
+        # The parser surface is the 66 commands the BUILD accepts, NOT the 121
+        # documentation-page names in _KB['commands'] — 55 of those (compute_grid,
+        # fix_ave_surf, dump_image, surf_react_adsorb, suffix, ...) are doc filenames
+        # that the binary rejects with "ERROR: Unknown command: ... (../input.cpp:244)".
+        # Validating against the doc index waved those through. (Fixed 2026-08-03 after
+        # feeding each form to spa_serial.)
+        surface = _KB.get("command_surface", {})
+        known = set(surface.get("true_commands") or [])
+        if not known:  # knowledge file predates the command_surface block
+            cmds = _KB.get("commands", {})
+            known = set(cmds) | {c.split("_")[0] for c in cmds}
         first_tokens = {l.split()[0] for l in nonblank}
-        unknown = [t for t in first_tokens if t not in known and t not in
-                   {"variable", "label", "next", "jump", "if", "echo", "log", "shell",
-                    "print", "include", "clear", "partition", "uncompute", "unfix",
-                    "undump", "boundary", "global", "seed", "units", "package"}]
+        unknown = sorted(t for t in first_tokens if t not in known)
         if unknown:
-            errors.append(f"Unrecognized SPARTA command(s): {', '.join(sorted(unknown)[:6])}")
-        if "run" not in first_tokens and "run_file" not in first_tokens:
+            errors.append(
+                f"Unrecognized SPARTA command(s): {', '.join(unknown[:6])} — "
+                f"note that compute/fix/dump/surf_react STYLES are written "
+                f"'compute <ID> <style> ...', not 'compute_<style> ...'")
+        if "run" not in first_tokens:
             errors.append("Script has no 'run' command (DSMC will not advance)")
         return errors
 
