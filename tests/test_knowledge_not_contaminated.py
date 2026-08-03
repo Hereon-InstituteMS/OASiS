@@ -41,8 +41,15 @@ KNOWLEDGE_ROOTS = [REPO / "src" / "backends", REPO / "src" / "tools",
 CAMPAIGN_TOKENS = [
     r"\bE[1-5]\s+prototype\b", r"\bT1[0-9]\s+campaign\b", r"\bT[0-9]+\s+campaign\b",
     r"\bcampaign\s+fix\b", r"\bevaluation\s+campaign\b",
-    r"\bB2/E[1-5]\b", r"\bheld-?out\s+(?:cell|instance|evaluation)\b",
+    r"\bB2/E[1-5]\b", r"\bheld-?out\s+(?:cell|instance)\b",
 ]
+# NOTE: "held-out evaluation" is deliberately NOT a token here. Unlike a
+# campaign identifier, the phrase legitimately appears in OASiS's own design
+# prose (e.g. the verification gate explaining why an ablation flag exists).
+# Flagging it would pressure a maintainer into deleting correct documentation,
+# which is a worse outcome than the residual risk: an entry that named a
+# specific held-out CELL or INSTANCE is still caught above, and the measured
+# numbers such an entry would carry are caught by MEASURED_ORDER_PATTERNS.
 
 # "we measured this order on this install" — the answer to a convergence study.
 MEASURED_ORDER_PATTERNS = [
