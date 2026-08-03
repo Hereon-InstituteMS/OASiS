@@ -689,13 +689,17 @@ _FEBIO = {
         "<febio-build-dir>/CMakeCache.txt`.",
 
         "[Integration][FirstRun] FEBio's own errors are clearly worded and "
-        "worth reading literally — they are not stack traces. A missing or "
-        "unreadable input file stops immediately. Signal: a boxed `ERROR` "
-        "banner containing `FATAL ERROR: Failed opening input file <path>`. If "
-        "you see that, the problem is the path or permissions, not the model. "
-        "Note also that FEBio with no arguments does not exit — it drops into "
-        "its own interactive `febio>` prompt after printing the banner, which "
-        "in an automated context looks like a hang. Always pass `-i <file>`.",
+        "worth reading literally — they are not stack traces, and the three "
+        "startup failures are distinguishable. Signal, a path that cannot be "
+        "opened: a boxed `ERROR` banner containing `FATAL ERROR: Failed "
+        "opening input file <path>` — the problem is the path or permissions, "
+        "not the model. Signal, `-i` omitted: `FATAL ERROR: no model input "
+        "file was defined (use -i to define the model input file)`. Signal, a "
+        "flag FEBio does not know: `FATAL ERROR: Invalid command line option "
+        "'<flag>'.` Note also that FEBio with NO arguments at all does not "
+        "exit — it prints its banner and drops into its own interactive "
+        "`febio>` prompt, which in an automated context is indistinguishable "
+        "from a hang. Always pass `-i <file>`.",
     ],
 }
 
