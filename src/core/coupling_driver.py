@@ -318,6 +318,18 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
             trace[p.name].append((_digest(imp_text), _digest(ep.read_text(errors="replace"))))
             ifd = new_exports[p.name]
             v = _stack(ifd)
+            # An EMPTY export is not a converged one. With nothing in the stacked
+            # vector the residual is 0/1e-30 = 0 at iteration 2, so a participant
+            # that writes a well-formed but empty interface converges instantly
+            # and every value-based check has nothing to look at and says nothing.
+            if v.size == 0:
+                return _finish(converged=False, iterations=it, residual=float("nan"),
+                               exports={}, history=history,
+                               error=(f"participant {p.name} exported an EMPTY "
+                                      "interface (no values) at iteration "
+                                      f"{it} — there is nothing to couple, and an "
+                                      "empty exchange would otherwise report a "
+                                      "residual of zero"))
             coords = np.asarray(ifd.coordinates, float)
             bad = (not np.all(np.isfinite(v))) or (
                 coords.size and not np.all(np.isfinite(coords)))

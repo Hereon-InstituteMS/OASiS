@@ -592,3 +592,31 @@ def test_checks_that_could_not_run_never_flip_the_verdict_but_always_appear(tmp_
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# The degenerate case every value-based check is blind to: nothing exchanged.
+# ═══════════════════════════════════════════════════════════════════════════
+_EMPTY = """\
+import json
+json.dump({"field_name": "y", "n_points": 0, "coordinates": [], "values": []},
+          open("exports.json", "w"))
+"""
+
+
+def test_an_empty_interface_is_not_a_converged_coupling(tmp_path):
+    """With nothing in the stacked vector the residual is 0 at iteration 2, and
+    every value-based check has nothing to look at and therefore says nothing."""
+    parts = _parts(tmp_path, b_body=_EMPTY)
+    r = run_coupling(parts, max_iter=10, tol=1e-8)
+    assert r.converged is False
+    assert "EMPTY interface" in (r.error or "")
+
+
+def test_empty_interface_would_otherwise_report_a_zero_residual(tmp_path):
+    """Discrimination: the same participants with ONE value converge honestly,
+    so it is the emptiness the guard reacts to, not the participant."""
+    one = _EMPTY.replace('"n_points": 0, "coordinates": [], "values": []',
+                         '"n_points": 1, "coordinates": [[0.0, 0.0]], "values": [2.0]')
+    r = run_coupling(_parts(tmp_path / "b", b_body=one), max_iter=10, tol=1e-8)
+    assert r.converged is True and r.residual == 0.0
