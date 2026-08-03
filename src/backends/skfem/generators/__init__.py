@@ -54,7 +54,15 @@ KNOWLEDGE["_general"] = {
         "CellBasis: element interior assembly",
         "FacetBasis: boundary facet assembly",
         "InteriorFacetBasis: interior facet assembly (DG, error estimators)",
-        "MortarFacetBasis: mortar mesh assembly (domain decomposition)",
+        "skfem.supermeshing.intersect / elementwise_quadrature: "
+        "mortar / non-matching-interface assembly (domain "
+        "decomposition). CORRECTION 2026-08-03: there is NO "
+        "MortarFacetBasis in skfem 12.0.1 — it is absent from "
+        "skfem, skfem.assembly and every subpackage, and no name "
+        "containing 'Mortar' is exported anywhere. Build the "
+        "coupling quadrature with skfem.supermeshing.intersect("
+        "m1, m2) -> (supermesh, t1, t2) and feed it to two "
+        "FacetBasis objects via elementwise_quadrature.",
     ],
     "mesh_types": [
         "MeshTri: init_symmetric, init_sqsymmetric, init_tensor, init_circle, init_lshaped",
@@ -73,7 +81,10 @@ KNOWLEDGE["_general"] = {
         "(OPTIONAL — skfem does not depend on jax; on the OASiS "
         "venv `import skfem.autodiff` raises ModuleNotFoundError, "
         "checked 2026-08-03)",
-        "Mortar methods for domain decomposition (MortarFacetBasis)",
+        "Mortar / non-matching interfaces for domain "
+        "decomposition via skfem.supermeshing (intersect, "
+        "elementwise_quadrature) — NOT via a MortarFacetBasis "
+        "class, which does not exist on 12.0.1",
         "Adaptive refinement: mesh.refined(element_indices)",
     ],
     "cell_basis_extras": {
