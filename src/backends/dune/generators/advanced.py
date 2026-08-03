@@ -1069,7 +1069,12 @@ KNOWLEDGE = {
         "spaces": {
             "flux": "raviartThomas(gridView, order=0) — H(div) conforming",
             "pressure": "dglagrange(gridView, order=0) — piecewise constant L²",
-            "product": "product_space(Sigma, V) — composite space for (sigma, u)",
+            "product": (
+                "dune.fem.space.product(Sigma, V) — composite space "
+                "for (sigma, u). NOTE the real name is `product`; the "
+                "template imports it as `from dune.fem.space import "
+                "product as product_space`, so `product_space` is a "
+                "local alias, not an API name"),
         },
         "pitfalls": [
             (
@@ -1086,15 +1091,27 @@ KNOWLEDGE = {
                 "(Audit 2026-06-02.)"
             ),
             (
-                "[API] product_space() from dune.fem."
-                "space wraps Sigma and V together. "
-                "Signal: trying to solve the mixed "
+                "[API] The multi-field factory is "
+                "dune.fem.space.product(Sigma, V) — there "
+                "is NO dune.fem.space.product_space. "
+                "Signal: `from dune.fem.space import "
+                "product_space` raises ImportError; the "
+                "name only ever existed as a local alias "
+                "in this catalog's own template ("
+                "`import product as product_space`). The "
+                "sibling factories are .composite and "
+                ".combined. Trying to solve the mixed "
                 "system on separate Sigma and V spaces "
                 "produces decoupled solves — no "
-                "saddle-point coupling. Use "
-                "W = product_space(Sigma, V) and "
-                "construct the form on W. (Audit "
-                "2026-06-02.)"
+                "saddle-point coupling — so wrap them: "
+                "W = product(Sigma, V) and construct the "
+                "form on W. (Audit 2026-06-02; the "
+                "product_space spelling was FALSIFIED by "
+                "execution 2026-08-03 — hasattr("
+                "dune.fem.space,'product_space') is False "
+                "and the string does not occur anywhere "
+                "under site-packages/dune or "
+                "include/dune in dune-fem 2.12.0.2.)"
             ),
             (
                 "[API] TrialFunctions(W) / TestFunctions"
