@@ -35,15 +35,26 @@ class ScalarTransportGenerator(BaseGenerator):
                 "advection-dominated transport with stabilisation (SUPG).  "
                 "The PROBLEM TYPE is 'Scalar_Transport' and the dynamics section "
                 "is 'SCALAR TRANSPORT DYNAMIC' (NOT 'SCATRA DYNAMIC').  "
-                "Geometry is specified in 'TRANSPORT GEOMETRY' and elements use "
-                "the TRANSP category."
+                "Elements use the TRANSP category and go in the section "
+                "'TRANSPORT ELEMENTS' (with NODE COORDS) for an inline mesh, "
+                "or in 'TRANSPORT GEOMETRY' -> ELEMENT_BLOCKS for an external "
+                "Exodus mesh.  The material is MAT_scatra (DIFFUSIVITY), NOT "
+                "MAT_Fourier.  Boundary conditions carry NUMDOF: 1 with "
+                "one-entry ONOFF / VAL / FUNCT arrays."
             ),
             "required_sections": [
                 "PROBLEM TYPE",
                 "SCALAR TRANSPORT DYNAMIC",
                 "SOLVER 1",
                 "MATERIALS",
-                "TRANSPORT GEOMETRY",
+                # Plus ONE mesh route - these three are alternatives, not
+                # a list of requirements, and TRANSPORT GEOMETRY is the
+                # one that needs an external file:
+                #   inline   : NODE COORDS + TRANSPORT ELEMENTS
+                #              + D*-NODE TOPOLOGY        <- no external file
+                #   Exodus   : TRANSPORT GEOMETRY (FILE + ELEMENT_BLOCKS)
+                #   generated: TRANSPORT DOMAIN (HEX/WEDGE cells only)
+                "one of: NODE COORDS + TRANSPORT ELEMENTS | TRANSPORT GEOMETRY | TRANSPORT DOMAIN",
             ],
             "materials": {
                 "MAT_scatra": {
@@ -60,10 +71,18 @@ class ScalarTransportGenerator(BaseGenerator):
                 },
                 "MAT_Fourier": {
                     "description": (
-                        "Fourier heat-conduction material used with PROBLEMTYPE "
-                        "Thermo (alternative formulation).  Can also be used for "
-                        "heat conduction within the scalar transport framework when "
-                        "the thermal capacity and conductivity are needed."
+                        "DO NOT USE THIS UNDER PROBLEMTYPE Scalar_Transport. "
+                        "MAT_Fourier belongs to PROBLEMTYPE Thermo with THERMO "
+                        "elements. A TRANSP element pointing at it aborts with "
+                        "'Material type m_thermo_fourier is not supported!' from "
+                        "scatra_ele/4C_scatra_ele_calc.cpp. Heat conduction "
+                        "modelled INSIDE the scatra framework uses MAT_scatra "
+                        "with the thermal diffusivity alpha = k / (rho * c_p) as "
+                        "DIFFUSIVITY. Listed here only so the distinction is "
+                        "explicit; the parameters below apply to the Thermo "
+                        "problem type. (Verified by execution 2026-08-03: the "
+                        "same 2D deck runs with MAT_scatra and aborts with "
+                        "MAT_Fourier.)"
                     ),
                     "parameters": {
                         "CAPA": {
@@ -85,8 +104,14 @@ class ScalarTransportGenerator(BaseGenerator):
                     "Time integration scheme.  Options: "
                     "'Stationary' (steady-state solve, single step), "
                     "'BDF2' (second-order backward differentiation, robust for stiff problems), "
-                    "'OneStepTheta' (theta-method; theta=1.0 gives implicit Euler, "
-                    "theta=0.5 gives Crank-Nicolson)."
+                    "'One_Step_Theta' (theta-method; theta=1.0 gives implicit "
+                    "Euler, theta=0.5 gives Crank-Nicolson), "
+                    "'Gen_Alpha'.  NOTE THE UNDERSCORES: this enum is spelled "
+                    "'One_Step_Theta' and 'Gen_Alpha', unlike STRUCTURAL and "
+                    "THERMAL DYNAMIC, whose DYNAMICTYPE uses CamelCase "
+                    "('OneStepTheta', 'GenAlpha').  Writing 'OneStepTheta' here "
+                    "aborts with 'Could not match this input' echoing the "
+                    "SCALAR TRANSPORT DYNAMIC block."
                 ),
                 "SOLVERTYPE": (
                     "Use 'linear_full' for linear problems (Poisson, linear heat). "
@@ -132,30 +157,50 @@ class ScalarTransportGenerator(BaseGenerator):
                 ),
                 (
                     "[Input] VELOCITYFIELD must be 'zero' (not omitted) "
-                    "for pure diffusion.  If omitted, 4C may assume a "
-                    "velocity field from a coupled problem that does not "
-                    "exist, leading to errors. Signal: runtime error "
-                    "`requested velocity field not found` or "
-                    "`Vector velnp uninitialized`. (Audit 2026-06-02.)"
+                    "for pure diffusion, but it is OPTIONAL: 'zero' is "
+                    "already its default and a deck that omits it runs "
+                    "correctly. Set it explicitly to document intent, or "
+                    "when you want 'function' (+ VELFUNCNO) or "
+                    "'Navier_Stokes'. Signal: none — there is no error and "
+                    "no warning for the omitted key. (An earlier version of "
+                    "this entry claimed the omission raised 'requested "
+                    "velocity field not found' or 'Vector velnp "
+                    "uninitialized'; NEITHER STRING EXISTS IN THE 4C BINARY, "
+                    "and a deck identical except for the deleted "
+                    "VELOCITYFIELD line completed with exit 0. Corrected "
+                    "against the real binary.)"
                 ),
                 (
-                    "[Output] VTK output for scalar transport uses "
-                    "'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' with "
-                    "'OUTPUT_SCATRA: true' and 'PHI: true'.  Do NOT use "
-                    "'IO/RUNTIME VTK OUTPUT/SCATRA' -- that path is "
-                    "invalid. Signal: simulation completes successfully "
-                    "but no scatra-*.vtu files appear under the output "
-                    "directory; visualize('list') shows only structure "
-                    "fields. (Audit 2026-06-02.)"
+                    "[Output] Scalar transport has NO runtime-VTK section at "
+                    "all, and you do not need one: a Scalar_Transport run "
+                    "writes <prefix>-vtk-files/scatra-*.vtu and "
+                    "<prefix>-scatra.pvd automatically, with no IO section "
+                    "in the deck whatsoever. Naming an output section is "
+                    "FATAL, not merely ineffective. Signal: both "
+                    "'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' and "
+                    "'IO/RUNTIME VTK OUTPUT/SCATRA' abort at parse with "
+                    "\"Section '<name>' is not a valid section name.\" from "
+                    "core/io/src/4C_io_input_file.cpp and exit 1. The array "
+                    "inside the .vtu is named phi_1, phi_2, ... "
+                    "(Verified by execution 2026-08-03: both section names "
+                    "were tried and both aborted; the automatic .vtu output "
+                    "was confirmed on a deck containing no IO section. This "
+                    "corrects an earlier entry that recommended the first "
+                    "section name and claimed the failure was silent.)"
                 ),
                 (
                     "[Input] For Exodus-based meshes the geometry section "
                     "is 'TRANSPORT GEOMETRY' with ELEMENT_BLOCKS using "
                     "the TRANSP element category.  Do not use STRUCTURE "
-                    "GEOMETRY. Signal: 4C aborts with `expected element "
-                    "category TRANSP but got SOLID` or similar mismatch "
-                    "during the geometry-parsing phase. (Audit "
-                    "2026-06-02.)"
+                    "GEOMETRY. But note TRANSPORT GEOMETRY is only ONE of "
+                    "three mesh routes and is NOT required: the inline route "
+                    "(NODE COORDS + TRANSPORT ELEMENTS + D*-NODE TOPOLOGY) "
+                    "needs no external file at all. Signal: a section name "
+                    "that does not exist on this build is rejected before "
+                    "anything runs with \"Section '<name>' is not a valid "
+                    "section name.\" (An earlier version of this entry "
+                    "quoted 'expected element category TRANSP but got SOLID'; "
+                    "THAT STRING DOES NOT EXIST IN THE 4C BINARY. Corrected.)"
                 ),
                 (
                     "[Input] NUMDOF for scalar transport boundary "
@@ -181,6 +226,62 @@ class ScalarTransportGenerator(BaseGenerator):
                     "start-up. (Audit 2026-06-02.)"
                 ),
             ],
+            # A COMPLETE, RUNNABLE scalar-transport deck with a
+            # TIME-DEPENDENT Dirichlet BC. It is here because the only
+            # worked FUNCT example an agent used to be shown in this
+            # payload came from a structural block (NUMDOF: 3, three-entry
+            # arrays) and copying it produces exactly the deck the NUMDOF
+            # pitfall predicts will abort. Verified by execution
+            # 2026-08-03: runs to completion, exit 0.
+            "worked_example_time_dependent_bc": """\
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Scalar_Transport"
+SCALAR TRANSPORT DYNAMIC:
+  SOLVERTYPE: "linear_full"
+  TIMEINTEGR: "One_Step_Theta"   # underscores, not CamelCase
+  THETA: 1.0
+  TIMESTEP: 0.05
+  NUMSTEP: 20
+  MAXTIME: 1.0
+  VELOCITYFIELD: "zero"
+  INITIALFIELD: "zero_field"
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Scatra_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_scatra:                  # NOT MAT_Fourier
+      DIFFUSIVITY: 1.0
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1                    # ONE scalar DOF - not 3
+    ONOFF: [1]                   # exactly one entry
+    VAL: [1.0]                   # amplitude
+    FUNCT: [1]                   # INDEX of FUNCT1 -> phi = 1.0 * t
+DLINE-NODE TOPOLOGY:
+  - "NODE 1 DLINE 1"
+  - "NODE 4 DLINE 1"
+NODE COORDS:
+  - "NODE 1 COORD 0.0 0.0 0.0"
+  - "NODE 2 COORD 1.0 0.0 0.0"
+  - "NODE 3 COORD 1.0 1.0 0.0"
+  - "NODE 4 COORD 0.0 1.0 0.0"
+TRANSPORT ELEMENTS:
+  - "1 TRANSP QUAD4 1 2 3 4 MAT 1 TYPE Std"
+RESULT DESCRIPTION:
+  - SCATRA:
+      DIS: "scatra"
+      NODE: 2
+      QUANTITY: "phi"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30          # record mode: abs(diff) is the true value
+""",
+
             "typical_experiments": [
                 {
                     "name": "poisson_2d",

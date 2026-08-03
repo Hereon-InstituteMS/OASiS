@@ -491,6 +491,10 @@ A 4C deck is a flat YAML mapping of ALL-CAPS section names. There is no
 nesting of sections: subsections are spelled with a slash IN the name, e.g.
 `STRUCTURAL DYNAMIC/GENALPHA`, as a separate top-level key.
 
+4C's error messages are fmt templates: the binary contains
+`Section '{}' is not a valid section name.`, not the rendered text. To check
+whether a message can occur at all, grep the binary for the TEMPLATE form.
+
 An unknown section name is fatal before anything runs:
     Section 'XFLUID DYNAMIC' is not a valid section name.
 so guessing a section name costs the whole run. `4C --parameters` prints the
@@ -551,8 +555,14 @@ Design entities are then attached SYMBOLICALLY — no node ids anywhere:
       - "EDGE structure x- y- DLINE 1"
     DNODE-NODE TOPOLOGY:
       - "CORNER structure x- y- z- DNODE 1"
-The word after SIDE/EDGE/CORNER is the DISCRETISATION name (structure,
-thermo, fluid, ale, scatra...), not the section name. The generator makes
+    DVOL-NODE TOPOLOGY:
+      - "VOLUME structure DVOLUME 1"
+The word after SIDE/EDGE/CORNER/VOLUME is the DISCRETISATION name (structure,
+thermo, fluid, ale, scatra...), not the section name, and it is CASE
+SENSITIVE and lowercase - "SIDE STRUCTURE x- DSURFACE 1" aborts with
+"Could not find discretization 'STRUCTURE'." Mixing a DOMAIN section with a
+NODE COORDS section fails with the non-obvious "Node 1 does not belong to
+discretization structure". The generator makes
 HEX8/20/27 and WEDGE6/15 ONLY — asking it for QUAD4 aborts with
 "The discretization type quad4, is not implemented. Currently only
 HEX(8,20,27) and WEDGE(6,15) are implemented for the box geometry
@@ -568,8 +578,8 @@ the element does not own is fatal ("After parsing, the line still contains
 | ELETYPE | cell types | REQUIRED keys |
 |---|---|---|
 | SOLID  | HEX8 HEX18 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 NURBS27 | MAT, KINEM |
-| WALL   | QUAD4 QUAD8 QUAD9 TRI3 TRI6 NURBS4 NURBS9 | MAT, KINEM, EAS, THICK, STRESS_STRAIN, GP |
-| THERMO | QUAD4 QUAD8 QUAD9 TRI3 TRI6 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 LINE2 LINE3 NURBS4 NURBS9 NURBS27 | MAT |
+| WALL   | QUAD4 QUAD8 QUAD9 TRI3 TRI6 | MAT, KINEM, EAS, THICK, STRESS_STRAIN, GP |
+| THERMO | QUAD4 QUAD8 QUAD9 TRI3 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 LINE2 | MAT |
 | TRANSP | same 2D+3D range as THERMO plus NURBS2/3/8 | MAT, TYPE |
 | FLUID  | QUAD4..NURBS27 | MAT, NA |
 | SOLIDSCATRA | HEX8 HEX27 TET4 TET10 NURBS27 | MAT, KINEM, TYPE |
@@ -578,6 +588,30 @@ the element does not own is fatal ("After parsing, the line still contains
 SOLID owns NO 2D cell type on this build — 2D structural cells belong to
 WALL. Getting this backwards gives
 "Element 'SOLID' does not seem to know cell type 'quad4'."
+(the cell type is echoed in LOWERCASE).
+
+BEING LISTED BY `4C --parameters` IS NOT THE SAME AS WORKING. `--parameters`
+describes the PARSER; some cell types parse and then die at element
+evaluation. Confirmed dead on this build: WALL NURBS4/NURBS9 (the registered
+type for those is WALLNURBS, and the rejection misleadingly says "Unknown
+type 'WALL' of finite element"), and THERMO TRI6/WEDGE15/LINE3/NURBS4/NURBS9,
+which abort with "Element shape TRI6 (6 nodes) not activated. Just do it."
+The tables above list only what was executed successfully.
+
+WALL GP is per direction for quads ("GP 2 2", QUAD9 wants "GP 3 3") but for
+TRI3/TRI6 the SECOND number must be 0: "GP 3 0". "GP 3 3" on a triangle
+aborts with "Unknown number of Gauss points for tri element". WALL EAS full
+is 4-node only.
+
+KINEM takes exactly "linear" or "nonlinear". "nonlinearTotLag" is what 4C
+echoes back internally after parsing "nonlinear"; writing it is rejected with
+"Could not parse parameter 'KINEM': invalid value 'nonlinearTotLag'. Valid
+options are: linear|nonlinear".
+
+NURBS cells of any element type additionally need PROBLEM TYPE/SHAPEFCT:
+"Nurbs", a "<DIS> KNOTVECTORS" section, and control points written as
+"CP <id> COORD x y z <weight>" instead of "NODE". Plain NODE lines with a
+NURBS element SEGFAULT with no message at all.
 An element type that does not exist at all gives
 "Unknown type 'BOGUS' of finite element".
 A missing required key gives
@@ -587,9 +621,16 @@ SOLID optional keys: PRESTRESS_TECH (none|mulf), RAD/AXI/CIR, FIBER1..3,
 TECH, INTEGRATION. TECH exists on only three cell types and with different
 choices each: HEX8 -> none|fbar|eas_mild|eas_full|shell_ans|shell_eas|
 shell_eas_ans; WEDGE6 -> none|shell_ans|shell_eas_ans; PYRAMID5 -> none|fbar.
-Writing TECH on TET4 or HEX20 is fatal. INTEGRATION is usable ONLY in
-ELEMENT_BLOCKS (Route B/C); on an inline element line it parses and then
-aborts with "Key 'INTEGRATION' cannot be found in the container."
+Writing TECH on TET4 or HEX20 is fatal. INTEGRATION is usable ONLY where the
+element is written as a YAML MAP - inside ELEMENT_BLOCKS (Route B) or inside
+`STRUCTURE DOMAIN: elements:` (Route C), as
+`INTEGRATION: {RESIDUUM: hex_27point, MASS: hex_8point}`. On an inline
+`STRUCTURE ELEMENTS` string line there is NO syntax that works, and it fails
+in two different ways: with both sub-keys present it aborts with
+"Key 'INTEGRATION' cannot be found in the container."; with only one sub-key,
+or bare, it produces NO 4C diagnostic at all - the process dies with
+"terminate called after throwing an instance of 'std::bad_any_cast'" and
+shell exit status 134.
 
 ## 3. COMPLETE RUNNABLE DECK — 3D linear-elastic cantilever, generated mesh
 
@@ -726,9 +767,13 @@ complete deck plus the three sections contact adds.
    1 for thermal and scalar transport. ONOFF/VAL/FUNCT must each have exactly
    NUMDOF entries.
 7. Convergence is controlled by TOLDISP+TOLRES (structure) or TOLTEMP+TOLRES
-   (thermal); both members of the pair must be met by default. They appear in
-   the output as `Update-Norm = ... < <your TOLDISP>` and
-   `F-Norm = ... < <your TOLRES>`.
+   (thermal); both members of the pair must be met by default
+   (NORMCOMBI_RESFDISP / NORMCOMBI_RESFTEMP: "And"). ONLY the structural
+   solver echoes them: it prints `Structure-Update-Norm = ... < <your
+   TOLDISP>` and `Structure-F-Norm = ... < <your TOLRES>`. The thermal
+   integrator is not NOX and prints no tolerance at all - just a numiter /
+   abs-res-norm / abs-temp-norm table - so do not try to confirm a thermal
+   tolerance by grepping the log.
 8. Runtime VTK needs BOTH the parent `IO/RUNTIME VTK OUTPUT` section AND the
    per-field one with at least one field flag set; either alone writes
    nothing. Scalar transport is the exception: it writes .vtu automatically

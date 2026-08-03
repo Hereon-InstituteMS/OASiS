@@ -1168,9 +1168,313 @@ FOURC_KNOWLEDGE = {
     # STRUCTURAL MECHANICS (structure, structure_new, solid_3D_ele)
     # ═══════════════════════════════════════════════════════════════════════
     "structural_mechanics": {
-        "description": "Full nonlinear structural mechanics — the core of 4C",
+        # ---- READ THIS FIRST ----
+        "description": (
+            "Linear and finite-deformation solid mechanics.\n"
+            "  PROBLEMTYPE:      Structure\n"
+            "  control section:  STRUCTURAL DYNAMIC\n"
+            "  element section:  STRUCTURE ELEMENTS\n"
+            "  3D element line:  <eid> SOLID <CELLTYPE> <nodes...> MAT <m> "
+            "KINEM linear|nonlinear\n"
+            "  2D element line:  <eid> WALL <CELLTYPE> <nodes...> MAT <m> "
+            "KINEM <k> EAS <e> THICK <t> STRESS_STRAIN <s> GP <a> <b>\n"
+            "                    (2D needs ALL SIX keys, and SOLID owns no "
+            "2D cell type)\n"
+            "  material:         MAT_Struct_StVenantKirchhoff with YOUNG, "
+            "NUE, DENS (DENS required even under Statics)\n"
+            "  convergence:      TOLDISP (update norm) and TOLRES (residual "
+            "norm), both must be met\n"
+            "  result check:     field group STRUCTURE, DIS: \"structure\", "
+            "QUANTITY: dispx|dispy|dispz|...\n"
+            "The deck below is complete and runs as written."
+        ),
         "problemtype": "Structure",
         "yaml_section": "STRUCTURAL DYNAMIC",
+
+        # ---- COMPLETE RUNNABLE DECK, 3D, no external files ----
+        "minimal_working_input_3d": """\
+# 3D cantilever under an end traction. The mesh is GENERATED - there is not
+# a single node coordinate in this file.
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURE DOMAIN:
+  bottom_corner_point: [0.0, 0.0, 0.0]   # REQUIRED
+  top_corner_point: [10.0, 1.0, 1.0]     # REQUIRED
+  subdivisions: [10, 2, 2]               # REQUIRED, elements per direction
+  elements:                              # REQUIRED
+    SOLID:
+      HEX8:
+        MAT: 1
+        KINEM: nonlinear
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"    # Statics|GenAlpha|OneStepTheta|CentrDiff|...
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0              # truncates: stops at min(NUMSTEP*TIMESTEP, MAXTIME)
+  TOLDISP: 1.0e-10          # update-norm tolerance
+  TOLRES: 1.0e-09           # residual-norm tolerance
+  MAXITER: 30
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: 1000.0
+      NUE: 0.3              # validated to lie in [-1, 0.5)
+      DENS: 1.0             # REQUIRED even for Statics
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0.0, 0.0, -1.0]
+    FUNCT: [0, 0, 1]
+    TYPE: "Live"
+DSURF-NODE TOPOLOGY:        # symbolic faces of the generated box
+  - "SIDE structure x- DSURFACE 1"
+  - "SIDE structure x+ DSURFACE 2"
+IO/RUNTIME VTK OUTPUT:      # parent section: REQUIRED for any VTU
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true    # master switch
+  DISPLACEMENT: true        # at least one field flag, or nothing is written
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 1
+      QUANTITY: "dispz"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30     # record mode: abs(diff) prints the true value
+""",
+
+        # ---- COMPLETE RUNNABLE DECK, 2D ----
+        "minimal_working_input_2d": """\
+# 2D plane-strain square, hand-written mesh. The box generator cannot make
+# 2D cells, so 2D always uses the inline route.
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1.0e-10
+  TOLRES: 1.0e-09
+  MAXITER: 30
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: 1000.0
+      NUE: 0.3
+      DENS: 1.0
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 2               # 2 in 2D, not 3
+    ONOFF: [1, 1]
+    VAL: [0.0, 0.0]
+    FUNCT: [0, 0]
+DLINE-NODE TOPOLOGY:
+  - "NODE 1 DLINE 1"
+  - "NODE 4 DLINE 1"
+NODE COORDS:
+  - "NODE 1 COORD 0.0 0.0 0.0"
+  - "NODE 2 COORD 1.0 0.0 0.0"
+  - "NODE 3 COORD 1.0 1.0 0.0"
+  - "NODE 4 COORD 0.0 1.0 0.0"
+STRUCTURE ELEMENTS:
+  # WALL, not SOLID, and all six keys are required
+  - "1 WALL QUAD4 1 2 3 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+""",
+
+        # ---- CONVERGENCE: the keys and what they print ----
+        "convergence_control": {
+            "_note": (
+                "Newton convergence in STRUCTURAL DYNAMIC is governed by a "
+                "PAIR of tolerances, and by default BOTH must be satisfied "
+                "(NORMCOMBI_RESFDISP: 'And'). Set 'Or' to stop as soon as "
+                "either is met."
+            ),
+            "TOLDISP": (
+                "Default 1e-10. Tolerance on the solution-update norm. "
+                "Printed in the NOX status block as "
+                "'Structure-Update-Norm = <value> < <your TOLDISP>'."
+            ),
+            "TOLRES": (
+                "Default 1e-08. Tolerance on the residual force norm. "
+                "Printed as 'Structure-F-Norm = <value> < <your TOLRES>'."
+            ),
+            "NORM_DISP": "Default 'Abs'. Choices: Abs, Rel, Mix. How TOLDISP is measured.",
+            "NORM_RESF": "Default 'Abs'. Choices: Abs, Rel, Mix. How TOLRES is measured.",
+            "NORMCOMBI_RESFDISP": "Default 'And'. Choices: And, Or. How the two are combined.",
+            "ITERNORM": "Default 'L2'. Choices: L1, L2, Inf, Rms.",
+            "MAXITER": "Default 50. Exhausting it aborts the run, it does not continue.",
+            "MINITER": "Default 0.",
+            "NLNSOL": (
+                "Default 'fullnewton'. Choices: fullnewton, modnewton, "
+                "lsnewton, ptc, noxnln, newtonlinuzawa, augmentedlagrange, "
+                "singlestep."
+            ),
+            "DIVERCONT": (
+                "Default 'stop' — a non-converged step aborts. Set "
+                "'halve_step' or 'adapt_step' to let 4C retry with a smaller "
+                "step instead of dying. Other choices: continue, repeat_step, "
+                "repeat_simulation, rand_adapt_step, adapt_penaltycontact."
+            ),
+            "PREDICT": "Default 'ConstDis'. Choices: ConstDis, ConstVel, ConstAcc, TangDis, TangDisConstFext, ConstDisVelAcc.",
+            "_failure_signal": (
+                "When Newton runs out of iterations 4C prints "
+                "'Failed.......Number of Iterations = <n> < <MAXITER>' in "
+                "the final status block and then aborts with 'The nonlinear "
+                "solver did not converge!' from "
+                "solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp, exit 1."
+            ),
+        },
+
+        # ---- STRUCT NOX: the section whose keys are not SCREAMING_SNAKE ----
+        "struct_nox": {
+            "_note": (
+                "STRUCT NOX and its subsections configure the Trilinos NOX "
+                "nonlinear solver. THEIR KEYS ARE CAPITALISED ENGLISH WORDS "
+                "WITH SPACES, not SCREAMING_SNAKE like the rest of a 4C "
+                "deck: 'Nonlinear Solver', 'Method', 'Max Iters', 'Outer "
+                "Iteration'. Writing 'METHOD' instead of 'Method' is fatal. "
+                "The section is optional; omit it entirely and 4C uses a "
+                "line-search-based Newton with a full step."
+            ),
+            "STRUCT NOX": "Nonlinear Solver: Line Search Based | Trust Region Based | Inexact Trust Region Based | Tensor Based | Pseudo Transient | Single Step. Default 'Line Search Based'.",
+            "STRUCT NOX/Direction": "Method: Newton | Steepest Descent | NonlinearCG | Broyden | User Defined. Default 'Newton'.",
+            "STRUCT NOX/Line Search": "Method: Full Step | Backtrack | Polynomial | More'-Thuente | User Defined. Default 'Full Step'.",
+            "STRUCT NOX/Line Search/Backtrack": "Default Step (1), Minimum Step (1e-12), Recovery Step (1), Max Iters (50), Reduction Factor (0.5), Allow Exceptions (false).",
+            "STRUCT NOX/Printing": "Outer Iteration, Inner Iteration, Outer Iteration StatusTest, Details, Debug, Error, Warning, Parameters, Linear Solver Details, Test Details — all booleans. Set the first three false to quieten a long run.",
+            "STRUCT NOX/Pseudo Transient": "deltaInit, deltaMax, deltaMin, Max Number of PTC Iterations, SER_alpha, ScalingFactor, Time Step Control, Norm Type for TSC, Scaling Type, Build scaling operator.",
+            "STRUCT NOX/Solver Options": "Merit Function ('Sum of Squares'), Status Test Check Type (Complete | Minimal | None).",
+            "STRUCT NOX/Status Test": "XML File: path to a NOX status-test XML.",
+            "_example": (
+                "STRUCT NOX:\\n"
+                "  Nonlinear Solver: \"Line Search Based\"\\n"
+                "STRUCT NOX/Direction:\\n"
+                "  Method: \"Newton\"\\n"
+                "STRUCT NOX/Line Search:\\n"
+                "  Method: \"Backtrack\"\\n"
+                "STRUCT NOX/Line Search/Backtrack:\\n"
+                "  Max Iters: 30\\n"
+                "  Reduction Factor: 0.5"
+            ),
+        },
+
+        # ---- ELEMENT VOCABULARY, required keys stated ----
+        "structure_elements_section": {
+            "_note": (
+                "Section 'STRUCTURE ELEMENTS' is a list of quoted strings, "
+                "one per element:\n"
+                "  <eid> <ELETYPE> <CELLTYPE> <node ids...> <KEY value>...\n"
+                "It goes together with 'NODE COORDS' and the "
+                "'D*-NODE TOPOLOGY' sections. Use it OR "
+                "'STRUCTURE GEOMETRY' (Exodus) OR 'STRUCTURE DOMAIN' (box "
+                "generator) — never two of them."
+            ),
+            "SOLID": {
+                "cell_types": ["HEX8", "HEX18", "HEX20", "HEX27", "TET4",
+                               "TET10", "WEDGE6", "PYRAMID5", "NURBS27"],
+                "required_keys": ["MAT", "KINEM"],
+                "KINEM": "linear | nonlinear",
+                "optional_keys": {
+                    "TECH": (
+                        "ONLY on HEX8, WEDGE6, PYRAMID5, and with different "
+                        "choices each: HEX8 -> none|fbar|eas_mild|eas_full|"
+                        "shell_ans|shell_eas|shell_eas_ans; WEDGE6 -> none|"
+                        "shell_ans|shell_eas_ans; PYRAMID5 -> none|fbar. "
+                        "Writing TECH on any other cell type is fatal."
+                    ),
+                    "PRESTRESS_TECH": "none | mulf",
+                    "RAD / AXI / CIR": "3-vectors, cylindrical fibre frame",
+                    "FIBER1 / FIBER2 / FIBER3": "3-vectors, anisotropy directions",
+                    "INTEGRATION": (
+                        "Sub-group with RESIDUUM and MASS Gauss rules. "
+                        "USABLE ONLY where the element is written as a YAML "
+                        "MAP — i.e. inside 'ELEMENT_BLOCKS' (Exodus route) "
+                        "or inside 'STRUCTURE DOMAIN: elements:' (box "
+                        "generator). NEVER on a whitespace-separated "
+                        "'STRUCTURE ELEMENTS' string line, in any syntax. "
+                        "YAML-map form: 'INTEGRATION: {RESIDUUM: "
+                        "hex_27point, MASS: hex_8point}'. The Gauss-rule "
+                        "names are validated per cell family (hex_*, tet_*, "
+                        "wedge_*, pyramid_*) and a mismatched one is "
+                        "rejected."
+                    ),
+                },
+                "example": '"1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear TECH eas_full"',
+            },
+            "WALL": {
+                "_note": "This is the 2D solid element. SOLID owns no 2D cell type.",
+                "cell_types": ["QUAD4", "QUAD8", "QUAD9", "TRI3", "TRI6"],
+                "_cell_types_that_do_NOT_work": (
+                    "`4C --parameters` also lists NURBS4 and NURBS9 under "
+                    "WALL, but they are not registered: the element type "
+                    "for those is WALLNURBS, and asking for them under WALL "
+                    "gives the misleading \"Unknown type 'WALL' of finite "
+                    "element\"."
+                ),
+                "required_keys": ["MAT", "KINEM", "EAS", "THICK",
+                                  "STRESS_STRAIN", "GP"],
+                "KINEM": "linear | nonlinear",
+                "EAS": "none | full. 'full' is 4-node only; on TRI3 it gives 'eas-technology not implemented for tri3 elements'.",
+                "STRESS_STRAIN": "plane_strain | plane_stress",
+                "GP": (
+                    "Two integers. For QUADs it is Gauss points per "
+                    "direction, e.g. 'GP 2 2' (QUAD9 wants 'GP 3 3'). For "
+                    "TRI3/TRI6 the SECOND number must be 0 — 'GP 3 0', not "
+                    "'GP 3 3', which aborts with 'Unknown number of Gauss "
+                    "points for tri element'."
+                ),
+                "example": '"1 WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"',
+            },
+            "SOLIDSCATRA": {
+                "cell_types": ["HEX8", "HEX27", "TET4", "TET10", "NURBS27"],
+                "required_keys": ["MAT", "KINEM", "TYPE"],
+                "_note": "Structure element carrying a scalar field; used by TSI and SSI.",
+            },
+            "_error_signals": {
+                "_note": (
+                    "These are what 4C PRINTS. In the binary they are fmt "
+                    "templates with '{}' where the value goes, so a "
+                    "`strings | grep -F` check must be run against the "
+                    "TEMPLATE (\"Required value '{}' not found in input "
+                    "line\"), not against the rendered message. Note also "
+                    "that a near-identical sibling exists for the one_of "
+                    "case, \"Required '{}' not found in input line\"."
+                ),
+                "missing required key": "Required value 'KINEM' not found in input line",
+                "cell type not owned by that element": "Element 'SOLID' does not seem to know cell type 'quad4'. (cell type echoed LOWERCASE)",
+                "element type does not exist": "Unknown type 'BOGUS' of finite element",
+                "surplus / unsupported key on the line": "After parsing, the line still contains '<token>'. — followed by a 'Parsed parameters:' dump of what it did accept",
+                "bad value for an enum key": "Could not parse parameter 'TECH': invalid value 'fbar'. Valid options are: none|shell_ans|shell_eas_ans",
+                "INTEGRATION on an inline line, both sub-keys given": "Key 'INTEGRATION' cannot be found in the container.",
+                "INTEGRATION on an inline line, PARTIAL (one sub-key or bare)": (
+                    "NO 4C diagnostic at all. The process aborts with "
+                    "\"terminate called after throwing an instance of "
+                    "'std::bad_any_cast'\" and shell exit status 134. "
+                    "There is no 'PROC 0 ERROR' block to grep for."
+                ),
+                "cell type parses but the physics module has no implementation": "Element shape TRI6 (6 nodes) not activated. Just do it.",
+                "triangle Gauss rule written as <n> <n>": "Unknown number of Gauss points for tri element",
+            },
+        },
 
         "time_integration": {
             "Statics": "Static analysis (one step, equilibrium)",
@@ -1201,20 +1505,30 @@ FOURC_KNOWLEDGE = {
                 "SOLIDSCATRA HEX8": "8-node hex with scalar transport coupling (for TSI)",
             },
             "2D_wall": {
-                "SOLID QUAD4": "4-node quadrilateral (plane "
-                                "strain/stress, EAS option). NOTE: "
-                                "'WALL QUAD4' is the legacy name "
-                                "and is NOT registered in 4C "
-                                "2026.3 (eletype 'WALL' raises "
-                                "'Unknown type WALL' from "
-                                "parobjectfactory.cpp). Use "
-                                "SOLID QUAD4 + THICKNESS + "
-                                "PLANE_ASSUMPTION.",
-                "SOLID QUAD8": "8-node serendipity quad",
-                "SOLID QUAD9": "9-node full biquadratic quad",
-                "SOLID TRI3":  "3-node triangle (registered as "
-                                "SOLID, not WALL)",
-                "SOLID TRI6":  "6-node quadratic triangle",
+                "_which_element_type": (
+                    "WHICH element type owns 2D structural cells is "
+                    "VERSION-DEPENDENT and the two spellings share no "
+                    "keywords, so they cannot be mixed:\n"
+                    "  WALL  <cell> <nodes> MAT m KINEM k EAS e THICK t "
+                    "STRESS_STRAIN s GP a b\n"
+                    "  SOLID <cell> <nodes> MAT m KINEM k THICKNESS t "
+                    "PLANE_ASSUMPTION p\n"
+                    "Exactly one of them is registered in any given build. "
+                    "Decide it, do not guess it: `4C --parameters` lists the "
+                    "cell types each element factory owns. If SOLID's cell "
+                    "list is 3D-only (HEX/TET/WEDGE/PYRAMID), 2D belongs to "
+                    "WALL and 'SOLID QUAD4' aborts with \"Element 'SOLID' "
+                    "does not seem to know cell type 'quad4'.\"; if SOLID "
+                    "lists QUAD4/TRI3 then 'WALL' aborts with \"Unknown "
+                    "type 'WALL' of finite element\". On the build this "
+                    "catalogue was verified against, WALL owns 2D."
+                ),
+                "WALL QUAD4": "4-node quadrilateral. Six required keys: MAT, KINEM, EAS, THICK, STRESS_STRAIN, GP.",
+                "WALL QUAD8": "8-node serendipity quad, same six required keys.",
+                "WALL QUAD9": "9-node full biquadratic quad, same six required keys.",
+                "WALL TRI3":  "3-node triangle, same six required keys.",
+                "WALL TRI6":  "6-node quadratic triangle, same six required keys.",
+                "WALL NURBS4 / NURBS9": "Isogeometric 2D cells, same six required keys.",
             },
             "1D_beam": {
                 "BEAM3R": "Simo-Reissner beam (shear-deformable, geometrically exact)",
@@ -1257,32 +1571,62 @@ FOURC_KNOWLEDGE = {
 
         "pitfalls": [
             (
-                "[API] SOLID QUAD4 (2D structural) needs: "
-                "'MAT 1 KINEM nonlinear THICKNESS 1.0 "
-                "PLANE_ASSUMPTION plane_strain'. DO NOT "
-                "write 'WALL QUAD4', 'THICK', or "
-                "'STRESS_STRAIN' — those are the legacy "
-                "keywords. Signal: 4C 2026.3 rejects "
-                "'WALL' with 'Unknown type WALL of finite "
-                "element' from parobjectfactory.cpp:153; "
-                "'THICK' / 'STRESS_STRAIN' raise 'unknown "
-                "parameter' from input_spec_builders.cpp. "
-                "Verified empirically; see Tier-2 fixture "
-                "structural_2d_solid_quad4_not_wall. "
-                "(Audit 2026-06-02.)"
+                "[Input] STRUCTURE ELEMENTS: The 2D structural element type is "
+                "VERSION-DEPENDENT and the two spellings share no keywords, "
+                "so you cannot hedge by writing both:\n"
+                "  WALL  QUAD4 <n..> MAT m KINEM k EAS e THICK t "
+                "STRESS_STRAIN s GP a b\n"
+                "  SOLID QUAD4 <n..> MAT m KINEM k THICKNESS t "
+                "PLANE_ASSUMPTION p\n"
+                "Determine which one this build registers before writing "
+                "anything: `4C --parameters` lists, per element type, the "
+                "cell types it owns. If SOLID's list is 3D-only, 2D is "
+                "WALL's. Signal: both were confirmed by triggering them - the "
+                "wrong 2D element type gives \"Element 'SOLID' does not "
+                "seem to know cell type 'quad4'.\" (note the cell type is "
+                "echoed in LOWERCASE), and an element type this build does "
+                "not register at all gives \"Unknown type 'WALL' of finite "
+                "element\". A keyword the element does not own gives "
+                "\"After parsing, the line still contains '<token>'\" — not "
+                "'unknown parameter', which is not the wording 4C uses "
+                "here. See Tier-2 fixture "
+                "structural_2d_solid_quad4_not_wall, which probes both "
+                "spellings and asserts the era-agnostic invariant rather "
+                "than hard-coding either."
             ),
             (
-                "[Input] SOLID elements (3D + 2D) need: "
-                "MAT <id> KINEM <linear or nonlinearTotLag>. "
-                "Signal: writing KINEM nonlinear (without "
-                "the TotLag suffix in 3D) is silently "
-                "accepted in some 4C versions but produces "
-                "an updated-Lagrangian formulation instead "
-                "of total-Lagrangian — stress and strain "
-                "are referred to the wrong configuration. "
-                "Use nonlinearTotLag for finite-strain "
-                "problems unless you specifically want UL. "
-                "(Audit 2026-06-02.)"
+                "[Input] STRUCTURE ELEMENTS: WALL TRI3 and TRI6 take GP as "
+                "'<n> 0', NOT '<n> <n>'. 'GP 3 3' on a triangle is fatal. "
+                "Signal: 'Unknown number of Gauss points for tri element' "
+                "from w1/4C_w1_input.cpp. 'GP 3 0' on the same element runs. "
+                "EAS is likewise 4-node-only: 'EAS full' on TRI3 gives "
+                "'eas-technology not implemented for tri3 elements'."
+            ),
+            (
+                "[Input] STRUCTURE ELEMENTS: WALL does NOT own NURBS4/NURBS9 even "
+                "though `4C --parameters` lists them under WALL. The "
+                "registered element type for isogeometric 2D cells is "
+                "WALLNURBS. Signal: 'Unknown type 'WALL' of finite "
+                "element' - which names the wrong "
+                "thing: 'Unknown type 'WALL' of finite element'. Any NURBS "
+                "element additionally needs PROBLEM TYPE/SHAPEFCT: "
+                "\"Nurbs\", a '<DIS> KNOTVECTORS' section, and control "
+                "points written as 'CP <id> COORD x y z <weight>' inside "
+                "NODE COORDS. Writing plain 'NODE' lines with a NURBS "
+                "element SEGFAULTS — exit status 139, no 4C error block, no "
+                "message at all."
+            ),
+            (
+                "[Input] STRUCTURE ELEMENTS: KINEM takes exactly two values on "
+                "this build: 'linear' or 'nonlinear'. Do NOT write "
+                "'nonlinearTotLag' — it is what 4C reports INTERNALLY once "
+                "it has parsed 'nonlinear' (you see it echoed in the "
+                "'Parsed parameters:' dump), but it is not accepted as "
+                "input. Signal: \"Could not parse parameter 'KINEM': "
+                "invalid value 'nonlinearTotLag'. Valid options are: "
+                "linear|nonlinear\". So 'KINEM nonlinear' already IS the "
+                "total-Lagrangian formulation; there is no separate "
+                "updated-Lagrangian spelling to avoid."
             ),
             (
                 "[Input] SOLIDSCATRA element is REQUIRED for "
@@ -1742,185 +2086,488 @@ FOURC_KNOWLEDGE = {
     # SCALAR TRANSPORT (scatra, scatra_ele)
     # ═══════════════════════════════════════════════════════════════════════
     "scalar_transport": {
-        "description": "Convection-diffusion / scalar transport — the workhorse for Poisson, heat, electrochemistry",
+        # ---- READ THIS FIRST ----
+        "description": (
+            "Convection-diffusion-reaction of one or more scalars. Used for "
+            "Poisson, heat-by-diffusion, electrochemistry and level sets.\n"
+            "  PROBLEMTYPE:      Scalar_Transport\n"
+            "  control section:  SCALAR TRANSPORT DYNAMIC  (NOT 'SCATRA DYNAMIC')\n"
+            "  element section:  TRANSPORT ELEMENTS\n"
+            "  element line:     <eid> TRANSP <CELLTYPE> <nodes...> MAT <m> TYPE Std\n"
+            "                    (MAT and TYPE are both REQUIRED)\n"
+            "  material:         MAT_scatra with DIFFUSIVITY   (NOT MAT_Fourier)\n"
+            "  BC DOF count:     NUMDOF: 1, and ONOFF/VAL/FUNCT each ONE entry\n"
+            "  output:           .vtu is written automatically; there is NO\n"
+            "                    runtime-VTK section for scatra and naming one "
+            "aborts the run\n"
+            "The deck below is complete and runs as written."
+        ),
         "problemtype": "Scalar_Transport",
         "yaml_section": "SCALAR TRANSPORT DYNAMIC",
 
-        # SCALAR TRANSPORT DYNAMIC/TIMEINTEGR enum
-        # (4C 2026.3 schema). Different from STRUCTURAL/THERMAL
-        # DYNAMIC/DYNAMICTYPE (which uses CamelCase). The
-        # scatra TIMEINTEGR has underscores.
+        # ---- COMPLETE RUNNABLE DECK, with a TIME-DEPENDENT Dirichlet BC ----
+        "minimal_working_input": """\
+# Transient diffusion on a unit square with a time-ramped Dirichlet edge.
+# Everything is inline: no mesh file, no include.
+PROBLEM SIZE:
+  DIM: 2
+PROBLEM TYPE:
+  PROBLEMTYPE: "Scalar_Transport"
+SCALAR TRANSPORT DYNAMIC:
+  SOLVERTYPE: "linear_full"
+  TIMEINTEGR: "One_Step_Theta"   # underscores here; the structural section
+  THETA: 1.0                     # spells its enum in CamelCase instead
+  TIMESTEP: 0.05
+  NUMSTEP: 20
+  MAXTIME: 1.0
+  VELOCITYFIELD: "zero"          # optional - "zero" is already the default
+  INITIALFIELD: "zero_field"
+  LINEAR_SOLVER: 1
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Scatra_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_scatra:
+      DIFFUSIVITY: 1.0
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN LINE DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 1                    # ONE scalar DOF - not 3
+    ONOFF: [1]                   # exactly one entry
+    VAL: [1.0]                   # amplitude, multiplied by FUNCT
+    FUNCT: [1]                   # -> phi = 1.0 * t on this edge
+DLINE-NODE TOPOLOGY:
+  - "NODE 1 DLINE 1"
+  - "NODE 4 DLINE 1"
+NODE COORDS:
+  - "NODE 1 COORD 0.0 0.0 0.0"
+  - "NODE 2 COORD 1.0 0.0 0.0"
+  - "NODE 3 COORD 1.0 1.0 0.0"
+  - "NODE 4 COORD 0.0 1.0 0.0"
+TRANSPORT ELEMENTS:
+  - "1 TRANSP QUAD4 1 2 3 4 MAT 1 TYPE Std"
+RESULT DESCRIPTION:
+  - SCATRA:
+      DIS: "scatra"
+      NODE: 2
+      QUANTITY: "phi"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30          # record mode: abs(diff) prints the true value
+""",
+
+        "time_dependent_bc_recipe": (
+            "A time-dependent boundary condition is TWO pieces that must "
+            "agree in count:\n"
+            "  FUNCT<n>:\n"
+            "    - SYMBOLIC_FUNCTION_OF_SPACE_TIME: \"<expr in x,y,z,t>\"\n"
+            "  DESIGN LINE DIRICH CONDITIONS:\n"
+            "    - E: 1\n"
+            "      NUMDOF: 1\n"
+            "      ONOFF: [1]\n"
+            "      VAL: [1.0]\n"
+            "      FUNCT: [1]        <- index of FUNCT1, NOT a value\n"
+            "The imposed value is VAL[i] * FUNCT[i](x,t). FUNCT: [0] (or "
+            "null) means 'no function', i.e. a constant VAL. For scalar "
+            "transport NUMDOF is 1 and all three arrays have ONE entry — a "
+            "three-entry array copied from a structural example is a "
+            "different physics and will not match."
+        ),
+
+        "required_vs_optional": {
+            "SCALAR TRANSPORT DYNAMIC / LINEAR_SOLVER": "REQUIRED IN PRACTICE (default -1 is not a solver id).",
+            "SCALAR TRANSPORT DYNAMIC / TIMEINTEGR": "Optional, default 'One_Step_Theta'. Choices: Stationary, One_Step_Theta, BDF2, Gen_Alpha. Note the underscores.",
+            "SCALAR TRANSPORT DYNAMIC / SOLVERTYPE": "Optional, default 'linear_full'. Use 'nonlinear' for reaction terms.",
+            "SCALAR TRANSPORT DYNAMIC / VELOCITYFIELD": "Optional, default 'zero'. Choices: zero, function, Navier_Stokes. Omitting it is safe for pure diffusion.",
+            "SCALAR TRANSPORT DYNAMIC / INITIALFIELD": "Optional, default 'zero_field'. Use 'field_by_function' + INITFUNCNO for a non-zero start.",
+            "SCALAR TRANSPORT DYNAMIC / THETA": "Optional, default 0.5. Only read under TIMEINTEGR One_Step_Theta.",
+            "SCALAR TRANSPORT DYNAMIC / RESULTSEVERY": "Optional, default 1.",
+            "TRANSPORT ELEMENTS line / MAT": "REQUIRED.",
+            "TRANSPORT ELEMENTS line / TYPE": "REQUIRED. 'Std' for plain convection-diffusion; other values select the elch / level-set / cardiac variants.",
+            "MATERIALS / MAT_scatra / DIFFUSIVITY": "REQUIRED.",
+        },
+
         "time_integration": ["Gen_Alpha", "BDF2", "One_Step_Theta", "Stationary"],
 
         "physics_variants": {
-            "standard": "Pure convection-diffusion-reaction",
+            "standard": "Pure convection-diffusion-reaction (TYPE Std)",
             "electrochemistry": "Nernst-Planck ion transport (elch, elch_diffcond, elch_scl)",
             "cardiac_monodomain": "Cardiac electrophysiology (FHN, TenTusscher models)",
-            "level_set": "Level-set advection + reinitialization",
+            "level_set": "Level-set advection + reinitialization (TYPE Ls)",
             "porous_media": "Scalar transport in porous media",
             "growth_remodel": "Growth and remodeling scalar transport",
         },
 
-        "elements": "TRANSP QUAD4/8/9 (2D), TRANSP HEX8/20/27 (3D), TRANSP TRI3/6, TRANSP TET4/10",
+        "elements": (
+            "TRANSP with cell types QUAD4/8/9, TRI3/6, HEX8/20/27, TET4/10, "
+            "WEDGE6/15, PYRAMID5, LINE2/3 and the NURBS family. Required keys "
+            "on every one of them: MAT and TYPE."
+        ),
 
         "pitfalls": [
-            "[Syntax] Top-level section name must be the full "
-            "spelling 'SCALAR TRANSPORT DYNAMIC' (matches "
-            "scalar_transport.yaml_section above), NOT the "
-            "abbreviation 'SCATRA DYNAMIC' that internal Kratos / "
-            "4C application names suggest. 4C rejects 'SCATRA "
-            "DYNAMIC' at YAML parse time with 'PROC 0 ERROR ... "
-            "Section \"SCATRA DYNAMIC\" is not a valid section "
-            "name.' from core/io/src/4C_io_input_file.cpp. "
-            "Signal: \"SCATRA DYNAMIC\" + \"not a valid section "
-            "name\" + \"4C_io_input_file\" all appear in 4C "
-            "stderr. Element section is similarly TRANSPORT "
-            "ELEMENTS (not STRUCTURE or FLUID). (Verified "
-            "empirically 2026-06-01.)",
-            "[Integration] Material: MAT_scatra with DIFFUSIVITY "
-            "parameter (and CAPACITY for transient). Without a "
-            "MAT_scatra entry for the elements' MAT id, the "
-            "solver setup fails when the constitutive law is "
-            "looked up. Signal: 4C ERROR mentioning 'Material' / "
-            "'MAT_scatra' and the missing MAT id. (Claim "
-            "inherited — not yet empirically verified.)",
-            "[Syntax] For Poisson via scatra: TIMEINTEGR "
-            "Stationary, VELOCITYFIELD zero (the field must be "
-            "set, not omitted), source applied via DESIGN SURF "
-            "NEUMANN. Signal: omitting VELOCITYFIELD may surface "
-            "later as an undefined-field error during element "
-            "initialisation, not at parse time. (Claim "
-            "inherited — not yet fully verified; partial probe "
-            "saw a TRANSPORT-ELEMENTS-empty error before "
-            "VELOCITYFIELD was checked.)",
-            "[Syntax] For scatra heat: same skeleton as Poisson "
-            "but T_left/T_right via DESIGN LINE DIRICH (linewise "
-            "Dirichlet) rather than NEUMANN. Signal: temperature "
-            "field shows the prescribed BC at the boundaries; "
-            "swapping DIRICH ↔ NEUMANN produces a constant flux "
-            "but no enforced temperature. (Claim inherited.)",
-            "[API] IO/RUNTIME VTK OUTPUT/SCATRA may crash 4C — "
-            "the scatra-specific RUNTIME VTK path has known "
-            "issues for some element types; safer to omit the "
-            "RUNTIME VTK SCATRA subsection and convert results "
-            "to .vtu via the post_vtu post-processor after the "
-            "run completes. Signal: crash inside 4C's "
-            "RUNTIME_VTK output code rather than diverged "
-            "physics; switching to post_vtu sidesteps it. "
-            "(Claim inherited.)",
-            "[Syntax] Field name in scatra VTU output is "
-            "phi_1, phi_2, ... (not 'temperature' or 'u' as "
-            "users sometimes assume). When loading the result "
-            "in ParaView, the array name must match. Signal: "
-            "ParaView (or paraview-python) opening the "
-            "post_vtu output of a SCATRA DYNAMIC run reports "
-            "'no array named temperature' when the user "
-            "expects 'phi_1'. (Claim inherited.)",
+            (
+                "[Input] SCALAR TRANSPORT DYNAMIC: The section name is the full "
+                "'SCALAR TRANSPORT DYNAMIC'. The abbreviation 'SCATRA "
+                "DYNAMIC' that the source-tree and application names suggest "
+                "is not a section. The element section is likewise "
+                "'TRANSPORT ELEMENTS', not STRUCTURE or FLUID or SCATRA. "
+                "Signal: \"Section 'SCATRA DYNAMIC' is not a valid section "
+                "name.\" from core/io/src/4C_io_input_file.cpp, exit 1, "
+                "before anything is set up."
+            ),
+            (
+                "[Input] MATERIALS: Scalar transport uses MAT_scatra (key: "
+                "DIFFUSIVITY). MAT_Fourier (keys: CAPA, CONDUCT) belongs to "
+                "PROBLEMTYPE: Thermo and its THERMO elements. The two are "
+                "not interchangeable, and they fail in opposite ways. Signal: "
+                "MAT_Fourier under Scalar_Transport aborts cleanly with "
+                "'Material type m_thermo_fourier is not supported!' from "
+                "scatra_ele/4C_scatra_ele_calc.cpp, but MAT_scatra under "
+                "PROBLEMTYPE: Thermo SEGFAULTS — no 4C error block, no "
+                "message at all, shell exit status 139. If a Thermo run dies "
+                "with no output, check the material first. (Both directions "
+                "were run; the segfault reproduced three times out of "
+                "three.) The rule is decided by PROBLEMTYPE, not by whether "
+                "the physical quantity is called a temperature: heat "
+                "conduction modelled through the scatra framework uses "
+                "MAT_scatra with the thermal diffusivity as DIFFUSIVITY."
+            ),
+            (
+                "[Output] IO: There is NO runtime-VTK section for scalar transport, "
+                "and naming one is fatal rather than merely ineffective. Signal: "
+                "Both 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' and "
+                "'IO/RUNTIME VTK OUTPUT/SCATRA' abort at parse with "
+                "\"Section '<name>' is not a valid section name.\" and exit "
+                "1. You do not need one: a Scalar_Transport run writes "
+                "<prefix>-vtk-files/scatra-*.vtu and <prefix>-scatra.pvd "
+                "automatically, with no output section in the deck at all. "
+                "(Both wrong section names were tried; the automatic .vtu "
+                "output was confirmed on a deck containing no IO section "
+                "whatsoever.) This corrects the older advice to 'omit the "
+                "subsection and convert with post_vtu' — post-processing is "
+                "not required."
+            ),
+            (
+                "[Output] The scalar array in the VTU is named phi_1, phi_2, "
+                "... one per transported scalar — not 'temperature', 'u' or "
+                "'phi'. The RESULT DESCRIPTION spelling is different again: "
+                "QUANTITY: \"phi\" with the field group SCATRA and DIS: "
+                "\"scatra\". Signal: the written "
+                "<prefix>-vtk-files/scatra-*.vtu carries "
+                "Name=\"phi_1\" in its PointData; a post-processing script "
+                "that asks for 'temperature' finds no such array. "
+                "(Confirmed by reading the array names out of a .vtu the "
+                "run actually wrote.)"
+            ),
+            (
+                "[Input] DESIGN * DIRICH CONDITIONS: NUMDOF is 1 for scalar "
+                "transport and ONOFF, VAL and FUNCT must each have exactly "
+                "one entry. Copying a three-entry structural block is the "
+                "single most common transcription error here. Signal: a "
+                "mismatched array length is rejected at parse with 'Could "
+                "not match this input' followed by an echo of the offending "
+                "block and the candidate specification."
+            ),
+            (
+                "[Input] SCALAR TRANSPORT DYNAMIC: VELOCITYFIELD already defaults "
+                "to 'zero', so a pure-diffusion deck that omits it runs "
+                "correctly. Earlier guidance that the key must be set "
+                "explicitly was wrong: a deck identical except for the "
+                "deleted VELOCITYFIELD line completed with exit 0. Set it "
+                "explicitly only to document intent, or when you actually "
+                "want 'function' or 'Navier_Stokes'. Signal: none - there is "
+                "no error and no warning for the omitted key, which is "
+                "why the older advice went unchallenged."
+            ),
+            (
+                "[Input] SCALAR TRANSPORT DYNAMIC: For a stationary Poisson "
+                "problem use TIMEINTEGR: \"Stationary\" and drive it with a "
+                "DESIGN * NEUMANN condition as the source; for a prescribed "
+                "boundary VALUE use DIRICH instead. Swapping the two gives a "
+                "run that succeeds and answers a different question — "
+                "NEUMANN imposes a flux, DIRICH imposes the scalar. There is "
+                "Signal: none - the run exits 0 either way, so pin the "
+                "expected boundary value with a RESULT DESCRIPTION entry."
+            ),
         ],
     },
+
 
     # ═══════════════════════════════════════════════════════════════════════
     # THERMAL (thermo)
     # ═══════════════════════════════════════════════════════════════════════
     "thermal": {
-        "description": "Thermal analysis (standalone or coupled via TSI/STI/SSTI)",
+        # ---- READ THIS FIRST ----
+        "description": (
+            "Heat conduction as its own problem type (standalone), or as the "
+            "thermal field of TSI / STI / SSTI.\n"
+            "  PROBLEMTYPE:      Thermo\n"
+            "  control section:  THERMAL DYNAMIC   (the word THERMAL)\n"
+            "  element section:  THERMO ELEMENTS   (the word THERMO)\n"
+            "  element line:     <eid> THERMO <CELLTYPE> <nodes...> MAT <m>\n"
+            "                    MAT is the ONLY key it accepts - adding "
+            "KINEM or anything else aborts\n"
+            "  material:         MAT_Fourier with CAPA and CONDUCT\n"
+            "                    CONDUCT is tensor-typed: write "
+            "CONDUCT: {constant: [k]}, a bare scalar is rejected\n"
+            "  boundary cond.:   PLAIN 'DESIGN SURF DIRICH CONDITIONS' with "
+            "NUMDOF: 1.\n"
+            "                    DO NOT use 'DESIGN SURF THERMO DIRICH "
+            "CONDITIONS' in a standalone\n"
+            "                    Thermo run - it parses cleanly and is then "
+            "SILENTLY IGNORED.\n"
+            "  result check:     field group THERMAL, DIS: \"thermo\", "
+            "QUANTITY: \"temp\"\n"
+            "The deck below is complete and runs as written."
+        ),
         "problemtype": "Thermo",
         "yaml_section": "THERMAL DYNAMIC",
-        "time_integration": ["Statics", "GenAlpha", "OneStepTheta"],
-        "boundary_conditions": {
-            "DESIGN SURF THERMO DIRICH CONDITIONS": "Prescribed temperature",
-            "DESIGN SURF THERMO NEUMANN CONDITIONS": "Prescribed heat flux",
-            "ThermoConvections": "Convective heat transfer BC (h*(T-T_inf))",
-            "ThermoRobin": "Robin BC for thermal",
+
+        # ---- COMPLETE RUNNABLE DECK ----
+        "minimal_working_input": """\
+# Transient heat conduction in a bar, hot face at x-, everything inline.
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo"
+THERMO DOMAIN:                 # box generator - no NODE COORDS needed
+  bottom_corner_point: [0.0, 0.0, 0.0]
+  top_corner_point: [1.0, 0.2, 0.2]
+  subdivisions: [10, 2, 2]
+  elements:
+    THERMO:
+      HEX8:
+        MAT: 1
+THERMAL DYNAMIC:
+  DYNAMICTYPE: "OneStepTheta"  # Statics | OneStepTheta | GenAlpha
+  TIMESTEP: 0.01
+  NUMSTEP: 20
+  MAXTIME: 0.2                 # MAXTIME truncates: the run stops at
+  INITIALFIELD: "zero_field"   # min(NUMSTEP*TIMESTEP, MAXTIME)
+  TOLTEMP: 1.0e-10             # temperature-update tolerance
+  TOLRES: 1.0e-08              # residual tolerance
+  MAXITER: 30
+  LINEAR_SOLVER: 1
+THERMAL DYNAMIC/ONESTEPTHETA:
+  THETA: 1.0                   # 1.0 = backward Euler, 0.5 = Crank-Nicolson
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermo_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Fourier:
+      CAPA: 1.0
+      CONDUCT:
+        constant: [1.0]        # tensor-typed - NOT "CONDUCT: 1.0"
+DESIGN SURF DIRICH CONDITIONS: # PLAIN. NOT "DESIGN SURF THERMO DIRICH".
+  - E: 1
+    NUMDOF: 1                  # one temperature DOF
+    ONOFF: [1]
+    VAL: [100.0]
+    FUNCT: [0]                 # 0 = constant; use a FUNCT index to ramp
+DSURF-NODE TOPOLOGY:
+  - "SIDE thermo x- DSURFACE 1"
+IO/RUNTIME VTK OUTPUT:         # parent section: REQUIRED for any VTU
+  INTERVAL_STEPS: 5
+THERMAL DYNAMIC/RUNTIME VTK OUTPUT:
+  OUTPUT_THERMO: true          # master switch
+  TEMPERATURE: true            # at least one field flag, or nothing is written
+RESULT DESCRIPTION:
+  - THERMAL:                   # THERMAL, not THERMO
+      DIS: "thermo"
+      NODE: 1
+      QUANTITY: "temp"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30        # record mode: abs(diff) prints the true value
+""",
+
+        "inline_mesh_variant": (
+            "To hand-write the mesh instead of generating it, delete the "
+            "THERMO DOMAIN section and supply three sections instead:\n"
+            "  NODE COORDS:      - \"NODE 1 COORD 0.0 0.0 0.0\"  ...\n"
+            "  THERMO ELEMENTS:  - \"1 THERMO HEX8 1 2 3 4 5 6 7 8 MAT 1\"\n"
+            "  DSURF-NODE TOPOLOGY: - \"NODE 1 DSURFACE 1\"  ...\n"
+            "The box generator only makes HEX8/20/27 and WEDGE6/15, so any 2D "
+            "thermal problem must use the inline route with "
+            "THERMO QUAD4 / TRI3 elements and DLINE topology."
+        ),
+
+        "required_vs_optional": {
+            "THERMAL DYNAMIC / LINEAR_SOLVER": "REQUIRED IN PRACTICE (default -1 is not a solver id).",
+            "THERMAL DYNAMIC / DYNAMICTYPE": "Optional, default 'OneStepTheta'. Choices: Statics, OneStepTheta, GenAlpha.",
+            "THERMAL DYNAMIC / TIMESTEP": "Optional, default 0.05.",
+            "THERMAL DYNAMIC / NUMSTEP": "Optional, default 200.",
+            "THERMAL DYNAMIC / MAXTIME": "Optional, default 5. Truncates the run: it stops at min(NUMSTEP*TIMESTEP, MAXTIME).",
+            "THERMAL DYNAMIC / TOLTEMP": "Optional, default 1e-10. Temperature-update convergence tolerance.",
+            "THERMAL DYNAMIC / TOLRES": "Optional, default 1e-08. Residual convergence tolerance.",
+            "THERMAL DYNAMIC / INITIALFIELD": "Optional, default 'zero_field'. Choices: zero_field, field_by_function (+ INITFUNCNO), field_by_condition.",
+            "THERMAL DYNAMIC / MAXITER": "Optional, default 50.",
+            "THERMAL DYNAMIC / PREDICT": "Optional, default 'ConstTemp'. Choices: ConstTemp, ConstTempRate, TangTemp.",
+            "THERMAL DYNAMIC/ONESTEPTHETA / THETA": "Optional, default 0.5. Only read under DYNAMICTYPE OneStepTheta.",
+            "THERMAL DYNAMIC/GENALPHA": "Sub-section with GAMMA, ALPHA_M, ALPHA_F, RHO_INF, GENAVG. Only read under DYNAMICTYPE GenAlpha.",
+            "THERMO ELEMENTS line / MAT": "REQUIRED, and the ONLY key the THERMO element accepts.",
+            "MATERIALS / MAT_Fourier / CAPA": "REQUIRED. Volumetric heat capacity.",
+            "MATERIALS / MAT_Fourier / CONDUCT": "REQUIRED, tensor-typed. Isotropic form: CONDUCT: {constant: [k]}.",
         },
+
+        "time_integration": ["Statics", "GenAlpha", "OneStepTheta"],
+
+        "elements": (
+            "USE ONLY THESE, all confirmed to run: 2D QUAD4, QUAD8, QUAD9, "
+            "TRI3; 3D HEX8, HEX20, HEX27, TET4, TET10, WEDGE6, PYRAMID5; "
+            "1D LINE2; plus NURBS27 with the full NURBS apparatus. Every "
+            "one takes MAT and nothing else.\n"
+            "DO NOT USE these five, even though `4C --parameters` lists "
+            "them under THERMO: TRI6, WEDGE15, LINE3, NURBS4, NURBS9. They "
+            "parse and then die at element evaluation with 'Element shape "
+            "TRI6 (6 nodes) not activated. Just do it.' from "
+            "thermo/src/element/4C_thermo_ele_impl.cpp. Appearing in "
+            "`--parameters` means the PARSER accepts it, not that the "
+            "physics module implements it."
+        ),
+
+        "boundary_conditions": {
+            "_which_prefix": (
+                "STANDALONE PROBLEMTYPE: Thermo -> use the PLAIN sections: "
+                "DESIGN POINT/LINE/SURF/VOL DIRICH CONDITIONS and "
+                "... NEUMANN CONDITIONS, with NUMDOF: 1. The THERMO-prefixed "
+                "sections exist and parse but are dropped. COUPLED TSI -> the "
+                "THERMO-prefixed sections are the ones that reach the thermal "
+                "field, because the plain ones belong to the structure."
+            ),
+            "DESIGN SURF DIRICH CONDITIONS": "Prescribed temperature (standalone Thermo). NUMDOF 1.",
+            "DESIGN SURF NEUMANN CONDITIONS": "Prescribed heat flux (standalone Thermo). NUMDOF 1.",
+            "DESIGN SURF THERMO DIRICH CONDITIONS": "Prescribed temperature IN A TSI RUN. Silently ignored in a standalone Thermo run.",
+            "DESIGN SURF THERMO NEUMANN CONDITIONS": "Prescribed heat flux IN A TSI RUN. Silently ignored in a standalone Thermo run.",
+            "DESIGN THERMO CONVECTION SURF CONDITIONS": "Convective heat transfer, h*(T - T_inf).",
+            "DESIGN THERMO ROBIN SURF CONDITIONS": "Robin boundary condition.",
+            "DESIGN SURF THERMO INITIAL FIELD CONDITIONS": "Initial temperature by condition (with INITIALFIELD: field_by_condition).",
+        },
+
         "pitfalls": [
             (
-                "[Syntax] Use THERMO not THERMAL in section "
-                "names: 'DESIGN SURF THERMO DIRICH', "
-                "'DESIGN SURF THERMO NEUMANN', "
-                "'DESIGN VOL THERMO DIRICH'. Signal: "
-                "writing 'DESIGN SURF THERMAL DIRICH' "
-                "raises 'unknown section' from "
-                "input_spec_builders.cpp at parse — the "
-                "vocabulary uses THERMO consistently "
-                "across all conditions; THERMAL appears "
-                "only in section names like 'THERMAL "
-                "DYNAMIC'. (Audit 2026-06-02.)"
+                "[Input] DESIGN * DIRICH CONDITIONS: THE DANGEROUS ONE, and it is "
+                "the first thing to get right. In a STANDALONE "
+                "PROBLEMTYPE: Thermo run, 'DESIGN SURF THERMO DIRICH "
+                "CONDITIONS' is a perfectly valid section name, parses "
+                "without a single warning, and is then SILENTLY DROPPED — "
+                "the temperature stays at its initial value and the run "
+                "exits 0 looking like a success. The sections that actually "
+                "reach the thermo discretisation are the PLAIN ones: DESIGN "
+                "POINT/LINE/SURF/VOL DIRICH CONDITIONS and ... NEUMANN "
+                "CONDITIONS. The THERMO-prefixed variants belong to the "
+                "coupled TSI path. Signal: there is NO diagnostic — that is "
+                "the whole problem. Detect it by adding a RESULT DESCRIPTION "
+                "THERMAL entry on a node whose temperature you prescribed; "
+                "the silent wrong answer then becomes 'is WRONG --> "
+                "actresult= 0.00000000000000000e+00' and exit 1. (Verified "
+                "on both a static and a transient run, 3D: with the "
+                "prefixed section a mid-bar node read exactly 0.0 while one "
+                "face was held at 100; changing only that section name gave "
+                "the expected diffusive profile. Verified by execution "
+                "2026-08-03 and re-confirmed on a transient 2D and a "
+                "transient 3D deck.)"
             ),
             (
-                "[Input] For TSI: thermal field is "
-                "SOLVED BY 4C, not prescribed externally. "
-                "Signal: prescribing temperature via a "
-                "Dirichlet on every node (instead of "
-                "letting 4C solve the heat equation) "
-                "defeats the coupling — there is no "
-                "feedback from structure to thermal. Use "
-                "thermal source terms (Joule heating, "
-                "mechanical dissipation) and BCs only on "
-                "physical heat-input/output boundaries. "
-                "(Audit 2026-06-02.)"
+                "[Syntax] section names: THERMAL vs THERMO is not interchangeable "
+                "and there is no rule of thumb — you have to know which is "
+                "which. The control section is 'THERMAL DYNAMIC' and the "
+                "RESULT DESCRIPTION field group is 'THERMAL'; the element "
+                "section is 'THERMO ELEMENTS', the element type is 'THERMO', "
+                "the discretisation is named 'thermo', and the coupled "
+                "condition sections are '... THERMO DIRICH ...'. Writing "
+                "'DESIGN SURF THERMAL DIRICH CONDITIONS' is fatal — but "
+                "note it fails LOUDLY, unlike the THERMO-prefixed trap "
+                "above. Signal: \"Section 'DESIGN SURF THERMAL DIRICH "
+                "CONDITIONS' is not a valid section name.\" from "
+                "core/io/src/4C_io_input_file.cpp, exit 1. (An earlier "
+                "version of this entry attributed the message to "
+                "input_spec_builders.cpp and quoted it as 'unknown section'; "
+                "that string does not occur anywhere in the binary. "
+                "Corrected against the real output.)"
             ),
             (
-                "[Input] INITIALFIELD: field_by_function "
-                "with INITFUNCNO pointing to a FUNCT for "
-                "initial temperature. Signal: omitting "
-                "INITIALFIELD defaults to T = 0, which "
-                "for a problem with INITTEMP > 0 in the "
-                "structural material gives spurious "
-                "thermal-strain at t = 0 (the difference "
-                "T - INITTEMP drives the contraction). "
-                "Set INITIALFIELD to match INITTEMP. "
-                "(Audit 2026-06-02.)"
+                "[Input] THERMO ELEMENTS: The THERMO element accepts MAT and "
+                "nothing else — no KINEM, no TYPE, no THICK. Any extra "
+                "token on the line is fatal. Signal: \"After parsing, the "
+                "line still contains 'KINEM linear'.\" followed by 'Parsed "
+                "parameters: MAT : 1', from core/io/src/4C_io_input_spec.cpp."
             ),
             (
-                "[Input] In a STANDALONE PROBLEMTYPE: Thermo run "
-                "the THERMO-prefixed boundary-condition sections "
-                "are a trap: 'DESIGN SURF THERMO DIRICH "
-                "CONDITIONS' is a perfectly valid section name, "
-                "parses without complaint, and is then SILENTLY "
-                "DROPPED — the temperature field stays at its "
-                "initial value and the run reports success. The "
-                "sections that actually reach the thermo "
-                "discretisation are the PLAIN ones: 'DESIGN SURF "
-                "DIRICH CONDITIONS', 'DESIGN LINE DIRICH "
-                "CONDITIONS', 'DESIGN SURF NEUMANN CONDITIONS'. "
-                "The THERMO-prefixed variants belong to the "
-                "coupled TSI path. This extends the previously "
-                "recorded THERMO-prefixed NEUMANN finding to "
-                "DIRICH. Signal: a standalone Thermo run that "
-                "exits 0 with a uniformly zero (or uniformly "
-                "initial) temperature field despite prescribed "
-                "temperatures; there is NO warning, so pin it "
-                "with a RESULT DESCRIPTION THERMAL entry, which "
-                "converts the silent wrong answer into "
-                "'is WRONG --> actresult= "
-                "0.00000000000000000e+00' and exit 1. (Verified "
-                "by execution 2026-08-03, single THERMO HEX8 with "
-                "T=0 on one face and T=100 on the opposite face: "
-                "with DESIGN SURF THERMO DIRICH CONDITIONS the "
-                "node on the hot face read 0.0 and the run "
-                "finished normally with exit 0 once the RESULT "
-                "DESCRIPTION was removed; changing the section "
-                "name to DESIGN SURF DIRICH CONDITIONS and "
-                "nothing else gave exactly 100.0 to 1e-8.)"
+                "[Input] MATERIALS: MAT_Fourier.CONDUCT is tensor-typed. The "
+                "isotropic case must be written as a 'constant:' list — "
+                "'CONDUCT: {constant: [k]}' — and a bare scalar is rejected. "
+                "Signal: 'CONDUCT: 1.0' produces \"Failed to match "
+                "specification in section 'MATERIALS'\"; the wrapped form "
+                "reaches fill_complete on discretisation 'thermo'."
             ),
             (
-                "[Syntax] MAT_Fourier.CONDUCT is tensor-typed on "
-                "the deployed 2026.2.0-dev build as well as on "
-                "2026.3 — the isotropic case must still be "
-                "written as a 'constant:' list, "
-                "'CONDUCT: {constant: [k]}'. A bare scalar is "
-                "rejected. Signal: 'CONDUCT: 1.0' produces "
-                "\"Failed to match specification in section "
-                "'MATERIALS'\" from global_data_read; the wrapped "
-                "form reaches fill_complete on discretisation "
-                "'thermo'. (Re-verified by execution 2026-08-03 "
-                "against 4C 2026.2.0-dev git 89519cf — the "
-                "originally 2026-06-01 claim still holds on this "
-                "build.)"
+                "[Input] MATERIALS: Do not put MAT_scatra in a PROBLEMTYPE: Thermo "
+                "deck. It does not produce a 4C error — the process "
+                "SEGFAULTS with no message at all and shell exit status 139. "
+                "MAT_scatra (DIFFUSIVITY) belongs to Scalar_Transport with "
+                "TRANSP elements; MAT_Fourier (CAPA, CONDUCT) belongs to "
+                "Thermo with THERMO elements. If a Thermo run dies producing "
+                "no output whatsoever, check the material before anything "
+                "else. Signal: NO 4C output at all - no 'PROC 0 ERROR' block, "
+                "no message, just a shell exit status of 139. "
+                "(Reproduced three times out of three.)"
+            ),
+            (
+                "[Output] IO: Thermal runtime VTU needs BOTH sections. "
+                "'THERMAL DYNAMIC/RUNTIME VTK OUTPUT' carries the field "
+                "flags (OUTPUT_THERMO, TEMPERATURE, TEMPERATURE_RATE, "
+                "CONDUCTIVITY, ELEMENT_OWNER, ELEMENT_GID, NODE_GID) but has "
+                "NO frequency key; INTERVAL_STEPS lives in the parent "
+                "'IO/RUNTIME VTK OUTPUT'. Putting INTERVAL_STEPS in the "
+                "thermal subsection is fatal, not ignored. Signal: 'Could "
+                "not match this input' echoing the THERMAL DYNAMIC/RUNTIME "
+                "VTK OUTPUT block. With neither section present the run "
+                "still succeeds and writes only the binary .control / "
+                ".mesh / .result files — no .vtu at all."
+            ),
+            (
+                "[Input] THERMAL DYNAMIC: The thermal integrator is NOT NOX and "
+                "prints NO tolerance in its output — unlike STRUCTURAL "
+                "DYNAMIC, where the status block echoes your TOLDISP and "
+                "TOLRES back at you. A thermal run prints 'Predictor thermo "
+                "absolute res-norm <r>' and then a table with columns "
+                "numiter / abs-res-norm / abs-temp-norm / wct. So you "
+                "cannot confirm TOLTEMP and TOLRES were read by looking for "
+                "them in the log; grepping for '<' finds nothing. Confirm "
+                "them by behaviour instead: an impossible TOLTEMP with a "
+                "small MAXITER gives 'Newton unconverged in <n> "
+                "iterations', and NORMCOMBI_RESFTEMP: \"Or\" makes the "
+                "same deck converge in fewer iterations. Signal: 'Newton "
+                "unconverged in <n> iterations' is the ONLY place a "
+                "thermal tolerance surfaces in the output."
+            ),
+            (
+                "[Input] THERMAL DYNAMIC: INITIALFIELD: 'field_by_function' needs "
+                "INITFUNCNO pointing at a FUNCT block. Omitting INITIALFIELD "
+                "defaults to T = 0, which for a structural material carrying "
+                "INITTEMP > 0 gives spurious thermal strain at t = 0, since "
+                "it is the difference T - INITTEMP that drives the "
+                "expansion. Match INITIALFIELD to INITTEMP. Signal: none at "
+                "parse or run time - the detector is a non-zero "
+                "displacement at t = 0 in a problem that should start "
+                "unstrained, so pin the initial state with a RESULT "
+                "DESCRIPTION entry."
+            ),
+            (
+                "[Physics] TSI: In a coupled TSI run the thermal field is SOLVED by "
+                "4C, not prescribed. Pinning the temperature with a "
+                "Dirichlet condition on every node defeats the coupling — "
+                "there is then no feedback from the structure to the thermal "
+                "field. Use thermal sources (Joule heating, mechanical "
+                "dissipation) and put boundary conditions only on real "
+                "heat-input/output boundaries. Signal: none - the run "
+                "succeeds and answers a different question. The "
+                "detector is a thermal field identical to the "
+                "prescribed one at every step."
             ),
         ],
     },
+
 
     # ═══════════════════════════════════════════════════════════════════════
     # MULTI-PHYSICS COUPLING
@@ -1981,7 +2628,7 @@ FOURC_KNOWLEDGE = {
                 "symbolic FUNCT (param temp_expr — pass the partner code's "
                 "temperature solution). Verified against the 4C binary "
                 "2026-08-01: tip displacement within 0.5% of the analytic "
-                "plane-strain thermal-expansion value. (T14 campaign fix.)"
+                "plane-strain thermal-expansion value."
             ),
             (
                 "[Input] Without CLONING MATERIAL MAP, 4C "
@@ -2840,7 +3487,7 @@ RESULT DESCRIPTION:
         # ---- PITFALLS, each attached to the section it concerns ----
         "pitfalls": [
             (
-                "[DESIGN * MORTAR CONTACT CONDITIONS] THE DANGEROUS ONE: a "
+                "[Input] DESIGN * MORTAR CONTACT CONDITIONS: THE DANGEROUS ONE: a "
                 "deck with CONTACT DYNAMIC and MORTAR COUPLING but NO "
                 "contact-condition section runs to completion, exit 0, with "
                 "no warning and no contact. The word 'contact' does not "
@@ -2856,7 +3503,7 @@ RESULT DESCRIPTION:
                 "the log.)"
             ),
             (
-                "[CONTACT DYNAMIC] LINEAR_SOLVER is REQUIRED even though "
+                "[Input] CONTACT DYNAMIC: LINEAR_SOLVER is REQUIRED even though "
                 "`4C --parameters` reports required:false with default -1. "
                 "Omitting it — or omitting the whole CONTACT DYNAMIC section "
                 "while a contact condition is present — aborts identically. "
@@ -2866,7 +3513,7 @@ RESULT DESCRIPTION:
                 "(Verified on HEX8, TET4 and 2D QUAD4 meshes.)"
             ),
             (
-                "[CONTACT DYNAMIC] Pointing LINEAR_SOLVER at an id that has "
+                "[Input] CONTACT DYNAMIC: Pointing LINEAR_SOLVER at an id that has "
                 "no SOLVER n block does NOT produce a 4C diagnostic. The "
                 "process dies with a raw C++ abort and SIGABRT, so there is "
                 "no 'PROC 0 ERROR' block and no stack trace in 4C's own "
@@ -2877,16 +3524,16 @@ RESULT DESCRIPTION:
                 "LINEAR_SOLVER id in the deck has a matching SOLVER block."
             ),
             (
-                "[CONTACT DYNAMIC] PENALTYPARAM defaults to 0 and 0 is "
+                "[Input] CONTACT DYNAMIC: PENALTYPARAM defaults to 0 and 0 is "
                 "rejected, so under STRATEGY: \"Penalty\" the key is "
                 "effectively required. The same holds for PENALTYPARAMTAN as "
-                "soon as FRICTION is anything but None. Signals, both "
+                "soon as FRICTION is anything but None. Signal: both "
                 "confirmed by running the wrong variant: 'Penalty parameter "
                 "eps = 0, must be greater than 0' and 'Tangential penalty "
                 "parameter eps = 0, must be greater than 0'."
             ),
             (
-                "[MORTAR COUPLING] The DEFAULT MORTAR COUPLING settings are "
+                "[Input] MORTAR COUPLING: The DEFAULT MORTAR COUPLING settings are "
                 "INVALID for every STRATEGY except Lagrange. Omitting the "
                 "section, writing it empty as 'MORTAR COUPLING: {}', or "
                 "writing it with defaults (LM_SHAPEFCN: Dual, "
@@ -2901,7 +3548,7 @@ RESULT DESCRIPTION:
                 "Dual+boundary aborts, and Lagrange+boundary runs fine.)"
             ),
             (
-                "[CONTACT DYNAMIC] STRATEGY: \"Lagrange\" is the DEFAULT, and "
+                "[Input] CONTACT DYNAMIC: STRATEGY: \"Lagrange\" is the DEFAULT, and "
                 "its default SYSTEM: \"Condensed\" refuses to run with "
                 "standard shape functions. A deck that sets no STRATEGY and "
                 "no LM_SHAPEFCN is fine; a deck that sets 'LM_SHAPEFCN: "
@@ -2909,16 +3556,18 @@ RESULT DESCRIPTION:
                 "fixes, both verified: 'LM_SHAPEFCN: \"Dual\"' in MORTAR "
                 "COUPLING, or 'SYSTEM: \"SaddlePoint\"' in CONTACT DYNAMIC. "
                 "Signal: 'Condensation of linear system only possible for "
-                "dual Lagrange multipliers'. Setting LM_QUAD to escape the "
+                "dual Lagrange multipliers', raised by "
+                "CONTACT::STRATEGY::Factory::read_and_check_input in "
+                "4C_contact_strategy_factory.cpp. Setting LM_QUAD to escape the "
                 "check is not a third fix: on linear elements it aborts with "
                 "'Lin/Lin interpolation of LM only for line3/tri6/quad8/"
                 "quad9 mortar elements'."
             ),
             (
-                "[DESIGN * MORTAR CONTACT CONDITIONS] The list needs EXACTLY "
+                "[Input] DESIGN * MORTAR CONTACT CONDITIONS: The list needs EXACTLY "
                 "ONE Side: \"Master\" and EXACTLY ONE Side: \"Slave\" per "
                 "InterfaceID, both carrying the SAME InterfaceID. Each way "
-                "of getting this wrong has its own diagnostic, all four "
+                "of getting this wrong has its own diagnostic. Signal: all four "
                 "confirmed by triggering them: two Masters and no Slave -> "
                 "'Slave side missing in contact condition group!'; two "
                 "Slaves and no Master -> 'Master side missing in contact "
@@ -2931,7 +3580,7 @@ RESULT DESCRIPTION:
                 "completion with exit 0."
             ),
             (
-                "[DESIGN * MORTAR CONTACT CONDITIONS] 'Side' is "
+                "[Input] DESIGN * MORTAR CONTACT CONDITIONS: 'Side' is "
                 "case-sensitive: Master / Slave / Selfcontact. Writing "
                 "'slave' is rejected — even though 'STRATEGY: \"penalty\"' "
                 "IS accepted in lowercase, so the casing rule is not uniform "
@@ -2940,7 +3589,7 @@ RESULT DESCRIPTION:
                 "CONDITIONS 3D'.'"
             ),
             (
-                "[STRUCTURAL DYNAMIC] When contact Newton fails, SHRINK THE "
+                "[Numerical] STRUCTURAL DYNAMIC: When contact Newton fails, SHRINK THE "
                 "LOAD STEP — do not lower PENALTYPARAM. The failure mode is "
                 "active-set chatter, not a stiff-system stall: the trace "
                 "alternates forever between two states, one with a non-zero "
@@ -2959,17 +3608,21 @@ RESULT DESCRIPTION:
                 "'Failed.......Number of Iterations = <MAXITER> < <MAXITER>'."
             ),
             (
-                "[STRUCT NOX] A line search does NOT rescue a failing "
+                "[Numerical] STRUCT NOX: A line search does NOT rescue a failing "
                 "contact Newton. Backtrack, Polynomial and Full Step all "
                 "behave identically on a chattering active set, with the "
                 "step length staying at 1.0 throughout. The STRUCT NOX "
                 "section IS being read — a bogus 'Method' value is rejected "
                 "with 'Could not match this input' — so a silent no-op is "
-                "not the explanation. Shrink the time step instead."
+                "not the explanation. Signal: the per-iteration trace prints "
+                "'step = 1.00000e+00' unchanged for every line-search "
+                "method and the run still ends in 'The nonlinear solver "
+                "did not converge!'. Shrink the time step instead."
             ),
             (
-                "[CONTACT DYNAMIC] STRATEGY: \"Nitsche\" needs THREE things "
-                "Penalty does not, and fails differently for each. (a) "
+                "[Input] CONTACT DYNAMIC: STRATEGY: \"Nitsche\" needs THREE things "
+                "Penalty does not, and fails differently for each, so the Signal: tells "
+                "you which one is missing. (a) "
                 "Without 'ALGORITHM: \"GPTS\"' in MORTAR COUPLING it aborts "
                 "with 'Unrecognized strategy: "
                 "\"CONTACT::SolvingStrategy::nitsche\"' — the same message "
@@ -2985,7 +3638,7 @@ RESULT DESCRIPTION:
                 "much smaller value."
             ),
             (
-                "[CONTACT DYNAMIC] 'Uzawa' appears in the STRATEGY enum that "
+                "[Input] CONTACT DYNAMIC: 'Uzawa' appears in the STRATEGY enum that "
                 "`4C --parameters` prints, but selecting it aborts: the "
                 "schema lists it, the code does not implement it. Signal: "
                 "'This contact strategy is not yet considered!'. Likewise "
@@ -2995,14 +3648,14 @@ RESULT DESCRIPTION:
                 "sufficient."
             ),
             (
-                "[PROBLEM SIZE] A 2D contact deck that is otherwise correct "
+                "[Input] PROBLEM SIZE: A 2D contact deck that is otherwise correct "
                 "but omits 'PROBLEM SIZE:\\n  DIM: 2' gets all the way into "
                 "the mortar search before failing, so the message points at "
                 "geometry rather than at the missing key. Signal: "
                 "'auxiliary_plane called for unknown element type'."
             ),
             (
-                "[DESIGN * MORTAR CONTACT CONDITIONS] The dimension suffix "
+                "[Input] DESIGN * MORTAR CONTACT CONDITIONS: The dimension suffix "
                 "is part of the section name and is not optional: "
                 "'DESIGN SURF MORTAR CONTACT CONDITIONS 3D' and "
                 "'DESIGN LINE MORTAR CONTACT CONDITIONS 2D'. There is no "
@@ -3011,12 +3664,14 @@ RESULT DESCRIPTION:
                 "wrote>' is not a valid section name.\" and exit 1."
             ),
             (
-                "[IO] To get contact tractions into the output, "
+                "[Output] IO: To get contact tractions into the output, "
                 "'IO/RUNTIME VTK OUTPUT/STRUCTURE' has a dedicated flag "
                 "'OUTPUT_CONTACT: true' alongside DISPLACEMENT. As with all "
                 "runtime VTK, the parent section 'IO/RUNTIME VTK OUTPUT' "
                 "with INTERVAL_STEPS must ALSO be present, or nothing is "
-                "written at all."
+                "written at all. Signal: there is no error either "
+                "way - the detector is the ABSENCE of a "
+                "<prefix>-vtk-files/ directory next to the output prefix."
             ),
         ],
     },

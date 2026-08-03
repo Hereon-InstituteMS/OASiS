@@ -63,13 +63,19 @@ EXECUTED_ENTRIES = [
     ("input_format", 26, "INTERVAL_STEPS"),
     ("input_format", 27, "RESTARTEVERY"),
     ("input_format", 28, "--parameters"),
-    ("structural_mechanics", 7, "VERSION-DEPENDENT"),
-    ("structural_mechanics", 8, "EAS"),
-    ("structural_mechanics", 9, "Expected parameter 'DENS'"),
-    ("structural_mechanics", 10, "in_range[-1,0.5)"),
-    ("structural_mechanics", 11, "Floating point exception (8)"),
-    ("structural_mechanics", 12, "KINEM nonlinear"),
-    ("thermal", 3, "SILENTLY DROPPED"),
+    # 2026-08-03 (second sweep): three corrected/added element-line
+    # pitfalls were inserted ahead of these, so the sweep entries moved
+    # from 7..12 to 9..14. The entries themselves are unchanged and still
+    # carry the provenance marker; only their position shifted.
+    ("structural_mechanics", 9, "VERSION-DEPENDENT"),
+    ("structural_mechanics", 10, "EAS"),
+    ("structural_mechanics", 11, "Expected parameter 'DENS'"),
+    ("structural_mechanics", 12, "in_range[-1,0.5)"),
+    ("structural_mechanics", 13, "Floating point exception (8)"),
+    ("structural_mechanics", 14, "KINEM nonlinear"),
+    # thermal was reordered so the silent-drop trap is read FIRST; it is
+    # now index 0 rather than 3.
+    ("thermal", 0, "SILENTLY DROPPED"),
     ("structural_dynamics", 7, "singular matrix"),
     ("structural_dynamics", 8, "Finalised step"),
     ("structural_dynamics", 9, "RESTARTEVERY"),
