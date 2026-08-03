@@ -1,0 +1,23 @@
+{
+  "session_id": "11ff8609-48ce-49c6-9011-a66a441cd14f",
+  "started_at": 1785789830.7192373,
+  "ended_at": 1785789834.8749967,
+  "duration_seconds": 0.0,
+  "solvers_used": [
+    "skfem"
+  ],
+  "physics_used": [
+    "poisson"
+  ],
+  "event_count": 1,
+  "error_count": 0,
+  "events": [
+    {
+      "timestamp": 1785789830.7192438,
+      "event_type": "knowledge_lookup",
+      "tool_name": "prepare_simulation",
+      "solver": "skfem",
+      "physics": "poisson"
+    }
+  ]
+}
