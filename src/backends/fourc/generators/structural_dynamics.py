@@ -1,7 +1,7 @@
 """Generator for structural dynamics physics module (GenAlpha, explicit, damping).
 
 Covers time-dependent structural problems with inertia effects, using
-DYNAMICTYPE: GenAlpha (or OneStepTheta, ExplEuler) in the STRUCTURAL
+DYNAMICTYPE: GenAlpha (or OneStepTheta, ExplicitEuler) in the STRUCTURAL
 DYNAMIC section of 4C.  Produces validated, working .4C.yaml templates.
 """
 
@@ -193,7 +193,9 @@ class StructuralDynamicsGenerator(BaseGenerator):
                 ),
                 (
                     "[Numerical] Explicit time stepping (DYNAMICTYPE: "
-                    "ExplEuler / CentrDiff) requires CFL: dt < h_min / c "
+                    "ExplicitEuler / CentrDiff -- it is 'ExplicitEuler' "
+                    "spelled out, and 'ExplEuler' is REJECTED with 'Could "
+                    "not match this input') requires CFL: dt < h_min / c "
                     "where c = sqrt(E/rho) is the elastic wave speed. "
                     "Violating CFL gives immediate exponential growth. "
                     "Signal: the displacement norm increases by orders of "
@@ -245,8 +247,11 @@ class StructuralDynamicsGenerator(BaseGenerator):
                 (
                     "[Syntax] STRUCTURAL DYNAMIC.DYNAMICTYPE validates "
                     "against an allowed enum at YAML parse — values like "
-                    "Statics, GenAlpha, OneStepTheta, ExplEuler, "
-                    "CentrDiff, GenAlphaLieGroup. A typo or made-up name "
+                    "Statics, GenAlpha, OneStepTheta, ExplicitEuler, "
+                    "CentrDiff, GenAlphaLieGroup, AdamsBashforth2, "
+                    "AdamsBashforth4 -- the full list this build accepts. "
+                    "Note 'ExplicitEuler', NOT 'ExplEuler'. A typo or "
+                    "made-up name "
                     "(e.g. 'TotallyMadeUpScheme') is rejected with "
                     "'PROC 0 ERROR ... Could not match this input' from "
                     "core/io/src/4C_io_input_spec_builders.cpp, with the "
@@ -637,21 +642,30 @@ RESULT DESCRIPTION:
 
         # Check DYNAMICTYPE
         dyntype = params.get("DYNAMICTYPE")
-        valid_types = {"GenAlpha", "GenAlphaLieGroup", "OneStepTheta", "ExplEuler"}
+        # The full STRUCTURAL DYNAMIC/DYNAMICTYPE enum this build
+        # accepts, taken from `4C --parameters`. It is 'ExplicitEuler',
+        # spelled out: the earlier set here listed 'ExplEuler', so this
+        # validator ACCEPTED a value 4C rejects and REJECTED the valid
+        # one. Verified by execution 2026-08-03 -- ExplEuler aborts with
+        # 'Could not match this input', ExplicitEuler runs.
+        valid_types = {"Statics", "GenAlpha", "GenAlphaLieGroup",
+                       "OneStepTheta", "ExplicitEuler", "CentrDiff",
+                       "AdamsBashforth2", "AdamsBashforth4"}
         if dyntype is not None and dyntype not in valid_types:
             errors.append(
                 f"DYNAMICTYPE must be one of {sorted(valid_types)}, "
                 f"got {dyntype!r}.  Use 'GenAlpha' for implicit dynamics "
-                f"(recommended) or 'ExplEuler' for explicit."
+                f"(recommended) or 'ExplicitEuler' for explicit -- note it "
+                f"is spelled out; 'ExplEuler' is rejected by 4C."
             )
 
         # Warn about CFL for explicit
-        if dyntype == "ExplEuler" and timestep is not None:
+        if dyntype in ("ExplicitEuler", "CentrDiff") and timestep is not None:
             try:
                 dt = float(timestep)
                 if dt > 1e-6:
                     errors.append(
-                        f"ExplEuler with TIMESTEP = {dt}: explicit methods "
+                        f"{dyntype} with TIMESTEP = {dt}: explicit methods "
                         f"typically require very small time steps to satisfy "
                         f"the CFL condition (dt < h_min / c_wave).  Verify "
                         f"that this time step is small enough for your mesh "
