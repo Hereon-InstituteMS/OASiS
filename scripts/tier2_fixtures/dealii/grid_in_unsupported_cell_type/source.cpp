@@ -1,17 +1,17 @@
-/* Tier-2 fixture: deal.II 2D GridIn refuses Gmsh meshes that
- * contain only triangles, not quads.
+/* Tier-2 fixture for linear_elasticity#4 — INVERTED 2026-08-03.
  *
- * The pitfall (linear_elasticity #4): 'deal.II 2D ONLY reads
- * QUADS from Gmsh — no triangles. Always set
- * gmsh.option.setNumber(Mesh.RecombineAll, 1) to produce quads.
- * Signal: ExcMessage from grid_in.cc that the mesh contains
- * unsupported cell type.'
+ * The pitfall used to read: 'deal.II 2D ONLY reads QUADS from Gmsh —
+ * no triangles. Signal: ExcMessage from grid_in.cc that the mesh
+ * contains unsupported cell type.' That has been false since deal.II
+ * 9.3 added simplex support, and this fixture already detected it: on
+ * the installed 9.8.0-pre it printed "ERROR: GridIn::read_msh
+ * accepted triangles; pitfall claim does not hold in this deal.II
+ * version" and therefore failed its own expect_in_output.
  *
- * This fixture writes a tiny in-memory Gmsh-format mesh with
- * triangles only and tries to read it into Triangulation<2>.
- * GridIn::read_msh raises ExcMessage; we catch it and print the
- * exception so the Tier-2 runner can match against the Signal
- * substrings (ExcMessage / grid_in).
+ * The fixture now asserts the CORRECTED claim: a triangles-only Gmsh
+ * mesh reads successfully into Triangulation<2>, and the resulting
+ * cells really are triangles (n_vertices() == 3). Measured on
+ * deal.II 9.8.0-pre 2026-08-03.
  */
 
 #include <deal.II/base/exceptions.h>
@@ -51,18 +51,22 @@ int main()
   }
   catch (const std::exception &e)
   {
-    // Print both the standard exception name and the message
-    // so the matcher can see both "ExcMessage" (from typeid
-    // or class context) and "grid_in" (from file location).
-    std::cerr << "Caught exception of type: "
-              << typeid(e).name() << '\n';
-    std::cerr << "what(): " << e.what() << '\n';
+    std::cout << "GridIn_read_msh_triangles=REJECTED\n";
+    std::cout << "what(): " << e.what() << '\n';
+    std::cout << "FIXTURE_MISMATCH\n";
     return 1;
   }
-  // If we get here, deal.II accepted triangles — pitfall claim
-  // is invalid for this version.
-  std::cerr << "ERROR: GridIn::read_msh accepted triangles; "
-            << "pitfall claim does not hold in this deal.II "
-            << "version\n";
-  return 2;
+
+  unsigned int n_tri = 0, n_quad = 0;
+  for (const auto &cell : tria.active_cell_iterators())
+    (cell->n_vertices() == 3 ? n_tri : n_quad)++;
+
+  std::cout << "GridIn_read_msh_triangles=ACCEPTED\n";
+  std::cout << "n_active_cells=" << tria.n_active_cells()
+            << " n_triangles=" << n_tri
+            << " n_quads=" << n_quad << '\n';
+  const bool ok = (tria.n_active_cells() == 2) && (n_tri == 2) &&
+                  (n_quad == 0);
+  std::cout << (ok ? "FIXTURE_OK" : "FIXTURE_MISMATCH") << '\n';
+  return ok ? 0 : 2;
 }
