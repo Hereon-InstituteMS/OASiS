@@ -125,6 +125,120 @@ def _short_reason(msg: str, limit: int = 240) -> str:
     return out[:limit]
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# JSON knowledge-block fitting
+# ─────────────────────────────────────────────────────────────────────────────
+# Every knowledge block an agent receives is rendered as a ```json fence. Until
+# 2026-08-03 the size cap was applied with a raw string slice, `text[:LIMIT]`,
+# which cuts in the middle of whatever value happens to sit at that offset. A
+# sweep of all 206 (backend, physics) payloads found 12 over the cap, and ALL 12
+# came back as INVALID JSON under the slice — 7 SPARTA rows and 5 FEniCSx rows,
+# failing with "Unterminated string" or "Expecting property name enclosed in
+# double quotes". A small model handed an unparseable payload has nothing to
+# fall back on, so this is worse than serving less.
+#
+# _fit_json_block guarantees three things:
+#   1. the returned text ALWAYS parses as JSON,
+#   2. load-bearing entries are never removed,
+#   3. whatever was removed is named, with the call that fetches it.
+# It shrinks in two phases: first thin out the *inside* of the largest
+# non-load-bearing container (so a big command reference degrades to a prefix
+# rather than vanishing), then drop whole non-load-bearing entries. If only
+# load-bearing entries remain it serves them in full rather than cutting.
+
+_LOAD_BEARING_KEYS = frozenset({
+    # Cross-backend: what a model needs to actually set the problem up.
+    "description", "minimal_working_example", "worked_example",
+    "function_space", "function_spaces", "weak_form", "weak_forms",
+    "boundary_conditions", "solver", "verification",
+    "problem_type", "required_sections", "input_format",
+})
+
+
+def _is_load_bearing(name: str) -> bool:
+    """Entry names that must survive any shrink, on any backend.
+
+    Anything holding runnable input counts: a small model copies an example,
+    it does not reconstruct one from prose.
+    """
+    n = str(name).lower()
+    return n in _LOAD_BEARING_KEYS or "example" in n or "template" in n
+
+
+def _fit_json_block(payload: dict, limit: int, fetch_hint: str = "") -> tuple[str, str]:
+    """Render ``payload`` as JSON within ``limit`` chars WITHOUT ever slicing.
+
+    Returns ``(json_text, note)``. ``json_text`` always parses. ``note`` is a
+    human-readable line naming what was thinned or dropped (empty if nothing).
+    """
+    def dump(obj):
+        return json.dumps(obj, indent=2, default=str)
+
+    text = dump(payload)
+    if len(text) <= limit:
+        return text, ""
+
+    work = dict(payload)
+    thinned, dropped = [], []
+    droppable = [k for k in work if not _is_load_bearing(k)]
+
+    # Phase 1 — thin the inside of oversized containers, largest first. Keeps a
+    # usable prefix of e.g. a per-command reference instead of losing all of it.
+    for key in sorted(droppable, key=lambda k: -len(dump(work[k]))):
+        if len(dump(work)) <= limit:
+            break
+        val = work[key]
+        if not isinstance(val, (dict, list)) or len(val) < 2:
+            continue
+        items = list(val.items()) if isinstance(val, dict) else list(enumerate(val))
+        # Keep at least one sub-entry: "0 of 7 kept" is a drop wearing a
+        # thinning label, and phase 2 reports drops properly.
+        lo, hi, best = 1, len(items), None
+        while lo <= hi:                       # binary search the longest prefix
+            mid = (lo + hi) // 2
+            if isinstance(val, dict):
+                cand = dict(items[:mid])
+                cand[f"__{len(items) - mid}_more_entries_omitted__"] = fetch_hint or "ask for this section by name"
+            else:
+                cand = [v for _, v in items[:mid]]
+                cand.append(f"__{len(items) - mid}_more_entries_omitted__")
+            probe = dict(work)
+            probe[key] = cand
+            if len(dump(probe)) <= limit:
+                best, lo = cand, mid + 1
+            else:
+                hi = mid - 1
+        if best is not None and len(best) - 1 < len(items):
+            work[key] = best
+            thinned.append(f"{key} ({len(best) - 1} of {len(items)} entries kept)")
+
+    # Phase 2 — drop whole non-load-bearing entries, largest first.
+    for key in sorted(droppable, key=lambda k: -len(dump(work.get(key, "")))):
+        if len(dump(work)) <= limit:
+            break
+        if key in work:
+            work.pop(key)
+            thinned = [t for t in thinned if not t.startswith(f"{key} (")]
+            dropped.append(key)
+
+    text = dump(work)
+    bits = []
+    if dropped:
+        bits.append("omitted entirely: " + ", ".join(dropped))
+    if thinned:
+        bits.append("shortened: " + "; ".join(thinned))
+    note = ""
+    if bits:
+        note = ("\n\n[Trimmed to fit — " + " | ".join(bits)
+                + (f". Fetch the full record with {fetch_hint}" if fetch_hint else "")
+                + "]")
+    if len(text) > limit:
+        note += (f"\n\n[Payload is {len(text)} chars, over the {limit} soft cap; "
+                 f"served whole because every remaining entry is load-bearing "
+                 f"and cutting it would produce invalid JSON.]")
+    return text, note
+
+
 def _strip_pitfalls(obj):
     """Recursively remove pitfall-DB keys from nested dicts/lists.
 
@@ -227,7 +341,6 @@ _PHYSICS_SYNONYMS = {
     "free_flow_porous": "stokes_darcy",
     "thermoelastic": "thermal_structural",
     "thermoelasticity": "thermal_structural",
-    "thermomechanical": "thermal_structural",
     "thermal_expansion": "thermal_structural",
     "thermal_stress": "thermal_structural",
     "phase_separation": "cahn_hilliard",
@@ -237,21 +350,15 @@ _PHYSICS_SYNONYMS = {
     "species_transport": "reaction_diffusion",
     "multi_species": "reaction_diffusion",
     "turing": "reaction_diffusion",
-    "chemical_kinetics": "reaction_diffusion",
     "eigenmodes": "eigenvalue",
-    "eigenmode": "eigenvalue",
     "modal_analysis": "eigenvalue",
     "natural_frequency": "eigenvalue",
-    "obstacle": "contact",
     "obstacle_problem": "contact",
     "unilateral_contact": "contact",
     "signorini": "contact",
-    "phase_field_fracture": "fracture",
     "damage": "fracture",
-    "crack_propagation": "fracture",
     "griffith": "fracture",
     "free_surface": "multiphase",
-    "two_phase": "multiphase",
     "level_set": "multiphase",
 
     # ── Heat / thermal conduction ──────────────────────────────────
@@ -2432,14 +2539,20 @@ def register_consolidated_tools(mcp: FastMCP):
             # Match the TEMPLATE_LIMIT of 12000 set above so the
             # LLM gets the full materials table. Audit 2026-06-01.
             KNOWLEDGE_LIMIT = 16000
-            payload_text = json.dumps(json_payload, indent=2, default=str)
-            payload_truncated = len(payload_text) > KNOWLEDGE_LIMIT
-            payload_body = payload_text[:KNOWLEDGE_LIMIT]
-            payload_suffix = (f"\n... [truncated {len(payload_text) - KNOWLEDGE_LIMIT} chars]"
-                              if payload_truncated else "")
+            # Never slice: _fit_json_block drops or thins WHOLE entries so the
+            # rendered block always parses, and never removes a load-bearing
+            # one. See the helper's header for the sweep that motivated it.
+            payload_text, payload_suffix = _fit_json_block(
+                json_payload, KNOWLEDGE_LIMIT,
+                fetch_hint=(f'knowledge(topic="physics", solver="{solver}", '
+                            f'physics="{matched_physics}")'))
+            # The trim note goes OUTSIDE the fence: whatever sits between
+            # ```json and ``` must be parseable on its own, because that is
+            # what a consumer extracts.
             parts.append("## Knowledge\n```json\n"
-                         + payload_body + payload_suffix
-                         + "\n```\n")
+                         + payload_text
+                         + "\n```\n"
+                         + (payload_suffix.strip() + "\n" if payload_suffix else ""))
             if pitfalls_separate:
                 bullets = "\n".join(f"- {p}" for p in pitfalls_separate)
                 parts.append(
