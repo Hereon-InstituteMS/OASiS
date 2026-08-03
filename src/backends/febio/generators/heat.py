@@ -142,8 +142,9 @@ KNOWLEDGE = {
             "fluid-solutes, thermo-fluid, polar fluid). Fixing every "
             "fluid velocity DOF reduces the thermo-fluid energy "
             "equation to Fourier conduction; the steady state then "
-            "reproduces the analytic linear profile to machine "
-            "precision on every mesh. Template: heat_3d_bar."),
+            "reproduces the analytic linear profile on every mesh, to "
+            "the linear solver's tolerance rather than to "
+            "discretization error. Template: heat_3d_bar."),
         "input_format": "FEBio XML v4.0",
         "status": (
             "EXECUTED on FEBio 4.12.0.86045466d. heat_3d_bar runs to "
@@ -394,12 +395,21 @@ KNOWLEDGE = {
         ],
         "verification": (
             "The steady state of heat_3d_bar is linear in x and hex8 is "
-            "trilinear, so FEBio reproduces the analytic profile to "
-            "machine precision independently of mesh size. That makes "
-            "the deck a conduction PATCH TEST: run it at two "
+            "trilinear, so the exact solution lies IN the finite-element "
+            "space and FEBio reproduces it independently of mesh size. "
+            "That makes the deck a conduction PATCH TEST: run it at two "
             "refinements and compare the logged nodal temperatures "
-            "against T_cold + (T_hot - T_cold) * x / L. Any deviation "
-            "at all is a real defect, not discretization error."),
+            "against T_cold + (T_hot - T_cold) * x / L. The residual is "
+            "set by the ITERATIVE solver's tolerance, not by "
+            "discretization, so expect a small floor rather than exact "
+            "zeros — `bicgstab` is required here (see the [Solver] "
+            "pitfall) and is not a direct solve. Executed at 2, 4, 8, "
+            "12 and 16 elements and across conductivity, temperature, "
+            "length, density, molar-mass and heat-capacity variations: "
+            "the deviation never rose above the solver floor, and it "
+            "does NOT grow with refinement — that non-growth is the "
+            "property to check. Any deviation that scales with element "
+            "size is a real defect."),
     },
 }
 
