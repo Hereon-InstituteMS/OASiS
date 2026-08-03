@@ -511,10 +511,26 @@ class TestVerifyMeshIndependenceE2E(unittest.TestCase):
         stub = _StubMCP()
         register_consolidated_tools(stub)
         cls.tool = staticmethod(stub.tools["verify_mesh_independence"])
+        cls.submit_review = staticmethod(stub.tools["submit_critic_review"])
 
     def _run(self, **kw):
         out = asyncio.run(self.tool(**kw))
         return json.loads(out)
+
+    def _review(self, solver, template):
+        """Put a critic review of this template on record.
+
+        `critic_approved=True` alone no longer verifies anything: OASiS looks
+        the review up on the server rather than trusting the flag, so a test
+        that wants a VERIFIED verdict has to do what a real agent does.
+        """
+        out = json.loads(asyncio.run(self.submit_review(
+            solver=solver, setup=template,
+            findings="Checked the manufactured problem, the boundary "
+                     "conditions, the element choice and the refinement "
+                     "sequence; the discretisation is adequate and the "
+                     "units are consistent.")))
+        self.assertTrue(out["accepted"], out)
 
     def test_registered_with_critic_approved(self):
         import inspect
@@ -523,6 +539,7 @@ class TestVerifyMeshIndependenceE2E(unittest.TestCase):
         self.assertIn("rel_tol", params)
 
     def test_resolved_problem_converges(self):
+        self._review("skfem", _SKFEM_TEMPLATE)
         d = self._run(solver="skfem", input_template=_SKFEM_TEMPLATE,
                       resolution=32, job_name="test_meshcheck_converged",
                       critic_approved=True)

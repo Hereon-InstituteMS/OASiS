@@ -77,12 +77,20 @@ def _require_skfem():
 
 
 def _build_mesh(points: np.ndarray, cells, dim: int):
-    """Construct a scikit-fem mesh from submitted points/cells."""
+    """Construct a scikit-fem mesh from submitted points/cells.
+
+    Cell blocks are normalised through the fabrication gate's helper rather
+    than indexed directly. Indexing is what broke here: meshio returns
+    CellBlock objects, which are not subscriptable, so `c[0]` raised TypeError
+    on every real artefact while the module's own tests — which build cells as
+    plain tuples — kept passing. The check was sound and unreachable.
+    """
     from skfem import MeshTri, MeshTet
-    tri = [np.asarray(c[1], int) for c in cells
-           if str(c[0]).lower().startswith("triangle")]
-    tet = [np.asarray(c[1], int) for c in cells
-           if str(c[0]).lower().startswith("tetra")]
+
+    from .fabrication_gate import _cell_arrays
+    blocks = _cell_arrays(cells)
+    tri = [arr for name, arr in blocks if name.startswith("triangle")]
+    tet = [arr for name, arr in blocks if name.startswith("tetra")]
     p = np.asarray(points, float)
     if dim == 2 and tri:
         t = np.vstack(tri)

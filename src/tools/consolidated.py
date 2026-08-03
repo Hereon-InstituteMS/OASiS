@@ -15,6 +15,8 @@ from mcp.server.fastmcp.server import Context
 from core.backend import detect_template_language
 from core.registry import get_backend, available_backends, all_backends
 from core.fabrication_gate import inspect_result_artefacts
+from core.critic_gate import (CriticRegistry, CriticGateError,
+                              setup_digest)
 from core.quality_checks import check_result_files_finite, check_summary_finite
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
@@ -35,16 +37,205 @@ _ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
 _PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
                  "general_pitfalls", "common_pitfalls")
 
-# The MANDATORY pre-execution critic. OFA_DISABLE_CRITIC is the held-out eval's
-# ablation control: it LIFTS the mandatory-critic requirement so an evidence-
-# backed run verifies without critic approval (attestation is still enforced).
-# It therefore DOES change the verification-gate verdict — that is exactly how
-# the ablation measures the critic's contribution — but only under the toggle.
-_ABLATE_CRITIC = os.environ.get("OFA_DISABLE_CRITIC", "0") == "1"
+# The MANDATORY pre-execution critic is unconditional.
+#
+# An OFA_DISABLE_CRITIC environment ablation used to lift it, stamping an
+# unreviewed run VERIFIED. That is removed. An environment variable that turns a
+# mandatory gate off is a bypass, and a gate with a bypass cannot support the
+# claim that OASiS results are critic-reviewed: anything that sets the variable
+# — a stray export, a harness default, a copied shell script — silently
+# converts every verdict into an unreviewed one that still reads as VERIFIED.
+# The evaluation it existed for (a critic-ablation arm) is not run; the design
+# is OASiS or no OASiS.
+
+# The critic requirement was a boolean the AGENT passed: an audit showed a run
+# stamped VERIFIED with critic_approved=True and no critic anywhere in the
+# process. The server now keeps its own record. A review must be SUBMITTED for
+# the exact setup being run, and the run tools consult this registry INSTEAD of
+# trusting the flag.
+_CRITIC_REGISTRY = CriticRegistry()
+
+
+def _critic_state(solver: str, setup_text: str, *, token: str = "",
+                  job_id: str = "") -> tuple[bool, str]:
+    """Has an independent critic reviewed THIS setup, on this server's record?
+
+    Only a review submitted through `submit_critic_review` counts, and only for
+    the exact deck being run: a digest mismatch means the input changed after it
+    was reviewed, so "review a clean setup, then run a different one" is blocked.
+
+    Two routes, both requiring a server-side record:
+
+      * a TOKEN issued for this review — validated by the registry as known,
+        unexpired, UNUSED, and matching this solver and this deck. Single-use,
+        so it also blocks replaying one review across many runs.
+      * no token — the deck is matched against submitted reviews by digest. This
+        still proves a review of this exact setup exists; it does NOT bound how
+        many runs one review covers. Callers that want that bound pass a token.
+
+    What neither route can do is judge whether the critique was any GOOD; the
+    server is not an oracle for review quality. It enforces that a substantive
+    review of this setup happened and is auditable, which is the part that can
+    be enforced in software rather than requested in a prompt.
+
+    The agent's own `critic_approved` flag is deliberately not an input here: it
+    is a self-report, and replacing the self-report is the entire point.
+    """
+    digest = setup_digest(solver, setup_text)
+    if token:
+        try:
+            _CRITIC_REGISTRY.consume(token, digest=digest, solver=solver,
+                                     job_id=job_id)
+            return True, "reviewed (critic token redeemed; single use)"
+        except CriticGateError as exc:
+            return False, f"critic review token refused: {exc}"
+    for rec in _CRITIC_REGISTRY.records():
+        if rec.solver == solver and rec.digest == digest and not rec.expired():
+            return True, "reviewed (submitted review matches this setup)"
+    if any(r.solver == solver for r in _CRITIC_REGISTRY.records()):
+        return False, ("a critic review exists for this solver but NOT for this "
+                       "setup: the input changed after it was reviewed")
+    return False, "no critic review is on record for this setup"
+
+
+def _attest_run_quantities(work_dir, job_id: str) -> dict:
+    """Compute the run's headline numbers from the run's OWN data output.
+
+    An audit demonstrated the gap this closes: the gate bound its verdict to the
+    RUN but never to a NUMBER, so a plausible invented value attached to a real,
+    clean run passed everything. Nothing recomputed it, because nothing could —
+    the number existed only in the agent's narration.
+
+    So OASiS computes them itself, from the solver's data artefacts and never
+    from anything the agent wrote: a value is derived from the mesh and nodal
+    field the run actually produced, and carries the file it came from and that
+    file's hash. The agent no longer has to state a number, which is the point —
+    fabrication-by-assertion stops being a thing an agent can usefully do,
+    because the authoritative value is already in the result next to its
+    provenance.
+
+    This is not the same as making fabrication impossible. It binds a number to
+    a FILE, not to a PROBLEM: a field that is well-formed but does not solve the
+    stated equations still attests fine. Separating solving from forging needs
+    the discrete residual (core/residual_check.py), which requires the problem's
+    source term and is therefore opt-in per run.
+
+    Never raises: an unattestable run is reported as unattestable, with the
+    reason, and the run still returns.
+    """
+    quantities = {}
+    try:
+        from core.attestation import AttestationError, attest_quantity
+    except Exception as exc:                      # pragma: no cover
+        return {"available": False,
+                "why": f"attestation unavailable: {exc}"[:300]}
+    for quantity in ("l2_norm", "max_abs"):
+        try:
+            att = attest_quantity(work_dir, job_id, quantity)
+        except AttestationError as exc:
+            quantities[quantity] = {"available": False, "why": str(exc)[:300]}
+        except Exception as exc:
+            quantities[quantity] = {
+                "available": False,
+                "why": f"could not be computed from the run's data: {exc}"[:300]}
+        else:
+            quantities[quantity] = {
+                "available": True,
+                "value": att.value,
+                "field": att.field,
+                "from_file": Path(att.source_file).name,
+                "sha256": att.source_sha256[:16],
+                "n_points": att.n_points,
+                "computed_by": att.computed_by,
+            }
+    quantities["note"] = (
+        "Computed by OASiS from this run's own data output. Report these "
+        "rather than numbers read out of a script's print statements, and "
+        "never a number you did not obtain from the run.")
+    return quantities
+
+
+def _check_declared_pde(spec: str, out_files) -> dict:
+    """Does the field the run produced actually SOLVE the problem it declared?
+
+    Every other check in this gate inspects the run: did it complete, did it
+    write output, is that output finite, is the mesh structurally sane. All of
+    them are satisfied by a field that is well-formed and wrong — an audit built
+    one in eight lines that was MORE accurate than a genuine solve, ran 82x
+    faster, and passed a mesh-independence study. As data it is impeccable. The
+    only property that separates it from a solve is whether it satisfies the
+    equations, and that is what this measures.
+
+    Opt-in, because it needs the problem's source term and OASiS cannot infer
+    one. That is not a leak: f is the problem statement, not its solution, and a
+    residual is computed from f alone. A gate that needed the answer could not
+    verify a real engineering problem, where there isn't one.
+
+    Never raises — a gate an agent can disable by malforming its input is not a
+    gate.
+    """
+    try:
+        from core.residual_gate import check_run_residual
+        return check_run_residual(spec, out_files)
+    except Exception as exc:                       # pragma: no cover
+        return {"verdict": "REFUSED",
+                "detail": f"the residual check could not run: {exc}"[:300]}
+
+
+def _residual_coverage_note(result: dict) -> str:
+    """Say, in the verdict itself, whether anything checked that this output
+    solves anything.
+
+    The residual check is opt-in — it needs the problem's source term, which
+    only the caller has. So a run that skips it still passes every other check
+    and still reads VERIFIED. If the verdict said nothing, those two cases would
+    be indistinguishable in the one place an agent actually looks, and the
+    strongest check in the gate would quietly become optional in practice rather
+    than in principle. Naming the gap is what keeps it a gap instead of a hole.
+    """
+    verdict = (result.get("residual_check") or {}).get("verdict")
+    if verdict == "SOLVES":
+        return ("The output also SATISFIES the equations the run declared "
+                "(relative residual "
+                f"{result['residual_check'].get('relative_residual'):.2e}), so "
+                "it was obtained by solving them rather than merely being a "
+                "well-formed field.")
+    if verdict in ("UNSUPPORTED", "REFUSED"):
+        return ("NOTE: OASiS could not check whether this output solves the "
+                "declared problem ("
+                + str(result["residual_check"].get("detail", ""))[:160]
+                + "), so this verdict covers the run, not the physics.")
+    return ("NOTE: nothing here checked whether this output satisfies any "
+            "equations — the run declared no problem to check against. Pass "
+            "verify_pde with the problem's source term to have OASiS assemble "
+            "it and measure the residual; a field that is finite, structurally "
+            "sane and solves nothing passes every other check in this gate.")
+
+
+def _residual_blocks_verification(result: dict) -> bool:
+    """True only when the residual check positively established the field does
+    not solve the declared problem. UNSUPPORTED and REFUSED must never block —
+    they mean OASiS did not check, and 'not checked' is not evidence of guilt
+    any more than it is evidence of innocence."""
+    return (result.get("residual_check") or {}).get("verdict") == "DOES_NOT_SOLVE"
+
+
+def _coupling_setup_text(**kwargs) -> str:
+    """Canonical text a coupling review is bound to.
+
+    One definition, used by the coupling tools and reproduced by
+    `submit_critic_review`, so the digest a review is issued for and the digest
+    a run is checked against cannot drift apart.
+    """
+    return json.dumps(kwargs, sort_keys=True)
 
 
 def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
-                        critic_approved: bool = False) -> dict:
+                        critic_approved: bool = False,
+                        solver: str | None = None,
+                        setup_text: str | None = None,
+                        critic_token: str = "",
+                        job_id: str = "") -> dict:
     """Attach OASiS's verification-gate verdict to a run/coupling result in place.
 
     A result is trustworthy ONLY when it (1) passes the numerical checks — the
@@ -66,19 +257,37 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
 
     Enforcement is by VERDICT, never by error: an unverified run still returns
     its output, but is never labelled trustworthy, so a confidently-wrong or
-    fabricated claim can't be reported as a result. The critic is mandatory in
-    normal operation; the OFA_DISABLE_CRITIC ablation lifts ONLY the critic
-    requirement, and only for the held-out evaluation that measures its
-    contribution.
+    fabricated claim can't be reported as a result. The critic is mandatory,
+    unconditionally — there is no ablation switch that lifts it.
+
+    THE CRITIC IS RESOLVED FROM THE SERVER'S RECORD, NOT FROM THE ARGUMENT.
+    Pass `solver` and `setup_text` and this function asks the critic registry
+    whether that exact deck was reviewed. A caller that does NOT identify its
+    setup gets NOT VERIFIED: the gate fails closed, because a tool that cannot
+    say what it ran cannot have had that thing reviewed. `critic_approved` is
+    retained only to record what the agent CLAIMED, so a claim with no matching
+    review can be named as such in the verdict.
 
     evidence_ok: True iff a real run backs this result AND the gate's numerical
         checks passed (execution completed, output/logs produced, converged,
         finite, interface balanced — as applicable to the calling tool).
     reason: short cause shown when evidence_ok is False.
-    critic_approved: whether the mandatory critic reviewed the setup. Without it
-        (and outside the ablation) the result is NOT verified.
+    critic_approved: what the agent asserted. Recorded, never trusted.
+    solver, setup_text: identify the deck whose review is being looked up.
+    critic_token: optional single-use token from `submit_critic_review`.
+    job_id: recorded against a redeemed token for audit.
     """
-    critic_ok = _ABLATE_CRITIC or critic_approved
+    if solver is not None and setup_text is not None:
+        critic_ok, critic_note = _critic_state(
+            solver, setup_text, token=critic_token, job_id=job_id)
+    else:
+        critic_ok, critic_note = False, (
+            "not checked — this tool did not identify its setup to the "
+            "verification gate, so no review could be looked up")
+    if critic_approved and not critic_ok:
+        critic_note += ("; the call declared critic_approved=True, which OASiS "
+                        "does not accept as evidence — a review must be on "
+                        "record via submit_critic_review")
     if not evidence_ok:
         result["trustworthy_result"] = False
         result["verification"] = (
@@ -91,23 +300,21 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
         result["verification"] = (
             "NOT VERIFIED — the automated checks passed, but OASiS's MANDATORY "
             "independent critic has not reviewed this setup, and OASiS treats no "
-            "result as trustworthy until it has. Spawn a critic to challenge the "
-            "parameters, units, discretisation, problem statement and boundary "
-            "conditions and to cross-check against literature/benchmarks, then "
-            "re-run with critic_approved=True.")
+            "result as trustworthy until it has (" + critic_note + "). Spawn a "
+            "critic to challenge the parameters, units, discretisation, problem "
+            "statement and boundary conditions and to cross-check against "
+            "literature/benchmarks, then call submit_critic_review with what it "
+            "found and re-run. Asserting critic_approved=True does not work: "
+            "OASiS looks the review up rather than taking your word for it.")
     else:
         result["trustworthy_result"] = True
         result["verification"] = (
-            "VERIFIED — "
-            + ("critic-approved" if critic_approved
-               else "critic disabled for this evaluation run")
-            + " and passed OASiS verification-gate checks (attestation + "
-            "numerical checks). This is verification, not validation: confirm "
-            "physical validity against reality yourself.")
-    result["critic_review"] = (
-        "approved" if critic_approved
-        else "disabled for evaluation" if _ABLATE_CRITIC
-        else "REQUIRED — mandatory critic not yet performed")
+            "VERIFIED — an independent critic reviewed this exact setup ("
+            + critic_note + ") and the run passed OASiS's verification-gate "
+            "numerical checks. This is verification, not validation: confirm "
+            "physical validity against reality yourself. "
+            + _residual_coverage_note(result))
+    result["critic_review"] = critic_note
     return result
 
 
@@ -1514,9 +1721,99 @@ def register_consolidated_tools(mcp: FastMCP):
     # ═══════════════════════════════════════════════════════════
 
     @mcp.tool()
+    async def submit_critic_review(solver: str, findings: str,
+                                   setup: str = "", coupling_args: str = "",
+                                   ttl_s: float = 3600.0) -> str:
+        """Put an independent critic's review of a setup ON RECORD, so a run of
+        that setup can be verified.
+
+        OASiS's critic requirement is enforced, not requested. The run and
+        coupling tools do not take your word for it: they look up whether THIS
+        server holds a review of the EXACT setup being executed. Passing
+        critic_approved=True without a matching review here leaves the result
+        NOT VERIFIED, whatever else the run does.
+
+        The workflow is: spawn a sub-agent as an independent critic; have it
+        challenge the parameters, units, discretisation, problem statement and
+        boundary conditions, and cross-check against literature and benchmarks;
+        then submit what it actually found here; then run.
+
+        The review is bound to the setup by digest, so a setup edited after
+        review no longer matches and must be reviewed again. That is deliberate:
+        reviewing a clean deck and running a different one is the obvious way to
+        defeat a critic requirement, and it is the route this closes.
+
+        This server cannot judge whether a critique was any GOOD — it is not an
+        oracle for review quality. It enforces that a substantive review of this
+        setup exists and is auditable, and refuses a review too short to have
+        said anything.
+
+        Args:
+            solver: the backend the run will use. For `couple` pass "couple",
+                for `couple_precice` pass "couple_precice", and for the legacy
+                `coupled_solve` pass "<solver_a>-><solver_b>".
+            findings: what the critic actually checked and concluded. Substance
+                is required; an empty approval is indistinguishable from no
+                review and is refused.
+            setup: for run_simulation / run_with_generator /
+                verify_mesh_independence — the EXACT deck text you will run
+                (input_content, generator_script, or input_template).
+            coupling_args: for the coupling tools instead of `setup` — a JSON
+                object of the arguments you will pass. Keys per tool:
+                coupled_solve: problem, solver_a, solver_b, nx, ny, max_iter,
+                tol, relaxation, params; couple: participants, max_iter, tol,
+                accelerator; couple_precice: participants, data, exchanges,
+                scheme, dimensions, max_time, time_window.
+            ttl_s: how long the review stays valid (default 1 hour).
+
+        Returns: JSON with a `critic_token`. Passing it to run_simulation or
+            run_with_generator makes the review single-use and binds it to that
+            job; omitting it still works, since the deck is matched by digest.
+        """
+        if bool(setup) == bool(coupling_args):
+            return json.dumps({
+                "accepted": False,
+                "error": "pass exactly one of `setup` (a deck) or "
+                         "`coupling_args` (a JSON object of coupling "
+                         "arguments), so the review binds to one setup."},
+                indent=2)
+        if coupling_args:
+            try:
+                parsed = json.loads(coupling_args)
+            except json.JSONDecodeError as exc:
+                return json.dumps({"accepted": False,
+                                   "error": f"coupling_args is not JSON: {exc}"},
+                                  indent=2)
+            setup_text = json.dumps(parsed, sort_keys=True)
+        else:
+            setup_text = setup
+        try:
+            rec = _CRITIC_REGISTRY.submit_review(
+                solver=solver, findings=findings,
+                digest=setup_digest(solver, setup_text), ttl_s=ttl_s)
+        except CriticGateError as exc:
+            return json.dumps({"accepted": False, "error": str(exc)}, indent=2)
+        _get_journal().record("critic_review", "submit_critic_review",
+                              solver=solver,
+                              input_snapshot=_make_input_snapshot(
+                                  setup_text, solver, {"type": "critic_review"}))
+        return json.dumps({
+            "accepted": True,
+            "critic_token": rec.token,
+            "solver": solver,
+            "valid_for_s": ttl_s,
+            "note": ("This review is on record for this exact setup. Editing "
+                     "the setup invalidates it. Pass critic_token to the run "
+                     "tool to make the review single-use and bound to that "
+                     "job."),
+        }, indent=2)
+
+    @mcp.tool()
     async def run_with_generator(solver: str, generator_script: str,
                                   job_name: str = "", np: int = 1,
                                   critic_approved: bool = False,
+                                  critic_token: str = "",
+                                  verify_pde: str = "",
                                   ctx: Context = None) -> str:
         """Run a generator script that creates an input file, then execute the solver.
 
@@ -1540,7 +1837,22 @@ def register_consolidated_tools(mcp: FastMCP):
             generator_script: Python script that creates the input file
             job_name: Optional job directory name
             np: MPI processes (default 1)
-            critic_approved: Set True only after critic agent approved setup
+            critic_approved: recorded, not trusted. The result is verified only
+                if a critic review of THIS generator_script is on record — call
+                submit_critic_review first.
+            critic_token: optional token from submit_critic_review; makes the
+                review single-use and binds it to this job.
+            verify_pde: optional JSON declaring the problem being solved, so
+                OASiS can check the result actually SATISFIES it rather than
+                merely looking well-formed. Example:
+                {"operator": "diffusion",
+                 "source": "2*pi**2*sin(pi*x)*sin(pi*y)",
+                 "coefficient": "1.0", "dim": 2, "domain_measure": 1.0}
+                `source` and `coefficient` are numeric expressions in x, y, z.
+                A field that does not satisfy the declared equations is NOT
+                VERIFIED, whatever else the run did. Currently covers scalar
+                diffusion on simplex meshes; anything else is reported as not
+                checked, never as passed.
         """
         import subprocess
         import sys
@@ -1661,6 +1973,16 @@ def register_consolidated_tools(mcp: FastMCP):
             # 'non-finite values' (FEBio .xplt / .bp-without-adios2 runs).
             nonfinite = [x for x in nonfinite
                          if not x.startswith("finiteness not asserted")]
+            # OASiS computes the run's headline numbers from the run's own
+            # data, so the agent never has to assert one of its own.
+            if out_files:
+                result["oasis_computed"] = _attest_run_quantities(
+                    work_dir, job.job_id)
+                # …and, if the run declared what it is solving, whether that
+                # data satisfies those equations at all.
+                if verify_pde:
+                    result["residual_check"] = _check_declared_pde(
+                        verify_pde, out_files)
         # Verification gate: bind the verdict to run evidence (attestation).
         if job.error:
             reason = "the solver run errored, so no number is backed by a valid run"
@@ -1675,17 +1997,28 @@ def register_consolidated_tools(mcp: FastMCP):
                       if any("non-finite" in x for x in nonfinite)
                       else "a result file is unreadable/corrupt, so the gate "
                            "could not assert the output's integrity")
+        elif _residual_blocks_verification(result):
+            reason = ("the field this run produced does NOT satisfy the "
+                      "equations it declared: "
+                      + str(result["residual_check"].get("detail", "")))
         else:
             reason = ""
         _stamp_verification(result,
-                            evidence_ok=bool(out_files) and not job.error and not nonfinite,
-                            reason=reason, critic_approved=critic_approved)
+                            evidence_ok=(bool(out_files) and not job.error
+                                         and not nonfinite
+                                         and not _residual_blocks_verification(result)),
+                            reason=reason, critic_approved=critic_approved,
+                            solver=solver, setup_text=generator_script,
+                            critic_token=critic_token,
+                            job_id=str(result.get("job_id", job_name or "")))
         return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def run_simulation(solver: str, input_content: str,
                              job_name: str = "", np: int = 1,
                              critic_approved: bool = False,
+                             critic_token: str = "",
+                             verify_pde: str = "",
                              ctx: Context = None) -> str:
         """Run a simulation directly with input content.
 
@@ -1701,7 +2034,22 @@ def register_consolidated_tools(mcp: FastMCP):
             input_content: The input content (Python script / YAML / C++ / XML)
             job_name: Optional job name
             np: MPI processes
-            critic_approved: Set True only after critic agent approved
+            critic_approved: recorded, not trusted. The result is verified only
+                if a critic review of THIS input_content is on record — call
+                submit_critic_review first.
+            critic_token: optional token from submit_critic_review; makes the
+                review single-use and binds it to this job.
+            verify_pde: optional JSON declaring the problem being solved, so
+                OASiS can check the result actually SATISFIES it rather than
+                merely looking well-formed. Example:
+                {"operator": "diffusion",
+                 "source": "2*pi**2*sin(pi*x)*sin(pi*y)",
+                 "coefficient": "1.0", "dim": 2, "domain_measure": 1.0}
+                `source` and `coefficient` are numeric expressions in x, y, z.
+                A field that does not satisfy the declared equations is NOT
+                VERIFIED, whatever else the run did. Currently covers scalar
+                diffusion on simplex meshes; anything else is reported as not
+                checked, never as passed.
         """
         _journal = _get_journal()
         _snap = _make_input_snapshot(input_content, solver)
@@ -1791,6 +2139,16 @@ def register_consolidated_tools(mcp: FastMCP):
             # 'non-finite values' (FEBio .xplt / .bp-without-adios2 runs).
             nonfinite = [x for x in nonfinite
                          if not x.startswith("finiteness not asserted")]
+            # OASiS computes the run's headline numbers from the run's own
+            # data, so the agent never has to assert one of its own.
+            if out_files:
+                result["oasis_computed"] = _attest_run_quantities(
+                    work_dir, job.job_id)
+                # …and, if the run declared what it is solving, whether that
+                # data satisfies those equations at all.
+                if verify_pde:
+                    result["residual_check"] = _check_declared_pde(
+                        verify_pde, out_files)
         # Verification gate: attestation binds the verdict to run evidence.
         if job.error:
             reason = "the solver run errored, so no number is backed by a valid run"
@@ -1805,11 +2163,20 @@ def register_consolidated_tools(mcp: FastMCP):
                       if any("non-finite" in x for x in nonfinite)
                       else "a result file is unreadable/corrupt, so the gate "
                            "could not assert the output's integrity")
+        elif _residual_blocks_verification(result):
+            reason = ("the field this run produced does NOT satisfy the "
+                      "equations it declared: "
+                      + str(result["residual_check"].get("detail", "")))
         else:
             reason = ""
         _stamp_verification(result,
-                            evidence_ok=bool(out_files) and not job.error and not nonfinite,
-                            reason=reason, critic_approved=critic_approved)
+                            evidence_ok=(bool(out_files) and not job.error
+                                         and not nonfinite
+                                         and not _residual_blocks_verification(result)),
+                            reason=reason, critic_approved=critic_approved,
+                            solver=solver, setup_text=input_content,
+                            critic_token=critic_token,
+                            job_id=str(result.get("job_id", job_name or "")))
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -1885,7 +2252,8 @@ def register_consolidated_tools(mcp: FastMCP):
             res = {"tool": "verify_mesh_independence", "solver": solver,
                    "status": "failed", "error": msg}
             _stamp_verification(res, evidence_ok=False, reason=msg[:200],
-                                critic_approved=critic_approved)
+                                critic_approved=critic_approved,
+                                solver=solver, setup_text=input_template)
             return json.dumps(res, indent=2)
 
         # Structured failures for these early exits too (Copilot review,
@@ -2034,7 +2402,8 @@ def register_consolidated_tools(mcp: FastMCP):
                     + "; ".join(comparison["failures"])
                     + f" (threshold {rel_tol:.2%}). The solution still "
                     "depends on the mesh — refine further"),
-            critic_approved=critic_approved)
+            critic_approved=critic_approved,
+            solver=solver, setup_text=input_template)
         return json.dumps(result, indent=2)
 
     # ═══════════════════════════════════════════════════════════
@@ -2110,8 +2479,17 @@ def register_consolidated_tools(mcp: FastMCP):
         # An audit found this tool accepted `critic_approved` and then never
         # read it — a dead parameter on a tool the server instructions list as
         # critic-gated, so an unreviewed run was indistinguishable from a
-        # reviewed one. The critic state now governs the verdict shown here.
-        if _ABLATE_CRITIC or critic_approved:
+        # reviewed one. The critic state now governs the verdict shown here,
+        # and it is resolved from the server's review record rather than from
+        # the flag: every parameter that changes what is solved goes into the
+        # digest, so reviewing one configuration does not approve another.
+        critic_ok, critic_note = _critic_state(
+            f"{solver_a}->{solver_b}",
+            _coupling_setup_text(problem=problem, solver_a=solver_a,
+                                 solver_b=solver_b, nx=nx, ny=ny,
+                                 max_iter=max_iter, tol=tol,
+                                 relaxation=relaxation, params=params))
+        if critic_ok:
             note = ("\n\n[OASiS verification: LEGACY coupled_solve — critic-reviewed. "
                     "Trust is governed by the convergence report above; a "
                     "non-converged run is reported as failure, never a result. "
@@ -2121,9 +2499,11 @@ def register_consolidated_tools(mcp: FastMCP):
                     "critic has not reviewed this setup, and OASiS treats no "
                     "result as trustworthy until it has. Do NOT report the values "
                     "above as a result: have a critic challenge the parameters, "
-                    "units, discretisation and boundary conditions, then re-run "
-                    "with critic_approved=True. For a machine-readable verdict "
-                    "use `couple`.]")
+                    "units, discretisation and boundary conditions, then call "
+                    "submit_critic_review with what it found and re-run. "
+                    f"({critic_note}.) Asserting critic_approved=True does not "
+                    "work: OASiS looks the review up rather than taking your "
+                    "word for it. For a machine-readable verdict use `couple`.]")
         return (out + note) if isinstance(out, str) else out
 
     @mcp.tool()
@@ -2201,7 +2581,11 @@ def register_consolidated_tools(mcp: FastMCP):
                   "the coupling did not converge or failed a finiteness / "
                   "interface-balance check")
         _stamp_verification(result, evidence_ok=checks_ok, reason=reason,
-                            critic_approved=critic_approved)
+                            critic_approved=critic_approved,
+                            solver="couple",
+                            setup_text=_coupling_setup_text(
+                                participants=participants, max_iter=max_iter,
+                                tol=tol, accelerator=accelerator))
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -2269,6 +2653,11 @@ def register_consolidated_tools(mcp: FastMCP):
                                "values — the exchanged fields are invalid."]
         _stamp_verification(
             r, evidence_ok=conv and not nonfinite, critic_approved=critic_approved,
+            solver="couple_precice",
+            setup_text=_coupling_setup_text(
+                participants=participants, data=data, exchanges=exchanges,
+                scheme=scheme, dimensions=dimensions, max_time=max_time,
+                time_window=time_window),
             reason="" if (conv and not nonfinite) else
                    ("participant logs report non-finite (NaN/Inf) values"
                     if nonfinite else
