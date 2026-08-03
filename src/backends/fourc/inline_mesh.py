@@ -4,13 +4,44 @@ Inline mesh generation for 4C input files.
 Creates NODE COORDS + ELEMENTS sections directly in YAML,
 bypassing the need for external Exodus mesh files.
 This makes 4C fully self-contained for standard benchmark problems.
+
+WHICH ELEMENT TYPE OWNS 2D STRUCTURAL CELLS IS VERSION-DEPENDENT, and the two
+spellings share no keywords:
+
+    WALL  QUAD4 <n..> MAT m KINEM k EAS e THICK t STRESS_STRAIN s GP a b
+    SOLID QUAD4 <n..> MAT m KINEM k THICKNESS t PLANE_ASSUMPTION p
+
+Only one of them is registered in any given build: `4C --parameters` lists the
+cell types each element factory owns, and in a build where SOLID owns only 3D
+cell types, `SOLID QUAD4` aborts before the first assembly with
+
+    Element 'SOLID' does not seem to know cell type 'quad4'.
+
+while in a build where 2D has been folded into SOLID, `WALL` aborts with
+
+    Unknown type 'WALL' of finite element
+
+STRUCT_QUAD4_TYPE / STRUCT_QUAD4_SUFFIX below carry the WALL spelling with all
+six of its required keys, because that is what the deployed 4C accepts. Swap
+both constants together if you target a build where SOLID owns quad4 — they are
+not interchangeable one at a time, since neither keyword set is a subset of the
+other.
 """
+
+# 2D structural element spelling. Change BOTH constants together.
+STRUCT_QUAD4_TYPE = "WALL QUAD4"
+STRUCT_QUAD4_SUFFIX_LINEAR = (
+    "MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+)
+STRUCT_QUAD4_SUFFIX_NONLINEAR = (
+    "MAT 1 KINEM nonlinear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+)
 
 
 def generate_quad4_rectangle(nx: int, ny: int, lx: float = 1.0, ly: float = 1.0,
                               element_section: str = "STRUCTURE",
-                              element_type: str = "SOLID QUAD4",
-                              element_suffix: str = "MAT 1 KINEM nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain"):
+                              element_type: str = STRUCT_QUAD4_TYPE,
+                              element_suffix: str = STRUCT_QUAD4_SUFFIX_NONLINEAR):
     """Generate inline QUAD4 mesh on [0,lx]×[0,ly].
 
     Returns dict with:
@@ -782,8 +813,8 @@ def matched_elasticity_input(nx: int = 40, ny: int = 4, E: float = 1000.0, nu: f
     """
     mesh = generate_quad4_rectangle(nx, ny, lx=lx, ly=ly,
                                      element_section="STRUCTURE",
-                                     element_type="SOLID QUAD4",
-                                     element_suffix="MAT 1 KINEM linear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
+                                     element_type=STRUCT_QUAD4_TYPE,
+                                     element_suffix=STRUCT_QUAD4_SUFFIX_LINEAR)
 
     yaml = f'''TITLE:
   - "Cantilever {lx}x{ly} — cross-solver benchmark"
@@ -1157,8 +1188,8 @@ def matched_elasticity_genalpha_input(nx: int = 20, ny: int = 4,
     """
     mesh = generate_quad4_rectangle(nx, ny, lx=lx, ly=ly,
                                      element_section="STRUCTURE",
-                                     element_type="SOLID QUAD4",
-                                     element_suffix="MAT 1 KINEM linear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
+                                     element_type=STRUCT_QUAD4_TYPE,
+                                     element_suffix=STRUCT_QUAD4_SUFFIX_LINEAR)
 
     yaml = f'''TITLE:
   - "Cantilever {lx}x{ly} transient — GenAlpha"
@@ -3810,4 +3841,155 @@ DNODE-NODE TOPOLOGY:
   - "NODE 1 DNODE 1"
   - "NODE 5 DNODE 2"
   - "NODE 6 DNODE 3"
+'''
+
+
+def matched_contact_3d_input(nx: int = 2, ny: int = 2, nz: int = 2,
+                             gap: float = 0.1, indent: float = 0.3,
+                             penalty: float = 1.0e4,
+                             E: float = 1000.0, nu: float = 0.3,
+                             n_steps: int = 10) -> str:
+    """Two stacked HEX8 blocks driven into mortar-penalty contact.
+
+    Self-contained: inline nodes, inline elements, no external mesh.
+    Runs to completion on the deployed 4C (rc=0, all load steps
+    finalised, contact active set non-empty from the step where the
+    prescribed displacement closes ``gap``).
+
+    The contact-specific ingredients — and there are exactly three
+    sections — are CONTACT DYNAMIC, MORTAR COUPLING, and one Master +
+    one Slave DESIGN SURF MORTAR CONTACT CONDITIONS 3D entry sharing an
+    InterfaceID. CONTACT DYNAMIC/LINEAR_SOLVER may reuse the structural
+    solver id; the separate SOLVER 2 block below is convention, not a
+    requirement.
+
+    ``penalty`` is a physical interface stiffness for STRATEGY Penalty and
+    scales with ``E``. If Newton fails, shrink ``n_steps``' step size
+    (raise ``n_steps``) rather than lowering ``penalty``: the failure mode
+    is active-set chatter, and a smaller ``penalty`` buys convergence by
+    permitting more penetration. A deck that exhausts MAXITER at ten load
+    steps completes at a hundred, unchanged otherwise.
+    """
+    nodes, elements = [], []
+    nid, eid = 1, 1
+    face = {"bot_lo": [], "bot_hi": [], "top_lo": [], "top_hi": []}
+
+    for blk, (z0, z1, lo_key, hi_key) in enumerate(
+            [(0.0, 1.0, "bot_lo", "bot_hi"),
+             (1.0 + gap, 2.0 + gap, "top_lo", "top_hi")]):
+        grid = {}
+        for k in range(nz + 1):
+            for j in range(ny + 1):
+                for i in range(nx + 1):
+                    x = i / nx
+                    y = j / ny
+                    z = z0 + k * (z1 - z0) / nz
+                    nodes.append(f'NODE {nid} COORD {x:.6f} {y:.6f} {z:.6f}')
+                    grid[(i, j, k)] = nid
+                    if k == 0:
+                        face[lo_key].append(nid)
+                    if k == nz:
+                        face[hi_key].append(nid)
+                    nid += 1
+        for k in range(nz):
+            for j in range(ny):
+                for i in range(nx):
+                    c = [grid[(i, j, k)], grid[(i + 1, j, k)],
+                         grid[(i + 1, j + 1, k)], grid[(i, j + 1, k)],
+                         grid[(i, j, k + 1)], grid[(i + 1, j, k + 1)],
+                         grid[(i + 1, j + 1, k + 1)], grid[(i, j + 1, k + 1)]]
+                    ids = " ".join(str(c_) for c_ in c)
+                    elements.append(
+                        f'{eid} SOLID HEX8 {ids} MAT {blk + 1} KINEM nonlinear')
+                    eid += 1
+
+    def topo(ids, dsurf):
+        return "\n".join(f'  - "NODE {n} DSURFACE {dsurf}"' for n in ids)
+
+    node_block = "\n".join(f"  - \"{n}\"" for n in nodes)
+    ele_block = "\n".join(f"  - \"{e}\"" for e in elements)
+    topo_block = "\n".join([
+        topo(face["bot_lo"], 1),
+        topo(face["bot_hi"], 2),
+        topo(face["top_lo"], 3),
+        topo(face["top_hi"], 4),
+    ])
+
+    return f'''TITLE:
+  - "Two blocks in mortar-penalty contact -- inline mesh, self-contained"
+PROBLEM SIZE:
+  DIM: 3
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: {1.0 / n_steps}
+  NUMSTEP: {n_steps}
+  MAXTIME: 1.0
+  TOLDISP: 1.0e-08
+  TOLRES: 1.0e-06
+  MAXITER: 50
+  LINEAR_SOLVER: 1
+CONTACT DYNAMIC:
+  LINEAR_SOLVER: 2
+  STRATEGY: "Penalty"
+  PENALTYPARAM: {penalty}
+MORTAR COUPLING:
+  LM_DUAL_CONSISTENT: "none"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+SOLVER 2:
+  SOLVER: "UMFPACK"
+  NAME: "Contact_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: 1.0
+  - MAT: 2
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: {E}
+      NUE: {nu}
+      DENS: 1.0
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+  - E: 4
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, {-abs(indent)}]
+    FUNCT: [0, 0, 1]
+DESIGN SURF MORTAR CONTACT CONDITIONS 3D:
+  - E: 2
+    InterfaceID: 1
+    Side: "Master"
+  - E: 3
+    InterfaceID: 1
+    Side: "Slave"
+DSURF-NODE TOPOLOGY:
+{topo_block}
+NODE COORDS:
+{node_block}
+STRUCTURE ELEMENTS:
+{ele_block}
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+  OUTPUT_CONTACT: true
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 1
+      QUANTITY: "dispz"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30
 '''

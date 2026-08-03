@@ -111,9 +111,14 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("plasticity", "Elasto-plasticity: J2/von Mises, Drucker-Prager, GTN damage, crystal plasticity", [2, 3],
                               ["QUAD4", "HEX8"],
                               ["linear_2d", "nonlinear_3d"]),
+            # heat_transient_2d was reachable through generate_input()
+            # and produced a running One-Step-Theta deck, but was absent
+            # from template_variants, so no tool could select it and no
+            # caller could discover it. Registered 2026-08-03 after
+            # executing both variants on the installed 4C (both rc=0).
             PhysicsCapability("heat", "Heat conduction", [2, 3],
                               ["QUAD4", "HEX8"],
-                              ["heat_2d"]),
+                              ["heat_2d", "heat_transient_2d"]),
             PhysicsCapability("fluid", "Incompressible Navier-Stokes", [2, 3],
                               ["QUAD4", "HEX8"],
                               ["channel_2d", "cavity_2d"]),
@@ -126,9 +131,13 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("beams", "Beam elements", [2, 3],
                               ["BEAM3R", "BEAM3EB"],
                               ["cantilever_static", "cantilever_dynamic"]),
+            # inline_penalty_3d FIRST: it is the only contact variant
+            # that is self-contained (inline nodes + elements) and runs
+            # without FOURC_ROOT or an external Exodus mesh. penalty_3d
+            # is the tutorial/format-template route and needs both.
             PhysicsCapability("contact", "Contact mechanics", [3],
                               ["HEX8"],
-                              ["penalty_3d"]),
+                              ["inline_penalty_3d", "penalty_3d"]),
             PhysicsCapability("particle_pd", "Peridynamics (bond-based)", [2],
                               ["particle"],
                               ["plate_2d", "impact_2d"]),
@@ -199,9 +208,14 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("multiscale", "Multiscale FE-squared (computational homogenisation)", [3],
                               ["SOLID HEX8"],
                               ["fe2_3d"]),
+            # single_phase_3d listed FIRST because it is the only one of
+            # the three that generates a complete deck and runs (rc=0 on
+            # the installed 4C, 2026-08-03); terzaghi_2d and
+            # consolidation_3d fall through to the ~1 kB reference-stub
+            # template and are documentation, not runnable input.
             PhysicsCapability("porous_media", "Poroelasticity (Biot/mixture theory, consolidation)", [2, 3],
                               ["WALLQ4PORO", "WALLQ9PORO", "SOLIDH8PORO", "SOLIDT4PORO"],
-                              ["terzaghi_2d", "consolidation_3d"]),
+                              ["single_phase_3d", "terzaghi_2d", "consolidation_3d"]),
             # New physics
             PhysicsCapability("membrane", "Membrane elements (inflatable, fabric, tissue)", [2, 3],
                               ["MEMBRANE TRI3", "MEMBRANE QUAD4"], ["membrane_2d"]),
@@ -1119,6 +1133,7 @@ class FourcBackend(SolverBackend):
             matched_fluid_cavity_input,
             matched_fluid_channel_input,
             matched_reduced_airways_input,
+            matched_contact_3d_input,
         )
         key = f"{physics}_{variant}"
 
@@ -1326,6 +1341,22 @@ class FourcBackend(SolverBackend):
             # inline BEAM3R cantilevers; the tip load scales with E,
             # so the probe's E=1000 override converges like the
             # default E=1e7.
+            # contact/inline_penalty_3d: the ONLY self-contained contact
+            # variant. contact/penalty_3d needs FOURC_ROOT and an external
+            # Exodus mesh; without them it falls through to the
+            # <placeholder> format template, which cannot run (4C's
+            # MatchTree rejects "TIMESTEP: <load_step_size>"). This one
+            # carries its own nodes and elements and completes every load
+            # step on the deployed 4C (verified by execution 2026-08-03).
+            "contact_inline_penalty_3d":
+                lambda p: matched_contact_3d_input(
+                    nx=int(p.get("nx", 2)), ny=int(p.get("ny", 2)),
+                    nz=int(p.get("nz", 2)),
+                    gap=p.get("gap", 0.1),
+                    indent=p.get("indent", 0.3),
+                    penalty=p.get("penalty", 1.0e4),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
+                    n_steps=int(p.get("n_steps", 10))),
             "beams_cantilever_static":
                 lambda p: matched_beam_cantilever_static_input(
                     n_elem=p.get("n_elem", 10),

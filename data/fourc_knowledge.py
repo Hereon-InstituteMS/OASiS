@@ -2504,18 +2504,521 @@ FOURC_KNOWLEDGE = {
     # CONTACT MECHANICS
     # ═══════════════════════════════════════════════════════════════════════
     "contact": {
-        "description": "Contact mechanics with multiple enforcement methods",
-        "methods": {
-            "penalty": "Penalty method (simple, parameter-dependent)",
-            "lagrange": "Lagrange multiplier (exact enforcement, saddle-point)",
-            "nitsche": "Nitsche method (consistent, no extra DOFs)",
-            "mortar": "Mortar method (surface integration, non-matching meshes)",
+        # ---- READ THIS FIRST ----
+        "description": (
+            "Mortar contact between two deformable bodies. Contact is NOT a "
+            "problem type: PROBLEMTYPE stays 'Structure'. Contact adds "
+            "exactly THREE sections to an otherwise ordinary structural "
+            "deck, and all three are mandatory:\n"
+            "  1. CONTACT DYNAMIC  — must set LINEAR_SOLVER; must set "
+            "PENALTYPARAM if STRATEGY is Penalty\n"
+            "  2. MORTAR COUPLING  — must be present AND non-empty; "
+            "'MORTAR COUPLING: {}' still aborts. One line is enough: "
+            "LM_DUAL_CONSISTENT: \"none\"\n"
+            "  3. DESIGN SURF MORTAR CONTACT CONDITIONS 3D (2D: DESIGN LINE "
+            "MORTAR CONTACT CONDITIONS 2D) — EXACTLY ONE entry with "
+            "Side: \"Master\" and EXACTLY ONE with Side: \"Slave\", both "
+            "carrying the SAME InterfaceID\n"
+            "CONTACT DYNAMIC/LINEAR_SOLVER may point at the SAME SOLVER n "
+            "block the structure uses — a separate contact solver is "
+            "conventional but NOT required.\n"
+            "The deck below is complete and runs as written."
+        ),
+        "problemtype": "Structure",
+        "yaml_sections": [
+            "CONTACT DYNAMIC",
+            "MORTAR COUPLING",
+            "DESIGN SURF MORTAR CONTACT CONDITIONS 3D",
+            "DESIGN LINE MORTAR CONTACT CONDITIONS 2D",
+        ],
+
+        # ---- COMPLETE RUNNABLE DECK. Copy this whole thing. ----
+        "minimal_working_input_3d": """\
+# Complete 3D contact deck: two unit cubes, the upper one pressed into the
+# lower one across an initial 0.1 gap. Nothing external is needed - no mesh
+# file, no include. Runs to completion; the contact active set becomes
+# non-empty from the load step at which the prescribed displacement closes
+# the gap.
+PROBLEM TYPE:
+  PROBLEMTYPE: "Structure"
+STRUCTURAL DYNAMIC:
+  DYNAMICTYPE: "Statics"
+  TIMESTEP: 0.1            # load-step size; SHRINK THIS FIRST if Newton fails
+  NUMSTEP: 10
+  MAXTIME: 1.0
+  TOLDISP: 1.0e-08
+  TOLRES: 1.0e-06
+  MAXITER: 50
+  LINEAR_SOLVER: 1
+CONTACT DYNAMIC:           # (1) REQUIRED whenever a contact condition exists
+  LINEAR_SOLVER: 2         #     REQUIRED - may reuse id 1
+  STRATEGY: "Penalty"
+  PENALTYPARAM: 1.0e4      #     REQUIRED for Penalty; 0 is rejected
+MORTAR COUPLING:           # (2) REQUIRED and must be non-empty
+  LM_DUAL_CONSISTENT: "none"
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
+SOLVER 2:                  # optional: CONTACT DYNAMIC could reuse SOLVER 1
+  SOLVER: "UMFPACK"
+  NAME: "Contact_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Struct_StVenantKirchhoff:
+      YOUNG: 1000.0
+      NUE: 0.3
+      DENS: 1.0
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1                   # bottom face of the lower block: clamped
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+  - E: 4                   # top face of the upper block: pushed down
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, -0.3]
+    FUNCT: [0, 0, 1]
+DESIGN SURF MORTAR CONTACT CONDITIONS 3D:  # (3) one Master, one Slave
+  - E: 2
+    InterfaceID: 1
+    Side: "Master"
+  - E: 3
+    InterfaceID: 1
+    Side: "Slave"
+DSURF-NODE TOPOLOGY:
+  - "NODE 1 DSURFACE 1"
+  - "NODE 2 DSURFACE 1"
+  - "NODE 3 DSURFACE 1"
+  - "NODE 4 DSURFACE 1"
+  - "NODE 5 DSURFACE 2"
+  - "NODE 6 DSURFACE 2"
+  - "NODE 7 DSURFACE 2"
+  - "NODE 8 DSURFACE 2"
+  - "NODE 9 DSURFACE 3"
+  - "NODE 10 DSURFACE 3"
+  - "NODE 11 DSURFACE 3"
+  - "NODE 12 DSURFACE 3"
+  - "NODE 13 DSURFACE 4"
+  - "NODE 14 DSURFACE 4"
+  - "NODE 15 DSURFACE 4"
+  - "NODE 16 DSURFACE 4"
+NODE COORDS:
+  - "NODE 1 COORD 0.0 0.0 0.0"
+  - "NODE 2 COORD 1.0 0.0 0.0"
+  - "NODE 3 COORD 1.0 1.0 0.0"
+  - "NODE 4 COORD 0.0 1.0 0.0"
+  - "NODE 5 COORD 0.0 0.0 1.0"
+  - "NODE 6 COORD 1.0 0.0 1.0"
+  - "NODE 7 COORD 1.0 1.0 1.0"
+  - "NODE 8 COORD 0.0 1.0 1.0"
+  - "NODE 9 COORD 0.0 0.0 1.1"
+  - "NODE 10 COORD 1.0 0.0 1.1"
+  - "NODE 11 COORD 1.0 1.0 1.1"
+  - "NODE 12 COORD 0.0 1.0 1.1"
+  - "NODE 13 COORD 0.0 0.0 2.1"
+  - "NODE 14 COORD 1.0 0.0 2.1"
+  - "NODE 15 COORD 1.0 1.0 2.1"
+  - "NODE 16 COORD 0.0 1.0 2.1"
+STRUCTURE ELEMENTS:
+  - "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear"
+  - "2 SOLID HEX8 9 10 11 12 13 14 15 16 MAT 1 KINEM nonlinear"
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 9
+      QUANTITY: "dispz"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30    # record mode: prints abs(diff) = the true value
+""",
+
+        # ---- 2D: FIVE changes, not two ----
+        "how_to_make_it_2d": (
+            "Five things change together. Changing only some of them "
+            "produces a design-entity error, not a helpful message.\n"
+            "  1. ADD at the top:  PROBLEM SIZE:\\n  DIM: 2\n"
+            "     (omitting this on an otherwise correct 2D deck aborts "
+            "inside the mortar search with 'auxiliary_plane called for "
+            "unknown element type')\n"
+            "  2. DESIGN SURF MORTAR CONTACT CONDITIONS 3D  ->  "
+            "DESIGN LINE MORTAR CONTACT CONDITIONS 2D\n"
+            "  3. DESIGN SURF DIRICH CONDITIONS  ->  "
+            "DESIGN LINE DIRICH CONDITIONS\n"
+            "  4. DSURF-NODE TOPOLOGY -> DLINE-NODE TOPOLOGY, and every "
+            "'DSURFACE n' -> 'DLINE n'\n"
+            "  5. the element lines: 2D structural cells belong to WALL, not "
+            "SOLID, and WALL needs all six of its keys:\n"
+            "       \"1 WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none "
+            "THICK 1.0 STRESS_STRAIN plane_strain GP 2 2\"\n"
+            "CONTACT DYNAMIC and MORTAR COUPLING are byte-identical in 2D "
+            "and 3D. NUMDOF/ONOFF/VAL/FUNCT of 3 entries are tolerated in a "
+            "2D DIRICH block, so that is not the thing that breaks."
+        ),
+
+        # ---- REQUIRED vs OPTIONAL, stated, not implied ----
+        "contact_dynamic_keys": {
+            "_note": (
+                "Section CONTACT DYNAMIC, 37 keys. `4C --parameters` marks "
+                "EVERY key required:false, but two of them are required in "
+                "practice because their defaults are rejected at setup: "
+                "LINEAR_SOLVER (default -1) and, under STRATEGY Penalty, "
+                "PENALTYPARAM (default 0)."
+            ),
+            "LINEAR_SOLVER": (
+                "REQUIRED IN PRACTICE (schema default -1 is rejected). "
+                "Integer id of a SOLVER n block. MAY be the same id "
+                "STRUCTURAL DYNAMIC uses; a separate contact solver is not "
+                "required. Pointing at an id with no SOLVER block is NOT a "
+                "clean error — see pitfalls."
+            ),
+            "STRATEGY": (
+                "Optional, default 'Lagrange'. Working choices: Lagrange / "
+                "LagrangianMultipliers, Penalty, Nitsche. 'Uzawa' is in the "
+                "enum but is not implemented and aborts. Lowercase aliases "
+                "'lagrange' and 'penalty' are accepted."
+            ),
+            "PENALTYPARAM": (
+                "Optional in the schema (default 0) but REQUIRED under "
+                "STRATEGY Penalty / Nitsche — 0 is explicitly rejected. For "
+                "Penalty it is a physical interface stiffness with units and "
+                "scales with the material's YOUNG. For Nitsche with the "
+                "default NITSCHE_PENALTY_ADAPTIVE: true it is a much smaller "
+                "dimensionless multiplier; a value that works for Penalty is "
+                "typically far too large for Nitsche."
+            ),
+            "PENALTYPARAMTAN": (
+                "Optional, default 0, but REQUIRED once FRICTION is set to "
+                "anything but None — this is the tangential penalty, and "
+                "there is no separate friction-coefficient key in this "
+                "section (the coefficient lives on the condition, as "
+                "FrCoeffOrBound)."
+            ),
+            "SYSTEM": (
+                "Optional, default 'Condensed'. Choices: Condensed, "
+                "Condensedlagmult, SaddlePoint (plus lowercase aliases). "
+                "Condensed requires LM_SHAPEFCN: Dual."
+            ),
+            "FRICTION": "Optional, default 'None'. Choices: None, Coulomb, Stick, Tresca.",
+            "SEMI_SMOOTH_NEWTON": (
+                "Optional, default true. LEAVE IT TRUE — setting it false "
+                "aborts, the non-semi-smooth path is not supported."
+            ),
+            "TOLCONTCONSTR": "Optional, default 1e-06. Contact-constraint convergence tolerance.",
+            "TOLLAGR": "Optional, default 1e-06. Lagrange-multiplier convergence tolerance.",
+            "ADHESION": "Optional, default 'none'. Choices: none, bounded.",
+            "INITCONTACTBYGAP": "Optional, default false. Initialise the active set from an initial gap.",
+            "INITCONTACTGAPVALUE": "Optional, default 0. Gap threshold when INITCONTACTBYGAP is true.",
+            "NITSCHE_THETA": "Optional, default 0. Nitsche symmetry parameter (0 = non-symmetric).",
+            "NITSCHE_WEIGHTING": "Optional, default 'harmonic'. Choices: slave, master, harmonic, physical.",
+            "NITSCHE_PENALTY_ADAPTIVE": "Optional, default true. Scales PENALTYPARAM by element stiffness/size.",
+            "CONSTRAINT_DIRECTIONS": "Optional, default 'ntt'. Choices: vague, ntt, xyz.",
+            "NONSMOOTH_GEOMETRIES": "Optional, default false. Enable edge/corner (LTL, NTS) treatment.",
+            "REGULARIZED_NORMAL_CONTACT": "Optional, default false. Regularised normal law.",
+            "RESTART_WITH_CONTACT": "Optional, default false. Start contact from a contact-free restart.",
+            "_full_key_count": 37,
         },
-        "variants": ["Standard contact", "Self-contact (binary tree search)",
-                     "Wear contact", "Friction (Coulomb)",
+
+        "mortar_coupling_keys": {
+            "_note": (
+                "Section MORTAR COUPLING, 15 keys, all optional in the "
+                "schema. The section itself is NOT optional when contact is "
+                "active, and an empty mapping does not count. The DEFAULT "
+                "combination (LM_SHAPEFCN: Dual + LM_DUAL_CONSISTENT: "
+                "boundary) is invalid for every STRATEGY except Lagrange. "
+                "Minimum for Penalty/Nitsche: LM_DUAL_CONSISTENT: \"none\"."
+            ),
+            "LM_SHAPEFCN": (
+                "Default 'Dual'. Choices: Dual, Standard, PetrovGalerkin "
+                "(plus lowercase aliases). Dual is what SYSTEM: Condensed "
+                "needs; Standard is one of the two escapes from the "
+                "dual-consistency check."
+            ),
+            "LM_DUAL_CONSISTENT": (
+                "Default 'boundary'. Choices: all, boundary, none. Must be "
+                "'none' for any non-Lagrange strategy while LM_SHAPEFCN is "
+                "Dual."
+            ),
+            "ALGORITHM": (
+                "Default 'Mortar'. Choices: Mortar, GPTS, NTS, LTS, LTL, STL "
+                "(plus lowercase). STRATEGY Nitsche accepts ONLY GPTS. GPTS "
+                "is not Nitsche-exclusive: Penalty + GPTS also runs."
+            ),
+            "SEARCH_ALGORITHM": "Default 'BinaryTree'. Choices: BinaryTree, BruteForce, BruteForceEleBased.",
+            "SEARCH_PARAM": "Default 0.3. Search-box inflation factor.",
+            "INTTYPE": "Default 'Segments'. Choices: Segments, Elements, Elements_BS.",
+            "NUMGP_PER_DIM": "Default 0 (= automatic). Gauss points per direction on the interface.",
+            "TRIANGULATION": "Default 'Delaunay'. Choices: Delaunay, Center.",
+            "LM_QUAD": (
+                "Default 'undefined'. Multiplier order on the interface: "
+                "quad, lin, piecewiselinear, const. The lin/const settings "
+                "need quadratic mortar elements (line3/tri6/quad8/quad9) and "
+                "abort on linear ones."
+            ),
+            "MESH_RELOCATION": "Default 'Initial'. Choices: Initial, None.",
+            "CROSSPOINTS": "Default false.",
+            "OUTPUT_INTERFACES": "Default false. Write the mortar interfaces as separate output.",
+            "BINARYTREE_UPDATETYPE": "Default 'BottomUp'. Choices: BottomUp, TopDown.",
+            "SEARCH_USE_AUX_POS": "Default true.",
+            "RESTART_WITH_MESHTYING": "Default false.",
+        },
+
+        "contact_condition_keys": {
+            "_note": (
+                "One list entry per interface SIDE, in section "
+                "DESIGN SURF MORTAR CONTACT CONDITIONS 3D (3D) or "
+                "DESIGN LINE MORTAR CONTACT CONDITIONS 2D (2D). Minimum two "
+                "entries: one Master, one Slave, same InterfaceID."
+            ),
+            "InterfaceID": "REQUIRED. Integer. Master and Slave of one interface must match.",
+            "Side": (
+                "REQUIRED. Choices: Master, Slave, Selfcontact. "
+                "CASE-SENSITIVE — 'slave' is rejected even though "
+                "STRATEGY: 'penalty' lowercase is accepted."
+            ),
+            "E": (
+                "Design-entity id, for inline meshes. Give EITHER E (+ "
+                "optional ENTITY_TYPE) OR NODE_SET_NAME, never both."
+            ),
+            "NODE_SET_NAME": (
+                "Node-set name in the external Exodus file, for the "
+                "STRUCTURE GEOMETRY mesh path. Mutually exclusive with E."
+            ),
+            "ENTITY_TYPE": "Optional. Choices: legacy_id, node_set_id, element_block_id.",
+            "Initialization": "Optional, default 'Inactive'. Choices: Active, Inactive.",
+            "FrCoeffOrBound": "Optional, default 0. Friction coefficient / Tresca bound.",
+            "AdhesionBound": "Optional, default 0.",
+            "Application": "Optional, default 'Solidcontact'. Choices: Solidcontact, Beamtosolidcontact, Beamtosolidmeshtying.",
+            "TwoHalfPass": "Optional, default 0.",
+            "ConstitutiveLawID": "Optional. Id into CONTACT CONSTITUTIVE LAWS.",
+        },
+
+        "strategy_recipes": {
+            "Penalty (simplest)": (
+                "CONTACT DYNAMIC: STRATEGY: \"Penalty\", PENALTYPARAM: <k>, "
+                "LINEAR_SOLVER: <id>  +  MORTAR COUPLING: "
+                "LM_DUAL_CONSISTENT: \"none\". Nothing else. Choose <k> on "
+                "the order of the material's YOUNG."
+            ),
+            "Lagrange, condensed (the default STRATEGY)": (
+                "CONTACT DYNAMIC: STRATEGY: \"Lagrange\", LINEAR_SOLVER: "
+                "<id>  +  MORTAR COUPLING: LM_SHAPEFCN: \"Dual\". No penalty "
+                "parameter, no parameter to tune, and the constraint is "
+                "satisfied exactly rather than approximately."
+            ),
+            "Lagrange, saddle point": (
+                "CONTACT DYNAMIC: STRATEGY: \"Lagrange\", SYSTEM: "
+                "\"SaddlePoint\", LINEAR_SOLVER: <id>. Then LM_SHAPEFCN may "
+                "stay Standard."
+            ),
+            "Nitsche": (
+                "CONTACT DYNAMIC: STRATEGY: \"Nitsche\", PENALTYPARAM: <k>, "
+                "LINEAR_SOLVER: <id>  +  MORTAR COUPLING: ALGORITHM: "
+                "\"GPTS\", LM_DUAL_CONSISTENT: \"none\", NUMGP_PER_DIM: 1, "
+                "TRIANGULATION: \"Center\"  +  a material that supplies a "
+                "Cauchy-stress derivative (MAT_ElastHyper + "
+                "ELAST_CoupNeoHooke). MAT_Struct_StVenantKirchhoff does NOT "
+                "work with Nitsche. <k> here is orders of magnitude SMALLER "
+                "than the Penalty-strategy value for the same material, "
+                "because NITSCHE_PENALTY_ADAPTIVE scales it."
+            ),
+        },
+
+        "methods": {
+            "penalty": "Penalty method (simple, one parameter, approximate constraint)",
+            "lagrange": "Lagrange multiplier (exact constraint, saddle-point or condensed)",
+            "nitsche": "Nitsche method (consistent, no extra DOFs, needs ALGORITHM GPTS)",
+            "mortar": "Mortar surface integration; the default ALGORITHM under all of the above",
+        },
+        "variants": ["Standard contact", "Self-contact (Side: Selfcontact)",
+                     "Wear contact", "Friction (Coulomb / Tresca / Stick)",
                      "TSI contact", "Poro contact", "FSI contact", "SSI contact"],
         "constitutive_laws": ["Linear", "Cubic", "Power law", "Broken rational",
                               "MIRCO (microscale)", "Python surrogate"],
+
+        # ---- PITFALLS, each attached to the section it concerns ----
+        "pitfalls": [
+            (
+                "[DESIGN * MORTAR CONTACT CONDITIONS] THE DANGEROUS ONE: a "
+                "deck with CONTACT DYNAMIC and MORTAR COUPLING but NO "
+                "contact-condition section runs to completion, exit 0, with "
+                "no warning and no contact. The word 'contact' does not "
+                "appear in the output at all — no 'Building contact "
+                "interface(s)', no strategy banner — and the two bodies pass "
+                "through each other. This looks exactly like success. Signal: "
+                "ABSENCE of the lines 'Building contact interface(s)' and "
+                "'fill_complete() on discretization mortar_interface_1', "
+                "which a correct contact run always prints. Check for those "
+                "before believing a contact result. (Verified by execution: "
+                "the same deck with the condition section deleted ran 10/10 "
+                "steps, rc=0, zero occurrences of 'contact' or 'mortar' in "
+                "the log.)"
+            ),
+            (
+                "[CONTACT DYNAMIC] LINEAR_SOLVER is REQUIRED even though "
+                "`4C --parameters` reports required:false with default -1. "
+                "Omitting it — or omitting the whole CONTACT DYNAMIC section "
+                "while a contact condition is present — aborts identically. "
+                "It may reuse the structural solver id. Signal: 'no linear "
+                "solver defined for meshtying/contact problem. Please set "
+                "LINEAR_SOLVER in CONTACT DYNAMIC to a valid number!' "
+                "(Verified on HEX8, TET4 and 2D QUAD4 meshes.)"
+            ),
+            (
+                "[CONTACT DYNAMIC] Pointing LINEAR_SOLVER at an id that has "
+                "no SOLVER n block does NOT produce a 4C diagnostic. The "
+                "process dies with a raw C++ abort and SIGABRT, so there is "
+                "no 'PROC 0 ERROR' block and no stack trace in 4C's own "
+                "format. Signal: 'terminate called after throwing an "
+                "instance of Teuchos::Exceptions::InvalidParameterName' and "
+                "'Error!  The parameter \"SOLVER\" does not exist', with a "
+                "shell exit status of 134. Cross-check that every "
+                "LINEAR_SOLVER id in the deck has a matching SOLVER block."
+            ),
+            (
+                "[CONTACT DYNAMIC] PENALTYPARAM defaults to 0 and 0 is "
+                "rejected, so under STRATEGY: \"Penalty\" the key is "
+                "effectively required. The same holds for PENALTYPARAMTAN as "
+                "soon as FRICTION is anything but None. Signals, both "
+                "confirmed by running the wrong variant: 'Penalty parameter "
+                "eps = 0, must be greater than 0' and 'Tangential penalty "
+                "parameter eps = 0, must be greater than 0'."
+            ),
+            (
+                "[MORTAR COUPLING] The DEFAULT MORTAR COUPLING settings are "
+                "INVALID for every STRATEGY except Lagrange. Omitting the "
+                "section, writing it empty as 'MORTAR COUPLING: {}', or "
+                "writing it with defaults (LM_SHAPEFCN: Dual, "
+                "LM_DUAL_CONSISTENT: boundary) all abort at setup under "
+                "Penalty, Nitsche, Ehl or MultiScale. Two independent "
+                "one-line fixes, both confirmed: set 'LM_DUAL_CONSISTENT: "
+                "\"none\"' OR set 'LM_SHAPEFCN: \"Standard\"'. Signal: "
+                "'Consistent dual shape functions in boundary elements only "
+                "for Lagrange multiplier strategy.' (The four combinations "
+                "of LM_SHAPEFCN x LM_DUAL_CONSISTENT were run under "
+                "STRATEGY Penalty on HEX8, TET4, QUAD4 and TRI3 meshes; only "
+                "Dual+boundary aborts, and Lagrange+boundary runs fine.)"
+            ),
+            (
+                "[CONTACT DYNAMIC] STRATEGY: \"Lagrange\" is the DEFAULT, and "
+                "its default SYSTEM: \"Condensed\" refuses to run with "
+                "standard shape functions. A deck that sets no STRATEGY and "
+                "no LM_SHAPEFCN is fine; a deck that sets 'LM_SHAPEFCN: "
+                "\"Standard\"' and leaves STRATEGY at its default aborts. Two "
+                "fixes, both verified: 'LM_SHAPEFCN: \"Dual\"' in MORTAR "
+                "COUPLING, or 'SYSTEM: \"SaddlePoint\"' in CONTACT DYNAMIC. "
+                "Signal: 'Condensation of linear system only possible for "
+                "dual Lagrange multipliers'. Setting LM_QUAD to escape the "
+                "check is not a third fix: on linear elements it aborts with "
+                "'Lin/Lin interpolation of LM only for line3/tri6/quad8/"
+                "quad9 mortar elements'."
+            ),
+            (
+                "[DESIGN * MORTAR CONTACT CONDITIONS] The list needs EXACTLY "
+                "ONE Side: \"Master\" and EXACTLY ONE Side: \"Slave\" per "
+                "InterfaceID, both carrying the SAME InterfaceID. Each way "
+                "of getting this wrong has its own diagnostic, all four "
+                "confirmed by triggering them: two Masters and no Slave -> "
+                "'Slave side missing in contact condition group!'; two "
+                "Slaves and no Master -> 'Master side missing in contact "
+                "condition group!'; a single entry of either kind -> 'Not "
+                "enough contact conditions in discretization'; Master with "
+                "InterfaceID 1 and Slave with InterfaceID 2 -> 'Cannot find "
+                "matching contact condition for id'. Note what is NOT "
+                "checked: THREE entries in one group, InterfaceID 0, and "
+                "contact surfaces that do not face each other all run to "
+                "completion with exit 0."
+            ),
+            (
+                "[DESIGN * MORTAR CONTACT CONDITIONS] 'Side' is "
+                "case-sensitive: Master / Slave / Selfcontact. Writing "
+                "'slave' is rejected — even though 'STRATEGY: \"penalty\"' "
+                "IS accepted in lowercase, so the casing rule is not uniform "
+                "across the deck. Signal: 'Failed to match condition "
+                "specification in section 'DESIGN SURF MORTAR CONTACT "
+                "CONDITIONS 3D'.'"
+            ),
+            (
+                "[STRUCTURAL DYNAMIC] When contact Newton fails, SHRINK THE "
+                "LOAD STEP — do not lower PENALTYPARAM. The failure mode is "
+                "active-set chatter, not a stiff-system stall: the trace "
+                "alternates forever between two states, one with a non-zero "
+                "Contact-Normal-Active-Set-Size and a large residual and one "
+                "with an empty active set and a small residual, with the "
+                "update norm pinned at a constant. Raising MAXITER does not "
+                "help, and it is not monotone in the load (a LARGER "
+                "prescribed displacement can converge where a smaller one "
+                "does not). Verified: a deck that exhausts MAXITER at "
+                "TIMESTEP 0.1 completes every step, unchanged in all other "
+                "respects, at TIMESTEP 0.01. Lowering PENALTYPARAM also "
+                "makes it converge, but by allowing more penetration — it "
+                "buys convergence with accuracy, so reach for it second, not "
+                "first. Signal: 'The nonlinear solver did not converge!' "
+                "from 4C_solver_nonlin_nox_problem.cpp, preceded by "
+                "'Failed.......Number of Iterations = <MAXITER> < <MAXITER>'."
+            ),
+            (
+                "[STRUCT NOX] A line search does NOT rescue a failing "
+                "contact Newton. Backtrack, Polynomial and Full Step all "
+                "behave identically on a chattering active set, with the "
+                "step length staying at 1.0 throughout. The STRUCT NOX "
+                "section IS being read — a bogus 'Method' value is rejected "
+                "with 'Could not match this input' — so a silent no-op is "
+                "not the explanation. Shrink the time step instead."
+            ),
+            (
+                "[CONTACT DYNAMIC] STRATEGY: \"Nitsche\" needs THREE things "
+                "Penalty does not, and fails differently for each. (a) "
+                "Without 'ALGORITHM: \"GPTS\"' in MORTAR COUPLING it aborts "
+                "with 'Unrecognized strategy: "
+                "\"CONTACT::SolvingStrategy::nitsche\"' — the same message "
+                "appears for ALGORITHM NTS, LTS and Mortar, so GPTS is the "
+                "only accepted value. (b) With GPTS but a "
+                "St.-Venant-Kirchhoff material it aborts with "
+                "'evaluate_cauchy_n_dir_and_derivatives not implemented for "
+                "material of type' — use MAT_ElastHyper with "
+                "ELAST_CoupNeoHooke. (c) The PENALTYPARAM that works for the "
+                "mortar Penalty strategy is far too large for Nitsche, "
+                "because NITSCHE_PENALTY_ADAPTIVE rescales it; a Nitsche "
+                "deck that only fails to converge is usually asking for a "
+                "much smaller value."
+            ),
+            (
+                "[CONTACT DYNAMIC] 'Uzawa' appears in the STRATEGY enum that "
+                "`4C --parameters` prints, but selecting it aborts: the "
+                "schema lists it, the code does not implement it. Signal: "
+                "'This contact strategy is not yet considered!'. Likewise "
+                "'SEMI_SMOOTH_NEWTON: false' is a valid boolean the code "
+                "refuses: 'Currently we support only the semi-smooth Newton "
+                "case!'. Being present in `--parameters` is necessary, not "
+                "sufficient."
+            ),
+            (
+                "[PROBLEM SIZE] A 2D contact deck that is otherwise correct "
+                "but omits 'PROBLEM SIZE:\\n  DIM: 2' gets all the way into "
+                "the mortar search before failing, so the message points at "
+                "geometry rather than at the missing key. Signal: "
+                "'auxiliary_plane called for unknown element type'."
+            ),
+            (
+                "[DESIGN * MORTAR CONTACT CONDITIONS] The dimension suffix "
+                "is part of the section name and is not optional: "
+                "'DESIGN SURF MORTAR CONTACT CONDITIONS 3D' and "
+                "'DESIGN LINE MORTAR CONTACT CONDITIONS 2D'. There is no "
+                "spelling without the suffix. Signal: any wrong spelling is "
+                "caught before anything runs, with \"Section '<what you "
+                "wrote>' is not a valid section name.\" and exit 1."
+            ),
+            (
+                "[IO] To get contact tractions into the output, "
+                "'IO/RUNTIME VTK OUTPUT/STRUCTURE' has a dedicated flag "
+                "'OUTPUT_CONTACT: true' alongside DISPLACEMENT. As with all "
+                "runtime VTK, the parent section 'IO/RUNTIME VTK OUTPUT' "
+                "with INTERVAL_STEPS must ALSO be present, or nothing is "
+                "written at all."
+            ),
+        ],
     },
 
     # ═══════════════════════════════════════════════════════════════════════
