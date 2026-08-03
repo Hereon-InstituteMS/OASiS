@@ -132,8 +132,9 @@ KNOWLEDGE["_general"] = {
             ),
             (
                 "[Syntax] A wrong-form <MeshAdaptor type=...> that "
-                "CONTAINS A NESTED CHILD ELEMENT swallows every "
-                "top-level section after it. Placed before <Material> "
+                "contains ANY CHILD WHICH ITSELF HAS CHILDREN "
+                "swallows every top-level section after it. Placed "
+                "before <Material> "
                 "and <Mesh>, it produces an EMPTY MODEL — zero nodes, "
                 "zero materials — that still exits 0 with a normal "
                 "termination banner. This is the worst silent failure "
@@ -147,10 +148,14 @@ KNOWLEDGE["_general"] = {
                 "materials ...... : 0` in the model echo, with "
                 "`N O R M A L   T E R M I N A T I O N` and exit 0. "
                 "ALWAYS check the echoed node and material counts "
-                "against the deck you wrote. The flat form with no "
-                "nested child does not swallow anything — it is merely "
-                "ignored — so the two failure modes look different and "
-                "only this one destroys the model. "
+                "against the deck you wrote. Executed across five "
+                "shapes of the wrong form: a <criterion> child and an "
+                "arbitrary made-up nested child BOTH destroy the "
+                "model, while a leaf child such as "
+                "<max_iters>1</max_iters>, an empty block and a "
+                "self-closing tag are merely ignored — so the trigger "
+                "is nesting depth, not the particular tag, and the two "
+                "failure modes look different from the outside. "
                 "(Executed 2026-08-03, FEBio 4.12.0.86045466d.)"
             ),
             (
