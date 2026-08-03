@@ -1,23 +1,24 @@
 {
   "dealii": {
-    "version": "9.1.1",
+    "version": "9.8.0",
     "n_applications": 0,
-    "n_elements": 39,
+    "n_elements": 49,
     "n_element_families": 0,
     "n_conditions": 0,
     "n_constitutive_laws": 0,
     "n_variables": 0,
-    "n_mesh_generators": 35,
+    "n_mesh_generators": 55,
     "n_processes": 0,
     "n_modelers": 0,
     "other_counts": {
-      "solvers": 10,
-      "preconditioners": 15
+      "solvers": 11,
+      "preconditioners": 15,
+      "tutorials": 88
     },
     "notes": [
       "constitutive_laws: deal.II ships no central material/law registry; user-written. Catalog diff should treat empty list as 'no information'.",
-      "tutorials: 97 step-* tutorials live in the upstream source tree, not in this conda install. Tutorial harvest pending.",
-      "install_root=~/miniconda3/envs/ofa-dealii"
+      "tutorials: 88 step-* directories present, highest number step-97 \u2014 the numbering has gaps, so the count and the highest number differ.",
+      "install_root=~/dealii/build"
     ]
   }
 }
