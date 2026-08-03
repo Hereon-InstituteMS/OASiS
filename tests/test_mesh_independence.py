@@ -111,6 +111,27 @@ class TestRefinementLadder(unittest.TestCase):
         with self.assertRaises(ValueError):
             mi.refinement_resolutions(16, 1.0, 1)
 
+    def test_zero_and_negative_base_rejected_in_both_kinds(self):
+        # Copilot review (PR #49): resolution=0 / negative silently
+        # produced an invalid ladder ([0, 0, ...]) that only failed later
+        # in solver-specific ways.
+        for kind in ("divisions", "size"):
+            for bad in (0, -8, -0.1):
+                with self.assertRaises(ValueError, msg=f"{kind}, {bad}"):
+                    mi.refinement_resolutions(bad, 2.0, 1, kind)
+
+    def test_fractional_divisions_base_rejected_but_valid_size_accepted(self):
+        # divisions must count at least one element ...
+        with self.assertRaises(ValueError):
+            mi.refinement_resolutions(0.5, 2.0, 1, "divisions")
+        # ... while the same value is a perfectly good element SIZE.
+        self.assertEqual(
+            mi.refinement_resolutions(0.5, 2.0, 1, "size"), [0.5, 0.25])
+
+    def test_non_numeric_base_rejected(self):
+        with self.assertRaises(ValueError):
+            mi.refinement_resolutions("coarse", 2.0, 1)
+
 
 # ── global norm ──────────────────────────────────────────────────────────
 
@@ -123,6 +144,16 @@ class TestGlobalL2(unittest.TestCase):
         norm, kind = mi.compute_global_l2(pts, [("quad", conn)], u)
         self.assertEqual(kind, "volume_weighted_l2")
         self.assertAlmostEqual(norm, 3.0, places=12)
+
+    def test_norm_is_unnormalised_l2_scaling_with_domain_measure(self):
+        # Documented semantics (Copilot review, PR #49): the value is the
+        # UNNORMALISED ||u||_L2 = sqrt(int |u|^2 dOmega), so a constant
+        # field c on a domain of measure V gives c*sqrt(V) — not a
+        # volume-normalised RMS. On a 2x2 square (V=4): 3*sqrt(4)=6.
+        pts, conn = _quad_mesh(8)
+        norm, _ = mi.compute_global_l2(
+            2.0 * pts, [("quad", conn)], np.full(len(pts), 3.0))
+        self.assertAlmostEqual(norm, 6.0, places=12)
 
     def test_refinement_invariance_smooth_field(self):
         # The SAME smooth field sampled on two refinements must give nearly
@@ -187,6 +218,22 @@ class TestProbes(unittest.TestCase):
         vals = mi.probe_field(pts, u, [[0.5, 0.5], [0.25, 0.75]])
         self.assertAlmostEqual(vals[0], 2.5, places=10)
         self.assertAlmostEqual(vals[1], 2.75, places=10)
+
+    def test_n_extra_beyond_two_is_honored(self):
+        # Copilot review (PR #49): n_extra > 2 used to be silently capped
+        # at the fixed (0.35, 0.65) pair.
+        pts, _ = _quad_mesh(8)
+        probes = mi.default_probe_points(pts, values=None, n_extra=4)
+        # centre + 4 distinct interior points, all inside the bbox
+        self.assertEqual(len(probes), 5)
+        for p in probes:
+            self.assertTrue(0.0 <= p[0] <= 1.0 and 0.0 <= p[1] <= 1.0)
+        keys = {tuple(np.round(p, 9)) for p in probes}
+        self.assertEqual(len(keys), 5)
+        # the historical first two interior positions are preserved
+        self.assertEqual(mi._interior_fractions(4)[:2], [0.35, 0.65])
+        # default behaviour (n_extra=2) unchanged
+        self.assertEqual(mi._interior_fractions(2), [0.35, 0.65])
 
 
 # ── comparison + verdict ─────────────────────────────────────────────────
@@ -519,6 +566,19 @@ class TestVerifyMeshIndependenceE2E(unittest.TestCase):
         self.assertEqual(d["status"], "completed", d)
         for lv in d["levels"]:
             self.assertEqual(lv["result_file"], "result.vtu")
+
+    def test_unknown_solver_returns_structured_failure(self):
+        # Copilot review (PR #49): the unknown-solver early exit used to
+        # return a plain string, skipping the JSON shape, the verification
+        # stamp and the tool_error journal record every other failure
+        # path carries.
+        d = self._run(solver="no_such_solver",
+                      input_template=_SKFEM_TEMPLATE, resolution=8,
+                      job_name="test_meshcheck_unknown_solver")
+        self.assertEqual(d["status"], "failed")
+        self.assertIn("Unknown solver", d["error"])
+        self.assertFalse(d["trustworthy_result"])
+        self.assertIn("NOT VERIFIED", d["verification"])
 
     def test_template_without_placeholder_is_refused(self):
         d = self._run(solver="skfem",

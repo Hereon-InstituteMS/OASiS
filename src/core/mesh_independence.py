@@ -104,6 +104,21 @@ def refinement_resolutions(base, refinement_factor: float = 2.0,
         raise ValueError("refinement_factor must be > 1")
     if parameter_kind not in ("divisions", "size"):
         raise ValueError("parameter_kind must be 'divisions' or 'size'")
+    # A non-positive base would silently produce an invalid ladder
+    # ([0, 0, ...]) that only fails later in solver-specific ways
+    # (Copilot review, PR #49).
+    try:
+        base_f = float(base)
+    except (TypeError, ValueError):
+        raise ValueError(f"resolution must be a number, got {base!r}")
+    if not math.isfinite(base_f) or base_f <= 0:
+        raise ValueError(
+            f"resolution must be a positive number, got {base!r}")
+    if parameter_kind == "divisions" and base_f < 1:
+        raise ValueError(
+            f"resolution counts divisions (parameter_kind='divisions') and "
+            f"must be >= 1, got {base!r}; for an element SIZE use "
+            f"parameter_kind='size'")
     out = []
     for lvl in range(levels + 1):
         if parameter_kind == "divisions":
@@ -187,15 +202,25 @@ def field_magnitude(values) -> np.ndarray:
 
 
 def compute_global_l2(points, cells, values) -> tuple[float, str]:
-    """Volume-weighted global L2 norm of a nodal field.
+    """Global L2 norm ``‖u‖_L2(Ω) = sqrt(∫|u|² dΩ)`` of a nodal field,
+    computed with volume-weighted quadrature.
 
+    "Volume-weighted" refers to the QUADRATURE, not to a normalisation:
     ``∫|u|² dΩ`` is approximated per cell as (cell measure) x (mean of
-    |u|² over the cell's corner vertices) — a first-order quadrature that
-    is applied identically at every refinement level, so the LIMIT the
-    levels are compared against is well defined. The highest-dimensional
-    cell family present is used (surface/edge blocks in a volume mesh are
-    ignored). Falls back to the plain point-wise RMS (flagged as
-    ``"rms_point"``) when no supported cell block exists.
+    |u|² over the cell's corner vertices) — a first-order rule applied
+    identically at every refinement level, so the LIMIT the levels are
+    compared against is well defined. The result is the UNNORMALISED
+    norm: it is NOT divided by the domain measure, so a constant field
+    ``u = c`` yields ``c * sqrt(|Ω|)`` (equal to ``c`` only on a
+    unit-measure domain). This is deliberate — the mesh-independence
+    verdict consumes only RELATIVE changes between refinement levels,
+    which are invariant to any fixed normalisation, and the reported
+    absolute value stays a standard, citable L2 norm.
+
+    The highest-dimensional cell family present is used (surface/edge
+    blocks in a volume mesh are ignored). Falls back to the plain
+    point-wise RMS (flagged as ``"rms_point"``) when no supported cell
+    block exists.
 
     Args:
         points: (N, dim) node coordinates.
@@ -204,8 +229,8 @@ def compute_global_l2(points, cells, values) -> tuple[float, str]:
         values: (N,) or (N, k) nodal field.
 
     Returns:
-        (norm, norm_type) with norm_type ``"volume_weighted_l2"`` or
-        ``"rms_point"``.
+        (norm, norm_type) with norm_type ``"volume_weighted_l2"`` (the
+        quadrature label described above) or ``"rms_point"``.
     """
     pts = _pad3(points)
     mag2 = field_magnitude(values) ** 2
@@ -258,12 +283,33 @@ def _active_axes(points: np.ndarray) -> list[int]:
     return [ax for ax in range(3) if spans[ax] > 1e-10 * ref]
 
 
+def _interior_fractions(n: int) -> list[float]:
+    """``n`` deterministic interior fractions of the bounding box.
+
+    The first two stay at the historical 35% / 65% so default behaviour
+    is unchanged; further requests continue with a golden-ratio
+    low-discrepancy sequence confined to [15%, 85%] of the box, so any
+    ``n_extra`` yields distinct, reproducible interior probes (Copilot
+    review, PR #49: values > 2 used to be silently ignored).
+    """
+    out = [0.35, 0.65][:max(0, n)]
+    i = 1
+    while len(out) < n:
+        f = round(0.15 + ((i * 0.618033988749895) % 1.0) * 0.7, 6)
+        if all(abs(f - g) > 1e-3 for g in out):
+            out.append(f)
+        i += 1
+    return out
+
+
 def default_probe_points(points, values=None, n_extra: int = 2) -> list[list[float]]:
     """Choose probe locations from the mesh itself (never from hard-coded
     problem dimensions): the location of the field's max magnitude (the
     hotspot, where local convergence matters most — only when ``values``
-    is given), the bounding-box centre, and interior off-centre points at
-    35% / 65% of the box. Nearby duplicates are dropped.
+    is given), the bounding-box centre, and ``n_extra`` deterministic
+    interior off-centre points (the first two at 35% / 65% of the box,
+    further ones from a golden-ratio sequence within 15-85%). Nearby
+    duplicates are dropped.
     """
     pts = _pad3(points)
     lo, hi = pts.min(axis=0), pts.max(axis=0)
@@ -284,7 +330,7 @@ def default_probe_points(points, values=None, n_extra: int = 2) -> list[list[flo
         if mag.size:
             candidates.append(pts[int(np.argmax(mag))])
     candidates.append((lo + hi) / 2.0)
-    for f in (0.35, 0.65)[:max(0, n_extra)]:
+    for f in _interior_fractions(n_extra):
         candidates.append(_frac(f))
 
     probes: list[list[float]] = []

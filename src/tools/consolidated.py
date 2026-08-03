@@ -1868,12 +1868,17 @@ def register_consolidated_tools(mcp: FastMCP):
                                 critic_approved=critic_approved)
             return json.dumps(res, indent=2)
 
+        # Structured failures for these early exits too (Copilot review,
+        # PR #49): every failure path of THIS tool returns the same JSON
+        # shape with the verification stamp and a tool_error journal
+        # record — a client must never have to branch on plain strings.
         backend = get_backend(solver)
         if not backend:
-            return f"Unknown solver: {solver}"
+            return _fail(f"Unknown solver: {solver}")
         status, msg = backend.check_availability()
         if status.value != "available":
-            return f"Solver {solver} not available: {_short_reason(msg)}"
+            return _fail(
+                f"Solver {solver} not available: {_short_reason(msg)}")
 
         try:
             resolutions = mi.refinement_resolutions(
