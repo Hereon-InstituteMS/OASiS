@@ -158,6 +158,39 @@ def test_no_measured_convergence_orders_in_knowledge(pattern):
         "being evaluated.\n  " + "\n  ".join(hits[:8]))
 
 
+def test_no_absolute_host_paths_in_served_knowledge_payloads():
+    """A `*_knowledge.json` is handed to the agent wholesale. Absolute paths
+    from the machine it was written on are wrong everywhere else.
+
+    An audit found SPARTA's `installed_build` block shipping four absolute host
+    paths through the live `knowledge` tool, for all ten physics — the only
+    backend doing it.
+
+    Deliberately narrow. A broader sweep over `src/backends` was measured and
+    rejected: it fires 16,435 times, overwhelmingly inside the generated install
+    manifest whose whole job is to record local paths, and on ordinary comments
+    that mention a path while explaining something. Search-path fallbacks in a
+    backend's own `backend.py` are likewise legitimate — the code has to look
+    somewhere. What is not legitimate is a path baked into the knowledge PAYLOAD
+    an agent is served as fact.
+    """
+    rx = re.compile(r"[\"'](/home/|/media/)[a-z][a-z0-9_/-]*")
+    hits = []
+    for root in KNOWLEDGE_ROOTS:
+        if not root.exists():
+            continue
+        for p in root.rglob("*_knowledge.json"):
+            text = p.read_text(errors="ignore")
+            for m in rx.finditer(text):
+                line = text[:m.start()].count("\n") + 1
+                hits.append(f"{p.relative_to(REPO)}:{line}: "
+                            f"{text[m.start():m.start() + 90]}")
+    assert not hits, (
+        "An absolute host path is served to agents as knowledge. Describe how "
+        "to locate the install; do not hard-code one machine's layout.\n  "
+        + "\n  ".join(hits[:8]))
+
+
 # Prose ABOUT exact solutions is legitimate and must not be flagged: the
 # mesh-independence tool's docstring correctly says it is "for problems WITHOUT
 # an exact solution", and a pitfall may warn that no closed form exists. Only a
