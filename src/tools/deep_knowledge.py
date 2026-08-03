@@ -281,7 +281,7 @@ _FENICS_KNOWLEDGE = {
                 "basix_name": "basix.ElementFamily.P",
                 "ufl_name": "'Lagrange' or 'P'",
                 "continuity": "C0 (continuous across facets)",
-                "orders": "1, 2, 3, ... (arbitrary order)",
+                "orders": "1, 2, 3, ... (arbitrary order); pyramid is capped at degree 2 — degree 3 raises RuntimeError 'Non-equispaced points on pyramids not supported yet.' (verified basix 0.10.0, 2026-08-03)",
                 "cell_types": "interval, triangle, quadrilateral, tetrahedron, hexahedron, prism, pyramid",
                 "api": "basix.ufl.element('Lagrange', cell, degree)",
                 "variants": {
@@ -289,9 +289,9 @@ _FENICS_KNOWLEDGE = {
                     "gll_warped": "basix.LagrangeVariant.gll_warped (GLL points, lower Lebesgue constant for high order)",
                     "gll_isaac": "basix.LagrangeVariant.gll_isaac (GLL with Isaac warp on simplices)",
                     "gll_centroid": "basix.LagrangeVariant.gll_centroid (GLL with centroid warp)",
-                    "chebyshev_warped": "basix.LagrangeVariant.chebyshev_warped (Chebyshev points)",
-                    "chebyshev_isaac": "basix.LagrangeVariant.chebyshev_isaac",
-                    "chebyshev_centroid": "basix.LagrangeVariant.chebyshev_centroid",
+                    "chebyshev_warped": "basix.LagrangeVariant.chebyshev_warped (Chebyshev points) — DISCONTINUOUS ONLY: on a continuous Lagrange element basix 0.10 raises RuntimeError 'This variant of Lagrange is only supported for discontinuous elements'. Use it on 'DG'. (Verified 2026-08-03.)",
+                    "chebyshev_isaac": "basix.LagrangeVariant.chebyshev_isaac — discontinuous only (same RuntimeError on continuous Lagrange)",
+                    "chebyshev_centroid": "basix.LagrangeVariant.chebyshev_centroid — discontinuous only (same RuntimeError on continuous Lagrange)",
                 },
                 "notes": "Use gll_warped for degree >= 5 to avoid Runge phenomenon. DG variant: 'DG' or basix.ElementFamily.P with discontinuous=True.",
             },
@@ -345,8 +345,12 @@ _FENICS_KNOWLEDGE = {
                 "basix_name": "basix.ElementFamily.CR",
                 "ufl_name": "'CR' or 'Crouzeix-Raviart'",
                 "continuity": "Nonconforming — continuous at facet midpoints only",
-                "orders": "1 only",
-                "cell_types": "triangle, tetrahedron, quadrilateral, hexahedron",
+                "orders": "1 only (degree 2 raises RuntimeError 'Degree must be 1 for Crouzeix-Raviart')",
+                # 2026-08-03: quadrilateral/hexahedron were listed here but
+                # basix 0.10 rejects them —
+                # ValueError: Unknown element family: CR with cell type
+                # quadrilateral. Simplices only.
+                "cell_types": "triangle, tetrahedron ONLY — quadrilateral/hexahedron raise ValueError 'Unknown element family: CR with cell type quadrilateral' (verified 2026-08-03)",
                 "api": "basix.ufl.element('CR', cell, 1)",
                 "use_cases": "Stokes (CR/DG0 pair is inf-sup stable), nonconforming methods",
             },
@@ -354,8 +358,12 @@ _FENICS_KNOWLEDGE = {
                 "basix_name": "basix.ElementFamily.bubble",
                 "ufl_name": "'Bubble'",
                 "continuity": "Zero on element boundaries (vanishes on facets)",
-                "orders": "Depends on cell type (3 for triangle, 4 for tet, 2 for quad, 3 for hex)",
-                "cell_types": "triangle, quadrilateral, tetrahedron, hexahedron",
+                # 2026-08-03: minimum degrees re-measured on basix 0.10 —
+                # triangle 3, tetrahedron 4, quadrilateral 2, hexahedron 2
+                # (the old '3 for hex' was wrong; hex degree 2 builds a
+                # 1-dof bubble, degree 3 gives 8 dofs).
+                "orders": "Minimum degree per cell type: 3 for triangle, 4 for tet, 2 for quad, 2 for hex (below that: RuntimeError 'Bubble element on a <cell> must have degree at least N'). Verified 2026-08-03.",
+                "cell_types": "interval, triangle, quadrilateral, tetrahedron, hexahedron",
                 "api": "basix.ufl.element('Bubble', cell, degree)",
                 "use_cases": "MINI element for Stokes (Lagrange + Bubble enrichment), stabilization",
             },
@@ -373,7 +381,9 @@ _FENICS_KNOWLEDGE = {
                 "ufl_name": "'HHJ'",
                 "continuity": "Normal-normal component continuous",
                 "orders": "0, 1, 2, ...",
-                "cell_types": "triangle",
+                # 2026-08-03: tetrahedron works too in basix 0.10
+                # (element('HHJ','tetrahedron',1).dim == 24).
+                "cell_types": "triangle, tetrahedron (verified 2026-08-03)",
                 "api": "basix.ufl.element('HHJ', cell, degree)",
                 "use_cases": "Kirchhoff plates, biharmonic equation (symmetric tensor field for moments)",
             },
@@ -400,16 +410,26 @@ _FENICS_KNOWLEDGE = {
                 "ufl_name": "'Hermite'",
                 "continuity": "C1 (value and gradient continuous at vertices)",
                 "orders": "3",
-                "cell_types": "triangle, tetrahedron",
-                "api": "basix.ufl.element('Hermite', cell, 3)",
+                "cell_types": "interval, triangle, tetrahedron",
+                # 2026-08-03: the STRING form is not accepted by basix 0.10 —
+                # basix.ufl.element('Hermite', 'triangle', 3) raises
+                # ValueError: Unknown element family: Hermite with cell type
+                # triangle. The ENUM form works (dim 10 on triangle,
+                # 20 on tet, 4 on interval).
+                "api": "basix.ufl.element(basix.ElementFamily.Hermite, basix.CellType.triangle, 3) — the ENUM is required; the string 'Hermite' raises ValueError 'Unknown element family: Hermite with cell type triangle' in basix 0.10 (verified 2026-08-03)",
                 "use_cases": "Beam/plate problems requiring C1 continuity, Kirchhoff theory",
             },
             "iso (isoparametric/macro)": {
                 "basix_name": "basix.ElementFamily.iso",
                 "ufl_name": "'iso'",
                 "continuity": "C0 (piecewise on sub-cells)",
-                "orders": "2, 3, ...",
-                "cell_types": "interval, triangle, quadrilateral, tetrahedron, hexahedron",
+                # 2026-08-03: measured limits on basix 0.10 — degree 2 only
+                # unless a LagrangeVariant is supplied ('Lagrange elements of
+                # degree > 2 need to be given a variant'), and tetrahedron is
+                # not implemented at all ('Only degree 0 and 1 macro polysets
+                # are currently implemented on a tetrahedron').
+                "orders": "2 (degree > 2 raises RuntimeError 'Lagrange elements of degree > 2 need to be given a variant' unless a LagrangeVariant is passed). Verified 2026-08-03.",
+                "cell_types": "interval, triangle, quadrilateral, hexahedron — NOT tetrahedron (RuntimeError 'Only degree 0 and 1 macro polysets are currently implemented on a tetrahedron'). Verified 2026-08-03.",
                 "api": "basix.ufl.element('iso', cell, degree)",
                 "notes": "Macro element: cell is split into sub-cells, lower-order polynomial on each. Fewer DOFs than standard high-order.",
             },
@@ -441,13 +461,15 @@ _FENICS_KNOWLEDGE = {
             "pyramid": "3D pyramid (5 vertices)",
         },
         "pitfalls": [
-            "In dolfinx >= 0.8, use basix.ufl.element() NOT ufl.FiniteElement() (legacy UFL deprecated)",
-            "For vector elements use blocked_element or shape= parameter, NOT VectorElement (deprecated)",
-            "For mixed spaces use basix.ufl.mixed_element, NOT ufl.MixedElement (deprecated)",
-            "Element variant matters for high order (>= 5): use gll_warped to avoid ill-conditioning",
-            "Not all element families support all cell types — check Basix docs for compatibility",
-            "Bubble element minimum degree depends on cell type: 3 for triangle, 4 for tet",
+            "In dolfinx >= 0.8, use basix.ufl.element() NOT ufl.FiniteElement() — the legacy names are GONE, not merely deprecated: ufl.FiniteElement / ufl.VectorElement / ufl.MixedElement all raise AttributeError \"module 'ufl' has no attribute 'FiniteElement'\" on ufl 2025.2.1 (verified 2026-08-03)",
+            "For vector elements use blocked_element or shape= parameter, NOT VectorElement (removed)",
+            "For mixed spaces use basix.ufl.mixed_element, NOT ufl.MixedElement (removed)",
+            "Element variant matters for high order (>= 5): use gll_warped to avoid ill-conditioning. The chebyshev_* variants are DISCONTINUOUS-ONLY — asking for them on continuous Lagrange raises RuntimeError 'This variant of Lagrange is only supported for discontinuous elements' (verified 2026-08-03)",
+            "Not all element families support all cell types — check Basix docs for compatibility. Measured on basix 0.10: CR and Regge are simplex-only; iso is not implemented on tetrahedra; Lagrange on pyramid stops at degree 2",
+            "Bubble element minimum degree depends on cell type: 3 for triangle, 4 for tet, 2 for quad, 2 for hex",
             "Serendipity and DPC elements only available on quads/hexes",
+            "[API] Some families are reachable ONLY through the basix.ElementFamily ENUM, not the family string. Hermite is the concrete case: basix.ufl.element('Hermite', 'triangle', 3) raises ValueError 'Unknown element family: Hermite with cell type triangle', while basix.ufl.element(basix.ElementFamily.Hermite, basix.CellType.triangle, 3) builds the 10-dof C1 element. (Verified empirically 2026-08-03, basix 0.10.0.)",
+            "[API] 'CG' still resolves (with a DeprecationWarning '\"CG\" element name is deprecated. Consider using \"Lagrange\" or \"P\" instead') — it is NOT rejected. 'P' also resolves. The name that genuinely raises ValueError 'Unknown element family: P1 with cell type triangle' is the old DOLFIN degree-suffixed form 'P1'. (Verified empirically 2026-08-03 — corrects an older catalog claim that 'CG' raises.)",
         ],
     },
 
@@ -488,8 +510,10 @@ _FENICS_KNOWLEDGE = {
         },
         "gmsh_integration": {
             "api_0_9": "dolfinx.io.gmshio.model_to_mesh(gmsh.model, MPI.COMM_WORLD, rank=0)",
-            "api_0_10": "dolfinx.io.gmsh.model_to_mesh(gmsh.model, MPI.COMM_WORLD, rank=0) — returns MeshData dataclass",
-            "read_from_msh": "dolfinx.io.gmshio.read_from_msh('file.msh', MPI.COMM_WORLD, rank=0)",
+            "api_0_10": "dolfinx.io.gmsh.model_to_mesh(gmsh.model, MPI.COMM_WORLD, rank=0) — returns a MeshData object with .mesh/.cell_tags/.facet_tags/.ridge_tags/.peak_tags/.physical_groups (verified 2026-08-03)",
+            # 2026-08-03: the gmshio module is GONE in 0.10 —
+            # `import dolfinx.io.gmshio` raises ModuleNotFoundError.
+            "read_from_msh": "dolfinx.io.gmsh.read_from_msh('file.msh', MPI.COMM_WORLD, rank=0) — NOTE the module is `gmsh`, not `gmshio`: `import dolfinx.io.gmshio` raises ModuleNotFoundError: No module named 'dolfinx.io.gmshio' on 0.10 (verified 2026-08-03)",
             "workflow": "1. Build geometry with gmsh Python API, 2. Mesh with gmsh.model.mesh.generate(dim), 3. Convert with model_to_mesh()",
             "returns": "MeshData with mesh, cell_tags (codim 0), facet_tags (codim 1), ridge/peak tags, physical group lookup",
             "notes": "Gmsh model processed on rank 0, DOLFINx mesh distributed across all ranks automatically.",
@@ -501,11 +525,18 @@ _FENICS_KNOWLEDGE = {
         },
         "vtkhdf_import": {
             "api": "dolfinx.io.vtkhdf.read_mesh('mesh.vtkhdf', MPI.COMM_WORLD) — new in 0.10",
-            "notes": "Kitware's future-proof format. Transition from XDMF has started.",
+            "notes": "Kitware's future-proof format. Transition from XDMF has started. Writing is present too in 0.10: dolfinx.io.vtkhdf exposes write_mesh, write_point_data, write_cell_data (verified 2026-08-03).",
         },
         "mesh_refinement": {
-            "uniform_refine": "dolfinx.mesh.uniform_refine(mesh) — refines all cells uniformly",
-            "refine": "dolfinx.mesh.refine(mesh, edges=None) — selective refinement of marked edges",
+            # 2026-08-03: BOTH refine entry points need the edges to exist
+            # first. On a freshly created mesh:
+            #   uniform_refine -> RuntimeError: Missing entities of dimension 1,
+            #                     need to call create_entities(1)
+            #   refine         -> RuntimeError: Missing IndexMap in Topology.
+            #                     Maybe you need to create_entities(1).
+            "PREREQUISITE": "mesh.topology.create_entities(1) MUST be called before either refine entry point on a freshly built mesh, otherwise RuntimeError 'Missing entities of dimension 1, need to call create_entities(1)' (uniform_refine) / 'Missing IndexMap in Topology. Maybe you need to create_entities(1).' (refine). Verified 2026-08-03.",
+            "uniform_refine": "mesh.topology.create_entities(1); m2 = dolfinx.mesh.uniform_refine(mesh) — refines all cells uniformly, returns a Mesh (32 -> 128 cells on a 4x4 unit square)",
+            "refine": "mesh.topology.create_entities(1); m2, parent_cells, parent_facets = dolfinx.mesh.refine(mesh, edges=None) — returns a 3-TUPLE (Mesh, parent-cell array, parent-facet array), not a bare Mesh (verified 2026-08-03)",
             "partitioner": "Optional custom partitioner for distributing refined mesh",
         },
         "mesh_operations": {
@@ -519,7 +550,8 @@ _FENICS_KNOWLEDGE = {
             "MUST pass MPI.COMM_WORLD (or appropriate communicator) to all mesh creation functions",
             "Gmsh model_to_mesh: module renamed from gmshio to gmsh in dolfinx 0.10",
             "For parallel: gmsh model built on rank 0 only (if gmsh.isInitialized())",
-            "Topology connectivity must be created before use: mesh.topology.create_connectivity(dim1, dim2)",
+            "Topology connectivity must be created before use: mesh.topology.create_connectivity(dim1, dim2). Measured scope on 0.10 (2026-08-03): locate_entities_boundary, locate_dofs_topological and ds/dS assembly all build it LAZILY and work without the call; dolfinx.mesh.exterior_facet_indices(mesh.topology) does NOT and raises RuntimeError 'Facet to cell connectivity has not been computed.'",
+            "Both refine entry points need mesh.topology.create_entities(1) first — see mesh_refinement.PREREQUISITE",
             "Branching meshes (T-joints, 3+ cells per facet) supported since 0.10",
             "create_unit_square default is triangles — use CellType.quadrilateral explicitly for quads",
         ],
@@ -547,8 +579,27 @@ _FENICS_KNOWLEDGE = {
                         "'missing 1 required keyword-only "
                         "argument: petsc_options_prefix'."
                     ),
+                    "returns": "problem.solve() returns a dolfinx.fem.Function (NOT a tuple) on 0.10; the KSP is reachable as problem.solver for getConvergedReason() / getIterationNumber(). Same for NonlinearProblem.solve(). (Verified 2026-08-03.)",
                     "0_10_note": "Now supports blocked problems via kind='mpi' or kind='nest'",
                 },
+                "DIAGNOSTIC_TRAP": (
+                    "[API] When a LinearProblem / NonlinearProblem "
+                    "CONSTRUCTOR raises, dolfinx 0.10 immediately "
+                    "emits a SECOND, misleading traceback from "
+                    "__del__ on the half-built object: "
+                    "\"Exception ignored in: <function "
+                    "LinearProblem.__del__ ...> AttributeError: "
+                    "'LinearProblem' object has no attribute "
+                    "'_solver'\" (and '_snes' for "
+                    "NonlinearProblem). The REAL error is the "
+                    "first one — e.g. TypeError missing "
+                    "petsc_options_prefix. Do not chase the "
+                    "_solver / _snes AttributeError; it is "
+                    "garbage-collection noise and appears on "
+                    "stderr even when the real exception was "
+                    "caught and handled. (Verified empirically "
+                    "2026-08-03, dolfinx 0.10.0.)"
+                ),
             },
             "direct_solvers": {
                 "mumps": {"options": {"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"}, "use": "General sparse, parallel, recommended default direct solver"},
@@ -573,8 +624,10 @@ _FENICS_KNOWLEDGE = {
                     "use": "Classical AMG via hypre — excellent for Poisson, good for elasticity",
                     "tuning": {"pc_hypre_boomeramg_strong_threshold": "0.25 (2D) or 0.5-0.7 (3D)", "pc_hypre_boomeramg_agg_nl": "2-4 (aggressive coarsening levels)"},
                 },
-                "BDDC": {"options": {"pc_type": "bddc"}, "use": "Balancing domain decomposition by constraints — scalable parallel"},
-                "fieldsplit": {"options": {"pc_type": "fieldsplit"}, "use": "Block preconditioner for saddle-point (Stokes, mixed)"},
+                "BDDC": {"options": {"pc_type": "bddc"}, "use": "Balancing domain decomposition by constraints — scalable parallel",
+                         "caveat": "NOT usable as a bare option dict: PCBDDC requires a MATIS-format operator, and a plain dolfinx-assembled AIJ matrix makes KSPSetUp abort with PETSc error code 62 (verified 2026-08-03)."},
+                "fieldsplit": {"options": {"pc_type": "fieldsplit"}, "use": "Block preconditioner for saddle-point (Stokes, mixed)",
+                               "caveat": "NOT usable as a bare option dict: the splits must be defined (IS fields via pc.setFieldSplitIS / a blocked LinearProblem with kind='nest'), otherwise KSPSetUp aborts with PETSc error code 77 (verified 2026-08-03)."},
             },
         },
         "nonlinear_solvers": {
@@ -630,9 +683,13 @@ _FENICS_KNOWLEDGE = {
         },
         "block_solvers": {
             "description": "For saddle-point problems (Stokes, mixed Poisson)",
-            "assemble_matrix_block": "dolfinx.fem.petsc.assemble_matrix_block(a_block, bcs)",
-            "assemble_matrix_nest": "dolfinx.fem.petsc.assemble_matrix_nest(a_block, bcs)",
-            "nullspace": "Build nullspace for pressure (constant) or rigid body modes (elasticity), attach to matrix",
+            # 2026-08-03: assemble_matrix_block / assemble_matrix_nest are GONE
+            # in dolfinx 0.10 — dir(dolfinx.fem.petsc) contains only
+            # assemble_matrix / assemble_vector / assemble_jacobian /
+            # assemble_residual. The blocked path is now the `kind` kwarg.
+            "api_0_10": "dolfinx.fem.petsc.assemble_matrix(a_block, bcs=bcs, kind='mpi'|'nest') — the separate assemble_matrix_block / assemble_matrix_nest functions were REMOVED in 0.10 and raise AttributeError (verified 2026-08-03)",
+            "high_level": "dolfinx.fem.petsc.LinearProblem(a_block, L_block, kind='nest'|'mpi', petsc_options_prefix=...) handles blocked problems directly in 0.10",
+            "nullspace": "Build nullspace for pressure (constant) or rigid body modes (elasticity), attach to matrix with A.setNullSpace(PETSc.NullSpace().create(constant=True)) — note dolfinx.la has NO create_petsc_nullspace_constants helper (verified 2026-08-03)",
         },
         "alternative_backends": {
             "pyamg": {
@@ -651,8 +708,9 @@ _FENICS_KNOWLEDGE = {
             "For Stokes: pressure nullspace (constant) must be set via setNullSpace()",
             "GAMG/hypre strong_threshold: 0.25 for 2D, 0.5-0.7 for 3D (wrong value = poor convergence)",
             "Direct solvers fail silently for very large problems — check ksp_monitor for divergence",
-            "NewtonSolver deprecated in 0.10 — use NonlinearProblem.solve() instead",
-            "snes_atol default is 1e-50 (effectively disabled) — you MUST set it explicitly",
+            "NewtonSolver deprecated in 0.10 — use NonlinearProblem.solve() instead. It is not merely advisory: constructing dolfinx.nls.petsc.NewtonSolver(comm, problem) around a 0.10 NonlinearProblem emits a DeprecationWarning AND then fails with AttributeError: 'NonlinearProblem' object has no attribute 'a' (verified 2026-08-03). Any pitfall text below that names NewtonSolver.solve as its signal is describing a 0.9-era code path.",
+            "snes_atol default is 1e-50 (effectively disabled) — you MUST set it explicitly. Measured defaults on petsc4py 3.24.4: (rtol, atol, stol, max_it) = (1e-8, 1e-50, 1e-8, 50) (verified 2026-08-03)",
+            "[API] pc_type 'bddc' / 'fieldsplit' / hypre 'ams' cannot be used as bare option dicts — each needs extra setup (MATIS operator, field splits, discrete-gradient operator respectively) and otherwise aborts in KSPSetUp with PETSc error 62 / 77 / 83 (verified 2026-08-03)",
         ],
         "by_physics": {
             "poisson": "CG + hypre/GAMG (or LU for small)",
@@ -661,7 +719,7 @@ _FENICS_KNOWLEDGE = {
             "stokes": "MinRes + fieldsplit (AMG for velocity block, mass matrix for Schur complement)",
             "navier_stokes": "SNES newtonls + GMRES + AMG (or LU for small)",
             "helmholtz": "GMRES + LU (complex-valued, direct often needed)",
-            "maxwell": "GMRES + AMS (from hypre) for H(curl) problems",
+            "maxwell": "GMRES + AMS (from hypre) for H(curl) problems — AMS needs the discrete gradient + vertex coordinates attached to the PC; {'pc_type':'hypre','pc_hypre_type':'ams'} alone aborts with PETSc error 83 (verified 2026-08-03)",
             "cahn_hilliard": "SNES + LU per time step",
         },
     },
@@ -704,11 +762,16 @@ _FENICS_KNOWLEDGE = {
             "api": "Simply do not specify any BC on the outlet boundary — it is naturally satisfied",
         },
         "pitfalls": [
-            "MUST create connectivity before locating boundary: mesh.topology.create_connectivity(fdim, tdim)",
+            # 2026-08-03: this used to say "MUST create connectivity before
+            # locating boundary". On dolfinx 0.10 that is no longer true for
+            # the locate_* path (lazy build); it IS still true for
+            # exterior_facet_indices. Narrowed to what actually reproduces.
+            "Connectivity: mesh.topology.create_connectivity(fdim, tdim) is NO LONGER required before locate_entities_boundary / locate_dofs_topological / ds / dS on dolfinx 0.10 — connectivity is built lazily and all four work without it. It IS still required before dolfinx.mesh.exterior_facet_indices(mesh.topology), which raises RuntimeError 'Facet to cell connectivity has not been computed.' Calling it explicitly remains harmless and is the safer tutorial pattern. (Verified empirically 2026-08-03.)",
             "For sub-space BCs: locate_dofs_topological needs BOTH the sub-space AND collapsed sub-space as tuple",
-            "Periodic BCs require dolfinx_mpc extension — not natively in DOLFINx",
-            "Dirichlet value type must match: np.zeros(gdim) for vector, scalar for scalar space",
+            "Periodic BCs require dolfinx_mpc extension — not natively in DOLFINx (confirmed: no periodic-constraint API anywhere in dolfinx 0.10)",
+            "Dirichlet value type must match: np.array([0.0]*gdim, dtype=default_scalar_type) for a vector space, scalar for a scalar space. A scalar on a vector space raises RuntimeError 'Rank mismatch between Constant and function space in DirichletBC' (verified 2026-08-03 — it is a dolfinx rank check, NOT a numpy broadcast error)",
             "For enclosed flows (all Dirichlet velocity): pin pressure at one DOF to remove nullspace",
+            "[API] locate_dofs_topological on a DG FunctionSpace returns an EMPTY dof array for boundary facets, so a strong DirichletBC on a DG space is a silent no-op. Impose inflow/boundary data weakly through a ds integral instead. (Verified empirically 2026-08-03: DG1 on a 8x8 unit square, x=0 facets -> 0 dofs located.)",
         ],
     },
 
@@ -735,7 +798,10 @@ _FENICS_KNOWLEDGE = {
         },
         "vtkhdf": {
             "api": "dolfinx.io.vtkhdf.read_mesh('file.vtkhdf', comm) — new in 0.10",
-            "notes": "Kitware's future format. Reading supported, writing in progress.",
+            # 2026-08-03: writing has landed; the module exports write_mesh,
+            # write_point_data, write_cell_data, write_vtkhdf_mesh,
+            # write_vtkhdf_data.
+            "notes": "Kitware's future format. Reading AND writing are both available on 0.10: read_mesh, write_mesh, write_point_data, write_cell_data (verified 2026-08-03 — the older 'writing in progress' note is stale).",
         },
         "checkpointing": {
             "library": "adios4dolfinx (extension by Jørgen S. Dokken)",
@@ -759,10 +825,10 @@ _FENICS_KNOWLEDGE = {
             },
         },
         "pitfalls": [
-            "VTXWriter requires ADIOS2 — check installation",
-            "XDMFFile: only geometry order <= 2; for high-order elements, use VTX",
-            "VTXWriter only works with (discontinuous) Lagrange elements — not RT, Nedelec, etc.",
-            "Function eval requires finding containing cell first — use BoundingBoxTree",
+            "VTXWriter requires ADIOS2 — check dolfinx.io.has_adios2",
+            "XDMFFile: only geometry order <= 2; for high-order elements, use VTX. Concretely, XDMFFile.write_function on a P2 Function over a P1 mesh raises RuntimeError 'Degree of output Function must be same as mesh degree. Maybe the Function needs to be interpolated?' while VTXWriter writes the same P2 Function fine (verified 2026-08-03)",
+            "VTXWriter only works with (discontinuous) Lagrange elements — not RT, Nedelec, etc. Exact message: RuntimeError 'Only (discontinuous) Lagrange functions are supported. Interpolate Functions before output.' (verified 2026-08-03)",
+            "Function eval requires finding containing cell first — use dolfinx.geometry.bb_tree + compute_collisions_points + compute_colliding_cells",
             "Checkpointing (restart) requires adios4dolfinx extension — not built into DOLFINx",
             "Close writers explicitly (writer.close()) to flush data to disk",
         ],
@@ -862,14 +928,17 @@ _FENICS_KNOWLEDGE = {
             "notes": "Computes matrix-vector product on-the-fly. Diagonal assembly available for Jacobi preconditioning.",
         },
         "pitfalls": [
-            "[API] In recent dolfinx, mesh.topology.create_connectivity(fdim, tdim) is no longer a hard prerequisite for locate_entities_boundary / locate_dofs_topological — connectivity is built lazily on first need. Calling it explicitly is harmless and is the safer tutorial pattern, but its ABSENCE no longer triggers an exception in current dolfinx. Signal: in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns dof indices without that step. (Verified empirically 2026-06-01.)",
-            "[API] dolfinx.default_scalar_type for Constants and Function arrays so dtype matches the PETSc build (float64 if PETSc is real, complex128 if PETSc is complex). Signal: passing a Python float into a complex-PETSc Function raises TypeError in fem.form / fem.assemble_matrix; passing 0j into a real-PETSc Function raises ValueError 'cannot convert complex to float'.",
-            "[API] VTXWriter (ADIOS2 backend) supports only Lagrange / DG element families. Mixed / Nedelec / BDM Functions cannot be written. Signal: VTXWriter.write raises RuntimeError 'Cannot interpolate function to the VTX output basis' or 'ADIOS2 VTX only supports Lagrange elements'.",
+            "[API] In recent dolfinx, mesh.topology.create_connectivity(fdim, tdim) is no longer a hard prerequisite for locate_entities_boundary / locate_dofs_topological — connectivity is built lazily on first need. Calling it explicitly is harmless and is the safer tutorial pattern, but its ABSENCE no longer triggers an exception in current dolfinx. Signal: in older dolfinx (pre-0.7), locate_dofs_topological raised RuntimeError mentioning 'connectivity has not been computed'; current dolfinx returns dof indices without that step. EXCEPTION worth knowing (re-verified 2026-08-03 on 0.10.0): dolfinx.mesh.exterior_facet_indices(mesh.topology) is still eager and raises RuntimeError 'Facet to cell connectivity has not been computed.' on a fresh mesh — so the common 'grab all boundary facets' idiom DOES need create_connectivity(fdim, tdim) even though locate_* does not. ds and dS assembly do not. (Verified empirically 2026-06-01; scope re-measured 2026-08-03.)",
+            "[API] dolfinx.default_scalar_type for Constants and Function arrays so dtype matches the PETSc build (float64 if PETSc is real, complex128 if PETSc is complex). Signal (re-measured 2026-08-03 on a REAL conda-forge build): assembling a ufl form that carries an imaginary coefficient raises ValueError 'Unexpected complex value in real expression.' from fem.form, and writing a complex value into a real Function array raises TypeError \"float() argument must be a string or a real number, not 'complex'\". Note fem.Constant(mesh, 1+2j) itself does NOT raise — the failure surfaces at form compilation / array assignment, not at Constant construction.",
+            "[API] VTXWriter (ADIOS2 backend) supports only Lagrange / DG element families. Mixed / Nedelec / BDM / RT Functions cannot be written. Signal (exact text, re-measured 2026-08-03 on 0.10.0): VTXWriter construction raises RuntimeError 'Only (discontinuous) Lagrange functions are supported. Interpolate Functions before output.' — the older quoted strings 'Cannot interpolate function to the VTX output basis' / 'ADIOS2 VTX only supports Lagrange elements' do NOT appear in current dolfinx, and the error fires at VTXWriter(...) construction, not at .write().",
             "[Physics] Pure-Neumann Poisson admits the constant null space — the solution is determined only up to a constant. Either pin one DOF (DirichletBC on a single point) or add a Lagrange multiplier enforcing mean(u) = 0. Signal: LinearProblem.solve returns successfully (CG with pc_type='none' even converges without raising), but the resulting Function array has a HUGE additive offset accommodating the null space — np.array shows max ≈ min ≈ O(1e6) with tiny std (e.g. max=2.18e+06, std=112 on an 8x8 unit square with f=1). The 'KSP fails' alternative does NOT typically fire; you observe the bug as the un-pinned constant. (Verified empirically 2026-06-01.)",
             "[Syntax] For non-unit kappa coefficients: define as fem.Constant for spatially uniform, or fem.Function (interpolated) for spatially varying. Plain Python floats inside ufl forms work for unit coefficients but lose unit metadata. Signal: ufl form runs but the assembled stiffness scale disagrees with the analytic kappa-scaled stiffness by exactly the kappa value (when float coefficient was forgotten).",
         ],
         "materials": {"kappa": {"range": [0.001, 1e6], "unit": "W/(m*K) or dimensionless"}},
-        "reference_solutions": {"unit_square_f1": "max(u) ~ 0.0737 for -laplacian(u)=1 on [0,1]^2, u=0 on boundary"},
+        "reference_solutions": {
+            "unit_square_f1": "max(u) ~ 0.0737 for -laplacian(u)=1 on [0,1]^2, u=0 on boundary (re-measured 2026-08-03 on dolfinx 0.10.0: 0.073657 with P1 on a 64x64 mesh)",
+            "mms_convergence": "Manufactured u = sin(pi x) sin(pi y), f = 2 pi^2 sin(pi x) sin(pi y): observed L2 rates on N = 8,16,32,64 are P1 -> 1.97/1.99/2.00, P2 -> 3.00/3.00/3.00, P3 -> 4.06/4.03/4.01, i.e. the textbook O(h^(k+1)) (verified 2026-08-03)",
+        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -917,51 +986,82 @@ _FENICS_KNOWLEDGE = {
             "trial' does not appear in current dolfinx.)",
             "[Syntax] Dirichlet BC value for a vector elasticity "
             "space must be np.array([0.0]*gdim, dtype="
-            "default_scalar_type) — not scalar 0. dolfinx "
-            "broadcasts the BC value against the space shape; "
-            "scalar→vector fails. Signal: numpy raises ValueError "
-            "'could not broadcast input array from shape () into "
-            "shape (gdim,)' when dirichletbc is constructed with "
-            "a scalar on a vector space.",
+            "default_scalar_type) — not scalar 0. Signal "
+            "(re-measured 2026-08-03 on dolfinx 0.10.0): "
+            "fem.dirichletbc(0.0, dofs, V) on a vector space "
+            "raises RuntimeError 'Rank mismatch between Constant "
+            "and function space in DirichletBC'. This is a "
+            "dolfinx rank check — the older quoted numpy "
+            "ValueError 'could not broadcast input array from "
+            "shape () into shape (gdim,)' does NOT appear.",
             "[Physics] Plane strain vs plane stress: lambda must "
             "be adjusted. Plane stress uses lambda_star = "
-            "2*lambda*mu/(lambda+2*mu); using plane strain "
-            "lambda on a thin plate gives ~30% over-stiffness. "
-            "Signal: a dolfinx plane_strain Function tip "
-            "deflection differs from the analytic plane_stress "
-            "reference by factor (1-nu) at nu=0.3.",
-            "[Numerical] Near-incompressible (nu > 0.49): MUST "
-            "use mixed formulation (Taylor-Hood or three-field) "
-            "to avoid volumetric locking. Pure displacement P1/P2 "
-            "at nu=0.4999 has displacement underestimated by "
-            "orders of magnitude. Signal: a dolfinx single-field "
-            "VectorFunctionSpace tip deflection at nu=0.4999 is "
-            "~1e-3 of analytic value; switching to a mixed_P2_P1 "
-            "Taylor_Hood MixedElement recovers it to within 1%.",
-            "[Numerical] For GAMG/AMG: MUST provide near-nullspace "
+            "2*lambda*mu/(lambda+2*mu). Signal (MEASURED "
+            "2026-08-03, cantilever 1.0 x 0.2, P2 vector "
+            "Lagrange, 40x8 triangles, end traction): the "
+            "plane-STRAIN tip deflection is a factor (1 - nu^2) "
+            "of the plane-STRESS one — 0.90941 measured vs "
+            "0.9100 predicted at nu=0.3, and 0.79100 vs 0.7975 "
+            "at nu=0.45. So plane strain is only ~9% stiffer at "
+            "nu=0.3, NOT ~30%, and the factor is (1-nu^2), NOT "
+            "(1-nu). (Corrects the previous wording, which "
+            "quoted both '~30%' and '(1-nu)' — neither "
+            "reproduces.)",
+            "[Numerical] Near-incompressible (nu > 0.49): a mixed "
+            "(u, p) formulation is the robust choice, but the "
+            "severity of locking depends strongly on ELEMENT "
+            "ORDER and mesh, not just on nu. MEASURED 2026-08-03 "
+            "(same cantilever, tip deflection vs a P2/P1 "
+            "Taylor-Hood reference): "
+            "P1 triangles lock by 7.2x / 16.5x / 19.5x at "
+            "nu = 0.49 / 0.499 / 0.4999 on a coarse 10x2 mesh, "
+            "improving to 1.2x / 2.4x / 9.2x on 80x16 — i.e. "
+            "locking is real but mesh-dependent and is a factor "
+            "of ~2-20, NOT 'orders of magnitude' and NOT the "
+            "'~1e-3 of analytic' quoted previously. "
+            "P2 triangles do NOT meaningfully lock at all here: "
+            "TaylorHood/P2 = 1.00-1.06 across every nu and mesh "
+            "tested. Recommend mixed (or P2+) for nu > 0.49; do "
+            "not expect the P1 catastrophe from P2.",
+            "[Numerical] For GAMG/AMG: provide the near-nullspace "
             "(rigid body modes — 3 translations + 3 rotations in "
-            "3D). Without it, CG+GAMG fails to converge on "
-            "large problems. Signal: PETScKrylovSolver.solve "
-            "raises 'KSP did not converge' / NoConvergence with "
-            "iteration count = max_it; setting "
-            "matrix.setNearNullSpace(rbm) reduces iter count by "
-            "10-50x.",
-            "[Physics] 2D default in dolfinx ufl elasticity is "
-            "plane strain — explicit modification needed for "
-            "plane stress. Forgetting this is a silent source of "
-            "wrong answers for thin structures. Signal: a 2D "
-            "VectorH1 dolfinx Function plate deflection differs "
-            "from analytic plane-stress reference by factor "
-            "(1-nu^2) — the plane-strain stiffness in the "
-            "ufl.inner(sigma, eps(v))*dx form over-constrains "
-            "thickness.",
-            "[API] dolfinx.fem.FunctionSpace rejects element "
-            "family names other than the registered basix "
-            "families. Passing legacy names like 'P1' or 'CG' "
-            "that worked in old DOLFIN raises ValueError. Signal: "
-            "dolfinx.fem.functionspace((mesh, ('CG', 1))) raises "
-            "ValueError 'Unknown element family CG' — the basix "
-            "name is 'Lagrange', not 'CG' or 'P1'.",
+            "3D) via A.setNearNullSpace(PETSc.NullSpace()."
+            "create(vectors=rbm)). Signal (MEASURED 2026-08-03, "
+            "dolfinx 0.10.0; P1 tetrahedral cantilever 2x1x1, "
+            "CG + GAMG, rtol 1e-8): WITHOUT the near-nullspace "
+            "the solve still CONVERGES (reason 2) in 31 / 38 / "
+            "41 iterations at 1911 / 7623 / 19575 dofs; WITH the "
+            "6 rigid-body modes it takes 16 / 16 / 23. "
+            "IMPORTANT CORRECTION: at these sizes the "
+            "near-nullspace is a 1.8x-2.4x iteration-count win, "
+            "NOT the 10x-50x previously claimed, and its absence "
+            "does NOT produce 'KSP did not converge' / iteration "
+            "count = max_it. The claim of outright failure was "
+            "not reproduced up to ~20k dofs; treat 'MUST' as "
+            "'strongly recommended, and increasingly so with "
+            "problem size' and measure your own iteration counts "
+            "before quoting a speedup.",
+            "[Physics] There is no dolfinx 'default': whichever "
+            "lambda you put in sigma() decides it, and the "
+            "standard 3D Lame lambda = E*nu/((1+nu)(1-2nu)) "
+            "written in a 2D form gives PLANE STRAIN. Forgetting "
+            "this is a silent source of wrong answers for thin "
+            "structures. Signal: a 2D VectorH1 dolfinx Function "
+            "plate deflection differs from the plane-stress "
+            "reference by factor (1-nu^2) — measured 0.90941 at "
+            "nu=0.3 against a predicted 0.9100 (verified "
+            "empirically 2026-08-03).",
+            "[API] dolfinx.fem.functionspace rejects element "
+            "family names that basix does not register. Signal "
+            "(re-measured 2026-08-03 on dolfinx 0.10.0 / basix "
+            "0.10.0): the DOLFIN degree-suffixed name 'P1' "
+            "raises ValueError 'Unknown element family: P1 with "
+            "cell type triangle'. 'CG' however STILL WORKS — it "
+            "only emits a DeprecationWarning ('\"CG\" element "
+            "name is deprecated. Consider using \"Lagrange\" or "
+            "\"P\" instead') and builds the space. The previous "
+            "wording, which claimed ('CG', 1) raises ValueError "
+            "'Unknown element family CG', does not reproduce.",
             "[API] dolfinx XDMFFile.write_function requires the "
             "Function degree to match the mesh degree. P2 on a P1 "
             "mesh (the common case) is rejected — interpolate to a "
@@ -1010,16 +1110,28 @@ _FENICS_KNOWLEDGE = {
             "more vectors than just the constant pressure. "
             "(Verified empirically 2026-06-01 — Tier-2 fixture "
             "stokes_basix_element_construction in scripts/"
-            "tier2_fixtures/fenics/. Constructability of all "
-            "three confirmed; instability of P1/P1 is the "
-            "advisory part — well-known LBB theory.)",
+            "tier2_fixtures/fenics/. Re-verified 2026-08-03 on "
+            "dolfinx 0.10.0: the three dims are still exactly "
+            "187 / 139 / 75, and the instability is now measured "
+            "rather than advisory — SVD of the bc-applied Stokes "
+            "matrix on the same 8x8 mesh gives numerical null "
+            "dimension 1 for Taylor-Hood (the constant pressure "
+            "alone) versus 8 for P1/P1.)",
             "[Numerical] Pressure for enclosed (all-Dirichlet on "
             "velocity) flows is determined only up to an "
             "additive constant. Pin one pressure DOF with a "
-            "DirichletBC at a chosen vertex, or attach a "
-            "nullspace via dolfinx.la.create_petsc_nullspace_"
-            "constants and call A.setNullSpace(ns) on the "
-            "PETSc matrix. Skipping this leaves PETSc to handle "
+            "DirichletBC at a chosen vertex, or build the "
+            "constant nullspace yourself with "
+            "PETSc.NullSpace().create(constant=True) and call "
+            "A.setNullSpace(ns) on the PETSc matrix. NOTE "
+            "(2026-08-03): there is NO "
+            "dolfinx.la.create_petsc_nullspace_constants helper "
+            "in dolfinx 0.10 — dolfinx.la exposes only "
+            "BlockMode / IndexMap / InsertMode / MatrixCSR / "
+            "Norm / Vector / is_orthonormal / matrix_csr / norm "
+            "/ orthonormalize / petsc / vector. The previously "
+            "quoted call does not exist. "
+            "Skipping this leaves PETSc to handle "
             "a singular system — MUMPS will either complain or "
             "return a solution with arbitrary global pressure "
             "shift. Signal: PETSc KSP iteration converges "
@@ -1260,26 +1372,51 @@ _FENICS_KNOWLEDGE = {
         },
         "pitfalls": [
             (
-                "[Numerical] Without stabilization, Galerkin method "
-                "produces oscillations for Pe > 1. Signal: solution "
-                "develops visible wiggles upstream of source/sink "
-                "locations; oscillation amplitude does not damp "
-                "with mesh refinement in the advection-aligned "
-                "direction. Add SUPG, GLS, or upwind DG. "
-                "(Audit 2026-06-02.)"
+                "[Numerical] Without stabilization, the Galerkin "
+                "method oscillates whenever the CELL Peclet "
+                "number Pe_h = |b|*h/(2*kappa) exceeds ~1. "
+                "Signal (MEASURED 2026-08-03, dolfinx 0.10.0, "
+                "P1 on the unit square, b=(1,0), kappa=1e-3, "
+                "u=0 at x=0 and u=1 at x=1 — an exponential "
+                "outflow layer): the Galerkin undershoot is "
+                "-6.28 / -3.00 / -1.72 / -1.41 / -1.02 / -0.56 "
+                "/ -0.08 at N = 8 / 16 / 32 / 64 / 128 / 256 / "
+                "512 (Pe_h = 62.5 down to 0.98). "
+                "IMPORTANT CORRECTION: the oscillation DOES "
+                "damp under refinement — it disappears once the "
+                "mesh resolves the layer (Pe_h < 1). The "
+                "previous wording ('oscillation amplitude does "
+                "not damp with mesh refinement') is falsified. "
+                "The real argument for stabilisation is COST: "
+                "resolving the layer needs h < 2*kappa/|b|, "
+                "which is unaffordable for small kappa. SUPG "
+                "with the same meshes keeps the undershoot at "
+                "-0.042 down to -0.000 throughout."
             ),
             (
                 "[Numerical] SUPG tau parameter depends on mesh "
                 "size h and velocity magnitude — must compute "
-                "PER CELL via tau = h / (2*|b|) using "
-                "ufl.CellDiameter inside the dolfinx fem.form "
-                "for high-Pe regime. Using a constant global "
-                "tau Constant under-stabilises on fine cells "
-                "and over-diffuses on coarse ones. Signal: "
-                "convergence rate degrades from O(h^2) to "
-                "~O(h) with a constant Constant tau; per-cell "
-                "ufl.CellDiameter tau restores O(h^2). "
-                "(Audit 2026-06-02.)"
+                "PER CELL via tau = h/(2*|b|) * (coth(Pe_h) - "
+                "1/Pe_h) using ufl.CellDiameter inside the "
+                "dolfinx fem.form. A single global tau Constant "
+                "does not vanish as h -> 0 and leaves a fixed "
+                "streamline-diffusion floor. Signal (MEASURED "
+                "2026-08-03; MMS u = sin(pi x) sin(pi y), "
+                "b=(1,1), kappa=0.01, N = 8..128): with the "
+                "per-cell CellDiameter tau the L2 rates are "
+                "1.91 / 1.57 / 1.62 / 1.84 (P1, approaching 2 "
+                "as Pe_h drops below 1) — O(h^2) as claimed. "
+                "With a FIXED tau Constant (0.0575, the coarse-"
+                "mesh value) the errors are 9.76e-3, 4.12e-3, "
+                "3.94e-3, 4.03e-3, 4.06e-3 — rates 1.24, 0.06, "
+                "-0.03, -0.01. "
+                "IMPORTANT CORRECTION: a constant tau does not "
+                "degrade the rate to ~O(h); it STALLS "
+                "convergence entirely — the error plateaus at a "
+                "fixed floor and further refinement buys "
+                "nothing. Same behaviour on P2 (rates 1.76, "
+                "-0.42, -0.19). Look for a flat error curve, "
+                "not a halved slope."
             ),
             (
                 "[Numerical] DG methods are a cleaner alternative "
@@ -1346,10 +1483,11 @@ _FENICS_KNOWLEDGE = {
             "load_stepping": "For large deformations: apply load in increments, solving at each step",
         },
         "pitfalls": [
-            "[Numerical] Large load steps cause Newton (NewtonSolver) divergence in hyperelasticity. Use incremental load stepping: ramp the dirichletbc value or body-force fem.Constant across N steps, calling NewtonSolver.solve at each level. Signal: dolfinx.nls.petsc.NewtonSolver.solve raises 'Failed to converge' with the residual at the last iter still O(1); reducing the per-step load increment by 2-4× recovers convergence. (Claim inherited.)",
-            "[Numerical] Near-incompressible regime (nu > 0.49) makes the pure-displacement formulation lock — use a dolfinx mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) FunctionSpace or the F-bar method (uniform-pressure projection). Signal: Cook-membrane tip deflection at nu = 0.4999 with pure P2 VectorH1 displacement on a dolfinx Function is O(1e-3) of the analytic value; switching to the mixed (u, p) formulation in basix.ufl recovers it within ~1%. (Claim inherited.)",
+            "[VERSION NOTE 2026-08-03] Several signals below name dolfinx.nls.petsc.NewtonSolver.solve. On dolfinx 0.10.0 that class is DEPRECATED and cannot be driven by the 0.10 NonlinearProblem at all — NewtonSolver(comm, problem) emits a DeprecationWarning and then raises AttributeError: 'NonlinearProblem' object has no attribute 'a'. Read those signals as PETSc SNES signals instead: use NonlinearProblem(..., petsc_options_prefix=..., petsc_options={'snes_monitor': ''}) and inspect problem.solver.getConvergedReason() / getIterationNumber().",
+            "[Numerical] Large load steps cause Newton divergence in hyperelasticity. Use incremental load stepping: ramp the dirichletbc value or body-force fem.Constant across N steps, solving at each level. Signal: the SNES converged reason goes negative (DIVERGED_LINE_SEARCH / DIVERGED_MAX_IT) with the residual at the last iter still O(1); reducing the per-step load increment by 2-4x recovers convergence. (Claim inherited; the NewtonSolver-specific wording was corrected 2026-08-03 — see the version note above.)",
+            "[Numerical] Near-incompressible regime (nu > 0.49) can make the pure-displacement formulation lock — use a dolfinx mixed (u, p) basix.ufl.mixed_element([P2-vector, P1]) FunctionSpace or the F-bar method (uniform-pressure projection). CAUTION on magnitude (2026-08-03): the previously quoted signal ('Cook-membrane tip deflection at nu = 0.4999 with pure P2 displacement is O(1e-3) of analytic') is not supported by measurement in the linear analogue — a P2 cantilever at nu=0.4999 came within 0-6% of the P2/P1 Taylor-Hood reference on every mesh tested, while P1 was 9x-20x too stiff. Expect the severe locking at P1, not at P2; measure the ratio for your own geometry rather than assuming orders of magnitude. (Linear-elasticity measurement 2026-08-03; the hyperelastic Cook membrane itself was NOT re-run.)",
             "[Physics] Neo-Hookean / any compressible hyperelastic model requires J = det(F) > 0 everywhere. A locally inverted element gives J <= 0 and the log(J) term blows up. Signal: NewtonSolver.solve raises RuntimeError / FloatingPointError, or the residual jumps to nan, when det(F) at any quadrature point hits 0 or goes negative. Defensive check: ufl.conditional(J > 0, ..., raise_an_error). (Claim inherited.)",
-            "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.classes.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01.)",
+            "[API] ufl.variable() + ufl.diff() automate stress computation from a stored energy W. Wrap F in ufl.variable to mark it as the differentiation target, define W(F_var), then P = ufl.diff(W, F_var) yields the 1st Piola-Kirchhoff stress as a ufl.VariableDerivative expression directly usable inside the residual ufl.inner(P, grad(v))*dx form. Signal: type(ufl.variable(F)) is ufl.variable.Variable; type(ufl.diff(W, F_var)).__name__ == 'VariableDerivative'. Hand-coding the gradient bypasses ufl's analytic differentiation and is error-prone. (Verified empirically 2026-06-01; re-verified 2026-08-03 on ufl 2025.2.1.)",
             "[Numerical] Near-incompressibility split: decompose F = F_iso * F_vol where F_vol = (J^(1/3))*I (via ufl.det and ufl.Identity); then W = W_iso(F_iso) + U(J) with a quadratic-in-(J-1) volumetric penalty U(J) = kappa/2 * (J - 1)^2. Avoids volumetric locking in pure-displacement settings AND retains a well-conditioned tangent. Signal: dolfinx fem.assemble_scalar of the post-processed pressure (= dU/dJ) gives a bounded value; without the split, the discrete pressure Function at Gauss points oscillates wildly element-to-element. (Claim inherited.)",
             "[API] PETSc SNES newtonls residual monitor: pass 'snes_monitor': '' (or 'snes_monitor_short') in dolfinx.nls.petsc.NewtonSolver options. The monitor prints the residual norm per iter to stderr; if it stalls, halve the load increment and re-run. Signal: stderr shows '0 SNES Function norm ...' lines from PETSc; a stalled iteration shows the norm plateauing at a fixed O(1) value over many iterations rather than dropping by 10x per step. (Claim inherited.)",
         ],
@@ -1460,24 +1598,45 @@ _FENICS_KNOWLEDGE = {
         "pitfalls": [
             (
                 "[Numerical] Penalty parameter alpha must be large "
-                "enough for stability (scales with polynomial "
-                "degree^2). Signal: too small -> coercivity loss "
-                "and the solution norm diverges with mesh "
-                "refinement; too large -> cond(K) > 1e14 and "
-                "iterative solver stalls. Rule of thumb: alpha = "
-                "4 * (k+1)^2 for C0 interior-penalty biharmonic "
-                "with degree-k Lagrange. (Audit 2026-06-02.)"
+                "enough for coercivity, but the standard "
+                "'alpha = 4*(k+1)^2' rule of thumb is a "
+                "STABILITY floor, not an accuracy optimum. "
+                "Signal (MEASURED 2026-08-03, dolfinx 0.10.0; "
+                "C0-IP MMS u = sin(pi x) sin(pi y) on the unit "
+                "square, simply-supported, L2 error at N = "
+                "8/16/32/64): P2 with alpha = 36 (= 4*(k+1)^2) "
+                "gives 8.40e-2 -> 1.80e-3 at rate ~1.96, while "
+                "alpha = 1 gives 1.92e-2 -> 2.96e-4 at rate "
+                "2.00 — same order, ~6x smaller error. "
+                "IMPORTANT CORRECTION: too-small alpha does NOT "
+                "make the solution norm diverge under mesh "
+                "refinement. Measured the other way round — "
+                "alpha = 1e-6 gives a HUGE coarse-mesh error "
+                "(1.25e+1 at N=16) that then converges at rate "
+                "~4.0 as the mesh is refined (7.69e-1, 4.78e-2, "
+                "2.98e-3). The observable for an under-"
+                "penalised C0-IP scheme is a blown-up error "
+                "CONSTANT on coarse meshes, not divergence "
+                "under refinement."
             ),
             (
                 "[API] h_E (cell-size measure for the penalty "
-                "weight) must use the proper UFL CellDiameter / "
-                "FacetArea expressions — hard-coding h as a scalar "
-                "gives wrong scaling on graded meshes. Signal: "
-                "convergence rate degrades from O(h^2) to ~O(h) "
-                "or stagnates because the penalty does not scale "
-                "correctly with element size. Use "
-                "ufl.CellDiameter(mesh) inside the form. (Audit "
-                "2026-06-02.)"
+                "weight) should use ufl.CellDiameter / "
+                "ufl.FacetArea so the penalty tracks the local "
+                "element size on graded / locally refined "
+                "meshes. Signal (MEASURED 2026-08-03): on a "
+                "UNIFORM refinement sequence, hard-coding "
+                "h = 1/8 as a fem.Constant while refining from "
+                "N=16 to N=128 does NOT break convergence — the "
+                "measured P2 L2 rates are 2.65 / 2.59 / 2.43, "
+                "at least as good as the CellDiameter form. "
+                "IMPORTANT CORRECTION: the previously quoted "
+                "signal ('convergence rate degrades from O(h^2) "
+                "to ~O(h) or stagnates') is NOT reproducible on "
+                "uniform meshes. Treat this as a graded-mesh "
+                "concern only, and diagnose it by comparing "
+                "local penalty magnitudes rather than by "
+                "watching a global rate."
             ),
             (
                 "[Performance] Interior penalty requires interior "
@@ -1494,13 +1653,25 @@ _FENICS_KNOWLEDGE = {
             (
                 "[Numerical] Alternative: split into two "
                 "2nd-order equations (mixed method with auxiliary "
-                "variable). Signal: writing biharmonic as a "
-                "single 4th-order operator on C0 Lagrange "
-                "elements raises `NotImplementedError: H2 "
-                "conformity required` or silently uses the "
-                "interior-penalty form when assembling. Mixed "
-                "(u, sigma) with sigma = Laplacian(u) works on "
-                "plain P1 x P1. (Audit 2026-06-02.)"
+                "variable). Signal (MEASURED 2026-08-03, dolfinx "
+                "0.10.0): writing the naive single 4th-order "
+                "form inner(div(grad(u)), div(grad(v)))*dx on a "
+                "C0 Lagrange space raises NOTHING — it compiles "
+                "and assembles cleanly (P2 on an 8x8 unit "
+                "square: 3073 nonzeros), and on P1 it assembles "
+                "an IDENTICALLY ZERO matrix (497 stored "
+                "nonzeros, max |entry| = 0.0) because "
+                "div(grad(.)) of a P1 function vanishes "
+                "cell-wise. "
+                "IMPORTANT CORRECTION: dolfinx does NOT raise "
+                "`NotImplementedError: H2 conformity required` "
+                "(no such error exists) and it does NOT "
+                "silently substitute the interior-penalty form. "
+                "The failure is silent and numerical: a "
+                "singular/inconsistent operator. You must write "
+                "the dS interior-penalty terms yourself, or use "
+                "the mixed (u, sigma) split with sigma = "
+                "Laplacian(u) on P1 x P1."
             ),
         ],
     },
@@ -1525,25 +1696,45 @@ _FENICS_KNOWLEDGE = {
         "solver": "GMRES + LU (direct) for moderate sizes. Indefinite system — CG does NOT work.",
         "pitfalls": [
             (
-                "[Numerical] Need a fine mesh: ~10 points per "
-                "wavelength minimum (pollution effect for high k). "
-                "Signal: phase error grows as (k*h)^2 — at 5 "
-                "points-per-wavelength the computed dolfinx ufl "
-                "Function representing the wave shows visible "
-                "amplitude drift after ~10 wavelengths in the "
-                "XDMFFile output; increasing to 10 pts/wave "
-                "restores the analytic amplitude. Convergence "
-                "rate degrades from O(h^2) to ~O(h) when k*h > 1. "
-                "(Audit 2026-06-02.)"
+                "[Numerical] Need a fine mesh, and '~10 points "
+                "per wavelength' is a FLOOR that is far too "
+                "loose for P1. Signal (MEASURED 2026-08-03, "
+                "dolfinx 0.10.0; MMS u = sin(k x/sqrt2) "
+                "sin(k y/sqrt2) on the unit square with "
+                "Dirichlet data interpolated from the exact "
+                "solution, P1, non-resonant k chosen so k^2/pi^2 "
+                "stays away from any m^2+n^2): "
+                "at k = 12.17 the relative L2 error is 5.8e-1 at "
+                "8.3 pts/wavelength, 1.0e-1 at 16.5, 2.6e-2 at "
+                "33, 1.6e-3 at 132 (rates 2.46/2.01/2.00/2.00). "
+                "At k = 27.57 the errors are 3.04 / 8.18 / 0.73 "
+                "/ 9.6e-2 / 2.2e-2 at 3.6 / 7.3 / 14.6 / 29.2 / "
+                "58.3 pts/wavelength; at k = 54.55, 1.81 / 2.26 "
+                "/ 9.63 / 1.09 / 1.4e-1. "
+                "IMPORTANT CORRECTION: for k*h >~ 1 the scheme "
+                "does not converge at ~O(h) — it does not "
+                "converge AT ALL (relative error >= 1 with "
+                "NEGATIVE measured rates). Clean O(h^2) only "
+                "returns once k*h <~ 0.5. The pollution effect "
+                "is visible as the required points-per-"
+                "wavelength for a fixed accuracy growing with k "
+                "(33 pts/wave gives 2.6% at k=12 but 29 "
+                "pts/wave still gives 14% at k=55). "
+                "PRACTICAL WARNING for MMS tests: pick k away "
+                "from resonance — k^2 near pi^2*(m^2+n^2) makes "
+                "the discrete system near-singular and the error "
+                "study meaningless."
             ),
             (
                 "[Numerical] System is INDEFINITE — standard CG "
-                "diverges. Use GMRES or direct solver. Signal: "
-                "PETSc reports `KSPSolve: DIVERGED_INDEFINITE_PC` "
-                "or `DIVERGED_BREAKDOWN` with CG; the same matrix "
-                "with GMRES converges (slowly). For ~< 100k DOFs "
+                "diverges. Use GMRES or direct solver. Signal "
+                "(re-verified 2026-08-03, dolfinx 0.10.0, "
+                "k = 20 on a 32x32 unit square, ksp_type='cg' "
+                "pc_type='icc'): PETSc stops after 3 iterations "
+                "with converged reason -10 = "
+                "KSP_DIVERGED_INDEFINITE_PC. For ~< 100k DOFs "
                 "use LU; for larger meshes use GMRES + a shifted-"
-                "Laplacian preconditioner. (Audit 2026-06-02.)"
+                "Laplacian preconditioner."
             ),
             (
                 "[Numerical] High wavenumber k: requires "
@@ -1596,7 +1787,7 @@ _FENICS_KNOWLEDGE = {
         "solver": "GMRES + AMS (auxiliary-space Maxwell solver from hypre) for curl-curl",
         "pitfalls": [
             "[Physics] MUST use H(curl) elements (Nedelec / N1curl) for Maxwell — standard Lagrange spaces lack the tangential continuity that the physical fields require. Signal: dolfinx.fem.form does NOT fail at form construction (ufl.curl is accepted on vector Lagrange and even on scalar Lagrange in 2D), so the bug is silent at compile/assemble time. The observable failure is numerical: the post-processed B = curl(A) field has spurious normal jumps at element interfaces, and convergence against an analytic test (e.g., uniform B in a cavity) plateaus at ~10% error regardless of refinement. (Verified empirically 2026-06-01 — prior catalog wording 'violates physical constraints' implied a syntactic/assembly-time rejection; in current dolfinx the form compiles fine and the bug surfaces in the field values.)",
-            "[Syntax] Complex-valued Maxwell: PETSc must be compiled with --with-scalar-type=complex. Signal: assembling a form with imaginary coefficient (e.g., 1j*k*u*v*ds) into a real-PETSc Function raises TypeError 'cannot convert complex to float' or ValueError 'imaginary part discarded' from dolfinx.fem.assemble_vector.",
+            "[Syntax] Complex-valued Maxwell: PETSc must be compiled with --with-scalar-type=complex. Signal (exact text re-measured 2026-08-03 on a REAL conda-forge build, dolfinx 0.10.0 / PETSc 3.24.4): building the form raises ValueError 'Unexpected complex value in real expression.' at dolfinx.fem.form(...) — before assemble_vector is ever reached. Writing a complex value into a real Function array raises TypeError \"float() argument must be a string or a real number, not 'complex'\". The previously quoted strings 'cannot convert complex to float' / 'imaginary part discarded' do NOT appear. Check with numpy.issubdtype(dolfinx.default_scalar_type, numpy.complexfloating) before building the form.",
             "[Numerical] PML (Perfectly Matched Layer): requires coordinate stretching of the form x_i → x_i*(1 + i*sigma(x_i)/omega) inside the PML region. A real-only stretching (real sigma) gives a lossy real boundary, NOT a radiating PML. Signal: a fem.Function evaluated in the PML region decays by orders of magnitude only when the coordinate-stretch coefficient is constructed with numpy.complex128 ScalarType — with a real-only stretch the dolfinx.fem.assemble_vector output shows a standing-wave reflection back into the domain.",
             "[Numerical] Low-frequency breakdown: curl-curl + omega^2-mass formulation becomes ill-conditioned as omega → 0 because the gradient kernel of curl is no longer regularised by the mass term. Use mixed (A, phi) formulation with a Lagrange multiplier on the divergence. Signal: KSP iteration count for GMRES + AMS preconditioner explodes as omega is reduced below ~10^-3 of the lowest cavity eigenvalue; condition number printed by PETSc grows as 1/omega^2.",
             "[API] Edge elements (basix.ElementFamily.N1E / 'Nedelec 1st kind H(curl)') have DOF ordering by edge, not by node. Setting tangential BCs requires interpolating onto the edge basis, not the nodal basis. Signal: dirichletbc on an HCurl space defined with a vector-valued function silently sets only the first component on each edge, leaving the tangential trace 90 degrees off from intended; post-processed E field has non-zero normal component on the conductor boundary.",
@@ -1698,7 +1889,7 @@ _FENICS_KNOWLEDGE = {
             "[Integration] Eigenvalue problems in dolfinx use SLEPc (the eigenvalue counterpart of PETSc). SLEPc must be installed; PETSc must be configured with --download-slepc (or built against an external SLEPc). The Python binding is slepc4py.SLEPc.EPS. Signal: 'from slepc4py import SLEPc; SLEPc.EPS' resolves successfully when properly installed; ImportError 'No module named slepc4py' (or similar) when missing. (Verified empirically 2026-06-01 in the ofa-fenicsx conda env — slepc4py is present with EPS.)",
             "[Numerical] Shift-and-invert spectral transformation (SINVERT) is essential for interior eigenvalues. SLEPc.EPS().setST(...) with a SLEPc.ST configured to SINVERT centers the spectrum on the target value. Signal: searching for eigenvalues near k^2_estimate on the dolfinx-assembled stiffness Matrix without SINVERT returns extreme eigenvalues (highest or lowest) instead; with SINVERT and target = k^2_estimate the returned eigenvalues cluster near the target. (Claim inherited — not yet empirically separated.)",
             "[API] eps.setDimensions(nev, ncv) requests nev eigenvalues with ncv search-space size (ncv >= 2*nev is the SLEPc default heuristic). Too-small ncv slows convergence or fails. Signal: eps.solve() reports 'converged' with fewer than requested eigenvalues, or returns an error code != 0 from eps.getConvergedReason(); doubling ncv typically fixes it. (Claim inherited.)",
-            "[Numerical] For a generalised eigenvalue problem A*x = lambda*B*x with Dirichlet BC, the mass matrix B must be assembled WITHOUT zeroing the boundary rows the way Dirichlet rows are typically handled — otherwise B becomes singular at Dirichlet DOFs and spurious zero eigenvalues appear. Standard pattern: assemble both A and B with bcs=[], then use dirichletbc-aware row/column reduction only on A. Signal: SLEPc returns n_dirichlet_dof spurious zero eigenvalues at the bottom of the spectrum; the next eigenvalues (skipping those zeros) match the analytic Dirichlet eigenvalues. (Claim inherited.)",
+            "[Numerical] For a generalised eigenvalue problem A*x = lambda*B*x with Dirichlet BC, the Dirichlet rows of A and of the mass matrix B must not both be given the SAME diagonal value, or every constrained DOF contributes a spurious eigenvalue at A_ii/B_ii. Signal (MEASURED 2026-08-03, dolfinx 0.10.0, P1 Laplacian on a 24x24 unit square, SLEPc krylovschur + shift-and-invert; analytic Dirichlet eigenvalues 19.739, 49.348, 49.348, 78.957): assembling A with bcs (default diag=1) and B ALSO with bcs (default diag=1) returns 1, 1, 1, 1, 19.82, 49.71, 49.92, 80.3 — the spurious modes sit at lambda = 1, NOT at lambda = 0 as previously written, and the true spectrum follows them. Two clean recipes, both verified: assemble B with bcs=[] (no BC at all), or assemble B with bcs=[bc] and diag=0.0 to push the constrained modes to infinity — both give 19.82, 49.71, 49.92, 80.3 with no spurious entries. NOTE the kwarg is `diag`, not `diagonal`: dolfinx 0.10's assemble_matrix signature is (a, bcs=None, diag=1, constants=None, coeffs=None, kind=None), and `diagonal=0.0` raises TypeError 'assemble_matrix() got an unexpected keyword argument'. (Verified empirically 2026-08-03 — corrects the previous 'spurious ZERO eigenvalues' wording.)",
             "[Integration] Complex-valued eigenvalues require dolfinx + PETSc + SLEPc all compiled with --with-scalar-type=complex. The default conda-forge fenics-dolfinx build is REAL: dolfinx.default_scalar_type is numpy.float64 (verified empirically 2026-06-01). For complex Helmholtz / Maxwell eigenproblems either rebuild with complex scalar OR split into (re, im) real-pair formulation. Signal: dolfinx.default_scalar_type returns numpy.float64 in a real build; numpy.issubdtype(dolfinx.default_scalar_type, np.complexfloating) is False — assembling a ufl form with an imaginary coefficient then yields a wrong real-valued Function with the imaginary part silently dropped. (Verified empirically in the ofa-fenicsx env.)",
         ],
     },
@@ -1776,30 +1967,39 @@ _FENICS_KNOWLEDGE = {
         "solver": "MinRes or GMRES with block preconditioner (saddle-point structure)",
         "pitfalls": [
             (
-                "[Numerical] Standard displacement formulation "
-                "LOCKS for nu > 0.49 — MUST use mixed (u, p) "
-                "method. Signal: a compressed block shows "
-                "essentially zero displacement (artificial "
-                "rigidity); volume strain det(F)-1 << expected; "
-                "the same setup with Taylor-Hood mixed method "
-                "recovers the analytic incompressible solution. "
-                "Locking ratio ~1/(1-2nu) — at nu=0.499 "
-                "displacement is ~500x too small. (Audit "
-                "2026-06-02.)"
+                "[Numerical] Low-order displacement formulations "
+                "LOCK as nu -> 0.5 — a mixed (u, p) method is "
+                "the robust fix. Signal (MEASURED 2026-08-03, "
+                "dolfinx 0.10.0; cantilever 1.0 x 0.2 with end "
+                "traction, tip deflection against a P2/P1 "
+                "Taylor-Hood reference): "
+                "P1 triangles are 7.2x / 3.2x / 1.6x / 1.2x too "
+                "stiff at nu=0.49 on 10x2 / 20x4 / 40x8 / 80x16 "
+                "meshes; 16.5x / 11.4x / 5.5x / 2.4x at "
+                "nu=0.499; 19.5x / 18.7x / 15.4x / 9.2x at "
+                "nu=0.4999. P2 triangles are within 0-6% of the "
+                "mixed reference at EVERY nu and mesh tested. "
+                "IMPORTANT CORRECTION: the locking ratio is NOT "
+                "~1/(1-2nu) — that formula predicts 500x at "
+                "nu=0.499 where 2.4x-16.5x is measured, "
+                "depending on mesh. Locking magnitude depends "
+                "jointly on nu, element order and h; quote a "
+                "measured ratio, not the 1/(1-2nu) rule."
             ),
             (
                 "[Numerical] Inf-sup (LBB) condition: "
                 "pressure FunctionSpace must be STRICTLY "
                 "SMALLER than the displacement "
-                "FunctionSpace. Signal: pairing P1 "
-                "displacement Function + P1 pressure "
-                "Function (equal-order) gives checkerboard "
-                "pressure pattern that does NOT converge "
-                "under refinement; switching to P2/P1 "
-                "dolfinx mixed-element removes the "
-                "checkerboard. The LBB constant collapsing "
-                "with h is the diagnostic for inf-sup "
-                "failure. (Audit 2026-06-02.)"
+                "FunctionSpace. Signal (measured on the "
+                "Stokes analogue 2026-08-03, dolfinx "
+                "0.10.0): SVD of the bc-applied saddle-point "
+                "matrix on an 8x8 unit square gives "
+                "numerical null dimension 1 for P2/P1 "
+                "Taylor-Hood (the constant pressure alone) "
+                "but 8 for equal-order P1/P1 — the extra "
+                "kernel vectors ARE the checkerboard modes. "
+                "The LBB constant collapsing with h is the "
+                "diagnostic for inf-sup failure."
             ),
             (
                 "[Numerical] Taylor-Hood (P2/P1) or (P2/"
@@ -2024,6 +2224,100 @@ _FENICS_KNOWLEDGE = {
     },
 
     # ═══════════════════════════════════════════════════════════════════════════
+    # PROVENANCE — adversarial re-verification pass
+    # ═══════════════════════════════════════════════════════════════════════════
+    "_provenance": {
+        "description": "Record of what was actually EXECUTED against an installed dolfinx to substantiate the entries in this catalog. Entries not listed here were not re-run in that pass and carry their older audit tag.",
+        "2026-08-03_adversarial_reverification": {
+            "environment": (
+                "dolfinx 0.10.0, basix 0.10.0, ufl 2025.2.1, "
+                "petsc4py 3.24.4 (real scalars, 32-bit indices, "
+                "MUMPS + SuperLU_DIST + UMFPACK all present), "
+                "slepc4py 3.24.3, mpi4py 4.1.1, gmsh 4.15.1, "
+                "Python 3.12.13 conda-forge, Linux x86_64. "
+                "NOT installed in that env: dolfinx_mpc, "
+                "adios4dolfinx, pyamg."
+            ),
+            "method": (
+                "Every 'works' claim was executed; every 'fails' "
+                "/ pitfall claim was reproduced by running the "
+                "WRONG variant and comparing the observed error "
+                "text or numerical misbehaviour to the "
+                "documented signal. Numerical claims (element "
+                "orders, stabilisation requirements, locking, "
+                "penalty scaling, pollution) were checked with "
+                "manufactured-solution convergence studies: "
+                "prescribe an exact u, derive f symbolically "
+                "(sympy) or analytically, refine, and fit the "
+                "observed L2 rate."
+            ),
+            "mms_studies_run": [
+                "Poisson u=sin(pi x)sin(pi y), P1/P2/P3, N=8..64 -> rates 2.00 / 3.00 / 4.01",
+                "Convection-diffusion b=(1,1), kappa=0.01, P1 and P2, N=8..128: plain Galerkin, per-cell CellDiameter SUPG tau, and fixed global tau",
+                "Advection boundary layer kappa=1e-3, N=8..512, Galerkin vs SUPG undershoot",
+                "Biharmonic C0-IP u=sin(pi x)sin(pi y) (simply supported), P2/P3, alpha in {4(k+1)^2, 8, 1, 0.1, 0.01, 1e-4, 1e-6}, plus hard-coded vs CellDiameter h, N=8..128",
+                "Helmholtz u=sin(kx/sqrt2)sin(ky/sqrt2), P1, non-resonant k in {12.17, 27.57, 54.55}, N=16..256",
+                "Elasticity cantilever: plane-strain vs plane-stress tip deflection at nu=0.3/0.45; volumetric locking P1 vs P2 vs P2/P1 Taylor-Hood at nu=0.49/0.499/0.4999 on four meshes",
+                "Stokes: SVD null-space dimension of the bc-applied saddle-point matrix, Taylor-Hood vs equal-order P1/P1, 8x8",
+            ],
+            "generator_execution": (
+                "All 35 (physics, variant) pairs exposed by "
+                "src/backends/fenics/generators were generated "
+                "and RUN on the installed dolfinx. 34 finished "
+                "inside a 300 s budget with return code 0; "
+                "navier_stokes/3d also converges (3 Newton "
+                "iterations, 49072 dofs) but needs more than "
+                "300 s, so it must not be run under a 5-minute "
+                "timeout."
+            ),
+            "corrections_landed": (
+                "element_catalog (CR cells, Hermite api, Bubble "
+                "hex minimum, chebyshev variants, iso cells, HHJ "
+                "cells, pyramid degree, 'CG' vs 'P1'), "
+                "mesh_catalog (gmshio module removed, refine "
+                "prerequisites and return shapes, vtkhdf "
+                "writing), solver_catalog "
+                "(assemble_matrix_block/nest removed, "
+                "bddc/fieldsplit/ams need extra setup, "
+                "NewtonSolver hard failure), boundary_conditions "
+                "(connectivity scope, BC rank-mismatch message, "
+                "DG no-op), io_catalog (VTX exact message), "
+                "poisson (VTX message, complex messages, "
+                "exterior_facet_indices exception), "
+                "linear_elasticity (plane-stress factor, locking "
+                "magnitude, 'CG' family, BC message), stokes "
+                "(nullspace helper does not exist), "
+                "convection_diffusion (oscillation damping, "
+                "constant-tau stagnation), biharmonic (alpha "
+                "behaviour, hard-coded h, no H2 "
+                "NotImplementedError), helmholtz (no convergence "
+                "at all for k*h>1), "
+                "nearly_incompressible_elasticity (1/(1-2nu) "
+                "rule), hyperelasticity (NewtonSolver-era "
+                "signals, P2 locking magnitude), maxwell "
+                "(complex message), parallel_computing "
+                "(assemble_scalar is not collective), plus the "
+                "generator-level catalogs for dg_methods, "
+                "mixed_poisson, nonlinear_pde and magnetostatics."
+            ),
+            "not_re-run": (
+                "Claims requiring hardware/scale or absent "
+                "packages were left with their inherited tag and "
+                "NOT upgraded: fieldsplit iteration-count "
+                "scaling beyond ~100k dofs, GAMG near-nullspace "
+                "benefit at large scale, complex-PETSc "
+                "behaviour (this build is real), "
+                "dolfinx_mpc / adios4dolfinx / pyamg behaviour "
+                "(not installed), demo_catalog and "
+                "tutorial_catalog URLs (documentation links, not "
+                "executed), and the hyperelastic Cook-membrane "
+                "locking figure (only its linear analogue was "
+                "measured)."
+            ),
+        },
+    },
+
+    # ═══════════════════════════════════════════════════════════════════════════
     # ADVANCED: MULTIPHYSICS ON SUBMESHES
     # ═══════════════════════════════════════════════════════════════════════════
     "multiphysics_submeshes": {
@@ -2082,7 +2376,12 @@ _FENICS_KNOWLEDGE = {
             "communicator": "All mesh/solver creation takes MPI.COMM_WORLD (or sub-communicator)",
             "run": "mpirun -np N python script.py",
             "partitioning": "Automatic mesh partitioning on creation (configurable partitioner)",
-            "assembly": "dolfinx.fem.assemble_scalar() sums across ranks automatically",
+            # 2026-08-03: this said assemble_scalar "sums across ranks
+            # automatically". It does NOT. dolfinx's own docstring: "The
+            # returned value is local and not accumulated across processes."
+            # Measured on 2 ranks, assembling 1*dx over a 16x16 unit square:
+            # rank 0 -> 0.505859, rank 1 -> 0.494141 (true area 1.0).
+            "assembly": "dolfinx.fem.assemble_scalar() returns the RANK-LOCAL contribution ONLY — it does NOT reduce across ranks. You MUST wrap it: comm.allreduce(fem.assemble_scalar(fem.form(M)), op=MPI.SUM). (Verified empirically 2026-08-03 on 2 ranks: 0.505859 + 0.494141 for a functional whose true value is 1.0. Any error norm / integral computed without the allreduce is silently wrong in parallel.)",
         },
         "performance": {
             "scaling": "Strong and weak scaling demonstrated up to thousands of cores",
@@ -2091,6 +2390,7 @@ _FENICS_KNOWLEDGE = {
             "neighbourhood_collectives": "MPI Neighbourhood collectives for efficient halo exchange",
         },
         "pitfalls": [
+            "[Numerical] fem.assemble_scalar is NOT collective — it returns each rank's local piece. Forgetting comm.allreduce(..., op=MPI.SUM) makes every L2 error, energy and volume integral wrong in parallel while looking perfectly plausible in serial. This is the single most common silent parallel bug in dolfinx scripts. (Verified empirically 2026-08-03.)",
             "MUST use MPI communicator consistently — do not mix serial and parallel operations",
             "Output: only rank 0 should print; use if MPI.COMM_WORLD.rank == 0:",
             "Some operations (e.g., Gmsh model creation) should be done on rank 0 only",
@@ -2120,10 +2420,22 @@ _FENICS_KNOWLEDGE = {
             "blocked_element": "Use basix.ufl.blocked_element() for vector/tensor elements",
             "functionspace": "fem.functionspace() (lowercase) replaces fem.FunctionSpace()",
         },
+        "0_9_to_0_10_MEASURED_ADDITIONS": {
+            # 2026-08-03: found by executing against 0.10.0; these were
+            # not in the tracker and each one breaks 0.9-era code.
+            "gmshio_module_removed": "`import dolfinx.io.gmshio` now raises ModuleNotFoundError — it is not an alias, the module is gone. Use dolfinx.io.gmsh.",
+            "assemble_matrix_block_nest_removed": "dolfinx.fem.petsc.assemble_matrix_block / assemble_matrix_nest no longer exist; use assemble_matrix(..., kind='mpi'|'nest') or LinearProblem(..., kind=...).",
+            "NewtonSolver_hard_break": "dolfinx.nls.petsc.NewtonSolver still imports and warns, but wrapping a 0.10 NonlinearProblem raises AttributeError: 'NonlinearProblem' object has no attribute 'a'. The 0.9 two-step Newton pattern is dead code, not merely deprecated.",
+            "interpolation_points_removed": "basix.ufl elements have no `interpolation_points` attribute at all (neither property nor method) — AttributeError: '_BasixElement' object has no attribute 'interpolation_points'. The points are element.basix_element.points.",
+            "refine_needs_entities": "dolfinx.mesh.uniform_refine / refine require mesh.topology.create_entities(1) first, and refine returns a 3-tuple (Mesh, parent_cells, parent_facets).",
+            "create_form_signature": "dolfinx.fem.create_form(form, function_spaces, msh, subdomains, coefficient_map, constant_map, entity_maps=None) — no parent_mesh= / coefficients= / constants= kwargs.",
+            "vtkhdf_writing": "dolfinx.io.vtkhdf now exports write_mesh / write_point_data / write_cell_data, not just read_mesh.",
+        },
         "pitfalls": [
-            "Online tutorials may use old API (ufl.FiniteElement, FunctionSpace) — translate to new API",
+            "Online tutorials may use old API (ufl.FiniteElement, FunctionSpace) — translate to new API. ufl.FiniteElement / VectorElement / MixedElement are REMOVED, so old scripts fail with AttributeError on the ufl module rather than a deprecation warning (verified 2026-08-03)",
             "The jsdokken tutorial is updated for latest version — use it as primary reference",
             "DOLFINx version in Docker images may differ from pip install — check dolfinx.__version__",
+            "There is no errornorm helper in dolfinx or ufl — assemble inner(uh-uex, uh-uex)*dx yourself, and remember to comm.allreduce the result in parallel (verified 2026-08-03)",
         ],
     },
 
