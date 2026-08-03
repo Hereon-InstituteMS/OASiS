@@ -1043,12 +1043,14 @@ def register_consolidated_tools(mcp: FastMCP):
             from tools.examples_search import (
                 _4C_INPUT_GUIDE, _FENICS_INPUT_GUIDE, _DEALII_INPUT_GUIDE,
                 _FEBIO_INPUT_GUIDE, _DUNE_INPUT_GUIDE,
+                _SPARTA_INPUT_GUIDE,
             )
             guides = {"fourc": _4C_INPUT_GUIDE, "4c": _4C_INPUT_GUIDE,
                       "fenics": _FENICS_INPUT_GUIDE, "dealii": _DEALII_INPUT_GUIDE,
                       "febio": _FEBIO_INPUT_GUIDE,
                       "dune": _DUNE_INPUT_GUIDE, "dune-fem": _DUNE_INPUT_GUIDE,
-                      "dunefem": _DUNE_INPUT_GUIDE}
+                      "dunefem": _DUNE_INPUT_GUIDE,
+                      "sparta": _SPARTA_INPUT_GUIDE, "dsmc": _SPARTA_INPUT_GUIDE}
             return guides.get(solver.lower(), f"No input guide for {solver}")
 
         elif topic == "solver_guidance" and physics:
