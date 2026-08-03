@@ -1201,6 +1201,24 @@ _FENICS_KNOWLEDGE = {
             "ipcs": "Three sequential LinearProblem solves per time step",
         },
         "pitfalls": [
+            "[API] READ FIRST — several signals in this topic name "
+            "classes that do not exist on dolfinx 0.10 and can "
+            "therefore never fire. Signal: PETScKrylovSolver is "
+            "not part of dolfinx at all (hasattr(dolfinx, "
+            "'PETScKrylovSolver') is False, and it is absent from "
+            "dolfinx.fem.petsc) — it is a legacy DOLFIN name; and "
+            "dolfinx.nls.petsc.NewtonSolver still imports but "
+            "wrapping a 0.10 NonlinearProblem raises AttributeError: "
+            "'NonlinearProblem' object has no attribute 'a'. Read "
+            "both as PETSc SNES/KSP signals instead: build "
+            "NonlinearProblem(..., petsc_options_prefix=..., "
+            "petsc_options={'snes_monitor': ''}) and inspect "
+            "problem.solver.getConvergedReason() / "
+            "getIterationNumber(); for linear solves use "
+            "LinearProblem(...).solver, which is a petsc4py KSP. "
+            "(Verified by execution 2026-08-03, dolfinx 0.10.0 — "
+            "same correction the hyperelasticity topic already "
+            "carries; it was missing here.)",
             "[Numerical] Must use an inf-sup stable element pair "
             "(Taylor-Hood P2/P1 is the canonical choice in "
             "dolfinx; basix.ufl.mixed_element([P2, P1])). "
