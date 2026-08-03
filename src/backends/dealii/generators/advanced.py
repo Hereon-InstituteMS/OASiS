@@ -6,6 +6,26 @@ program: it builds a mesh, assembles + solves the PDE, and writes a
 template was compiled and executed against deal.II 9.1.1 and confirmed
 to produce output before being committed here (overhaul 2026-06-26).
 
+RE-VERIFIED 2026-08-03 against the INSTALLED deal.II 9.8.0-pre (Release
+build, /home/alexander/dealii/build). Four templates in this module and
+one in navier_stokes.py no longer compiled: every break was an upstream
+API removal between 9.1 and 9.8, not a logic error.
+
+  * DoFTools::count_dofs_per_block -> count_dofs_per_fe_block, which
+    RETURNS the vector instead of filling an out-parameter (>= 9.2)
+    — time_dependent_ns_2d here, navier_stokes_2d there;
+  * MGTransferPrebuilt::build_matrices -> build (>= 9.2)
+    — multigrid_2d;
+  * the mapping-less MatrixFree::reinit(dof, constraints, quad, data)
+    overload was removed, a Mapping must be passed first (>= 9.3);
+    MatrixFree::n_macro_cells -> n_cell_batches; and
+    FEEvaluation::evaluate/integrate(bool, bool) ->
+    EvaluationFlags::values / ::gradients — all three in matrix_free_2d;
+  * SolutionTransfer::interpolate(in, out) was removed in favour of the
+    one-argument interpolate(out) — time_dependent_heat_2d.
+
+All five now configure, compile, run and write .vtu on 9.8.0-pre.
+
 Physics that could not be made runnable with reasonable effort on the
 supported deal.II were REMOVED rather than shipped as print-and-exit
 stubs: compressible_euler (step-33/69 shock capturing), multiphysics
@@ -303,7 +323,10 @@ int main()
 
           setup_system();
           Vector<double> interpolated(dof_handler.n_dofs());
-          soltrans.interpolate(solution, interpolated);
+          // deal.II >= 9.7: SolutionTransfer::interpolate(in, out) is gone;
+          // the one-argument form fills the NEW-mesh vector from the state
+          // captured by prepare_for_coarsening_and_refinement().
+          soltrans.interpolate(interpolated);
           solution = interpolated;
           constraints.distribute(solution);
         }
@@ -530,9 +553,10 @@ int main()
   DoFHandler<dim> dof_flow(triangulation);
   dof_flow.distribute_dofs(fe_flow);
   DoFRenumbering::component_wise(dof_flow);
-  std::vector<types::global_dof_index> dpb(2);
   std::vector<unsigned int> bc(dim + 1, 0); bc[dim] = 1;
-  DoFTools::count_dofs_per_block(dof_flow, dpb, bc);
+  // deal.II >= 9.2: count_dofs_per_block -> count_dofs_per_fe_block (returns).
+  const std::vector<types::global_dof_index> dpb =
+    DoFTools::count_dofs_per_fe_block(dof_flow, bc);
   const unsigned int n_u = dpb[0], n_p = dpb[1];
 
   // ---- Temperature system ----
@@ -777,10 +801,10 @@ private:
       {
         phi.reinit(cell);
         phi.read_dof_values(src);
-        phi.evaluate(false, true);
+        phi.evaluate(EvaluationFlags::gradients);
         for (unsigned int q = 0; q < phi.n_q_points; ++q)
           phi.submit_gradient(phi.get_gradient(q), q);
-        phi.integrate(false, true);
+        phi.integrate(EvaluationFlags::gradients);
         phi.distribute_local_to_global(dst);
       }
   }
@@ -790,7 +814,7 @@ private:
     FEEvaluation<dim, fe_degree, fe_degree + 1, 1, double> phi(data);
     AlignedVector<VectorizedArray<double>> diag(phi.dofs_per_cell);
     diagonal = 0;
-    for (unsigned int cell = 0; cell < data.n_macro_cells(); ++cell)
+    for (unsigned int cell = 0; cell < data.n_cell_batches(); ++cell)
       {
         phi.reinit(cell);
         for (unsigned int i = 0; i < phi.dofs_per_cell; ++i)
@@ -798,10 +822,10 @@ private:
             for (unsigned int j = 0; j < phi.dofs_per_cell; ++j)
               phi.begin_dof_values()[j] = VectorizedArray<double>();
             phi.begin_dof_values()[i] = make_vectorized_array<double>(1.0);
-            phi.evaluate(false, true);
+            phi.evaluate(EvaluationFlags::gradients);
             for (unsigned int q = 0; q < phi.n_q_points; ++q)
               phi.submit_gradient(phi.get_gradient(q), q);
-            phi.integrate(false, true);
+            phi.integrate(EvaluationFlags::gradients);
             diag[i] = phi.begin_dof_values()[i];
           }
         for (unsigned int i = 0; i < phi.dofs_per_cell; ++i)
@@ -837,7 +861,9 @@ int main()
   add_data.tasks_parallel_scheme = MatrixFree<dim, double>::AdditionalData::none;
   add_data.mapping_update_flags = update_gradients | update_JxW_values;
   MatrixFree<dim, double> mf_data;
-  mf_data.reinit(dof_handler, constraints, QGauss<1>(degree + 1), add_data);
+  // deal.II >= 9.3: the mapping-less MatrixFree::reinit overload was removed.
+  mf_data.reinit(MappingQ1<dim>(), dof_handler, constraints,
+                 QGauss<1>(degree + 1), add_data);
 
   LaplaceOperator<dim, degree> system(mf_data);
 
@@ -848,12 +874,12 @@ int main()
   // RHS: constant unit source f=1 -> assemble (phi_i, 1)
   {
     FEEvaluation<dim, degree, degree + 1, 1, double> phi(mf_data);
-    for (unsigned int cell = 0; cell < mf_data.n_macro_cells(); ++cell)
+    for (unsigned int cell = 0; cell < mf_data.n_cell_batches(); ++cell)
       {
         phi.reinit(cell);
         for (unsigned int q = 0; q < phi.n_q_points; ++q)
           phi.submit_value(make_vectorized_array<double>(1.0), q);
-        phi.integrate(true, false);
+        phi.integrate(EvaluationFlags::values);
         phi.distribute_local_to_global(system_rhs);
       }
   }
@@ -1038,7 +1064,7 @@ int main()
 
   // Multigrid setup
   MGTransferPrebuilt<Vector<double>> mg_transfer(mg_constrained_dofs);
-  mg_transfer.build_matrices(dof_handler);
+  mg_transfer.build(dof_handler);   // deal.II >= 9.2: build_matrices -> build
 
   FullMatrix<double> coarse_matrix;
   coarse_matrix.copy_from(mg_matrices[0]);
@@ -1918,13 +1944,24 @@ KNOWLEDGE = {
         "pitfalls": [
             (
                 "[API] Requires tensor-product elements (FE_Q, "
-                "FE_DGQ). Signal: instantiating MatrixFree<dim> "
-                "with FE_RaviartThomas / FE_BDM / non-tensor-"
-                "product elements raises `MatrixFree: element "
-                "type not supported` or silently disables "
-                "vectorization. The performance gain (10-100x) "
-                "depends entirely on tensor-product evaluation. "
-                "(Audit 2026-06-02.)"
+                "FE_DGQ). Signal: MatrixFree<dim>::reinit with "
+                "FE_RaviartThomas / FE_BDM / non-tensor-product "
+                "elements THROWS — it does not silently disable "
+                "vectorization. The exception is an "
+                "ExcNotImplemented raised from internal::"
+                "MatrixFreeFunctions::get_element_type_specific_"
+                "information (shape_info.templates.h); its text is "
+                "the generic \"You are trying to use "
+                "functionality in deal.II that is currently not "
+                "implemented\", NOT the string 'MatrixFree: "
+                "element type not supported' this entry used to "
+                "quote. It is an AssertThrow, so it fires even on "
+                "a Release/NDEBUG build. Measured on deal.II "
+                "9.8.0-pre 2026-08-03: FE_Q(2) reinit OK "
+                "(8 cell batches, 2 active lanes in batch 0); "
+                "FE_RaviartThomas(1) throws. The performance gain "
+                "(10-100x) depends entirely on tensor-product "
+                "evaluation."
             ),
             (
                 "[Performance] No matrix assembly — operator is "
