@@ -1,0 +1,15 @@
+{
+  "_comment": "Tier-2: verifies febio::heat#0 — an unregistered <Module type=...> value is not diagnosed, it SEGFAULTS. FEBioModuleSection.cpp hands the string to FEModelBuilder::SetActiveModule() with no existence check. Runs four bad module strings ('heat' and 'biphasic-FSI', both of which OASiS templates used and neither of which exists in FEBio 4.12, plus the pure case errors 'Solid' and 'SOLID') and one positive control ('solid'). Verified 2026-08-03 on FEBio 4.12.0.86045466d: all four exit with SIGSEGV, no ERROR box, no FAILED! line, no .log file; the positive control reads SUCCESS. The positive control is what makes the four crashes attributable to the module string. Skips cleanly when no febio4 binary is installed.",
+  "backend": "febio",
+  "physics": "heat",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "unknown_module_segfault_count="
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

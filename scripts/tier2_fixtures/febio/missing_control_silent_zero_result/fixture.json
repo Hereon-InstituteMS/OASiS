@@ -1,0 +1,15 @@
+{
+  "_comment": "Tier-2: verifies febio::linear_elasticity#5 — a deck with no <Control> section reads SUCCESS, prints no error message at all, writes a full .xplt plus every requested logfile CSV, and still solves nothing (0 completed steps, E R R O R T E R M I N A T I O N, exit 1). Asserts every observable separately against a positive control that differs only by the <Control> block: read_success, absence of an ERROR box, error-termination banner, zero completed steps, non-empty .xplt, and a CSV holding exactly one *Step = 0 block. This is the fixture that justifies OASiS never accepting a FEBio run on the existence of output files. Verified 2026-08-03 on FEBio 4.12.0.86045466d. Skips cleanly when no febio4 binary is installed.",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "missing_control_silent="
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -65,7 +65,7 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 108  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 112  # cross-cutting (incl. synthetic indices).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -114,6 +114,22 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #      submodule, NOT top-level ngsolve — catalog drift)
     #   +1 fenics::biharmonic::0 (fem.functionspace factory vs FunctionSpace
     #      class — LLM-trap from legacy dolfin)
+    # 2026-08-03 fixture additions (108 -> 112): the first FEBio
+    # fixtures that RUN the solver, now that febio4 4.12.0 is built
+    # and installed. All four were executed on this machine before
+    # the floor was raised.
+    #   +1 febio::linear_elasticity::98 (hex8 patch test — FEBio's
+    #      first executed numerical-correctness gate: exact linear
+    #      field at the free interior node to 1.4e-17 and Cauchy
+    #      stress against the St.Venant-Kirchhoff closed form to
+    #      3.5e-11)
+    #   +1 febio::linear_elasticity::5 (a deck with no <Control>
+    #      reads SUCCESS, writes .xplt + CSVs, and solves nothing)
+    #   +1 febio::linear_elasticity::7 (a degenerate hex8 runs to
+    #      normal termination with 25% wrong stress)
+    #   +1 febio::heat::0 (an unregistered <Module type> SEGFAULTS
+    #      with no diagnostic — catalog falsification: FEBio 4.12
+    #      has no `heat` and no `biphasic-FSI` module)
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
