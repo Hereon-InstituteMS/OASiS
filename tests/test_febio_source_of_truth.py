@@ -256,6 +256,70 @@ class TestFebioModuleCatalogLive(unittest.TestCase):
                     f"but solved nothing — that is a broken template, "
                     f"whatever the banner says.")
 
+    def test_the_baseline_deck_in_knowledge_actually_runs(self) -> None:
+        """GUARD: the deck the catalog calls 'the safest thing to
+        mutate from' must be copy-and-run correct.
+
+        It used to be an abbreviated skeleton with `...` standing in
+        for the nodes, the elements, the boundary conditions and the
+        load curve. The consumer of this catalog is a small model that
+        will not fill those in and will not go looking for a second
+        payload, so an elided baseline is worse than none — it looks
+        authoritative and cannot work. This test extracts the XML from
+        the knowledge string exactly as a reader would and runs it."""
+        import subprocess
+        import tempfile
+        from backends.febio.generators import KNOWLEDGE
+
+        txt = KNOWLEDGE["_general"]["deck_authoring"][
+            "verified_working_baseline"]
+        m = re.search(r"(<\?xml[\s\S]*?</febio_spec>)", txt)
+        self.assertIsNotNone(
+            m, "verified_working_baseline no longer contains a complete "
+               "<?xml ...</febio_spec> deck. It must hold one that can "
+               "be copied out and run without edits.")
+        deck = m.group(1)
+        self.assertNotIn(
+            "...", deck,
+            "the baseline deck contains an elision. A reader cannot "
+            "run it, and this entry exists precisely to be run.")
+
+        with tempfile.TemporaryDirectory() as td:
+            feb = Path(td) / "baseline.feb"
+            feb.write_text(deck)
+            p = subprocess.run(
+                [str(self.binary), "-i", str(feb), "-nosplash"],
+                capture_output=True, text=True, timeout=300, cwd=td)
+            blob = (p.stdout or "") + (p.stderr or "")
+            log = Path(td) / "baseline.log"
+            if log.is_file():
+                blob += log.read_text(errors="replace")
+            pos = Path(td) / "pos.csv"
+            positions = pos.read_text() if pos.is_file() else ""
+
+        self.assertEqual(p.returncode, 0, f"baseline deck failed:\n{blob}")
+        self.assertIn("N O R M A L   T E R M I N A T I O N", blob)
+        m = re.search(r"Number of time steps completed\s*\.*\s*:\s*(\d+)",
+                      blob)
+        self.assertIsNotNone(m)
+        self.assertGreaterEqual(
+            int(m.group(1)), 1,
+            "baseline deck completed 0 time steps — it parsed but "
+            "solved nothing")
+        # Judge on physics, not on the banner: the prescribed face has
+        # to have actually moved.
+        self.assertTrue(positions,
+                        "baseline deck wrote no pos.csv, so the <Output> "
+                        "block in the documented deck is wrong")
+        zs = [float(r.split(",")[3])
+              for r in positions.split("*Step")[-1].splitlines()
+              if len(r.split(",")) == 4 and r.split(",")[0].strip().isdigit()]
+        self.assertTrue(zs, "could not parse node positions out of pos.csv")
+        self.assertGreater(
+            max(zs), 1.0 + 1e-6,
+            "the baseline deck prescribes a 10% stretch along z, so the "
+            "top face must end above z = 1. Nothing moved.")
+
     def test_backend_reports_available_and_versioned(self) -> None:
         """check_availability() must find the same binary this
         test found, so the catalog and the tests agree on which
