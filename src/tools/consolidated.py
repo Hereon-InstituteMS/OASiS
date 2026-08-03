@@ -2752,11 +2752,18 @@ def register_consolidated_tools(mcp: FastMCP):
         # zero residual and passes every other check — the most convincing
         # silent-wrong result this tool can produce. Name it.
         deaf = [p.name for p in parts if not p.imports_from]
-        if deaf:
+        if len(deaf) == len(parts):
             val.append(
-                f"NOT COUPLED: participant(s) {', '.join(deaf)} list no "
-                f"`imports_from`, so they never receive partner data and the "
-                f"run is not a coupling at all.")
+                "NOT COUPLED: no participant lists `imports_from`, so none of "
+                "them ever receives partner data. Nothing was exchanged and the "
+                "run is not a coupling at all.")
+        elif deaf:
+            # A one-way (master -> slave) coupling is legitimate and looks
+            # exactly like this, so it is a note rather than a failure.
+            val.append(
+                f"ONE-WAY: participant(s) {', '.join(deaf)} list no "
+                f"`imports_from` and so never see their partners' data. If the "
+                f"coupling is meant to be two-way, that is the bug.")
         elif r.converged and r.iterations <= 2 and r.residual == 0.0:
             val.append(
                 "NOT COUPLED: no participant's export changed between "
