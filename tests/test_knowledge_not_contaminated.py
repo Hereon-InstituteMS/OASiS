@@ -75,6 +75,11 @@ MEASURED_ORDER_PATTERNS = [
     # "1.669e-01 / 3.923e-02 / 8.013e-03" — a convergence table. Three or more
     # slash-separated values in a row is our error series, not a citation.
     r"\d\.\d{2,}e[-+]\d+\s*/\s*\d\.\d{2,}e[-+]\d+\s*/\s*\d\.\d{2,}e[-+]\d+",
+    # "gave orders 2.083 / 1.997 / 1.668" — the same measurement, slash-
+    # separated instead of comma-separated, and introduced by "gave" rather
+    # than "observed". Found still shipping after the first two patterns were
+    # added, which is why these match the shape rather than the wording.
+    r"\borders?\s+\d+\.\d{2,}\s*/\s*\d+\.\d{2,}",
 ]
 
 # TWO PATTERNS THAT WERE TRIED AND DELIBERATELY NOT KEPT
