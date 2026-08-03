@@ -46,18 +46,95 @@ _FOREIGN = {
     "Trilinos": re.compile(r'^(NOX\w*|Epetra\w*|Teuchos\w*|Tpetra\w*)$'),
 }
 
-# Which backends genuinely link which library, established by inspection of the
-# installed artefacts rather than by assumption. deal.II names PETSc and
-# Trilinos in its own wrapper namespaces (`PETScWrappers`, `TrilinosWrappers`),
-# so those are real deal.II symbols regardless of whether a given build enables
-# the feature — a Signal relying on the FEATURE still needs build scoping, which
-# is a separate concern from whether the NAME exists.
+# WHICH BACKENDS LINK WHICH LIBRARY — and why this is a fallback, not an oracle.
+#
+# A first version of this guard hard-coded the answer. That reproduces the exact
+# defect it was written to catch: a hand-maintained table asserting what is real,
+# never checked against the software. A peer audit made the point concrete by
+# reporting that DUNE genuinely links PETSc on this box — which, if a DUNE Signal
+# ever quoted a PETSc diagnostic, this guard would have called a fabrication.
+#
+# So the table below is only consulted when the installed artefacts cannot be
+# inspected. Where they can, the evidence decides. `_evidence_links()` looks for
+# the library's own marker strings in what the backend actually loads.
+#
+# On the DUNE claim specifically: `libpetsc_real.so.3.12` exists system-wide but
+# NOT inside `dune-fem-env`, and the peer's `ldd` evidence could not be
+# reproduced here. So DUNE is deliberately absent from the table — an unconfirmed
+# peer assertion is not evidence, and the evidence path will admit it
+# automatically if the linkage is real.
 _LINKS = {
     "fenics": {"PETSc"},        # dolfinx is built on petsc4py
+    # deal.II names PETSc and Trilinos in its own wrapper namespaces
+    # (`PETScWrappers`, `TrilinosWrappers`), so those are genuinely deal.II
+    # symbols whether or not a given build enables the feature. A Signal that
+    # relies on the FEATURE still needs build scoping — a separate concern from
+    # whether the NAME exists.
     "dealii": {"PETSc", "Trilinos"},
     "fourc": {"Trilinos"},      # 4C is a Trilinos application
     "kratos": {"Trilinos"},     # TrilinosApplication is a real Kratos module
 }
+
+# How to recognise a library: its own shared objects, or failing that, marker
+# strings inside the backend's. Filenames come first because they are direct and
+# cheap — a first version scanned only the alphabetically-first 40 libraries for
+# markers and so never reached `libpetsc*`, reporting that dolfinx does not link
+# PETSc. It passed anyway because the table covered it, which is precisely the
+# kind of "works by accident" this file exists to refuse.
+_LIB_GLOBS = {"PETSc": ("libpetsc*.so*",),
+              "Trilinos": ("libteuchos*.so*", "libnox*.so*", "libepetra*.so*",
+                           "libtrilinos*.so*")}
+_MARKERS = {"PETSc": ("PETSC ERROR", "KSPSolve"),
+            "Trilinos": ("Teuchos::", "NOX::")}
+
+
+def _evidence_links(backend: str) -> set[str] | None:
+    """Which libraries this backend demonstrably loads, or None if unknowable.
+
+    Returning None rather than an empty set matters: "we could not look" must
+    not read as "it links nothing", or the guard starts accusing backends whose
+    corpus happens to be unavailable.
+    """
+    import subprocess
+
+    roots = {
+        "fenics": ["/home/alexander/miniconda3/envs/fenics/lib"],
+        "dune": ["/home/alexander/miniconda3/envs/dune-fem-env/lib"],
+        "febio": ["/home/alexander/Schreibtisch/febio-src/cbuild/lib"],
+        "fourc": ["/home/alexander/4C/build"],
+    }.get(backend)
+    if not roots:
+        return None
+    found: set[str] = set()
+    looked = False
+    for root in roots:
+        p = pathlib.Path(root)
+        if not p.is_dir():
+            continue
+        all_libs = sorted(p.glob("*.so*"))
+        if not all_libs:
+            continue
+        looked = True
+        # Direct evidence: the library's own shared object sits here.
+        for library, globs in _LIB_GLOBS.items():
+            if any(next(p.glob(g), None) for g in globs):
+                found.add(library)
+        # Indirect: the backend's own binaries carry the library's strings. Only
+        # worth the scan for libraries not already established.
+        todo = {lib: mk for lib, mk in _MARKERS.items() if lib not in found}
+        if not todo:
+            continue
+        try:
+            blob = subprocess.run(["strings", "-n", "6",
+                                   *map(str, all_libs[:60])],
+                                  capture_output=True, text=True,
+                                  timeout=300).stdout
+        except (OSError, subprocess.SubprocessError):
+            continue
+        for library, markers in todo.items():
+            if any(m in blob for m in markers):
+                found.add(library)
+    return found if looked else None
 
 
 def _blocks() -> dict[str, str]:
@@ -71,9 +148,13 @@ def _blocks() -> dict[str, str]:
 def test_no_backend_allowlists_a_library_it_does_not_link(backend):
     body = _blocks()[backend]
     quoted = set(re.findall(r'"([A-Za-z_]\w*)"', body))
+    # Evidence first, table only where the artefacts cannot be inspected.
+    measured = _evidence_links(backend)
+    links = _LINKS.get(backend, set()) if measured is None else (
+        measured | _LINKS.get(backend, set()))
     offenders = []
     for library, pattern in _FOREIGN.items():
-        if library in _LINKS.get(backend, set()):
+        if library in links:
             continue
         offenders += [f"{name} ({library})" for name in sorted(quoted)
                       if pattern.match(name)]
