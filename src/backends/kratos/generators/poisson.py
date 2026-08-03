@@ -144,24 +144,50 @@ KNOWLEDGE = {
                         "node values equal source * triangle_area / 3 for "
                         "LaplacianElement2D3N; with HEAT_FLUX=0 the RHS is "
                         "exactly zero.",
-                        '[API] Both LaplacianElement and EulerianConvDiff '
-                        'elements assemble HEAT_FLUX as a volume source — '
-                        'choose between them based on whether the problem has '
-                        'a convection term, NOT based on whether the source '
-                        'term is supported. LaplacianElement = pure diffusion '
-                        '(no advection, no transient mass). EulerianConvDiff = '
-                        'advection-diffusion (reads CONVECTION_VELOCITY) and is '
-                        'also the right choice for transient problems with '
-                        'mass. Signal: with CONVECTION_VELOCITY=0 and a '
-                        'stationary solver, LaplacianElement2D3N and '
-                        "EulerianConvDiff2D3N produce solutions that differ "
-                        "by less than 1e-12 relative norm — when they differ "
-                        "by more than that, the user has a non-zero "
-                        "CONVECTION_VELOCITY they did not intend.",
+                        '[Numerical] LaplacianElement2D3N and EulerianConvDiff2D3N '
+                        'are NOT interchangeable, not even with zero velocity in a '
+                        'stationary solve — swapping them silently destroys the '
+                        'solution. Both assemble the same HEAT_FLUX volume source, '
+                        'but only LaplacianElement assembles a DIFFUSION stiffness. '
+                        'Measured element-level on a unit right triangle (nodal and '
+                        'Properties CONDUCTIVITY = 1, zero velocity, DELTA_TIME = 1): '
+                        'LaplacianElement2D3N LHS = [[1,-0.5,-0.5],[-0.5,0.5,0],'
+                        '[-0.5,0,0.5]] (the P1 stiffness matrix), EulerianConvDiff2D3N '
+                        'LHS = [[0.0833,0.0417,0.0417],[...]] = the consistent MASS '
+                        'matrix with NO conductivity term; both RHS = 1.6667. '
+                        'Consequence at system level, 12x12 P1 unit square, '
+                        'f = 2*pi^2*sin(pi x)sin(pi y), u = 0 on the boundary, '
+                        'ResidualBasedLinearStrategy: LaplacianElement2D3N gives '
+                        'max T = 0.9755 (exact 1.0), EulerianConvDiff2D3N gives '
+                        'TEMPERATURE == 0.0 at EVERY node — no exception, no warning, '
+                        'relative difference exactly 1.0. Use EulerianConvDiff only '
+                        'inside a TRANSIENT convection-diffusion solver that supplies '
+                        'the time-integration context it expects. '
+                        'Signal: an all-zero TEMPERATURE field from a run that exited '
+                        '0. (Verified by execution 2026-08-03 on Kratos 10.4.0 — the '
+                        'prior catalog claim that the two elements "differ by less '
+                        'than 1e-12 relative norm" with zero convection was WRONG and '
+                        'is exactly the kind of swap that produces a clean run with no '
+                        'physics.)',
                         '[Integration] ConvectionDiffusionSettings MUST be set on ProcessInfo before solve '
                         "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-                        '[Numerical] Properties (CONDUCTIVITY, DENSITY, SPECIFIC_HEAT) go on Properties object, NOT on nodes '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
+                        '[Numerical] CONDUCTIVITY for LaplacianElement2D3N is read '
+                        'NODALLY (via ConvectionDiffusionSettings.GetDiffusionVariable), '
+                        'NOT from the Properties object. Swap test on a unit right '
+                        'triangle, reading LHS[0][0]: nodal 1 + Properties 1 -> 1.0; '
+                        'nodal 1 + Properties 999 -> 1.0 (Properties IGNORED); nodal '
+                        '999 + Properties 1 -> 999.0. So SetSolutionStepValue('
+                        'CONDUCTIVITY, k) on every node is mandatory; setting it only '
+                        'on Properties gives a zero-diffusivity (singular) system. '
+                        'DENSITY / SPECIFIC_HEAT follow the same settings-driven '
+                        'lookup. '
+                        'Signal: the solution scales with the nodal value and is '
+                        'unaffected by the Properties value. (Verified by execution '
+                        "2026-08-03 on Kratos 10.4.0 — the prior catalog text "
+                        '"Properties (CONDUCTIVITY, DENSITY, SPECIFIC_HEAT) go on '
+                        'Properties object, NOT on nodes" had it exactly backwards for '
+                        "this element, and contradicted KNOWLEDGE['curved_mms'] "
+                        'pitfall #1, which was right.)',
                         '[Integration] Material properties assigned via Begin Properties block in .mdpa OR via Materials.json '
                         "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
                         '[Integration] VTK output: add vtk_output_process to output_processes in ProjectParameters.json '

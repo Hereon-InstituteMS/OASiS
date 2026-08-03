@@ -2203,8 +2203,20 @@ KNOWLEDGE = {
         # verified against analytic reaction sums (hydrostatic resultant
         # to 1.3e-4, trapezoid weight to 4.7e-5).
         "elements": ["SmallDisplacementThermoMechanicElement2D4N"],
-        "constitutive_laws": ["ThermalLinearElastic2DPlaneStrain"],
+        "constitutive_laws": ["ThermalLinearElastic2DPlaneStrain (PYTHON CLASS name — the "
+                              "Materials.json registry string is ThermalLinearPlaneStrain, "
+                              "see pitfalls)"],
         "pitfalls": [
+            '[API] DamApplication thermal laws have a PYTHON CLASS name that differs from '
+            'the string under which they are registered for Materials.json. '
+            'DAM.ThermalLinearElastic2DPlaneStrain() instantiates fine from Python, but '
+            '{"constitutive_law": {"name": "ThermalLinearElastic2DPlaneStrain"}} fails — the '
+            'registered strings are ThermalLinearPlaneStrain / ThermalLinearPlaneStress / '
+            'ThermalElasticIsotropic3D. Pick the route first, then the name. '
+            'Signal: hasattr(DAM, "ThermalLinearElastic2DPlaneStrain") is True while '
+            'KratosGlobals.HasConstitutiveLaw("ThermalLinearElastic2DPlaneStrain") is False '
+            'and HasConstitutiveLaw("ThermalLinearPlaneStrain") is True. (Verified by '
+            'execution 2026-08-03 on Kratos 10.4.0 with the 10.4.0 Dam wheel.)',
             '[Input] DamHydroConditionLoadProcess (C++-only, defaults undocumented '
             'in the wheel) requires keys model_part_name, variable_name '
             '("POSITIVE_FACE_PRESSURE"), Modify, Gravity_Direction ("Y"), '
@@ -2248,12 +2260,34 @@ KNOWLEDGE = {
     "constitutive_laws": {
         "description": "Extended constitutive law library: hyperelastic, plasticity, damage, viscoplastic",
         "application": "ConstitutiveLawsApplication",
+        # REGISTERED NAMES ONLY. Every string below was accepted by
+        # KratosGlobals.HasConstitutiveLaw on the installed Kratos 10.4.0
+        # (/usr/bin/python3, 2026-08-03). The previous version of this block
+        # listed model *families* (Ogden, Yeoh, Arruda-Boyce, Blatz-Ko, Mazars,
+        # Perzyna, ModifiedCamClay, CriticalStateLine, RankineFragile,
+        # DruckerPragerViscoplastic) — NONE of those resolve to a law in 10.4.0,
+        # neither as a registry string nor as a Python attribute of
+        # ConstitutiveLawsApplication, so a Materials.json built from them dies
+        # with "not registered". See pitfall on yield-surface tags below.
         "laws": {
-            "hyperelastic": ["Ogden", "Yeoh", "Arruda-Boyce", "Blatz-Ko"],
-            "plasticity": ["VonMises", "Tresca", "DruckerPrager", "MohrCoulomb",
-                           "ModifiedCamClay", "CriticalStateLine"],
-            "damage": ["Mazars", "SimoJu", "RankineFragile", "ModifiedMohrCoulomb"],
-            "viscoplastic": ["Perzyna", "DruckerPragerViscoplastic"],
+            "hyperelastic": ["HyperElastic3DLaw", "HyperElasticPlaneStrain2DLaw",
+                             "HyperElasticQuasiIncompressibleNeoHookean3DLaw",
+                             "HyperElasticIsotropicOgden1D (1D truss/cable only)",
+                             "HyperElasticIsotropicHenky1D (1D truss/cable only)"],
+            "plasticity": ["SmallStrainIsotropicPlasticity3D<YS><PP>",
+                           "SmallStrainIsotropicPlasticityPlaneStrain<YS><PP>",
+                           "SmallStrainKinematicPlasticity3D<YS><PP>",
+                           "FiniteStrainIsotropicPlasticity3D<YS><PP>",
+                           "<YS>/<PP> in {VonMises, Tresca, DruckerPrager, MohrCoulomb, "
+                           "ModifiedMohrCoulomb} — 23 of the 25 3D isotropic pairings exist "
+                           "(MohrCoulombModifiedMohrCoulomb and ModifiedMohrCoulombMohrCoulomb "
+                           "are NOT registered in 10.4.0)"],
+            "damage": ["SmallStrainIsotropicDamage3D<YS> (YS also Rankine / SimoJu)",
+                       "SmallStrainDplusDminusDamage<TensionYS><CompressionYS><2D|3D>",
+                       "SmallStrainThermalIsotropicDamage3D<YS>",
+                       "DamageDPlusDMinusMasonry3DLaw"],
+            "viscoplastic": ["GenericSmallStrainViscoplasticity3D"],
+            "viscoelastic": ["ViscousGeneralizedMaxwell3D", "ViscousGeneralizedKelvin3D"],
         },
         "pitfalls": [
                         '[Numerical] These laws extend StructuralMechanicsApplication '
@@ -2290,11 +2324,44 @@ KNOWLEDGE = {
                         'for FRACTURE_ENERGY / YIELD_STRESS_TENSION / YIELD_STRESS_COMPRESSION '
                         'one by one at law Check(). (Verified empirically 2026-06-12.)',
                         '[Numerical] SmallStrainKinematicPlasticityPlaneStrainVonMisesVonMises '
-                        'segfaults during the first FE solve on the 10.4.2 wheel even though its '
-                        'Check() passes (KINEMATIC_HARDENING_TYPE 0 or 1, '
-                        'KINEMATIC_HARDENING_MODULUS set). Avoid; use the isotropic family. '
+                        'segfaults during the first FE solve even though its Check() passes '
+                        '(KINEMATIC_HARDENING_TYPE is a CLA variable, KINEMATIC_HARDENING_MODULUS '
+                        'is a KM variable). Avoid; use the isotropic family. '
                         'Signal: SIGSEGV, rc=139, no Python traceback, during the first '
-                        'strategy.Solve(). (Verified empirically 2026-06-12.)',
+                        'strategy.Solve(). (Verified empirically 2026-06-12 on 10.4.2; '
+                        'REPRODUCED by execution 2026-08-03 on 10.4.0 — single '
+                        'SmallDisplacementElement2D4N, plane-strain uniaxial stretch past yield, '
+                        'TANGENT_OPERATOR_ESTIMATION=3, law assigned as a Python instance: '
+                        'rc=139, while the identical case with '
+                        'SmallStrainIsotropicPlasticityPlaneStrainVonMisesVonMises exits 0.) '
+                        'THIS LAW IS ALSO THE ONE REGISTRY HOLE: of the 254 SmallStrain*/'
+                        'FiniteStrain* Python classes exported by ConstitutiveLawsApplication '
+                        '10.4.0, exactly two are absent from the string registry that '
+                        'Materials.json uses — this law and FiniteStrainIsotropicPlasticity'
+                        'Factory. So the JSON route fails LOUDLY (HasConstitutiveLaw is False, '
+                        '"not registered") while the Python-instance route reaches the solver '
+                        'and dies with SIGSEGV. Two different failure modes for the same law, '
+                        'depending on how you assign it.',
+                        '[Input] HARDENING_CURVE is NOT range-checked by the law Check(): '
+                        'values 7 and 8 — outside the documented 0..6 enum — pass Check() '
+                        'without any complaint on SmallStrainIsotropicPlasticity3DVonMisesVonMises. '
+                        'Two curves need extra properties that Check() DOES demand: curve 2 '
+                        '(InitialHardeningExponentialSoftening) needs MAXIMUM_STRESS, curve 4 '
+                        '(CurveFittingHardening) needs CURVE_FITTING_PARAMETERS; curves 0, 1, 3, '
+                        '5, 6 pass with only YIELD_STRESS_TENSION / YIELD_STRESS_COMPRESSION / '
+                        'FRACTURE_ENERGY set. '
+                        "Signal: 'Error: MAXIMUM_STRESS is not a defined value' (curve 2), "
+                        "'Error: CURVE_FITTING_PARAMETERS is not a defined value' (curve 4); an "
+                        'out-of-range curve index produces NO error at all. (Verified by '
+                        'execution 2026-08-03 on Kratos 10.4.0.)',
+                        '[API] The yield-surface tags VonMises / Tresca / DruckerPrager / '
+                        'MohrCoulomb / ModifiedMohrCoulomb / Rankine / SimoJu are NOT laws on '
+                        'their own — they only exist as substrings inside a composite law name. '
+                        'Writing {"constitutive_law": {"name": "VonMises"}} in Materials.json '
+                        'fails. '
+                        'Signal: KratosGlobals.HasConstitutiveLaw("VonMises") is False while '
+                        'HasConstitutiveLaw("SmallStrainIsotropicPlasticity3DVonMisesVonMises") '
+                        'is True. (Verified by execution 2026-08-03 on Kratos 10.4.0.)',
                         '[API] EQUIVALENT_PLASTIC_STRAIN / PLASTIC_DISSIPATION / UNIAXIAL_STRESS '
                         'cannot be read from the law object — use '
                         'element.CalculateOnIntegrationPoints(CLA.EQUIVALENT_PLASTIC_STRAIN, '

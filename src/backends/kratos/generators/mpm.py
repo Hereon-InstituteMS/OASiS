@@ -249,10 +249,25 @@ KNOWLEDGE = {
                 "MPMUpdatedLagrangianUP2D3N",
             ],
         },
+        # Registered names, checked with KratosGlobals.HasConstitutiveLaw against the
+        # installed MPMApplication 10.4.0 wheel (2026-08-03). The previous entries were
+        # family labels ("LinearElastic", "NeoHookean", "HenckyMC", "HenckyBorjaCamClay",
+        # "Johnson-Cook") — none of those five strings resolves to a law, so a
+        # Materials.json built from them fails with "not registered".
         "constitutive_laws": [
-            "LinearElastic (small strain)", "NeoHookean (finite strain)",
-            "HenckyMC (Mohr-Coulomb with Hencky strain)", "HenckyBorjaCamClay (critical state)",
-            "Johnson-Cook (rate-dependent plasticity)",
+            "LinearElasticIsotropic3DLaw / LinearElasticIsotropicPlaneStrain2DLaw / "
+            "LinearElasticIsotropicPlaneStress2DLaw / LinearElasticIsotropicAxisym2DLaw "
+            "(small strain)",
+            "HyperElasticNeoHookean3DLaw / HyperElasticNeoHookeanPlaneStrain2DLaw / "
+            "HyperElasticNeoHookeanAxisym2DLaw / HyperElasticNeoHookeanUP3DLaw "
+            "(finite strain)",
+            "HenckyMCPlastic3DLaw / HenckyMCPlasticPlaneStrain2DLaw / "
+            "HenckyMCPlasticAxisym2DLaw (Mohr-Coulomb with Hencky strain; "
+            "HenckyMCStrainSofteningPlastic* for softening)",
+            "HenckyBorjaCamClayPlastic3DLaw / HenckyBorjaCamClayPlasticPlaneStrain2DLaw "
+            "(critical state)",
+            "JohnsonCookThermalPlastic3DLaw / JohnsonCookThermalPlastic2DPlaneStrainLaw / "
+            "JohnsonCookThermalPlastic2DAxisymLaw (rate-dependent plasticity)",
         ],
         "solver_types": ["USL (Update Stress Last)", "USF (Update Stress First)", "MUSL (Modified USL)"],
         "pitfalls": [

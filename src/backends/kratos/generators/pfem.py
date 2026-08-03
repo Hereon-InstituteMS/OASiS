@@ -20,12 +20,21 @@ KNOWLEDGE = {
     "pfem_fluid": {
         "description": "Particle FEM for free-surface flows (dam break, sloshing, wave impact)",
         "application": (
-            "PfemFluidDynamicsApplication — NOT on PyPI as of "
-            "Kratos 10.4.2; pip install KratosPfemFluidDynamics"
-            "Application yields 'No matching distribution'. "
+            "PfemFluidDynamicsApplication — NOT pip-installable alongside a 10.4.x core. "
+            "`pip install KratosPfemFluidDynamicsApplication` prints "
+            "\"ERROR: Could not find a version that satisfies the requirement ... "
+            "(from versions: none)\" and \"No matching distribution found\". "
+            "Nuance re-checked 2026-08-03: the PyPI PROJECT does exist, but its newest "
+            "release is 10.2.3 and it publishes no distribution installable for this "
+            "interpreter/platform, so pip reports 'from versions: none' — do not read the "
+            "message as 'the package does not exist'. "
             "Build from source with -DPFEM_FLUID_DYNAMICS_"
             "APPLICATION=ON + -DDELAUNAY_MESHING_APPLICATION=ON."
         ),
+        # UNVERIFIED-ON-THIS-INSTALL: the application cannot be installed at 10.4.x, so
+        # these three element names could not be confirmed against a registry here
+        # (2026-08-03). Every other element name in the kratos catalog HAS been confirmed
+        # by ModelPart.CreateNewElement on the installed build.
         "elements": {
             "2D": ["TwoStepUpdatedLagrangianVPImplicitNodallyIntegratedElement2D3N",
                    "TwoStepUpdatedLagrangianVPImplicitFluidElement2D3N"],

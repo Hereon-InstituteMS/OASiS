@@ -311,7 +311,13 @@ KNOWLEDGE = {
             "Live smoke on this install (Kratos 10.4, /usr/bin/python3, gmsh OCC annulus, "
             "dev draw r_i=0.6 r_o=1.7 A=0.7 B=-1.3 C=0.8 D=0.35 m=3 p=3 kappa=2.5), "
             "h=0.2/0.1/0.05/0.025: L2 = 6.363e-2 / 1.674e-2 / 4.226e-3 / 1.063e-3, "
-            "observed orders 1.93 / 1.99 / 1.99 (2026-08-01)."),
+            "observed orders 1.93 / 1.99 / 1.99 (2026-08-01). REPRODUCED 2026-08-03 on "
+            "Kratos 10.4.0 to all quoted digits (6.362677563536e-02 / 1.674436952806e-02 / "
+            "4.226150279892e-03 / 1.062968069563e-03; orders 1.926 / 1.986 / 1.991). The "
+            "TEMPLATE DEFAULTS (r_i=0.5 r_o=1.0 A=B=C=D=1 m=2 p=3 kappa=1) are a DIFFERENT "
+            "draw and give L2 = 2.923e-2 / 6.952e-3 / 1.770e-3 / 4.447e-4, orders "
+            "2.07 / 1.97 / 1.99 — same order, different constants, so always re-derive the "
+            "reference numbers for the parameter draw you actually run."),
         "pitfalls": [
             '[Environment] Kratos 10.4 on this host works ONLY under the system '
             '/usr/bin/python3 (Python 3.8). The pip Kratos wheel inside the repo .venv '
@@ -320,10 +326,20 @@ KNOWLEDGE = {
             'version `GLIBC_2.32\' not found" on `import KratosMultiphysics` from the '
             '.venv, while the same import succeeds under /usr/bin/python3. Run generated '
             'Kratos scripts with the system interpreter (the gmsh module imports fine in '
-            'both). Available apps under /usr/bin/python3: KratosCore, '
-            'StructuralMechanicsApplication, ConvectionDiffusionApplication, '
-            'LinearSolversApplication — NO FluidDynamics, NO Mapping, NO CoSimulation. '
-            '(Verified empirically 2026-08-01.)',
+            'both). Application availability under /usr/bin/python3 is NOT fixed — every '
+            'Kratos application is a separate pip wheel, so ALWAYS probe with '
+            '`import KratosMultiphysics.X` instead of trusting any list. Measured on this '
+            'host 2026-08-03: 26 applications importable (Core, LinearSolvers, '
+            'StructuralMechanics, ContactStructuralMechanics, ConstitutiveLaws, '
+            'ConvectionDiffusion, FluidDynamics, CoSimulation, FSI, DEM, MPM, GeoMechanics, '
+            'CompressiblePotentialFlow, RANS, Rom, Iga, Poromechanics, ShallowWater, Dam, '
+            'DemStructuresCoupling, CableNet, Optimization, ShapeOptimization, MeshMoving, '
+            'Meshing, Mapping) after pip-installing the matching 10.4.0 wheels; before that '
+            'only four were present. Two wheels install but do NOT import here: SwimmingDEM '
+            'and Chimera, both dying with "libKratos<App>Core.so: cannot open shared object '
+            'file". (Verified empirically 2026-08-01; list corrected and re-measured '
+            '2026-08-03 — the previous four-app list was already incomplete when written, '
+            'ContactStructuralMechanicsApplication was importable too.)',
             '[Numerical] LaplacianElement2D3N reads the diffusivity NODALLY via '
             'ConvectionDiffusionSettings.GetDiffusionVariable() — the CONDUCTIVITY value '
             'on the Properties object is IGNORED by this element. Verified 2026-08-01 by '

@@ -156,8 +156,8 @@ KNOWLEDGE = {
         "pitfalls": [
                         '[Numerical] Newmark average acceleration uses beta=0.25, gamma=0.5 (no numerical damping). Choosing gamma > 0.5 adds artificial damping; gamma < 0.5 is unconditionally unstable. '
                         'Signal: in a ResidualBasedNewmarkDisplacementScheme run with gamma < 0.5, the DISPLACEMENT amplitude in the VtkOutput grows exponentially across time steps regardless of dt.',
-                        "[Syntax] Bossak adds mild numerical damping for high-frequency noise (alpha_m ≈ -0.1). In the Kratos JSON the parameter name is 'damp_factor_m' (NOT alpha_m). Wrong key is silently ignored and the scheme runs without damping. "
-                        "Signal: spurious high-frequency oscillation in the response remains even after enabling 'Bossak' in the time_integration block.",
+                        "[Syntax] Bossak adds mild numerical damping for high-frequency noise (alpha_m ≈ -0.1). In the Kratos JSON the parameter name is 'damp_factor_m' (NOT alpha_m). A wrong key is NOT silently ignored: Kratos Parameters validation is strict and the run aborts before the first time step. "
+                        "Signal: RuntimeError 'Error: The item with name \"alpha_m\" is present in this Parameters but NOT in the default values' from Parameters::ValidateAndAssignDefaults; with 'damp_factor_m' the same case runs to completion. (Re-verified by execution 2026-08-03 on Kratos 10.4.0 — a full StructuralMechanicsAnalysis with solver_type 'Dynamic', scheme_type 'bossak' and the key renamed to alpha_m raises; the earlier catalog text 'Wrong key is silently ignored and the scheme runs without damping' was WRONG. This matters: an unknown key is a loud failure in Kratos, not a silent one, so do not go hunting for a physics explanation.)",
                         '[Numerical] Mass matrix: consistent (default) or lumped (faster for explicit). Lumped on linear tets/quads is OK; lumped on quadratic elements loses accuracy for higher-frequency modes. '
                         'Signal: natural-frequency study with lumped quad8 shows frequency error 2-5% for f_2..f_5 vs <0.5% with consistent mass.',
                         '[Numerical] Effective stiffness K_eff = K + 1/(beta*dt^2)*M — factor it ONCE for linear dynamics, reuse across steps. Re-factorising every step costs O(N^1.5) instead of O(N). '
@@ -165,11 +165,17 @@ KNOWLEDGE = {
                         '[Numerical] For nonlinear dynamics: tangent must be re-assembled at each Newton iteration (not just each time step). Caching the initial tangent gives modified-Newton with slow convergence. '
                         "Signal: ResidualBasedNewtonRaphsonStrategy iteration log shows the ResidualCriteria ratio decreasing by < 0.5 per iter (should be O(0.01) for full Newton); the strategy saturates at max_iteration without ResidualBasedBlockBuilderAndSolver reaching tolerance.",
                         '[Numerical] ELEMENT SELECTION: Linear hex8 (SmallDisplacementElement3D8N) shear-locks in bending-dominated problems — use quadratic hex20 or hex27. Same applies to linear quad4 in 2D — use quad8/quad9. '
-                        'Signal: cantilever tip deflection with hex8 mesh is 20-40% smaller than analytic; switching to hex20 recovers it.',
-                        '[API] For POINT_LOAD application: use AssignVectorVariableProcess with constrained: [false, false, false]. AssignVectorByDirectionProcess crashes for load variables because it tries to fix/free DOFs. '
-                        "Signal: RuntimeError 'Trying to fix DOF of non-existing variable' or segfault when the directional-process is used with POINT_LOAD.",
+                        'Signal: measured on this install (Kratos 10.4.0, plane-stress cantilever L=10, h=1, E=2e11, nu=0, tip shear 1000 N, LinearElasticPlaneStress2DLaw, sparse_lu): '
+                        'SmallDisplacementElement2D4N on a 10x1 grid gives tip uy = -1.340e-5 = 66.6% of the Timoshenko value -2.012e-5 (33% too stiff, i.e. inside the claimed 20-40% band); '
+                        'SmallDisplacementElement2D8N on the SAME 10x1 element grid gives -2.010e-5 = 99.9%. Refining quad4 recovers it only slowly: 20x2 -> 88.8%, 40x4 -> 96.9%, 80x8 -> 99.2%. '
+                        '(Verified by execution 2026-08-03.)',
+                        '[API] For POINT_LOAD application: use AssignVectorVariableProcess with constrained: [false, false, false]. '
+                        'The directional process (KratosMultiphysics.assign_vector_by_direction_process, a CORE module — StructuralMechanicsApplication does NOT export a class of that name) tries to fix/free the DOF and therefore cannot be used for load variables. '
+                        "Signal: RuntimeError 'Error: Trying to fix/free dof of variable POINT_LOAD_X but this dof does not exist in node #1!'; the same case with assign_vector_variable_process sets POINT_LOAD = [0, -100, 0] cleanly. "
+                        'For loads applied on CONDITIONS (the usual case with PointLoadCondition2D1N) assign_vector_by_direction_to_condition_process IS the right process and works. '
+                        '(Verified by execution 2026-08-03 on Kratos 10.4.0.)',
                         "[Syntax] problem_data section MUST include the 'echo_level' field (typically 0). Kratos accesses it during stage initialisation without a default. "
-                        "Signal: KeyError 'echo_level' from AnalysisStage.RunSolutionLoop when problem_data omits the field.",
+                        "Signal: RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' from the C++ Parameters::GetValue — NOT a Python KeyError, and not from RunSolutionLoop. (Re-verified by execution 2026-08-03: a full StructuralMechanicsAnalysis whose problem_data omits echo_level aborts with exactly that message. The earlier signal text in this entry said \"KeyError 'echo_level' from AnalysisStage.RunSolutionLoop\" and was stale; the linear_elasticity copy of this pitfall already carried the correct wording.)",
                     ],
     },
 }
