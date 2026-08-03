@@ -186,6 +186,93 @@ def test_discover_has_a_coupling_branch():
         "discover(query='coupling') must name the follow-up knowledge call")
 
 
+# ── the launch section must be SPECIALISED where the participant is a wrapper ──
+
+# backend -> the constant its shipped script keeps the solver binary in
+_WRAPPER_BACKENDS = {"fourc": "FOURC_BIN", "febio": "FEBIO",
+                     "sparta": "SPARTA", "dealii": "DEALII_EXE"}
+
+
+@pytest.mark.parametrize("name,const", sorted(_WRAPPER_BACKENDS.items()))
+def test_wrapper_backends_say_the_command_runs_the_wrapper(name, const):
+    """For these four the participant is a Python WRAPPER around a binary, so
+    `command` must run PYTHON and the binary goes into a constant in the script.
+
+    The measured bug this pins: the specialised step 4 was applied with
+    `_LAUNCH_PY.replace(<literal>, ...)` and ALL FOUR literals were stale, so
+    every one of these backends served the generic "get the interpreter or
+    binary from discover(query='list')" — and what discover prints for them IS
+    the binary. `str.replace` cannot fail, so the corpus said nothing while
+    telling a weak model to put a solver binary where an interpreter goes.
+    """
+    served = coupling_knowledge(name)
+    assert "runs the WRAPPER" in served, (
+        f"solver='{name}': the launch section does not say that `command` runs "
+        f"the wrapper rather than the {name} binary")
+    assert const in served, (
+        f"solver='{name}': the launch section never names `{const}`, the "
+        f"constant the binary path actually goes into")
+
+
+@pytest.mark.parametrize("name", _BACKEND_ORDER)
+def test_launch_section_has_no_unsubstituted_field(name):
+    """A named field left in the served text is a hard stop for a weak model."""
+    for text in (coupling_knowledge(name), coupling_core()):
+        assert "{INTERP}" not in text, f"solver='{name}': unsubstituted {{INTERP}}"
+        assert "{RIGHT}" not in text, f"solver='{name}': unsubstituted {{RIGHT}}"
+
+
+@pytest.mark.parametrize("name", _BACKEND_ORDER)
+def test_served_edit_block_only_names_constants_the_script_defines(name):
+    """Step 2 hands over a "complementary side" edit block. Every constant in it
+    must EXIST in the script served in the same payload.
+
+    The measured bug: the CONDUCTION right-side block was embedded in all nine
+    payloads. FEBio's script is elasticity (no K, F_SRC, T_OUTER, T_INIT),
+    Kratos's has no SIDE/IFACE_X/Y0,Y1/NX,NY/F_SRC/Q_INIT, and SPARTA's has none
+    of nine of them — so three of nine backends were told to set constants that
+    do not exist in the file they had just been given. For SPARTA the block also
+    said `SIDE="neumann"` while the same payload says the Neumann role is
+    IMPOSSIBLE. Applying the served block to the served FEBio script was
+    confirmed to fail on its first key.
+    """
+    def assigned(text):
+        """Names bound by a module-level assignment, incl. `X0, X1 = a, b`."""
+        out = set()
+        for m in re.finditer(r"^([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=[^=]", text, re.M):
+            out |= {c.strip() for c in m.group(1).split(",")}
+        return out
+
+    served = coupling_knowledge(name)
+    script = (_PARTICIPANT_DIR / f"participant_{name}.py").read_text()
+    defined = assigned(script)
+    blocks = re.findall(r"```python\n(.*?)```", served, re.S)
+    # the edit blocks are the short fenced blocks; the participant is the long one
+    for blk in [b for b in blocks if b != script and len(b) < 2000]:
+        missing = sorted(assigned(blk) - defined)
+        assert not missing, (
+            f"solver='{name}': the served edit block sets {missing}, which the "
+            f"served participant script never defines")
+
+
+def test_sparta_is_not_handed_a_neumann_edit_block():
+    """SPARTA's own payload says the Neumann role is impossible; the launch
+    section must not simultaneously tell the agent to make a neumann copy."""
+    served = coupling_knowledge("sparta")
+    assert 'SIDE      = "neumann"' not in served, (
+        "the SPARTA payload serves a neumann edit block while stating that the "
+        "Neumann role cannot be done at all")
+    assert "DIRICHLET-side" in served or "Dirichlet-side" in served
+
+
+def test_pure_python_backends_do_not_claim_a_wrapper():
+    """The complement: a backend whose participant IS the script must not tell
+    the agent to look for a binary constant that does not exist in it."""
+    for name in ("fenics", "ngsolve", "skfem", "dune"):
+        assert "runs the WRAPPER" not in coupling_knowledge(name), (
+            f"solver='{name}': participant is a plain script, not a wrapper")
+
+
 def test_sides_table_covers_every_backend():
     table = coupling_sides_table()
     for label in ("FEniCSx", "NGSolve", "scikit-fem", "DUNE", "deal.II",

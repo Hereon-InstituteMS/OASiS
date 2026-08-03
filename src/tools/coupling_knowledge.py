@@ -457,26 +457,12 @@ _LAUNCH_PY = '''\
    participant's own `work_dir` (an absolute path). Name them whatever you
    reference in `command` — `participant_left.py` and `participant_right.py`
    below. The driver does not copy anything for you.
-2. The script AS SHIPPED is the LEFT / Dirichlet side. In the second copy,
-   replace the edit block with the complementary side. For the placeholder
-   problem that is exactly:
-
-```python
-{RIGHT}```
-
-   The rules the two blocks must satisfy, whatever your real numbers are:
-   one copy has `SIDE="dirichlet"` and the other `SIDE="neumann"`; each
-   `PARTNER` is the other's `name`; both have the SAME `IFACE_X`; the two
-   x-extents meet at `IFACE_X` and do not overlap; each subdomain keeps at
-   least one Dirichlet boundary of its own, or its problem is singular and the
-   solve blows up. The two meshes need NOT match.
+2. {STEP2}
 3. Run each copy BY HAND in its own directory first, with no `imports.json`
    present (delete a leftover one from an earlier attempt — the driver never
    removes it). Each must print its interface line and write `exports.json`.
    A coupling cannot repair a participant that never ran.
-4. Get the interpreter or binary from `discover(query='list')`: it prints one
-   line per backend with the exact path on THIS install. Never copy an
-   interpreter path out of an example.
+4. {INTERP}
 5. Have a critic review the setup, then put the review on record — the flag
    alone is NOT enough, OASiS looks the review up rather than believing you:
 
@@ -500,6 +486,134 @@ couple(participants='[
   max_iter=60, tol=1e-8, accelerator="constant", theta=0.5, critic_approved=True)
 ```
 '''.replace("{RIGHT}", _RIGHT_BLOCK)
+
+# Step 4 differs for the four backends whose participant is a Python WRAPPER
+# around a separate binary (4C, FEBio, SPARTA, deal.II). For those, `command`
+# must run PYTHON and the binary path goes into a CONSTANT INSIDE the script.
+# "Get the interpreter or binary from discover(query='list')" is the wrong
+# instruction there: what discover prints for those backends IS the binary, and
+# a model that follows step 4 verbatim puts the solver binary in `command`,
+# where it cannot run a Python wrapper.
+#
+# This was previously done with `_LAUNCH_PY.replace(<literal>, ...)` at four
+# call sites. ALL FOUR WERE DEAD: the literals wrapped their lines at a
+# different point than the text (and 4C's was left from an older wording
+# entirely), so every wrapper backend served the generic step 4 and not one of
+# them said `command` runs the wrapper. `str.replace` cannot fail, so nothing
+# reported it. Step 4 is a NAMED FIELD now, so a stale note raises at import
+# instead of going quiet, and `test_wrapper_backends_say_the_command_runs_the
+# _wrapper` asserts on the SERVED text rather than on the call.
+_INTERP_GENERIC = (
+    "Get the interpreter from `discover(query='list')`: it prints one\n"
+    "   line per backend with the exact interpreter path on THIS install.\n"
+    "   Never copy an interpreter path out of an example.")
+
+# The RULES step 2 states are the same whatever the physics; only the concrete
+# block changes. Kept separate so a bespoke step 2 can reuse them.
+_TWO_BLOCK_RULES = '''\
+
+   The rules the two blocks must satisfy, whatever your real numbers are:
+   one copy has `SIDE="dirichlet"` and the other `SIDE="neumann"`; each
+   `PARTNER` is the other's `name`; both have the SAME `IFACE_X`; the two
+   x-extents meet at `IFACE_X` and do not overlap; each subdomain keeps at
+   least one Dirichlet boundary of its own, or its problem is singular and the
+   solve blows up. The two meshes need NOT match.'''
+
+
+def _step2_block(block: str, what: str = "the placeholder problem") -> str:
+    return ("The script AS SHIPPED is the LEFT / Dirichlet side. In the second "
+            f"copy,\n   replace the edit block with the complementary side. For "
+            f"{what} that is\n   exactly:\n\n```python\n{block}```\n"
+            + _TWO_BLOCK_RULES)
+
+
+# Step 2 embedded the CONDUCTION right-side block into every backend's payload.
+# For the three backends whose shipped script does not solve that problem it
+# named constants that do not exist in the script the agent had just been given
+# (FEBio has no K/T_OUTER/T_INIT/F_SRC — it is elasticity; Kratos has no
+# SIDE/IFACE_X/Y0,Y1/NX,NY/F_SRC/Q_INIT; SPARTA has none of nine of them). For
+# SPARTA it also flatly contradicted the same payload's own headline, which says
+# the Neumann role is IMPOSSIBLE, by handing over a `SIDE="neumann"` block.
+# Verified by execution: applying the served block to the served FEBio script
+# fails on the first key. So step 2 is per-backend now.
+_STEP2_DEFAULT = _step2_block(_RIGHT_BLOCK)
+
+# FEBio's script is the ELASTIC analogue, so its complementary block is in
+# displacement/modulus, not temperature/conductivity. These constant names are
+# the ones the shipped FEBio script actually defines; the pairing was run as a
+# real FEBio-to-FEBio coupling and converged with non-matching meshes.
+_RIGHT_BLOCK_FEBIO = """\
+SIDE      = "neumann"     # this copy takes the OTHER side
+PARTNER   = "left"        # the name you gave the first participant
+X0, X1    = 0.5, 1.0      # the OTHER subdomain: starts where the first ends
+Y0, Y1    = 0.0, 1.0      # same cross-section as the partner
+Z0, Z1    = 0.0, 0.1      # same cross-section as the partner
+IFACE_X   = 0.5           # SAME interface coordinate as the partner
+E_MOD     = 2250.0        # this subdomain's own material
+NU        = 0.3
+U_OUTER   = 1.0e-4        # prescribed u_x on ITS outer face (here x = 1.0)
+NX, NY    = 12, 6         # its own mesh — deliberately NOT the partner's
+U_INIT    = 5.0e-5
+Q_INIT    = 0.0
+"""
+
+# Kratos ships a DIRICHLET-side script with no `SIDE` switch, so there is no
+# "flip SIDE" edit to make: the Neumann side is a code change, described under
+# the traps. SPARTA cannot take the Neumann side at all.
+_STEP2_KRATOS = ('''\
+The shipped script is the DIRICHLET side and has NO `SIDE` switch, so
+   the second participant is NOT this script with one constant flipped. Two
+   ways to build the pair, and the first is what was actually run:
+
+   (a) PAIR IT WITH ANOTHER BACKEND. Take the Neumann side from a backend whose
+       script has a `SIDE` switch — `knowledge(topic="coupling",
+       solver="fenics")` is the lightest — and edit only its block. Kratos was
+       proven against FEniCSx this way, in both roles.
+   (b) MAKE A KRATOS NEUMANN SIDE. Copy the script and change the interface
+       condition as described under the traps below: do NOT `Fix(TEMPERATURE)`
+       on the interface nodes; set `FACE_HEAT_FLUX` from the partner's
+       `normal_fluxes` and create the interface `ThermalFace` conditions.
+       Nothing else — mesh, material, export — changes.
+
+   For its own edit block, the second participant's subdomain must start where
+   the first ends (`X0` = the first copy's `X1`), keep the same `H`, carry its
+   own `K` and its own outer `T_OUTER`, and name the partner in `PARTNER`. Each
+   subdomain must keep one Dirichlet boundary of its own or it is singular.''')
+
+_STEP2_SPARTA = ('''\
+THERE IS NO SECOND COPY OF THIS SCRIPT. SPARTA is a DIRICHLET-side
+   participant only — no surface-collision model accepts a prescribed heat
+   flux — so it cannot take the complementary role, and a `SIDE="neumann"`
+   edit of this script does not exist.
+
+   The partner is a NEUMANN-side participant in another backend: it imports
+   SPARTA's exported `normal_fluxes` as its interface flux and exports the wall
+   temperature SPARTA imports. `knowledge(topic="coupling", solver="fenics")`
+   gives such a script; set its `SIDE="neumann"`, put its interface at the wall
+   SPARTA's surface file describes, and make sure both sides agree on units —
+   SPARTA works in SI with energy flux per unit area.
+
+   Read the stochasticity note below BEFORE you size `NRUN`/`NAVE`: this
+   coupling was run end to end here and `couple` reported FAILURE on the
+   residual even though the physics agreed, because a Monte-Carlo estimate has
+   a noise floor the residual cannot fall below.''')
+
+
+def _launch_py(interp: str = _INTERP_GENERIC, step2: str = "") -> str:
+    """The launch section, with steps 2 and 4 written for this backend."""
+    for field in ("{INTERP}", "{STEP2}"):             # guard the guard
+        if field not in _LAUNCH_PY:
+            raise AssertionError(f"_LAUNCH_PY lost its {field} field")
+    return (_LAUNCH_PY.replace("{INTERP}", interp)
+                      .replace("{STEP2}", step2 or _STEP2_DEFAULT))
+
+
+def _interp_wrapper(binary: str, const: str, extra: str = "") -> str:
+    """Step 4 for a wrapper participant: python in `command`, binary in a const."""
+    return (f"The `command` runs the WRAPPER, so the interpreter is a plain\n"
+            f"   Python with numpy — NOT the {binary} binary. The {binary} BINARY\n"
+            f"   path goes into `{const}` INSIDE the script; that is what\n"
+            f"   `discover(query='list')` prints for this backend.{extra}")
 
 
 def coupling_core() -> str:
@@ -530,7 +644,7 @@ def _fenics() -> str:
         "second code on this install: FEniCSx as the Dirichlet side against 4C "
         "on Neumann, and FEniCSx as the Neumann side against 4C on Dirichlet. "
         "Both converged with non-matching interface meshes.",
-        "fenics", _LAUNCH_PY,
+        "fenics", _launch_py(),
         '''\
 * `LinearProblem` in dolfinx 0.9+ REQUIRES `petsc_options_prefix`. Omit it and
   the constructor raises before anything is solved.
@@ -563,12 +677,11 @@ def _fourc() -> str:
         "which lists 4C on the Neumann side only — that limitation belongs to "
         "the legacy tool's own generators, not to 4C.",
         "fourc",
-        _LAUNCH_PY.replace(
-            "Take the interpreter from `discover(query='list')`; it\n"
-            "   prints the exact interpreter this backend uses on this install.",
-            "The `command` runs the WRAPPER, so the interpreter is a\n"
-            "   Python with numpy + meshio (OASiS's own). The 4C BINARY path goes\n"
-            "   into `FOURC_BIN` inside the script — `discover(query='list')` prints it."),
+        _launch_py(_interp_wrapper(
+            "4C", "FOURC_BIN",
+            extra="\n   That Python needs numpy + meshio (OASiS's own has both). Put\n"
+                  "   4C's dependency lib directory in `FOURC_LD` if the binary does\n"
+                  "   not find its libraries by itself.")),
         '''\
 * `PROBLEMTYPE: "Scalar_Transport"` with `TIMEINTEGR: "Stationary"` is the
   conduction problem. Element line is `TRANSP QUAD4 ... MAT 1 TYPE Std` in a
@@ -609,7 +722,7 @@ def _ngsolve() -> str:
         "combinations were run as real couplings on this install — against "
         "FEniCSx and against scikit-fem, with non-matching interface meshes — "
         "and all converged.",
-        "ngsolve", _LAUNCH_PY,
+        "ngsolve", _launch_py(),
         '''\
 * TWO CONSECUTIVE `gfu.Set(value, definedon=mesh.Boundaries(...))` CALLS CANCEL
   EACH OTHER. The second `Set` zeroes what the first wrote outside its own
@@ -643,7 +756,7 @@ def _skfem() -> str:
         "combinations were run as real couplings on this install — against "
         "FEniCSx and against NGSolve, with non-matching interface meshes — and "
         "all converged.",
-        "skfem", _LAUNCH_PY,
+        "skfem", _launch_py(),
         '''\
 * This is the lightest participant of the set: pure Python, numpy + scipy, no
   compilation and no JIT. If you are prototyping a coupling and do not care
@@ -1126,12 +1239,9 @@ def _febio() -> str:
         "modulus the role of conductivity. Both roles were run as a real "
         "FEBio-to-FEBio coupling on this install, with non-matching meshes, "
         "and converged.",
-        "febio", _LAUNCH_PY.replace(
-            "Get the interpreter or binary from `discover(query='list')`: it\n"
-            "   prints one line per backend with the exact path on THIS install.",
-            "The `command` runs the WRAPPER, so the interpreter is a\n"
-            "   Python with numpy. The FEBio BINARY path goes into `FEBIO` inside\n"
-            "   the script — `discover(query='list')` prints it."),
+        "febio", _launch_py(_interp_wrapper("FEBio", "FEBIO"),
+                            _step2_block(_RIGHT_BLOCK_FEBIO,
+                                         "the placeholder ELASTIC problem")),
         '''\
 * NO SCRIPTING API. FEBio is XML-in, plot/log-out. A participant is therefore a
   wrapper: write a complete `.feb` deck with the imported data baked in, run
@@ -1174,12 +1284,11 @@ def _sparta() -> str:
         "and the interface energy balance closed, but `couple` still reported "
         "FAILURE, because the residual cannot fall below the Monte-Carlo "
         "sampling noise. Read the stochasticity note below before using it.",
-        "sparta", _LAUNCH_PY.replace(
-            "Get the interpreter or binary from `discover(query='list')`: it\n"
-            "   prints one line per backend with the exact path on THIS install.",
-            "The `command` runs the WRAPPER, so the interpreter is a\n"
-            "   Python with numpy. The SPARTA BINARY path goes into `SPARTA`\n"
-            "   inside the script — `discover(query='list')` prints it."),
+        "sparta", _launch_py(_interp_wrapper(
+            "SPARTA", "SPARTA",
+            extra="\n   Copy the surf / species / vss files into `work_dir` yourself:\n"
+                  "   `couple` has no `data_files`, so nothing else puts them there."),
+            _STEP2_SPARTA),
         '''\
 * STOCHASTICITY IS THE HEADLINE. DSMC output is a Monte-Carlo estimate. Its
   sampling noise does NOT shrink as the coupling iterates, so the driver's
@@ -1218,7 +1327,7 @@ def _kratos() -> str:
         "non-matching interface meshes. The script below is the DIRICHLET side; "
         "the Neumann side is the same script with the interface condition "
         "changed, described under the traps.",
-        "kratos", _LAUNCH_PY,
+        "kratos", _launch_py(step2=_STEP2_KRATOS),
         '''\
 * CHECK THE INSTALL FIRST, IT IS THE USUAL FAILURE. `import KratosMultiphysics`
   can fail at import with a GLIBC version error from the bundled shared
@@ -1260,7 +1369,7 @@ def _dune() -> str:
         "combinations were run as real couplings on this install — against "
         "FEniCSx and against deal.II, with non-matching interface meshes — and "
         "all converged.",
-        "dune", _LAUNCH_PY,
+        "dune", _launch_py(),
         '''\
 * JIT COMPILATION IS THE THING THAT WILL BITE YOU. DUNE-fem compiles each
   distinct UFL form on first use, and a cold cache can take a minute or more
@@ -1299,12 +1408,11 @@ def _dealii() -> str:
         "combinations were run as real couplings on this install — against "
         "FEniCSx and against DUNE-fem, with non-matching interface meshes — and "
         "all converged.",
-        "dealii", _LAUNCH_PY.replace(
-            "Get the interpreter or binary from `discover(query='list')`: it\n"
-            "   prints one line per backend with the exact path on THIS install.",
-            "BUILD THE SOLVER FIRST (see the traps below), then put its\n"
-            "   path in `DEALII_EXE`. The `command` runs the WRAPPER, so the\n"
-            "   interpreter is a plain Python with numpy."),
+        "dealii", _launch_py(_interp_wrapper(
+            "deal.II", "DEALII_EXE",
+            extra="\n   BUILD THE SOLVER FIRST (see the traps below): the wrapper runs\n"
+                  "   an executable that does not exist until you have built it, and\n"
+                  "   `DEALII_EXE` is the path to YOUR build, not to a deal.II install.")),
         '''\
 * THE PARTICIPANT IS TWO FILES: a compiled C++ solver and a thin Python
   wrapper. The wrapper converts imports.json into the solver's plain-text input
