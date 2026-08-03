@@ -1469,7 +1469,12 @@ STRUCTURE ELEMENTS:
                     "NO 4C diagnostic at all. The process aborts with "
                     "\"terminate called after throwing an instance of "
                     "'std::bad_any_cast'\" and shell exit status 134. "
-                    "There is no 'PROC 0 ERROR' block to grep for."
+                    "There is no 'PROC 0 ERROR' block to grep for. Note "
+                    "that this line comes from the C++ RUNTIME's "
+                    "terminate handler in libstdc++, not from 4C: "
+                    "`strings` on the 4C binary will NOT find it, and "
+                    "that absence is expected rather than evidence the "
+                    "message cannot occur."
                 ),
                 "cell type parses but the physics module has no implementation": "Element shape TRI6 (6 nodes) not activated. Just do it.",
                 "triangle Gauss rule written as <n> <n>": "Unknown number of Gauss points for tri element",

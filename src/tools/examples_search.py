@@ -630,7 +630,9 @@ in two different ways: with both sub-keys present it aborts with
 "Key 'INTEGRATION' cannot be found in the container."; with only one sub-key,
 or bare, it produces NO 4C diagnostic at all - the process dies with
 "terminate called after throwing an instance of 'std::bad_any_cast'" and
-shell exit status 134.
+shell exit status 134. That line comes from the C++ runtime's terminate
+handler in libstdc++, not from 4C, so grepping the 4C binary for it finds
+nothing - the absence is expected, not evidence it cannot happen.
 
 ## 3. COMPLETE RUNNABLE DECK — 3D linear-elastic cantilever, generated mesh
 
