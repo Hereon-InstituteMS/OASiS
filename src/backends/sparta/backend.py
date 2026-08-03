@@ -222,12 +222,19 @@ def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
 _VERIFIED_DSMC_PITFALLS = [
     "[Physics] Omitting the collide command is NEVER an error — the gas is simply "
     "collisionless (free-molecular), and in a wall-bounded conduction problem the wall "
-    "heat flux comes out 8.4x too large. Measured: with 'collide vss' cold-wall flux "
-    "2.092e5 W/m2, hot-wall -2.037e5 W/m2, mid-gas T = 660.3 K; with the collide line "
-    "deleted, 1.7615e6 and -1.7495e6 W/m2 and T = 538.5 K. Both rc=0. "
+    "heat flux comes out far too large. HOW far is set by the Knudsen number, NOT by a "
+    "fixed factor: on one 2d argon Fourier channel, holding particles/cell constant and "
+    "rescaling the grid and dt with density, the free/collisional cold-wall flux ratio "
+    "measured 1.91 at nrho 7.07e22, 9.01 at nrho 7.07e23 and ~73 at nrho 7.07e24. The "
+    "free-molecular flux is exactly linear in density while the collisional flux "
+    "saturates toward the continuum limit, so the ratio scales like 1/Kn and tends to 1 "
+    "as the gas rarefies. Do not carry any single number across problems. Reference "
+    "point at nrho 7.07043e23, fnum 1e11, 4x60 grid, dt 1e-9, walls 300/1000 K: with "
+    "'collide vss' cold-wall flux ~2.0e5 W/m2, without it ~1.76e6 W/m2. Both rc=0. "
     "Signal: Ncoll is identically 0 in every stats line. Put ncoll in stats_style and "
     "check it is nonzero before believing any transport number. "
-    "(Verified by execution 2026-08-03.)",
+    "(Verified by execution 2026-08-03; the fixed '8.4x' was falsified and replaced by "
+    "the density sweep on 2026-08-04.)",
 
     "[Physics] Without a collide command, create_particles also gives every particle "
     "ZERO rotational and vibrational energy even when the mixture asks for trot/tvib, "
@@ -318,9 +325,16 @@ _VERIFIED_DSMC_PITFALLS = [
     "file: pointing it at a VSS parameter file loads ZERO reactions and the run "
     "proceeds with chemistry silently disabled. Measured: rc=0, no warning, Nreact = 0 "
     "at every stats output while Ncoll = 7114. "
-    "Signal: the run header line 'Gas reaction tallies: style tce #-of-reactions 0' and "
-    "'Reactions = 0 (0K)' — the ONLY place the problem is visible. "
-    "(Verified by execution 2026-08-03.)",
+    "Signal: the run header line 'Gas reaction tallies: style tce #-of-reactions 0' — "
+    "that block appears ONLY when a react command was parsed, so '#-of-reactions 0' in "
+    "it is the tell. Do NOT use 'Gas reactions = 0 (0K)' / 'Reactions = 0 (0K)' as the "
+    "signal: SPARTA prints that line at the end of EVERY run, including runs with no "
+    "react command at all, so it carries no information. Note also that a file SPARTA "
+    "cannot open does fail loudly — 'ERROR on proc 0: Cannot open reaction file <f> "
+    "(../react_bird.cpp:552)'; the silent case is specifically a readable file that "
+    "parses to zero reactions. "
+    "(Verified by execution 2026-08-03; signal corrected 2026-08-04 after a control run "
+    "with no react command printed the same 'Gas reactions = 0 (0K)' line.)",
 
     "[Syntax] The doc-page names in this catalog's 'commands' index are NOT input-script "
     "commands. 55 of the 121 keys (every compute_* and fix_* page, dump_image, "
