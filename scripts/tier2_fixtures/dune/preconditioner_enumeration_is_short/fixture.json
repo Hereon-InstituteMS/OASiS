@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for dune::stokes (preconditioner names are a five-item enumeration). The catalog advertised PETSc fieldsplit, AMG and ILU as preconditioners for this backend; for the default numpy/'fem' storage none of those names exists. dune-fem forwards 'linear.preconditioning.method' unchecked to DUNE's parameter reader, so a plausible name fails at SCHEME CONSTRUCTION with a RuntimeError naming 'fem.solver.linear.preconditioning.method' and enumerating none, sor, ssor, gauss-seidel, jacobi. The fixture harvests that message for ilu/amg/fieldsplit and then proves each of the five advertised names really builds and solves. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03; the same message was hit independently from a Stokes script and from a Poisson script.",
+  "_comment": "Tier-2 for dune::stokes (preconditioner names are a five-item enumeration). The catalog advertised PETSc fieldsplit, AMG and ILU as preconditioners for this backend; for the default numpy/'fem' storage none of those names exists. dune-fem forwards 'linear.preconditioning.method' unchecked to DUNE's parameter reader, so a plausible name fails at SCHEME CONSTRUCTION with a RuntimeError naming 'fem.solver.linear.preconditioning.method' and enumerating none, sor, ssor, gauss-seidel, jacobi. That exact message was captured live twice on 2026-08-03 from two independent scripts (a Taylor-Hood Stokes script passing 'ilu', and a Poisson script passing a nonsense name), which is the evidence behind expect_in_output below. PROVENANCE CAVEAT: this fixture SCRIPT has not itself been observed to run green end to end \u2014 the machine was saturated by unrelated jobs during the writing pass and the single JIT scheme build did not finish inside the timeout. The parts that were not directly observed (that each of the five advertised names really builds and solves) are therefore asserted by the script's own fail-fast logic, which prints a FAIL: line and returns 1, rather than by expect_in_output. Promote them into expect_in_output once the fixture has been seen green on a quiet machine.",
   "backend": "dune",
   "physics": "stokes",
   "pitfall_index": 2,
@@ -11,9 +11,6 @@
     "bogus_fieldsplit_rejected=True",
     "bogus_names_the_parameter=True",
     "bogus_enumerates_the_valid_names=True",
-    "pc_none_converged=True",
-    "pc_ssor_converged=True",
-    "pc_jacobi_converged=True",
     "dune_preconditioner_enumeration_verified=True"
   ],
   "forbid_in_output": [
