@@ -130,8 +130,8 @@ KNOWLEDGE = {
             (
                 "[Numerical] Laplace-Beltrami has kernel = "
                 "constants, and NEITHER failure mode is loud. "
-                "Signal (measured on the sphere, maxh=0.3, "
-                "Curve(4), H1 order 3, f = 6z^2-2): with no "
+                "Signal: measured on the sphere, maxh=0.3, "
+                "Curve(4), H1 order 3, f = 6z^2-2 — with no "
                 "regularisation, "
                 "a.mat.Inverse(fes.FreeDofs(), inverse='umfpack') "
                 "returns WITHOUT raising and gives "
