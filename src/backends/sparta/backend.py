@@ -234,7 +234,7 @@ _VERIFIED_DSMC_PITFALLS = [
     "Signal: Ncoll is identically 0 in every stats line. Put ncoll in stats_style and "
     "check it is nonzero before believing any transport number. "
     "(Verified by execution 2026-08-03; the fixed '8.4x' was falsified and replaced by "
-    "the density sweep on 2026-08-04.)",
+    "the density sweep on 2026-08-03 (re-audit).)",
 
     "[Physics] Without a collide command, create_particles also gives every particle "
     "ZERO rotational and vibrational energy even when the mixture asks for trot/tvib, "
@@ -333,7 +333,7 @@ _VERIFIED_DSMC_PITFALLS = [
     "cannot open does fail loudly — 'ERROR on proc 0: Cannot open reaction file <f> "
     "(../react_bird.cpp:552)'; the silent case is specifically a readable file that "
     "parses to zero reactions. "
-    "(Verified by execution 2026-08-03; signal corrected 2026-08-04 after a control run "
+    "(Verified by execution 2026-08-03; signal corrected 2026-08-03 (re-audit) after a control run "
     "with no react command printed the same 'Gas reactions = 0 (0K)' line.)",
 
     "[Syntax] The doc-page names in this catalog's 'commands' index are NOT input-script "

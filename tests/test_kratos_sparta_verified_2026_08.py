@@ -93,7 +93,7 @@ class TestKratosFalsifiedClaimsStayFixed(unittest.TestCase):
         knowledge = _kratos_knowledge()
         required = [
             # NOT "TEMPERATURE == 0.0 at EVERY node": that 2026-08-03 wording was
-            # itself falsified on 2026-08-04 (it recorded a DELTA_TIME = 0 artifact
+            # itself falsified on 2026-08-03 (re-audit) (it recorded a DELTA_TIME = 0 artifact
             # of its own fixture). The element-level statement is what survives.
             ("poisson", "max T = 19.7392"),
             ("poisson", "setting the RHS to zero"),
@@ -110,7 +110,7 @@ class TestKratosFalsifiedClaimsStayFixed(unittest.TestCase):
     def test_structural_hyperelastic_names_are_not_mpm_only(self) -> None:
         """HyperElasticNeoHookean* is registered by MPMApplication, not by
         StructuralMechanicsApplication. Offering it as a structural law makes
-        Materials.json fail with 'Kratos components missing'. Proven 2026-08-04
+        Materials.json fail with 'Kratos components missing'. Proven 2026-08-03 (re-audit)
         with only SMA + CLA imported: HasConstitutiveLaw is False and
         KM.ReadMaterialsUtility raises."""
         elast = _all_text(_kratos_knowledge()["linear_elasticity"]["constitutive_laws"])
@@ -121,7 +121,7 @@ class TestKratosFalsifiedClaimsStayFixed(unittest.TestCase):
         laws = _all_text(_kratos_knowledge()["constitutive_laws"]["laws"])
         self.assertNotIn("HyperElasticQuasiIncompressibleNeoHookean3DLaw", laws,
                          "not registered under ANY of the 26 importable "
-                         "applications on 10.4.0 (checked 2026-08-04)")
+                         "applications on 10.4.0 (checked 2026-08-03 (re-audit))")
 
 
 class TestKratosConstitutiveLawNames(unittest.TestCase):

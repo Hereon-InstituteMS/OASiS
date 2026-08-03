@@ -177,7 +177,7 @@ KNOWLEDGE = {
                         'of the P1 stiffness (1/-0.5), and the LHS scales with 1/dt '
                         'instead of being dt-independent. '
                         '(Verified by execution 2026-08-03 on Kratos 10.4.0; system-level '
-                        'wording re-derived 2026-08-04 — the prior catalog claim that the '
+                        'wording re-derived 2026-08-03 (re-audit) — the prior catalog claim that the '
                         'two elements "differ by less than 1e-12 relative norm" with zero '
                         'convection was WRONG, and the 2026-08-03 replacement text '
                         '"TEMPERATURE == 0.0 at EVERY node — no exception, no warning" '

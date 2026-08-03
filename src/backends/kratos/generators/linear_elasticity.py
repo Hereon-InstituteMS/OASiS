@@ -298,7 +298,7 @@ KNOWLEDGE = {
         },
         # Every name below was checked against the INSTALLED Kratos with
         # KratosGlobals.HasConstitutiveLaw (10.4.0, /usr/bin/python3, 2026-08-03)
-        # and RE-checked 2026-08-04 with ONLY StructuralMechanicsApplication +
+        # and RE-checked 2026-08-03 (re-audit) with ONLY StructuralMechanicsApplication +
         # ConstitutiveLawsApplication imported. That distinction matters: the
         # registry is filled per IMPORTED APPLICATION, so a name checked in a
         # process that also imported MPMApplication/DamApplication can be
