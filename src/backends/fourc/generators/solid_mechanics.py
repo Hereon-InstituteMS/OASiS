@@ -278,9 +278,10 @@ RESULT DESCRIPTION:
                 ),
                 "MAXITER": (
                     "Maximum Newton-Raphson iterations per load step.  "
-                    "Set MAXITER: 1 for truly linear problems (linear material + "
-                    "KINEM: linear) to avoid unnecessary iterations.  "
-                    "Typical: 20--50 for nonlinear problems."
+                    "NEVER set MAXITER: 1, not even for a linear problem: "
+                    "exhausting MAXITER is an ABORT, not an early exit.  "
+                    "Typical: 20--50; there is no cost to a generous cap "
+                    "because Newton stops at the tolerance, not at the cap."
                 ),
                 "TOLDISP": "Displacement convergence tolerance (typical: 1e-6 to 1e-10).",
                 "TOLRES": "Residual force convergence tolerance (typical: 1e-6 to 1e-10).",
@@ -435,21 +436,38 @@ RESULT DESCRIPTION:
                     "(Audit 2026-06-02.)"
                 ),
                 (
-                    "[Performance] For truly linear problems set MAXITER: 1. "
-                    " 4C will waste time iterating if MAXITER > 1 because "
-                    "the solution is already converged after one step. "
-                    "Signal: NOX convergence log shows residual already "
-                    "below TOLRES at iteration 1 yet a second Newton step "
-                    "is taken on every time step. (Audit 2026-06-02.)"
+                    "[Numerical] NEVER set MAXITER = 1, not even for a linear "
+                    "problem. Exhausting MAXITER is an ABORT, not an early "
+                    "exit: the iteration counter reaches 1 before the "
+                    "convergence test is credited, so MAXITER: 1 kills a "
+                    "perfectly converged linear deck. Leave the default or "
+                    "set 10-30. Signal: "
+                    "'Failed.......Number of Iterations = 1 < 1' in the final "
+                    "status block, then a PROC 0 ERROR from "
+                    "solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp and "
+                    "exit 1. (An earlier version of this entry RECOMMENDED "
+                    "MAXITER = 1 here. Falsified by execution 2026-08-03 on "
+                    "the deployed 4C: the served minimal_working_input_3d deck "
+                    "with MAXITER: 1 aborts with exit 1 under BOTH "
+                    "KINEM linear and KINEM nonlinear, while the same deck "
+                    "with MAXITER: 30 finishes normally with exit 0.)"
                 ),
                 (
                     "[Input] DENS (density) is only needed for dynamics or "
                     "body-force loads (gravity).  For quasi-static problems "
                     "without gravity it can be omitted, but it is MANDATORY "
                     "for structural dynamics. Signal: a transient run with "
-                    "DYNAMICTYPE: GenAlpha aborts with `mass matrix needs "
-                    "DENS in material X` or produces all-zero displacements "
-                    "with no inertia effect. (Audit 2026-06-02.)"
+                    "DYNAMICTYPE: GenAlpha and DENS 0 aborts with "
+                    "\"You are about to invert a singular matrix!\" from "
+                    "structure_new/4C_structure_new_integrator.cpp and exit 1 "
+                    "-- the message names the linear algebra, NOT the density, "
+                    "so check DENS first when you see it. "
+                    "(An earlier version of this entry quoted "
+                    "`mass matrix needs DENS in material X`. That string does "
+                    "not occur anywhere in the 4C binary; grepping for it "
+                    "finds nothing. Corrected by execution 2026-08-03: the "
+                    "served 3D deck switched to GenAlpha with DENS: 0.0 "
+                    "produced the singular-matrix message above.)"
                 ),
                 (
                     "[Numerical] HEX8 elements suffer from "
@@ -538,9 +556,11 @@ RESULT DESCRIPTION:
                     "name": "cantilever_2d",
                     "description": (
                         "2D cantilever beam under tip load.  Fixed left edge, "
-                        "point or line load on right edge.  Uses SOLID QUAD4 "
-                        "elements with plane_strain, MAT_Struct_StVenantKirchhoff, "
-                        "KINEM: linear, MAXITER: 1."
+                        "point or line load on right edge.  Uses QUAD4 cells of "
+                        "whichever 2D element type this build registers (see the "
+                        "'2d_element_type' key -- it is version-dependent) with "
+                        "plane_strain, MAT_Struct_StVenantKirchhoff, "
+                        "KINEM: linear, MAXITER: 20."
                     ),
                     "template_variant": "linear_2d",
                 },
