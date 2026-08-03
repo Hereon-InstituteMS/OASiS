@@ -11,8 +11,8 @@ The first three terms are harmonic; only the D*r^p term sources the PDE:
     -kappa * lap(u*) = -kappa * D * p^2 * r^(p-2) =: f      (sympy-verified)
 
 Dirichlet u = u* is imposed on both boundary circles, so the exact
-solution of the BVP is u* itself and the P1 L2 error must converge at
-the theoretical order 2 (verified live on this install, see KNOWLEDGE).
+solution of the BVP is u* itself and the P1 L2 error is expected to
+converge at the theoretical order 2.
 
 The generated script genuinely exercises Kratos: it builds a ModelPart
 from the Gmsh mesh and solves with the ConvectionDiffusionApplication
@@ -296,8 +296,8 @@ KNOWLEDGE = {
                         "Gmsh-meshed 2D annulus, solved with the real ConvectionDiffusionApplication "
                         "stationary path (LaplacianElement2D3N + ResidualBasedLinearStrategy). "
                         "u*(r,theta) = A + B*ln(r) + C*r^m*cos(m*theta) + D*r^p; the ln and modal "
-                        "terms are harmonic, so f = -kappa*D*p^2*r^(p-2) exactly (sympy-verified "
-                        "2026-08-01). Theoretical L2 order for P1 triangles: 2."),
+                        "terms are harmonic, so f = -kappa*D*p^2*r^(p-2) exactly (closed form "
+                        "cross-checked with sympy). Theoretical L2 order for P1 triangles: 2."),
         "application": "ConvectionDiffusionApplication (+ LinearSolversApplication for sparse_lu)",
         "elements": ["LaplacianElement2D3N (string factory only, see poisson pitfalls)"],
         "variables": {
@@ -307,11 +307,12 @@ KNOWLEDGE = {
             "reaction": "REACTION_FLUX",
         },
         "theoretical_l2_order": 2.0,
-        "verified_convergence": (
-            "Live smoke on this install (Kratos 10.4, /usr/bin/python3, gmsh OCC annulus, "
-            "dev draw r_i=0.6 r_o=1.7 A=0.7 B=-1.3 C=0.8 D=0.35 m=3 p=3 kappa=2.5), "
-            "h=0.2/0.1/0.05/0.025: L2 = 6.363e-2 / 1.674e-2 / 4.226e-3 / 1.063e-3, "
-            "observed orders 1.93 / 1.99 / 1.99 (2026-08-01)."),
+        "how_to_grade_convergence": (
+            "Run the emitted script at a sequence of mesh sizes (e.g. h, h/2, h/4) "
+            "and fit log(L2 error) against log(h); the slope is the observed order. "
+            "Both the errors and the order are OUTPUTS of your run — measure them, "
+            "do not assume them. Compare the slope against theoretical_l2_order to "
+            "decide whether the deck is correct."),
         "pitfalls": [
             '[Environment] Kratos 10.4 on this host works ONLY under the system '
             '/usr/bin/python3 (Python 3.8). The pip Kratos wheel inside the repo .venv '
@@ -323,26 +324,26 @@ KNOWLEDGE = {
             'both). Available apps under /usr/bin/python3: KratosCore, '
             'StructuralMechanicsApplication, ConvectionDiffusionApplication, '
             'LinearSolversApplication — NO FluidDynamics, NO Mapping, NO CoSimulation. '
-            '(Verified empirically 2026-08-01.)',
+            '(Verified empirically on this host.)',
             '[Numerical] LaplacianElement2D3N reads the diffusivity NODALLY via '
             'ConvectionDiffusionSettings.GetDiffusionVariable() — the CONDUCTIVITY value '
-            'on the Properties object is IGNORED by this element. Verified 2026-08-01 by '
-            'swap test: Properties CONDUCTIVITY=999 with correct nodal values leaves the '
-            'MMS L2 error unchanged (1.674e-2 at h=0.1); nodal CONDUCTIVITY=999 with '
-            'correct Properties value destroys it (L2 jumps to 1.18). Signal: solution '
-            'scales with the nodal value, not the property; forgetting '
-            'SetSolutionStepValue(CONDUCTIVITY, ...) on nodes gives a singular or '
-            'zero-diffusivity system.',
+            'on the Properties object is IGNORED by this element. Confirmed by a swap '
+            'test: corrupting the Properties CONDUCTIVITY while the nodal values stay '
+            'correct leaves the solution unchanged, whereas corrupting the nodal '
+            'CONDUCTIVITY destroys it. Signal: solution scales with the nodal value, '
+            'not the property; forgetting SetSolutionStepValue(CONDUCTIVITY, ...) on '
+            'nodes gives a singular or zero-diffusivity system.',
             '[Numerical] Curved boundaries with straight P1 edges: Gmsh places boundary '
             'NODES exactly on the circles, but element edges are straight chords, so the '
             'computed domain is a polygon inscribed in the annulus. The geometric '
             '(domain-approximation) error is O(h^2) — the same order as the P1 '
             'interpolation error — so the L2 convergence order 2 is PRESERVED without '
-            'curved (isoparametric) elements. Signal: observed orders 1.93-1.99 in the '
-            'live smoke above; a plateau near order 1.5 would instead indicate '
+            'curved (isoparametric) elements. Signal: a measured order that plateaus '
+            'well below 2 (around 1.5) is NOT the curved boundary — look instead for '
             'misclassified boundary nodes or an inconsistent source term.',
             '[Integration] msh -> ModelPart conversion pitfalls (all hit or guarded '
-            '2026-08-01): (1) Gmsh node tags are NOT contiguous after OCC boolean cuts — '
+            'while building this family): (1) Gmsh node tags are NOT contiguous after '
+            'OCC boolean cuts — '
             'renumber to 1..N before CreateNewNode or Kratos raises on missing node ids; '
             '(2) triangle orientation from Gmsh is not guaranteed CCW — check the signed '
             'area and flip, else element Jacobians go negative; (3) '

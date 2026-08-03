@@ -19,15 +19,15 @@ MeshData/NodeData maps referenced by 'prescribed displacement' BCs
 <logfile><node_data> text output so an L2-error sweep is scriptable.
 
 Expected convergence: displacement L2 order 2 for hex8 (trilinear)
-elements. VERIFIED LIVE 2026-08-01 on FEBio 4.12.0 built from source
-on this host (github.com/febiosoftware/FEBio, cmake with USE_MKL=OFF /
-skyline solver; see KNOWLEDGE pitfalls for the build recipe): default
-parameters, discrete nodal L2 with h^3 weights, n = 4 -> 8 -> 16 -> 32
-gave orders 2.083 / 1.997 / 1.668 — order 2 in the asymptotic regime,
-with the finest ratio degrading exactly as the amplitude-floor pitfall
-predicts; see the expected_convergence KNOWLEDGE entry for the
-measured numbers including the falsification sweep at amplitude=1e-5.
-Claims that remain spec-derived are still marked as such below.
+elements, in the asymptotic regime. The order a given sweep attains is an
+OUTPUT of that sweep — measure it, do not assume it; the amplitude-floor
+pitfall in KNOWLEDGE explains the one systematic reason a correct deck
+can still fall short of 2 on the finest mesh.
+
+FEBio 4.12.0 for this backend is built from source
+(github.com/febiosoftware/FEBio, cmake with USE_MKL=OFF / skyline
+solver); see KNOWLEDGE pitfalls for the build recipe. Claims that remain
+spec-derived are marked as such below.
 """
 import math
 
@@ -56,10 +56,9 @@ _DEFAULTS = {
     # unit volume is  b = -rho*f_input.  With sign = -1 (default) the deck
     # emits  f_input = -(-div sigma)/rho = +div(sigma)/rho, which is correct
     # for that source-derived convention. Set +1 to get the manual-formula
-    # convention (rho*a = div sigma + rho*b). LIVE-VERIFIED 2026-08-01 on
-    # FEBio 4.12.0 built from source: with the default -1 the MMS sweep
-    # converges at order 2 (2.083/1.997 for n=4->8->16); a wrong sign
-    # would give an O(1) non-shrinking error instead.
+    # convention (rho*a = div sigma + rho*b). Checked live on FEBio 4.12.0:
+    # with the default -1 the MMS sweep converges; a wrong sign gives an
+    # O(1) error that does not shrink under refinement.
     "body_force_sign": -1.0,
 }
 
@@ -407,20 +406,18 @@ KNOWLEDGE = {
             "for L2-error sweeps"),
         "input_format": "FEBio XML (.feb), version 4.0",
         "expected_convergence": (
-            "Displacement L2 error order 2 for hex8 (trilinear) elements "
-            "under uniform refinement n -> 2n -> 4n. VERIFIED LIVE "
-            "2026-08-01 on FEBio 4.12.0 built from source (skyline "
-            "solver, default parameters, discrete nodal L2 with h^3 "
-            "weights): n = 4 -> 8 -> 16 -> 32 gave orders 2.083 / 1.997 "
-            "/ 1.668, the finest ratio degrading exactly as the "
-            "amplitude-floor pitfall predicts (relative L2 1.57e-3 "
-            "approaching the O(amplitude)=1e-3 geometric-nonlinearity "
-            "floor). Falsification sweep at amplitude=1e-5 (same "
-            "everything else): orders 2.025 / 2.006 for n = 8 -> 16 -> "
-            "32 — clean order 2, closing the loop on the pitfall. The "
-            "body-force derivation is additionally verified offline: "
-            "closed form re-checked with sympy (difference identically "
-            "zero) plus a numpy finite-difference cross-check in "
+            "Theory: displacement L2 error O(h^2) for hex8 (trilinear) "
+            "elements under uniform refinement n -> 2n -> 4n, i.e. order "
+            "2 in the asymptotic regime. Grade the order by computing "
+            "the discrete nodal L2 error (h^3 weights) at each level of "
+            "your own sweep and taking successive log2 ratios — the "
+            "numbers are outputs of the run, not inputs. One systematic "
+            "caveat applies before you call a shortfall a bug: 'isotropic "
+            "elastic' is a finite-strain law, so the relative error "
+            "cannot fall below O(amplitude) (see the amplitude pitfall). "
+            "The body-force derivation itself is verified offline: closed "
+            "form re-checked with sympy (difference identically zero) "
+            "plus a numpy finite-difference cross-check in "
             "tests/test_febio_elasticity_mms.py."),
         "mms_setup": {
             "per_node_dirichlet": (
@@ -433,9 +430,9 @@ KNOWLEDGE = {
                 "<value lc=\"1\" type=\"map\">map_name</value>. The "
                 "type=\"map\" parameter mechanism is documented in FEBio "
                 "User Manual 4.7 Appendix A.2 (mapped parameters); its "
-                "use on BC values is live-verified 2026-08-01 (FEBio "
-                "4.12.0 built from source): decks read cleanly and the "
-                "boundary carries the exact u* values (order-2 sweep)."),
+                "use on BC values is live-verified on FEBio 4.12.0: decks "
+                "read cleanly and the boundary carries the exact u* "
+                "values."),
             "body_force_math": (
                 "<body_load type=\"non-const\"> takes one math expression "
                 "per component (<x>, <y>, <z>) with UPPERCASE X, Y, Z = "
@@ -452,7 +449,8 @@ KNOWLEDGE = {
                 "<logfile><node_data data=\"ux;uy;uz\" delim=\",\" "
                 "file=\"mms_node_disp.csv\"/></logfile>. With the node "
                 "list omitted, ALL nodes are written in ascending node-id "
-                "order each recorded step (live-verified 2026-08-01: the "
+                "order each recorded step (live-verified on FEBio 4.12.0: "
+                "the "
                 "CSV carries a '*Step/*Time/*Data' header per block, one "
                 "block for step 0 [all zeros] and one per recorded step, "
                 "values at ~12 significant digits — parse the LAST "
@@ -476,15 +474,14 @@ KNOWLEDGE = {
                 "coordinate direction — consistent with FEBio forum "
                 "guidance to enter gravity as positive g = 9.8. The "
                 "generator therefore emits f_input = +div(sigma(u*))/rho "
-                "(parameter body_force_sign = -1). LIVE-VERIFIED "
-                "2026-08-01 (FEBio 4.12.0 built from source): the "
-                "default -1 convention converges at order 2 "
-                "(2.083/1.997, n=4->8->16). Signal: a wrong sign is a clean run "
+                "(parameter body_force_sign = -1). LIVE-VERIFIED on "
+                "FEBio 4.12.0: the default -1 convention converges "
+                "under refinement. Signal: a wrong sign is a clean run "
                 "(normal termination, no warning) whose displacement L2 "
                 "error is O(1) relative — the interior solves toward -u* "
                 "while the boundary pins +u* — and does NOT shrink under "
                 "mesh refinement; flip body_force_sign to +1 in that "
-                "case. (Source walk 2026-08-01.)"
+                "case. (Confirmed by source walk.)"
             ),
             (
                 "[Input] FEBio body forces are per unit MASS, multiplied "
@@ -508,8 +505,8 @@ KNOWLEDGE = {
                 "lowercase x,y,z in 2.x-era 'data' attributes — do not "
                 "mix the two conventions; lowercase symbols are not the "
                 "reference coordinates in the 4.x math parser. Signal: "
-                "LIVE-VERIFIED 2026-08-01 (FEBio 4.12.0 built from "
-                "source) and WORSE than a parse error: a deck whose "
+                "LIVE-VERIFIED on FEBio 4.12.0 and WORSE than a parse "
+                "error: a deck whose "
                 "body-load expression uses lowercase x reads in with "
                 "'Reading file ...SUCCESS!', starts the first time "
                 "step, and CRASHES with a segmentation fault (exit "
@@ -529,12 +526,13 @@ KNOWLEDGE = {
                 "amplitude small enough that h^2 discretization error "
                 "dominates on the finest mesh of a sweep, or the "
                 "measured order degrades below 2. LIVE-VERIFIED both "
-                "ways 2026-08-01 (FEBio 4.12.0 built from source): at "
-                "the default amplitude=1e-3 the n=16->32 order dropped "
-                "to 1.668 (relative L2 1.57e-3, near the 1e-3 floor); "
-                "re-running the same sweep at amplitude=1e-5 restored "
-                "orders 2.025/2.006 (n=8->16->32). Signal: "
-                "measured order that decays on the finest "
+                "ways on FEBio 4.12.0: a sweep run at an amplitude "
+                "large enough for the relative L2 error to reach the "
+                "amplitude value loses order on its finest levels, and "
+                "re-running the SAME sweep at a smaller amplitude "
+                "restores it — so the falsification test for this "
+                "pitfall is to shrink amplitude and check the order "
+                "comes back. Signal: measured order that decays on the finest "
                 "meshes while coarse-mesh ratios look fine and the "
                 "relative L2 error approaches the amplitude value — the "
                 "O(amplitude) nonlinearity floor has been reached; "
@@ -545,10 +543,10 @@ KNOWLEDGE = {
                 "LOCAL index into the referenced node_set's listing "
                 "order, NOT the global node id. The generator emits the "
                 "boundary NodeSet in ascending node-id order and the "
-                "maps in the same order. Live-verified indirectly "
-                "2026-08-01: the generated decks read cleanly on FEBio "
-                "4.12.0 and the sweep converges at order 2, which a "
-                "permuted lid mapping would destroy. Signal: lid/"
+                "maps in the same order. Live-verified indirectly: the "
+                "generated decks read cleanly on FEBio 4.12.0 and the "
+                "sweep converges under refinement, which a permuted lid "
+                "mapping would destroy. Signal: lid/"
                 "global-id confusion is either a deck-read error (lid "
                 "exceeding the node_set size) or a clean run whose "
                 "boundary nodes carry permuted u* values — O(1) error "
@@ -560,7 +558,7 @@ KNOWLEDGE = {
                 "FEBio carry no binary assets and febio.org downloads "
                 "sit behind a WordPress account login with reCAPTCHA, "
                 "so unattended installs are blocked. RESOLUTION "
-                "(live-verified 2026-08-01): the source builds cleanly "
+                "(live-verified): the source builds cleanly "
                 "— git clone github.com/febiosoftware/FEBio; cmake "
                 "with -DUSE_MKL=OFF -DUSE_HYPRE=OFF -DUSE_MMG=OFF "
                 "-DUSE_LEVMAR=OFF and, because the non-MKL path never "
@@ -568,8 +566,9 @@ KNOWLEDGE = {
                 "-DCMAKE_EXE_LINKER_FLAGS='-fopenmp -ldl' "
                 "-DCMAKE_SHARED_LINKER_FLAGS='-fopenmp -ldl'; then "
                 "make. Without MKL FEBio falls back to the SKYLINE "
-                "direct solver (slow but correct: the 107k-dof n=32 "
-                "MMS level ran ~10 min). Signal: skipping the linker "
+                "direct solver — correct but slow, on the order of ten "
+                "minutes for a ~10^5-dof solid solve, so budget wall "
+                "time accordingly on refined meshes. Signal: skipping the linker "
                 "flags fails at the final febio4 link with 'undefined "
                 "reference to GOMP_parallel / dlsym' out of "
                 "libfecore.so and libfebiolib.so; a system HYPRE "

@@ -11,8 +11,9 @@ a global-refinement convergence loop and a per-cycle L2 error printed as
 
     cycle <c> dofs <n> L2 <err>
 
-Expected L2 order for FE_Q(k) is k+1 (verified live: degree=1 -> ~2.0,
-degree=2 -> ~3.0 on deal.II 9.8.0-pre, 2026-08-01).
+Theoretical L2 order for FE_Q(k) is k+1. The order a run actually attains
+is an OUTPUT of that run — read it off the per-cycle L2 errors rather
+than assuming it.
 
 DESIGN PRINCIPLE (project rule "no anchoring"): every problem dimension
 is a parameter with placeholder defaults — MMS coefficients/frequencies,
@@ -431,11 +432,11 @@ KNOWLEDGE = {
                        "step-3/4 (basic Poisson assembly)"],
     "function_space": "FE_Q<3>(k) — Lagrange, any order k",
     "expected_order": (
-        "L2 error = O(h^(k+1)) for FE_Q(k) under global refinement. "
-        "Verified live on deal.II 9.8.0-pre (2026-08-01, 5 cycles, "
-        "mixed faces {0,3,4} Neumann): degree=1 observed orders "
-        "2.06, 1.96, 1.99, 2.00; degree=2 observed orders 1.55 "
-        "(pre-asymptotic on the 2^1 mesh), 2.92, 2.98, 3.00."),
+        "Theory: L2 error = O(h^(k+1)) for FE_Q(k) under global "
+        "refinement, i.e. order k+1 asymptotically. The coarsest cycles "
+        "of a sweep are routinely pre-asymptotic and show a lower ratio; "
+        "grade the order from successive log2 ratios of the per-cycle L2 "
+        "errors your own run prints, and compare against k+1."),
     "mixed_bc_assembly": (
         "Neumann data enters the WEAK FORM ONLY, as the surface "
         "integral + int_{Gamma_N} g v ds added to the right-hand "
@@ -466,11 +467,11 @@ KNOWLEDGE = {
         "solves the problem with homogeneous Neumann data (g = 0) on "
         "those faces and converges to the WRONG solution. Signal: the "
         "per-cycle L2 error stalls at an O(1) mesh-independent level "
-        "instead of decreasing at order k+1. Verified live "
-        "(2026-08-01, deal.II 9.8.0-pre): with the surface term "
-        "deleted from this template, degree=1 errors froze near "
-        "7.5e-01 (8.17e-01, 7.47e-01, 7.51e-01, 7.53e-01) with "
-        "observed orders 0.13, -0.01, 0.00 instead of ~2.0.",
+        "instead of decreasing at order k+1, i.e. the measured order "
+        "collapses toward 0 while the solver still reports a clean CG "
+        "convergence. Falsified live on deal.II 9.8.0-pre by deleting "
+        "the surface term from this template and watching exactly that "
+        "happen.",
         "[Numerical] A wrong SIGN on the Neumann datum (g = -grad(u*) "
         ". n, or an inward normal) is the same silent failure mode: "
         "the run completes and the L2 error plateaus at a "
@@ -499,8 +500,11 @@ KNOWLEDGE = {
         "[Numerical] The linear-solver tolerance must sit well below "
         "the finest-cycle discretization error, otherwise the "
         "convergence curve flattens at the solver tolerance rather "
-        "than the FE error. A relative SolverControl target of "
-        "1e-12 * ||b|| kept degree=2 orders clean down to L2 errors "
-        "of order 2e-05 at 274k DoFs (verified live 2026-08-01).",
+        "than the FE error. Signal: a convergence sweep whose last "
+        "cycles all sit at roughly the same error, with that error "
+        "close to the CG tolerance rather than shrinking like h^(k+1). "
+        "A relative SolverControl target (e.g. 1e-12 * ||b||) rather "
+        "than an absolute one keeps the solver error below the "
+        "discretization error at every cycle of a refinement study.",
     ],
 }

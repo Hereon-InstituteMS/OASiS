@@ -18,11 +18,9 @@ a machine-readable error line
 
     level <l> n <n> dofs <d> L2 <e_l2> H1 <e_h1>
 
-followed by observed EOC lines. Expected orders for Lagrange order k:
-L2 -> k+1, H1-seminorm -> k. Verified live on this install (dune-fem
-conda env, 2026-08-01): order=1 L2 EOCs ~2.0, order=2 L2 EOCs ~3.0 —
-the measured values from the gate run are recorded in KNOWLEDGE
-["poisson_mms"]["expected_order"].
+followed by observed EOC lines. Theoretical orders for Lagrange order k:
+L2 -> k+1, H1-seminorm -> k. The EOCs a given run actually attains are an
+OUTPUT of that run — read them off the emitted lines, do not assume them.
 
 DESIGN PRINCIPLE (project rule "no anchoring"): every problem dimension
 is a parameter with placeholder defaults — domain size, MMS frequencies
@@ -296,13 +294,13 @@ KNOWLEDGE = {
             "per-level L2/H1 error lines"),
         "input_format": "Python script (dune.fem + UFL)",
         "expected_order": (
-            "L2 order k+1 and H1-seminorm order k for Lagrange order k. "
-            "Verified live (dune-fem 2.10 conda env dune-fem-env, "
-            "2026-08-01, dev-draw params L=2, a=2, b=1, c=1.5, d=0.5, "
-            "amp=1.3, kappa=(2,-0.75,0.5,1), 4 levels): order=1 L2 EOCs "
-            "1.984/1.996/1.999 and H1 EOCs 1.028/1.007/1.002; order=2 "
-            "L2 EOCs 1.628(pre-asymptotic)/2.923/2.982 and H1 EOCs "
-            "1.059(pre-asymptotic)/1.990/1.998."),
+            "Theory for a conforming Lagrange space of order k on a "
+            "sufficiently smooth solution: L2 error O(h^(k+1)) and "
+            "H1-seminorm error O(h^k), i.e. L2 order k+1 and H1 order k. "
+            "These are the ASYMPTOTIC rates — the coarsest levels of a "
+            "sweep are commonly pre-asymptotic and show a lower EOC. The "
+            "EOCs of any particular run are an output of that run; read "
+            "them from the emitted 'EOC level ...' lines."),
         "mms_setup": {
             "source_term": (
                 "f = -div(kappa*grad(u_exact)) built symbolically in UFL "
@@ -329,9 +327,8 @@ KNOWLEDGE = {
                 "importing from dune.fem.function emits "
                 "'DeprecationWarning: dune.fem.function.integrate is "
                 "deprecated use dune.fem.integrate instead. New "
-                "signature is (expr, gridView, order)' — observed live "
-                "on this install during the E5 prototype run "
-                "(2026-08-01)."
+                "signature is (expr, gridView, order)' — observed on "
+                "dune-fem 2.10."
             ),
             (
                 "[API] galerkin solver parameter keys 'newton.*' are "
@@ -341,10 +338,9 @@ KNOWLEDGE = {
                 "Warning: the parameter key 'newton.linear' is "
                 "deprecated. Simply remove 'newton.'\" and \"the "
                 "parameter key 'newton' is deprecated. Replace with "
-                "'nonlinear'\" — observed live on this install "
-                "(2026-08-01); the old keys still WORK (warning only), "
-                "so runs do not fail, but the template emits the new "
-                "keys."
+                "'nonlinear'\" — observed on dune-fem 2.10; the old "
+                "keys still WORK (warning only), so runs do not fail, "
+                "but the template emits the new keys."
             ),
             (
                 "[Numerics] The error quadrature order must comfortably "
@@ -376,12 +372,11 @@ KNOWLEDGE = {
                 "within one refinement loop the form is textually "
                 "identical across levels so ONLY the first level pays "
                 "the compile cost. Signal: level 0 of a fresh order "
-                "takes O(30-60s) wall time while later levels of the "
-                "same run finish in seconds — observed live on this "
-                "install (2026-08-01: the fresh-cache order=1 gate run "
-                "spent the bulk of its 2m51s wall time on level-0 JIT "
-                "compilation; switching to order=2 triggered a fresh "
-                "compile in its own run)."
+                "takes tens of seconds of wall time while later levels "
+                "of the same run finish in seconds. Changing the "
+                "Lagrange order changes the form, so it triggers a "
+                "fresh compile even though the script is unchanged — "
+                "budget for that when timing a sweep."
             ),
             (
                 "[API] structuredGrid in 3D creates HEXAHEDRA (YaspGrid "
@@ -389,8 +384,9 @@ KNOWLEDGE = {
                 "(n*k+1)^3 scalar dofs — cost grows with the CUBE of "
                 "n*k, which is why the family caps n0*2^(levels-1)*"
                 "order. Signal: space.size printed per level equals "
-                "(n*order+1)^3 exactly — verified live on this install "
-                "(2026-08-01: order=1 n=8 -> 729, order=2 n=8 -> 4913)."
+                "(n*order+1)^3 exactly (order=1, n=8 -> 9^3 = 729; "
+                "order=2, n=8 -> 17^3 = 4913); anything else means the "
+                "grid or the space is not what you think it is."
             ),
         ],
     },
