@@ -386,7 +386,16 @@ def _run_monolithic_check(monolithic: str, exports: dict,
     report: dict = {"status": "checked", "reference_points": int(ref_vals.size),
                     "reference_field": ref_field}
     findings: list[str] = []
-    not_run: list[str] = []
+    # Nothing here can tell an independent un-split solve from a script that
+    # echoes the coupled answer back: both write the same file. Agreement is
+    # therefore only as good as the reference, and that has to be said, because
+    # a reference that is wrong in the same way as the coupling turns the
+    # strongest check in this tool into a rubber stamp.
+    not_run: list[str] = [
+        "monolithic reference INDEPENDENCE: OASiS ran the command it was given "
+        "and compared the numbers; it cannot tell a genuine un-split solve from "
+        "one that re-reads or reproduces the coupled answer. Agreement below is "
+        "evidence only if the reference solves the problem on its own."]
     for name, ex in exports.items():
         vals = _np.asarray(ex.get("values", []), float).ravel()
         if vals.size == 0:
@@ -2734,7 +2743,7 @@ def register_consolidated_tools(mcp: FastMCP):
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
                      accelerator: str = "aitken", theta: float = 0.5,
-                     monolithic: str = "",
+                     monolithic: str = "", probe: bool = True,
                      critic_approved: bool = False) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
 
@@ -2796,6 +2805,12 @@ def register_consolidated_tools(mcp: FastMCP):
               a Dirichlet-Neumann or FSI coupling converge at all when the physical
               stiffness/density ratio makes the un-relaxed iteration diverge; 0.5 is
               a neutral default, not a recommendation for your problem.
+            probe: after the iteration settles, spend ONE extra solve per
+              participant perturbing its final imports and measuring how far its
+              answer moves. This is the only check here that can tell a solver
+              which reads its boundary data from one that merely looks as if it
+              does; turn it off only if that solve is genuinely unaffordable, and
+              the verdict will then record that the question was not asked.
             monolithic: OPTIONAL JSON {"command":[argv...], "work_dir": str,
               "timeout": int} — a solve of the SAME problem un-split, in ONE code,
               which writes <work_dir>/monolithic.json in InterfaceData shape on the
@@ -2813,6 +2828,8 @@ def register_consolidated_tools(mcp: FastMCP):
             check_interface_balance, check_finite, check_convergence,
             check_coupling_directionality, check_participant_responsiveness,
             check_interface_meshes, check_residual_blocks, check_returncodes,
+            check_interface_flux_profile, check_interfaces_are_the_same_surface,
+            check_interface_sensitivity,
         )
         _get_journal().record("tool_call", "couple", solver="general", physics="coupling")
         try:
@@ -2832,7 +2849,7 @@ def register_consolidated_tools(mcp: FastMCP):
             except (KeyError, TypeError) as e:
                 return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
         r = run_coupling(parts, max_iter=max_iter, tol=tol, accelerator=accelerator,
-                         theta0=theta)
+                         theta0=theta, probe=probe)
 
         # ── silent-wrong validators ───────────────────────────────────────────
         # `val` holds findings (they flip the verdict); `not_run` holds checks
@@ -2849,6 +2866,14 @@ def register_consolidated_tools(mcp: FastMCP):
         f, n = check_returncodes(r.returncodes); val += f; not_run += n
         f, n = check_coupling_directionality(r.graph, max_iter); val += f; not_run += n
         f, n = check_participant_responsiveness(r.responsiveness); val += f; not_run += n
+        if probe:
+            f, n = check_interface_sensitivity(r.sensitivity); val += f; not_run += n
+        else:
+            not_run.append(
+                "interface sensitivity: NOT probed (probe=False). The one solve "
+                "that would have established whether each participant's answer "
+                "depends on its imports was skipped, so a solver that ignores "
+                "imports.json is indistinguishable here from one that reads it.")
         # Only interesting when the GLOBAL norm claims convergence: that is the
         # case where a still-moving small block is invisible. When the global
         # residual already says NOT CONVERGED it says everything, and repeating
@@ -2858,7 +2883,11 @@ def register_consolidated_tools(mcp: FastMCP):
         names = list(r.exports)
         if len(names) == 2:
             a, b = r.exports[names[0]], r.exports[names[1]]
+            f, n = check_interfaces_are_the_same_surface(a, b, names[0], names[1])
+            val += f; not_run += n
             f, n = check_interface_meshes(a, b, names[0], names[1]); val += f; not_run += n
+            f, n = check_interface_flux_profile(a, b, names[0], names[1])
+            val += f; not_run += n
             if a.get("normal_fluxes") is None or b.get("normal_fluxes") is None:
                 not_run.append(
                     "interface flux balance: at least one participant exported no "
@@ -2895,6 +2924,7 @@ def register_consolidated_tools(mcp: FastMCP):
                   "returncodes": r.returncodes,
                   "responsiveness": r.responsiveness,
                   "graph": r.graph, "relaxation": r.theta,
+                  "interface_sensitivity": r.sensitivity,
                   "monolithic_check": mono_block,
                   "exports": r.exports, "error": r.error,
                   "validation": val, "checks_not_run": not_run}
@@ -2907,7 +2937,7 @@ def register_consolidated_tools(mcp: FastMCP):
                             setup_text=_coupling_setup_text(
                                 participants=participants, max_iter=max_iter,
                                 tol=tol, accelerator=accelerator, theta=theta,
-                                monolithic=monolithic))
+                                monolithic=monolithic, probe=probe))
         if not_run:
             result["verification"] += (
                 " COVERAGE — these checks could NOT run on this coupling, so the "

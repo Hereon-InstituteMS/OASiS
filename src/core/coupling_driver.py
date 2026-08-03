@@ -102,8 +102,11 @@ class CouplingResult:
     # the coupling graph as the driver resolved it (declared vs. actually wired)
     graph: dict = field(default_factory=dict)
     # relaxation actually applied: {"mode": "aitken"|"constant", "theta0": float,
-    #                               "final": {participant: theta}}
+    #                               "applied": float}
     theta: dict = field(default_factory=dict)
+    # participant -> finite-difference interface sensitivity (see
+    # probe_interface_sensitivity), or None where it could not be measured
+    sensitivity: dict = field(default_factory=dict)
 
 
 def _stack(ifd: InterfaceData) -> np.ndarray:
@@ -156,13 +159,32 @@ def _digest(text: str) -> str:
 
 
 def _rel_change(new: np.ndarray, prev: np.ndarray) -> float:
-    """Relative L2 change of one block; NaN if it cannot be formed."""
+    """Relative change of one block, taken ENTRY BY ENTRY.
+
+    A block norm is itself a scale-masking device: an interface vector that
+    happens to hold a huge entry and a small one in the same flat array (mixed
+    quantities in one `values` list — very common) has its norm set entirely by
+    the huge entry, so the small entry can oscillate by 100% of itself with the
+    block residual reading 1e-12. Demonstrated: a two-entry export whose second
+    component's true fixed point was 100 converged at iteration 2 reporting 1.5,
+    with every check silent.
+
+    So: the reported number is the WORST entry-wise relative change, not the
+    norm ratio. Entries that are zero to within the block's own dynamic range
+    (below 1e-13 of the largest entry) are skipped — their relative change is
+    numerical noise, not information. Returns NaN if it cannot be formed.
+    """
     if new.shape != prev.shape or new.size == 0:
         return float("nan")
-    ref = float(np.sqrt(np.sum(prev ** 2))) + float(np.sqrt(np.sum(new ** 2)))
-    if ref <= 0:
+    scale = max(float(np.max(np.abs(new))) if new.size else 0.0,
+                float(np.max(np.abs(prev))) if prev.size else 0.0)
+    if scale <= 0:
         return 0.0
-    return float(np.sqrt(np.sum((new - prev) ** 2)) * 2.0 / ref)
+    mag = np.maximum(np.abs(new), np.abs(prev))
+    live = mag > 1e-13 * scale
+    if not np.any(live):
+        return 0.0
+    return float(np.max(np.abs(new[live] - prev[live]) / mag[live]))
 
 
 def _blocks(ifd: InterfaceData) -> dict[str, np.ndarray]:
@@ -190,12 +212,17 @@ def _blocks(ifd: InterfaceData) -> dict[str, np.ndarray]:
 
 def run_coupling(participants: list[Participant], max_iter: int = 50,
                  tol: float = 1e-6, accelerator: str = "aitken",
-                 theta0: float = 0.5) -> CouplingResult:
+                 theta0: float = 0.5, probe: bool = True) -> CouplingResult:
     """Run a general fixed-point partitioned coupling. Physics-agnostic.
 
     Each iteration: every participant consumes its partners' latest exports (relaxed),
     runs, and produces new exports. Converges when the relaxed export-vector stops
     changing. Returns success=False if not converged within max_iter.
+
+    probe: after the iteration settles, spend ONE extra solve per participant
+        measuring whether its answer actually depends on its imports (see
+        probe_interface_sensitivity). Turn it off only if that solve is
+        genuinely unaffordable — the result then says the question was not asked.
 
     accelerator: "aitken" (dynamic theta, recomputed per participant per iteration,
         starting from theta0) or "constant" (theta fixed at theta0 for the whole
@@ -254,6 +281,7 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
     block_residuals: dict[str, float] = {}
     # participant -> list of (imports digest, exports digest) per iteration
     trace: dict[str, list[tuple[str, str]]] = {p.name: [] for p in participants}
+    last_imports: dict[str, str] = {}
     nonfinite_hits = 0
 
     def _finish(**kw) -> CouplingResult:
@@ -274,6 +302,7 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
             imp = {src: exports[src].to_dict() for src in p.imports_from if src in exports}
             imp_text = json.dumps(imp, indent=2, sort_keys=True)
             (p.work_dir / "imports.json").write_text(imp_text)
+            last_imports[p.name] = imp_text
             ep = p.work_dir / "exports.json"
             if ep.exists():
                 ep.unlink()
@@ -402,9 +431,13 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
             if nonfinite_hits > _MAX_NONFINITE_WARNINGS:
                 warnings.append(f"... {nonfinite_hits - _MAX_NONFINITE_WARNINGS} "
                                 "further non-finite export warnings suppressed")
+            # Only on the success path: a run that already failed has a finding,
+            # and the probe would cost a solve to say something already known.
+            sens = (probe_interface_sensitivity(participants, last_imports)
+                    if probe else {})
             return _finish(converged=True, iterations=it, residual=res,
                            exports={n: e.to_dict() for n, e in exports.items()},
-                           history=history)
+                           history=history, sensitivity=sens)
 
     if nonfinite_hits > _MAX_NONFINITE_WARNINGS:
         warnings.append(f"... {nonfinite_hits - _MAX_NONFINITE_WARNINGS} further "
@@ -415,6 +448,141 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
                    history=history,
                    error=f"did not converge to tol={tol} in {max_iter} iters "
                          f"(last residual {history[-1]:.2e}) — result is NOT trustworthy")
+
+
+def probe_interface_sensitivity(participants: list[Participant],
+                                last_imports: dict[str, str],
+                                delta: float = 1e-3) -> dict[str, dict]:
+    """Does each participant's answer ACTUALLY depend on what it is handed?
+
+    Watching the iteration cannot establish this. A participant that never opens
+    imports.json but advances some internal state produces a different export
+    every iteration, converges, and reads as fully responsive — it was stamped
+    trustworthy. One that adds a token 1e-16 multiple of its import to defeat a
+    byte-identity test does the same.
+
+    So ask the question directly, twice, after the coupling has settled:
+
+      NOISE   re-run the participant on EXACTLY the imports it last had. A solver
+              that is a function of its boundary data returns the same answer. A
+              non-zero value here means hidden state or nondeterminism, and a
+              fixed-point iteration over such a participant has not converged to
+              anything, whatever the residual says. This is the run that catches
+              a participant which ignores imports.json while advancing a counter
+              — the single-run probe cannot, because its output moves anyway.
+
+      SIGNAL  re-run it again with every exchanged number nudged by `delta`
+              relative, and measure how far the answer moves from the NOISE run
+              (one further step of whatever internal drift exists, so the two are
+              directly comparable).
+
+    S = signal / delta is a finite-difference interface sensitivity; S = 0 means
+    the output is not a function of the input at all. Two extra solves per
+    participant for the whole coupling.
+
+    Runs in place and restores imports.json and exports.json, so the work
+    directory is left as the coupling left it. Returns per participant
+    {"noise", "signal", "S"} with None where a quantity could not be measured —
+    never a number that would read as a pass.
+    """
+    out: dict[str, dict] = {}
+
+    def _blank(reason):
+        return {"noise": None, "signal": None, "S": None, "blocks": {},
+                "detail": reason}
+
+    for p in participants:
+        if not p.imports_from:
+            out[p.name] = _blank("participant declares no imports")
+            continue
+        ip, ep = p.work_dir / "imports.json", p.work_dir / "exports.json"
+        if not ep.exists():
+            out[p.name] = _blank("no exports.json left from the run")
+            continue
+        try:
+            base_vec = _stack(InterfaceData.from_json(ep))
+            saved_exports = ep.read_text()
+            saved_imports = last_imports.get(
+                p.name, ip.read_text() if ip.exists() else "{}")
+            imp = json.loads(saved_imports or "{}")
+        except Exception as e:
+            out[p.name] = _blank(f"could not read the run state: {e}")
+            continue
+
+        def _run(text) -> Optional[InterfaceData]:
+            try:
+                ip.write_text(text)
+                if ep.exists():
+                    ep.unlink()
+                r = subprocess.run(p.command, cwd=str(p.work_dir),
+                                   capture_output=True, text=True, timeout=p.timeout)
+                if r.returncode != 0 or not ep.exists():
+                    return None
+                return InterfaceData.from_json(ep)
+            except Exception:
+                return None
+
+        try:
+            repeat = _run(saved_imports)
+            if repeat is None:
+                out[p.name] = _blank("the participant did not re-run cleanly")
+                continue
+            noise = _rel_change(_stack(repeat), base_vec)
+
+            touched = False
+            for d in imp.values():
+                if not isinstance(d, dict):
+                    continue
+                for key in ("values", "normal_fluxes"):
+                    if d.get(key) is None:
+                        continue
+                    a = np.asarray(d[key], float)
+                    if a.size == 0 or not np.all(np.isfinite(a)):
+                        continue
+                    scale = float(np.max(np.abs(a))) or 1.0
+                    # relative nudge, with an absolute floor so exactly-zero
+                    # entries still move (a zero import is still an import)
+                    d[key] = (a + delta * np.where(np.abs(a) > 0,
+                                                   np.abs(a), scale)).tolist()
+                    touched = True
+            if not touched:
+                out[p.name] = {"noise": _f(noise), "signal": None, "S": None,
+                               "blocks": {},
+                               "detail": "its imports carry no numbers to perturb"}
+                continue
+            nudged = _run(json.dumps(imp, indent=2, sort_keys=True))
+            if nudged is None:
+                out[p.name] = {"noise": _f(noise), "signal": None, "S": None,
+                               "blocks": {},
+                               "detail": "the perturbed run did not complete"}
+                continue
+            signal = _rel_change(_stack(nudged), _stack(repeat))
+            # PER BLOCK as well as in total. A participant can hold its physics
+            # frozen at a stale value while echoing an imported quantity back in
+            # another block: the stacked vector then responds fully and the
+            # frozen half is invisible. Demonstrated — the values block was
+            # pinned to a constant while normal_fluxes passed the import
+            # straight through, and the coupling was stamped trustworthy.
+            nb, rb = _blocks(nudged), _blocks(repeat)
+            blocks = {k: _f(_rel_change(v, rb[k]) if k in rb and v.shape == rb[k].shape
+                            else float("nan"))
+                      for k, v in nb.items()}
+            out[p.name] = {"noise": _f(noise), "signal": _f(signal),
+                           "S": (None if signal != signal else float(signal) / delta),
+                           "blocks": {k: (None if v is None else v / delta)
+                                      for k, v in blocks.items()},
+                           "detail": ""}
+        finally:
+            try:
+                ip.write_text(saved_imports)
+                ep.write_text(saved_exports)
+            except OSError:
+                pass
+    return out
+
+
+def _f(x) -> Optional[float]:
+    return None if x is None or x != x else float(x)
 
 
 def _responsiveness(trace: dict[str, list[tuple[str, str]]],

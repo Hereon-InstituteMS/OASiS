@@ -132,7 +132,8 @@ def _couple(parts, *, reviewed=True, **kw):
         setup = _coupling_setup_text(
             participants=args["participants"], max_iter=args["max_iter"],
             tol=args["tol"], accelerator=args.get("accelerator", "aitken"),
-            theta=args.get("theta", 0.5), monolithic=args.get("monolithic", ""))
+            theta=args.get("theta", 0.5), monolithic=args.get("monolithic", ""),
+            probe=args.get("probe", True))
         _CRITIC_REGISTRY.submit_review(
             solver="couple", digest=setup_digest("couple", setup),
             findings="Reviewed the participant maps, the units on both sides "
@@ -199,21 +200,109 @@ json.dump({"field_name": "y", "n_points": 1, "coordinates": [[0.0, 0.0]],
 
 
 def test_do_nothing_detection_discriminates(tmp_path, monkeypatch):
-    """Remove the check and the same run is stamped trustworthy."""
-    with_check = _couple(_parts(tmp_path / "w", a_body=_A_NOFLUX,
-                                b_body=_NOOP_NOFLUX))
-    assert with_check["converged"] is True
-    assert with_check["trustworthy_result"] is False
+    """Two independent checks catch this, and BOTH are load-bearing.
 
+    Disabling either one alone still catches it — that is the point of having
+    two. Disabling both produces a VERIFIED coupling in which one participant
+    did nothing, which is what they are for.
+    """
     import core.quality_checks as Q
-    monkeypatch.setattr(Q, "check_participant_responsiveness",
-                        lambda *_a, **_k: ([], []))
-    without = _couple(_parts(tmp_path / "o", a_body=_A_NOFLUX,
-                             b_body=_NOOP_NOFLUX))
-    assert without["converged"] is True
-    assert without["trustworthy_result"] is True, (
-        "with the responsiveness check stubbed out, a participant that did "
-        "nothing produces a VERIFIED coupling — which is what the check is for")
+    dead = lambda *_a, **_k: ([], [])                       # noqa: E731
+
+    both = _couple(_parts(tmp_path / "b", a_body=_A_NOFLUX, b_body=_NOOP_NOFLUX))
+    assert both["converged"] is True and both["trustworthy_result"] is False
+
+    # only the interface-sensitivity probe left
+    monkeypatch.setattr(Q, "check_participant_responsiveness", dead)
+    probe_only = _couple(_parts(tmp_path / "p", a_body=_A_NOFLUX,
+                                b_body=_NOOP_NOFLUX))
+    assert probe_only["trustworthy_result"] is False
+    assert any("NOT COUPLED" in w for w in probe_only["validation"])
+    monkeypatch.undo()
+
+    # only the byte-identity responsiveness check left
+    resp_only = _couple(_parts(tmp_path / "r", a_body=_A_NOFLUX,
+                               b_body=_NOOP_NOFLUX), probe=False)
+    assert resp_only["trustworthy_result"] is False
+    assert any("byte-identical" in w for w in resp_only["validation"])
+
+    # neither
+    monkeypatch.setattr(Q, "check_participant_responsiveness", dead)
+    neither = _couple(_parts(tmp_path / "n", a_body=_A_NOFLUX,
+                             b_body=_NOOP_NOFLUX), probe=False)
+    assert neither["converged"] is True
+    assert neither["trustworthy_result"] is True, (
+        "with both stubbed out, a participant that did nothing produces a "
+        "VERIFIED coupling — which is what they are for")
+
+
+# ── the checks the critic pass added, each with its discrimination ───────────
+_STATEFUL_B = """\
+import json
+from pathlib import Path
+n = int(Path("n.txt").read_text()) + 1 if Path("n.txt").exists() else 1
+Path("n.txt").write_text(str(n))
+y = 10.0 * (1.0 - 0.5 ** n)          # converges on its own, reads nothing
+json.dump({"field_name": "y", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [y]}, open("exports.json", "w"))
+"""
+
+
+def test_a_participant_with_hidden_state_is_caught_by_the_probe(tmp_path):
+    """It never opens imports.json, but its export moves every iteration, so it
+    reads as responsive throughout and the coupling converges."""
+    d = _couple(_parts(tmp_path, a_body=_A_NOFLUX, b_body=_STATEFUL_B))
+    assert d["converged"] is True
+    assert d["responsiveness"]["B"] == "responsive"      # the cheap check is fooled
+    assert any("NOT A FUNCTION" in w for w in d["validation"])
+    assert d["trustworthy_result"] is False
+
+
+def test_hidden_state_detection_discriminates(tmp_path):
+    d = _couple(_parts(tmp_path, a_body=_A_NOFLUX, b_body=_STATEFUL_B),
+                probe=False)
+    assert d["converged"] is True
+    assert d["trustworthy_result"] is True, (
+        "without the probe, a participant carrying hidden state between calls "
+        "converges and is stamped VERIFIED")
+    assert any("NOT probed" in c for c in d["checks_not_run"])
+
+
+# B pins its physics to a constant but echoes the imported value back in its
+# flux, so the STACKED export responds fully and the frozen half is invisible.
+_FROZEN_BLOCK_B = """\
+import json
+from pathlib import Path
+imp = json.loads(Path("imports.json").read_text() or "{}")
+x = imp["A"]["values"][0] if "A" in imp else 0.0
+json.dump({"field_name": "y", "n_points": 1, "coordinates": [[0.0, 0.0]],
+           "values": [10.0], "normal_fluxes": [-x]}, open("exports.json", "w"))
+"""
+
+
+def test_a_frozen_block_inside_a_responsive_export_is_caught(tmp_path):
+    d = _couple(_parts(tmp_path, b_body=_FROZEN_BLOCK_B))
+    assert d["converged"] is True
+    assert d["responsiveness"]["B"] == "responsive"
+    sens = d["interface_sensitivity"]["B"]
+    assert sens["S"] > 1e-9, "the export as a whole DOES respond"
+    assert any("do NOT respond" in w for w in d["validation"])
+    assert d["trustworthy_result"] is False
+
+
+def test_frozen_block_detection_discriminates(tmp_path):
+    d = _couple(_parts(tmp_path, b_body=_FROZEN_BLOCK_B), probe=False)
+    assert d["converged"] is True and d["trustworthy_result"] is True
+
+
+def test_the_probe_costs_nothing_in_correctness_on_a_good_coupling(tmp_path):
+    """It must not fire on a real coupling — the control for all of the above."""
+    d = _couple(_parts(tmp_path))
+    assert d["validation"] == [], d["validation"]
+    assert d["trustworthy_result"] is True
+    for name, rec in d["interface_sensitivity"].items():
+        assert rec["S"] > 1e-6, (name, rec)
+        assert rec["noise"] == 0.0, "a deterministic solver must repeat exactly"
 
 
 def test_a_genuinely_converged_participant_is_not_called_unresponsive(tmp_path):
@@ -620,3 +709,125 @@ def test_empty_interface_would_otherwise_report_a_zero_residual(tmp_path):
                          '"n_points": 1, "coordinates": [[0.0, 0.0]], "values": [2.0]')
     r = run_coupling(_parts(tmp_path / "b", b_body=one), max_iter=10, tol=1e-8)
     assert r.converged is True and r.residual == 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Conservation is not one number, and an interface is not just a node count.
+# ═══════════════════════════════════════════════════════════════════════════
+from core.quality_checks import (                                    # noqa: E402
+    check_interface_flux_profile, check_interfaces_are_the_same_surface,
+    check_interface_sensitivity,
+)
+
+_CO4 = [[0.5, y / 3] for y in range(4)]
+
+
+def test_a_wrong_flux_distribution_that_sums_to_zero_is_caught():
+    """The net balance is a single number, and a redistribution along the
+    interface cancels in the sum. A exports a uniform flux; B piles it all onto
+    one node and takes it off the others. The totals cancel EXACTLY."""
+    a = {"coordinates": _CO4, "normal_fluxes": [1.0, 1.0, 1.0, 1.0]}
+    b = {"coordinates": _CO4, "normal_fluxes": [-40.0, 12.0, 12.0, 12.0]}
+    assert abs(sum(a["normal_fluxes"]) + sum(b["normal_fluxes"])) < 1e-12
+    assert not check_interface_balance(a, b), "the total balance is satisfied"
+    findings, not_run = check_interface_flux_profile(a, b)
+    assert findings and "POINT BY POINT" in findings[0]
+    assert not not_run
+
+
+def test_flux_profile_check_passes_a_correct_distribution():
+    a = {"coordinates": _CO4, "normal_fluxes": [1.0, 2.0, 3.0, 4.0]}
+    b = {"coordinates": _CO4, "normal_fluxes": [-1.0, -2.0, -3.0, -4.0]}
+    findings, not_run = check_interface_flux_profile(a, b)
+    assert not findings and not not_run
+
+
+def test_flux_profile_says_it_could_not_look_rather_than_passing():
+    """Different node counts, or coordinates that do not line up: the profile
+    cannot be compared, and that must not read as conservation being fine."""
+    a = {"coordinates": _CO4, "normal_fluxes": [1.0] * 4}
+    b = {"coordinates": _CO4[:2], "normal_fluxes": [-2.0] * 2}
+    findings, not_run = check_interface_flux_profile(a, b)
+    assert not findings and not_run and "ONLY conservation evidence" in not_run[0]
+    findings, not_run = check_interface_flux_profile({"coordinates": _CO4}, b)
+    assert not findings and not_run
+
+
+def test_two_interfaces_that_do_not_overlap_are_not_one_interface():
+    a = {"coordinates": [[0.5, 0.0], [0.5, 1.0]]}
+    b = {"coordinates": [[0.5, 5.0], [0.5, 6.0]]}
+    findings, _ = check_interfaces_are_the_same_surface(a, b)
+    assert findings and "do NOT overlap" in findings[0]
+
+
+def test_overlapping_interfaces_of_different_resolution_are_fine():
+    a = {"coordinates": [[0.5, y / 10] for y in range(11)]}
+    b = {"coordinates": [[0.5, y / 2] for y in range(3)]}
+    findings, not_run = check_interfaces_are_the_same_surface(a, b)
+    assert not findings and not not_run
+
+
+def test_missing_coordinates_is_reported_not_passed():
+    findings, not_run = check_interfaces_are_the_same_surface({}, {})
+    assert not findings and not_run
+
+
+# ── intra-block scale masking: a huge and a small entry in ONE flat array ────
+_BIG_A = """\
+import json
+from pathlib import Path
+imp = json.loads(Path("imports.json").read_text() or "{}")
+s = imp["B"]["values"][1] if "B" in imp else 0.0
+json.dump({"field_name": "v", "n_points": 2, "coordinates": [[0.0, 0.0], [0.0, 1.0]],
+           "values": [1e12, -1.0 * s + 1.0]}, open("exports.json", "w"))
+"""
+_BIG_B = """\
+import json
+from pathlib import Path
+imp = json.loads(Path("imports.json").read_text() or "{}")
+s = imp["A"]["values"][1] if "A" in imp else 0.0
+json.dump({"field_name": "v", "n_points": 2, "coordinates": [[0.0, 0.0], [0.0, 1.0]],
+           "values": [1e12, -1.0 * s + 1.0]}, open("exports.json", "w"))
+"""
+
+
+def test_a_huge_entry_cannot_mask_a_small_one_in_the_same_array(tmp_path):
+    """`values` is often a flat list of mixed quantities. A block NORM is set by
+    the largest entry, so a small entry oscillating by 100% of itself leaves the
+    block residual at 1e-12 and the coupling reports convergence at iteration 2.
+    """
+    d = _couple(_parts(tmp_path, a_body=_BIG_A, b_body=_BIG_B),
+                max_iter=40, tol=1e-8)
+    assert d["converged"] is True and d["residual"] < 1e-8
+    assert d["block_residuals"]["A.values"] > 0.1, (
+        "the entry-wise measure must see the oscillation the norm hides")
+    assert any("NOT representative" in w for w in d["validation"])
+    assert d["trustworthy_result"] is False
+
+
+def test_intra_block_masking_discriminates(tmp_path, monkeypatch):
+    """Restore the block-NORM measure and the oscillation disappears.
+
+    The probe is disabled here on purpose: it measures its per-block
+    sensitivity with the same function, so it independently catches this case
+    too. Isolating one check at a time is the only way to show that each is
+    doing the work the test claims.
+    """
+    import core.coupling_driver as D
+    import numpy as _np
+
+    def _norm_ratio(new, prev):          # the block-NORM measure it replaced
+        if new.shape != prev.shape or new.size == 0:
+            return float("nan")
+        ref = float(_np.linalg.norm(prev)) + float(_np.linalg.norm(new))
+        return 0.0 if ref <= 0 else float(_np.linalg.norm(new - prev)) * 2.0 / ref
+
+    monkeypatch.setattr(D, "_rel_change", _norm_ratio)
+    d = _couple(_parts(tmp_path, a_body=_BIG_A, b_body=_BIG_B),
+                max_iter=40, tol=1e-8, probe=False)
+    assert d["converged"] is True
+    assert d["block_residuals"]["A.values"] < 1e-8, (
+        "with the norm measure the oscillation is invisible")
+    assert d["trustworthy_result"] is True, (
+        "and the coupling is stamped VERIFIED with one exchanged quantity "
+        "oscillating by 100% of itself")
