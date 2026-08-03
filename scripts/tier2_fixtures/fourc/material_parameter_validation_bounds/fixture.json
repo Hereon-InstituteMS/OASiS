@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#9 (DENS is a REQUIRED parameter of MAT_Struct_StVenantKirchhoff even for DYNAMICTYPE: Statics — the frequent advice that density 'is only needed for dynamics' is about whether the VALUE matters, not whether the KEY may be omitted) and #10 (NUE is validated against the half-open range [-1, 0.5), so the incompressible limit NUE: 0.5 is rejected outright rather than merely ill-conditioned). The parameter specs are in src/global_legacy_module/4C_global_legacy_module_validmaterials.cpp; neither has a default. Three runs of the same Statics HEX8 deck: NUE 0.49 reaches fill_complete and exits 0; NUE 0.5 exits 1 with \"Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)\"; DENS omitted exits 1 with \"Expected parameter 'DENS'\". Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "nue_ok: EXIT=0",
+    "fill_complete() on discretization structure",
+    "nue_half: EXIT=1",
+    "Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)",
+    "dens_missing: EXIT=1",
+    "Expected parameter 'DENS'"
+  ],
+  "forbid_in_output": [
+    "NEEDLE_MISSING",
+    "nue_half: EXIT=0",
+    "dens_missing: EXIT=0"
+  ]
+}

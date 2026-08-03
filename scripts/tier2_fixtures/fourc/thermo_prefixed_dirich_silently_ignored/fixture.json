@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#3 — in a STANDALONE PROBLEMTYPE: Thermo run, 'DESIGN SURF THERMO DIRICH CONDITIONS' is a valid section name that parses without complaint and is then silently dropped; the plain 'DESIGN SURF DIRICH CONDITIONS' is what reaches the thermo discretisation. Two runs that differ in exactly that one word: the prefixed one leaves the hot-face node at 0.0 (caught only because a RESULT DESCRIPTION THERMAL entry is present -> 'is WRONG', exit 1), the plain one gives exactly 100.0 -> 'is CORRECT', exit 0. Note there is NO 'not a valid section name' diagnostic in either run, which is the whole point. Extends the previously recorded THERMO-prefixed NEUMANN finding to DIRICH. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "is WRONG --> actresult= 0.00000000000000000e+00",
+    "EXIT_PREFIXED=1",
+    "is CORRECT",
+    "EXIT_PLAIN=0"
+  ],
+  "forbid_in_output": [
+    "not a valid section name",
+    "EXIT_PLAIN=1"
+  ]
+}
