@@ -187,12 +187,13 @@ Iteration 1 has nothing to compare against and is recorded as NaN.
 
 The consequence matters: even a participant whose raw output has ALREADY
 stopped changing still shows a residual falling like (1-theta)^k, purely
-because the relaxed value is still catching up to the raw one. So the residual
-can never fall faster than (1-theta) per iteration, and reaching tol needs at
-least log(tol)/log(1-theta) iterations NO MATTER how good the physics is —
-about 27 at theta=0.5 for tol=1e-8, about 40 at theta=0.3. Size max_iter
-accordingly; a run that fails at max_iter=20 with theta=0.3 never had a
-chance.
+because the relaxed value is still catching up to the raw one. So with a
+CONSTANT theta the residual cannot fall faster than (1-theta) per iteration,
+and reaching tol needs at least log(tol)/log(1-theta) iterations NO MATTER how
+good the physics is — about 27 at theta=0.5 for tol=1e-8, about 40 at
+theta=0.3. Size max_iter accordingly; a run that fails at max_iter=20 with
+theta=0.3 never had a chance. (With accelerator="aitken" theta moves, so the
+floor moves with it, but the same mechanism is there.)
 
 `accelerator`:
   * "constant" — theta fixed at the value you passed. Predictable. USE THIS FIRST.
