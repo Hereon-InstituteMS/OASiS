@@ -297,17 +297,31 @@ KNOWLEDGE = {
             "springs": ["SpringDamperElement3D2N", "NodalConcentratedElement2D1N/3D1N"],
         },
         # Every name below was checked against the INSTALLED Kratos with
-        # KratosGlobals.HasConstitutiveLaw (10.4.0, /usr/bin/python3, 2026-08-03).
+        # KratosGlobals.HasConstitutiveLaw (10.4.0, /usr/bin/python3, 2026-08-03)
+        # and RE-checked 2026-08-04 with ONLY StructuralMechanicsApplication +
+        # ConstitutiveLawsApplication imported. That distinction matters: the
+        # registry is filled per IMPORTED APPLICATION, so a name checked in a
+        # process that also imported MPMApplication/DamApplication can be
+        # "registered" and still be unusable in a structural job. Confirm with
+        # KM.ReadMaterialsUtility, not just HasConstitutiveLaw.
         "constitutive_laws": {
             "linear": ["LinearElastic3DLaw", "LinearElasticPlaneStrain2DLaw",
                        "LinearElasticPlaneStress2DLaw", "LinearElasticAxisym2DLaw",
                        "TrussConstitutiveLaw", "BeamConstitutiveLaw"],
             "hyperelastic": ["KirchhoffSaintVenant3DLaw (Saint Venant-Kirchhoff; also "
                              "KirchhoffSaintVenantPlaneStrain2DLaw / ...PlaneStress2DLaw)",
-                             "HyperElasticNeoHookean3DLaw / HyperElasticNeoHookeanPlaneStrain2DLaw "
-                             "/ HyperElasticNeoHookeanAxisym2DLaw (Neo-Hookean)",
                              "HyperElasticSimoTaylorNeoHookean3DLaw / "
-                             "HyperElasticSimoTaylorNeoHookeanPlaneStrain2DLaw",
+                             "HyperElasticSimoTaylorNeoHookeanPlaneStrain2DLaw "
+                             "(the Neo-Hookean family that IS available to a "
+                             "StructuralMechanics job)",
+                             "NOT HyperElasticNeoHookean3DLaw / "
+                             "HyperElasticNeoHookeanPlaneStrain2DLaw / "
+                             "HyperElasticNeoHookeanAxisym2DLaw — those are "
+                             "MPMApplication laws. With only StructuralMechanics + "
+                             "ConstitutiveLaws imported, HasConstitutiveLaw is False "
+                             "and Materials.json dies with 'Error: Kratos components "
+                             "missing \"HyperElasticNeoHookean3DLaw\"'. They appear "
+                             "only after 'import KratosMultiphysics.MPMApplication'.",
                              "HyperElastic3DLaw (registered, but a DIFFERENT C++ class from "
                              "KirchhoffSaintVenant3DLaw — do not treat it as the SVK law)"],
             "plasticity": ("SmallStrainIsotropicPlasticity3D<YieldSurface><PlasticPotential> — "

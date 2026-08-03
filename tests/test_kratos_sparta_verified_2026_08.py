@@ -92,7 +92,11 @@ class TestKratosFalsifiedClaimsStayFixed(unittest.TestCase):
     def test_corrections_present(self) -> None:
         knowledge = _kratos_knowledge()
         required = [
-            ("poisson", "TEMPERATURE == 0.0 at EVERY node"),
+            # NOT "TEMPERATURE == 0.0 at EVERY node": that 2026-08-03 wording was
+            # itself falsified on 2026-08-04 (it recorded a DELTA_TIME = 0 artifact
+            # of its own fixture). The element-level statement is what survives.
+            ("poisson", "max T = 19.7392"),
+            ("poisson", "setting the RHS to zero"),
             ("poisson", "nodal 999 + Properties 1 -> 999.0"),
             ("structural_dynamics", "NOT silently ignored"),
             ("structural_dynamics", "Getting a value that does not exist"),
@@ -102,6 +106,22 @@ class TestKratosFalsifiedClaimsStayFixed(unittest.TestCase):
         missing = [f"{p}: {s!r}" for p, s in required
                    if s not in _all_text(knowledge[p])]
         self.assertEqual(missing, [], f"Verified correction missing: {missing}")
+
+    def test_structural_hyperelastic_names_are_not_mpm_only(self) -> None:
+        """HyperElasticNeoHookean* is registered by MPMApplication, not by
+        StructuralMechanicsApplication. Offering it as a structural law makes
+        Materials.json fail with 'Kratos components missing'. Proven 2026-08-04
+        with only SMA + CLA imported: HasConstitutiveLaw is False and
+        KM.ReadMaterialsUtility raises."""
+        elast = _all_text(_kratos_knowledge()["linear_elasticity"]["constitutive_laws"])
+        self.assertIn("HyperElasticSimoTaylorNeoHookean3DLaw", elast)
+        self.assertIn("MPMApplication", elast,
+                      "the structural hyperelastic list must say that the "
+                      "HyperElasticNeoHookean* family comes from MPMApplication")
+        laws = _all_text(_kratos_knowledge()["constitutive_laws"]["laws"])
+        self.assertNotIn("HyperElasticQuasiIncompressibleNeoHookean3DLaw", laws,
+                         "not registered under ANY of the 26 importable "
+                         "applications on 10.4.0 (checked 2026-08-04)")
 
 
 class TestKratosConstitutiveLawNames(unittest.TestCase):

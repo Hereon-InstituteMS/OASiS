@@ -2271,7 +2271,6 @@ KNOWLEDGE = {
         # with "not registered". See pitfall on yield-surface tags below.
         "laws": {
             "hyperelastic": ["HyperElastic3DLaw", "HyperElasticPlaneStrain2DLaw",
-                             "HyperElasticQuasiIncompressibleNeoHookean3DLaw",
                              "HyperElasticIsotropicOgden1D (1D truss/cable only)",
                              "HyperElasticIsotropicHenky1D (1D truss/cable only)"],
             "plasticity": ["SmallStrainIsotropicPlasticity3D<YS><PP>",

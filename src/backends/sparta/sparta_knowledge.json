@@ -1963,7 +1963,7 @@
   "binary": "/home/alexander/Schreibtisch/sparta/src/spa_serial (serial only \u2014 no spa_mpi on this host, so nothing about MPI/partitioning is verified here)",
   "distribution_root": "/home/alexander/Schreibtisch/sparta",
   "data_dir": "/home/alexander/Schreibtisch/sparta/data (ar.species, air.species, *.vss, ...)",
-  "examples_dir": "/home/alexander/Schreibtisch/sparta/examples (38 upstream decks)",
+  "examples_dir": "/home/alexander/Schreibtisch/sparta/examples (37 example subdirectories, 120 in.* decks; the earlier '38 upstream decks' was wrong on both readings \u2014 counted 2026-08-04)",
   "invocation": "cd <run dir> && spa_serial -in in.<case>   # writes log.sparta in cwd",
   "compiled_styles": {
    "collide": [
@@ -2009,7 +2009,7 @@
    "_note": "27 compute styles and 25 fix styles are compiled in; ave/histo/weight and gas/collision/tally are present but were not previously documented."
   },
   "documented_but_absent_here": {
-   "kokkos_kk_styles": "NONE of the 25 documented /kk styles is compiled in, and 'package kokkos' aborts with 'Package kokkos command without KOKKOS package enabled (../input.cpp:1507)'. Requesting a /kk style gives 'Unrecognized collide style (../input.cpp:1417)' / 'Unrecognized compute style (../modify.cpp:467)' / 'Unrecognized fix style (../modify.cpp:370)'.",
+   "kokkos_kk_styles": "NONE of the documented /kk styles is compiled in (39 distinct /kk names appear in doc/*.txt, and src/KOKKOS ships 73 headers; the earlier count of '25' matched neither), and 'package kokkos' aborts with 'Package kokkos command without KOKKOS package enabled (../input.cpp:1507)'. Requesting a /kk style gives 'Unrecognized collide style (../input.cpp:1417)' / 'Unrecognized compute style (../modify.cpp:467)' / 'Unrecognized fix style (../modify.cpp:370)'; the three /kk COMMAND styles instead give a fourth form, 'ERROR: Unknown command: create_particles/kk ... (../input.cpp:244)'.",
    "compute fft/grid": "documented in doc/compute_fft_grid.txt, but src/FFT is an un-installed package and style_compute.h does not include it -> 'Unrecognized compute style (../modify.cpp:467)'.",
    "compute reaction/tally": "stale doc heading in doc/compute_gas_reaction_tally.txt; the compiled styles are 'gas/reaction/tally' and 'surf/reaction/tally'.",
    "suffix": "documented in doc/suffix.txt but NOT a command in this build's parser -> 'ERROR: Unknown command: suffix kk (../input.cpp:244)'. Use the -suffix command-line switch (pointless here: no accelerator package is compiled in)."
@@ -2187,10 +2187,10 @@
   }
  },
  "surfaces": {
-  "mandatory_order": "create_grid -> read_surf -> surf_collide -> surf_modify -> run",
+  "mandatory_order": "create_grid -> read_surf -> surf_modify -> run. Only two orderings are actually enforced: read_surf needs the grid, and surf_modify needs BOTH the surfaces and the surf_collide model to already exist. surf_collide itself is NOT tied to read_surf \u2014 moving 'surf_collide 1 diffuse 300.0 0.0' up to directly after create_grid in examples/circle/in.circle still runs (rc=0, same 43387 particles). Corrected 2026-08-04; the previous 'create_grid -> read_surf -> surf_collide -> surf_modify' overstated the constraint.",
   "binding": "surf_modify <group-ID|all> collide <sc-ID> binds a surf_collide model to a surface group; groups come from 'group <name> surf id <lo> <hi>', and different groups may carry different wall models in one run.",
   "syntax_verified": {
-   "surf_collide <ID> diffuse <Tsurf> <acc>": "EXACTLY two args, in the order Tsurf (K) then acc (0..1). A swap is caught only when it makes Tsurf <= 0 ('ERROR: Surf_collide tsurf <= 0.0 (../surf_collide.cpp:125)'); 'diffuse 0.5 300' would NOT be caught. acc outside [0,1] or a missing arg -> 'ERROR: Illegal surf_collide diffuse command (../surf_collide_diffuse.cpp:44/50)'.",
+   "surf_collide <ID> diffuse <Tsurf> <acc>": "EXACTLY two args, in the order Tsurf (K) then acc (0..1). A SWAP IS CAUGHT: 'surf_collide 1 diffuse 0.5 300' aborts with 'ERROR: Illegal surf_collide diffuse command (../surf_collide_diffuse.cpp:50)' because acc=300 fails the [0,1] test \u2014 the earlier claim that \"'diffuse 0.5 300' would NOT be caught\" was WRONG and contradicted the very next sentence of its own entry (falsified by execution 2026-08-04). A swap is silent only when BOTH values are in range, e.g. 'diffuse 0.9 0.3'. Tsurf <= 0 gives 'ERROR: Surf_collide tsurf <= 0.0 (../surf_collide.cpp:125)'; a missing arg gives '... (../surf_collide_diffuse.cpp:44)'.",
    "surf_collide <ID> specular [noslip]": "takes NO temperature argument; passing one -> 'ERROR: Illegal surf_collide specular command (../surf_collide_specular.cpp:42)'."
   },
   "hard_errors_verified": {
