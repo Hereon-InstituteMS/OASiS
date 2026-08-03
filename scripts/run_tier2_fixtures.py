@@ -391,16 +391,37 @@ def _eval_fixture(fixture_dir: Path,
                     "FENICS_PYTHON or install ofa-fenicsx conda env")
                 return result
         elif backend == "dune":
-            cand = (env.get("DUNE_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-dune" / "bin" / "python"))
-            if Path(cand).is_file():
+            # DUNE-fem is heavy enough that it always lives in a
+            # dedicated conda env, but the env NAME is not
+            # standardised across machines — conda-forge users
+            # typically call it `dune-fem-env`, the OASiS convention
+            # is `ofa-dune`. Probe the known spellings in order
+            # instead of hard-coding one, otherwise every dune fixture
+            # silently reports `skipped` on a perfectly good install.
+            # This is a deliberately SIMPLER check than
+            # _find_dune_python() in src/backends/dune/backend.py,
+            # which globs every conda env and VERIFIES each candidate
+            # with a subprocess `import dune.fem`; here the fixture
+            # itself fails loudly if the interpreter cannot import
+            # dune, so a file-exists probe suffices.
+            cand = env.get("DUNE_PYTHON") or ""
+            if not (cand and Path(cand).is_file()):
+                cand = ""
+                for env_name in ("ofa-dune", "dune-fem-env",
+                                 "dune-fem", "dune"):
+                    probe = (Path.home() / "miniconda3" / "envs"
+                             / env_name / "bin" / "python")
+                    if probe.is_file():
+                        cand = str(probe)
+                        break
+            if cand and Path(cand).is_file():
                 python = cand
             else:
                 result.status = "skipped"
                 result.notes.append(
                     "DUNE-fem env python not found; set "
-                    "DUNE_PYTHON or install ofa-dune conda env")
+                    "DUNE_PYTHON or install one of the conda envs "
+                    "ofa-dune / dune-fem-env")
                 return result
         elif backend == "kratos":
             cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos")

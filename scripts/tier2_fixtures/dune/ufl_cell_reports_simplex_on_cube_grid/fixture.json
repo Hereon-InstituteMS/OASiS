@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dune::poisson (UFL cell is not the grid cell). dune/ufl/__init__.py::_cell maps dimension straight onto ufl.triangle / ufl.tetrahedron, so a space built on a YaspGrid of quadrilaterals still reports '<Lagrange1 on a triangle>'. A model transferring dolfinx habits reads mesh.ufl_cell() to pick an element family or quadrature degree and gets a lie, quietly. Fixture asserts the grid really is cubes (per-element geometry types + 16 cells in 2D), that the space nevertheless reports simplices, and that aluConformGrid on the SAME cartesianDomain produces triangles with exactly twice the element count. It deliberately does NOT use dof counts to tell cube from simplex: continuous Lagrange order 1 has 25 dofs on both grids because they share the 25 vertices (b5 measured 'CUBE k=1 n=4 dofs=25' and 'SIMPLEX k=1 n=4 dofs=25'); space.size is only cross-checked against the vertex count. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03: structuredGrid 4x4 -> 16 'quadrilateral', space.cell()='triangle', space.size=25; aluConformGrid -> 32 'triangle'.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 11,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "grid2d_element_types=['quadrilateral']",
+    "space2d_ufl_cell=triangle",
+    "grid3d_element_types=['hexahedron']",
+    "space3d_ufl_cell=tetrahedron",
+    "alugrid_element_types=['triangle']",
+    "dune_ufl_cell_is_always_simplex=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
