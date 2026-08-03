@@ -17,6 +17,7 @@ current 7 names are exactly the schema's COUPALGO enum.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -38,7 +39,20 @@ def find_schema() -> Path | None:
         / "4C" / "build" / "4C_schema.json",
         Path("/home/hermann/Schreibtisch/4C-src/4C/build/"
              "4C_schema.json"),
+        # 2026-08-03: the deployed build on the current verification
+        # host. NOTE this build does not currently carry the artefact —
+        # 4C_schema.json is produced post-build by
+        # `create-schema-files 4C_metadata.yaml 4C_schema.json` (see
+        # apps/global_full/CMakeLists.txt) and that step needs the build
+        # venv, whose interpreter is broken here. The raw metadata IS
+        # present as <build>/4C_metadata.yaml (also obtainable from
+        # `4C --parameters`), so regenerating the schema is all this
+        # fixture needs to become evaluable again.
+        Path.home() / "4C" / "build" / "4C_schema.json",
     ]
+    env = os.environ.get("FOURC_SCHEMA_JSON")
+    if env:
+        candidates.insert(0, Path(env))
     for p in candidates:
         if p.is_file():
             return p
