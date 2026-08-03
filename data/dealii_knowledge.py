@@ -1,9 +1,16 @@
 """
 Comprehensive deal.II knowledge catalogue.
 
-Based on all 97 step tutorials (step-1 through step-97), covering all physics
+Based on the step tutorials (step-1 through step-97), covering all physics
 from Poisson to compressible Euler, Maxwell, FSI, contact, topology optimization.
 deal.II won the 2025 SIAM/ACM CSE Prize.
+
+Counted on the installed source tree 2026-08-03 (deal.II 9.8.0-pre,
+/home/alexander/dealii/examples): the numbering runs to step-97 but has
+GAPS — there are 88 step-* directories, not 97. In particular step-73
+does NOT exist upstream (the AD tutorials are step-71 and step-72); the
+"step-73 (AD-assisted / elasticity)" references that used to appear
+below have been removed.
 """
 
 DEALII_KNOWLEDGE = {
@@ -11,8 +18,19 @@ DEALII_KNOWLEDGE = {
     # OVERVIEW
     # ═══════════════════════════════════════════════════════════════════════
     "overview": {
-        "description": "deal.II is a C++ FEM library with 97 tutorial programs and 40+ element types",
-        "version": "9.7 (July 2025)",
+        "description": ("deal.II is a C++ FEM library with 88 tutorial programs "
+                        "(numbered up to step-97, with gaps — counted on the "
+                        "installed 9.8.0-pre source tree 2026-08-03) and 40+ "
+                        "element types"),
+        "version": ("9.7 (July 2025) upstream release; the deal.II "
+                    "installed on this machine is 9.8.0-pre, a "
+                    "RELEASE-only source build at "
+                    "/home/alexander/dealii/build. Always read the "
+                    "real version from "
+                    "$DEAL_II_DIR/include/deal.II/base/config.h "
+                    "(DEAL_II_PACKAGE_VERSION) rather than trusting "
+                    "this field — knowledge here is version-"
+                    "specific. Checked 2026-08-03."),
         "language": "C++17/20",
         "build_system": "CMake: find_package(deal.II 9.5 REQUIRED)",
         "compilation": "cmake -Bbuild . && cmake --build build -j$(nproc)",
@@ -42,7 +60,7 @@ DEALII_KNOWLEDGE = {
 
         "structural_mechanics": {
             "linear_elasticity": ["step-8 (basic)", "step-17 (MPI parallel)", "step-18 (quasi-static)"],
-            "hyperelasticity": ["step-44 (3-field Neo-Hookean)", "step-73 (AD-assisted)"],
+            "hyperelasticity": ["step-44 (3-field Neo-Hookean)", "step-72 (AD-assisted)"],
             "contact": ["step-41 (obstacle problem)", "step-42 (3D elasto-plastic contact, parallel)"],
             "topology_optimization": ["step-79 (SIMP method, density-based)"],
         },
@@ -89,7 +107,9 @@ DEALII_KNOWLEDGE = {
             "unfitted_CutFEM": ["step-85 (Nitsche)", "step-95 (MF CutFEM)"],
             "checkpoint_restart": ["step-83"],
             "non_matching_grids": ["step-89 (mortaring)"],
-            "AD": ["step-71 (concepts)", "step-72 (energy functional)", "step-73 (elasticity)"],
+            # step-73 does not exist upstream (verified against
+            # /home/alexander/dealii/examples 2026-08-03).
+            "AD": ["step-71 (concepts)", "step-72 (energy functional)"],
             "SUNDIALS": ["step-77 (KINSOL nonlinear)", "step-86 (ARKode time stepping)"],
         },
     },
@@ -102,7 +122,10 @@ DEALII_KNOWLEDGE = {
             "FE_Q(p)": "Standard Lagrange on quads/hexes, any order p, Gauss-Lobatto points",
             "FE_Q_Hierarchical(p)": "Hierarchical basis (efficient for hp-adaptivity)",
             "FE_Bernstein(p)": "Bernstein polynomial basis (positive, partition of unity)",
-            "FE_Hermite(p)": "Hermite interpolation (C1 at vertices)",
+            "FE_Hermite(p)": ("Hermite interpolation (C1 at vertices). deal.II "
+                              "reports conforming_space == Conformity::H2, not H1 "
+                              "(measured 2026-08-03); it is listed under H1 here "
+                              "because H2 is contained in H1."),
             "FE_SimplexP(p)": "Lagrange on simplices (triangles/tetrahedra)",
             "FE_SimplexP_Bubbles(p)": "Simplex Lagrange + bubble enrichment",
         },
@@ -121,7 +144,13 @@ DEALII_KNOWLEDGE = {
                 "the agent recognises them when reading existing decks."
             ),
             "FE_Q_DG0(p)": "Lagrange Qp PLUS cell-wise constants (Qp+DG0); the added piecewise-constant mode is discontinuous across element boundaries",
-            "FE_RannacherTurek(0)": "Classical first-order nonconforming element; continuity enforced only at face midpoints, not pointwise (degree fixed to 0 upstream)",
+            "FE_RannacherTurek(0)": ("Classical first-order nonconforming element; continuity "
+                                     "enforced only in the face-mean sense, not pointwise. deal.II "
+                                     "reports Conformity::L2 (measured 2026-08-03). The constructor "
+                                     "is FE_RannacherTurek<dim>(order = 0, n_face_support_points = 2) "
+                                     "and only order 0 is implemented. has_support_points() is FALSE, "
+                                     "so VectorTools::interpolate_boundary_values segfaults on it in a "
+                                     "Release build — use project_boundary_values."),
         },
         "DG_discontinuous": {
             "FE_DGQ(p)": "Tensor-product DG, equidistant points",
@@ -167,7 +196,11 @@ DEALII_KNOWLEDGE = {
             "FE_FaceQ(p)": "DOFs on faces only (for HDG trace systems, step-51)",
             "FE_Nothing": "Zero-DOF element (subdomain coupling in hp, step-46)",
             "FE_Enriched": "Enrichment wrapper for XFEM/GFEM (partition of unity)",
-            "FE_P1NC": "Nonconforming P1 (Crouzeix-Raviart analogue)",
+            "FE_P1NC": ("Nonconforming P1 (Crouzeix-Raviart analogue), 2D quads only. "
+                        "NOT a class template: declared as "
+                        "`class FE_P1NC : public FiniteElement<2, 2>`, so the "
+                        "constructor is FE_P1NC() and FE_P1NC<2>() fails to compile "
+                        "(verified 2026-08-03). Conformity::L2."),
             "FESystem": "Combine multiple FE into vector/tensor systems",
             "hp::FECollection": "Collection of different FE for hp-adaptivity",
         },
@@ -344,7 +377,13 @@ class MyProblem {
         "general": [
             "Always refine_global() BEFORE distributing DOFs",
             "FEValues must be reinitialized per cell: fe_values.reinit(cell)",
-            "Hanging node constraints MUST be applied after assembly for AMR",
+            "Hanging node constraints MUST be built (DoFTools::"
+            "make_hanging_node_constraints) and applied for AMR — but "
+            "forgetting them is SILENT: the matrix stays exactly "
+            "symmetric and CG converges in the same iteration count; "
+            "only the L2 error stops improving under refinement "
+            "(measured on 9.8.0-pre 2026-08-03, see the poisson "
+            "pitfall catalogue for the numbers)",
             "Use AffineConstraints for both Dirichlet BCs and hanging node constraints",
             "VTU output: call DataOut::build_patches() before write_vtu()",
         ],

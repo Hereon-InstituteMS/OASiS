@@ -432,10 +432,16 @@ KNOWLEDGE = {
     "function_space": "FE_Q<3>(k) — Lagrange, any order k",
     "expected_order": (
         "L2 error = O(h^(k+1)) for FE_Q(k) under global refinement. "
-        "Verified live on deal.II 9.8.0-pre (2026-08-01, 5 cycles, "
-        "mixed faces {0,3,4} Neumann): degree=1 observed orders "
-        "2.06, 1.96, 1.99, 2.00; degree=2 observed orders 1.55 "
-        "(pre-asymptotic on the 2^1 mesh), 2.92, 2.98, 3.00."),
+        "Re-verified live on deal.II 9.8.0-pre (2026-08-03, 5 cycles, "
+        "mixed faces {0,3,4} Neumann, defaults otherwise): degree=1 "
+        "L2 8.589e-02, 2.268e-02, 5.728e-03, 1.436e-03, 3.591e-04 "
+        "-> observed orders 1.92, 1.99, 2.00, 2.00; degree=2 "
+        "L2 1.195e-02, 1.652e-03, 2.116e-04, 2.661e-05, 3.331e-06 "
+        "-> observed orders 2.86, 2.96, 2.99, 3.00 (274625 DoFs at "
+        "the last cycle). The 2026-08-01 record of this entry gave "
+        "2.06/1.96/1.99/2.00 and 1.55/2.92/2.98/3.00; the tail "
+        "figures reproduce, the first-cycle numbers do not, so the "
+        "table above is the measured one."),
     "mixed_bc_assembly": (
         "Neumann data enters the WEAK FORM ONLY, as the surface "
         "integral + int_{Gamma_N} g v ds added to the right-hand "
@@ -474,8 +480,13 @@ KNOWLEDGE = {
         "[Numerical] A wrong SIGN on the Neumann datum (g = -grad(u*) "
         ". n, or an inward normal) is the same silent failure mode: "
         "the run completes and the L2 error plateaus at a "
-        "mesh-independent value. Evaluate g with the outward normal "
-        "from FEFaceValues::normal_vector(q) instead of hand-coding "
+        "mesh-independent value. Signal: the per-cycle L2 error "
+        "stops responding to refinement — measured on deal.II "
+        "9.8.0-pre 2026-08-03 with the sign of g flipped in this "
+        "template, degree=1 gave 1.363, 1.401, 1.409, 1.411, 1.411 "
+        "(observed orders -0.04, -0.01, 0.00, 0.00) instead of "
+        "~2.0. Evaluate g with the outward normal from "
+        "FEFaceValues::normal_vector(q) instead of hand-coding "
         "per-face normal components.",
         "[Syntax] GridGenerator::hyper_cube must be called with "
         "colorize=true to get distinct per-face boundary ids (0..5). "
@@ -488,19 +499,40 @@ KNOWLEDGE = {
         "the CG solve may still 'converge' on the consistent part, "
         "but apply_boundary_values constrains nothing and the "
         "reported L2 error contains an arbitrary constant offset. "
-        "Keep at least one Dirichlet face (validate_parameters in "
-        "this module rejects the all-Neumann spec).",
-        "[Numerical] Using QGauss(fe.degree + 1) for "
-        "integrate_difference can under-integrate the error of "
-        "higher-order elements against a trigonometric exact "
-        "solution, distorting the observed order near the "
-        "asymptotic regime. Use fe.degree + 2 for the error "
-        "quadrature (cheap — it runs once per cycle).",
+        "Signal: validate_parameters() in this module returns a "
+        "non-empty problem list for an all-Neumann spec, and if the "
+        "guard is bypassed the per-cycle L2 error plateaus at an "
+        "O(1) mesh-independent level exactly as in the "
+        "missing-Neumann-term case. Keep at least one Dirichlet "
+        "face.",
+        "[Numerical] Use QGauss(fe.degree + 2) for "
+        "integrate_difference, not degree + 1: the lower rule "
+        "under-integrates the error of higher-order elements "
+        "against a trigonometric exact solution and BIASES THE "
+        "ERROR MAGNITUDE LOW. It does NOT visibly distort the "
+        "observed ORDER, which is what this entry used to claim. "
+        "Measured on deal.II 9.8.0-pre 2026-08-03, degree=2, "
+        "4 cycles, identical in every other respect: with "
+        "QGauss(degree+1) the reported L2 is 9.553e-03, 1.368e-03, "
+        "1.766e-04, 2.225e-05 (orders 2.80, 2.95, 2.99); with "
+        "QGauss(degree+2) it is 1.195e-02, 1.652e-03, 2.116e-04, "
+        "2.661e-05 (orders 2.86, 2.96, 2.99). The magnitudes differ "
+        "by up to 20%, the orders by at most 0.06. Signal: compare "
+        "the same cycle's L2 value under QGauss(fe.degree + 1) and "
+        "QGauss(fe.degree + 2) — a gap of more than a few percent "
+        "means the lower rule is under-integrating. Do NOT use the "
+        "observed order as the tell; it barely moves. Still use "
+        "degree + 2 — it is cheap and it is the honest number.",
         "[Numerical] The linear-solver tolerance must sit well below "
         "the finest-cycle discretization error, otherwise the "
         "convergence curve flattens at the solver tolerance rather "
         "than the FE error. A relative SolverControl target of "
         "1e-12 * ||b|| kept degree=2 orders clean down to L2 errors "
-        "of order 2e-05 at 274k DoFs (verified live 2026-08-01).",
+        "of order 3.3e-06 at 274625 DoFs (re-verified live "
+        "2026-08-03 on deal.II 9.8.0-pre). Signal: the observed "
+        "order collapses toward 0 on the FINEST cycles only, while "
+        "the coarse cycles still show k+1 — and SolverControl::"
+        "last_value() on those cycles sits at the requested "
+        "tolerance rather than well below it.",
     ],
 }

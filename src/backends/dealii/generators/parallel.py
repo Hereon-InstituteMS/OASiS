@@ -25,13 +25,19 @@ def _parallel_poisson_2d(params: dict) -> str:
 #include <deal.II/lac/generic_linear_algebra.h>
 
 // Hard precondition with ONE actionable diagnostic instead of 200
-// lines of template errors from inside generic_linear_algebra.h:
-// conda-forge deal.II builds ship WITHOUT MPI and WITHOUT PETSc in
-// every version (config.h: '#undef DEAL_II_WITH_MPI' / '..._PETSC',
-// verified 9.1.1 + 9.3.2 on 2026-06-12), so the step-40 distributed
-// pattern cannot compile there at all.
+// lines of template errors from inside generic_linear_algebra.h.
+// Builds without MPI/PETSc cannot compile the step-40 distributed
+// pattern at all. This is NOT a conda-only problem: conda-forge
+// packages ship without them (verified 9.1.1 + 9.3.2 on 2026-06-12)
+// AND a source build configured without those flags behaves the
+// same way (verified on the 9.8.0-pre source build at
+// /home/alexander/dealii/build, 2026-08-03: config.h carries
+// '/* #undef DEAL_II_WITH_MPI */' and '/* #undef DEAL_II_WITH_P4EST */',
+// and parallel::distributed::Triangulation's constructor is
+// `= delete`d, so without this guard the failure is
+// "use of deleted function").
 #if !defined(DEAL_II_WITH_MPI) || !defined(DEAL_II_WITH_PETSC)
-#  error "parallel_poisson_2d requires a deal.II build with MPI + PETSc (+ p4est). conda-forge deal.II ships without them - use the serial poisson_2d template instead, or build deal.II from source with -DDEAL_II_WITH_MPI=ON -DDEAL_II_WITH_PETSC=ON."
+#  error "parallel_poisson_2d requires a deal.II build with MPI + PETSc (+ p4est). Neither conda-forge packages nor a source build configured without those flags provide them - check config.h for '#undef DEAL_II_WITH_MPI' / '..._PETSC' / '..._P4EST'. Use the serial poisson_2d template instead, or rebuild deal.II with -DDEAL_II_WITH_MPI=ON -DDEAL_II_WITH_PETSC=ON -DDEAL_II_WITH_P4EST=ON."
 #endif
 
 // Choose LA backend: PETSc or Trilinos
@@ -237,10 +243,21 @@ KNOWLEDGE = {
     "pitfalls": [
         "[Integration] Requires deal.II compiled with MPI + p4est + "
         "PETSc (or Trilinos). Without these the parallel:: classes "
-        "are not instantiated. Signal: link error 'undefined "
-        "reference to parallel::distributed::Triangulation<dim>::"
-        "Triangulation' or `ExcMessage('parallel::distributed::"
-        "Triangulation needs deal.II compiled with p4est')`.",
+        "are not instantiated. Signal: on deal.II >= 9.x built "
+        "WITHOUT p4est you get a COMPILE-time error, not a link error and "
+        "not a runtime ExcMessage — the constructor is `= delete`d, "
+        "so the failure reads \"use of deleted function "
+        "'dealii::parallel::distributed::Triangulation<dim, "
+        "spacedim>::Triangulation(dealii::MPI_Comm, ...)'\". "
+        "Measured on 9.8.0-pre 2026-08-03 (config.h shows "
+        "'/* #undef DEAL_II_WITH_P4EST */' and "
+        "'/* #undef DEAL_II_WITH_MPI */'). Note the header "
+        "`deal.II/distributed/tria.h` still includes cleanly and "
+        "`Utilities::MPI::MPI_InitFinalize` still constructs "
+        "(n_mpi_processes == 1), so an availability probe that only "
+        "checks the include or MPI_InitFinalize will WRONGLY report "
+        "parallel support. Probe the feature flags in "
+        "$DEAL_II_DIR/include/deal.II/base/config.h instead.",
         "[Syntax] Only locally-owned cells are assembled. Use "
         "`cell->is_locally_owned()` to gate the assembly loop. "
         "Signal: assembly runs on every rank but "
