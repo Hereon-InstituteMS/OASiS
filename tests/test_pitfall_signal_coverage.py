@@ -508,14 +508,34 @@ SIGNAL_COVERAGE_MIN = {
                        #                  entries attached to every row.
                        #                  The earlier "155 / collision_relaxation
                        #                  5" arithmetic was wrong.
-                       #                  DISTINCT Signal TEXTS are 74, not 75:
-                       #                  hypersonic_flow[0] and
-                       #                  particle_emission[0] are two different
-                       #                  pitfalls carrying the SAME Signal
-                       #                  literal (the fix emit/face periodic-
-                       #                  boundary abort), so 65 physics-
-                       #                  specific entries yield only 64 unique
-                       #                  Signal texts.
+                       #                  COUNT WHAT YOU NAME. Three different
+                       #                  numbers live here and they are NOT
+                       #                  interchangeable:
+                       #                    165 = pitfall entries counted
+                       #                     75 = distinct pitfall entries
+                       #                          (65 physics-specific + 10
+                       #                          cross-cutting; confirmed both
+                       #                          by value and by id())
+                       #                     74 = distinct Signal TEXTS
+                       #                  75 -> 74 because hypersonic_flow[0]
+                       #                  and particle_emission[0] are two
+                       #                  differently-worded pitfalls carrying
+                       #                  the SAME Signal literal verbatim (the
+                       #                  fix emit/face periodic-boundary
+                       #                  abort), so the 65 physics-specific
+                       #                  entries yield only 64 distinct
+                       #                  physics-specific Signal texts. That
+                       #                  64 is the only real "n=64" here; it is
+                       #                  a Signal-level duplicate, NOT an
+                       #                  entry-level miscount, and "75 unique
+                       #                  entries" was correct as written.
+                       #                  Checked for the reference-sharing trap
+                       #                  that inflated a peer backend's count:
+                       #                  exactly one sub-container is attached
+                       #                  by reference to all ten rows
+                       #                  ('deck_skeleton'), and it is not a
+                       #                  pitfall, so no counted number here is
+                       #                  inflated by it.
                        #                  Message literals quoted inside those
                        #                  Signals: 71 distinct, 71/71 present in
                        #                  the installed binary (49 ERROR/WARNING
