@@ -273,6 +273,64 @@ def test_pure_python_backends_do_not_claim_a_wrapper():
             f"solver='{name}': participant is a plain script, not a wrapper")
 
 
+# ── through the TOOL, which is the only path an agent has ────────────────
+#
+# Everything above calls the payload functions directly. That is how a whole
+# surface stayed broken while the suite was green: `knowledge(topic='precice',
+# solver=...)` reached `get_precice_knowledge()`, which took NO solver argument
+# while its caller passed one, so EVERY preCICE call — core included — returned
+#   "⚠ `get_precice_knowledge()` raised: `TypeError: ... takes 0 positional
+#    arguments but 1 was given`"
+# a 151-character error string in place of an 11 kB payload, for all nine
+# backends. Measured through the tool, the per-backend corpus was 117,632
+# characters rather than the 217,492 the functions produce. Direct-call tests
+# cannot see this; only driving the tool can.
+
+def _knowledge_tool():
+    """The registered `knowledge` tool function, as an agent would reach it."""
+    from tools.consolidated import register_consolidated_tools
+
+    captured = {}
+
+    class _Recorder:
+        def tool(self, *a, **k):
+            def deco(fn):
+                captured[fn.__name__] = fn
+                return fn
+            return deco
+
+    register_consolidated_tools(_Recorder())
+    return captured["knowledge"]
+
+
+_ERROR_MARK = "⚠ `"
+
+
+@pytest.mark.parametrize("topic", ["coupling", "precice"])
+@pytest.mark.parametrize("solver", [""] + _BACKEND_ORDER)
+def test_knowledge_tool_serves_a_real_payload(topic, solver):
+    out = _knowledge_tool()(topic=topic, solver=solver)
+    assert _ERROR_MARK not in out, (
+        f"knowledge(topic={topic!r}, solver={solver!r}) served an ERROR STRING "
+        f"instead of a payload: {out[:200]}")
+    assert len(out) > 3000, (
+        f"knowledge(topic={topic!r}, solver={solver!r}) served only {len(out)} "
+        f"characters — that is not the payload, it is a stub or an error")
+
+
+@pytest.mark.parametrize("topic", ["coupling", "precice"])
+def test_knowledge_tool_output_matches_the_payload_function(topic):
+    """The tool must serve what the tested function returns, not a second copy
+    and not a legacy inline string that drifted away from it."""
+    fn = coupling_knowledge if topic == "coupling" else precice_knowledge
+    tool = _knowledge_tool()
+    for solver in [""] + _BACKEND_ORDER:
+        assert tool(topic=topic, solver=solver) == fn(solver), (
+            f"knowledge(topic={topic!r}, solver={solver!r}) does not match "
+            f"{fn.__name__}({solver!r}) — the served path and the tested path "
+            f"have diverged")
+
+
 def test_sides_table_covers_every_backend():
     table = coupling_sides_table()
     for label in ("FEniCSx", "NGSolve", "scikit-fem", "DUNE", "deal.II",

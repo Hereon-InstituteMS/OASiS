@@ -464,145 +464,24 @@ FUNCT1:
 '''
 
     @mcp.tool()
-    def get_precice_knowledge() -> str:
-        """Get knowledge about preCICE coupling and comparison with MCP approach.
+    def get_precice_knowledge(solver: str = "") -> str:
+        """Complete knowledge for preCICE coupling via `couple_precice`.
 
-        Returns preCICE XML config patterns, adapter ecosystem status, and
-        comparison between preCICE and our MCP-orchestrated coupling.
+        With no solver: when to use preCICE instead of `couple`, what you supply
+        versus what OASiS generates, the HARD LIMITS of the generated config,
+        the participant loop, and the launch traps.
+        With a solver name: whether that backend CAN be a preCICE participant on
+        this install, and its backend-specific traps.
+
+        `solver` must be accepted here. This function is reached through
+        `knowledge(topic='precice', solver=...)`, whose wrapper passes the
+        argument positionally; a zero-argument signature made every such call
+        return the string "⚠ `get_precice_knowledge()` raised: `TypeError: ...
+        takes 0 positional arguments but 1 was given`" instead of any payload —
+        the whole preCICE surface, core included, served as an error message.
         """
-        return '''\
-# preCICE Coupling Knowledge
-
-## What is preCICE?
-
-preCICE is an open-source coupling library for partitioned multi-physics.
-It provides mesh mapping, data communication, and coupling schemes between
-independent solvers via adapters.
-
-## preCICE vs MCP-Orchestrated Coupling
-
-| Aspect | preCICE | MCP Agent (ours) |
-|--------|---------|------------------|
-| Architecture | Library linked into each solver | External orchestrator (no code changes) |
-| Config | XML + adapter code per solver | Python (auto-generated) |
-| Mesh mapping | Built-in (RBF, nearest-neighbor) | scipy.griddata + numpy.interp |
-| Coupling schemes | Parallel/serial implicit, explicit | DN iteration (MCP-controlled) |
-| Performance | Optimized C++ | Python loop (sufficient for demos) |
-| 4C support | No adapter exists | Built-in (YAML generation) |
-| FEniCS support | fenicsprecice adapter | Built-in (script generation) |
-| deal.II support | No official adapter | Built-in (template generation) |
-| Setup complexity | Install C++ lib + adapters | pip install (pure Python) |
-| Novelty | Established (2016+) | First MCP-based coupling |
-
-## preCICE XML Configuration Pattern
-
-```xml
-<precice-configuration>
-  <data:scalar name="Temperature" />
-  <data:scalar name="Heat-Flux" />
-
-  <mesh name="Mesh-A" dimensions="2">
-    <use-data name="Temperature" />
-    <use-data name="Heat-Flux" />
-  </mesh>
-
-  <participant name="Dirichlet">
-    <provide-mesh name="Mesh-A" />
-    <write-data name="Temperature" mesh="Mesh-A" />
-    <read-data name="Heat-Flux" mesh="Mesh-A" />
-  </participant>
-
-  <coupling-scheme:serial-implicit>
-    <acceleration:aitken>
-      <initial-relaxation value="0.5" />
-    </acceleration:aitken>
-  </coupling-scheme:serial-implicit>
-</precice-configuration>
-```
-
-## Participant Adapter Pattern (generic — every coupled code follows this)
-
-Each participant is a small script wrapping ONE solver that exchanges the coupling
-fields every time window. Fill in the `<SOLVER>` specifics yourself:
-
-```python
-import precice, numpy as np
-p = precice.Participant("<PARTICIPANT_NAME>", "precice-config.xml", 0, 1)
-# coordinates of YOUR coupling-interface points (the surface/edge shared with the partner):
-coords = np.array([[x0, y0], ...])
-vid = p.set_mesh_vertices("<MESH_NAME>", coords)
-if p.requires_initial_data():
-    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, initial_outgoing)
-p.initialize()
-while p.is_coupling_ongoing():
-    # --- IMPLICIT coupling: save state at the start of a window so the window can be redone ---
-    if p.requires_writing_checkpoint():
-        saved_state = your_solver.save_state()        # deep-copy solver state (fields, time)
-    dt = p.get_max_time_step_size()
-    incoming = p.read_data("<MESH_NAME>", "<READ_FIELD>", vid, dt)   # field FROM the partner
-    # --- advance YOUR solver by dt, using `incoming` as a boundary condition ---
-    outgoing = ...                                                   # field YOUR solver produces
-    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, outgoing)
-    p.advance(dt)
-    # --- IMPLICIT coupling: if not yet converged, REDO the window from the checkpoint ---
-    if p.requires_reading_checkpoint():
-        your_solver.restore_state(saved_state)
-    # else: window converged -> commit and move to the next time window
-p.finalize()
-```
-
-CHECKPOINTS ARE MANDATORY FOR IMPLICIT SCHEMES. With `serial-implicit`/`parallel-implicit`
-(needed when explicit Dirichlet–Neumann diverges — values blow up to infinity), preCICE
-SUB-ITERATES each time window to convergence, so each participant MUST handle the checkpoint
-calls above: `requires_writing_checkpoint()` (save state) and `requires_reading_checkpoint()`
-(restore state and redo the window). If you ignore these, an implicit run never advances and
-preCICE reports the window unconverged. For `*-explicit` schemes these calls always return
-False, so the same loop works unchanged. Add convergence acceleration
-(`<acceleration:aitken>` or IQN) under the coupling-scheme to make implicit converge fast.
-
-CRITICAL LAUNCH: both participant scripts must run AT THE SAME TIME — they handshake through
-preCICE and each blocks at `initialize()` until the other connects. Start each as its own
-concurrent process (NOT one after the other, and NOT a single `mpirun` over both files), or
-let the `couple_precice` tool launch every participant for you. Set `LD_LIBRARY_PATH` to the
-preCICE lib and match the `pyprecice` version to `libprecice`.
-
-## Adapter Ecosystem
-
-| Solver | preCICE Adapter | Status |
-|--------|----------------|--------|
-| FEniCS | fenicsprecice | Official, maintained |
-| OpenFOAM | openfoam-adapter | Official, widely used |
-| deal.II | No official | Community experiments only |
-| 4C | None | No adapter available |
-| CalculiX | calculix-adapter | Official |
-| SU2 | su2-adapter | Official |
-
-## Key Advantage of MCP Approach
-
-Our coupling does NOT require solver-specific adapters. Any solver that
-produces VTU output can be coupled. The MCP agent handles:
-1. Input generation for each solver
-2. Running solvers independently
-3. Extracting results from VTU
-4. Transferring data between non-matching meshes
-5. Controlling the iteration loop
-6. Checking convergence
-
-This is fundamentally different from preCICE: we treat solvers as black
-boxes orchestrated by an intelligent agent, rather than requiring
-library-level integration.
-
-## Installation (if needed)
-
-```bash
-# Requires C++ library first
-sudo apt install libprecice-dev  # Ubuntu
-# Then Python bindings
-pip install pyprecice
-# FEniCS adapter
-pip install fenicsprecice
-```
-'''
+        from tools.coupling_knowledge import precice_knowledge
+        return precice_knowledge(solver)
 
     @mcp.tool()
     def list_physics(solver: str = "") -> str:
