@@ -112,11 +112,11 @@ DESIGN SURF NEUMANN CONDITIONS:
 DSURF-NODE TOPOLOGY:      # symbolic faces of the generated box
   - "SIDE structure x- DSURFACE 1"
   - "SIDE structure x+ DSURFACE 2"
-IO/RUNTIME VTK OUTPUT:    # parent section: REQUIRED for any VTU
-  INTERVAL_STEPS: 1
-IO/RUNTIME VTK OUTPUT/STRUCTURE:
-  OUTPUT_STRUCTURE: true  # master switch
-  DISPLACEMENT: true      # at least one field flag, or nothing is written
+IO/RUNTIME VTK OUTPUT:    # OPTIONAL - drop both VTK sections and the deck
+  INTERVAL_STEPS: 1       # still runs, it just writes no .vtu. But for .vtu
+IO/RUNTIME VTK OUTPUT/STRUCTURE:   # you need BOTH sections AND at least one
+  OUTPUT_STRUCTURE: true           # field flag; any one of the three alone
+  DISPLACEMENT: true               # writes nothing.
 RESULT DESCRIPTION:
   - STRUCTURE:
       DIS: "structure"

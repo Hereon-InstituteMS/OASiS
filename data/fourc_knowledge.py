@@ -1242,11 +1242,11 @@ DESIGN SURF NEUMANN CONDITIONS:
 DSURF-NODE TOPOLOGY:        # symbolic faces of the generated box
   - "SIDE structure x- DSURFACE 1"
   - "SIDE structure x+ DSURFACE 2"
-IO/RUNTIME VTK OUTPUT:      # parent section: REQUIRED for any VTU
-  INTERVAL_STEPS: 1
-IO/RUNTIME VTK OUTPUT/STRUCTURE:
-  OUTPUT_STRUCTURE: true    # master switch
-  DISPLACEMENT: true        # at least one field flag, or nothing is written
+IO/RUNTIME VTK OUTPUT:      # OPTIONAL - drop both VTK sections and the
+  INTERVAL_STEPS: 1         # deck still runs, it just writes no .vtu.
+IO/RUNTIME VTK OUTPUT/STRUCTURE:   # But for .vtu you need BOTH sections AND
+  OUTPUT_STRUCTURE: true           # at least one field flag; any one of the
+  DISPLACEMENT: true               # three alone writes nothing.
 RESULT DESCRIPTION:
   - STRUCTURE:
       DIS: "structure"
@@ -2447,11 +2447,11 @@ DESIGN SURF DIRICH CONDITIONS: # PLAIN. NOT "DESIGN SURF THERMO DIRICH".
     FUNCT: [0]                 # 0 = constant; use a FUNCT index to ramp
 DSURF-NODE TOPOLOGY:
   - "SIDE thermo x- DSURFACE 1"
-IO/RUNTIME VTK OUTPUT:         # parent section: REQUIRED for any VTU
-  INTERVAL_STEPS: 5
-THERMAL DYNAMIC/RUNTIME VTK OUTPUT:
-  OUTPUT_THERMO: true          # master switch
-  TEMPERATURE: true            # at least one field flag, or nothing is written
+IO/RUNTIME VTK OUTPUT:         # OPTIONAL - drop both VTK sections and the
+  INTERVAL_STEPS: 5            # deck still runs, it just writes no .vtu.
+THERMAL DYNAMIC/RUNTIME VTK OUTPUT:  # For .vtu you need BOTH sections AND at
+  OUTPUT_THERMO: true                # least one field flag. INTERVAL_STEPS
+  TEMPERATURE: true                  # lives ONLY in the parent section.
 RESULT DESCRIPTION:
   - THERMAL:                   # THERMAL, not THERMO
       DIS: "thermo"
