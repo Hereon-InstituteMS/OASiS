@@ -919,3 +919,184 @@ def test_submit_critic_review_uses_the_same_definition_as_the_run(tmp_path):
     finally:
         loop.close()
     assert d["trustworthy_result"] is True, d["critic_review"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Mutation testing found these SIX checks untested. A check whose call site can
+# be deleted without a test noticing is not wired, whatever its unit test says.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_vector_flux_components_are_balanced_one_by_one():
+    """Summing a vector traction across components lets a +x imbalance cancel a
+    -y one and report perfect conservation across an interface that conserves
+    nothing."""
+    a = {"normal_fluxes": [[10.0, 3.0]]}
+    b = {"normal_fluxes": [[-3.0, -10.0]]}          # totals: 13 and -13
+    assert abs(sum(sum(v) for v in a["normal_fluxes"])
+               + sum(sum(v) for v in b["normal_fluxes"])) < 1e-12
+    w = check_interface_balance(a, b)
+    assert w, "component-wise, neither x nor y balances"
+    assert any("[0]" in m for m in w) and any("[1]" in m for m in w)
+    ok = check_interface_balance({"normal_fluxes": [[10.0, 3.0]]},
+                                 {"normal_fluxes": [[-10.0, -3.0]]})
+    assert not ok
+
+
+def test_mismatched_flux_component_counts_are_reported_not_skipped():
+    w = check_interface_balance({"normal_fluxes": [[1.0, 2.0]]},
+                                {"normal_fluxes": [[-1.0, -2.0, 0.0]]})
+    assert w and "could NOT be evaluated" in w[0]
+
+
+# The three tool-level wirings. Each of these was reachable only through a unit
+# test, so deleting the call in `couple` changed nothing that any test saw.
+_CO11 = [[0.5, y / 10] for y in range(11)]
+
+
+def _iface_participant(coords, fluxes, value="x") -> str:
+    return (
+        "import json\nfrom pathlib import Path\n"
+        'imp = json.loads(Path("imports.json").read_text() or "{}")\n'
+        f'v = imp["{"B" if value == "x" else "A"}"]["values"][0] if imp else 0.0\n'
+        f"co = {coords!r}\nfl = {fluxes!r}\n"
+        'json.dump({"field_name": "t", "n_points": len(co), "coordinates": co,\n'
+        '           "values": [0.5 * v + 1.0] * len(co), "normal_fluxes": fl},\n'
+        '          open("exports.json", "w"))\n')
+
+
+def test_flux_profile_check_is_wired_into_couple(tmp_path):
+    """Totals cancel exactly; the distribution is nonsense."""
+    a = _iface_participant(_CO11, [1.0] * 11, "x")
+    b = _iface_participant(_CO11, [-11.0] + [0.0] * 10, "y")
+    d = _couple(_parts(tmp_path, a_body=a, b_body=b), max_iter=30, tol=1e-8)
+    assert d["converged"] is True
+    assert not any("NOT balanced" in w for w in d["validation"]), \
+        "the NET balance is satisfied — only the profile is wrong"
+    assert any("POINT BY POINT" in w for w in d["validation"])
+    assert d["trustworthy_result"] is False
+
+
+def test_same_surface_check_is_wired_into_couple(tmp_path):
+    a = _iface_participant([[0.5, 0.0], [0.5, 1.0]], [1.0, 1.0], "x")
+    b = _iface_participant([[0.5, 90.0], [0.5, 91.0]], [-1.0, -1.0], "y")
+    d = _couple(_parts(tmp_path, a_body=a, b_body=b), max_iter=30, tol=1e-8)
+    assert d["converged"] is True
+    assert any("do NOT overlap" in w for w in d["validation"])
+    assert d["trustworthy_result"] is False
+
+
+def test_mesh_conformity_note_is_wired_into_couple(tmp_path):
+    a = _iface_participant(_CO11, [1.0] * 11, "x")
+    b = _iface_participant([[0.5, y / 2] for y in range(3)], [-11.0 / 3] * 3, "y")
+    d = _couple(_parts(tmp_path, a_body=a, b_body=b), max_iter=30, tol=1e-8)
+    assert any("NON-MATCHING" in c for c in d["checks_not_run"])
+    assert "NON-MATCHING" in d["verification"]
+
+
+def test_aitken_beats_the_theta_it_started_from(tmp_path):
+    """Discrimination for the Aitken fix itself.
+
+    Handing the formula the previous RAW EXPORT where it wants the previous
+    RESIDUAL leaves theta wandering inside its clamp, which costs convergence
+    RATE rather than correctness — so a test that only asks "did it converge"
+    passes with the bug in place. This asks for the rate: on a map whose
+    un-relaxed iteration does not converge at all, correct Aitken has to find
+    the theta that does, and get there in a comparable number of iterations to
+    the best constant choice.
+    """
+    body = _b(scale=-1.0)                       # oscillates at theta = 1
+    best = run_coupling(_parts(tmp_path / "k", b_body=body), max_iter=400,
+                        tol=1e-10, accelerator="constant", theta0=0.5)
+    assert best.converged
+    ait = run_coupling(_parts(tmp_path / "a", b_body=body), max_iter=400,
+                       tol=1e-10, accelerator="aitken", theta0=1.0)
+    assert ait.converged
+    assert ait.iterations <= best.iterations + 4, (
+        f"Aitken took {ait.iterations} where the best constant theta took "
+        f"{best.iterations} — it is not tracking the residual")
+    # and it must have MOVED off the starting guess it was given, which is the
+    # whole claim. The optimum for this map is not derived here, so its value is
+    # not asserted — the rate above is the substantive check.
+    assert ait.theta["applied"] < 0.95, ait.theta
+
+
+def test_tool_level_returncode_check_is_wired(monkeypatch, tmp_path):
+    """Defence in depth, made testable.
+
+    The driver refuses a non-zero exit before it can reach the tool, so deleting
+    the tool's own check changes nothing any other test sees. That makes the call
+    look like decoration. It is not — it is the guard for a result that arrives
+    carrying a failed exit code — so exercise it directly by handing `couple` a
+    driver result the driver itself would never produce.
+    """
+    import tools.consolidated as C
+    from core.coupling_driver import CouplingResult
+
+    ex = {"field_name": "x", "n_points": 1, "coordinates": [[0.0, 0.0]],
+          "values": [1.0], "normal_fluxes": [1.0]}
+    exb = dict(ex, field_name="y", normal_fluxes=[-1.0])
+    fake = CouplingResult(
+        converged=True, iterations=3, residual=1e-12,
+        exports={"A": ex, "B": exb}, history=[float("nan"), 1e-12],
+        returncodes={"A": 0, "B": 137},          # killed, but "converged"
+        block_residuals={"A.values": 0.0, "B.values": 0.0},
+        responsiveness={"A": "responsive", "B": "responsive"},
+        graph={"participants": ["A", "B"],
+               "declared_edges": {"A": ["B"], "B": ["A"]}},
+        theta={"mode": "aitken", "theta0": 0.5, "applied": 0.5},
+        sensitivity={"A": {"noise": 0.0, "signal": 1e-3, "S": 1.0, "blocks": {}},
+                     "B": {"noise": 0.0, "signal": 1e-3, "S": 1.0, "blocks": {}}})
+    monkeypatch.setattr(C, "run_coupling", lambda *a, **k: fake, raising=False)
+    import core.coupling_driver as D
+    monkeypatch.setattr(D, "run_coupling", lambda *a, **k: fake)
+    d = _couple(_parts(tmp_path))
+    assert d["converged"] is True
+    assert any("exited non-zero" in w for w in d["validation"]), d["validation"]
+    assert d["trustworthy_result"] is False
+
+
+def test_aitken_formula_matches_the_hand_computation():
+    """Pin the formula itself: theta = -theta_prev (r_prev . dr) / (dr . dr).
+
+    With prev_relaxed = 0, new_raw = 2 the residual is r = 2; against r_prev = -1
+    that gives dr = 3 and theta = -0.5 * (-1 * 3) / 9 = 1/6. The function must
+    also RETURN r, since the caller has to store it for the next step.
+    """
+    from core.coupling_driver import _aitken
+    th, r_k = _aitken(np.array([0.0]), np.array([2.0]), np.array([-1.0]), 0.5)
+    assert abs(th - 1.0 / 6.0) < 1e-12, th
+    assert r_k.tolist() == [2.0]
+    # no previous residual yet -> hold theta, and still return the residual
+    th0, r0 = _aitken(np.array([0.0]), np.array([2.0]), None, 0.4)
+    assert th0 == 0.4 and r0.tolist() == [2.0]
+    # a zero denominator must not divide by zero
+    th1, _ = _aitken(np.array([0.0]), np.array([2.0]), np.array([2.0]), 0.3)
+    assert th1 == 0.3
+
+
+def test_aitken_is_given_the_residual_and_not_the_raw_export(tmp_path):
+    """Direct discrimination for the Aitken bookkeeping.
+
+    The formula needs the previous RESIDUAL r = G(x) - x; it used to be handed
+    the previous raw export G(x). Both are vectors of the right shape, so nothing
+    complains and the only symptom is a theta that wanders inside its clamp — a
+    convergence-RATE loss that a "did it converge" test does not see. What DOES
+    separate them is size: at convergence the residual is by definition tiny,
+    while the raw export is the size of the solution.
+
+    LIMIT, stated: this pins WHAT the driver stores. Mutation testing shows that
+    corrupting only what is PASSED BACK IN — the input to the formula — is caught
+    indirectly, by three tests that are sensitive to iteration count, and not by
+    any assertion written for it. Deriving the analytic optimum theta for this
+    map would close that, and is not done here.
+    """
+    r = run_coupling(_parts(tmp_path), max_iter=90, tol=1e-9,
+                     accelerator="aitken", theta0=0.5)
+    assert r.converged
+    solution_scale = abs(r.exports["A"]["values"][0])
+    assert solution_scale > 1.0
+    assert r.theta["residual_norm"] is not None
+    assert r.theta["residual_norm"] < 1e-6, (
+        f"Aitken is holding a vector of norm {r.theta['residual_norm']:.3g} "
+        f"where the converged residual must be tiny (the solution is of order "
+        f"{solution_scale:.3g}) — it is being handed the raw export, not the "
+        "residual")

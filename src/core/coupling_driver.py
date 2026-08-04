@@ -290,9 +290,19 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
         kw.setdefault("block_residuals", block_residuals)
         kw.setdefault("responsiveness", _responsiveness(trace, participants))
         kw.setdefault("graph", graph)
+        rp = res_prev.get("*")
         kw.setdefault("theta", {"mode": accelerator, "theta0": theta0,
                                 "applied": (theta_global if accelerator == "aitken"
-                                            else theta0)})
+                                            else theta0),
+                                # Norm of the residual Aitken was last given. At
+                                # convergence this is small BY DEFINITION — it is
+                                # the fixed-point residual. Reporting it is what
+                                # makes the bookkeeping checkable from outside:
+                                # handing the formula the raw export instead (the
+                                # bug this replaced) leaves a number of the size
+                                # of the SOLUTION here, not of the residual.
+                                "residual_norm": (None if rp is None
+                                                  else float(np.linalg.norm(rp)))})
         return CouplingResult(**kw)
 
     for it in range(1, max_iter + 1):
