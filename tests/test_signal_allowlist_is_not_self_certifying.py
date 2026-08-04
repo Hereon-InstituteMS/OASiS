@@ -97,9 +97,19 @@ def _evidence_links(backend: str) -> set[str] | None:
     """
     import subprocess
 
+    # DUNE is the instructive case. Searching its env finds no `libpetsc*`, and
+    # an earlier version of this concluded it does not link PETSc. An audit
+    # settled it: DUNE links PETSc from OUTSIDE the env —
+    # `/usr/lib/petscdir/petsc3.12/.../libpetsc_real.so.3.12` — and 375 of 400
+    # JIT-compiled modules link it. The evidence is in the generated objects,
+    # not the package directory, so that is where to look. A DUNE process
+    # printing `[0]PETSC ERROR: Caught signal number 15` settled it beyond
+    # linkage: PETSc is initialised at runtime.
     roots = {
         "fenics": ["/home/alexander/miniconda3/envs/fenics/lib"],
-        "dune": ["/home/alexander/miniconda3/envs/dune-fem-env/lib"],
+        "dune": ["/home/alexander/miniconda3/envs/dune-fem-env/lib",
+                 "/home/alexander/miniconda3/envs/dune-fem-env/.cache/"
+                 "dune-py/python/dune/generated"],
         "febio": ["/home/alexander/Schreibtisch/febio-src/cbuild/lib"],
         "fourc": ["/home/alexander/4C/build"],
     }.get(backend)
@@ -119,6 +129,26 @@ def _evidence_links(backend: str) -> set[str] | None:
         for library, globs in _LIB_GLOBS.items():
             if any(next(p.glob(g), None) for g in globs):
                 found.add(library)
+
+        # Linked from elsewhere: ask the loader. This is the case that defeated
+        # two earlier versions of this function — DUNE's JIT-compiled modules
+        # link `/usr/lib/petscdir/.../libpetsc_real.so.3.12`, which is neither in
+        # the env nor a string inside the module, so both a filename glob and a
+        # `strings` scan report "no PETSc" for a backend that initialises PETSc
+        # at runtime. Only a handful of objects are checked; linkage is uniform
+        # across a build, so a sample settles it.
+        for lib in all_libs[:6]:
+            missing = {k for k in _MARKERS if k not in found}
+            if not missing:
+                break
+            try:
+                deps = subprocess.run(["ldd", str(lib)], capture_output=True,
+                                      text=True, timeout=60).stdout.lower()
+            except (OSError, subprocess.SubprocessError):
+                break
+            for library in missing:
+                if library.lower() in deps:
+                    found.add(library)
         # Indirect: the backend's own binaries carry the library's strings. Only
         # worth the scan for libraries not already established.
         todo = {lib: mk for lib, mk in _MARKERS.items() if lib not in found}
