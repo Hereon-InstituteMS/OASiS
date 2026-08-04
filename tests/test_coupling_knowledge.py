@@ -331,6 +331,33 @@ def test_knowledge_tool_output_matches_the_payload_function(topic):
             f"have diverged")
 
 
+def test_iteration_floor_figures_are_arithmetically_right():
+    """The knowledge tells the agent to size max_iter from
+    log(tol)/log(1-theta) and then quotes worked values. One was computed at a
+    DIFFERENT tolerance than the sentence states: "about 27 at theta=0.5 for
+    tol=1e-8, about 40 at theta=0.3" — 27 is right for 1e-8, but theta=0.3 at
+    1e-8 needs ~52; 40 is the 1e-6 figure. Under-budgeting max_iter looks
+    exactly like a physics failure, which is what the paragraph warns about.
+    """
+    import math
+    core = _core()
+    m = re.search(r"For tol=1e-8 that is about (\d+) at theta=0\.5, about (\d+) "
+                  r"at\s+theta=0\.3 and about (\d+) at theta=0\.2", core)
+    assert m, "the tol=1e-8 iteration-floor figures are not in the knowledge"
+    for got, th in zip(m.groups(), (0.5, 0.3, 0.2)):
+        want = math.log(1e-8) / math.log(1 - th)
+        assert abs(int(got) - want) <= 1.5, (
+            f"floor figure for theta={th} at tol=1e-8 is quoted as {got}, "
+            f"but log(1e-8)/log(1-{th}) = {want:.1f}")
+    m6 = re.search(r"for tol=1e-6, about (\d+) / (\d+) / (\d+)", core)
+    assert m6, "the tol=1e-6 iteration-floor figures are not in the knowledge"
+    for got, th in zip(m6.groups(), (0.5, 0.3, 0.2)):
+        want = math.log(1e-6) / math.log(1 - th)
+        assert abs(int(got) - want) <= 1.5, (
+            f"floor figure for theta={th} at tol=1e-6 is quoted as {got}, "
+            f"but log(1e-6)/log(1-{th}) = {want:.1f}")
+
+
 def test_sides_table_does_not_overstate_what_converged_here():
     """The blanket sentence under the table claimed every "yes" was a coupling
     that ran on THIS install and CONVERGED. Two of the nine rows contradicted it
