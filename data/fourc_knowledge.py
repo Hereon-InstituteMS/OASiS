@@ -1340,7 +1340,18 @@ RESULT DESCRIPTION:
             "NORM_RESF": "Default 'Abs'. Choices: Abs, Rel, Mix. How TOLRES is measured.",
             "NORMCOMBI_RESFDISP": "Default 'And'. Choices: And, Or. How the two are combined.",
             "ITERNORM": "Default 'L2'. Choices: L1, L2, Inf, Rms.",
-            "MAXITER": "Default 50. Exhausting it aborts the run, it does not continue.",
+            "MAXITER": "Default 50. Exhausting it aborts the run, it does not continue. NEVER set it to 1.",
+            "LINEAR_SOLVER": (
+                "REQUIRED IN PRACTICE. `4C --parameters` reports "
+                "required:false with default -1, but -1 is not a solver id "
+                "and setup rejects it. Verified by omission. Signal: 'no "
+                "linear solver defined for structural field. Please set "
+                "LINEAR_SOLVER in STRUCTURAL DYNAMIC to a valid number!' "
+                "Every field has its own variant of this message naming its "
+                "own section — ALE DYNAMIC, FLUID DYNAMIC, THERMAL DYNAMIC, "
+                "CONTACT DYNAMIC, TSI DYNAMIC and so on — so the section it "
+                "names is the section to fix."
+            ),
             "MINITER": "Default 0.",
             "NLNSOL": (
                 "Default 'fullnewton'. Choices: fullnewton, modnewton, "
@@ -2236,7 +2247,16 @@ RESULT DESCRIPTION:
         ),
 
         "required_vs_optional": {
-            "SCALAR TRANSPORT DYNAMIC / LINEAR_SOLVER": "REQUIRED IN PRACTICE (default -1 is not a solver id).",
+            "SCALAR TRANSPORT DYNAMIC / LINEAR_SOLVER": (
+                "REQUIRED IN PRACTICE (default -1 is not a solver id). "
+                "Verified by omission. Signal: 'no linear solver defined for "
+                "SCALAR_TRANSPORT problem. Please set LINEAR_SOLVER in "
+                "SCALAR TRANSPORT DYNAMIC to a valid number!' The same "
+                "section name appears in several sibling messages naming a "
+                "DIFFERENT problem (ELCH, LOMA, least-square NURBS), so read "
+                "which problem the message names before assuming which key "
+                "it means."
+            ),
             "SCALAR TRANSPORT DYNAMIC / TIMEINTEGR": "Optional, default 'One_Step_Theta'. Choices: Stationary, One_Step_Theta, BDF2, Gen_Alpha. Note the underscores.",
             "SCALAR TRANSPORT DYNAMIC / SOLVERTYPE": "Optional, default 'linear_full'. Use 'nonlinear' for reaction terms.",
             "SCALAR TRANSPORT DYNAMIC / VELOCITYFIELD": "Optional, default 'zero'. Choices: zero, function, Navier_Stokes. Omitting it is safe for pure diffusion.",
@@ -2453,7 +2473,15 @@ RESULT DESCRIPTION:
         ),
 
         "required_vs_optional": {
-            "THERMAL DYNAMIC / LINEAR_SOLVER": "REQUIRED IN PRACTICE (default -1 is not a solver id).",
+            "THERMAL DYNAMIC / LINEAR_SOLVER": (
+                "REQUIRED IN PRACTICE (default -1 is not a solver id). "
+                "Verified by omission. Signal: 'No linear solver defined for "
+                "thermal solver. Please set LINEAR_SOLVER in THERMAL DYNAMIC "
+                "to a valid number!' — note the capital 'No', where the "
+                "structural, scatra and contact variants of this same "
+                "message start lowercase, so a case-sensitive grep for one "
+                "will miss the others."
+            ),
             "THERMAL DYNAMIC / DYNAMICTYPE": "Optional, default 'OneStepTheta'. Choices: Statics, OneStepTheta, GenAlpha.",
             "THERMAL DYNAMIC / TIMESTEP": "Optional, default 0.05.",
             "THERMAL DYNAMIC / NUMSTEP": "Optional, default 200.",
@@ -3477,7 +3505,10 @@ RESULT DESCRIPTION:
                 "PENALTYPARAM (default 0)."
             ),
             "LINEAR_SOLVER": (
-                "REQUIRED IN PRACTICE (schema default -1 is rejected). "
+                "REQUIRED IN PRACTICE (schema default -1 is rejected); "
+                "verified by omission. Note the message names CONTACT "
+                "DYNAMIC specifically -- each field has its own variant "
+                "naming its own section. "
                 "Integer id of a SOLVER n block. MAY be the same id "
                 "STRUCTURAL DYNAMIC uses; a separate contact solver is not "
                 "required. Pointing at an id with no SOLVER block is NOT a "
