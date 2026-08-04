@@ -13,6 +13,7 @@ deal.ii tutorials used:
 
 import asyncio
 import logging
+import re
 import os
 import shutil
 import time
@@ -28,6 +29,120 @@ from core.backend import (
 from core.registry import register_backend
 
 logger = logging.getLogger("oasis.dealii")
+
+
+# Cache of verification verdicts, keyed by resolved path. A verdict is
+# True (proven deal.II), False (proven not), or None (could not look).
+_VERIFY_CACHE: dict[str, tuple[Optional[bool], str]] = {}
+
+
+def verify_dealii_install(root: Path) -> tuple[Optional[bool], str]:
+    """Prove that ``root`` really is a deal.II installation.
+
+    deal.II is a C++ library with no executable to interrogate, so the
+    equivalent of "run it and look for its own vocabulary" is to read
+    the version macro that deal.II's OWN generated header carries, or
+    the version its own CMake package file declares. A directory that
+    merely exists, or that happens to contain a differently-named
+    ``include/`` tree, cannot produce either string.
+
+    Returns ``(verdict, detail)``:
+      * ``(True,  "9.8.0-pre (include/deal.II/base/config.h)")`` —
+        proven; ``detail`` names the version and the evidence.
+      * ``(False, reason)`` — looked, and the evidence is absent.
+      * ``(None,  reason)`` — could NOT look (unreadable path,
+        permission error). Callers must FAIL OPEN on None: an
+        unreadable install is not a wrong install, and refusing to
+        run because we could not inspect it would be its own bug.
+
+    Verdicts are cached per path; the filesystem does not change under
+    us within a session and ``discover`` may ask repeatedly.
+    """
+    key = str(root)
+    if key in _VERIFY_CACHE:
+        return _VERIFY_CACHE[key]
+
+    result: tuple[Optional[bool], str]
+    unreadable = False
+    version = ""
+    evidence = ""
+
+    # (a) The generated header, which carries deal.II's own
+    #     DEAL_II_PACKAGE_VERSION macro. It exists in an installed
+    #     prefix, and in the BUILD tree of a source checkout — note a
+    #     source checkout's own include/ has only config.h.in, so a
+    #     bare checkout root is not by itself proof.
+    for rel in (Path("include"),):
+        cfg = root / rel / "deal.II" / "base" / "config.h"
+        if not cfg.is_file():
+            continue
+        try:
+            m = re.search(
+                r'#\s*define\s+DEAL_II_PACKAGE_VERSION\s+"([^"]+)"',
+                cfg.read_text(errors="replace"))
+            if m:
+                version = m.group(1)
+                evidence = str(rel / "deal.II" / "base" / "config.h")
+                break
+        except OSError as exc:
+            unreadable = True
+            evidence = f"could not read {cfg}: {exc}"
+
+    # (b) deal.II's own CMake package-version file, in any of the
+    #     layouts it ships (installed prefix, or a build tree).
+    if not version:
+        for rel in (Path("lib") / "cmake" / "deal.II",
+                    Path("share") / "deal.II" / "cmake",
+                    Path("cmake") / "config"):
+            vf = root / rel / "deal.IIConfigVersion.cmake"
+            if not vf.is_file():
+                continue
+            try:
+                m = re.search(r'set\(\s*PACKAGE_VERSION\s+"([^"]+)"',
+                              vf.read_text(errors="replace"))
+                if m:
+                    version, evidence = m.group(1), str(rel / vf.name)
+                    break
+            except OSError as exc:
+                unreadable = True
+                evidence = f"could not read {vf}: {exc}"
+
+    if version:
+        result = (True, f"deal.II {version} ({evidence})")
+    elif unreadable:
+        result = (None, evidence)
+    else:
+        result = (False,
+                  "no DEAL_II_PACKAGE_VERSION in "
+                  "include/deal.II/base/config.h and no "
+                  "deal.IIConfigVersion.cmake under lib/cmake/deal.II, "
+                  "share/deal.II/cmake or cmake/config")
+
+    _VERIFY_CACHE[key] = result
+    return result
+
+
+def resolve_dealii_root(candidate: Path) -> Optional[Path]:
+    """Return the sub-path of ``candidate`` that find_package can use.
+
+    A source checkout is not itself usable: its ``include/`` holds
+    ``config.h.in``, and the generated header plus the CMake package
+    files live in the build directory. Try the candidate first, then
+    the usual build/install layouts, and return the first that
+    verifies (or that we could not inspect, since we fail open).
+    """
+    unreadable: Optional[Path] = None
+    for rel in (Path("."), Path("build"), Path("install"),
+                Path("build") / "install"):
+        cand = (candidate / rel).resolve()
+        if not cand.is_dir():
+            continue
+        verdict, _ = verify_dealii_install(cand)
+        if verdict is True:
+            return cand
+        if verdict is None and unreadable is None:
+            unreadable = cand      # fail open, but prefer a proven hit
+    return unreadable
 
 
 def _find_dealii() -> Optional[Path]:
@@ -50,12 +165,6 @@ def _find_dealii() -> Optional[Path]:
     ``include/deal.II/`` or ``share/deal.II/cmake/``). Callers
     pass this to ``find_package(deal.II HINTS ...)``.
     """
-    # 1. Explicit env override
-    for env_var in ("DEAL_II_DIR", "DEALII_ROOT"):
-        env_dir = os.environ.get(env_var)
-        if env_dir and Path(env_dir).is_dir():
-            return Path(env_dir)
-
     def _looks_like_dealii_root(p: Path) -> bool:
         """A path is a deal.II install root if it has either
         include/deal.II/ headers or share/deal.II/cmake/ macros
@@ -65,6 +174,36 @@ def _find_dealii() -> Optional[Path]:
         return ((p / "include" / "deal.II").is_dir()
                 or (p / "share" / "deal.II" / "cmake").is_dir()
                 or (p / "lib" / "cmake" / "deal.II").is_dir())
+
+    # 1. Explicit env override. The path is VERIFIED, not merely
+    #    tested for existence: this branch used to `return
+    #    Path(env_dir)` for any directory that happened to exist, so
+    #    `DEAL_II_DIR=/tmp` (or DEALII_ROOT=/tmp) made
+    #    check_availability report "deal.II found at /tmp" and the
+    #    backend advertise itself as available with no deal.II
+    #    anywhere near it. An availability check that a wrong path
+    #    can satisfy is worse than no check: it turns a clear
+    #    "not installed" into template generation that fails much
+    #    later, at compile time, with an unrelated error.
+    for env_var in ("DEAL_II_DIR", "DEALII_ROOT"):
+        env_dir = os.environ.get(env_var)
+        if not env_dir:
+            continue
+        cand = Path(env_dir)
+        if not cand.is_dir():
+            logger.warning("%s=%s is not a directory; ignoring",
+                           env_var, env_dir)
+            continue
+        resolved = resolve_dealii_root(cand)
+        if resolved is None:
+            logger.warning(
+                "%s=%s does not look like a deal.II install; ignoring "
+                "it and continuing discovery. Point it at a prefix "
+                "with include/deal.II/base/config.h, or at the build "
+                "directory of a source checkout.", env_var, env_dir)
+            continue
+        # Proven, or unreadable -> fail OPEN and trust the override.
+        return resolved
 
     # 2 + 3. Conda envs (deal.II often lives in a dedicated env).
     # When several envs contain deal.II, prefer the HIGHEST version:
@@ -97,17 +236,18 @@ def _find_dealii() -> Optional[Path]:
     if candidates:
         return max(candidates, key=_dealii_version_of)
 
-    # 4. User-source dirs (in case the user built from source).
+    # 4. User-source dirs (in case the user built from source). A
+    #    checkout root is NOT usable on its own — the generated header
+    #    and the CMake package files live in the build tree — so each
+    #    candidate goes through resolve_dealii_root().
     for sub in ("dealii", "deal.II", "src/dealii", "src/deal.II",
                 "Schreibtisch/dealii", "Schreibtisch/deal.II"):
         candidate = Path.home() / sub
-        if _looks_like_dealii_root(candidate):
-            return candidate
-        # Also try common build-subdir layouts.
-        for build_sub in ("install", "build/install"):
-            inner = candidate / build_sub
-            if _looks_like_dealii_root(inner):
-                return inner
+        if not candidate.is_dir():
+            continue
+        resolved = resolve_dealii_root(candidate)
+        if resolved is not None:
+            return resolved
 
     # 5. System paths.
     for cand in (Path("/opt/dealii"), Path("/opt/deal.II"),
@@ -156,7 +296,27 @@ class DealiiBackend(SolverBackend):
             # Try a test compile
             return self._check_via_compile()
 
-        return BackendStatus.AVAILABLE, f"deal.II found at {dealii}"
+        # Report WHAT was found, not just WHERE. A message of the form
+        # "deal.II <version> at <path>" cannot be produced by a path
+        # that is not a deal.II install, which is the point: the old
+        # message ("deal.II found at {dealii}") was satisfied by any
+        # directory reachable through DEAL_II_DIR / DEALII_ROOT.
+        verdict, detail = verify_dealii_install(dealii)
+        if verdict is False:
+            # _find_dealii's non-env branches already require deal.II
+            # markers, so getting here means those markers exist but
+            # no version does — a broken or partial install. Fall back
+            # to the compile probe, which is the authority.
+            logger.warning("%s has deal.II markers but no version (%s)",
+                           dealii, detail)
+            return self._check_via_compile()
+        if verdict is None:
+            # Could not look. FAIL OPEN, and say so rather than
+            # claiming a verification that did not happen.
+            return (BackendStatus.AVAILABLE,
+                    f"deal.II at {dealii} (version not verifiable: "
+                    f"{detail})")
+        return BackendStatus.AVAILABLE, f"{detail} at {dealii}"
 
     def _check_via_compile(self) -> tuple[BackendStatus, str]:
         """Try to compile a minimal deal.II program to check availability."""
