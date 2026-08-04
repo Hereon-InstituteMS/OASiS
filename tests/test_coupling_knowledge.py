@@ -331,6 +331,37 @@ def test_knowledge_tool_output_matches_the_payload_function(topic):
             f"have diverged")
 
 
+def test_sides_table_does_not_overstate_what_converged_here():
+    """The blanket sentence under the table claimed every "yes" was a coupling
+    that ran on THIS install and CONVERGED. Two of the nine rows contradicted it
+    in their own text: Kratos says "in a separate Kratos install, not OASiS's own
+    interpreter here", and SPARTA says the residual "cannot beat the Monte-Carlo
+    noise" — i.e. `couple` reported FAILURE. The rows were honest; the summary
+    over them was not, and it is the headline `discover('coupling')` serves.
+    """
+    table = coupling_sides_table()
+    assert "Every UNSTARRED" in table, (
+        "the table's summary sentence must not claim that every yes converged "
+        "on this install while the Kratos and SPARTA rows say otherwise")
+    for label in ("Kratos", "SPARTA"):
+        row = next(r for r in table.splitlines() if r.startswith(f"| {label}"))
+        assert "yes*" in row, f"{label} must carry the weaker-evidence marker"
+
+
+def test_sides_table_agrees_with_the_per_backend_payloads():
+    """Both are served surfaces; they must not disagree about what was coupled.
+    The table said DUNE and deal.II were "coupled to FEniCSx" while their own
+    payloads said FEniCSx AND each other, in all four role/position combinations.
+    """
+    table = coupling_sides_table()
+    for label, name, partner in (("DUNE-fem", "dune", "deal.II"),
+                                 ("deal.II", "dealii", "DUNE-fem")):
+        row = next(r for r in table.splitlines() if r.startswith(f"| {label}"))
+        assert partner in row, (
+            f"the table omits that {label} was coupled to {partner}, which "
+            f"knowledge(topic='coupling', solver='{name}') states")
+
+
 def test_sides_table_covers_every_backend():
     table = coupling_sides_table()
     for label in ("FEniCSx", "NGSolve", "scikit-fem", "DUNE", "deal.II",

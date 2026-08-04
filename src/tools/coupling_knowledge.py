@@ -190,10 +190,13 @@ stopped changing still shows a residual falling like (1-theta)^k, purely
 because the relaxed value is still catching up to the raw one. So with a
 CONSTANT theta the residual cannot fall faster than (1-theta) per iteration,
 and reaching tol needs at least log(tol)/log(1-theta) iterations NO MATTER how
-good the physics is — about 27 at theta=0.5 for tol=1e-8, about 40 at
-theta=0.3. Size max_iter accordingly; a run that fails at max_iter=20 with
-theta=0.3 never had a chance. (With accelerator="aitken" theta moves, so the
-floor moves with it, but the same mechanism is there.)
+good the physics is. For tol=1e-8 that is about 27 at theta=0.5, about 52 at
+theta=0.3 and about 83 at theta=0.2; for tol=1e-6, about 20 / 39 / 62. Size
+max_iter accordingly — EVALUATE THE FORMULA for your own theta and tol rather
+than reusing a number from a different tolerance, because under-budgeting looks
+exactly like a physics failure: a run that stops at max_iter=20 with theta=0.3
+never had a chance. (With accelerator="aitken" theta moves, so the floor moves
+with it, but the same mechanism is there.)
 
 `accelerator`:
   * "constant" — theta fixed at the value you passed. Predictable. USE THIS FIRST.
@@ -323,16 +326,28 @@ not copied from a docstring:
 | 4C         | yes       | yes     | Python wrapper + YAML    | coupled to FEniCSx, both roles |
 | NGSolve    | yes       | yes     | a Python script          | coupled to FEniCSx and scikit-fem, all four role/position combinations |
 | scikit-fem | yes       | yes     | a Python script          | coupled to FEniCSx and NGSolve, all four role/position combinations |
-| DUNE-fem   | yes       | yes     | a Python script          | coupled to FEniCSx, both roles |
-| deal.II    | yes       | yes     | Python wrapper + C++ exe | coupled to FEniCSx, both roles |
+| DUNE-fem   | yes       | yes     | a Python script          | coupled to FEniCSx and deal.II, both roles |
+| deal.II    | yes       | yes     | Python wrapper + C++ exe | coupled to FEniCSx and DUNE-fem, both roles |
 | FEBio      | yes       | yes     | Python wrapper + XML     | FEBio-to-FEBio, both roles — ELASTICITY, not heat: FEBio 4 has no heat module |
-| Kratos     | yes       | yes     | a Python script          | coupled to FEniCSx, both roles — in a separate Kratos install, not OASiS's own interpreter here |
-| SPARTA     | yes       | NO      | Python wrapper + deck    | coupled to a thermal shell; the Neumann role is impossible, and the residual cannot beat the Monte-Carlo noise |
+| Kratos     | yes*      | yes*    | a Python script          | coupled to FEniCSx, both roles — NOT reproducible here: see the asterisk |
+| SPARTA     | yes*      | NO      | Python wrapper + deck    | coupled to a thermal shell; the Neumann role is impossible, and the residual cannot beat the Monte-Carlo noise |
 
-Every "yes" in that table means a real two-code coupling was run in that role on
-this install and converged; it is not copied from a tool docstring. Note in
-particular that the DEPRECATED `coupled_solve` docstring lists 4C on the Neumann
-side only — that limitation belongs to its own fixed generators, not to 4C.
+Every UNSTARRED "yes" means a real two-code coupling was run in that role on
+THIS install and CONVERGED; it is not copied from a tool docstring. The two
+starred rows are weaker, and the difference matters before you plan around them:
+
+  * KRATOS was proven in a SEPARATE Kratos install, not in OASiS's interpreter
+    here. A core-only Kratos has no thermal element, so
+    `import KratosMultiphysics.ConvectionDiffusionApplication` is the thing to
+    test first — if it fails, the conduction participant cannot run at all on
+    this machine, whatever the table says.
+  * SPARTA's Dirichlet role ran end to end and the physics agreed, but `couple`
+    reported FAILURE: a Monte-Carlo residual has a noise floor. "yes" here means
+    the ROLE is possible, NOT that you will get a converged run out of it.
+
+Note in particular that the DEPRECATED `coupled_solve` docstring lists 4C on the
+Neumann side only — that limitation belongs to its own fixed generators, not
+to 4C.
 
 Nothing in the driver is specific to heat conduction. A backend that can (a)
 impose a prescribed field on a boundary, (b) impose a flux/traction on a
