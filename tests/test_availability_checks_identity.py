@@ -38,7 +38,16 @@ def fourc(monkeypatch):
     return get_backend("fourc")
 
 
-@pytest.mark.parametrize("path", ["/bin/true", "/bin/echo"])
+# Every one of these was measured passing an earlier version of the check.
+# `4c` as a token is two characters, so `pwd`/`ls` pass when the working
+# directory contains it and `env` passes when any variable does — which is the
+# normal state for a 4C user, since LD_LIBRARY_PATH=/opt/4C-dependencies/lib
+# contains it. `input file` passes gcc, whose no-argument output is "no input
+# files". And gzip's non-UTF-8 output raised UnicodeDecodeError, a ValueError,
+# which the fail-open branch caught and ACCEPTED.
+@pytest.mark.parametrize("path", ["/bin/true", "/bin/echo", "/bin/pwd",
+                                  "/bin/ls", "/usr/bin/env", "/usr/bin/gcc",
+                                  "/usr/bin/gzip", "/bin/cat"])
 def test_an_executable_that_is_not_4c_is_not_available(fourc, monkeypatch, path):
     """The regression. `/bin/true` exits 0, says nothing, and is not a solver."""
     if not os.path.exists(path):
@@ -101,3 +110,44 @@ def test_the_verdict_is_cached_so_discover_stays_cheap(monkeypatch):
     M._identifies_as_fourc("/bin/true")
     M._identifies_as_fourc("/bin/true")
     assert len(calls) == 1, f"ran the binary {len(calls)} times, expected 1"
+
+
+def test_the_probe_does_not_read_the_parents_stdin(monkeypatch):
+    """The most dangerous defect found in this check.
+
+    `subprocess.run([binary])` inherits the parent's stdin. An audit pointed the
+    probe at `/bin/cat`, which consumed the parent's ENTIRE stdin and made the
+    verdict a function of that text; pointed at a real solver it hung the full
+    timeout and then failed open. Under an MCP stdio server the parent's stdin is
+    the JSON-RPC stream, so an availability probe could eat the protocol.
+    """
+    import subprocess
+
+    import backends.fourc.backend as M
+
+    monkeypatch.setattr(M, "_FOURC_IDENT_CACHE", {})
+    seen = {}
+    real = subprocess.run
+
+    def _capture(*a, **k):
+        seen.update(k)
+        return real(*a, **k)
+
+    monkeypatch.setattr(subprocess, "run", _capture)
+    M._identifies_as_fourc("/bin/true")
+    assert seen.get("stdin") is subprocess.DEVNULL, (
+        "the identity probe must close stdin; inheriting it lets the probed "
+        "program consume the MCP JSON-RPC stream")
+
+
+def test_a_non_utf8_binary_is_not_accepted_by_the_fail_open_path(monkeypatch):
+    """UnicodeDecodeError is a ValueError. Catching ValueError in the
+    cannot-look branch meant every binary with non-text output was accepted."""
+    import backends.fourc.backend as M
+
+    monkeypatch.setattr(M, "_FOURC_IDENT_CACHE", {})
+    import os
+    if not os.path.exists("/usr/bin/gzip"):
+        pytest.skip("no gzip to probe")
+    ok, why = M._identifies_as_fourc("/usr/bin/gzip")
+    assert ok is False, why

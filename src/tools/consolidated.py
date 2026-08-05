@@ -3185,9 +3185,13 @@ def register_consolidated_tools(mcp: FastMCP):
         if _avail_status.value != "available":
             parts.append(
                 f"> ⚠ **{backend.display_name()} ({backend.name()}) is NOT available "
-                f"on this install** — {_short_reason(_avail_msg)}\n>\n> The setup below "
-                f"is still accurate, but install/enable {backend.name()} (or choose an "
-                f"available backend) before running.\n")
+                f"on this install** — {_short_reason(_avail_msg)}\n>\n> That message "
+                f"is a LOCAL OBSERVATION from the machine hosting this OASiS "
+                f"server: any paths in it are this host's, not universal facts. "
+                f"See `knowledge(topic='install')` for the route and the "
+                f"environment variable that overrides it. The setup below is "
+                f"still accurate, but install or enable {backend.name()} (or "
+                f"choose an available backend) before running.\n")
 
         # Fuzzy match: find the best matching physics name
         matched_physics = _fuzzy_match_physics(backend, physics)

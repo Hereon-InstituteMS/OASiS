@@ -56,18 +56,51 @@ def _identifies_as_fourc(binary) -> tuple[bool, str]:
 
     verdict: tuple[bool, str]
     try:
-        r = subprocess.run([key], capture_output=True, text=True, timeout=20)
-        blob = ((r.stdout or "") + (r.stderr or "")).lower()
+        # stdin MUST be closed. An audit pointed this at `/bin/cat`, which
+        # consumed the PARENT's entire stdin and made the verdict a function of
+        # that text; pointed at a real solver it hung the full timeout and then
+        # failed open. Under an MCP stdio server the parent's stdin is the
+        # JSON-RPC stream, so an identity probe could eat the protocol.
+        r = subprocess.run([key], capture_output=True, timeout=20,
+                           stdin=subprocess.DEVNULL)
+        blob = (r.stdout + r.stderr).decode("utf-8", errors="replace").lower()
+        # 4C's banner names itself in full. The first version matched "4c",
+        # "dat file" and "input file", all of which are far too weak: "4c" is
+        # two characters, so `/bin/pwd` and `/bin/ls` pass whenever the working
+        # directory contains it, and `/usr/bin/env` passes whenever ANY
+        # environment variable does — which is the normal state for a 4C user,
+        # since LD_LIBRARY_PATH=/opt/4C-dependencies/lib contains it. And
+        # "input file" passes `/usr/bin/gcc`, whose no-argument output is "no
+        # input files". Four measured false positives from three sloppy tokens.
+        # What 4C ACTUALLY emits with no arguments, measured rather than
+        # assumed: it does not print a banner at all. It throws
+        # `FourC::Core::Exception` with "Please provide both <input> and
+        # <output> arguments." and aborts. An audit recommended matching the
+        # project's full name, "Comprehensive Computational Community Code" —
+        # that appears in the banner on a successful start, NOT on this path, so
+        # matching it refused the real binary. Both the first token set and its
+        # proposed replacement were wrong in opposite directions, which is why
+        # this now uses strings taken from the observed output.
+        #
+        # `fourc::` is the C++ namespace and is specific enough on its own: no
+        # ordinary executable emits it. The argument message is a second,
+        # independent witness.
+        markers = ("fourc::", "provide both <input> and <output>", "lib4c.so")
         if not blob.strip():
             verdict = (False, "produced no output at all when run with no "
-                              "arguments; 4C prints its usage")
-        elif any(t in blob for t in ("4c", "baci", "dat file", "input file")):
+                              "arguments; 4C aborts with a named exception")
+        elif any(t in blob for t in markers):
             verdict = (True, "identified itself")
         else:
-            verdict = (False, "its output names no 4C vocabulary: "
+            verdict = (False, "its output carries none of 4C's own markers: "
                               + " ".join(blob.split())[:120])
-    except (subprocess.TimeoutExpired, OSError, ValueError) as exc:
-        # Could not look — do not accuse.
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        # Could not look — do not accuse a possibly-working install.
+        # ValueError is deliberately NOT caught here: UnicodeDecodeError is a
+        # ValueError, so catching it sent every non-UTF-8 binary down the
+        # fail-open path and ACCEPTED it (`/usr/bin/gzip` passed). Decoding is
+        # now explicit with errors="replace", so there is nothing left for a
+        # ValueError to mean except a real bug, which should surface.
         verdict = (True, f"identity not checked ({type(exc).__name__})")
 
     _FOURC_IDENT_CACHE[key] = verdict
@@ -1615,7 +1648,18 @@ class FourcBackend(SolverBackend):
         mesh_rel = tutorials[key][1]
         mesh_path = FOURC_ROOT / "tests" / mesh_rel
         if mesh_path.exists():
-            content = f"# MESH_FILE: {mesh_path}\n" + content
+            # Give the RELATIVE location as well as the resolved one. The
+            # absolute path is what this host needs to run the deck, but it is
+            # also what an agent copies — and a served deck naming
+            # `/home/<someone>/4C/tests/...` is a dead end on every other
+            # machine. These meshes ship WITH 4C, so anyone who has 4C has them;
+            # only the prefix differs. Naming FOURC_ROOT turns an unusable
+            # absolute path into a locatable one.
+            content = (f"# MESH_FILE: {mesh_path}\n"
+                       f"# MESH_FILE_RELATIVE: $FOURC_ROOT/tests/{mesh_rel}"
+                       f"  (ships with 4C; the absolute path above is this "
+                       f"host's — resolve it against your own FOURC_ROOT)\n"
+                       + content)
         return content
 
     def _resolve_mesh_references(self, content: str) -> str:
@@ -1627,7 +1671,15 @@ class FourcBackend(SolverBackend):
             mesh_name = match.group(1)
             # Search for the mesh in tests/
             for mesh_path in FOURC_ROOT.rglob(mesh_name):
-                content = f"# MESH_FILE: {mesh_path}\n" + content
+                try:
+                    rel = mesh_path.relative_to(FOURC_ROOT)
+                except ValueError:
+                    rel = mesh_path.name
+                content = (f"# MESH_FILE: {mesh_path}\n"
+                           f"# MESH_FILE_RELATIVE: $FOURC_ROOT/{rel}"
+                           f"  (the absolute path above is this host's — "
+                           f"resolve it against your own FOURC_ROOT)\n"
+                           + content)
                 break
         return content
 
