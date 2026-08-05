@@ -188,24 +188,43 @@ Iteration 1 has nothing to compare against and is recorded as NaN.
 The consequence matters: even a participant whose raw output has ALREADY
 stopped changing still shows a residual falling like (1-theta)^k, purely
 because the relaxed value is still catching up to the raw one. So with a
-CONSTANT theta the residual cannot fall faster than (1-theta) per iteration,
-and reaching tol needs at least log(tol)/log(1-theta) iterations NO MATTER how
-good the physics is. For tol=1e-8 that is about 27 at theta=0.5, about 52 at
-theta=0.3 and about 83 at theta=0.2; for tol=1e-6, about 20 / 39 / 62. Size
-max_iter accordingly — EVALUATE THE FORMULA for your own theta and tol rather
-than reusing a number from a different tolerance, because under-budgeting looks
-exactly like a physics failure: a run that stops at max_iter=20 with theta=0.3
-never had a chance. (With accelerator="aitken" theta moves, so the floor moves
-with it, but the same mechanism is there.)
+CONSTANT theta the residual's decay rate is bounded by (1-theta) per iteration
+once the raw output has settled, and the iteration count you need is roughly
 
-`accelerator`:
-  * "constant" — theta fixed at the value you passed. Predictable. USE THIS FIRST.
-  * "aitken"   — theta adapts per participant from your theta. This is the
-    DEFAULT, and it is not the safe choice here: Aitken is derived for a
-    Gauss-Seidel fixed point, and on this Jacobi loop it has been observed to
-    adapt into a worse theta than the constant one it started from, failing to
-    converge a coupling that the SAME theta held constant converges. If a run
-    with "aitken" stalls, retry with "constant" before touching the physics.
+    log(tol / d0) / log(1 - theta)
+
+where d0 is the INITIAL mismatch measured the way the residual is — relative to
+the field magnitude. Take d0 = 1 (a 100%-wrong start) and tol=1e-8 gives about
+27 iterations at theta=0.5, 52 at theta=0.3, 83 at theta=0.2; at tol=1e-6,
+about 20 / 39 / 62. Those are a SIZING GUIDE, not a lower bound: a field with a
+large offset — temperatures around 300 K whose interface value is wrong by a few
+K — starts at d0 of a few percent and reaches tol in measurably fewer iterations
+than the d0=1 figure. Evaluate the expression for your own theta and tol instead
+of reusing a number, then give max_iter generous headroom, because
+under-budgeting looks exactly like a physics failure: a run that stops at
+max_iter=20 with theta=0.3 never had a chance. (With accelerator="aitken" theta
+moves, so the rate moves with it, but the same mechanism is there.)
+
+`accelerator`: **the default, "aitken", is also the safer one — reach for
+"constant" to DIAGNOSE, not as your first choice.**
+  * "aitken" — theta adapts per participant, starting from the theta you pass,
+    clamped into [0.05, 1.0]. THIS IS THE DEFAULT AND YOU SHOULD NORMALLY KEEP
+    IT. Measured across conductance ratios rho from 1/4 to 9 and theta from 0.1
+    to 1.0 on this driver, Aitken matched or beat a constant theta almost
+    everywhere, and in a quarter of those settings it converged to the right
+    interface value where the SAME constant theta diverged by tens of orders of
+    magnitude. It is the main thing protecting you from a theta chosen too
+    large. It is not magic: at a strongly unbalanced ratio no accelerator
+    rescues a bad split — see the role-swapping advice below.
+  * "constant" — theta fixed at exactly what you passed. Predictable and
+    reproducible, which makes it the right tool for working out what the
+    iteration is doing, and unforgiving: above the stability limit for your rho
+    it diverges instead of adapting. One case was found where a constant theta
+    converged and Aitken did not: a very unbalanced split (rho = 9) at the one
+    theta that works there, where Aitken reached the correct interface value but
+    was still marginally above tol at the iteration budget. That is the
+    exception, not the rule; if "aitken" stalls, raise max_iter first, then try
+    the same theta constant, and only then touch the physics.
 
 ### Choosing theta — this maps to the real `theta` parameter
 
@@ -222,8 +241,11 @@ a bar, and so on — it is the subdomain's stiffness as seen from the interface)
 That gives three facts you can act on:
 
   * the best theta is  **theta ~ 1 / (1 + rho)** — 0.5 when the two sides are
-    balanced, smaller when the Dirichlet side is the stiffer one, larger when
-    it is the softer one;
+    balanced, smaller when the Dirichlet side is the stiffer one, larger when it
+    is the softer one. This is the one number in this section worth computing
+    before you run anything: swept over rho from 1/4 to 9, the fastest constant
+    theta was 1/(1+rho) at EVERY ratio, and at the unbalanced ones it was the
+    ONLY constant theta that converged at all rather than diverging;
   * theta = 1.0 NEVER converges at rho = 1 and DIVERGES for rho > 1. It is not
     a "no relaxation, exact for linear problems" setting on this driver;
   * convergence is fastest when the DIRICHLET side is the SOFTER / LESS
@@ -232,11 +254,14 @@ That gives three facts you can act on:
     by 1/rho and is usually a bigger win than any theta.
 
 Observed on this driver, running real two-code couplings:
-  * at rho = 1, theta = 0.5 converges and theta = 1.0 oscillates forever;
-  * at rho = 4, theta = 0.5 DIVERGES — the interface values run away by orders
-    of magnitude and the conservation check fires — while theta = 0.2
-    converges. Nothing warns you in advance: a diverging coupling looks like a
-    converging one for the first few iterations;
+  * at rho = 1, theta = 0.5 converges and theta = 1.0 oscillates forever
+    WITHOUT blowing up — the interface value simply never settles;
+  * at rho = 4, theta = 0.5 with a CONSTANT accelerator DIVERGES — the interface
+    values run away by many orders of magnitude and the conservation check fires
+    — while theta = 0.2 converges. Nothing warns you in advance: a diverging
+    coupling looks like a converging one for the first few iterations. Note the
+    default "aitken" survives this particular case; do not read the constant-
+    theta stability limit as a property of the tool's default;
   * for one asymmetric split, the SAME problem with the SAME tolerance failed
     to converge inside the iteration budget with the stiff subdomain on the
     Dirichlet side, and converged comfortably inside it once the two roles were
@@ -245,10 +270,12 @@ Observed on this driver, running real two-code couplings:
     each script's `SIDE` and `T_OUTER`.
 
   | Symptom                                       | Do this                    |
-  | first try, know nothing                       | theta=0.5, accelerator="constant" |
+  | first try, know nothing                       | estimate rho, set theta=1/(1+rho), keep accelerator="aitken" |
+  | first try, cannot estimate rho at all         | theta=0.5, keep accelerator="aitken" |
   | residual falls steadily but slowly            | keep theta, raise max_iter; then swap which side is Dirichlet |
   | residual flat or oscillating in sign          | halve theta                |
   | residual GROWING, values exploding            | halve theta, and check the flux sign convention (section 5) |
+  | want to see what the iteration is doing       | same theta, accelerator="constant" — reproducible, no adaptation |
   | converged, but you want it faster             | put Dirichlet on the softer subdomain, theta = 1/(1+rho) |
 
 There is no theta that makes this driver converge in one step for a two-code

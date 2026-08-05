@@ -331,6 +331,33 @@ def test_knowledge_tool_output_matches_the_payload_function(topic):
             f"have diverged")
 
 
+def test_the_default_accelerator_is_not_disparaged():
+    """The knowledge told the agent that "aitken" — the tool's DEFAULT — "is not
+    the safe choice here" and to use "constant" FIRST.
+
+    Swept on this driver over rho in {1/4, 1/2, 1, 2, 4, 9} x theta in
+    {0.1,...,1.0} (40 cells), that is backwards: Aitken matched or beat the
+    constant theta in 39 of 40 cells and converged to the correct interface value
+    in 10 cells where the SAME constant theta diverged (at rho=4, theta=0.7:
+    constant reached 3e63, Aitken converged in 86 iterations). Exactly one cell
+    went the other way, marginally. Steering a weak model from the adaptive
+    default to the setting that diverges by tens of orders of magnitude is the
+    most expensive kind of wrong advice this section could give.
+    """
+    core = _core()
+    assert 'accelerator="constant"' not in core.split("| Symptom")[1].split(
+        "residual falls steadily")[0], (
+        "the first-try row of the symptom table must not send the agent to "
+        "accelerator='constant'")
+    assert "USE THIS FIRST" not in core, (
+        "'constant' must not be advertised as the first choice")
+    low = core.lower()
+    assert "the default, \"aitken\", is also the safer one" in low or \
+           "default and you should normally keep" in low, (
+        "the knowledge must say plainly that the default accelerator is the "
+        "safer one")
+
+
 def test_iteration_floor_figures_are_arithmetically_right():
     """The knowledge tells the agent to size max_iter from
     log(tol)/log(1-theta) and then quotes worked values. One was computed at a
@@ -341,16 +368,22 @@ def test_iteration_floor_figures_are_arithmetically_right():
     """
     import math
     core = _core()
-    m = re.search(r"For tol=1e-8 that is about (\d+) at theta=0\.5, about (\d+) "
-                  r"at\s+theta=0\.3 and about (\d+) at theta=0\.2", core)
-    assert m, "the tol=1e-8 iteration-floor figures are not in the knowledge"
+    assert "not a lower bound" in core or "SIZING GUIDE, not a lower bound" in core, (
+        "the figures were stated as a bound the iteration needs 'AT LEAST', and "
+        "three measured runs beat it (rho=1/4, 1/2 and 1 at theta=0.1 reached "
+        "tol=1e-8 in 148, 153 and 165 iterations against a quoted 175) because "
+        "the residual is normalised by the field magnitude, so a good relative "
+        "starting point needs fewer iterations, not more")
+    m = re.search(r"tol=1e-8 gives about\s+(\d+) iterations at theta=0\.5, (\d+) at "
+                  r"theta=0\.3, (\d+) at theta=0\.2", core)
+    assert m, "the tol=1e-8 iteration-count figures are not in the knowledge"
     for got, th in zip(m.groups(), (0.5, 0.3, 0.2)):
         want = math.log(1e-8) / math.log(1 - th)
         assert abs(int(got) - want) <= 1.5, (
             f"floor figure for theta={th} at tol=1e-8 is quoted as {got}, "
             f"but log(1e-8)/log(1-{th}) = {want:.1f}")
-    m6 = re.search(r"for tol=1e-6, about (\d+) / (\d+) / (\d+)", core)
-    assert m6, "the tol=1e-6 iteration-floor figures are not in the knowledge"
+    m6 = re.search(r"at tol=1e-6,\s+about (\d+) / (\d+) / (\d+)", core)
+    assert m6, "the tol=1e-6 iteration-count figures are not in the knowledge"
     for got, th in zip(m6.groups(), (0.5, 0.3, 0.2)):
         want = math.log(1e-6) / math.log(1 - th)
         assert abs(int(got) - want) <= 1.5, (
