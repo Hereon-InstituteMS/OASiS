@@ -554,7 +554,24 @@ class DealiiBackend(SolverBackend):
         try:
             from tools.deep_knowledge import _DEALII_KNOWLEDGE
             if physics in _DEALII_KNOWLEDGE:
-                return _DEALII_KNOWLEDGE[physics]
+                tier3 = _DEALII_KNOWLEDGE[physics]
+                # The always-served essentials block is injected by
+                # the GENERATOR path only, so physics resolved here
+                # used to be served without it: advection_dg, contact
+                # and nonlinear_elasticity are advertised by
+                # supported_physics() and do serve pitfalls (4/3/3),
+                # yet reached the client with none of the Debug-vs-
+                # Release scoping, required call order or JxW check —
+                # 24 of 27 payloads carried the block, these 3 did
+                # not. Inject on the same condition the generator
+                # path uses, so an unknown physics still cannot look
+                # covered.
+                if isinstance(tier3, dict) and tier3.get("pitfalls"):
+                    from backends.dealii.generators._critical import (
+                        CRITICAL_KNOWLEDGE)
+                    return {"deal_II_essentials": CRITICAL_KNOWLEDGE,
+                            **tier3}
+                return tier3
         except ImportError:
             pass
         return gen_k

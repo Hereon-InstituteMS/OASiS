@@ -32,6 +32,8 @@ def _nonlinear_minimal_surface_2d(params: dict) -> str:
 #include <deal.II/base/function.h>
 #include <fstream>
 #include <cmath>
+#include <iostream>
+#include <limits>
 using namespace dealii;
 
 template <int dim>
@@ -80,8 +82,16 @@ int main() {{
   QGauss<dim> quadrature(fe.degree + 1);
   const unsigned int dpc = fe.n_dofs_per_cell();
 
-  // Newton iterations
-  for (unsigned int newton_step = 0; newton_step < 100; ++newton_step) {{
+  // Newton iterations. The budget must be large enough for the fixed
+  // damping below actually to reach the tolerance: alpha = 0.1 gives
+  // linear convergence at about 0.9 per step, so ~130 steps are needed
+  // for 1e-06 on this problem. A budget of 100 stopped at ~1.6e-05 and
+  // still printed success.
+  const unsigned int max_newton_steps = 200;
+  const double       newton_tol       = 1e-6;
+  bool               converged        = false;
+  double             last_residual    = std::numeric_limits<double>::quiet_NaN();
+  for (unsigned int newton_step = 0; newton_step < max_newton_steps; ++newton_step) {{
     system_matrix = 0;
     system_rhs = 0;
 
@@ -136,7 +146,8 @@ int main() {{
     solution.add(0.1, newton_update);
     double residual = system_rhs.l2_norm();
     std::cout << "Newton step " << newton_step << ": residual = " << residual << std::endl;
-    if (residual < 1e-6) break;
+    last_residual = residual;
+    if (residual < newton_tol) {{ converged = true; break; }}
   }}
 
   DataOut<dim> data_out;
@@ -145,8 +156,26 @@ int main() {{
   data_out.build_patches();
   std::ofstream output("solution.vtu");
   data_out.write_vtu(output);
-  std::cout << "Nonlinear solve complete." << std::endl;
-  return 0;
+
+  // Say which of the two exits happened. With the fixed damping
+  // alpha = 0.1 the residual falls by only about 10% per step, so the
+  // step budget runs out long before the tolerance is met: 100 steps
+  // reach ~1.6e-05 against a 1e-06 tolerance. Reporting "complete"
+  // unconditionally would be a silent non-convergence, which is the
+  // exact failure this catalog tells you to guard against — so the
+  // guard is written here rather than described.
+  if (converged)
+    std::cout << "Nonlinear solve CONVERGED: residual " << last_residual
+              << " < tol " << newton_tol << std::endl;
+  else
+    std::cout << "Nonlinear solve DID NOT CONVERGE: exhausted "
+              << max_newton_steps << " steps with residual "
+              << last_residual << " still above tol " << newton_tol
+              << ". The fixed damping alpha = 0.1 converges linearly at "
+                 "about 0.9 per step; raise max_newton_steps (~130 "
+                 "reaches 1e-06 here) or use a line search."
+              << std::endl;
+  return converged ? 0 : 1;
 }}
 '''
 
