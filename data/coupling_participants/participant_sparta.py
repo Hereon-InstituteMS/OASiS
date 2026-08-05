@@ -22,10 +22,18 @@ it IMPORTS a field value (wall temperature) and EXPORTS a flux (the net
 energy flux the gas deposits on the wall, `etot`, positive = wall gains
 energy = energy leaving the gas subdomain through the interface, i.e.
 exactly SPEC.md's outward-normal q_out for the gas side).
-SPARTA CANNOT be the Neumann side: no SPARTA surface-collision model takes a
-prescribed heat flux; `surf_collide diffuse/cll/td/impulsive` all take a
-temperature.  `fix surf/temp` derives a temperature FROM a flux, but from
-SPARTA's OWN computed flux, not from an imported one.
+SPARTA HAS NO NATIVE FLUX BC, so this script is the Dirichlet side: none of the
+nine `surf_collide` styles takes a prescribed heat flux, and the four thermal
+ones (`diffuse`, `cll`, `td`, `impulsive`) all take a temperature.
+A flux can be imposed only INDIRECTLY: `fix surf/temp` turns a per-surf flux
+into a per-surf temperature via the gray-body law q = sigma*emisurf*T^4, and it
+accepts that flux from ANY per-surf compute or fix — SPARTA's own doc states it
+"does not check that the specified compute/fix calculates an energy flux" — so
+an imported flux does reach it through `custom surf ... file` plus
+`fix ave/surf s_<name>`.  That route prescribes the wall temperature which would
+RADIATE the imported flux; it does not constrain the gas-side flux, and it adds
+an emissivity unrelated to the coupling.  It is NOT implemented below and was
+NOT run.  See knowledge(topic='coupling', solver='sparta').
 
 STOCHASTICITY.  DSMC output is a Monte-Carlo estimate.  With a fixed RNG seed
 and identical input the run is bit-reproducible (so a fixed-point iteration

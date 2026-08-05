@@ -357,7 +357,7 @@ not copied from a docstring:
 | deal.II    | yes       | yes     | Python wrapper + C++ exe | coupled to FEniCSx and DUNE-fem, both roles |
 | FEBio      | yes       | yes     | Python wrapper + XML     | FEBio-to-FEBio, both roles — ELASTICITY, not heat: FEBio 4 has no heat module |
 | Kratos     | yes*      | yes*    | a Python script          | coupled to FEniCSx, both roles — NOT reproducible here: see the asterisk |
-| SPARTA     | yes*      | NO      | Python wrapper + deck    | coupled to a thermal shell; the Neumann role is impossible, and the residual cannot beat the Monte-Carlo noise |
+| SPARTA     | yes*      | not natively | Python wrapper + deck | coupled to a thermal shell; no flux BC exists, only an indirect radiative-equilibrium route, and the residual cannot beat the Monte-Carlo noise |
 
 Every UNSTARRED "yes" means a real two-code coupling was run in that role on
 THIS install and CONVERGED; it is not copied from a tool docstring. The two
@@ -1232,9 +1232,12 @@ lib = ctypes.CDLL("<path to>/libsparta.so", mode=mode)
     window is the honest choice; if you use implicit, set the tolerance above
     the sampling noise and say so.
   * A SPARTA surface can take a prescribed TEMPERATURE
-    (`surf_collide ... diffuse`) but NOT a prescribed heat flux — no
-    surface-collision model accepts one. SPARTA is a Dirichlet-side
-    participant only.''',
+    (`surf_collide ... diffuse`) but there is NO surface-collision style that
+    accepts a prescribed heat flux, so treat SPARTA as a Dirichlet-side
+    participant. A flux can only be imposed indirectly, by converting it to a
+    radiating-equilibrium temperature through `fix surf/temp` — see
+    `knowledge(topic='coupling', solver='sparta')` for the route and its
+    caveats.''',
     },
     "fourc": {
         "title": "4C Multiphysics",
@@ -1315,13 +1318,36 @@ def _febio() -> str:
 def _sparta() -> str:
     return _payload(
         "SPARTA (DSMC)",
-        "**DIRICHLET-TYPE ONLY, and it will not pass the convergence check.** "
-        "SPARTA imports a wall TEMPERATURE and exports the energy flux the gas "
-        "deposits, which is exactly the Dirichlet role. It CANNOT take the "
-        "Neumann role: no SPARTA surface-collision model accepts a prescribed "
-        "heat flux — `diffuse`, `cll`, `td` and `impulsive` all take a "
-        "temperature, and `fix surf/temp` derives one from SPARTA's OWN "
-        "computed flux, not from an imported one. A full coupling to a thermal "
+        "**DIRICHLET-TYPE IN PRACTICE, and it will not pass the convergence "
+        "check.** SPARTA imports a wall TEMPERATURE and exports the energy flux "
+        "the gas deposits, which is exactly the Dirichlet role. There is NO "
+        "native flux boundary condition: of the nine `surf_collide` styles "
+        "(`adiabatic`, `cll`, `diffuse`, `impulsive`, `piston`, `specular`, "
+        "`td`, `transparent`, `vanish`) the four that take a thermal datum — "
+        "`diffuse`, `cll`, `td`, `impulsive` — all take a TEMPERATURE, and none "
+        "accepts a prescribed heat flux.\n\n"
+        "A flux CAN still be imposed INDIRECTLY, and it is worth knowing the "
+        "route exists before you conclude the coupling is impossible. "
+        "`fix surf/temp` converts a per-surface energy flux into a per-surface "
+        "temperature through the gray-body Stefan-Boltzmann law "
+        "`q = sigma*emisurf*T^4`, i.e. `T = (q/(sigma*emisurf))^(1/4)`, and it "
+        "takes that flux from ANY per-surf compute or fix — SPARTA's own doc "
+        "says \"SPARTA does not check that the specified compute/fix calculates "
+        "an energy flux\". So an IMPORTED flux reaches it: write the partner's "
+        "flux to a file, load it with `custom surf ... file` into a custom "
+        "per-surf vector, wrap that vector in `fix ave/surf s_<name>` (which "
+        "sets `per_surf_flag`), and hand that fix to `fix surf/temp`.\n\n"
+        "READ THE CAVEAT BEFORE USING IT. That is NOT a Neumann condition. It "
+        "prescribes the temperature that would RADIATE the imported flux, so it "
+        "constrains the wall temperature, not the gas-side flux, and it drags in "
+        "an emissivity that has nothing to do with your coupling. The flux "
+        "SPARTA then reports is free to differ from the one you imposed; making "
+        "the two agree is a feedback loop you have to close yourself, and it is "
+        "NOT what the shipped script does. This route was established by reading "
+        "the SPARTA source and docs on this install and has NOT been run here — "
+        "treat it as available, not as proven. The shipped script and everything "
+        "below are the Dirichlet role.\n\n"
+        "A full coupling to a thermal "
         "shell was run on this install: the physics agreed across the interface "
         "and the interface energy balance closed, but `couple` still reported "
         "FAILURE, because the residual cannot fall below the Monte-Carlo "

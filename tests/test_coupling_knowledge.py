@@ -255,6 +255,40 @@ def test_served_edit_block_only_names_constants_the_script_defines(name):
             f"served participant script never defines")
 
 
+def test_sparta_flux_claim_is_not_overstated():
+    """The payload said SPARTA "CANNOT take the Neumann role" because
+    "`fix surf/temp` derives one from SPARTA's OWN computed flux, not from an
+    imported one". The second half is factually wrong, checked in the SPARTA
+    source on this install:
+
+      * fix_surf_temp.cpp accepts `f_<fixID>` and the ONLY requirement is
+        `per_surf_flag != 0` — it never checks where the flux came from. SPARTA's
+        own doc/fix_surf_temp.txt says "Note that SPARTA does not check that the
+        specified compute/fix calculates an energy flux."
+      * fix_ave_surf.cpp accepts `s_<name>` (CUSTOM, arg[i][0] == 's') and sets
+        `per_surf_flag = 1`, and its CUSTOM branch reads `surf->edvec[...]`.
+      * `custom surf ... file` resets custom per-surf values from a FILE.
+
+    So an imported flux does reach `fix surf/temp`, which converts it via
+    `T = (q/(sigma*emisurf))^(1/4)` (fix_surf_temp.cpp: `pow(prefactor*qw,0.25)`
+    with `prefactor = 1/(emi*SB_SI)`). That is not a Neumann BC and carries real
+    caveats, but "cannot" removed a capability that exists. A wrong "cannot" is
+    as costly as a wrong "can".
+    """
+    served = coupling_knowledge("sparta")
+    assert "CANNOT take the Neumann role" not in served, (
+        "the flat 'cannot' is wrong: an imported flux can reach fix surf/temp")
+    assert "not from an imported one" not in served, (
+        "fix surf/temp does not care where the flux came from")
+    # the honest version must still be unmistakable about the absence of a real
+    # flux BC, and must name the indirect route rather than hiding it
+    assert "NO native flux boundary condition" in served
+    assert "fix surf/temp" in served and "Stefan-Boltzmann" in served
+    assert "custom surf" in served and "fix ave/surf" in served
+    assert "NOT been run here" in served, (
+        "a source-derived route must be marked unproven, not implied to be tested")
+
+
 def test_sparta_is_not_handed_a_neumann_edit_block():
     """SPARTA's own payload says the Neumann role is impossible; the launch
     section must not simultaneously tell the agent to make a neumann copy."""
