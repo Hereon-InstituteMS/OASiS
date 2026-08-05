@@ -366,3 +366,67 @@ def test_no_environment_variable_can_lift_the_critic_requirement():
         + ", ".join(str(n.lineno) for n in reads))
     names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
     assert "_ABLATE_CRITIC" not in names
+
+
+# ── the deck is not the whole setup ───────────────────────────────────────
+@needs_skfem
+@pytest.mark.asyncio
+async def test_changing_a_file_the_deck_imports_invalidates_the_review(tools, tmp_path):
+    """A review of the deck is not a review of the physics if the physics lives
+    in a file the deck imports.
+
+    Demonstrated against this gate before it was fixed: a reviewed deck importing
+    `SOURCE = 1.0` gave max|u| = 0.0728 and VERIFIED; rewriting only the imported
+    file to `SOURCE = 1000.0` gave 72.78 and VERIFIED again, on the same review.
+    A thousandfold change in the physics through a review of something else.
+
+    A sibling audit found the same shape in `couple`, where the digest covered
+    the participant COMMAND and never the script it named — 225x, same story. So
+    the fix is to the shape: files a deck references are fingerprinted into the
+    setup the review is bound to.
+    """
+    helper = tmp_path / "physics.py"
+    helper.write_text("SOURCE = 1.0\n")
+    deck = f"""
+import skfem, sys
+sys.path.insert(0, {str(tmp_path)!r})
+from physics import SOURCE
+from skfem import *
+from skfem.helpers import dot, grad
+m = skfem.MeshTri().refined(3); b = Basis(m, ElementTriP1())
+@BilinearForm
+def a(u, v, w): return dot(grad(u), grad(v))
+@LinearForm
+def L(v, w): return SOURCE * v
+x = solve(*condense(asm(a, b), asm(L, b), D=b.get_dofs()))
+m.save('solution.vtu', {{'u': x}})
+"""
+    await tools["submit_critic_review"](solver="skfem", setup=deck,
+                                        findings=FINDINGS)
+    first = json.loads(await tools["run_simulation"](
+        solver="skfem", input_content=deck, job_name="imported_before"))
+    assert first["trustworthy_result"] is True, first["verification"]
+
+    helper.write_text("SOURCE = 1000.0\n")          # deck text unchanged
+    second = json.loads(await tools["run_simulation"](
+        solver="skfem", input_content=deck, job_name="imported_after"))
+    assert second["trustworthy_result"] is False
+    assert "changed after it was reviewed" in second["critic_review"]
+
+
+@needs_skfem
+@pytest.mark.asyncio
+async def test_writing_a_referenced_file_after_review_invalidates_it(tools, tmp_path):
+    """The other direction, which is the same bypass wearing a hat: review a deck
+    whose helper does not exist yet, then create it."""
+    deck = f"""
+import sys
+sys.path.insert(0, {str(tmp_path)!r})
+print('placeholder')
+"""
+    await tools["submit_critic_review"](solver="skfem", setup=deck,
+                                        findings=FINDINGS)
+    (tmp_path / "physics.py").write_text("SOURCE = 1.0\n")
+    out = json.loads(await tools["run_simulation"](
+        solver="skfem", input_content=deck, job_name="created_after"))
+    assert out["trustworthy_result"] is False

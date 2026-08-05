@@ -7,6 +7,7 @@ Fewer tools = faster schema loading = faster agent response.
 
 import json
 import os
+import hashlib
 import re
 import time
 from pathlib import Path
@@ -56,6 +57,72 @@ _PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
 _CRITIC_REGISTRY = CriticRegistry()
 
 
+_PATHLIKE = re.compile(
+    r"""["']([^"'\n]{3,200}?\.(?:py|yaml|yml|json|xml|msh|e|exo|vtu|vtk|dat|csv|txt|inp|prm|feb|mdpa))["']"""
+)
+_LOCAL_IMPORT = re.compile(r"^\s*(?:from|import)\s+([A-Za-z_]\w*)", re.M)
+_SYSPATH = re.compile(r"""sys\.path\.\w+\(\s*\d*\s*,?\s*["']([^"'\n]+)["']""")
+
+
+def _referenced_file_digest(setup_text: str) -> str:
+    """Fingerprint the files a deck REFERENCES, not just the deck itself.
+
+    THE BYPASS THIS CLOSES, which I demonstrated against my own gate. A deck may
+    put its physics in a file it imports. The deck text then never changes, so
+    the review digest matches, so the run verifies — while the equations are
+    whatever the imported file now says. Measured: a reviewed deck importing
+    `SOURCE = 1.0` returned max|u| = 0.0728 and VERIFIED; rewriting only the
+    imported file to `SOURCE = 1000.0` returned 72.78 and VERIFIED again, with
+    the same review. A thousandfold change in the physics through a review of
+    something else.
+
+    A sibling audit found the identical hole in `couple`, where the digest
+    covered the participant COMMAND but never the contents of the script it
+    named — a 225x different answer surviving its review. Same shape, two
+    places, so it is the shape that has to be fixed rather than the instance.
+
+    WHAT IS AND IS NOT COVERED, stated rather than implied. Statically visible
+    references are covered: quoted paths with a known extension, local modules
+    imported after a `sys.path` insertion, and the inserted directories
+    themselves. A path assembled at runtime — from an environment variable, a
+    glob, string concatenation — is NOT, and cannot be without executing the
+    deck, which is the thing being gated. An absent file is recorded AS absent,
+    so creating it later invalidates the review; that direction matters, because
+    "write the file after review" is otherwise the same bypass again.
+
+    The residue is real and is named in the verdict. Shrinking a hole and saying
+    where it still is beats claiming it is closed.
+    """
+    roots = [Path(p) for p in _SYSPATH.findall(setup_text)]
+    seen: set[Path] = set()
+    for raw in _PATHLIKE.findall(setup_text):
+        seen.add(Path(raw))
+        for r in roots:
+            seen.add(r / raw)
+    for mod in set(_LOCAL_IMPORT.findall(setup_text)):
+        for r in roots:
+            seen.add(r / f"{mod}.py")
+            seen.add(r / mod / "__init__.py")
+    for r in roots:
+        seen.add(r)
+
+    parts: list[str] = []
+    for p in sorted(seen, key=str):
+        try:
+            if p.is_file():
+                parts.append(f"{p}={hashlib.sha256(p.read_bytes()).hexdigest()}")
+            elif p.is_dir():
+                # A directory's listing, so adding a shadowing module counts.
+                names = sorted(x.name for x in p.iterdir() if x.is_file())
+                parts.append(f"{p}/=" + hashlib.sha256(
+                    "\n".join(names).encode()).hexdigest())
+            else:
+                parts.append(f"{p}=ABSENT")
+        except OSError:
+            parts.append(f"{p}=UNREADABLE")
+    return "\n".join(parts)
+
+
 def _critic_state(solver: str, setup_text: str, *, token: str = "",
                   job_id: str = "") -> tuple[bool, str]:
     """Has an independent critic reviewed THIS setup, on this server's record?
@@ -81,7 +148,8 @@ def _critic_state(solver: str, setup_text: str, *, token: str = "",
     The agent's own `critic_approved` flag is deliberately not an input here: it
     is a self-report, and replacing the self-report is the entire point.
     """
-    digest = setup_digest(solver, setup_text)
+    digest = setup_digest(solver, setup_text,
+                          _referenced_file_digest(setup_text))
     if token:
         try:
             _CRITIC_REGISTRY.consume(token, digest=digest, solver=solver,
@@ -1931,7 +1999,9 @@ def register_consolidated_tools(mcp: FastMCP):
         try:
             rec = _CRITIC_REGISTRY.submit_review(
                 solver=solver, findings=findings,
-                digest=setup_digest(solver, setup_text), ttl_s=ttl_s)
+                digest=setup_digest(solver, setup_text,
+                                    _referenced_file_digest(setup_text)),
+                ttl_s=ttl_s)
         except CriticGateError as exc:
             return json.dumps({"accepted": False, "error": str(exc)}, indent=2)
         _get_journal().record("critic_review", "submit_critic_review",
