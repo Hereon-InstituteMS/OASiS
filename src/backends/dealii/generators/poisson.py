@@ -518,6 +518,15 @@ def _poisson_adaptive_2d(params: dict) -> str:
     """
     cycles = params.get("cycles", 6)
     order = params.get("order", 2)
+    # Pre-refinement before the adaptive loop. Must be >= 1: a
+    # fixed-FRACTION refinement strategy flags floor(fraction *
+    # n_active_cells) cells, which is zero on a 3-cell coarse mesh.
+    pre_refinements = int(params.get("pre_refinements", 2))
+    if pre_refinements < 1:
+        raise ValueError(
+            "poisson_2d_adaptive: pre_refinements must be >= 1, "
+            "otherwise refine_and_coarsen_fixed_number flags zero "
+            f"cells on the 3-cell coarse mesh (got {pre_refinements!r})")
     return f'''\
 /* Poisson with AMR — step-6 based — deal.II */
 #include <deal.II/grid/tria.h>
@@ -547,6 +556,13 @@ int main() {{
   const int dim = 2;
   Triangulation<dim> tria;
   GridGenerator::hyper_L(tria, -1, 1);
+  // REQUIRED: refine at least once before the adaptive loop.
+  // hyper_L gives 3 cells, and refine_and_coarsen_fixed_number(0.3, ...)
+  // computes 0.3*3 = 0.9 -> floors to ZERO cells flagged, so
+  // execute_coarsening_and_refinement() is a no-op and every cycle
+  // recomputes the identical answer without any warning. Verified:
+  // 3 cells -> 0 flagged; after one refine_global, 12 cells -> 3 flagged.
+  tria.refine_global({pre_refinements});
 
   FE_Q<dim> fe({order});
   DoFHandler<dim> dof_handler(tria);
@@ -813,7 +829,29 @@ KNOWLEDGE = {
         "colorize=true -> {0,...,5}. (This entry previously stated "
         "the ids were auto-assigned and printed the OPPOSITE "
         "signal.)",
-                "[Numerical] For AMR: hanging-node constraints are "
+                "[Numerical] A fixed-FRACTION refinement strategy can flag "
+        "ZERO cells on a coarse mesh, and the adaptive loop then runs "
+        "to completion producing the identical answer every cycle with "
+        "no warning at all. GridRefinement::"
+        "refine_and_coarsen_fixed_number(tria, error, top_fraction, "
+        "bottom_fraction) flags floor(top_fraction * n_active_cells) "
+        "cells. Verified on GridGenerator::hyper_L, which starts with "
+        "3 cells: with top_fraction = 0.3 that is 0.9, which floors to "
+        "0, so no cell was flagged and "
+        "execute_coarsening_and_refinement() left the mesh untouched; "
+        "after a single refine_global the same call flagged 3 of 12 "
+        "cells and the mesh grew normally. Always refine_global at "
+        "least once (twice is safer) before an adaptive loop — every "
+        "deal.II tutorial does. "
+        "Signal: print n_active_cells() and n_dofs() EVERY cycle and "
+        "require them to increase. A cycle count that rises while the "
+        "DoF count stands still is this bug; so is an error estimate "
+        "that is bit-identical between cycles. The alternative "
+        "strategy refine_and_coarsen_fixed_fraction (which flags "
+        "cells until a fraction of the total ERROR is covered) does "
+        "not have this failure mode, but can flag almost every cell "
+        "on a mesh with a flat error distribution.",
+        "[Numerical] For AMR: hanging-node constraints are "
         "MANDATORY — build them with "
         "DoFTools::make_hanging_node_constraints and apply them "
         "either through AffineConstraints::"
