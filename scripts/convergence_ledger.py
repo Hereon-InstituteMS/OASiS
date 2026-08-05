@@ -12,6 +12,27 @@ A round is a full pass over a backend by an agent that EXECUTES claims rather
 than reading them, followed by an independent adversarial audit of that pass.
 Round 1 was the extraction/verification pass plus the seven audits.
 
+THE METRIC MUST BE COMPUTED HERE, NOT REPORTED BY THE AGENT
+An audit of the deal.II pass established why. That pass reported 566 of 817
+claims executed — 69.3%. Its own two ledger scripts printed 449/817 = 55.0% and
+184, and neither yielded 566. Worse than the disagreement, the metric was a
+category error: it summed EXECUTION counts against a denominator of CLAIM
+STRINGS. None of the 817 claim ids mentioned "essentials" though 55 leaves were
+credited; none were step citations though 79 were credited; several entries were
+experiment counts. The one defensible figure was the one the script itself
+printed for pitfalls: 43/133 = 32.3%.
+
+So a self-reported percentage is not comparable between backends, and a freeze
+criterion built on incomparable numbers measures nothing. `surface_covered` is
+therefore defined as ONE thing that this script computes from the tree:
+
+    pitfall claims with an execution fixture behind them / pitfall claims total
+
+Pitfalls are the right unit because they are what the paper sells, they are
+countable without judgement, and a fixture is unambiguous evidence of execution.
+An agent's own richer accounting is welcome in its report; it does not enter the
+criterion.
+
 THE METRIC
 For each backend, per round:
 
@@ -138,5 +159,78 @@ def main() -> int:
     return 2
 
 
+# ── computed coverage, so no backend can self-report an incomparable number ──
+def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
+    """Pitfall claims and their tier-2 fixtures, counted from the tree.
+
+    Deliberately crude and uniform. An agent that walks its own knowledge dict
+    can produce a defensible-looking percentage from any denominator it likes —
+    one pass reported 69.3% from a metric that mixed execution counts with claim
+    strings, while its own scripts printed 55.0% and a bare 184. Comparability
+    beats sophistication when the number decides whether we freeze.
+    """
+    import ast
+    import json
+
+    repo = repo or REPO
+    backends_dir = repo / "src" / "backends"
+    fixtures_dir = repo / "scripts" / "tier2_fixtures"
+
+    out: dict[str, dict] = {}
+    for be_dir in sorted(p for p in backends_dir.iterdir() if p.is_dir()):
+        name = be_dir.name
+        if name.startswith("_"):
+            continue
+        # Pitfall claims: every string carrying a `Signal:` clause, deduplicated
+        # by value so a shared sub-dict attached by reference to many physics
+        # entries counts once. A DUNE audit found a naive walk inflating a count
+        # 111 -> 127 exactly that way.
+        signals: set[str] = set()
+        for py in be_dir.rglob("*.py"):
+            try:
+                tree = ast.parse(py.read_text(errors="ignore"))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                    if "Signal:" in node.value:
+                        signals.add(node.value)
+        fx = fixtures_dir / name
+        n_fx = 0
+        if fx.is_dir():
+            n_fx = len([d for d in fx.iterdir() if (d / "fixture.json").is_file()])
+        out[name] = {
+            "pitfall_claims": len(signals),
+            "fixtures": n_fx,
+            "covered": round(n_fx / len(signals), 4) if signals else None,
+        }
+    return out
+
+
+def print_measured_coverage() -> None:
+    rows = measured_pitfall_coverage()
+    print(f"\n{'backend':<10} {'pitfalls':>9} {'fixtures':>9} {'covered':>8}")
+    print("-" * 40)
+    tp = tf = 0
+    for be, d in sorted(rows.items()):
+        tp += d["pitfall_claims"]
+        tf += d["fixtures"]
+        cov = "—" if d["covered"] is None else f"{d['covered']:.1%}"
+        print(f"{be:<10} {d['pitfall_claims']:>9} {d['fixtures']:>9} {cov:>8}")
+    print("-" * 40)
+    print(f"{'TOTAL':<10} {tp:>9} {tf:>9} "
+          f"{(tf / tp if tp else 0):>7.1%}")
+    print("\nsurface_covered for the freeze criterion is this column — computed "
+          "from the tree, identical in meaning for every backend.")
+
+
 if __name__ == "__main__":
+    import sys as _sys
+    # `--coverage` prints the computed, cross-backend-comparable figure. A first
+    # version appended this dispatch AFTER `raise SystemExit(main())`, so it was
+    # dead code that silently did nothing — the same shape as the
+    # `--write-results` flag that was parsed and never read.
+    if "--coverage" in _sys.argv:
+        print_measured_coverage()
+        raise SystemExit(0)
     raise SystemExit(main())
