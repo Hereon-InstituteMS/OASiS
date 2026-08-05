@@ -861,7 +861,16 @@ _FEBIO = {
         "and then `import febio` fails with `ModuleNotFoundError: No module "
         "named 'MatDef'` — a Python-2 implicit relative import inside the "
         "package's own `__init__.py`. FEBio the solver is a C++ binary and has "
-        "no PyPI distribution at all; nothing you pip-install is it. Use one "
+        "no PyPI distribution at all; nothing you pip-install is it. "
+        "IT ALSO DAMAGES THE ENVIRONMENT IT LANDS IN, which is the part that "
+        "costs more than the wasted minute: `febio` declares "
+        "`Requires-Dist: numpy` with no upper bound, so pip pulls the newest "
+        "numpy. Installed alongside the reference environment here that "
+        "resolved numpy 2.5.1 and pip itself reported the damage — "
+        "`scipy 1.15.3 requires numpy<2.5,>=1.23.5, but you have numpy 2.5.1 "
+        "which is incompatible` and the same for `pyprecice 3.1.2 requires "
+        "numpy<2`. So the wrong route does not fail cleanly: it succeeds, "
+        "gives you nothing, and breaks scipy. Use one "
         "of the two routes in install_route.",
 
         "[Integration][Discovery] FEBIO_BINARY is OPTIONAL but is the only "
