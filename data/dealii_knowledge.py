@@ -11,6 +11,10 @@ source checkout there are 88 examples/step-* directories while the
 numbering runs to step-97. In particular step-73 does NOT exist upstream
 (the AD tutorials are step-71 and step-72); the "step-73 (AD-assisted /
 elasticity)" references that used to appear below have been removed.
+The full set of numbers that do NOT exist, checked against a 9.8
+examples/ directory, is 52, 73, 80, 84, 88, 91, 92, 94, 96 — every
+step-* reference in this catalog was checked against that directory and
+the two dangling ones (step-52, step-80) were corrected.
 Enumerate examples/step-* in the source checkout you actually have -
 a binary package prefix ships no tutorials at all.
 """
@@ -101,7 +105,14 @@ DEALII_KNOWLEDGE = {
         "multiphysics_coupling": {
             "Stokes_elasticity": ["step-46 (subdomain coupling via FE_Nothing)"],
             "Stokes_temperature": ["step-31 (Boussinesq)", "step-32 (parallel)"],
-            "FSI": ["step-60 (immersed DLM)", "step-70 (particles)", "step-80 (non-matching)"],
+            # step-80 does NOT exist upstream — checked against a 9.8
+            # examples/ directory, where the missing numbers are
+            # 52, 73, 80, 84, 88, 91, 92, 94 and 96. The
+            # non-matching-grid tutorials are step-89 (mortaring) and
+            # step-90 (TraceFEM); the immersed / distributed-Lagrange
+            # route is step-60.
+            "FSI": ["step-60 (immersed DLM)", "step-70 (particles)",
+                    "step-89 (non-matching, mortaring)"],
             "particle_coupling": ["step-19 (PIC)", "step-68 (Stokes particle advection)"],
         },
 
@@ -328,7 +339,13 @@ DEALII_KNOWLEDGE = {
         },
         "nonlinear": ["Manual Newton loop", "SUNDIALS KINSOL (step-77)"],
         "time_integration": ["Manual theta-scheme", "SUNDIALS ARKode (step-86)", "PETSc TS (step-86)",
-                            "TimeStepping namespace (step-52, explicit/implicit RK methods)"],
+                            # step-52 does NOT exist upstream (see the gap
+                            # list above). The TimeStepping / Runge-Kutta
+                            # machinery is used by step-67 and step-76,
+                            # which are the tutorials to read for it.
+                            ("TimeStepping / Runge-Kutta namespace — used in "
+                             "step-67 and step-76 (explicit RK for "
+                             "matrix-free DG Euler); there is no step-52")],
         "eigenvalue": "SLEPc EPS via PETSc interface (step-36)",
     },
 

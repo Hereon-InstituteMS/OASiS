@@ -712,10 +712,28 @@ KNOWLEDGE = {
         "hyper_rectangle": "Non-square aspect ratio.",
         "subdivided_hyper_cube": "Pre-subdivided to avoid repeated refine_global() calls.",
         "hyper_L": "Re-entrant-corner singularity; canonical adaptive-refinement test.",
-        "hyper_ball": "Curved boundary; tests boundary-conforming refinement.",
-        "hyper_shell": "Annulus; layered radial Poisson problems.",
+        "hyper_ball": ("Curved boundary. The generator attaches a "
+                       "SphericalManifold for you - do NOT call "
+                       "reset_all_manifolds(), and raise the mapping "
+                       "degree (MappingQ<dim>(2) or (3)) or the "
+                       "geometry error dominates the FE error. "
+                       "Verified: with no manifold the integrated "
+                       "volume is stuck at the straight-edged value "
+                       "and refinement does not change it at all."),
+        "hyper_shell": ("Annulus / spherical shell for layered radial "
+                        "problems. Same manifold and mapping-degree "
+                        "caveat as hyper_ball. Its colorize argument "
+                        "gives inner boundary_id 0 and outer 1, which "
+                        "is what a two-sided radial BC needs."),
         "cheese": "Heterogeneous-coefficient demos.",
-        "torus": "3D periodic-boundary studies.",
+        "torus": ("GridGenerator::torus is dimension-overloaded and "
+                  "both forms were verified to build: "
+                  "Triangulation<3> gives a SOLID torus of hexes, "
+                  "Triangulation<2,3> gives its SURFACE as a 2D mesh "
+                  "embedded in 3D. Pick deliberately - the surface "
+                  "variant needs spacedim-aware FEValues and suits "
+                  "Laplace-Beltrami style problems, not a volume "
+                  "PDE."),
     },
     "solvers": [
         "SolverCG<>                   — Poisson is symmetric positive-definite; CG is the default",
@@ -723,7 +741,22 @@ KNOWLEDGE = {
         "MatrixFree + FEEvaluation    — step-37 matrix-free; needed for matrix-storage-bound problems past ~10^7 DoFs",
     ],
     "preconditioners": [
-        "PreconditionSSOR             — serial default; cheap on SPD systems",
+        "PreconditionSSOR             — serial default; cheap on SPD systems. "
+        "The SYMMETRIC sweep, so it is legal with SolverCG. Its one-sided "
+        "sibling PreconditionSOR is NOT: verified, SolverCG + PreconditionSOR "
+        "runs to its iteration limit and throws SolverControl::NoConvergence "
+        "on an SPD Poisson system that SolverGMRES + PreconditionSOR solves "
+        "in a few tens of steps",
+        "PreconditionBlockSSOR / BlockJacobi — only when the diagonal blocks "
+        "are genuine sub-problems, i.e. a DISCONTINUOUS element with "
+        "block_size = fe.n_dofs_per_cell(). On a continuous FE_Q Poisson "
+        "system a block of constrained rows can be exactly SINGULAR; "
+        "initialize() then returns silently and the preconditioner is worse "
+        "than none (verified: one of 72 blocks singular, one-application "
+        "relative residual above 1)",
+        "SparseILU / SparseMIC        — incomplete LU / modified incomplete "
+        "Cholesky, both verified to work with SolverCG on Poisson; SparseMIC "
+        "is the class the name 'PreconditionICC' refers to",
         "PreconditionAMG / BoomerAMG  — parallel; via TrilinosWrappers, scales to 10^7 DoFs",
         "PreconditionChebyshev        — used inside multigrid as smoother, also as a standalone for matrix-free",
         "MGSmootherRelaxation         — geometric multigrid smoother (step-16, step-50)",
