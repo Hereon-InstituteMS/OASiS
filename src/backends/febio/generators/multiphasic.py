@@ -30,6 +30,7 @@ def _multiphasic_3d_diffusion(params: dict) -> str:
     <step_size>1.0</step_size>
     <solver type="multiphasic">
       <symmetric_stiffness>non-symmetric</symmetric_stiffness>
+      <linear_solver type="bicgstab"/>
     </solver>
   </Control>
   <Globals>
@@ -47,7 +48,7 @@ def _multiphasic_3d_diffusion(params: dict) -> str:
     </Solutes>
   </Globals>
   <Material>
-    <material id="1" type="multiphasic">
+    <material id="1" name="Material1" type="multiphasic">
       <phi0>0.2</phi0>
       <fixed_charge_density>0.0</fixed_charge_density>
       <solid type="neo-Hookean">
@@ -83,29 +84,25 @@ def _multiphasic_3d_diffusion(params: dict) -> str:
       <node id="7">1,1,1</node>
       <node id="8">0,1,1</node>
     </Nodes>
-    <Elements type="hex8" mat="1" name="Part1">
+    <Elements type="hex8" mat="Material1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="bottom">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-    </NodeSet>
-    <NodeSet name="top">
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="bottom">1,2,3,4</NodeSet>
+    <NodeSet name="top">5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="fix" type="zero displacement" node_set="bottom">
       <x_dof>1</x_dof><y_dof>1</y_dof><z_dof>1</z_dof>
     </bc>
     <bc name="c_bot" type="prescribed concentration" node_set="bottom">
-      <sol>1</sol>
+      <dof>c1</dof>
       <value lc="1">0.0</value>
     </bc>
     <bc name="c_top" type="prescribed concentration" node_set="top">
-      <sol>1</sol>
+      <dof>c1</dof>
       <value lc="1">{c_top}</value>
     </bc>
     <bc name="drain" type="zero fluid pressure" node_set="top"/>

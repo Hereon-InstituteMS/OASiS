@@ -1134,15 +1134,11 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "viscoelastic", "uncoupled_viscoelastic",
             "biphasic_solute", "triphasic", "multiphasic_solute",
             "Newtonian", "Carreau", "Bingham",
-            "fluid_solute", "isotropic_Fourier",
-            "Bauschinger_shift", "yield_stress",
+            "fluid_solute",
             # ── Solver / NOX-status tokens that real FEBio logs
-            #    emit ───────────────────────────────────────────
-            "NOX", "FullNewton", "BFGS", "Quasi",
-            "DIVERGED_LINE_SEARCH", "DIVERGED_FNORM_NAN",
-            "MaxIters", "lc", "load_controller",
-            "step_size", "dt_0", "Jacobian",
-            "max_refs", "max_ups", "Rtol", "Etol",
+            #    emit ─────────────────────────────────────────── "FullNewton", "BFGS", "Quasi", "lc", "load_controller",
+            "step_size", "Jacobian",
+            "max_refs", "max_ups",
             "STATIC", "DYNAMIC", "TRANSIENT",
             # ── Element types FEBio accepts in <Elements
             #    type="..."/> ───────────────────────────────────
@@ -1155,28 +1151,22 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "x_dof", "y_dof", "z_dof",
             "gx_dof", "gy_dof", "gz_dof",
             "center_of_mass", "initial_stress",
-            "rigid_displacement", "shedding_period",
-            # ── Output / runtime helpers ─────────────────────────
-            "write_vtu", "post_vtu", "xplt", "plt",
+            "rigid_displacement",
+            # ── Output / runtime helpers ───────────────────────── "xplt", "plt",
             # ── More FEBio runtime / PETSc-via-FEBio identifiers
             #    extracted from actual error logs and catalog
-            #    Signal: prose ──────────────────────────────────
-            "KSPSolve", "ALE", "Hookean", "HGO",
+            #    Signal: prose ────────────────────────────────── "ALE", "Hookean", "HGO",
             "Holzapfel_Gasser_Ogden",
             "kappa", "fiber", "Elements", "node",
-            "prescribed", "concentration", "sol",
-            "micro_rotation", "Cosserat",
-            "drainage", "tissue", "contact",
-            "fluid_pressure", "effective_concentration",
+            "prescribed", "concentration", "sol", "contact",
+            "fluid_pressure",
             # ── FEBio XML attribute / parameter lowercase tokens
             #    that show up in `<material>`/`<Element>` errors ──
             "material", "parameter", "element",
             "isotropic", "elastic", "displacement",
             "restart", "history", "cycle",
-            # ── Output / plotfile observables ─────────────────
-            "plotfile_xplt", "logfile",
-            "stress_strain", "kinetic_energy",
-            "fluid_velocity", "elastic_strain",
+            # ── Output / plotfile observables ───────────────── "logfile",
+            "fluid_velocity",
         })
 
     code_symbols.update({

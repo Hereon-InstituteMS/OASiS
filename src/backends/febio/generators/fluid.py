@@ -15,7 +15,7 @@ def _fluid_3d_channel(params: dict) -> str:
     """
     rho = params.get("density", 1.0)
     mu = params.get("viscosity", 0.01)
-    p_in = params.get("p_inlet", 1.0)
+    p_in = params.get("p_inlet", 0.01)
     return f'''\
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <febio_spec version="4.0">
@@ -26,10 +26,11 @@ def _fluid_3d_channel(params: dict) -> str:
     <step_size>0.1</step_size>
     <solver type="fluid">
       <symmetric_stiffness>non-symmetric</symmetric_stiffness>
+      <linear_solver type="bicgstab"/>
     </solver>
   </Control>
   <Material>
-    <material id="1" type="fluid">
+    <material id="1" name="Material1" type="fluid">
       <density>{rho}</density>
       <k>1e3</k>
       <viscous type="Newtonian fluid">
@@ -48,22 +49,15 @@ def _fluid_3d_channel(params: dict) -> str:
       <node id="7">1,1,1</node>
       <node id="8">0,1,1</node>
     </Nodes>
-    <Elements type="hex8" mat="1" name="Part1">
+    <Elements type="hex8" mat="Material1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
-    <NodeSet name="inlet">
-      <n id="1"/><n id="4"/><n id="5"/><n id="8"/>
-    </NodeSet>
-    <NodeSet name="outlet">
-      <n id="2"/><n id="3"/><n id="6"/><n id="7"/>
-    </NodeSet>
-    <NodeSet name="walls">
-      <n id="1"/><n id="2"/><n id="3"/><n id="4"/>
-      <n id="5"/><n id="6"/><n id="7"/><n id="8"/>
-    </NodeSet>
+    <NodeSet name="inlet">1,4,5,8</NodeSet>
+    <NodeSet name="outlet">2,3,6,7</NodeSet>
+    <NodeSet name="walls">1,2,3,4,5,6,7,8</NodeSet>
   </Mesh>
   <MeshDomains>
-    <SolidDomain name="Part1" mat="1"/>
+    <SolidDomain name="Part1" mat="Material1"/>
   </MeshDomains>
   <Boundary>
     <bc name="noslip" type="zero fluid velocity" node_set="walls">

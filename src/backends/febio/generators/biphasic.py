@@ -25,6 +25,7 @@ def _biphasic_3d_confined(params: dict) -> str:
     <step_size>1.0</step_size>
     <solver type="biphasic">
       <symmetric_stiffness>non-symmetric</symmetric_stiffness>
+      <linear_solver type="bicgstab"/>
     </solver>
   </Control>
   <Material>
@@ -51,7 +52,7 @@ def _biphasic_3d_confined(params: dict) -> str:
       <node id="7">1,1,1</node>
       <node id="8">0,1,1</node>
     </Nodes>
-    <Elements type="hex8" mat="1" name="Part1">
+    <Elements type="hex8" mat="Material1" name="Part1">
       <elem id="1">1,2,3,4,5,6,7,8</elem>
     </Elements>
     <NodeSet name="fix_bottom">1,2,3,4</NodeSet>
