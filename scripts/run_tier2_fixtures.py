@@ -51,6 +51,26 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
+
+def fixture_inventory_fingerprint() -> str:
+    """Identity of the fixture set: which fixtures exist and what they contain.
+
+    Deliberately NOT a claim about whether they pass — it records what was
+    summarised, so a summary can be told apart from a stale one. Every file in
+    every fixture directory is hashed, so editing a fixture's expectation or its
+    source counts as a change, not just adding or deleting one.
+    """
+    import hashlib
+
+    h = hashlib.sha256()
+    for d in sorted(p.parent for p in FIXTURES_DIR.glob("*/*/fixture.json")):
+        h.update(f"{d.parent.name}/{d.name}\n".encode())
+        for f in sorted(d.iterdir()):
+            if f.is_file():
+                h.update(f.name.encode())
+                h.update(hashlib.sha256(f.read_bytes()).digest())
+    return h.hexdigest()
+
 # Prefer the Debug-built deal.II at ~/Schreibtisch/dealii-debug
 # (Assert macros enabled — unlocks the Assert-gated Signal families
 # like ExcDimensionMismatch). Falls back to the conda Release install
@@ -550,6 +570,15 @@ def main():
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
         "summary": summary,
+        # Identity of the fixture set these results describe. Without it a
+        # committed snapshot cannot be told from a current one: an audit found
+        # `tier2_results.json` 18 commits stale, recording `passed: 113` on a
+        # host where 7 passed and 10 failed — and the floor test that reads it
+        # was green, including with the backend's binary hidden. The number
+        # travels with the repo, so every user gets our result reported as
+        # theirs. Comparing this fingerprint catches the fixture set having moved
+        # underneath a stale summary.
+        "fixture_fingerprint": fixture_inventory_fingerprint(),
         "results": results,
     }, indent=2))
     print(f"results written to "
