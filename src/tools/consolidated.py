@@ -81,19 +81,37 @@ def _referenced_file_digest(setup_text: str) -> str:
     named — a 225x different answer surviving its review. Same shape, two
     places, so it is the shape that has to be fixed rather than the instance.
 
-    WHAT IS AND IS NOT COVERED, stated rather than implied. Statically visible
-    references are covered: quoted paths with a known extension, local modules
-    imported after a `sys.path` insertion, and the inserted directories
-    themselves. A path assembled at runtime — from an environment variable, a
-    glob, string concatenation — is NOT, and cannot be without executing the
-    deck, which is the thing being gated. An absent file is recorded AS absent,
-    so creating it later invalidates the review; that direction matters, because
-    "write the file after review" is otherwise the same bypass again.
+    WHAT IS AND IS NOT COVERED, stated rather than implied. Covered: quoted
+    paths with a known extension, local modules imported after a `sys.path`
+    insertion or sitting next to the server's working directory, and the
+    directories themselves so a shadowing module counts. An absent file is
+    recorded AS absent, so creating it later invalidates the review — "write the
+    file after review" is otherwise the same bypass again.
 
-    The residue is real and is named in the verdict. Shrinking a hole and saying
-    where it still is beats claiming it is closed.
+    NOT COVERED, AND NOT COVERABLE HERE. A coupling audit defeated the
+    equivalent fix five ways and predicted this one would fall to the same
+    routes; measured, it did. What remains open:
+
+      * a module imported from a directory that does not exist yet at review
+        time — a generator that writes its own helper into the job directory
+        creates it AFTER the review, so no pre-run digest can see it;
+      * `exec(open(path).read())`, a path from an environment variable,
+        `os.path.join`, a glob — any path assembled at runtime.
+
+    None of these can be closed by reading the deck, because closing them means
+    knowing what the deck will do, which is the thing being gated. That is a
+    real limit on the guarantee, so `_stamp_verification` states it in the
+    VERDICT rather than here: a sibling audit found two limits that were
+    documented only in a docstring and observed that this "is the same as
+    nowhere". The agent reads the verdict.
     """
+    # Roots to resolve a bare `from model import x` against. The first version
+    # used ONLY `sys.path.insert` targets, so a deck with an ordinary sibling
+    # import — no path manipulation, no adversarial intent — had NOTHING
+    # fingerprinted. A coupling audit predicted this against my fix and it was
+    # right: measured, the digest resolved only the output filename.
     roots = [Path(p) for p in _SYSPATH.findall(setup_text)]
+    roots.append(Path.cwd())
     seen: set[Path] = set()
     for raw in _PATHLIKE.findall(setup_text):
         seen.add(Path(raw))
@@ -248,6 +266,26 @@ def _check_declared_pde(spec: str, out_files) -> dict:
     except Exception as exc:                       # pragma: no cover
         return {"verdict": "REFUSED",
                 "detail": f"the residual check could not run: {exc}"[:300]}
+
+
+def _critic_coverage_note() -> str:
+    """State what the review is NOT bound to, in the verdict itself.
+
+    A review is bound to the deck plus the files the deck statically names. It
+    is not bound to a module the deck loads by a runtime-constructed path, and
+    it cannot be: knowing that would mean knowing what the deck does, which is
+    the thing being gated. An audit defeated the equivalent coupling fix through
+    exactly those routes and predicted this one would fall to them too — it did.
+
+    Served rather than left in a docstring, because that same audit found two
+    limits documented only in a docstring and noted this "is the same as
+    nowhere". A limit an agent never reads is not a disclosure.
+    """
+    return ("SCOPE OF THE REVIEW: it is bound to this deck and to the files the "
+            "deck names outright. It is NOT bound to a module loaded by a path "
+            "built at run time — from an environment variable, a glob, "
+            "`exec(open(...))`, or a directory created after the review — so "
+            "physics moved into such a file is outside what the critic saw.")
 
 
 def _residual_coverage_note(result: dict) -> str:
@@ -509,7 +547,8 @@ def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
             + critic_note + ") and the run passed OASiS's verification-gate "
             "numerical checks. This is verification, not validation: confirm "
             "physical validity against reality yourself. "
-            + _residual_coverage_note(result))
+            + _residual_coverage_note(result)
+            + " " + _critic_coverage_note())
     result["critic_review"] = critic_note
     return result
 

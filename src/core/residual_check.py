@@ -254,6 +254,32 @@ def _build_mesh(points: np.ndarray, cells, dim: int):
     return None
 
 
+# STOKES IS NOT COVERED, AND THE ATTEMPT IS INSTRUCTIVE.
+#
+# A `check_stokes_residual` was written here and then removed, because the
+# approach cannot work and it is better to say so than to ship a check that
+# cannot discriminate.
+#
+# The residual is only meaningful against the SAME discrete system that was
+# solved. For diffusion and elasticity a nodal (P1) field and a P1 assembly are
+# the same system, so the check is exact. Stokes is not: a genuine Stokes
+# solution comes from an inf-sup-STABLE pair — Taylor-Hood P2/P1 — while a vtu
+# carries nodal values, and a P1/P1 assembly is unstable. Measured: the P1/P1
+# reference system is exactly singular, and a real Taylor-Hood solution sampled
+# at the nodes has no reason to satisfy it. In the attempt a genuine solve came
+# back INCONCLUSIVE and a divergent field u = (x, y) came back INCONCLUSIVE
+# too — the check separated nothing.
+#
+# Reconstructing the stable system from nodal output is impossible: the P2
+# edge degrees of freedom are not in the file. So Stokes needs either the
+# solver's own matrix or a different family of evidence (a mesh-refinement
+# study, a divergence norm, a benchmark quantity), not this one.
+#
+# `check_run_residual` therefore reports UNSUPPORTED for saddle-point problems,
+# which is honest and is not protection. Anyone extending this should start from
+# why the above fails rather than from the assembly.
+
+
 def _is_tensor(k, dim: int) -> bool:
     """Is this coefficient a dim x dim tensor rather than a scalar field?
 
