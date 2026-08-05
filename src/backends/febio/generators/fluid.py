@@ -82,6 +82,10 @@ def _fluid_3d_channel(params: dict) -> str:
       <var type="fluid velocity"/>
       <var type="effective fluid pressure"/>
     </plotfile>
+    <logfile>
+      <node_data data="nfvx;nfvy;nfvz" delim="," file="fluid_vel.csv"/>
+      <element_data data="fJ;fd;fp" delim="," file="fluid_elem.csv"/>
+    </logfile>
   </Output>
 </febio_spec>
 '''
@@ -121,15 +125,11 @@ KNOWLEDGE = {
                 "Signal: `tag \"y_dof\" (line N) : unrecognized tag` and `Reading file ...FAILED!`. Executed against a deliberately invented name too: the message is byte-identical, so it tells you the tag is unknown and nothing more — it will not hint that you wanted the w prefix. (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
             (
-                "[Numerical] Bulk modulus k controls how strictly "
-                "near-incompressibility is enforced. Too low: large "
-                "spurious dilatation; too high: ill-conditioning and "
-                "Newton stalls. Rule of thumb: k > 100 * mu * "
-                "(u_max / L) to keep dilatation < 1%. Signal: "
-                "fluid velocity field has visible volume change "
-                "(div(v) != 0 by >1%), or solver reports cond > 1e14 "
-                "with the k that was too aggressive. (Audit "
-                "2026-06-02.)"
+                "[Numerical] The `fluid` material's <k> is a bulk modulus, and whether it controls anything depends on how you drive the problem. In a deck whose inlet and outlet PRESCRIBE the fluid dilatation, k does not set the volume ratio at all — the boundary condition does. "
+                "WRONG: tuning <k> to control compressibility in a dilatation-driven deck, or reading an unchanged volume ratio as evidence that k is ignored. "
+                "RIGHT: to make k matter, drive the flow with a velocity or a traction and leave the dilatation free; to control the volume ratio in a dilatation-driven deck, change the prescribed value. "
+                "Signal: none — measure it. The fluid log variables are NOT the solid ones: use <element_data data=\"fJ;fd;fp\"/> for volume ratio, dilatation and pressure, and <node_data data=\"nfvx;nfvy;nfvz\"/> for nodal velocity. Asking for \"ef\" gives `\"ef\" is not a valid field variable name (line N)` after the deck has already read successfully. Executed as a k sweep over six decades on the shipped channel deck: fJ came back identical at every value, because the inlet and outlet prescribe it. "
+                "STILL UNVERIFIED: the size of the spurious dilatation k admits when the dilatation is genuinely free. Closing it needs a velocity- or traction-driven channel, which is a different deck from the one shipped here. Retained rather than softened. (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
             (
                 "[Numerical] CFL-like restriction on dt for "
