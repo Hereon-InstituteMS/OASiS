@@ -60,7 +60,12 @@ PHYSICS_TO_MODULE = {
     "fiber_reinforced": "solid",
     "fluid": "fluid",
     "fluid_fsi": "fluid-FSI",
-    "biphasic_fsi": "biphasic-FSI",
+    # FEBio 4.12 registers no `biphasic-FSI` MODULE: the registry
+    # line is `fluid-FSI.biphasic-FSI [FEMATERIAL_ID]`, i.e. a
+    # MATERIAL inside the fluid-FSI module. Corrected 2026-08-05
+    # together with the biphasic_fsi_3d_block template repair; the
+    # old value made this fixture demand the segfault back.
+    "biphasic_fsi": "fluid-FSI",
     "growth_remodeling": "solid",
     "multiphasic": "multiphasic",
     "plasticity": "solid",
@@ -72,6 +77,12 @@ PHYSICS_TO_MODULE = {
     #    template mapped to no physics and the fixture failed
     #    with "cannot map template key to known physics".
     "elasticity_mms": "solid",
+    # ── 2026-08-05: rigid_contact_3d_indentation was added by the
+    #    template-repair pass and never entered here, so it failed
+    #    with "cannot map template key to known physics". Its key
+    #    must sort before "rigid_body" is tried, which the
+    #    longest-prefix-first lookup already guarantees.
+    "rigid_contact": "solid",
 }
 
 # The ten module names FEBio 4.12.0 actually registers, read off

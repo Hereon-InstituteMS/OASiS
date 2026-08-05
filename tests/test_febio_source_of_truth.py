@@ -48,9 +48,19 @@ sys.path.insert(0, str(_REPO / "src"))
 
 
 def _find_febio() -> Path | None:
+    """Locate febio4.
+
+    FEBIO_BINARY is AUTHORITATIVE when set: if it names something that is
+    not a file we return None rather than falling through to the search
+    path. The fall-through silently defeated every acceptance test that
+    sets FEBIO_BINARY to a nonexistent path to prove absence-behaviour —
+    `FEBIO_BINARY=/nonexistent/febio4` used to resolve to the real
+    binary, so such a test measured nothing. (Fixed 2026-08-05.)
+    """
     env = os.environ.get("FEBIO_BINARY")
-    if env and Path(env).is_file():
-        return Path(env)
+    if env is not None:
+        p = Path(env)
+        return p if p.is_file() else None
     for c in (Path.home() / "FEBio" / "bin" / "febio4",
               Path.home() / "FEBioStudio" / "bin" / "febio4",
               Path("/opt/febio/bin/febio4"),
@@ -232,6 +242,11 @@ class TestFebioModuleCatalogLive(unittest.TestCase):
                     log = Path(td) / f"{key}.log"
                     if log.is_file():
                         blob += log.read_text(errors="replace")
+                    csv_name = ("heat_bar_T.csv"
+                                if key == "heat_3d_bar"
+                                else f"{key}_nodes.csv")
+                    cf = Path(td) / csv_name
+                    csv = cf.read_text() if cf.is_file() else ""
 
                 self.assertGreaterEqual(
                     p.returncode, 0,
@@ -255,6 +270,59 @@ class TestFebioModuleCatalogLive(unittest.TestCase):
                     f"{key}: 0 time steps completed. The deck parsed "
                     f"but solved nothing — that is a broken template, "
                     f"whatever the banner says.")
+
+                # ---- and now a NUMERIC check, because the four
+                # structural ones above are all satisfiable by a deck
+                # that returns nonsense. Adversarial audit 2026-08-05:
+                # flipping heat_3d_bar's <analysis> to DYNAMIC leaves
+                # every assertion above green while the steady field
+                # undershoots its own 300 K cold boundary by 26.44 K
+                # and misses the analytic profile by 113.94 K. So the
+                # docstring's promise that a banner is "not accepted as
+                # evidence" was only kept against the crudest failures.
+                if key == "heat_3d_bar":
+                    self.assertTrue(
+                        csv, f"{key}: no {csv_name} written, so the "
+                             f"documented <Output> block is wrong")
+                    rows = [r.split(",") for r in
+                            csv.split("*Step")[-1].splitlines()]
+                    temps = [float(r[1]) for r in rows
+                             if len(r) == 2 and r[0].strip().isdigit()]
+                    self.assertTrue(
+                        temps, f"{key}: could not parse temperatures")
+                    # Pure conduction between two Dirichlet ends obeys a
+                    # maximum principle: nothing may leave [T_cold,
+                    # T_hot]. The deck prescribes 300 and 400.
+                    self.assertGreater(
+                        min(temps), 300.0 - 1e-6,
+                        f"{key}: a node reached {min(temps)} K, below "
+                        f"the 300 K cold boundary. Conduction between "
+                        f"two Dirichlet ends cannot undershoot both of "
+                        f"them — the run is unphysical however clean "
+                        f"the banner is.")
+                    self.assertLess(
+                        max(temps), 400.0 + 1e-6,
+                        f"{key}: a node reached {max(temps)} K, above "
+                        f"the 400 K hot boundary.")
+                    # The exact solution is linear in x and hex8 is
+                    # trilinear, so it lies IN the FE space: the only
+                    # error is the iterative solver's. See the
+                    # `verification` entry for the measured range
+                    # (0 to 7.3e-8 over n = 2..96).
+                    xs = {int(mm.group(1)): float(mm.group(2))
+                          for mm in re.finditer(
+                              r'<node id="(\d+)">([-0-9.eE+]+),', deck)}
+                    err = max(
+                        abs(float(r[1]) - (300.0 + 100.0 * xs[int(r[0])]))
+                        for r in rows
+                        if len(r) == 2 and r[0].strip().isdigit())
+                    self.assertLess(
+                        err, 1e-5,
+                        f"{key}: max deviation from the analytic "
+                        f"profile T = 300 + 100*x is {err} K. The exact "
+                        f"solution lies in the trilinear space, so this "
+                        f"must sit at solver tolerance, not at "
+                        f"discretization error.")
 
     def test_the_baseline_deck_in_knowledge_actually_runs(self) -> None:
         """GUARD: the deck the catalog calls 'the safest thing to

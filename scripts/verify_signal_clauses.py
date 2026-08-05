@@ -1136,7 +1136,8 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Newtonian", "Carreau", "Bingham",
             "fluid_solute",
             # ── Solver / NOX-status tokens that real FEBio logs
-            #    emit ─────────────────────────────────────────── "FullNewton", "BFGS", "Quasi", "lc", "load_controller",
+            #    emit ───────────────────────────────────────────
+            "FullNewton", "BFGS", "Quasi", "lc", "load_controller",
             "step_size", "Jacobian",
             "max_refs", "max_ups",
             "STATIC", "DYNAMIC", "TRANSIENT",
@@ -1152,10 +1153,12 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "gx_dof", "gy_dof", "gz_dof",
             "center_of_mass", "initial_stress",
             "rigid_displacement",
-            # ── Output / runtime helpers ───────────────────────── "xplt", "plt",
+            # ── Output / runtime helpers ─────────────────────────
+            "xplt", "plt",
             # ── More FEBio runtime / PETSc-via-FEBio identifiers
             #    extracted from actual error logs and catalog
-            #    Signal: prose ────────────────────────────────── "ALE", "Hookean", "HGO",
+            #    Signal: prose ──────────────────────────────────
+            "ALE", "Hookean", "HGO",
             "Holzapfel_Gasser_Ogden",
             "kappa", "fiber", "Elements", "node",
             "prescribed", "concentration", "sol", "contact",
@@ -1165,7 +1168,8 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "material", "parameter", "element",
             "isotropic", "elastic", "displacement",
             "restart", "history", "cycle",
-            # ── Output / plotfile observables ───────────────── "logfile",
+            # ── Output / plotfile observables ─────────────────
+            "logfile",
             "fluid_velocity",
         })
 

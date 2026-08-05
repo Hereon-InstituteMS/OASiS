@@ -39,6 +39,25 @@ not to write, and a phantom hides behind the ambiguity. Text FEBio
 echoes back out of the deck (through a %s, and therefore always inside
 double quotes in the message) is exempt — it is a runtime value, not a
 literal.
+
+WHAT A GREEN RUN OF THIS FILE DOES AND DOES NOT MEAN. Measured on the
+catalog 2026-08-05: of 269 backticked literals inside Signal clauses,
+205 (76%) reach the fragment check. The other 64 are invisible to it —
+50 reduce to no checkable fragment at all (dominated by the spaced
+banners `N O R M A L   T E R M I N A T I O N` and
+`E R R O R   T E R M I N A T I O N`, where the placeholder rule treats
+every isolated capital as a substitution slot, plus short names like
+`LU`), and 14 are skipped by the flag rule. A further 20 of the 97
+pitfalls carry no backticked Signal literal, so the check never looks at
+them. The check is also blind to punctuation: `Reading file ...FAILED!`
+and a four-dot `Reading file ....FAILED!` produce identical fragments,
+so a wrong dot count passes.
+
+And it can only ever rule out INVENTION, never mis-ATTRIBUTION. A string
+that exists in the corpus passes even when it belongs to a different
+trigger than the entry claims. Nothing about grepping a binary can catch
+that; only running the stated WRONG: case and reading the message can.
+So "zero unmatchable Signals" is a floor, not a certificate.
 """
 from __future__ import annotations
 
@@ -61,9 +80,15 @@ _PLACEHOLDER = re.compile(r'"[^"]*"|<[^>]*>|\.\.\.|\b[A-Z]\b|%\w')
 
 
 def _find_febio() -> Path | None:
+    """FEBIO_BINARY is AUTHORITATIVE when set — see the note in
+    tests/test_febio_source_of_truth.py. A set-but-invalid value returns
+    None instead of falling through to the search path, which used to
+    make `FEBIO_BINARY=/nonexistent` resolve to the real binary and so
+    silently void any absence-behaviour test. (Fixed 2026-08-05.)"""
     env = os.environ.get("FEBIO_BINARY")
-    if env and Path(env).is_file():
-        return Path(env)
+    if env is not None:
+        p = Path(env)
+        return p if p.is_file() else None
     for c in (Path.home() / "FEBio" / "bin" / "febio4",
               Path.home() / "FEBioStudio" / "bin" / "febio4",
               Path("/opt/febio/bin/febio4"),
@@ -255,7 +280,14 @@ class TestSignalStringsExistInBinary(unittest.TestCase):
             # output; only solver messages are checked here.
             if re.match(r"^(printf|grep|strings|febio4|python|\$)", s):
                 continue
-            if s.startswith("<") or s.startswith("--"):
+            # Skip our own XML notation and genuine command-line FLAGS
+            # (`-nosplash`, `--help`, `-DUSE_MKL=ON`). The old rule was
+            # a bare startswith("--"), which also skipped FEBio's own
+            # `------- failed to converge at time :` — a real message
+            # quoted in four pitfalls that was therefore never checked.
+            # A flag has a letter right after the dashes; a banner rule
+            # does not. (Narrowed 2026-08-05.)
+            if s.startswith("<") or re.match(r"^--?[A-Za-z]", s):
                 continue
             # FEBio messages are printf templates, so only the STATIC
             # runs between substitutions survive into the binary.
