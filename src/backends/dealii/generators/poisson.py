@@ -11,6 +11,10 @@ def _poisson_2d(params: dict) -> str:
     appropriate to the specific problem being solved.
     Based on deal.II step-3.
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_poisson_2d: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 5)
     return f'''\
 /* Poisson equation on unit square — based on deal.II step-3
@@ -43,7 +47,7 @@ int main()
   GridGenerator::hyper_cube(triangulation);
   triangulation.refine_global({refinements});
 
-  FE_Q<2> fe(1);
+  FE_Q<2> fe({degree});
   DoFHandler<2> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
 
@@ -144,6 +148,10 @@ def _poisson_3d(params: dict) -> str:
     appropriate to the specific problem being solved.
     Based on deal.II step-3.
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_poisson_3d: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 3)
     return f'''\
 /* Poisson equation on unit cube — based on deal.II step-3
@@ -176,7 +184,7 @@ int main()
   GridGenerator::hyper_cube(triangulation);
   triangulation.refine_global({refinements});
 
-  FE_Q<3> fe(1);
+  FE_Q<3> fe({degree});
   DoFHandler<3> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
 
@@ -277,6 +285,10 @@ def _poisson_l_domain(params: dict) -> str:
     appropriate to the specific problem being solved.
     Uses deal.II built-in GridGenerator::hyper_L.
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_poisson_l_domain: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 5)
     return f'''\
 /* Poisson on L-shaped domain — deal.II
@@ -311,7 +323,7 @@ int main()
   GridGenerator::hyper_L(triangulation, -1, 1);
   triangulation.refine_global({refinements});
 
-  FE_Q<2> fe(1);
+  FE_Q<2> fe({degree});
   DoFHandler<2> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
   std::cout << "L-domain DOFs: " << dof_handler.n_dofs() << std::endl;
@@ -388,6 +400,10 @@ def _poisson_rectangle(params: dict) -> str:
     All parameter defaults are placeholders. The user/agent must set values
     appropriate to the specific problem being solved.
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_poisson_rectangle: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 5)
     lx = params.get("lx", 2.0)
     ly = params.get("ly", 1.0)
@@ -424,7 +440,7 @@ int main()
     Point<2>(0, 0), Point<2>({lx}, {ly}));
   triangulation.refine_global({refinements});
 
-  FE_Q<2> fe(1);
+  FE_Q<2> fe({degree});
   DoFHandler<2> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
   std::cout << "DOFs: " << dof_handler.n_dofs() << std::endl;
@@ -627,30 +643,69 @@ KNOWLEDGE = {
     #    is the Poisson-relevant subset only.
     "elements": {
         "FE_Q":
-            "Canonical Poisson choice. degree=1 default; degree=2 "
-            "smoother solutions; higher degree for spectral "
-            "convergence on smooth problems.",
+            "Canonical Poisson choice. The poisson_* and heat_* "
+            "templates take degree=<k> (or order=<k>) and emit "
+            "FE_Q<dim>(k); degree=1 is the default, degree=2 is the "
+            "cheapest real accuracy gain, and higher degrees pay off "
+            "on smooth problems. Verified by running the generated "
+            "programs at degree 1, 2 and 3 in 2D and 3D: all "
+            "compile, solve, and approach the analytic peak value of "
+            "the reference problem more closely as the degree rises. "
+            "NOTE the CG iteration count grows with degree at fixed "
+            "refinement (the condition number does), so raise the "
+            "SolverControl budget or precondition better when you "
+            "raise k.",
         "FE_Q_Hierarchical":
-            "Required for p-adaptive refinement on Poisson — "
-            "coarse-level DoFs survive a degree change.",
+            "Hierarchical basis, so coarse-level modes survive a "
+            "degree change — the usual choice for p-adaptive "
+            "Poisson. WARNING, verified by execution: "
+            "has_support_points() is FALSE for degree >= 2, and "
+            "VectorTools::interpolate_boundary_values then SEGFAULTS "
+            "(exit 139 on Release; a Debug build aborts with 'You "
+            "are trying to access the support points of a finite "
+            "element that either has no support points at all...'). "
+            "At degree 1 it coincides with FE_Q and the call is "
+            "fine, which is exactly why the bug hides in a "
+            "first-order test and appears when you raise the degree. "
+            "Use VectorTools::project_boundary_values instead, or "
+            "guard on fe.has_support_points().",
         "FE_Bernstein":
-            "For high-p Poisson where mass-matrix conditioning "
-            "matters (modal analysis, transient diffusion).",
+            "Positive, partition-of-unity basis; for high-p Poisson "
+            "where mass-matrix conditioning matters (modal analysis, "
+            "transient diffusion). SAME WARNING as "
+            "FE_Q_Hierarchical, verified by execution: "
+            "has_support_points() is FALSE for degree >= 2 (and it "
+            "has no generalized support points either), so "
+            "interpolate_boundary_values SEGFAULTS. Use "
+            "project_boundary_values.",
         "FE_Q_iso_Q1":
             "Cheap multi-linear-on-sub-cells alternative to "
             "FE_Q(p); diagonal lumped mass matrix.",
         "FE_DGQ":
             "Discontinuous Galerkin Poisson via interior-penalty "
             "formulation; needed when coefficients are "
-            "discontinuous across cells (heterogeneous media).",
+            "discontinuous across cells (heterogeneous media). Two "
+            "consequences you must handle, both verified: the "
+            "sparsity pattern has to come from "
+            "DoFTools::make_flux_sparsity_pattern (the cell-only "
+            "builder drops every face coupling), and "
+            "interpolate_boundary_values is a silent NO-OP on it — "
+            "it returns an EMPTY map — so Dirichlet data must be "
+            "imposed weakly through the penalty term.",
         "FE_DGP":
             "Monomial DG basis; alternative to FE_DGQ for higher-"
             "order accurate Poisson on hyper-cube meshes.",
         "FE_SimplexP":
             "Lagrange on simplex (triangle / tet) cells — needed "
-            "when the mesh comes from unstructured Gmsh / "
-            "Triangle / TetGen. (Available in deal.II ≥ 9.3; "
-            "the canonical element-catalog has the version gate.)",
+            "when the mesh comes from unstructured Gmsh / Triangle / "
+            "TetGen. Available in deal.II >= 9.3. It is NOT a "
+            "drop-in for FE_Q: the quadrature must become "
+            "QGaussSimplex and an explicit "
+            "MappingFE(FE_SimplexP(1)) must be passed to FEValues, "
+            "VectorTools::*, KellyErrorEstimator and DataOut. See "
+            "the simplex section of the essentials block for the "
+            "one check (summed JxW against the domain volume) that "
+            "catches all three mistakes.",
     },
     "mesh_generators": {
         "hyper_cube": "Classic Poisson on the unit square / cube.",
@@ -674,13 +729,27 @@ KNOWLEDGE = {
         "MGSmootherRelaxation         — geometric multigrid smoother (step-16, step-50)",
     ],
     "pitfalls": [
-        "[Syntax] Must call triangulation.refine_global() before "
-        "distributing DOFs. Calling distribute_dofs on a 1-cell "
-        "triangulation runs but gives a useless 4-DoF system. "
-        "Signal: SolverControl reports 'Convergence step 0 value "
-        "X.XXe-16' (already converged), `dof_handler.n_dofs()` "
-        "returns 4, and KellyErrorEstimator output is a single "
-        "cell-wise scalar.",
+        "[Syntax] Do all refinement BEFORE distribute_dofs(). "
+        "Calling distribute_dofs on an unrefined one-cell "
+        "triangulation succeeds and produces a system with no "
+        "interior at all. Verified on a one-cell unit square with "
+        "FE_Q(1) and Dirichlet data on every face: n_dofs() == 4 "
+        "and n_constraints() == 4 — EVERY degree of freedom is a "
+        "boundary DoF — so the assembled right-hand side is exactly "
+        "0, CG 'converges' at step 0, and the solution is "
+        "identically zero. Nothing is raised. "
+        "Signal: strongest first, compare "
+        "constraints.n_constraints() against "
+        "dof_handler.n_dofs() — equal means there is no unknown left "
+        "to solve for; then system_rhs.l2_norm() == 0 exactly; then "
+        "SolverControl::last_step() == 0 with last_value() == 0; and "
+        "KellyErrorEstimator returns a vector of length "
+        "n_active_cells(), i.e. 1. The solver log line, if you "
+        "enable it with log_history(true) + "
+        "deallog.depth_console(2), reads literally "
+        "'DEAL:cg::Convergence step 0 value 0.00000' — deal.II "
+        "prints that value in FIXED point, not the scientific "
+        "'X.XXe-16' this entry used to quote.",
         "[Syntax] Boundary IDs on hyper_cube: with the DEFAULT "
         "colorize=false ALL faces have boundary_id=0. The fix is NOT "
         "to re-tag faces by hand — pass colorize=true: "
@@ -781,7 +850,11 @@ KNOWLEDGE = {
         "WHY IT MATTERS: deal.II's argument checking is mostly "
         "Assert(...), which exists ONLY in a Debug build. In Release "
         "those checks vanish and the misuse returns silently with a "
-        "wrong answer or segfaults. Verified pairs, same program, "
+        "wrong answer or segfaults. Signal: `grep CMAKE_BUILD_TYPE "
+        "$DEAL_II_DIR/CMakeCache.txt` and `ls $DEAL_II_DIR/lib` — a "
+        "libdeal_II.g.so means the Assert-based diagnostics exist, "
+        "only libdeal_II.so means they do not. "
+        "Verified pairs, same program, "
         "both builds: SparseMatrix::add() outside the sparsity "
         "pattern — Debug aborts with 'You are trying to access the "
         "matrix entry with index <i,j>, but this entry does not "

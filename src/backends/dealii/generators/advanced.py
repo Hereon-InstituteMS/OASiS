@@ -6,7 +6,7 @@ program: it builds a mesh, assembles + solves the PDE, and writes a
 template was compiled and executed against deal.II 9.1.1 and confirmed
 to produce output before being committed here (overhaul 2026-06-26).
 
-RE-VERIFIED 2026-08-03 against the INSTALLED deal.II 9.8.0-pre (Release
+RE-VERIFIED by execution against deal.II 9.8.0-pre (Release
 build, /home/alexander/dealii/build). Four templates in this module and
 one in navier_stokes.py no longer compiled: every break was an upstream
 API removal between 9.1 and 9.8, not a logic error.
@@ -1834,7 +1834,7 @@ KNOWLEDGE = {
                 "produces a per-vertex flux field that does not "
                 "match the cell-face flux integral. Use "
                 "DataOutBase::DG output or interpolate to a P1 "
-                "post-processing space. (Audit 2026-06-02.)"
+                "post-processing space."
             ),
             (
                 "[Numerical] Schur complement solver for saddle-"
@@ -1845,7 +1845,7 @@ KNOWLEDGE = {
                 "preconditioner (step-20 / step-22). Without "
                 "Schur complement reformulation, MINRES (or GMRES "
                 "with a block preconditioner) is the only "
-                "robust option. (Audit 2026-06-02.)"
+                "robust option."
             ),
         ],
     },
@@ -1863,8 +1863,7 @@ KNOWLEDGE = {
                 "DoFHandler and is invalidated by refinement. "
                 "step-26 shows the canonical SolutionTransfer "
                 "(prepare_for_coarsening_and_refinement -> "
-                "refine -> interpolate) sequence. (Audit "
-                "2026-06-02.)"
+                "refine -> interpolate) sequence."
             ),
             (
                 "[Numerical] CFL for explicit; unconditionally "
@@ -1876,8 +1875,7 @@ KNOWLEDGE = {
                 "SUNDIALS::IDA are unconditionally stable but "
                 "CN can oscillate at sharp fronts. Choose "
                 "implicit for any production heat problem; use "
-                "explicit only for didactic comparisons. (Audit "
-                "2026-06-02.)"
+                "explicit only for didactic comparisons."
             ),
         ],
     },
@@ -1896,7 +1894,7 @@ KNOWLEDGE = {
                 "Newmark-beta with beta=0.25, gamma=0.5 "
                 "(step-23 demonstrates via DoFHandler + "
                 "AffineConstraints) conserve energy to "
-                "roundoff. (Audit 2026-06-02.)"
+                "roundoff."
             ),
             (
                 "[Numerical] CFL: dt < h/c for explicit schemes. "
@@ -1904,7 +1902,7 @@ KNOWLEDGE = {
                 "exponentially growing amplitude (factor of ~2 "
                 "per step) — classic explicit-wave instability. "
                 "Safety factor 0.5*h/c is conservative; CFL=1 is "
-                "the strict bound. (Audit 2026-06-02.)"
+                "the strict bound."
             ),
         ],
     },
@@ -1920,8 +1918,7 @@ KNOWLEDGE = {
                 "Computing at Ra > 1e6 without a turbulence model "
                 "produces visibly chaotic transient behaviour "
                 "that does not match a laminar DNS — switch to "
-                "LES or RANS for very-high-Ra regimes. (Audit "
-                "2026-06-02.)"
+                "LES or RANS for very-high-Ra regimes."
             ),
             (
                 "[Numerical] Requires NS + energy equation "
@@ -1934,7 +1931,7 @@ KNOWLEDGE = {
                 "the BlockVector temperature component stays "
                 "decoupled. step-35 implements via "
                 "BlockSparseMatrix and DoFTools::"
-                "make_sparsity_pattern. (Audit 2026-06-02.)"
+                "make_sparsity_pattern."
             ),
         ],
     },
@@ -2069,7 +2066,7 @@ KNOWLEDGE = {
                 "cell_loop and FEEvaluation::evaluate / "
                 "integrate. If matrix-related calls appear, the "
                 "code accidentally falls back to a sparse "
-                "path. (Audit 2026-06-02.)"
+                "path."
             ),
             (
                 "[Numerical] Geometric multigrid essential for "
@@ -2080,8 +2077,7 @@ KNOWLEDGE = {
                 "visible in SolverControl::log_history()); "
                 "GMG keeps it at ~10-20 iterations independent "
                 "of h. step-37 / step-50 show the canonical "
-                "MatrixFree + GMG combination. (Audit "
-                "2026-06-02.)"
+                "MatrixFree + GMG combination."
             ),
         ],
     },
@@ -2216,8 +2212,7 @@ KNOWLEDGE = {
                 "step-41's active-set strategy iterates "
                 "(IndexSet constraint-detection -> linear solve) "
                 "until two consecutive active sets are identical, "
-                "typically 3-10 outer iterations. (Audit "
-                "2026-06-02.)"
+                "typically 3-10 outer iterations."
             ),
         ],
     },
@@ -2234,8 +2229,7 @@ KNOWLEDGE = {
                 "effectivity index (estimated / true error) is "
                 "typically O(1) to 10x off without the dual. "
                 "step-14 / step-74 show the canonical DWR "
-                "(residual * weighted-dual) loop. (Audit "
-                "2026-06-02.)"
+                "(residual * weighted-dual) loop."
             ),
             (
                 "[Numerical] Higher-order dual solution needed "
@@ -2246,7 +2240,7 @@ KNOWLEDGE = {
                 "index is trivially 1 but the estimator gives "
                 "zero refinement information. Use one order "
                 "higher (or a patch-wise enrichment) for the "
-                "dual. (Audit 2026-06-02.)"
+                "dual."
             ),
         ],
     },
@@ -2264,7 +2258,7 @@ KNOWLEDGE = {
                 "tau * (b . grad phi) * (b . grad u - source) "
                 "inside the FEValues quadrature loop; "
                 "oscillations disappear. step-63 demonstrates "
-                "this stabilisation. (Audit 2026-06-02.)"
+                "this stabilisation."
             ),
             (
                 "[Numerical] Peclet number determines "
@@ -2274,8 +2268,7 @@ KNOWLEDGE = {
                 "by ~20% even in clearly resolved regions, "
                 "diagnosable via KellyErrorEstimator). Use "
                 "tau = h/(2*|b|) * f(Pe_h) where f(Pe) is the "
-                "doubly-asymptotic switch (coth(Pe) - 1/Pe). "
-                "(Audit 2026-06-02.)"
+                "doubly-asymptotic switch (coth(Pe) - 1/Pe)."
             ),
         ],
     },
@@ -2290,7 +2283,7 @@ KNOWLEDGE = {
                 "solution amplitude grows like ~exp(t) regardless "
                 "of mesh size. Use upwind: u_hat = u^- (downstream "
                 "cell takes upstream value); stability is "
-                "recovered. (Audit 2026-06-02.)"
+                "recovered."
             ),
             (
                 "[Numerical] DG + multigrid in step-39. Signal: a "
@@ -2302,7 +2295,7 @@ KNOWLEDGE = {
                 "PreconditionBlock (block-Jacobi over the DG "
                 "block + DoFRenumbering::downstream) restores "
                 "h-independent convergence; see step-39 / "
-                "step-50. (Audit 2026-06-02.)"
+                "step-50."
             ),
         ],
     },

@@ -136,7 +136,7 @@ ELEMENTS: dict[str, ElementRecord] = {
                    "quads/hexes; continuity only in the face-mean "
                    "sense, so deal.II reports "
                    "conforming_space == Conformity::L2, NOT H1 "
-                   "(measured on 9.8.0-pre 2026-08-03 — this record "
+                   "(verified by instantiation — this record "
                    "claimed H1 until then). Locking-free for nearly-"
                    "incompressible elasticity; inf-sup stable on quads "
                    "when paired with FE_DGQ(0) pressure. CAVEAT: "
@@ -155,7 +155,7 @@ ELEMENTS: dict[str, ElementRecord] = {
                    "locking-free property as FE_RannacherTurek for "
                    "incompressible-limit elasticity. deal.II reports "
                    "conforming_space == Conformity::L2 (this record "
-                   "claimed H1 until 2026-08-03). NOT a class "
+                   "claimed H1). NOT a class "
                    "template: it is declared "
                    "`class FE_P1NC : public FiniteElement<2, 2>` and "
                    "`FE_P1NC<2>()` fails to compile with "
@@ -357,7 +357,7 @@ ELEMENTS: dict[str, ElementRecord] = {
                    "piecewise-constant pressure — a cheap "
                    "alternative to Taylor-Hood Q2/Q1 for Stokes. "
                    "deal.II classifies it as Conformity::Hdiv "
-                   "(measured 2026-08-03; this record said H1). "
+                   "(verified by instantiation; this record said H1). "
                    "Only degree 1 is implemented."),
         constructor="FE_BernardiRaugel<dim>(unsigned int degree)",
     ),
@@ -397,7 +397,7 @@ ELEMENTS: dict[str, ElementRecord] = {
                    "in mortar / hybridised methods. Mathematically an "
                    "H^{1/2} trace space, but deal.II reports "
                    "conforming_space == Conformity::L2 (measured "
-                   "2026-08-03); this record used to advertise the "
+                   "verified by instantiation); this record used to advertise the "
                    "non-existent math_space value 'H(1/2)'."),
         constructor="FE_TraceQ<dim>(unsigned int degree)",
     ),
@@ -601,7 +601,7 @@ MESH_GENERATORS: dict[str, MeshGeneratorRecord] = {
                   "assigns per-face boundary ids 0..2*dim-1 "
                   "(2D {0,1,2,3}, 3D {0,...,5}); the default "
                   "colorize=false puts every face on id 0 (measured "
-                  "2026-08-03 on 9.8.0-pre)."),
+                  "verified by instantiation on deal.II 9.8)."),
     "hyper_rectangle": MeshGeneratorRecord(
         name="hyper_rectangle", header=_GG,
         signature="GridGenerator::hyper_rectangle(Triangulation<dim, spacedim>&, const Point<dim>& p1, const Point<dim>& p2, bool colorize = false)",
@@ -609,7 +609,7 @@ MESH_GENERATORS: dict[str, MeshGeneratorRecord] = {
                   "control; one cell. Like hyper_cube it needs "
                   "colorize=true for per-face ids — the default "
                   "yields get_boundary_ids() == {0} (measured "
-                  "2026-08-03 on 9.8.0-pre)."),
+                  "verified by instantiation on deal.II 9.8)."),
     "subdivided_hyper_cube": MeshGeneratorRecord(
         name="subdivided_hyper_cube", header=_GG,
         signature="GridGenerator::subdivided_hyper_cube(Triangulation<dim>&, unsigned int n, double a, double b)",
@@ -673,7 +673,7 @@ MESH_GENERATORS: dict[str, MeshGeneratorRecord] = {
                   "(10 cells, ids {0,1,2}). NOT 3D-only: the 2D "
                   "instantiation compiles and produces a single "
                   "rectangular cell with ids {0,1,2} (measured "
-                  "2026-08-03; this record used to say '3D only')."),
+                  "verified by instantiation; this record used to say '3D only')."),
     "cylinder_shell": MeshGeneratorRecord(
         name="cylinder_shell", header=_GG,
         signature="GridGenerator::cylinder_shell(Triangulation<dim>&, double length, double inner_radius, double outer_radius, ...)",

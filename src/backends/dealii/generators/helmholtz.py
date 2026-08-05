@@ -216,7 +216,7 @@ KNOWLEDGE = {
         "definiteness directly (a few hundred power iterations on "
         "A and on sigma*I - A give lambda_max and lambda_min) "
         "rather than waiting for SolverCG to complain. Measured on "
-        "deal.II 9.8.0-pre 2026-08-03 on the "
+        "deal.II 9.8 on the "
         "matrix this template assembles (omega=10, c=1, 5 global "
         "refinements, 2178 DoFs): a power-iteration estimate gives "
         "lambda_max = 3.85 and lambda_min = -0.37, i.e. genuinely "

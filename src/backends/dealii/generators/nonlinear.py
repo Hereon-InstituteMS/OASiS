@@ -58,7 +58,7 @@ int main() {{
   // Using the inhomogeneous BC constraints here re-adds the boundary
   // sine each step — the boundary value grows without bound, the
   // surface gradients blow up, the Jacobian degenerates, and the
-  // inner CG throws NoConvergence (probe 2026-06-12).
+  // inner CG throws NoConvergence .
   AffineConstraints<double> constraints;
   VectorTools::interpolate_boundary_values(dof_handler, 0,
     Functions::ZeroFunction<dim>(), constraints);
@@ -119,7 +119,7 @@ int main() {{
     // pattern). An absolute 1e-12 tolerance threw
     // SolverControl::NoConvergence on the first Newton steps, where
     // the residual is O(1) and CG cannot reach 1e-12 absolute within
-    // the iteration cap (probe 2026-06-12).
+    // the iteration cap .
     SolverControl sc(2000, 1e-6 * system_rhs.l2_norm());
     SolverCG<Vector<double>> solver(sc);
     PreconditionSSOR<SparseMatrix<double>> preconditioner;
@@ -132,7 +132,7 @@ int main() {{
     // exact problem (same sine boundary values). alpha = 0.5 was
     // observed to DIVERGE here: the residual rose 0.70 -> 0.96 over
     // four steps before the Jacobian lost definiteness and the inner
-    // CG threw NoConvergence (probe 2026-06-12).
+    // CG threw NoConvergence .
     solution.add(0.1, newton_update);
     double residual = system_rhs.l2_norm();
     std::cout << "Newton step " << newton_step << ": residual = " << residual << std::endl;
@@ -206,16 +206,28 @@ KNOWLEDGE = {
         "exceeding 1e3 (orders of magnitude above the 1e-6 "
         "convergence tolerance); the residual at iteration 2 "
         "is even larger — Newton diverges immediately rather "
-        "than stalling, ExcMessage('Newton step did not "
-        "converge').",
+        "than stalling. deal.II has NO Newton solver, so no library "
+        "message announces this: write your own guard, "
+        "AssertThrow(step < max_steps, ExcMessage(\"Newton step did "
+        "not converge\")) — AssertThrow is active in Release, "
+        "Assert is not. The library-side observable is the INNER "
+        "linear solve throwing SolverControl::NoConvergence, whose "
+        "text is 'Iterative method reported convergence failure in "
+        "step <N>. The residual in the last step was <R>.' with R "
+        "grown or nan.",
         "[Numerical] Line search prevents divergence — backtrack "
         "until the residual norm decreases. Full Newton step "
         "(alpha=1) without line search overshoots in the early "
         "iterations and diverges. Signal: SolverControl::last_step() "
         "reports residual.l2_norm() oscillating between 1e-3 and "
         "1e5 across consecutive Newton iterations without "
-        "converging; ExcMessage('Newton did not converge in N "
-        "iterations') eventually fires.",
+        "converging. Nothing in deal.II fires here — there is no "
+        "Newton loop in the library — so add "
+        "AssertThrow(step < max_steps, ExcMessage(\"Newton did not "
+        "converge in N iterations\")) yourself. A cheap automatic "
+        "check that needs no message at all: require the residual "
+        "norm to DECREASE monotonically across Newton steps and stop "
+        "when it does not.",
         "[Syntax] AssembleLinearisation MUST update with current "
         "solution at every Newton iteration. Using a stale solution "
         "(e.g. always the initial guess) makes Newton converge to "
@@ -237,9 +249,19 @@ KNOWLEDGE = {
         "with opposite sign; Newton converges to a saddle "
         "point of the energy instead of the minimum.",
         "[Integration] SUNDIALS KINSOL (step-77) requires deal.II "
-        "compiled with SUNDIALS support. Without it the link fails "
-        "with 'undefined reference to KINSOL::SUNDIALS::solve_with_"
-        "jacobian'. Signal: identical to the SLEPc/PETSc link "
-        "errors — same class of missing-third-party-dep failure.",
+        "compiled with SUNDIALS support. The failure is at COMPILE "
+        "time, not link time, and not with the mangled symbol this "
+        "entry used to invent ('undefined reference to "
+        "KINSOL::SUNDIALS::solve_with_jacobian' is not a real "
+        "message). On a SOURCE install the header "
+        "<deal.II/sundials/kinsol.h> includes CLEANLY even with "
+        "SUNDIALS off, because its body sits behind "
+        "'#ifdef DEAL_II_WITH_SUNDIALS'; the error appears only when "
+        "you NAME a class, as \"'dealii::SUNDIALS' has not been "
+        "declared\". Signal: grep "
+        "$DEAL_II_DIR/include/deal.II/base/config.h for "
+        "'/* #undef DEAL_II_WITH_SUNDIALS */' BEFORE writing the "
+        "code — the same probe as for SLEPc, PETSc and p4est, and "
+        "the only one that works on a source install.",
     ],
 }

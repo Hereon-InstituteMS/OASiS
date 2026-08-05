@@ -11,6 +11,10 @@ def _heat_2d_transient(params: dict) -> str:
     appropriate to the specific problem being solved.
     Based on deal.II step-26 pattern (simplified).
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_heat_2d_transient: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 4)
     n_steps = params.get("n_steps", 20)
     dt = params.get("dt", 0.05)
@@ -58,7 +62,7 @@ int main()
   GridGenerator::hyper_rectangle(triangulation, Point<2>(0,0), Point<2>(1,1), true);
   triangulation.refine_global({refinements});
 
-  FE_Q<2> fe(1);
+  FE_Q<2> fe({degree});
   DoFHandler<2> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
   std::cout << "Heat DOFs: " << dof_handler.n_dofs() << std::endl;
@@ -131,6 +135,10 @@ def _heat_2d_steady(params: dict) -> str:
     All parameter defaults are placeholders. The user/agent must set values
     appropriate to the specific problem being solved.
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_heat_2d_steady: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 5)
     T_left = params.get("T_left", 100.0)
     T_right = params.get("T_right", 0.0)
@@ -167,7 +175,7 @@ int main()
   GridGenerator::hyper_rectangle(triangulation, Point<2>(0,0), Point<2>(1,1), true);
   triangulation.refine_global({refinements});
 
-  FE_Q<2> fe(1);
+  FE_Q<2> fe({degree});
   DoFHandler<2> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
   std::cout << "Heat DOFs: " << dof_handler.n_dofs() << std::endl;
@@ -247,6 +255,10 @@ def _heat_rectangle(params: dict) -> str:
     All parameter defaults are placeholders. The user/agent must set values
     appropriate to the specific problem being solved.
     """
+    degree = int(params.get("degree", params.get("order", 1)))
+    if degree < 1:
+        raise ValueError(
+            f"_heat_rectangle: degree must be >= 1, got {degree!r}")
     refinements = params.get("refinements", 3)
     lx = params.get("lx", 2.0)
     ly = params.get("ly", 1.0)
@@ -287,7 +299,7 @@ int main()
     {{{nx}u, {ny}u}}, Point<2>(0, 0), Point<2>({lx}, {ly}), true /*colorize*/);
   triangulation.refine_global({refinements});
 
-  FE_Q<2> fe(1);
+  FE_Q<2> fe({degree});
   DoFHandler<2> dof_handler(triangulation);
   dof_handler.distribute_dofs(fe);
   std::cout << "Heat DOFs: " << dof_handler.n_dofs() << std::endl;

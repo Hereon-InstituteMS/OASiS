@@ -3,7 +3,7 @@
 Solves the step-36 problem (-laplacian(u) = lambda*u on the unit
 square) but WITHOUT SLEPc: conda-forge deal.II builds ship with
 neither PETSc nor SLEPc in ANY version (checked 9.1.1 and 9.3.2,
-2026-06-12), so the original SLEPcWrappers template could never
+), so the original SLEPcWrappers template could never
 compile for the most common install route. The template instead
 uses deflated inverse power iteration on deal.II's built-in serial
 SparseMatrix + SolverCG — compiles on every deal.II build, and the
@@ -261,7 +261,7 @@ KNOWLEDGE = {
     "pitfalls": [
         "[Integration] conda-forge deal.II ships WITHOUT PETSc and "
         "WITHOUT SLEPc in every version (verified on 9.1.1 and 9.3.2, "
-        "2026-06-12: config.h has '#undef DEAL_II_WITH_PETSC' and "
+        "config.h has '#undef DEAL_II_WITH_PETSC' and "
         "'#undef DEAL_II_WITH_SLEPC'). SLEPcWrappers code cannot even "
         "compile there — the slepc_solver.h include fails before any "
         "link step. Use the catalog template's deflated inverse power "
@@ -280,7 +280,7 @@ KNOWLEDGE = {
         "whole file body sits behind `#ifdef DEAL_II_WITH_SLEPC`, "
         "so the failure only appears when you name a class: "
         "\"error: 'dealii::SLEPcWrappers' has not been declared\". "
-        "Measured on 9.8.0-pre 2026-08-03. Do not use "
+        "Verified on deal.II 9.8. Do not use "
         "'header not found' as the availability test; grep "
         "$DEAL_II_DIR/include/deal.II/base/config.h for "
         "'/* #undef DEAL_II_WITH_SLEPC */' instead.",
@@ -346,7 +346,7 @@ KNOWLEDGE = {
         "EPS::set_which_eigenpairs(EPS_TARGET_REAL) was set with "
         "target=100; the get_target_value query confirms target=100 "
         "was registered but ignored.",
-        "[Physics] RE-VERIFIED 2026-08-03 on deal.II 9.8.0-pre: the "
+        "[Physics] RE-VERIFIED by execution on deal.II 9.8: the "
         "catalog template (deflated inverse power iteration, built-in "
         "SparseMatrix + SolverCG, 1089 DoFs) returns lambda = "
         "19.7551, 49.4829, 49.4829, 79.2108, 99.3479 against the "

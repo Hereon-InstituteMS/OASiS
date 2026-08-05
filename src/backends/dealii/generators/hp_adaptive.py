@@ -107,7 +107,7 @@ int main()
 
   // Declared OUTSIDE the cycle loop: the final DataOut block after
   // the loop reads it — an in-loop declaration leaves 'solution'
-  // out of scope there (compile error caught by probe 2026-06-12).
+  // out of scope there (compile error).
   Vector<double> solution;
 
   for (unsigned int cycle = 0; cycle < {n_cycles}; ++cycle)

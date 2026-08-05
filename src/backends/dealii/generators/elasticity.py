@@ -544,7 +544,19 @@ KNOWLEDGE = {
         "symmetric positive-definite. Adding a Dirichlet penalty "
         "(rather than constraining the DoFs) keeps it SPD; using "
         "asymmetric face stabilisation or a Nitsche-style boundary "
-        "term breaks symmetry — switch to SolverGMRES. Signal: SolverCG "
-        "reports 'breakdown' or stalls at 1e-2 residual reduction.",
+        "term breaks symmetry — switch to SolverGMRES. Signal: do not "
+        "wait for SolverCG to object; it cannot report a 'breakdown' "
+        "(the guard in solver_cg.h is an Assert, compiled out in "
+        "Release, and even in Debug it needs an exactly-zero "
+        "operator — see the essentials block). Measure the symmetry "
+        "yourself: loop the assembled matrix and compute "
+        "max|A_ij - A_ji|, which is at round-off for a symmetric "
+        "operator and at O(max|A|) once a Nitsche or one-sided "
+        "stabilisation term is in. If you run CG anyway the outcomes "
+        "are: SolverControl::NoConvergence ('Iterative method "
+        "reported convergence failure in step <N>. The residual in "
+        "the last step was <R>.'), a residual that stalls above the "
+        "tolerance, or silent convergence to the wrong answer — "
+        "SolverGMRES on the same matrix is the cross-check.",
     ],
 }
