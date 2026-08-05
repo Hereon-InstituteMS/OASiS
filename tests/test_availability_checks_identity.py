@@ -228,3 +228,37 @@ def test_every_backend_identity_probe_closes_stdin():
     assert not offenders, (
         "these subprocess.run calls inherit the parent's stdin; under an MCP "
         "stdio server that is the JSON-RPC stream:\n  " + "\n  ".join(offenders))
+
+
+def test_an_invalid_binary_override_is_not_silently_ignored(monkeypatch):
+    """A stale override must not resolve to a different binary.
+
+    Both FEBio and 4C used to accept `FEBIO_BINARY=/nonexistent` and fall
+    through to the search path, so the binary OASiS tested was not the one the
+    user named. An audit hit this while trying to verify that fixtures go red
+    with no binary: setting the override to a nonexistent path found the REAL
+    binary and everything passed, so the verification measured nothing. A silent
+    fallback does not just mislead the user — it invalidates tests written
+    against it.
+    """
+    import backends.febio.backend as FB
+
+    monkeypatch.setattr(FB, "_FEBIO_IDENT_CACHE", {})
+    monkeypatch.setenv("FEBIO_BINARY", "/nonexistent/febio4")
+    be = get_backend("febio")
+    if be is None:
+        pytest.skip("febio not registered")
+    status, message = be.check_availability()
+    assert status is BackendStatus.MISCONFIGURED, message
+    assert "not a file" in message
+    # and it must name the variable, so the user knows what to fix
+    assert "FEBIO_BINARY" in message
+
+
+def test_an_invalid_fourc_override_does_not_fall_through(monkeypatch):
+    import backends.fourc.backend as M
+
+    monkeypatch.setattr(M, "_FOURC_IDENT_CACHE", {})
+    monkeypatch.setenv("FOURC_BINARY", "/nonexistent/4C")
+    assert M._find_fourc_binary() is None, (
+        "an invalid FOURC_BINARY resolved to some other binary")

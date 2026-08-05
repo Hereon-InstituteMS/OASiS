@@ -109,7 +109,18 @@ def _identifies_as_fourc(binary) -> tuple[bool, str]:
 
 def _find_fourc_binary() -> Optional[Path]:
     """Locate the 4C binary."""
+    # An explicit override that does not resolve must not fall through to the
+    # search path — see the FEBio equivalent for what that costs. Kept as a
+    # warning-and-None here rather than an exception, because this finder is
+    # called from more places than FEBio's and a raise would change behaviour
+    # in paths I have not tested.
     env_path = os.environ.get("FOURC_BINARY")
+    if env_path and not Path(env_path).is_file():
+        logger.warning(
+            "FOURC_BINARY is set to %r, which is not a file; NOT falling back "
+            "to the search path, because the binary OASiS tests must be the one "
+            "you named", env_path)
+        return None
     if env_path and Path(env_path).is_file():
         return Path(env_path)
     if FOURC_ROOT:

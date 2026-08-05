@@ -28,12 +28,30 @@ compiled binaries and shared libraries, or the source of its installed Python
 package. A literal that appears nowhere in that corpus cannot be emitted, and is
 reported as UNMATCHABLE.
 
-WHAT IT DOES NOT PROVE
-----------------------
+WHAT IT DOES NOT PROVE — WITH A MEASURED EXAMPLE
+------------------------------------------------
 A match is not proof the message appears in the situation the pitfall describes
 — only that the software contains it. That still needs a tier-2 fixture. The
 value here is the opposite direction: a NON-match is near-proof of fabrication,
 it is cheap, and it covers the entire surface rather than a sample.
+
+That caveat is not hypothetical, and an audit produced the instance. A FEBio
+pitfall claimed the `LU` linear solver reports
+
+    Linear solver failed to find solution. Aborting run.
+
+The string IS in the binary — so it passes this checker, and it passed the
+tier-0 allowlist too. But it is not what an LU failure prints. The real message
+is `Fatal error in factorization of stiffness matrix. Aborting run.`, confirmed
+by running it. A REAL string attributed to the WRONG TRIGGER survives every
+presence check there is.
+
+So the tiers stack as: presence (this script) rules out invention; ATTRIBUTION
+needs the wrong variant triggered and the message observed, which only a tier-2
+fixture does. Presence is necessary and nowhere near sufficient, and anyone
+reading a green run from this script should read that sentence twice. Reporting
+"0 unmatchable signals" as though it meant "signals verified" is the mistake this
+paragraph exists to prevent.
 
 STATUS: A LEAD GENERATOR, NOT YET A GATE
 ----------------------------------------

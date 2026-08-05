@@ -29,6 +29,14 @@ from .generators import GENERATORS as _TEMPLATES, KNOWLEDGE as _FEBIO_KNOWLEDGE
 logger = logging.getLogger("oasis.febio")
 
 
+class FebioBinaryOverrideError(RuntimeError):
+    """FEBIO_BINARY names something that is not a file.
+
+    Raised rather than ignored, because silently searching elsewhere means the
+    binary OASiS tests is not the binary the user named.
+    """
+
+
 _FEBIO_IDENT_CACHE: dict[str, tuple[bool, str]] = {}
 
 
@@ -78,9 +86,24 @@ def _identifies_as_febio(binary) -> tuple[bool, str]:
 
 def _find_febio_binary() -> Optional[Path]:
     """Locate the FEBio binary."""
+    # An EXPLICIT override that does not resolve is an error, not a hint. This
+    # used to fall through silently to the search path, so a user with a stale
+    # or mistyped FEBIO_BINARY got a DIFFERENT binary tested than the one they
+    # named, with nothing said — and then debugged the wrong install. It also
+    # invalidated an audit's own acceptance test: setting
+    # FEBIO_BINARY=/nonexistent to check that fixtures go red instead found the
+    # real binary and passed, so the verification measured nothing.
     env_path = os.environ.get("FEBIO_BINARY")
-    if env_path and Path(env_path).is_file():
-        return Path(env_path)
+    if env_path:
+        p = Path(env_path)
+        if p.is_file():
+            return p
+        raise FebioBinaryOverrideError(
+            f"FEBIO_BINARY is set to {env_path!r}, which is not a file. "
+            f"Refusing to fall back to a different binary: an explicit "
+            f"override that silently resolves elsewhere is how you end up "
+            f"debugging an install you are not running. Fix the path or unset "
+            f"the variable.")
 
     # Common locations
     candidates = [
@@ -106,7 +129,13 @@ class FebioBackend(SolverBackend):
         return "FEBio"
 
     def check_availability(self) -> tuple[BackendStatus, str]:
-        binary = _find_febio_binary()
+        try:
+            binary = _find_febio_binary()
+        except FebioBinaryOverrideError as exc:
+            # Report as MISCONFIGURED rather than propagating: `discover` must
+            # keep working and list the other backends, but this one must not
+            # read as available or as simply absent.
+            return BackendStatus.MISCONFIGURED, str(exc)
         if not binary:
             return BackendStatus.NOT_INSTALLED, (
                 "FEBio binary not found. Install from https://febio.org/downloads/, "
