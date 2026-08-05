@@ -138,23 +138,10 @@ KNOWLEDGE = {
                 "~0 — the BC was missed. (Audit 2026-06-02.)"
             ),
             (
-                "[Numerical] Setting micro_viscosity = 0 recovers "
-                "the classical Navier-Stokes velocity field "
-                "exactly, but leaves the (now-decoupled) micro-"
-                "rotation DOF unconstrained — the linear solver "
-                "complains about a singular block. Set "
-                "micro_viscosity > 0 OR use the plain 'fluid' "
-                "module for pure NS. Signal: solver reports "
-                "[FALSIFIED 2026-08-03: the message text quoted here "
-                "does not occur anywhere in the FEBio 4.12.0.86045466d "
-                "binary or any of its shared libraries (`strings` over "
-                "febio4 + all 12 .so files, 267541 strings), so this "
-                "Signal can never match on 4.12. The physics reasoning "
-                "is desk research and was NOT executed] `KSPSolve: "
-                "zero-pivot at micro-rotation block` (KSPSolve is a "
-                "PETSc name; FEBio uses neither PETSc nor that message). "
-                ""
-                "(Audit 2026-06-02.)"
+                "[Input] There is no <micro_viscosity> parameter, so the question of setting it to zero does not arise. On FEBio 4.12 the polar viscosity is a PROPERTY: <polar type=\"polar linear\"> with <tau>, <alpha>, <beta> and <gamma>. "
+                "WRONG: <micro_viscosity>0.001</micro_viscosity> as a parameter of the `polar fluid` material. "
+                "RIGHT: <material id=\"1\" name=\"Material1\" type=\"polar fluid\"><density>1.0</density><k>1e3</k><viscous type=\"Newtonian fluid\"><mu>0.01</mu></viscous><polar type=\"polar linear\"><tau>0.001</tau><alpha>0.0</alpha><beta>0.001</beta><gamma>0.001</gamma></polar></material>. "
+                "Signal: `tag \"micro_viscosity\" (line N) : unrecognized tag` and `Reading file ...FAILED!`. The material also carries its own <k> bulk modulus; the only registered type for the <polar> slot on this build is `polar linear`. (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
             (
                 "[Numerical] The micropolar correction scales with "
@@ -171,19 +158,10 @@ KNOWLEDGE = {
                 "2026-06-02.)"
             ),
             (
-                "[Input] Micro-rotation DOFs are named "
-                "gx_dof / gy_dof / gz_dof in the BC spec (lower "
-                "case g for 'gyration'), NOT mx/my/mz or Rx/Ry/Rz. "
-                "Signal: a BC type='zero micro-rotation' with "
-                "<x_dof>1</x_dof> raises `invalid DOF for polar "
-                "fluid module — [FALSIFIED 2026-08-03: the message text "
-                "quoted here does not occur anywhere in the FEBio "
-                "4.12.0.86045466d binary or any of its shared libraries "
-                "(`strings` over febio4 + all 12 .so files, 267541 "
-                "strings), so this Signal can never match on 4.12. The "
-                "physics reasoning is desk research and was NOT "
-                "executed] expected gx_dof / gy_dof / "
-                "gz_dof`. (Audit 2026-06-02.)"
+                "[Syntax] The micro-rotation DOF names gx_dof / gy_dof / gz_dof are correct, but the BC TYPE that carries them is `zero fluid angular velocity` — there is no `zero micro-rotation`. The matching plot variable is `polar fluid angular velocity`, not `micro rotation`. "
+                "WRONG: <bc type=\"zero micro-rotation\" node_set=\"walls\">, or <var type=\"micro rotation\"/>. "
+                "RIGHT: <bc name=\"no_microrot\" type=\"zero fluid angular velocity\" node_set=\"walls\"><gx_dof>1</gx_dof><gy_dof>1</gy_dof><gz_dof>1</gz_dof></bc>, and <var type=\"polar fluid angular velocity\"/>. "
+                "Signal: for the BC, `tag \"bc\" (line N) : invalid value for attribute \"type\"` at parse time. For the plot variable the failure is LATER and looks different: the deck reads `...SUCCESS!` and then aborts with `FATAL ERROR: Output variable \"micro rotation\" is not defined`. The registered polar plot variables all begin with \"polar fluid\" or \"nodal polar fluid\". (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
         ],
     },

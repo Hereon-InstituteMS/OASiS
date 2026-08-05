@@ -161,19 +161,10 @@ KNOWLEDGE = {
         },
         "pitfalls": [
             (
-                "[Input] Module type MUST be 'fluid-FSI'. Using "
-                "'fluid' alone gives an Eulerian (non-moving-mesh) "
-                "fluid that ignores the solid; using 'solid' gives "
-                "no fluid. Signal: fluid domain shows no mesh "
-                "deformation despite solid moving; or `material "
-                "type fluid-FSI not allowed in module fluid` [FALSIFIED "
-                "2026-08-03: this message text does not occur anywhere "
-                "in the FEBio 4.12.0.86045466d binary or any of its "
-                "shared libraries (`strings` over febio4 + all 12 .so "
-                "files, 267541 strings), so this Signal can never match "
-                "on 4.12. The physics reasoning is desk research and was "
-                "NOT executed] . "
-                "(Audit 2026-06-02.)"
+                "[Syntax] `fluid-FSI` is both a MODULE name and a MATERIAL name, and the material only works inside the module. Naming the wrong module fails on the SOLVER first. "
+                "WRONG: <Module type=\"fluid\"/> with a `fluid-FSI` material. "
+                "RIGHT: <Module type=\"fluid-FSI\"/> with <solver type=\"fluid-FSI\">, and the material as <material id=\"1\" name=\"FSIBlock\" type=\"fluid-FSI\"> holding a <solid> and a <fluid> property. "
+                "Signal: `tag \"solver\" (line N) : invalid value for attribute \"type\"` and `Reading file ...FAILED!` — the solver factory is module-scoped and is checked before the materials. (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
             (
                 "[Numerical] The ALE solid material inside the FSI "
@@ -187,30 +178,17 @@ KNOWLEDGE = {
                 "2026-06-02.)"
             ),
             (
-                "[Numerical] FSI interface is implicit via material "
-                "ID adjacency — node sharing between the two element "
-                "blocks at the interface is REQUIRED. Disjoint "
-                "meshes won't couple. Signal: FEBio diagnostic "
-                "prints [FALSIFIED 2026-08-03: this message text does "
-                "not occur anywhere in the FEBio 4.12.0.86045466d binary "
-                "or any of its shared libraries (`strings` over febio4 + "
-                "all 12 .so files, 267541 strings), so this Signal can "
-                "never match on 4.12. The physics reasoning is desk "
-                "research and was NOT executed] `FSI interface: 0 shared "
-                "nodes between mat=1 "
-                "and mat=2`; the fluid pressure has zero effect on "
-                "the solid response. (Audit 2026-06-02.)"
+                "[Numerical] The FSI interface is implicit — it exists only where the two element blocks SHARE nodes. Duplicate the nodes so the blocks are geometrically coincident but topologically disjoint and the model does not couple; FEBio reports NOTHING about the interface. "
+                "WRONG: two element blocks meeting at coincident but DUPLICATED nodes. "
+                "RIGHT: one <Nodes> block, with the elements on both sides of the interface referencing the SAME node ids there. "
+                "Signal: no interface message of any kind — executed by duplicating every node and pointing half the elements at the copies, and the output contains no mention of shared nodes or of an interface. What you get is the generic `------- failed to converge at time : <t>` with `Number of time steps completed .... : 0` and exit 1, where the intact mesh completed all its steps. Detect it BEFORE running instead: compare the node count FEBio echoes against the count you intended — a duplicated interface shows up as roughly twice the nodes for the same geometry. (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
             (
-                "[Numerical] FSI is stiff — start with small dt and "
-                "use SMOOTH ramping of pressure / velocity BCs. "
-                "Sudden load application (LINEAR load_controller + "
-                "small dt_0) produces high-frequency oscillations "
-                "in the fluid_FSI interface that take many steps "
-                "to damp out. Signal: the kinetic_energy logfile "
-                "channel at the interface oscillates with "
-                "amplitude > 50% of mean for the first ~50 NOX "
-                "steps before settling. (Audit 2026-06-02.)"
+                "[Numerical] The FSI family is stiff, and on a USE_MKL=OFF build the binding constraint is not the ramp but the DEGREES OF FREEDOM: with the fluid velocity free the Newton loop fails at the first step regardless of load, ramp shape or step size. "
+                "WRONG: reaching for a smoother load curve or a smaller step to rescue a first-step failure. Executed across driving amplitudes, two step sizes, four ALE stiffnesses spanning six decades, two meshes and ZERO load: every combination failed at step 1. Zero load failing is what rules out the ramp and the step size. "
+                "RIGHT: constrain the fluid velocity on every node and remove the dilatation degree of freedom with <bc type=\"zero fluid dilatation\" node_set=\"all_nodes\"/>, then drive the problem through the SOLID with a prescribed displacement — which is what the shipped template does, and it completes all its steps on both meshes. "
+                "Signal: `------- failed to converge at time : <t>` repeated, then `Number of time steps completed .... : 0` and exit 1; sometimes `N negative jacobians detected.` first, when the under-constrained velocity inverts an element. "
+                "STILL UNVERIFIED: whether a freely flowing FSI problem converges on a build WITH MKL. Closing it needs FEBio rebuilt with -DUSE_MKL=ON for the `pardiso` factorisation, because every solver registered on this build either reports the matrix-format error or fails to converge. Retained rather than softened. (Executed 2026-08-05, FEBio 4.12.0.86045466d.)"
             ),
         ],
     },
