@@ -125,7 +125,7 @@ def _find_dealii() -> Optional[Path]:
             r = subprocess.run(
                 [cmake, "--find-package", "-DNAME=deal.II",
                  "-DCOMPILER_ID=GNU", "-DLANGUAGE=CXX",
-                 "-DMODE=COMPILE"],
+                 "-DMODE=COMPILE"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=10
             )
             if r.returncode == 0:
@@ -156,6 +156,32 @@ class DealiiBackend(SolverBackend):
             # Try a test compile
             return self._check_via_compile()
 
+        # A directory existing is not an install. `DEAL_II_DIR=/tmp` (and
+        # `DEALII_ROOT=/tmp`) reported "available — deal.II found at /tmp",
+        # because discovery returns whatever the override names. Require a file
+        # only a real deal.II tree has — the same check the install knowledge
+        # already prescribes to the user as their own defence.
+        #
+        # `config.h` is GENERATED INTO THE BUILD TREE and `_find_dealii()` may
+        # return a source root with the build directory beneath it, which is
+        # exactly the confusion the knowledge warns about: pointing DEAL_II_DIR
+        # at a source root silently falls back to an older install. So look in
+        # the returned directory AND its usual build subdirectories rather than
+        # assuming which was handed over. Measured: this install resolves to the
+        # source root with the markers under `build/`, so requiring them directly
+        # under the returned path refused the real install — the false negative
+        # is the worse error, since a user cannot diagnose it.
+        _roots = [Path(dealii)] + [Path(dealii) / s
+                                   for s in ("build", "build/release", "install")]
+        if not any((r / sub).is_file() for r in _roots for sub in (
+                Path("include") / "deal.II" / "base" / "config.h",
+                Path("lib") / "cmake" / "deal.II" / "deal.IIConfig.cmake")):
+            return BackendStatus.MISCONFIGURED, (
+                f"{dealii} does not look like a deal.II install: no "
+                f"include/deal.II/base/config.h or "
+                f"lib/cmake/deal.II/deal.IIConfig.cmake there or in its build "
+                f"subdirectory. Note config.h is generated into the BUILD tree, "
+                f"so a source root alone will not do.")
         return BackendStatus.AVAILABLE, f"deal.II found at {dealii}"
 
     def _check_via_compile(self) -> tuple[BackendStatus, str]:
@@ -178,7 +204,7 @@ class DealiiBackend(SolverBackend):
             Path(tmpdir, "CMakeLists.txt").write_text(test_cmake)
             try:
                 r = subprocess.run(
-                    ["cmake", "."], capture_output=True, text=True,
+                    ["cmake", "."], stdin=subprocess.DEVNULL, capture_output=True, text=True,
                     cwd=tmpdir, timeout=30
                 )
                 if r.returncode == 0:

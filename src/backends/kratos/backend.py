@@ -49,7 +49,7 @@ class KratosBackend(SolverBackend):
             result = subprocess.run(
                 [python, "-c",
                  "import KratosMultiphysics as KM; "
-                 "print(KM.KratosGlobals.Kernel.Version())"],
+                 "print(KM.KratosGlobals.Kernel.Version())"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=15
             )
             if result.returncode == 0:

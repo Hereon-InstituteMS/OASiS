@@ -83,7 +83,7 @@ def _find_fenics_python() -> Optional[Path]:
     import subprocess
     try:
         r = subprocess.run(
-            [sys.executable, "-c", "import dolfinx"],
+            [sys.executable, "-c", "import dolfinx"], stdin=subprocess.DEVNULL,
             capture_output=True, timeout=5,
         )
         if r.returncode == 0:
@@ -335,7 +335,7 @@ class FenicsBackend(SolverBackend):
         import subprocess
         try:
             result = subprocess.run(
-                [str(python), "-c", "import dolfinx; print(dolfinx.__version__)"],
+                [str(python), "-c", "import dolfinx; print(dolfinx.__version__)"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:
@@ -442,7 +442,7 @@ class FenicsBackend(SolverBackend):
         import subprocess
         try:
             r = subprocess.run(
-                [str(python), "-c", "import dolfinx; print(dolfinx.__version__)"],
+                [str(python), "-c", "import dolfinx; print(dolfinx.__version__)"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=10
             )
             return r.stdout.strip() if r.returncode == 0 else None
@@ -459,7 +459,7 @@ class FenicsBackend(SolverBackend):
             import subprocess
             p = _find_fenics_python()
             if p:
-                r = subprocess.run([str(p), "-c", "import dolfinx; print(dolfinx.__version__)"],
+                r = subprocess.run([str(p), "-c", "import dolfinx; print(dolfinx.__version__)"], stdin=subprocess.DEVNULL,
                                    capture_output=True, text=True, timeout=5)
                 if r.returncode == 0:
                     ver = r.stdout.strip()

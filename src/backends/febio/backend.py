@@ -29,6 +29,53 @@ from .generators import GENERATORS as _TEMPLATES, KNOWLEDGE as _FEBIO_KNOWLEDGE
 logger = logging.getLogger("oasis.febio")
 
 
+_FEBIO_IDENT_CACHE: dict[str, tuple[bool, str]] = {}
+
+
+def _identifies_as_febio(binary) -> tuple[bool, str]:
+    """Does this executable actually identify itself as FEBio?
+
+    `-info` prints `FEBio version  = <x>` before its banner — measured on
+    4.12.0.86045466d. Two details are load-bearing and both were learned the
+    hard way on the 4C equivalent:
+
+    stdin MUST be closed. `-info` falls into FEBio's interactive prompt on an
+    open stdin and hangs; and under an MCP stdio server the inherited stdin is
+    the JSON-RPC stream, so a probe that reads it consumes the protocol.
+
+    ValueError is NOT caught. `UnicodeDecodeError` is a `ValueError`, so
+    catching it in the cannot-look branch sent every binary with non-text
+    output down the fail-open path and ACCEPTED it. Decoding is explicit.
+
+    Fails OPEN on a genuine inability to look — a check that cannot run must not
+    condemn a working install. Cached per path, because `check_availability` is
+    called by `discover` and every knowledge surface.
+    """
+    import subprocess
+
+    key = str(binary)
+    if key in _FEBIO_IDENT_CACHE:
+        return _FEBIO_IDENT_CACHE[key]
+
+    verdict: tuple[bool, str]
+    try:
+        r = subprocess.run([key, "-info"], capture_output=True, timeout=25,
+                           stdin=subprocess.DEVNULL)
+        blob = (r.stdout + r.stderr).decode("utf-8", errors="replace")
+        if "FEBio version" in blob:
+            verdict = (True, "identified itself")
+        elif not blob.strip():
+            verdict = (False, "-info produced no output")
+        else:
+            verdict = (False, "its -info output carries no `FEBio version` "
+                              "line: " + " ".join(blob.split())[:120])
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        verdict = (True, f"identity not checked ({type(exc).__name__})")
+
+    _FEBIO_IDENT_CACHE[key] = verdict
+    return verdict
+
+
 def _find_febio_binary() -> Optional[Path]:
     """Locate the FEBio binary."""
     env_path = os.environ.get("FEBIO_BINARY")
@@ -69,6 +116,23 @@ class FebioBackend(SolverBackend):
                 "working recipe, see elasticity_mms KNOWLEDGE) and symlink to "
                 "~/FEBio/bin/febio4, or set FEBIO_BINARY env var."
             )
+        # Confirm the binary IS FEBio. This check previously accepted any
+        # existing executable, so `FEBIO_BINARY=/bin/true` reported
+        # "available — FEBio at /bin/true" — the same defect found and fixed in
+        # 4C. An agent asks `discover`, is told the backend works, and every run
+        # then fails for a cause the availability report has already excluded.
+        #
+        # `-info` prints `FEBio version  = <x>`, measured on 4.12. stdin is
+        # closed because `-info` falls into FEBio's interactive prompt on an open
+        # stdin and hangs — and under an MCP stdio server the inherited stdin is
+        # the JSON-RPC stream, so the probe would consume the protocol.
+        ident_ok, ident_why = _identifies_as_febio(binary)
+        if not ident_ok:
+            return BackendStatus.MISCONFIGURED, (
+                f"the binary at {binary} does not identify itself as FEBio "
+                f"({ident_why}). Point FEBIO_BINARY at a real FEBio build; note "
+                f"`pip install febio` installs an unrelated third-party wrapper, "
+                f"not FEBio.")
         return BackendStatus.AVAILABLE, f"FEBio at {binary}"
 
     def input_format(self) -> InputFormat:
@@ -80,7 +144,7 @@ class FebioBackend(SolverBackend):
             return None
         import subprocess
         try:
-            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5, stdin=subprocess.DEVNULL)
             return r.stdout.strip() or r.stderr.strip()
         except Exception:
             return None

@@ -49,7 +49,7 @@ class NgsolveBackend(SolverBackend):
         import subprocess
         try:
             result = subprocess.run(
-                [str(python), "-c", "import ngsolve; print(ngsolve.__version__)"],
+                [str(python), "-c", "import ngsolve; print(ngsolve.__version__)"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:

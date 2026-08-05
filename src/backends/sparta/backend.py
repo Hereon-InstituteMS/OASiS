@@ -312,13 +312,30 @@ class SpartaBackend(SolverBackend):
             return (BackendStatus.NOT_INSTALLED,
                     "SPARTA binary not found (set SPARTA_BINARY or build spa_serial)")
         import subprocess
+        # This ran `-h` and then THREW THE RESULT AWAY, returning available
+        # unless the call itself raised — so `SPARTA_BINARY=/bin/true` reported
+        # "available ... with knowledge, 121 commands". The code read as though
+        # it validated, which is worse than an obviously absent check.
+        #
+        # `-h` prints `SPARTA (<date>)` as its first line, measured on this
+        # build. stdin is closed: under an MCP stdio server an inherited stdin is
+        # the JSON-RPC stream, and a probed program that reads it consumes the
+        # protocol.
         try:
-            subprocess.run([binpath, "-h"], capture_output=True, text=True, timeout=10)
-            # SPARTA prints usage/version; rc may be nonzero for -h, that's fine
-            tag = "with knowledge" if _KB.get("commands") else "no knowledge file"
-            return BackendStatus.AVAILABLE, f"SPARTA at {binpath} ({tag}, {_KB.get('n_commands',0)} commands)"
-        except Exception as e:
-            return BackendStatus.MISCONFIGURED, f"SPARTA found but check failed: {e}"
+            r = subprocess.run([binpath, "-h"], capture_output=True, timeout=15,
+                               stdin=subprocess.DEVNULL)
+            blob = (r.stdout + r.stderr).decode("utf-8", errors="replace")
+        except (subprocess.TimeoutExpired, OSError) as e:
+            # Could not look — do not condemn a possibly-working install.
+            blob = None
+            _unchecked = f"identity not checked ({type(e).__name__}: {e})"
+        if blob is not None and "SPARTA (" not in blob:
+            return BackendStatus.MISCONFIGURED, (
+                f"the binary at {binpath} does not identify itself as SPARTA "
+                f"(its -h output does not begin `SPARTA (`): "
+                + " ".join(blob.split())[:120])
+        tag = "with knowledge" if _KB.get("commands") else "no knowledge file"
+        return BackendStatus.AVAILABLE, f"SPARTA at {binpath} ({tag}, {_KB.get('n_commands',0)} commands)"
 
     def input_format(self) -> InputFormat:
         return InputFormat.SPARTA

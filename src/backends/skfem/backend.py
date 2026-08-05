@@ -43,7 +43,7 @@ class SkfemBackend(SolverBackend):
             return BackendStatus.NOT_INSTALLED, "No Python found"
         try:
             result = subprocess.run(
-                [python, "-c", "import skfem; print(skfem.__version__)"],
+                [python, "-c", "import skfem; print(skfem.__version__)"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:

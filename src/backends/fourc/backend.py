@@ -185,7 +185,7 @@ class FourcBackend(SolverBackend):
             return None
         import subprocess
         try:
-            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5, stdin=subprocess.DEVNULL)
             for line in r.stdout.splitlines():
                 if "version" in line.lower():
                     return line.strip()

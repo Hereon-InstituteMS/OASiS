@@ -151,3 +151,80 @@ def test_a_non_utf8_binary_is_not_accepted_by_the_fail_open_path(monkeypatch):
         pytest.skip("no gzip to probe")
     ok, why = M._identifies_as_fourc("/usr/bin/gzip")
     assert ok is False, why
+
+
+# ── the other three backends with the same defect ─────────────────────────
+# A setup audit measured all three reporting `available` for a path that is not
+# the software. SPARTA read worst: it already RAN `<binary> -h` and then threw
+# the result away, so the code looked like it validated.
+@pytest.mark.parametrize("var, value, backend", [
+    ("FEBIO_BINARY", "/bin/true", "febio"),
+    ("FEBIO_BINARY", "/bin/echo", "febio"),
+    ("SPARTA_BINARY", "/bin/true", "sparta"),
+    ("SPARTA_BINARY", "/bin/echo", "sparta"),
+    ("DEAL_II_DIR", "/tmp", "dealii"),
+    ("DEALII_ROOT", "/tmp", "dealii"),
+])
+def test_a_path_that_is_not_the_backend_is_not_available(monkeypatch, var, value,
+                                                         backend):
+    if not os.path.exists(value):
+        pytest.skip(f"{value} not present")
+    import backends.febio.backend as FB
+    monkeypatch.setattr(FB, "_FEBIO_IDENT_CACHE", {})
+    monkeypatch.setenv(var, value)
+    be = get_backend(backend)
+    if be is None:
+        pytest.skip(f"{backend} not registered")
+    status, message = be.check_availability()
+    assert status is not BackendStatus.AVAILABLE, message
+
+
+@pytest.mark.parametrize("backend", ["febio", "sparta", "dealii"])
+def test_the_real_installs_are_still_available(monkeypatch, backend):
+    """The half that is easy to forget, and the one that matters more.
+
+    A check that refuses a working install is worse than no check: it is a false
+    negative the user cannot diagnose. deal.II caught me here — `_find_dealii()`
+    returns the SOURCE root while `config.h` is generated into the BUILD tree, so
+    requiring the marker directly under the returned directory refused the real
+    install.
+    """
+    import backends.febio.backend as FB
+    monkeypatch.setattr(FB, "_FEBIO_IDENT_CACHE", {})
+    for v in ("FEBIO_BINARY", "SPARTA_BINARY", "DEAL_II_DIR", "DEALII_ROOT"):
+        monkeypatch.delenv(v, raising=False)
+    be = get_backend(backend)
+    if be is None:
+        pytest.skip(f"{backend} not registered")
+    status, message = be.check_availability()
+    if status is BackendStatus.NOT_INSTALLED:
+        pytest.skip(f"no {backend} on this machine")
+    assert status is BackendStatus.AVAILABLE, message
+
+
+def test_every_backend_identity_probe_closes_stdin():
+    """Generalised from the 4C finding: an inherited stdin under an MCP stdio
+    server is the JSON-RPC stream, and a probed program that reads it consumes
+    the protocol. Any `subprocess.run` in a `check_availability` path must say
+    so explicitly."""
+    import ast
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "backends"
+    offenders = []
+    for path in sorted(root.glob("*/backend.py")):
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            if getattr(fn, "attr", None) != "run":
+                continue
+            if getattr(getattr(fn, "value", None), "id", None) != "subprocess":
+                continue
+            kws = {k.arg for k in node.keywords}
+            if "stdin" not in kws:
+                offenders.append(f"{path.parent.name}/backend.py:{node.lineno}")
+    assert not offenders, (
+        "these subprocess.run calls inherit the parent's stdin; under an MCP "
+        "stdio server that is the JSON-RPC stream:\n  " + "\n  ".join(offenders))
