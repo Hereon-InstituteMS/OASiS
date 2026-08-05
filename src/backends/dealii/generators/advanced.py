@@ -6,8 +6,8 @@ program: it builds a mesh, assembles + solves the PDE, and writes a
 template was compiled and executed against deal.II 9.1.1 and confirmed
 to produce output before being committed here (overhaul 2026-06-26).
 
-RE-VERIFIED by execution against deal.II 9.8.0-pre (Release
-build, /home/alexander/dealii/build). Four templates in this module and
+RE-VERIFIED by execution against deal.II 9.8.0-pre (a Release
+build). Four templates in this module and
 one in navier_stokes.py no longer compiled: every break was an upstream
 API removal between 9.1 and 9.8, not a logic error.
 
