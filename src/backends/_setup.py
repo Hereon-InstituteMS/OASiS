@@ -165,8 +165,15 @@ _DEALII = {
         "TWO deal.II installs on one host, which is itself the common case "
         "and the source of several traps below. (1) A source build, 9.8.0-pre, "
         "CMAKE_BUILD_TYPE=Release, producing only libdeal_II.so — no debug "
-        "library. Features ON: ARPACK ASSIMP BOOST GMSH GSL KOKKOS LAPACK "
+        "library. Features ON, as the documented probe actually prints them: "
+        "ARPACK ASSIMP GMSH GSL KOKKOS LAPACK "
         "MAGIC_ENUM METIS MUPARSER OPENCASCADE TASKFLOW TBB UMFPACK ZLIB. "
+        "(This list used to include BOOST. It does not belong: there is no "
+        "`DEAL_II_WITH_BOOST` in config.h at all — the bundled Boost shows up "
+        "as `DEAL_II_FEATURE_BOOST_BUNDLED_CONFIGURED`, which the probe's "
+        "`DEAL_II_WITH` pattern does not match. An inventory has to match "
+        "what the probe beside it prints, or the reader concludes the probe "
+        "is broken.) "
         "Features OFF: MPI P4EST PETSC SLEPC TRILINOS COMPLEX_VALUES HDF5 "
         "SUNDIALS SYMENGINE CGAL ADOLC MUMPS SCALAPACK VTK ARBORX GINKGO "
         "PSBLAS 64BIT_INDICES. (Note DEAL_II_WITH_THREADS is not an "
@@ -231,9 +238,20 @@ _DEALII = {
         "overrides, not requirements — with neither set, OASiS searches conda "
         "envs, then ~/dealii and similar source dirs, then system paths. But "
         "the override is accepted on an is-a-directory test ALONE: it is not "
-        "checked for deal.II content. Signal: with DEAL_II_DIR set to any "
-        "existing directory, `discover(query='list')` reports deal.II as "
-        "`available` and names that directory back to you; the run fails much "
+        "checked for deal.II content. Signal, and MIND THE EXACT SPELLING — "
+        "the variable is `DEAL_II_DIR` or `DEALII_ROOT`; `DEALII_DIR` is not "
+        "consulted at all, so an audit that tried that spelling could not "
+        "reproduce this and wrongly concluded the claim was wrong: with "
+        "DEAL_II_DIR=/tmp (or DEALII_ROOT=/tmp), `check_availability()` "
+        "returns `available` / `deal.II found at /tmp`, and "
+        "`setup_backend(action='plan', solver='dealii')` prints "
+        "`\"details\": \"AVAILABLE: deal.II found at /tmp\"`. NOTE WHICH "
+        "SURFACE SHOWS WHAT: `discover(query='list')` prints only "
+        "`deal.II (dealii): available — cpp input` — it does NOT print the "
+        "path for an available backend, and `setup_backend(action='status')` "
+        "prints a bare `dealii | YES`. So the false 'available' is visible on "
+        "every surface while the wrong path is visible on only one, which is "
+        "why this survives unnoticed. The run then fails much "
         "later, at compile time, with an error that says nothing about "
         "DEAL_II_DIR. Defense: after setting either variable, confirm "
         "`<dir>/include/deal.II/base/config.h` or "
@@ -251,16 +269,43 @@ _DEALII = {
         "an out-of-range Vector read specifically, `The violated condition "
         "was: i < size()` and `Index 7 is not in the half-open range [0,3).`, "
         "with the process aborting. Signal, Release: no message at all. "
+        "SCOPE, and it is not a detail: the two halves were observed on "
+        "DIFFERENT VERSIONS, because no single build here ships both "
+        "libraries. The Release behaviour is from the 9.8.0-pre source build; "
+        "every Debug message quoted here comes from the distribution 9.1.1 "
+        "DebugRelease install, reproduced by compiling one source file twice — "
+        "once with the build directory as the CMake hint, once with no hint, "
+        "which is what makes find_package fall back to /usr. Exit codes "
+        "measured on that pair: Release 0, Debug 134. 'Debug at 9.8 behaves as "
+        "Debug at 9.1.1' was NOT checked and is assumed; the line numbers in "
+        "the message are certainly version-specific, so match on the phrases "
+        "rather than the numbers. "
         "READ THE RELEASE BEHAVIOUR CAREFULLY, because the obvious workaround "
         "does not work: an out-of-range read returns whatever is in the "
-        "allocation padding, which is UNINITIALIZED HEAP, not zero. It often "
-        "looks like 0.0 on a fresh process, and it is not: recycling the "
-        "allocator first (free a larger Vector, or free a poisoned buffer of "
-        "the same size) makes the same read return the old contents. So "
+        "allocation padding, which is UNINITIALIZED HEAP, not zero. So "
         "`if (v[i] == 0.0)` is NOT a usable substitute for the assertion. "
-        "Whether the read even survives is also luck — a few elements past the "
-        "end sit inside the same aligned block and the program exits 0, while "
-        "a far-out index segfaults. Check which build you have with "
+        "BE PRECISE ABOUT WHICH INDEX, because a sloppy version of this claim "
+        "is easy to falsify and was: on `Vector<double> v(3)` in a FRESH "
+        "process here, `v[3]`, `v[4]`, `v[5]` and `v[15]` all read as garbage "
+        "(3.211426698e-322, 4.6e-310, 2.4e-154 — reproducible byte-for-byte "
+        "across runs), while `v[7]` and `v[63]` read as exactly 0. So the "
+        "nearest out-of-range index — the one an off-by-one actually hits — "
+        "does NOT look like 0.0, and the reading that does is index-specific. "
+        "HOW TO PROVE THE ZERO IS NOT A ZERO, corrected against execution: "
+        "this entry used to say 'free a larger Vector, or free a poisoned "
+        "buffer of the same size'. Neither works — both leave `v[7]` at 0, "
+        "checked with a 64-element Vector filled with 12345.678 and with a "
+        "3-double malloc filled with 98765.4321. What DOES work is freeing a "
+        "LARGE poisoned block first: malloc 256 doubles, fill them with "
+        "55555.5, free, then construct the Vector — `v[7]` and `v[63]` both "
+        "come back 55555.5. The phenomenon is real; the small-block recipes "
+        "are not, because they do not recycle the region the Vector's "
+        "allocation comes from. "
+        "Whether the read even survives is also luck, and the boundary was "
+        "measured: `v[100]` still reads (exit 0), `v[100000]` segfaults "
+        "(exit 139). Exit codes for the two builds on the same source: "
+        "Release 9.8.0-pre exits 0 with no message, Debug 9.1.1 aborts with "
+        "exit 134. Check which build you have with "
         "CONFIG_PROBES['dealii_build_type'] BEFORE acting on an "
         "assertion-based pitfall; do not try to detect the fault at runtime "
         "on a Release build.",
@@ -498,8 +543,11 @@ _FOURC = {
         "[Integration][Discovery] FOURC_BINARY is accepted WITHOUT being "
         "checked — any existing file is taken as 4C. Point it at the wrong "
         "executable and OASiS reports `available` naming that file, then hands "
-        "it your input deck. Signal: `discover(query='list')` shows 4C "
-        "available at a path that is not a 4C build; the run afterwards "
+        "it your input deck. Signal: with FOURC_BINARY=/bin/true, "
+        "`check_availability()` returns `available` / `4C at /bin/true` and "
+        "`setup_backend(action='plan', solver='fourc')` prints it back as "
+        "`AVAILABLE: 4C at /bin/true`; `discover(query='list')` shows the "
+        "false `available` but not the path. The run afterwards "
         "produces no 4C banner and no result files, and whether it 'fails' "
         "depends entirely on what that other program does with the arguments. "
         "Reproduce by setting FOURC_BINARY to any executable on PATH. Defense: "
@@ -642,12 +690,19 @@ _KRATOS = {
         "environment OASiS itself runs in, and confirm with that same "
         "interpreter: `<oasis-python> -c 'import KratosMultiphysics'`.",
 
-        "[Integration][Install] Not every Kratos application has a wheel. The "
-        "PFEM applications in particular are absent from PyPI, so an install "
-        "plan that names them cannot succeed by pip at all. Signal: "
+        "[Integration][Install] Not every Kratos application has a wheel FOR "
+        "LINUX, and the reason matters because it changes what the error "
+        "means. The PFEM applications DO have a PyPI project — "
+        "KratosPfemFluidDynamicsApplication publishes 10.2.1 and 10.2.3 — but "
+        "every file is `win_amd64`, cp38 through cp312. There is no Linux "
+        "wheel and no sdist, so on Linux pip has nothing to resolve. Signal: "
         "`ERROR: No matching distribution found for "
         "KratosPfemFluidDynamicsApplication` — verified by attempting the "
-        "download. Defense: treat the pip route as covering the applications "
+        "download. Read that as 'no wheel for THIS platform', not as 'the "
+        "package does not exist'; on Windows the same command succeeds, and "
+        "an earlier version of this entry said the package was absent from "
+        "PyPI altogether, which the project's own JSON metadata contradicts. "
+        "Defense: treat the pip route as covering the applications "
         "bundled by `KratosMultiphysics-all` (structural mechanics, fluid "
         "dynamics, convection-diffusion, constitutive laws, contact, DEM, MPM, "
         "geo/poro mechanics, mesh moving, meshing, mapping, FSI, "
@@ -686,9 +741,15 @@ _DUNE = {
 
         "[Integration][Install] mpi4py is an UNDECLARED dependency — pip will "
         "not pull it, and DUNE refuses to import without it. Confirmed from "
-        "the wheel metadata: neither dune-fem's nor dune-common's "
-        "Requires-Dist mentions mpi4py, yet the modules were built against "
-        "MPI. In a clean virtual environment `pip install dune-fem` completes "
+        "PyPI's own metadata, and note the SHAPE of it, because an earlier "
+        "version of this entry said 'the wheel metadata' and there is no "
+        "wheel: dune-fem 2.12.0.2 publishes an sdist only "
+        "(`dune_fem-2.12.0.2.tar.gz`, packagetype `sdist`), and its "
+        "`requires_dist` is null — it declares NO dependencies at all, not "
+        "merely no mpi4py. So `pip install dune-fem` also compiles from "
+        "source, which is why it is slow, and there is nothing for pip to "
+        "resolve mpi4py from. In a clean virtual environment `pip install "
+        "dune-fem` completes "
         "successfully and the very first `import dune.fem` fails. It IS a "
         "traceback — a RuntimeError chained off a ModuleNotFoundError — so do "
         "not expect a tidy one-line message. Signal, and this FIRST line is "
@@ -791,10 +852,14 @@ _FEBIO = {
         "reliable way to choose a build, and it is accepted without "
         "validation. Set it to any existing file and OASiS reports "
         "`available` naming that file, with no check that it is FEBio at all. "
-        "Signal of the unvalidated case: `discover(query='list')` reports FEBio "
-        "available at a path that is not an FEBio build, and the failure "
+        "Signal of the unvalidated case: with FEBIO_BINARY=/bin/true, "
+        "`check_availability()` returns `available` / `FEBio at /bin/true`, "
+        "and the failure "
         "arrives later as missing output rather than as a complaint about the "
-        "variable. Unset, discovery searches a fixed list of CONVENTIONAL "
+        "variable. THIS ONE IS STILL OPEN as of this entry: 4C's identical "
+        "defect was fixed by running the binary and checking it answers as 4C, "
+        "and FEBio's was not, so FEBio is now the sharpest remaining case. "
+        "Unset, discovery searches a fixed list of CONVENTIONAL "
         "LOCATIONS FIRST — a `FEBio/bin/febio4` or `FEBioStudio/bin/febio4` "
         "under your home directory, then /opt and /usr/local — and only falls "
         "back to PATH afterwards, where it takes `febio4`, then `febio3`, then "
@@ -868,8 +933,13 @@ _SPARTA = {
     ),
     "install_route": (
         "Source build; SPARTA has no wheel or package.\n"
-        "    git clone https://github.com/sparta-sparta/sparta.git\n"
+        "    git clone https://github.com/sparta/sparta.git\n"
         "    cd sparta/src && make serial     # or: make mpi\n"
+        "The org is `sparta`, not `sparta-sparta`. This entry named "
+        "`https://github.com/sparta-sparta/sparta.git` until an audit ran it: "
+        "that URL answers `remote: Repository not found.` (HTTP 404), while "
+        "`https://github.com/sparta/sparta.git` answers with refs and is the "
+        "origin of the working checkout on this host.\n"
         "The binary appears in that same src directory as `spa_serial` (or "
         "`spa_mpi`). It is not installed onto PATH by the build, which is why "
         "SPARTA_BINARY exists."
@@ -886,10 +956,16 @@ _SPARTA = {
         "[Integration][Discovery] SPARTA_BINARY is OPTIONAL and unvalidated. "
         "Unset, OASiS looks for `spa_serial`, `spa_mpi` or `sparta` on PATH "
         "and then in conventional build locations. Set to any existing file, "
-        "it is taken at face value. Signal: `discover(query='list')` reports "
-        "SPARTA available at that path AND still advertises its full command "
-        "knowledge, because the knowledge base is a data file that loads "
-        "whether or not the binary is real — so the reported command count "
+        "it is taken at face value — and WORSE THAN AT FACE VALUE, because "
+        "this check LOOKS like it validates and does not: it really does run "
+        "`<binary> -h`, then discards the result and returns `available` "
+        "regardless. Only an exception (an unrunnable file) downgrades it. "
+        "Signal: with SPARTA_BINARY=/bin/true, `check_availability()` returns "
+        "`available` / `SPARTA at /bin/true (with knowledge, 121 commands)` — "
+        "the SAME message shape as a real install, including the command "
+        "count, because the knowledge base is a data file that loads "
+        "whether or not the binary is real. `/bin/echo` behaves the same. So "
+        "the reported command count "
         "tells you nothing about the binary. Defense: a genuine SPARTA prints "
         "its dated version as the first line of any run, e.g. "
         "`SPARTA (24 Sep 2025)`, followed by `Running on N MPI task(s)`. "
@@ -1131,6 +1207,77 @@ PORTABILITY_EVIDENCE: dict[str, dict] = {
 }
 
 
+# ── how much an "available" verdict is worth, per backend ────────────────
+#
+# The single most damaging thing this surface can get wrong is a false
+# `available`, because an agent calls `discover`, believes it, and then spends
+# the whole session debugging physics for a backend that was never there. So
+# the strength of each backend's own availability check is recorded here as a
+# fact about OASiS, not as advice.
+#
+# Measured by driving `check_availability()` on every backend with the
+# documented override pointed at `/bin/true` and `/bin/echo`, and — for
+# deal.II — at `/tmp`.
+
+AVAILABILITY_CHECK_STRENGTH: dict[str, str] = {
+    "_how_to_read": (
+        "PROVES-IT: the check imports or runs the software and inspects what "
+        "came back, so `available` means the backend answered. "
+        "EXISTS-ONLY: the check confirms a path exists and stops, so "
+        "`available` means a file is there. Treat EXISTS-ONLY backends as "
+        "unverified until you have seen the software identify itself, using "
+        "the Defense in that backend's Discovery entry."
+    ),
+    "fenics": "PROVES-IT — runs `import dolfinx` in the candidate interpreter "
+              "and reads the version it prints.",
+    "ngsolve": "PROVES-IT — runs `import ngsolve` and reads the version.",
+    "skfem": "PROVES-IT — runs `import skfem` and reads the version.",
+    "kratos": "PROVES-IT — runs `import KratosMultiphysics` and reads "
+              "Kernel.Version().",
+    "dune": "PROVES-IT — every candidate interpreter is verified with a "
+            "subprocess `import dune.fem` before being returned.",
+    "fourc": "RUNS-IT, WEAKLY — the check runs the binary with no arguments "
+             "and looks for 4C vocabulary in the output. `/bin/true` and "
+             "`/bin/echo` are correctly refused. It is still foolable, and "
+             "the ways were measured: the accepted token `4c` is two "
+             "characters, so anything echoing a path or environment that "
+             "contains it passes — `/bin/pwd` and `/bin/ls` pass whenever the "
+             "working directory has `4c` in its name, and `/usr/bin/env` "
+             "passes whenever any variable does, which is the normal state "
+             "for a 4C user. The token `input file` passes `/usr/bin/gcc`, "
+             "whose no-argument output is `no input files`. And a binary "
+             "emitting non-UTF-8 raises UnicodeDecodeError, which the check "
+             "treats as could-not-look and therefore ACCEPTS: `/usr/bin/gzip` "
+             "passes for that reason. Require a longer, 4C-specific string "
+             "(`Comprehensive Computational Community Code`) instead.",
+    "dealii": "EXISTS-ONLY — DEAL_II_DIR / DEALII_ROOT are accepted on an "
+              "is-a-directory test. `DEAL_II_DIR=/tmp` reports "
+              "`available` / `deal.II found at /tmp`. OPEN DEFECT.",
+    "febio": "EXISTS-ONLY — FEBIO_BINARY is accepted on an is-a-file test. "
+             "`FEBIO_BINARY=/bin/true` reports `available` / "
+             "`FEBio at /bin/true`. OPEN DEFECT.",
+    "sparta": "EXISTS-ONLY, DISGUISED — the check runs `<binary> -h` and then "
+              "DISCARDS the result, returning `available` unless the run "
+              "raised. `SPARTA_BINARY=/bin/true` reports `available` / "
+              "`SPARTA at /bin/true (with knowledge, 121 commands)`. OPEN "
+              "DEFECT, and the worst-reading of the three because the code "
+              "looks like it validates.",
+    "_if_you_fix_one": (
+        "Two rules the 4C fix got right and one it got wrong, all worth "
+        "keeping. RIGHT: fail OPEN when the check cannot look, so a sandbox "
+        "never condemns a working install; and cache the verdict per path, "
+        "because check_availability() is called by every knowledge surface. "
+        "WRONG: it runs the candidate with the parent's stdin inherited. A "
+        "child that reads stdin then eats it — demonstrated with /bin/cat, "
+        "which consumed the parent's whole input and left the verdict a "
+        "function of that text. Under an MCP stdio server that input is the "
+        "JSON-RPC stream. Pass stdin=subprocess.DEVNULL. This file already "
+        "knows the lesson: see CONFIG_PROBES['febio_build'], where "
+        "`< /dev/null` is marked REQUIRED, not tidiness."
+    ),
+}
+
+
 # ── the registry ─────────────────────────────────────────────────────────
 
 SETUP_KNOWLEDGE: dict[str, dict] = {
@@ -1170,10 +1317,14 @@ def get_setup_knowledge(backend: str | None = None) -> dict:
                 "backend was compiled — run the matching probe in "
                 "`config_probes` before acting on it. `portability_evidence` "
                 "says which of these claims were re-checked in a clean "
-                "environment and which were not testable at all."
+                "environment and which were not testable at all. Read "
+                "`availability_check_strength` BEFORE trusting a backend that "
+                "reports `available`: for three of the nine, that verdict "
+                "means only that a file exists."
             ),
             "config_probes": CONFIG_PROBES,
             "portability_evidence": PORTABILITY_EVIDENCE,
+            "availability_check_strength": AVAILABILITY_CHECK_STRENGTH,
             "backends": SETUP_KNOWLEDGE,
         }
     key = backend.strip().lower()
@@ -1183,7 +1334,13 @@ def get_setup_knowledge(backend: str | None = None) -> dict:
         return {"error": f"No setup knowledge for '{backend}'",
                 "known": sorted(SETUP_KNOWLEDGE)}
     return {"backend": key, "config_probes": CONFIG_PROBES,
-            "portability_evidence": PORTABILITY_EVIDENCE, **entry}
+            "portability_evidence": PORTABILITY_EVIDENCE,
+            "availability_check_strength": {
+                "_how_to_read": AVAILABILITY_CHECK_STRENGTH["_how_to_read"],
+                key: AVAILABILITY_CHECK_STRENGTH.get(
+                    key, "not recorded for this backend"),
+            },
+            **entry}
 
 
 def get_setup_pitfalls(backend: str) -> list[str]:

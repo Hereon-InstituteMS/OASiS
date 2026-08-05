@@ -341,26 +341,87 @@ class TestPortabilityEvidence(unittest.TestCase):
                     f"{key} is listed as untested without saying why or what "
                     f"that costs the reader")
 
+    # Words that hedge a claim. Case-insensitive on purpose: the text writes
+    # "was NOT observed" for emphasis, and a case-sensitive membership test
+    # silently missed it.
+    _HEDGES = ("was not possible", "unverified", "not observed", "not checked",
+               "limited to", "checked here", "checked on", "sourced", "scoped",
+               "nothing here claims", "rather than confirmed", "only the")
+
     def test_untested_configurations_are_reflected_in_the_pitfalls(self):
         """A gap recorded here but not visible in the pitfall text helps
-        nobody: the agent reads pitfalls, not this dict. Each backend named
-        in not_tested must hedge somewhere in its own entries."""
-        hedges = ("was not possible", "unverified", "not observed",
-                  "limited to", "checked here", "sourced", "scoped",
-                  "Nothing here claims", "rather than confirmed")
-        for gap, backend in (("dealii_debug", "dealii"),
-                             ("dealii_optional_deps", "dealii"),
-                             ("febio_with_mkl", "febio"),
-                             ("sparta_with_kokkos", "sparta")):
-            if gap not in PORTABILITY_EVIDENCE.get("not_tested", {}):
+        nobody: the agent reads pitfalls, not this dict.
+
+        The hedge must sit in the SAME pitfall as the gap's own subject. An
+        earlier version of this test joined all of a backend's pitfalls and
+        asked whether any hedge word appeared anywhere in the result, which is
+        not the same question. An audit falsified it by mutation: strip every
+        hedge from FEBio's MKL entry, state flat that "the pardiso solver is
+        faster and is the one to use", leave the words "checked here" in the
+        unrelated Discovery entry — and the test still passed. A gate that a
+        fabricated claim walks through is worse than no gate, because it is
+        cited as evidence the claim was checked.
+
+        Each gap therefore declares the tokens that identify the pitfall it
+        belongs to; the hedge is required in a pitfall that mentions one.
+        """
+        # gap -> (backend, tokens that identify the pitfall carrying the claim)
+        gaps = {
+            "dealii_debug": ("dealii", ("Debug", "Release")),
+            "dealii_optional_deps": ("dealii", ("PETSc", "Trilinos", "MPI")),
+            "febio_with_mkl": ("febio", ("MKL", "pardiso")),
+            "sparta_with_kokkos": ("sparta", ("KOKKOS",)),
+            "macos_and_windows": (None, ()),   # cross-cutting; see below
+        }
+        not_tested = PORTABILITY_EVIDENCE.get("not_tested", {})
+
+        # Every recorded gap must be listed here, or a new gap can be added
+        # with no enforcement at all — which is how macos_and_windows went
+        # unchecked until an audit noticed.
+        self.assertEqual(
+            set(not_tested) - set(gaps), set(),
+            "a gap is recorded in not_tested with no enforcement mapping in "
+            "this test. Add it to `gaps` (with the tokens that identify the "
+            "pitfall it belongs to) so removing its hedge fails the suite.")
+
+        for gap, (backend, tokens) in gaps.items():
+            if gap not in not_tested or backend is None:
                 continue
             with self.subTest(gap=gap):
-                blob = " ".join(SETUP_KNOWLEDGE[backend]["pitfalls"])
+                carriers = [p for p in SETUP_KNOWLEDGE[backend]["pitfalls"]
+                            if any(t in p for t in tokens)]
                 self.assertTrue(
-                    any(h in blob for h in hedges),
-                    f"{gap} is recorded as untested, but {backend}'s pitfalls "
-                    f"state their claims flat. Scope the claim where the "
-                    f"agent will read it.")
+                    carriers,
+                    f"{gap} is recorded as untested but no {backend} pitfall "
+                    f"even mentions {tokens} — the gap is invisible to the "
+                    f"agent.")
+                hedged = [p for p in carriers
+                          if any(h in p.lower() for h in self._HEDGES)]
+                self.assertTrue(
+                    hedged,
+                    f"{gap} is recorded as untested, and the {len(carriers)} "
+                    f"{backend} pitfall(s) that carry the claim state it FLAT. "
+                    f"A hedge elsewhere in the backend's text does not count: "
+                    f"scope the claim in the entry the agent will read.")
+
+    def test_the_hedging_gate_rejects_the_mutation_that_defeated_it(self):
+        """Proof the predicate discriminates, rather than trusting that a green
+        run means anything. Same rule as
+        tests/test_fixtures_cannot_pass_vacuously.py."""
+        flat = ("[Integration][BuildConfig] MKL PRESENCE CHANGES THE DEFAULT "
+                "LINEAR SOLVER. Signal of an MKL build: `Default linear "
+                "solver: pardiso`. The pardiso solver is faster and is the "
+                "one to use.")
+        decoy = ("[Integration][Discovery] FEBIO_BINARY is optional. "
+                 "Discovery order was checked here.")
+        hedges = self._HEDGES
+        carriers = [p for p in (flat, decoy) if "MKL" in p or "pardiso" in p]
+        self.assertEqual(carriers, [flat], "token match picked the wrong entry")
+        self.assertFalse(
+            [p for p in carriers if any(h in p.lower() for h in hedges)],
+            "the gate still accepts a flat MKL claim when an unrelated entry "
+            "carries the hedge word — the mutation that defeated the previous "
+            "version of this test")
 
 
 class TestAgainstRealInstalls(unittest.TestCase):

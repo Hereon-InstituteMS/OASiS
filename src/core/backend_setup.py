@@ -175,19 +175,34 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
                               "set. Installing KratosMultiphysics ALONE "
                               "lets pip take the newest wheel, which is "
                               "where the next problem starts.",
-                              "GLIBC: the 10.4.x wheel is tagged "
-                              "manylinux_2_28 but its Kratos.cpython-*.so "
+                              "GLIBC: the 10.4.0-10.4.2 wheels are tagged "
+                              "manylinux_2_28 but their Kratos.cpython-*.so "
                               "requires GLIBC_2.32 and GLIBC_2.34. pip "
-                              "accepts it on any host with glibc >= 2.28, "
+                              "accepts them on any host with glibc >= 2.28, "
                               "the install reports success, and the import "
                               "then fails with \"version `GLIBC_2.32' not "
                               "found\" — followed by a Kratos message "
                               "blaming LD_LIBRARY_PATH, which cannot fix "
-                              "it. Check `ldd --version | head -1`; on "
-                              "glibc < 2.32 pin "
-                              "'KratosMultiphysics==10.3.0', whose wheel is "
-                              "manylinux_2_17 and needs nothing above "
-                              "GLIBC_2.16. Verified in a clean venv.",
+                              "it. Check `ldd --version | head -1`, then TRY "
+                              "THE NEWEST RELEASE FIRST: 10.4.3 installs and "
+                              "imports on glibc 2.31 with nothing above "
+                              "GLIBC_2.17 anywhere in the package, verified "
+                              "in a clean venv. Only if the newest is also "
+                              "broken fall back to 10.3.x (its wheel is "
+                              "manylinux_2_17 and tops out at GLIBC_2.16, "
+                              "also verified). Do NOT pin backwards as a "
+                              "reflex — this note said \"on glibc < 2.32 pin "
+                              "'KratosMultiphysics==10.3.0'\" until an audit "
+                              "found the mis-tag had been fixed upstream; the "
+                              "advice froze users on an older line for no "
+                              "reason. The range that is actually broken is "
+                              "10.4.0-10.4.2, not the 10.4 line.",
+                              "GLIBC, second half: a symbol sweep and a "
+                              "platform tag answer different questions. "
+                              "10.4.3 needs nothing above GLIBC_2.17 but is "
+                              "still TAGGED manylinux_2_28, so pip refuses it "
+                              "below glibc 2.28 even though the binary would "
+                              "load. On such a host 10.3.x is the route.",
                               "The PFEM applications have no PyPI wheel at "
                               "all — `pip download "
                               "KratosPfemFluidDynamicsApplication` answers "
@@ -430,8 +445,13 @@ SETUP_ROUTES: dict[str, list[dict[str, Any]]] = {
                 "linux": {"verified": True,
                           "system_deps": ["g++", "make", "libopenmpi-dev"],
                           "notes": [
-                              "git clone https://github.com/sparta-sparta/"
+                              "git clone https://github.com/sparta/"
                               "sparta.git && cd sparta/src && make serial",
+                              "The org is `sparta`, NOT `sparta-sparta`. This "
+                              "note carried the latter until an audit ran it: "
+                              "`git ls-remote https://github.com/"
+                              "sparta-sparta/sparta.git` answers `remote: "
+                              "Repository not found.` (HTTP 404).",
                               "The binary is left in that same src directory "
                               "as spa_serial (or spa_mpi for `make mpi`) and "
                               "is NOT put on PATH — set SPARTA_BINARY to it, "
