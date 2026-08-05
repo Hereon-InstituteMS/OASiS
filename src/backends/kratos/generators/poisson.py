@@ -13,7 +13,16 @@ def _poisson_2d_kratos(params: dict) -> str:
     ny = params.get("ny", nx)
     f_val = params.get("f", 1.0)
     return f'''\
-"""Poisson -Δu = {f_val} on [0,1]², u=0 on boundary — Kratos Multiphysics"""
+"""Poisson -Δu = {f_val} on [0,1]², u=0 on boundary — Kratos (manual assembly)
+
+This script does NOT use KratosMultiphysics: it assembles and solves the system
+directly with numpy/scipy. The docstring previously read "Kratos Multiphysics"
+with no qualifier, which told a reader the opposite of the truth — every sibling
+template in this backend says "(manual assembly)" or "(standalone)", and this one
+was the only one that did not. A weak model reads the first line and stops.
+
+Run it with `run_simulation` rather than `run_with_generator`, per the server
+instructions: it is a standalone Python script, not a Kratos input deck."""
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
