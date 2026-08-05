@@ -50,10 +50,13 @@ def _review_on_record(solver: str, setup_text: str) -> None:
     has to put a review there first. Tests that skip this step are asserting
     the behaviour of an unreviewed run, which is the interesting case anyway.
     """
-    from core.critic_gate import setup_digest
-    from tools.consolidated import _CRITIC_REGISTRY
+    # Use the ONE definition rather than rebuilding it. This helper used to
+    # call `setup_digest` directly and so became a third, stale copy the moment
+    # referenced-file fingerprinting was added — four gate tests went red while
+    # the gate itself was correct.
+    from tools.consolidated import _CRITIC_REGISTRY, review_digest
     _CRITIC_REGISTRY.submit_review(
-        solver=solver, digest=setup_digest(solver, setup_text),
+        solver=solver, digest=review_digest(solver, setup_text),
         findings="Checked the problem statement, boundary conditions, units "
                  "and discretisation against the stated physics; no issues "
                  "found that would invalidate the run.")

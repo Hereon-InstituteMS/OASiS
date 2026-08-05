@@ -111,16 +111,25 @@ def _referenced_file_digest(setup_text: str) -> str:
     # fingerprinted. A coupling audit predicted this against my fix and it was
     # right: measured, the digest resolved only the output filename.
     roots = [Path(p) for p in _SYSPATH.findall(setup_text)]
-    roots.append(Path.cwd())
+    # The working directory resolves a bare `from model import x`, but it is
+    # deliberately NOT hashed as a directory the way an explicit sys.path root
+    # is. Hashing its listing made the digest depend on every unrelated file in
+    # the cwd, so any file appearing between review and run invalidated the
+    # review — a false-negative machine, and it turned four gate tests red the
+    # moment I tried it. Only the named modules resolved against it are
+    # fingerprinted.
+    resolve_only = [Path.cwd()]
     seen: set[Path] = set()
     for raw in _PATHLIKE.findall(setup_text):
         seen.add(Path(raw))
         for r in roots:
             seen.add(r / raw)
     for mod in set(_LOCAL_IMPORT.findall(setup_text)):
-        for r in roots:
+        for r in roots + resolve_only:
             seen.add(r / f"{mod}.py")
             seen.add(r / mod / "__init__.py")
+    # Explicit sys.path roots ARE hashed as directories, so adding a shadowing
+    # module to one counts. The cwd is not, for the reason above.
     for r in roots:
         seen.add(r)
 
@@ -139,6 +148,21 @@ def _referenced_file_digest(setup_text: str) -> str:
         except OSError:
             parts.append(f"{p}=UNREADABLE")
     return "\n".join(parts)
+
+
+def review_digest(solver: str, setup_text: str) -> str:
+    """THE definition of what a critic review is bound to. One function.
+
+    There were three places computing this — the issuing tool, the redeeming
+    check, and a test helper — and they drifted. A coupling audit identified
+    exactly that divergence as the root cause of its digest bypass: the sets of
+    inputs each site folded in had stopped matching. Then my own test helper
+    turned out to be a third copy and went stale the moment the definition
+    changed, which is how a green suite can accompany a broken gate.
+
+    Anything that needs to know what a review covers calls this.
+    """
+    return setup_digest(solver, setup_text, _referenced_file_digest(setup_text))
 
 
 def _critic_state(solver: str, setup_text: str, *, token: str = "",
@@ -166,8 +190,7 @@ def _critic_state(solver: str, setup_text: str, *, token: str = "",
     The agent's own `critic_approved` flag is deliberately not an input here: it
     is a self-report, and replacing the self-report is the entire point.
     """
-    digest = setup_digest(solver, setup_text,
-                          _referenced_file_digest(setup_text))
+    digest = review_digest(solver, setup_text)
     if token:
         try:
             _CRITIC_REGISTRY.consume(token, digest=digest, solver=solver,
@@ -2038,8 +2061,7 @@ def register_consolidated_tools(mcp: FastMCP):
         try:
             rec = _CRITIC_REGISTRY.submit_review(
                 solver=solver, findings=findings,
-                digest=setup_digest(solver, setup_text,
-                                    _referenced_file_digest(setup_text)),
+                digest=review_digest(solver, setup_text),
                 ttl_s=ttl_s)
         except CriticGateError as exc:
             return json.dumps({"accepted": False, "error": str(exc)}, indent=2)
