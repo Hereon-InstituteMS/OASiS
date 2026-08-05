@@ -284,7 +284,7 @@ def check_convergence(converged: bool, residual: float, tol: float) -> list[str]
 
 
 def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
-                            rtol: float = 0.05) -> list[str]:
+                            rtol: float = 0.05, floor: float = 0.0) -> list[str]:
     """Conservation across a coupling interface: the net flux leaving A should equal
     the net flux entering B (global balance). Pure arithmetic on the exchanged
     normal_fluxes — no physics. `export_*` are InterfaceData-like dicts/objects.
@@ -293,6 +293,19 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
     question, answered by `interface_balance_coverage` — a coupling that
     exchanges no fluxes gets an empty finding list here, and an empty finding
     list must never be read as "conservation was checked and is fine".
+
+    `floor` is an absolute magnitude below which an imbalance is float noise
+    rather than a finding. It exists because the per-component branch below
+    compares each component on its OWN scale: a component that is zero on both
+    sides — a tangential traction on a frictionless interface is exactly this,
+    and it is the common case, not a corner one — then has a denominator of
+    roundoff, and two ~1e-17 entries that should cancel report an imbalance of
+    tens of percent on a coupling that is exactly right. Demonstrated: a normal
+    traction of 1e5 cancelling exactly, with a 1e-17 tangential component on
+    both sides, was reported as 91.6% non-conservative. The vector branch
+    therefore derives one floor from the WHOLE interface and hands it down, so a
+    component is only ever judged against the size of the flux actually being
+    exchanged. Callers comparing a single scalar keep the old behaviour (0.0).
     """
     w = []
 
@@ -316,11 +329,20 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                 f"{va.size} flux component(s) and {label_b} exports {vb.size}. "
                 "Conservation is unchecked."]
     if va.size > 1:
+        # ONE floor for the whole interface, from the largest component either
+        # side actually exchanges. Without it each component is judged against
+        # its own magnitude alone and a both-sides-zero component fails on
+        # roundoff — see the `floor` note in the docstring.
+        comp_floor = 1e-6 * max(float(_np.max(_np.abs(va[_np.isfinite(va)])))
+                                if _np.any(_np.isfinite(va)) else 0.0,
+                                float(_np.max(_np.abs(vb[_np.isfinite(vb)])))
+                                if _np.any(_np.isfinite(vb)) else 0.0,
+                                floor)
         out = []
         for c in range(va.size):
             out += check_interface_balance(
                 {"normal_fluxes": [float(va[c])]}, {"normal_fluxes": [float(vb[c])]},
-                f"{label_a}[{c}]", f"{label_b}[{c}]", rtol)
+                f"{label_a}[{c}]", f"{label_b}[{c}]", rtol, comp_floor)
         return out
     fa, fb = float(va[0]), float(vb[0])
     # A non-finite net flux makes every comparison below False (nan > rtol is
@@ -330,7 +352,7 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
         return [f"Interface flux balance could NOT be evaluated: net({label_a})={fa}, "
                 f"net({label_b})={fb} — a non-finite exchanged flux. Conservation "
                 "is unchecked and the exchanged data is invalid."]
-    denom = max(abs(fa), abs(fb), 1e-30)
+    denom = max(abs(fa), abs(fb), floor, 1e-30)
     rel = abs(fa + fb) / denom            # A exports +flux, B imports -flux → sum≈0
     if rel > rtol:
         # Name the convention. The most common cause of this warning is not a
@@ -432,6 +454,18 @@ def check_interfaces_are_the_same_surface(export_a, export_b, label_a="A",
         return None if c is None else _np.atleast_2d(_np.asarray(c, float))
 
     ca, cb = _co(export_a), _co(export_b)
+    # The limit belongs in the SERVED coverage, not only in this docstring: an
+    # agent reads the verdict, never the source. Stating it on every run is the
+    # point — it is unconditional, and a reader who is told the interfaces
+    # overlap would otherwise take that for "the right surface was used".
+    _WRONG_SURFACE_LIMIT = (
+        "interface identity: OASiS compared the coordinates the two participants "
+        "REPORTED and they describe the same region of space. It cannot check "
+        "that those coordinates are the surface each participant actually "
+        "applied its boundary condition on — a participant that reports the "
+        "right coordinates for the wrong surface is not detectable at this "
+        "level, by any check here. Only the `monolithic` comparison can catch "
+        "it.")
     if ca is None or cb is None or ca.size == 0 or cb.size == 0:
         return [], ["interface geometry: coordinates were not exported, so "
                     "whether the two sides describe the same surface is unknown"]
@@ -451,7 +485,7 @@ def check_interfaces_are_the_same_surface(export_a, export_b, label_a="A",
                  f"[{lo_b[d]:.4g}, {hi_b[d]:.4g}] — a gap of {gap[d]:.4g}. These "
                  "are two different surfaces, so every value exchanged between "
                  "them was mapped onto geometry it does not belong to."], [])
-    return [], []
+    return [], [_WRONG_SURFACE_LIMIT]
 
 
 # Ratios that show up when two participants agree on the physics and disagree on
@@ -837,4 +871,23 @@ def check_interface_sensitivity(sensitivity: dict, floor: float = 1e-9,
                 "part of its answer is a constant or a stale field carried "
                 "through the iteration — the coupling converged around it "
                 "without ever solving it.")
+    # The frontier of this check, in the SERVED coverage rather than only in the
+    # docstring above. Measured, not assumed: a participant whose export is
+    # WRONG_CONSTANT + eps*import passes every check here for eps down to the
+    # floor, because S is then eps and eps > floor. At eps=1e-6 and at eps=1e-8 a
+    # participant frozen at a 50%-wrong value came back with no finding at all;
+    # only at eps=1e-10 did the per-block test fire. A response that is real but
+    # tiny is what stiff physics looks like, so no local measurement can separate
+    # the two — the un-split `monolithic` comparison is the only thing that can.
+    if any(isinstance(r, dict) and r.get("S") is not None
+           for r in sensitivity.values()):
+        not_checked.append(
+            f"interface sensitivity FRONTIER: a measured response above the "
+            f"floor ({floor:.0e}) establishes only that the export moves when "
+            "the imports move — NOT that it moves by the right amount. A "
+            "participant frozen at a badly wrong value that adds a token "
+            "multiple of its import responds just enough to pass, and a genuinely "
+            "stiff participant responds just as little, so the two are not "
+            "separable by any measurement made here. Pass `monolithic` if you "
+            "need that distinction.")
     return findings, not_checked

@@ -332,6 +332,27 @@ def _participant_fingerprints(participants_json: str, monolithic_json: str = "")
     not exist yet is recorded as absent, so creating it afterwards changes the
     digest — a participant whose script does not exist cannot have been
     reviewed.
+
+    WHAT THIS STILL DOES NOT COVER, established by running it. The fingerprint
+    reaches exactly the paths the SPEC NAMES. Anything a script opens at RUNTIME
+    is invisible, and rewriting it leaves the digest identical while the coupled
+    answer changes completely. Four routes were demonstrated, each taking a
+    reviewed x=2.666667 to x=334.666665 with the verdict still reading VERIFIED,
+    "an independent critic reviewed this exact setup":
+
+      * `from model import step` — an ordinary helper module beside run.py. No
+        trickery at all, and the most likely shape of real code;
+      * `exec(open("physics.py").read())`;
+      * a path built from an environment variable, or by `os.path.join`;
+      * a path found by `glob`.
+
+    A symlink repointed at different content IS caught (the hash follows the
+    link), as is a rewritten `data_files` entry and a rewritten monolithic
+    reference. Closing the rest needs the participants' whole working trees
+    fingerprinted, or an import trace; neither is done here. So `couple` states
+    the scope in its served coverage (`_DIGEST_SCOPE_LIMIT`) rather than letting
+    VERIFIED imply more than the digest supports, and declaring such a file in
+    `data_files` is the supported way to bring it inside.
     """
     out: dict = {}
     try:
@@ -388,6 +409,18 @@ def _coupling_setup_text(**kwargs) -> str:
         if fp:
             payload["__participant_files__"] = fp
     return json.dumps(payload, sort_keys=True)
+
+
+_DIGEST_SCOPE_LIMIT = (
+    "review-to-run binding SCOPE: the review is bound to the participant spec "
+    "and to the CONTENTS of every file the spec names (each command token that "
+    "is a file, every `data_files` entry, the monolithic reference). It is NOT "
+    "bound to files a script opens at runtime — a helper module it imports, a "
+    "path built from an environment variable or by os.path.join, a file found by "
+    "glob. Rewriting one of those changes the coupled answer and leaves this "
+    "verdict's digest identical, so VERIFIED here does not certify that part of "
+    "the setup was reviewed. Declare such files in `data_files` to bring them "
+    "inside the digest.")
 
 
 _MONOLITHIC_NOT_SUPPLIED = (
@@ -2950,7 +2983,7 @@ def register_consolidated_tools(mcp: FastMCP):
         # that could not look at anything (they never flip the verdict, and they
         # are printed in it, so "not checked" is never read as "checked and fine").
         val = list(r.warnings)
-        not_run: list[str] = []
+        not_run: list[str] = [_DIGEST_SCOPE_LIMIT]
         val += check_convergence(r.converged, r.residual, tol)
         for nm, ex in r.exports.items():
             val += check_finite(ex.get("values", []), label=f"{nm}.values")

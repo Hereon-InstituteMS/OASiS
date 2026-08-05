@@ -402,6 +402,37 @@ def test_nonfinite_flux_is_not_silently_passed_by_the_balance_check():
     assert not check_interface_balance(a, good)
 
 
+def test_a_component_that_is_zero_on_both_sides_is_not_an_imbalance():
+    """A validator that condemns a CORRECT coupling is worse than one that misses.
+
+    The per-component branch judges each component on its own scale. A component
+    that is zero on both sides — the tangential traction of a frictionless
+    interface, which is the ordinary case and not a corner one — then has a
+    denominator made of roundoff, and two entries that should cancel report tens
+    of percent. Measured before the floor: a normal traction of 1e5 cancelling
+    exactly, with 1e-17 tangential components, came back "NOT balanced ... 91.6%".
+
+    Remove the `floor` argument from the recursive call in
+    check_interface_balance and this test fails.
+    """
+    n = 11
+    rng = np.random.default_rng(0)
+    fa = np.stack([np.full(n, 1.0e5), rng.normal(0, 3e-17, n)], axis=1)
+    fb = np.stack([np.full(n, -1.0e5), rng.normal(0, 3e-17, n)], axis=1)
+    co = [[float(x), 0.0] for x in np.linspace(0, 1, n)]
+    assert check_interface_balance(
+        {"coordinates": co, "normal_fluxes": fa.tolist()},
+        {"coordinates": co, "normal_fluxes": fb.tolist()}) == []
+    # and the floor must not blind the check to a REAL imbalance in the same
+    # small component: comp1 off by a factor of two is still caught.
+    fb2 = np.stack([np.full(n, -1.0e5), np.full(n, -0.25)], axis=1)
+    fa2 = np.stack([np.full(n, 1.0e5), np.full(n, 0.5)], axis=1)
+    got = check_interface_balance(
+        {"coordinates": co, "normal_fluxes": fa2.tolist()},
+        {"coordinates": co, "normal_fluxes": fb2.tolist()})
+    assert got and "[1]" in got[0], got
+
+
 def test_nonfinite_export_is_reported_by_the_tool(tmp_path):
     nan_b = _b().replace('"normal_fluxes": [-x]', '"normal_fluxes": [float("nan")]')
     d = _couple(_parts(tmp_path, b_body=nan_b), max_iter=5)
@@ -576,12 +607,25 @@ def test_constant_relaxation_actually_uses_the_given_theta(tmp_path):
 def test_aitken_recovers_from_a_theta0_that_does_not_converge(tmp_path):
     """The point of the accelerator, and the regression that mattered: Aitken
     was handed the previous raw export where the formula wants the previous
-    residual, and relaxed each participant by a different theta."""
-    body = _b(scale=-1.0)          # x <- 0.5y+1, y <- -x+2 : oscillates at theta=1
-    fixed = run_coupling(_parts(tmp_path / "c", b_body=body), max_iter=60,
+    residual, and relaxed each participant by a different theta.
+
+    scale=-2.0, not -1.0. The composite Jacobi map over the stacked state
+    (A.values, A.fluxes, B.values, B.fluxes) is J = [[0,0,.5,0], [0,0,.5,0],
+    [s,0,0,0], [s,0,0,0]], whose non-zero eigenvalues satisfy lambda^2 = 0.5*s.
+    At s=-1 that is |lambda| = 0.707, so theta=1 CONVERGES — in 68 iterations,
+    and `assert not converged` at max_iter=60 was passing on the budget being 8
+    short rather than on the premise in the comment. At s=-2, |lambda| = 1
+    exactly, the relaxed spectral radius is |1-theta+i*theta| >= 1 at theta=1,
+    and theta=1 provably cannot converge however long it runs (measured: still
+    2.65e+00 after 400 iterations). Same map, real premise.
+    """
+    body = _b(scale=-2.0)          # |lambda(J)| = 1 exactly: theta=1 cannot converge
+    fixed = run_coupling(_parts(tmp_path / "c", b_body=body), max_iter=120,
                          tol=1e-10, accelerator="constant", theta0=1.0)
     assert not fixed.converged, "theta0=1 must be the bad choice here"
-    ait = run_coupling(_parts(tmp_path / "a", b_body=body), max_iter=60,
+    # and not merely short of budget: the residual is still O(1), not creeping down
+    assert fixed.residual > 1e-3, fixed.residual
+    ait = run_coupling(_parts(tmp_path / "a", b_body=body), max_iter=120,
                        tol=1e-10, accelerator="aitken", theta0=1.0)
     assert ait.converged, "Aitken must find a theta that works from a bad start"
     assert 0.05 <= ait.theta["applied"] <= 1.0
@@ -679,6 +723,44 @@ def test_checks_that_could_not_run_never_flip_the_verdict_but_always_appear(tmp_
         assert note in d["verification"]
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# The three limits that were true of the machinery but were stated only in
+# docstrings, which no agent reads. A limit that is not SERVED is a limit the
+# reader does not have, and VERIFIED then implies more than was established.
+# ═══════════════════════════════════════════════════════════════════════════
+def test_the_digest_says_which_files_it_actually_covers(tmp_path):
+    """The fingerprint reaches the paths the SPEC NAMES. A helper module the
+    script imports at runtime is outside it: rewriting `model.py` moved a
+    reviewed x=2.666667 to x=334.666665 with the verdict still VERIFIED. That
+    is a real limit, so it is stated where the verdict is read.
+    """
+    d = _couple(_parts(tmp_path))
+    assert d["trustworthy_result"] is True
+    hit = [c for c in d["checks_not_run"] if "review-to-run binding SCOPE" in c]
+    assert hit, d["checks_not_run"]
+    assert "data_files" in hit[0]        # says how to bring such a file inside
+    assert hit[0] in d["verification"]
+
+
+def test_the_sensitivity_frontier_is_stated_where_the_verdict_is_read(tmp_path):
+    """S above the floor proves the export MOVES, not that it moves correctly.
+    Measured: values = 6.0 + 1e-6*import is 50% wrong and produces no finding.
+    """
+    d = _couple(_parts(tmp_path), probe=True)
+    hit = [c for c in d["checks_not_run"] if "sensitivity FRONTIER" in c]
+    assert hit, d["checks_not_run"]
+    assert "monolithic" in hit[0]
+    assert hit[0] in d["verification"]
+
+
+def test_the_wrong_surface_limit_is_stated_where_the_verdict_is_read(tmp_path):
+    """Overlapping coordinates are the coordinates the participants REPORTED."""
+    d = _couple(_parts(tmp_path))
+    hit = [c for c in d["checks_not_run"] if "interface identity" in c]
+    assert hit, d["checks_not_run"]
+    assert hit[0] in d["verification"]
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
 
@@ -764,7 +846,11 @@ def test_overlapping_interfaces_of_different_resolution_are_fine():
     a = {"coordinates": [[0.5, y / 10] for y in range(11)]}
     b = {"coordinates": [[0.5, y / 2] for y in range(3)]}
     findings, not_run = check_interfaces_are_the_same_surface(a, b)
-    assert not findings and not not_run
+    # No FINDING: differing resolution on the same surface is legitimate.
+    assert not findings
+    # Coverage is a different channel, and overlapping-as-reported is exactly
+    # where the reader needs telling that "as reported" is all that was checked.
+    assert [n for n in not_run if "interface identity" in n], not_run
 
 
 def test_missing_coordinates_is_reported_not_passed():
