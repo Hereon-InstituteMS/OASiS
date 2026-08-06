@@ -1,0 +1,19 @@
+{
+  "_comment": "Verifies reaction_diffusion pitfall 3 on scikit-fem 12.0.1 (2026-08-06). Schnakenberg on 16x16 ElementQuad1 (289 DOFs), dt=2e-3, 10 backward-Euler steps. Started exactly at (u_ss, v_ss) = (1.0, 0.9) the run stays flat, spread 2.97e-08, and the assembled residual at that state is ~1e-13 - the uniform state is an exact discrete equilibrium because laplace @ ones = 0 and f(u_ss, v_ss) = 0. With the recommended 1e-3 perturbation the same run saturates into a pattern, spread 4.48, ratio 1.5e+08. Refinement recorded by the fixture: the unperturbed spread is NOT constant, it grows x5.5 per step from round-off (the backward-Euler amplification of the fastest mode), reaching 4.0e+01 by step 20 during authoring. An unperturbed start delays onset by ~17 steps here; it does not prevent it.",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "element=ElementQuad1",
+    "n_dofs=289",
+    "n_elements=256",
+    "u_ss=1.0 v_ss=0.9",
+    "uniform_state_is_exact_discrete_equilibrium=True",
+    "unperturbed_spread_lt_1e_5=True",
+    "unperturbed_seed_grows_from_roundoff=True",
+    "perturbed_spread_gt_1p0=True",
+    "spread_ratio_gt_1e6=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

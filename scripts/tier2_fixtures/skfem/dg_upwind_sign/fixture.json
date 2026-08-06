@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#3, verified 2026-08-06 on skfem 12.0.1. The quadratic form z^T F z of the interior-facet flux matrix is positive for every probe with np.minimum(sv*bn,0) (upwind, dissipative), indefinite and ~30x smaller with 0.5*sv*bn (centered, no net dissipation), and negative for every probe with np.maximum(sv*bn,0) (downwind, anti-dissipative). The downwind operator makes the pure-advection matrix exactly singular (spsolve -> NaN) and with a 1e-2 mass shift the solution reaches O(1e12) instead of [0,1]; the centered flux overshoots the advected front more than upwind.",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "upwind_quadform_all_positive=True",
+    "upwind_quadform_all_negative=False",
+    "centered_quadform_all_positive=False",
+    "centered_quadform_indefinite=True",
+    "downwind_quadform_all_negative=True",
+    "upwind_dissipation_exceeds_centered_by_gt_10x=True",
+    "downwind_all_nan=True",
+    "Matrix is exactly singular",
+    "downwind_with_mass_shift_max_abs_gt_1e6=True",
+    "centered_overshoot_exceeds_upwind=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

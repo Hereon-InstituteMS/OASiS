@@ -1,0 +1,25 @@
+{
+  "_comment": "Verifies reaction_diffusion pitfall 2 on scikit-fem 12.0.1 (2026-08-06). The reaction Jacobian block df_u/dv = u^2 assembled with the stiffness pattern instead of the mass pattern: it annihilates constants (S @ ones = 5.6e-16, max row sum / max entry = 2.5e-16) so it reports ZERO coupling for a uniform change in v where the true coupling is 1.0; its norm relative to the mass block scales like 1/h^2 (89, 375, 1526, 6134 for nx = 4, 8, 16, 32, x4 per halving) which is what makes it spurious DIFFUSION; the finite-difference directional derivative of the residual is off by a relative 2.8e+02 versus 8.7e-10 for the mass form; and Newton on one backward-Euler step never converges in 25 iterations, ending 3 orders above its starting residual, while the mass form converges in 2 updates to 4.2e-13. Secondary finding recorded here: asm(mass_pointwise, c) and M @ diag(c) are NOT the same matrix (gap 1.7e-1 at nx=4 shrinking to 8.2e-3 at nx=32 for a smooth c) - each is the exact derivative of a different residual - so the claim's 'differs from the M @ diag reference' is not by itself evidence of a bug.",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "element=ElementQuad1",
+    "n_dofs=81",
+    "stiffness_block_kills_uniform_coupling=True",
+    "mass_block_keeps_uniform_coupling=True",
+    "mass_form_total_equals_integral=True",
+    "stiffness_form_rowsums_are_zero=True",
+    "norm_ratio_grows_like_one_over_h_squared=True",
+    "mass_pointwise_differs_from_M_at_diag=True",
+    "gap_shrinks_under_refinement=True",
+    "mass_form_is_derivative_consistent=True",
+    "stiffness_form_relerr_gt_1=True",
+    "mass_form_newton_converged=True",
+    "stiffness_form_newton_iterations_used=25",
+    "stiffness_form_newton_converged=False",
+    "stiffness_form_final_residual_above_start=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

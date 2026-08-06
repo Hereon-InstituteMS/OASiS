@@ -1,0 +1,20 @@
+{
+  "_comment": "Verifies reaction_diffusion pitfall 0 on scikit-fem 12.0.1 (2026-08-06): the shipped reaction_diffusion_2d template exits rc=0 but produces NO pattern. Reproduces the claim's figures literally - 100 backward-Euler steps of dt=0.5 on the 32x32 ElementQuad1 grid (1089 DOFs) end at u_max=1.0000000000000104 / u_min=0.999999999999973, spread 3.741e-14 - and contrasts them with the byte-identical run at dt=0.002, which saturates into a real Turing pattern (u in [0.118, 4.390], spread 4.27, ratio 1.14e14). The fixture also prints the dispersion relation for the same parameters: lambda_max=+411 (the homogeneous state IS unstable), and the backward-Euler amplification 1/(1-lambda*dt) = -0.0049 at dt=0.5 versus +5.6 at dt=0.002, so the flat output is a time-integration artefact, not physics.",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "element=ElementQuad1",
+    "n_dofs=1089",
+    "n_elements=1024",
+    "lambda_max_gt_0=True",
+    "be_amp_at_shipped_dt_lt_1=True",
+    "be_amp_at_fixed_dt_gt_1=True",
+    "shipped_spread_lt_1e_10=True",
+    "shipped_min_max_identical_to_4dp=True",
+    "fixed_spread_gt_1p0=True",
+    "spread_ratio_gt_1e10=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
