@@ -452,11 +452,25 @@ def heat_arrangement(tag: str, backend_left: str, backend_right: str,
 def elastic_arrangement(tag: str, backend_left: str, backend_right: str,
                         dirichlet: str, mesh_l=(16, 8), mesh_r=(12, 6),
                         theta: float | None = None, max_iter: int = 200,
-                        tol: float = 1e-8, u_atol: float = 1e-9,
-                        q_atol: float = 1e-4) -> dict:
+                        tol: float = 1e-8, u_atol: float = 1e-7,
+                        q_atol: float = 1e-3) -> dict:
     """The same, for the elastic analogue FEBio solves — FEBio 4 has no heat
     module, so a conduction participant is impossible there and the shipped
-    script is a uniaxial-strain bar instead."""
+    script is a uniaxial-strain bar instead.
+
+    The tolerances are looser than the conduction ones in RELATIVE terms
+    (~1e-3 of the problem's own scale, against ~1e-8 for conduction) and that
+    is a property of the model, not slack. The P1 conduction participants are
+    exact for a piecewise-linear solution, so their only error is the coupling
+    tolerance. FEBio solves a three-dimensional hex model of a bar that is
+    uniaxial-strain only in the continuum limit — one element through the
+    thickness, a lateral constraint, its own nonlinear solver tolerance — so a
+    small model error survives however tightly the coupling converges. Measured
+    here it is a few parts in 1e5, and these thresholds sit an order of
+    magnitude above that while staying orders of magnitude below any of the
+    pathologies the fixture exists to catch: a sign error is O(1) and a wrong
+    modulus O(0.1).
+    """
     p = ElasticProblem()
     if theta is None:
         rho = (p.cl / p.cr) if dirichlet == "left" else (p.cr / p.cl)

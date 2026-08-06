@@ -238,14 +238,21 @@ factor  sqrt((1-theta)^2 + rho*theta^2), where
 and "interface conductance" is material coefficient / distance from the
 interface to that subdomain's own outer boundary (k/d for conduction, EA/L for
 a bar, and so on — it is the subdomain's stiffness as seen from the interface).
-That gives three facts you can act on:
+That gives four facts you can act on:
 
   * the best theta is  **theta ~ 1 / (1 + rho)** — 0.5 when the two sides are
     balanced, smaller when the Dirichlet side is the stiffer one, larger when it
     is the softer one. This is the one number in this section worth computing
     before you run anything: swept over rho from 1/4 to 9, the fastest constant
-    theta was 1/(1+rho) at EVERY ratio, and at the unbalanced ones it was the
-    ONLY constant theta that converged at all rather than diverging;
+    theta was 1/(1+rho) at EVERY ratio;
+  * the amplification factor above is below 1 exactly when
+    **theta < 2 / (1 + rho)**, which is TWICE the optimum. So what converges is
+    an INTERVAL, not a point: everything below double the value you just
+    computed. The interval NARROWS as the split gets more unbalanced, which is
+    why a coarse sweep at a strongly unbalanced ratio can turn up only one value
+    that works — the interval got smaller than the spacing, not the method.
+    Above the limit the iteration diverges, and halving theta always brings you
+    back inside it;
   * theta = 1.0 NEVER converges at rho = 1 and DIVERGES for rho > 1. It is not
     a "no relaxation, exact for linear problems" setting on this driver;
   * convergence is fastest when the DIRICHLET side is the SOFTER / LESS
