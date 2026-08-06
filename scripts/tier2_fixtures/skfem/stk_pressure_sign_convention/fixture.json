@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem stokes#7, verified 2026-08-06 on skfem 12.0.1 AND NGSolve 6.2.2604, both importable in this environment so the cross-code half is EXECUTED, not inferred from the other project's documentation. Claim (marked inherited, never cross-verified): skfem uses -p*div(v) and NGSolve +p*div(v), and a Poiseuille benchmark on the same geometry gives pressure fields differing by a sign at every DoF. Ran: a pressure-driven channel in skfem with the coupling written both ways (-div(u)*q and +div(u)*q), and the same experiment in NGSolve with the tutorial form's sign and its negation, comparing inlet pressure and velocity in each. Printed: THE MECHANISM IS CONFIRMED AND SHARP -- in skfem the two pressure vectors are exact negatives (inlet +1.000000 vs -1.000000) while the velocity fields are BIT-IDENTICAL (max difference 0.000e+00); NGSolve reproduces both halves (inlet +1.000000 vs -1.000000, velocity integral unchanged at -8.3333e-02). That is exactly why porting a form between the two is dangerous: the quantity a reader sanity-checks first is completely unaffected and only the pressure sign moves. TWO CORRECTIONS: skfem ships no Stokes form at all, so 'scikit-fem uses -p*div(v)' describes the CATALOG TEMPLATE, not the library -- writing +div(u)*q is a one-character change skfem accepts without complaint, and the convention lives in the user's form. And 'differ by a sign at every DoF' is not checkable BETWEEN the codes, which mesh and number DOFs differently; what is checkable is the boundary pressure sign in each code plus the exact-negation property within each.",
+  "backend": "skfem", "physics": "stokes", "pitfall_index": 7, "mode": "python",
+  "expect_in_output": [
+    "skfem_version=",
+    "ngsolve_version=",
+    "skfem_catalog_convention_gives_positive_inlet_pressure=True",
+    "skfem_flipped_convention_gives_negative_inlet_pressure=True",
+    "skfem_pressures_are_exact_negatives=True",
+    "skfem_velocities_are_identical=True",
+    "sign_flip_is_invisible_in_the_velocity=True",
+    "ngsolve_pressure_sign_flips_with_the_form=True",
+    "ngsolve_velocity_unchanged_by_the_flip=True",
+    "mechanism_reproduces_in_both_libraries=True",
+    "convention_lives_in_the_user_form_not_the_library=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 300
+}
