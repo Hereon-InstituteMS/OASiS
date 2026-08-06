@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "petsc_library_has_no_step_rejected_message=True",
+    "petsc_library_does_contain_DIVERGED_STEP_REJECTED=True",
+    "snes_convergedreason_has_diverged_step_rejected=False",
+    "ts_convergedreason_has_diverged_step_rejected=True",
+    "problem_solver_is_a_snes_not_a_ts=True",
+    "failing_solve_printed_no_rejection_message=True",
+    "failing_reason_is_max_it_or_line_search=True",
+    "dt_stayed_exactly_where_the_caller_put_it=True",
+    "fixed_dt_loop_died_at_the_failing_step=True",
+    "VERDICT=nothing_in_the_stack_rejects_a_step_or_shrinks_dt"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "petsc_library_not_found=True",
+    "VERDICT=the_stack_handled_dt_itself"
+  ]
+}

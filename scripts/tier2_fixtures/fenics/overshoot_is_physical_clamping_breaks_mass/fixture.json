@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "converged_solution_overshoots_below_zero=True",
+    "converged_solution_overshoots_above_one=True",
+    "every_step_converged_so_the_overshoot_is_not_a_failure=True",
+    "unclamped_run_conserves_mass_at_roundoff=True",
+    "early_field_inside_unit_interval_is_nowhere_near_the_wells=True",
+    "clamping_to_the_unit_interval_breaks_mass_conservation=True",
+    "VERDICT=the_overshoot_is_physical_the_clamp_is_the_bug"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_overshoot_or_clamp_was_harmless"
+  ]
+}

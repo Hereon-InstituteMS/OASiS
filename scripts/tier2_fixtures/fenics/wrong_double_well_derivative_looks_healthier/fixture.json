@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "ufl_diff_matches_the_hand_coded_derivative=True",
+    "the_quoted_12c_expression_is_0p06_times_the_correct_one=True",
+    "corrupted_run_converged_every_step=True",
+    "corrupted_run_needed_fewer_newton_iterations=True",
+    "corrupted_run_never_separated=True",
+    "correct_run_separated=True",
+    "VERDICT=flat_low_newton_counts_are_a_warning_not_a_success"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=corrupted_derivative_was_caught_by_the_solver"
+  ]
+}

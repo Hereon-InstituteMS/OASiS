@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "uniform_0p5_never_separates=True",
+    "uniform_0p63_never_separates=True",
+    "mean_0p5_plus_noise_separates=True",
+    "mean_0p63_plus_noise_separates=True",
+    "zero_point_five_is_not_special=True",
+    "every_run_converged_so_the_solver_says_nothing=True",
+    "VERDICT=the_perturbation_not_the_mean_breaks_the_symmetry"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=uniform_start_separated_after_all"
+  ]
+}

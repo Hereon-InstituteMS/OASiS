@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "no_bc_mass_drift_at_roundoff=True",
+    "no_bc_free_energy_monotonically_decreasing=True",
+    "dirichlet_on_c_leaks_mass=True",
+    "drift_ratio_is_many_orders_of_magnitude=True",
+    "dirichlet_run_still_converged_and_still_lost_energy=True",
+    "VERDICT=mass_drift_means_a_leaking_bc_not_an_inaccurate_solver"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_leak_detected"
+  ]
+}

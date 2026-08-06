@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "stale_u0_iteration_count_collapses=True",
+    "every_stale_step_reported_convergence=True",
+    "stale_u0_mass_conservation_still_looks_perfect=True",
+    "stale_u0_field_stopped_evolving=True",
+    "refreshed_loop_separated=True",
+    "VERDICT=stale_u0_freezes_the_run_and_every_check_still_passes"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=stale_u0_was_caught"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "fem_form_accepted_the_u_sub_residual=True",
+    "u_sub_jacobian_is_exactly_zero=True",
+    "ufl_split_jacobian_is_nonzero=True",
+    "petsc4py.PETSc.Error: error code 73",
+    "Matrix is missing diagonal entry 0",
+    "u_sub_solve_raised_a_hard_petsc_error=True",
+    "u_sub_left_the_concentration_untouched=True",
+    "claimed_diverged_pc_failed_text_present=False",
+    "ufl_split_step_converged_and_moved_the_field=True",
+    "VERDICT=u_sub_residual_compiles_then_dies_with_a_zero_tangent"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=u_sub_residual_was_fine"
+  ]
+}
