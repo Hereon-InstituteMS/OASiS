@@ -44,7 +44,8 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / "dune"
 # number in the file is never an aspiration.
 #   2026-08-06  0.07 -> 0.31 (nine fixtures)
 #   2026-08-06  0.31 -> 0.63 (thirteen more; 71 of 111)
-MIN_COVERAGE_FRACTION = 0.63
+#   2026-08-06  0.63 -> 0.65 (stokes solver cost; 73 of 111)
+MIN_COVERAGE_FRACTION = 0.65
 
 
 def _claim_inventory() -> dict[str, str]:
