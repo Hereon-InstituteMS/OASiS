@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for NGSolve phase_field#0: Allen-Cahn does not conserve mass, the mixed H1xH1 Cahn-Hilliard form does. Verified on NGSolve 6.2.2604, unit_square maxh=0.06 (ne=634, P1 ndof=352), eps=0.06, droplet radius 0.3, M=20, dt=2e-4, 60 steps (2026-08-06): the shipped semi-implicit Allen-Cahn scheme drifts by -2.755e-02 relative and monotonically, while the same mesh/eps/M/dt under a stabilised semi-implicit Cahn-Hilliard on ProductSpace(H1,H1) drifts by -3.516e-16. Both fields stay inside [0,1] to a few percent, so the drift is genuine curvature-driven shrinkage rather than an instability.",
+  "backend": "ngsolve",
+  "physics": "phase_field",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "ac_mass_drift_gt_1pct=True",
+    "ac_mass_monotone_decreasing=True",
+    "ac_field_stays_bounded=True",
+    "ch_space_class=ProductSpace",
+    "ch_space_ncomponents=2",
+    "ch_ndof_is_twice_ac_ndof=True",
+    "ch_mass_drift_lt_1em12=True",
+    "ch_field_stays_bounded=True",
+    "ch_conserves_better_than_ac_by_gt_1e10=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

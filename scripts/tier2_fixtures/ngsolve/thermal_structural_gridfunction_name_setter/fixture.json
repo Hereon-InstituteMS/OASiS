@@ -1,0 +1,23 @@
+{
+  "_comment": "ngsolve thermal_structural#5 (GridFunction.name is read-only). Verified 2026-08-03 on NGSolve 6.2.2604. Reading the property returns the constructor-supplied name; type(gf).__dict__['name'] is a property whose fset is None; assigning gfu.name = 'displacement' raises AttributeError whose str() is exactly \"property of 'GridFunction' object has no setter\", and the name is left unchanged. The documented workaround is complete: VTKOutput(mesh, coefs=[...], names=['temperature','displacement']) accepts the labels and Do() writes the file.",
+  "backend": "ngsolve",
+  "physics": "thermal_structural",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "name_is_readable=True",
+    "name_is_a_property=True",
+    "name_property_has_no_setter=True",
+    "displacement_rename_raises=True",
+    "property of 'GridFunction' object has no setter",
+    "temperature_rename_raises=True",
+    "name_unchanged_after_failed_assignment=True",
+    "vtkoutput_names_accepted=True files_written=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

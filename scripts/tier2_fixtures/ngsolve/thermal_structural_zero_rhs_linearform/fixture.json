@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve thermal_structural#4 (symbolic-zero RHS: LinearForm(0*v*dx) has no TestFunction). Verified 2026-08-03 on NGSolve 6.2.2604, unit_square maxh=0.3, H1(order=2, dirichlet='left|right'). LinearForm(0*vT*dx).Assemble() raises NgException whose str() is exactly 'Linearform must have TestFunction'. A 1e-30 coefficient assembles fine, so the collapse is symbolic (the literal 0) and not a smallness threshold. The no-integrand constructor LinearForm(V); f.Assemble() yields an all-zero vector that still carries the template's pure-conduction solve to T_max = 100 after Dirichlet lifting.",
+  "backend": "ngsolve",
+  "physics": "thermal_structural",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "thermal_space_type=h1ho",
+    "zero_integrand_raises=True",
+    "exc_type=NgException",
+    "Linearform must have TestFunction",
+    "tiny_but_nonzero_coefficient_assembles=True",
+    "no_integrand_ctor_rhs_is_zero=True",
+    "empty_rhs_still_solves_conduction=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

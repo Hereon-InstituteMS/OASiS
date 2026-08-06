@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve plasticity#5 (multiplicative F = Fe*Fp vs additive eps = eps_e + eps_p). Observed 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.4 VectorH1 order 2, Integrate(..., order=6): the small-strain additive Cauchy stress and the Neo-Hookean push-forward from Fe = F*Inv(Fp) drift apart monotonically with engineering strain (about 1% at 1% strain, 3.9% at 5%, 11.6% at 20%, 15.3% at 30%) and the gap tracks |1/Det(F) - 1| to within a factor well under 2 -- the claim's stated order. Det(Fe)*Det(Fp) == Det(F) and Cof(F) == Det(F)*Inv(F).trans hold to machine precision.",
+  "backend": "ngsolve",
+  "physics": "plasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "F_type=CoefficientFunction",
+    "disp_space_type=VectorH1",
+    "sym_grad_matches_F=True",
+    "cof_equals_det_times_invT=True",
+    "det_multiplicative_split_exact=True",
+    "detF_stays_positive=True",
+    "reldiff_at_1pct_strain_lt_2pct=True",
+    "reldiff_at_5pct_strain_lt_5pct=True",
+    "reldiff_at_20pct_strain_gt_10pct=True",
+    "reldiff_monotonically_increasing=True",
+    "gap_is_order_inverse_detF=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

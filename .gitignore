@@ -71,3 +71,8 @@ data/build_logs/
 /webui/TEST_PROMPTS.md
 /benchmarks/probe_results/templates.md
 benchmarks/coupling_pairs/*/build_dealii/
+
+# Tier-2 fixtures write output files at run time; they are not inputs.
+scripts/tier2_fixtures/**/*.vtu
+scripts/tier2_fixtures/**/*.vtk
+scripts/tier2_fixtures/**/_build/

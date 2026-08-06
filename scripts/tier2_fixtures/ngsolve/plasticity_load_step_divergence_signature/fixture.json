@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve plasticity#4 (load stepping required for J2 + hardening; divergence signature). Observed 2026-08-06 on NGSolve 6.2.2604, plane-strain J2 on unit_square maxh 0.3 VectorH1 order 2, traction 500 with sigma_y 250 and H 100: one shot returns (-1, maxit) and prints 'Warning: Newton might not converge!' at maxit 30, 100 and 200 alike, so 'increase the steps, not maxit' is confirmed. But the returned pair is (status, numit) -- the claim's '(iters, conv) with iters == maxit' names them in the opposite order and expects an error value Newton never returns. Increments of 100% and 40% of sigma_y diverge; 20%, 10% and 5% converge to the same max|u_x|.",
+  "backend": "ngsolve",
+  "physics": "plasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "newton_doc_first_return_is_status=True",
+    "Warning: Newton might not converge!",
+    "oneshot_first_element=-1",
+    "oneshot_diverged_at_every_maxit=True",
+    "oneshot_second_element_equals_maxit=True",
+    "oneshot_first_element_equals_maxit=False",
+    "raising_maxit_does_not_help=True",
+    "coarse_increments_diverge=True",
+    "increment_at_or_below_10pct_of_sigma_y_converges=True",
+    "all_fine_step_sizes_converge=True",
+    "converged_solution_independent_of_step_size=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

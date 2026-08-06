@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#10, verified 2026-08-06 on skfem 12.0.1. Interior-layer advection-diffusion at 30 degrees, eps = 1/160, Pe_h = 10 / 5 / 2.5 over three refinements. Pure upwind ElementDG(ElementTriP1) rings and does NOT damp -- its excursion outside the physical range [0,1] creeps up 0.083 -> 0.090 -> 0.100; SUPG-CG P1 damps monotonically 0.041 -> 0.011 -> 0.0001, beats DG at every level, and uses a sixth of the DOFs. PARTIAL FALSIFICATION of the numbers: the DG ringing measures 8-10 percent, just under the catalog's '~10-30%' band, and it does NOT clear after ~3 refinement levels; the claim's ORDERING reproduces exactly.",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "coarse_level_pe_h_gt_5=True",
+    "n_refinement_levels=3",
+    "dofs_dg=[384, 1536, 6144]",
+    "dofs_cg=[81, 289, 1089]",
+    "dg_rings_at_coarse_level=True",
+    "dg_damps_monotonically=False",
+    "dg_ringing_cleared_after_3_levels=False",
+    "dg_ring_amplitude_in_10_to_30_percent_band=False",
+    "supg_damps_monotonically=True",
+    "supg_beats_dg_at_every_level=True",
+    "supg_uses_fewer_dofs_than_dg=True",
+    "supg_beats_unstabilised_cg_at_every_level=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
