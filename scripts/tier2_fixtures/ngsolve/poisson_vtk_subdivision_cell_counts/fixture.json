@@ -1,0 +1,21 @@
+{
+  "_comment": "ngsolve poisson#4 (VTKOutput cells per element grow as T(2^N) = 2^N(2^N+1)/2, not 4^N). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3 (24 elements), H1 order 2, subdivision 0 through 3. The measured cells-per-element sequence is exactly 1, 3, 10, 36 -- the claim's numbers -- and each entry equals the triangular number T(2^N) as exact integer arithmetic. 4^N gives 1, 4, 16, 64 and agrees only at N = 0, so the two formulas disagree at three of the four levels and the measurement genuinely discriminates between them; at N = 3 the 4^N estimate over-counts by 1.78x. File sizes 3514/6731/16983/52745 bytes and point counts 72/144/360/1080 both grow, so the cost the formula predicts is real. Mutation: dividing the cell count by 2*mesh.ne instead of mesh.ne shifts the sequence and the fixture fails on matches_triangular_formula.",
+  "backend": "ngsolve",
+  "physics": "poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "cells_per_element=[1, 3, 10, 36]",
+    "matches_triangular_formula=True",
+    "is_1_3_10_36=True",
+    "does_not_match_4_to_the_N=True",
+    "formulas_are_distinguishable_here=True",
+    "file_size_grows_with_subdivision=True",
+    "point_count_grows_with_subdivision=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve stokes#2 (enclosed-flow Stokes has a constant-pressure nullspace; open flows do not; the singular system stays quiet). Run 2026-08-06 on NGSolve 6.2.2604 on one mesh (unit square maxh 0.25, Taylor-Hood order 2/1) with two boundary conditions that differ ONLY in whether the right edge is traction-free. The enclosed system has exactly one singular value at 4.3e-16 against a next of 6.2e-4; its right singular vector puts 100% of its norm in the pressure block with a relative spread of 3.7e-14, so it is the constant-pressure mode. The open system has no zero singular value at all -- smallest 6.3e-4 -- confirming the claim's second sentence. Solving the singular system raises nothing, prints nothing (checked at the file-descriptor level) and returns a finite vector. Both fixes the claim names are exercised: pinning one pressure DOF and a NumberSpace mean-zero multiplier give velocities agreeing to 1.3e-17, and the NumberSpace route additionally drives the pressure mean to 5.2e-18 while pinning leaves it at 0.5 -- so the two are not interchangeable if the pressure's constant matters. Mutation: giving the 'open' problem full Dirichlet velocity BCs makes it singular too and the fixture fails on open_flow_pressure_is_unique.",
+  "backend": "ngsolve",
+  "physics": "stokes",
+  "pitfall_index": 2,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "enclosed_has_exactly_one_zero_mode=True",
+    "nullmode_is_the_constant_pressure=True",
+    "open_flow_pressure_is_unique=True",
+    "singular_system_does_not_announce_itself=True",
+    "singular_solve_returned_finite=True",
+    "both_routes_give_the_same_velocity=True",
+    "numberspace_enforces_mean_zero=True",
+    "pinning_does_not_fix_the_mean=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
