@@ -1,7 +1,7 @@
 """Tier-2: `fix dt/reset` can throw away the timestep you set, and one
 argument decides whether it does.
 
-  rarefied_flow:16  resetflag 0 only reports a recommendation through f_ID;
+  collision_relaxation:8  resetflag 0 only reports a recommendation through f_ID;
                     1 or 2 WRITE it into the global timestep, so every result
                     after the first Nevery steps belongs to a step size the
                     deck did not choose. The only place it shows is the 'dt'

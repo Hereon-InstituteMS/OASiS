@@ -67,18 +67,14 @@ KNOWLEDGE = {
                          "[rotate ...] [invert] [clip] — needs the grid first",
             "surf_collide": "surf_collide <ID> diffuse <Tsurf> <acc> | specular "
                             "[noslip] | cll <Tsurf> <acc_n> <acc_t> <acc_rot> "
-                            "<acc_vib> [partial <e>|translate vx vy vz|rotate "
-                            "px py pz wx wy wz] | adiabatic (NO arguments) | "
-                            "transparent (no arguments; pair with 'read_surf "
-                            "... transparent') | vanish (no arguments) | td "
-                            "<Tsurf> [temp/freq|barrier|initenergy|bond ...] | "
-                            "impulsive <Tsurf> softsphere|tempvar ... (>= 8 "
-                            "further args) | piston <vwall> (vwall > 0, "
-                            "axis-aligned normals only). Wherever <Tsurf> is "
-                            "accepted a 'v_<equal-style-variable>' or "
-                            "'s_<custom per-surf attribute>' may be used "
-                            "instead of a number, which is how a wall "
-                            "temperature is made to vary in time.",
+                            "<acc_vib> [partial|translate|rotate ...] | "
+                            "adiabatic | transparent | vanish (those three take "
+                            "NO arguments) | td <Tsurf> [...] | impulsive "
+                            "<Tsurf> softsphere|tempvar ... | piston <vwall>. "
+                            "Any <Tsurf> may be 'v_<equal-style variable>' or "
+                            "'s_<custom per-surf attribute>' instead of a "
+                            "number — that is how a wall temperature varies in "
+                            "time.",
             "surf_modify": "surf_modify <group-ID|all> collide <sc-ID> [react "
                            "<sr-ID>]",
             "surf_react": "surf_react <ID> prob <file> | global <p_recomb> "
@@ -92,7 +88,11 @@ KNOWLEDGE = {
                             "wall model to a BOX face declared 's' in boundary",
         },
         "solver": "SPARTA DSMC; run: spa_serial -in <deck>",
-        "output_idioms": output_idioms("per-surf tally idiom", "dump format"),
+        # 'dump format' was dropped from this row's idioms once the universal
+        # dump entry started carrying the argument order, the '*' rule and the
+        # bracket rule in full: the two said the same thing twice, and this row
+        # is the largest served payload on the backend.
+        "output_idioms": output_idioms("per-surf tally idiom"),
         "pitfalls": [
             "[Syntax] 'surf_collide <ID> diffuse' takes exactly two arguments "
             "in the order Tsurf (K) then accommodation (0..1). A swap is "
@@ -260,28 +260,7 @@ KNOWLEDGE = {
             "model or reaction model (../surf.cpp:397)' for the opposite one. "
             "(Verified 2026-08-07)",
 
-            "[Setup] Tallying 'etot' on a wall whose collision model DELETES "
-            "the particle crashes the process outright — no ERROR line, no "
-            "message, just a signal, with log.sparta ending mid-run. It is "
-            "specific to the etot keyword: n, nwt, nflux, mflux, press, shx, "
-            "ke, erot, evib and the force keywords all run cleanly on the same "
-            "wall, and etot is fine on diffuse, specular and adiabatic. The "
-            "mechanism is in the source: SurfCollideVanish::collide and "
-            "SurfCollideTransparent::collide are the only two styles that "
-            "leave the 'reaction' out-parameter UNASSIGNED (the argument is "
-            "unnamed in their signatures), where every other style writes "
-            "reaction = 0 first; ComputeSurf::surf_tally's ETOT branch then "
-            "indexes surf->sr[isr] on that stale value with no reaction model "
-            "loaded. If you need the energy carried away by a vanishing "
-            "stream, tally ke, erot and evib separately and add them. "
-            "Signal: the run returns a negative status (SIGSEGV) with an empty "
-            "stderr and no 'ERROR' string anywhere; under a debugger the frame "
-            "is 'SPARTA_NS::ComputeSurf::surf_tally' called from "
-            "'SPARTA_NS::Update::move'. A driver that only checks for the "
-            "string 'ERROR' will report this run as clean. "
-            "(Verified 2026-08-07)",
-
-            "[Syntax] The wall models that take more than a temperature fail "
+"[Syntax] The wall models that take more than a temperature fail "
             "late or vaguely. 'cll' needs FIVE numbers — Tsurf then four "
             "accommodation coefficients (normal, tangential, rotational, "
             "vibrational) — and a short argument list gives only the generic "
@@ -301,28 +280,7 @@ KNOWLEDGE = {
             "(../surf_collide_piston.cpp:76)' AFTER the setup block has "
             "printed. (Verified 2026-08-07)",
 
-            "[Physics] SPARTA has NO heat-flux wall boundary condition. Every "
-            "surf_collide style either fixes the wall TEMPERATURE (diffuse, "
-            "cll, td, impulsive) or transfers no energy at all (specular, "
-            "adiabatic), and there is no keyword anywhere that sets a flux. A "
-            "prescribed flux can only be reached indirectly, by making the "
-            "wall temperature respond to the flux you measure, and there are "
-            "exactly two mechanisms in the code. (1) RADIATIVE EQUILIBRIUM: "
-            "'fix surf/temp' sets each element's temperature from the tallied "
-            "flux through the Stefan-Boltzmann balance, so the converged state "
-            "has zero NET flux rather than a flux you chose. (2) PID FEEDBACK: "
-            "'fix controller' drives an internal-style variable from any "
-            "global scalar, and a surf_collide temperature given as "
-            "'v_<name>' follows it — that is the only route to an ARBITRARY "
-            "target. Neither is a boundary condition: both are controllers "
-            "with a transient, and both need the flux tally to be averaged "
-            "before it is fed back. "
-            "Signal: grep the deck for the wall temperature. If it is a "
-            "number, the flux is an output, not an input, whatever the problem "
-            "statement asked for. There is no error to look for here — a deck "
-            "that silently imposes a temperature where a flux was wanted runs "
-            "perfectly. (Verified 2026-08-07)",
-        ],
+],
     },
 }
 

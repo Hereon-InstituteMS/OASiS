@@ -8,7 +8,7 @@
                           clear message; the transparent MODEL on ordinary
                           elements is NOT, and the run dies in the collision
                           routine talking about cell volume.
-  surface_interaction:13  cll needs five numbers and range-checks them; piston
+  surface_interaction:12  cll needs five numbers and range-checks them; piston
                           needs an axis-aligned normal and says so only at the
                           start of the first run.
 
@@ -128,7 +128,7 @@ print(f"the_other_direction_is_checked_and_named="
 rc_tt, e_tt, _ = go("transparent", rsopt=" transparent")
 print(f"both_flags_together_run={rc_tt == 0 and not e_tt}")
 
-# surface_interaction:13 — cll and piston.
+# surface_interaction:12 — cll and piston.
 rc_c, e_c, _ = go("cll 300.0 1.0 1.0 1.0 1.0")
 print(f"cll_with_five_numbers_runs={rc_c == 0 and not e_c}")
 rc_c3, e_c3, _ = go("cll 300.0 1.0 1.0")

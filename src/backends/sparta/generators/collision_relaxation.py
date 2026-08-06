@@ -233,6 +233,25 @@ KNOWLEDGE = {
             "(../fix_ave_histo.cpp:53)' when lo, hi or Nbin are omitted. A "
             "f_ID[1] equal to Nrepeat rather than to the particle count means "
             "you are histogramming a global scalar. (Verified 2026-08-07)",
+
+"[Numerical] 'fix <ID> dt/reset <Nevery> <c_ID|f_ID> <weight> "
+            "<resetflag>' can change the global timestep underneath a running "
+            "simulation, and the last argument decides whether it does. With "
+            "resetflag 0 the fix only COMPUTES a recommended timestep and "
+            "publishes it as f_ID; with 1 or 2 it WRITES it into the global "
+            "timestep, so the dt you set with the 'timestep' command is gone "
+            "after the first Nevery steps and every subsequent result belongs "
+            "to a step size you did not choose — a per-cell recommendation on "
+            "a near-equilibrium box can be several times the value a user "
+            "picked. <weight> in [0,1] is an exponential smoothing factor on "
+            "the change, not a safety factor. The recommendation itself comes "
+            "from 'compute dt/grid', so it inherits that compute's dependence "
+            "on a fix ave/grid that has to have produced output first. "
+            "Signal: put 'dt' in stats_style. A constant Dt column means "
+            "resetflag 0 or no fix at all; a Dt column that steps at multiples "
+            "of Nevery means the timestep is being rewritten, and the "
+            "convergence study you thought you were running is not one. "
+            "(Verified 2026-08-07)",
         ],
     },
 }

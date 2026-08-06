@@ -1,7 +1,7 @@
 """Tier-2: `compute surf ... etot` on a `vanish` wall kills the process, with
 no ERROR line anywhere.
 
-  surface_interaction:12  the crash is specific to the etot keyword and to a
+  particle_emission:7      the crash is specific to the etot keyword and to a
                           collision model that deletes the particle. Every other
                           compute surf keyword runs on the same wall, and etot
                           runs on every other wall.

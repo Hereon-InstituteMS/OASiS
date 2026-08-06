@@ -1,7 +1,7 @@
 """Tier-2: `fix field/grid` on its own is a no-op, and the activating line
 takes a FIX ID that upstream's example makes look like a flag.
 
-  rarefied_flow:15  the body force needs three lines that agree — a grid-style
+  ambipolar_plasma:5  the body force needs three lines that agree — a grid-style
                     (or particle-style) variable, the fix, and a 'global field'
                     line naming the FIX ID. With the global line missing the
                     deck runs to completion with the particle statistics

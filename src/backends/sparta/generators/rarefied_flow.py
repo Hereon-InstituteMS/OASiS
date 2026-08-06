@@ -126,7 +126,9 @@ KNOWLEDGE = {
             "global": "global nrho <n> fnum <F> [gridcut <d>] — nrho is real "
                       "number density (1/m^3), fnum is real particles per "
                       "simulation particle",
-            "create_grid": "create_grid Nx Ny Nz [level <n> <bounds> nx ny nz]",
+            "create_grid": "create_grid Nx Ny Nz [levels <N> then a region or "
+                           "subset clause per level] — there is no "
+                           "'level' keyword; see adaptive_grid",
             "create_particles": "create_particles <mixID> n 0 [region <regID>]",
             "compute temp": "compute <ID> temp — GLOBAL kinetic temperature, "
                             "streaming velocity NOT removed",
@@ -275,49 +277,7 @@ KNOWLEDGE = {
             "opposite. Tally both and use that balance as the convergence "
             "test, not the wall-clock or the step count.",
 
-            "[Output] 'fix <F> ave/time Nevery Nrepeat Nfreq ...' enforces two "
-            "constraints that a reader cannot tell apart from the message: "
-            "Nfreq must be an exact multiple of Nevery, AND Nevery*Nrepeat "
-            "must not exceed Nfreq. Both violations abort with the SAME "
-            "generic text, which names neither rule and does not print the "
-            "three numbers, so the fix is to check both by hand. The window "
-            "the fix averages is the LAST Nrepeat samples ending at each "
-            "Nfreq step, not the whole Nfreq interval — 'ave/time 10 5 1000' "
-            "averages five samples out of the final fifty steps of every "
-            "thousand and ignores the other 950. "
-            "Signal: 'ERROR: Illegal fix ave/time command "
-            "(../fix_ave_time.cpp:129)' for either violation. Widen the window "
-            "with Nrepeat, not with Nfreq. (Verified 2026-08-07)",
-
-            "[Output] A fix's output can only be printed on steps where the "
-            "fix has fresh data, and SPARTA checks this the STRICT way: "
-            "'stats N' must be a multiple of the fix's Nfreq, so sampling the "
-            "stats table MORE often than the averaging window is a hard error, "
-            "not a repeated value. 'stats 50' against Nfreq 100 aborts; 'stats "
-            "200' against Nfreq 100 runs. 'compute reduce' reading a fix "
-            "raises the same objection with its own message. The check fires "
-            "at the start of the run, after setup has printed, so a deck can "
-            "look healthy for several screens before it stops. "
-            "Signal: 'ERROR: Stats and fix not computed at compatible times "
-            "(../stats.cpp:203)', and from the reduce path 'ERROR: Fix used in "
-            "compute reduce not computed at compatible time', which "
-            "compute_reduce.cpp raises from three different call sites (lines "
-            "778, 805 and 832) for a global, a per-grid and a per-surf input — "
-            "so match the text, not the line. (Verified 2026-08-07)",
-
-            "[Output] The FIRST stats row of a run prints every f_<ID> of a "
-            "fix ave/* as a literal 0, because no averaging window has closed "
-            "yet. There is no warning and no sentinel value — the zero is "
-            "indistinguishable from a real measurement of zero, and it is the "
-            "row an agent reading the top of the table sees first. The same "
-            "zero reappears at the start of every subsequent 'run' command. "
-            "Signal: the f_<ID> column reads exactly 0 on the step-0 row and "
-            "jumps to a physical value on the first row at or after Nfreq. "
-            "Discard the first row; if you need a time series on disk instead "
-            "of in the table, add 'file <name>' to the fix ave/time line, "
-            "which writes one row per Nfreq step. (Verified 2026-08-07)",
-
-            "[Output] 'compute <ID> property/grid <grid-group> <attrs>' is the "
+"[Output] 'compute <ID> property/grid <grid-group> <attrs>' is the "
             "exception to SPARTA's per-grid shape rule: with ONE attribute it "
             "produces a per-grid VECTOR read as c_ID with no bracket, and only "
             "with two or more does it produce an ARRAY read as c_ID[i]. "
@@ -355,72 +315,7 @@ KNOWLEDGE = {
             "(../compute_reduce.cpp:168)' for a replace pair that names one "
             "column or a column past the end. (Verified 2026-08-07)",
 
-            "[Setup] A 'region' is a SELECTOR, not geometry. It reflects "
-            "nothing, blocks nothing and creates no surface: a region defined "
-            "in a deck and never named by another command changes the run not "
-            "at all — same particle count, same collision count, same exit "
-            "count, step for step. Only the commands that take a region "
-            "argument see it (create_particles, create_grid, adapt_grid, the "
-            "fix emit family, fix ave/histo, dump particle). To obstruct a "
-            "flow you need read_surf plus a surf_collide model. Styles are "
-            "block, cylinder, sphere, plane, union and intersect; block takes "
-            "six bounds and accepts INF and EDGE; union and intersect take the "
-            "COUNT of sub-regions first ('region u union 2 a b'); 'side out' "
-            "inverts the selection. In a 2d run a sphere and a z-cylinder of "
-            "the same radius select exactly the same cells. "
-            "Signal: there is NO signal for an unused region — the run is "
-            "identical to one without it, which is why this has to be checked "
-            "by reading the deck. The typo cases do speak: 'ERROR: "
-            "Unrecognized region style (../domain.cpp:471)' for a style that "
-            "does not exist, and 'ERROR: Create_particles region does not "
-            "exist (../create_particles.cpp:122)' for a name that was never "
-            "defined. (Verified 2026-08-07)",
-
-            "[Setup] An external body force needs THREE lines that agree, and "
-            "getting two of them right leaves a run that is silently "
-            "force-free. 'fix <ID> field/grid <ax> <ay> <az>' (or "
-            "field/particle) names GRID-style variables for field/grid and "
-            "PARTICLE-style variables for field/particle, written as BARE "
-            "names with no 'v_' prefix, with NULL for an unused component. The "
-            "fix on its own does nothing at all: the mover only consults it "
-            "after 'global field grid <fix-ID> <Nevery>' or 'global field "
-            "particle <fix-ID>' activates it, and that first argument is a FIX "
-            "ID, not a number — upstream's own example names its fix '1', so "
-            "the line reads 'global field grid 1 0' and copies as if 1 were a "
-            "flag. Without the global line the deck runs to completion with "
-            "the particle statistics bit-identical to a deck with no field. "
-            "The simpler alternative is 'global field constant <magnitude> "
-            "<fx> <fy> <fz>', which needs no fix and no variable. "
-            "Signal: for the silent case there is NO signal — compare a "
-            "temperature or mean kinetic energy against the same deck with the "
-            "fix deleted and see whether anything moved. The loud cases are "
-            "'ERROR: External field fix ID not found (../update.cpp:221)' when "
-            "the global line names something that is not a fix, 'ERROR: "
-            "Variable for fix field/grid is invalid style "
-            "(../fix_field_grid.cpp:105)' for an equal-style variable where a "
-            "grid-style one is required, and 'ERROR: Variable name for fix "
-            "field/grid does not exist (../fix_field_grid.cpp:103)' when the "
-            "name carries a 'v_' prefix. (Verified 2026-08-07)",
-
-            "[Numerical] 'fix <ID> dt/reset <Nevery> <c_ID|f_ID> <weight> "
-            "<resetflag>' can change the global timestep underneath a running "
-            "simulation, and the last argument decides whether it does. With "
-            "resetflag 0 the fix only COMPUTES a recommended timestep and "
-            "publishes it as f_ID; with 1 or 2 it WRITES it into the global "
-            "timestep, so the dt you set with the 'timestep' command is gone "
-            "after the first Nevery steps and every subsequent result belongs "
-            "to a step size you did not choose — a per-cell recommendation on "
-            "a near-equilibrium box can be several times the value a user "
-            "picked. <weight> in [0,1] is an exponential smoothing factor on "
-            "the change, not a safety factor. The recommendation itself comes "
-            "from 'compute dt/grid', so it inherits that compute's dependence "
-            "on a fix ave/grid that has to have produced output first. "
-            "Signal: put 'dt' in stats_style. A constant Dt column means "
-            "resetflag 0 or no fix at all; a Dt column that steps at multiples "
-            "of Nevery means the timestep is being rewritten, and the "
-            "convergence study you thought you were running is not one. "
-            "(Verified 2026-08-07)",
-        ],
+],
     },
 }
 

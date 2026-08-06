@@ -228,6 +228,28 @@ KNOWLEDGE = {
             "after a timestep or Nevery change with the gains untouched — "
             "compare kp*alpha*tau before and after rather than kp. "
             "(Verified 2026-08-07)",
+
+            "[Physics] SPARTA has NO heat-flux wall boundary condition. Every "
+            "surf_collide style either fixes the wall TEMPERATURE (diffuse, "
+            "cll, td, impulsive) or transfers no energy at all (specular, "
+            "adiabatic), and there is no keyword anywhere that sets a flux. A "
+            "prescribed flux can only be reached indirectly, by making the "
+            "wall temperature respond to the flux you measure, and there are "
+            "exactly two mechanisms in the code. (1) RADIATIVE EQUILIBRIUM: "
+            "'fix surf/temp' sets each element's temperature from the tallied "
+            "flux through the Stefan-Boltzmann balance, so the converged state "
+            "has zero NET flux rather than a flux you chose. (2) PID FEEDBACK: "
+            "'fix controller' drives an internal-style variable from any "
+            "global scalar, and a surf_collide temperature given as "
+            "'v_<name>' follows it — that is the only route to an ARBITRARY "
+            "target. Neither is a boundary condition: both are controllers "
+            "with a transient, and both need the flux tally to be averaged "
+            "before it is fed back. "
+            "Signal: grep the deck for the wall temperature. If it is a "
+            "number, the flux is an output, not an input, whatever the problem "
+            "statement asked for. There is no error to look for here — a deck "
+            "that silently imposes a temperature where a flux was wanted runs "
+            "perfectly. (Verified 2026-08-07)",
         ],
     },
 }

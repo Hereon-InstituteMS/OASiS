@@ -179,6 +179,32 @@ KNOWLEDGE = {
             "Signal: 'ERROR: Surface reaction probability for a species > 1.0 "
             "(../surf_react_prob.cpp:287)' — usually it means the file's "
             "column layout does not line up with your declared species.",
+
+"[Setup] An external body force needs THREE lines that agree, and "
+            "getting two of them right leaves a run that is silently "
+            "force-free. 'fix <ID> field/grid <ax> <ay> <az>' (or "
+            "field/particle) names GRID-style variables for field/grid and "
+            "PARTICLE-style variables for field/particle, written as BARE "
+            "names with no 'v_' prefix, with NULL for an unused component. The "
+            "fix on its own does nothing at all: the mover only consults it "
+            "after 'global field grid <fix-ID> <Nevery>' or 'global field "
+            "particle <fix-ID>' activates it, and that first argument is a FIX "
+            "ID, not a number — upstream's own example names its fix '1', so "
+            "the line reads 'global field grid 1 0' and copies as if 1 were a "
+            "flag. Without the global line the deck runs to completion with "
+            "the particle statistics bit-identical to a deck with no field. "
+            "The simpler alternative is 'global field constant <magnitude> "
+            "<fx> <fy> <fz>', which needs no fix and no variable. "
+            "Signal: for the silent case there is NO signal — compare a "
+            "temperature or mean kinetic energy against the same deck with the "
+            "fix deleted and see whether anything moved. The loud cases are "
+            "'ERROR: External field fix ID not found (../update.cpp:221)' when "
+            "the global line names something that is not a fix, 'ERROR: "
+            "Variable for fix field/grid is invalid style "
+            "(../fix_field_grid.cpp:105)' for an equal-style variable where a "
+            "grid-style one is required, and 'ERROR: Variable name for fix "
+            "field/grid does not exist (../fix_field_grid.cpp:103)' when the "
+            "name carries a 'v_' prefix. (Verified 2026-08-07)",
         ],
     },
 }

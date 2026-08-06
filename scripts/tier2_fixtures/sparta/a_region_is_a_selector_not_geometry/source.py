@@ -1,6 +1,6 @@
 """Tier-2: a `region` is a selector. It obstructs nothing.
 
-  rarefied_flow:14  defining a region changes the run not at all until a command
+  particle_emission:6  defining a region changes the run not at all until a command
                     names it; it is not geometry, reflects nothing, and there is
                     no warning to tell you so.
 

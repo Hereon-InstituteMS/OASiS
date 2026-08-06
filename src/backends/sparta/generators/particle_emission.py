@@ -122,6 +122,48 @@ KNOWLEDGE = {
             "from the mixture's streaming velocity. "
             "Signal: 'ERROR: Fix emit/surf group ID does not exist "
             "(../fix_emit_surf.cpp:61)'.",
+
+            "[Setup] A 'region' is a SELECTOR, not geometry. It reflects "
+            "nothing, blocks nothing and creates no surface: a region defined "
+            "in a deck and never named by another command changes the run not "
+            "at all — same particle count, same collision count, same exit "
+            "count, step for step. Only the commands that take a region "
+            "argument see it (create_particles, create_grid, adapt_grid, the "
+            "fix emit family, fix ave/histo, dump particle). To obstruct a "
+            "flow you need read_surf plus a surf_collide model. Styles are "
+            "block, cylinder, sphere, plane, union and intersect; block takes "
+            "six bounds and accepts INF and EDGE; union and intersect take the "
+            "COUNT of sub-regions first ('region u union 2 a b'); 'side out' "
+            "inverts the selection. In a 2d run a sphere and a z-cylinder of "
+            "the same radius select exactly the same cells. "
+            "Signal: there is NO signal for an unused region — the run is "
+            "identical to one without it, which is why this has to be checked "
+            "by reading the deck. The typo cases do speak: 'ERROR: "
+            "Unrecognized region style (../domain.cpp:471)' for a style that "
+            "does not exist, and 'ERROR: Create_particles region does not "
+            "exist (../create_particles.cpp:122)' for a name that was never "
+            "defined. (Verified 2026-08-07)",
+
+            "[Setup] Tallying 'etot' on a wall whose collision model DELETES "
+            "the particle crashes the process outright — no ERROR line, no "
+            "message, just a signal, with log.sparta ending mid-run. It is "
+            "specific to the etot keyword: n, nwt, nflux, mflux, press, shx, "
+            "ke, erot, evib and the force keywords all run cleanly on the same "
+            "wall, and etot is fine on diffuse, specular and adiabatic. The "
+            "mechanism is in the source: SurfCollideVanish::collide and "
+            "SurfCollideTransparent::collide are the only two styles that "
+            "leave the 'reaction' out-parameter UNASSIGNED (the argument is "
+            "unnamed in their signatures), where every other style writes "
+            "reaction = 0 first; ComputeSurf::surf_tally's ETOT branch then "
+            "indexes surf->sr[isr] on that stale value with no reaction model "
+            "loaded. If you need the energy carried away by a vanishing "
+            "stream, tally ke, erot and evib separately and add them. "
+            "Signal: the run returns a negative status (SIGSEGV) with an empty "
+            "stderr and no 'ERROR' string anywhere; under a debugger the frame "
+            "is 'SPARTA_NS::ComputeSurf::surf_tally' called from "
+            "'SPARTA_NS::Update::move'. A driver that only checks for the "
+            "string 'ERROR' will report this run as clean. "
+            "(Verified 2026-08-07)",
         ],
     },
 }

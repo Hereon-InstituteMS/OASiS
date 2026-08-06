@@ -1,7 +1,7 @@
 """Tier-2: there is no flux boundary condition, and the PID that stands in for
 one has an inverted sign, no clamp and a schedule-dependent gain.
 
-  surface_interaction:14        every wall model fixes a TEMPERATURE or transfers
+  conjugate_heat_transfer:10        every wall model fixes a TEMPERATURE or transfers
                                 nothing; a flux can only be reached indirectly.
   conjugate_heat_transfer:7     the variable-style chain a working PID needs.
   conjugate_heat_transfer:8     the sign is inverted versus textbook PID, there
@@ -218,7 +218,7 @@ if not gain_follows_the_schedule:
     print(f"UNEXPECTED: gain identity failed; ratios at (100, 1e-8) were "
           f"{gain_ratio(100, 1e-8)}")
 
-# surface_interaction:14 — no wall model anywhere takes a flux. The wall that
+# conjugate_heat_transfer:10 — no wall model anywhere takes a flux. The wall that
 # needs no controller at all is the one with a NUMBER for its temperature, and
 # it runs: the flux is then an output, which is the whole of the claim.
 rc_f, e_f, (h_f, r_f), _ = go("", "300.0", "", "")

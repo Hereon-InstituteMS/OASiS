@@ -188,6 +188,48 @@ KNOWLEDGE = {
             "(../fix_ave_time.cpp:137)' when 'mode vector' is missing — the "
             "same message a per-grid compute produces there, so it does not by "
             "itself tell you which mistake you made. (Verified 2026-08-07)",
+
+            "[Output] 'fix <F> ave/time Nevery Nrepeat Nfreq ...' enforces two "
+            "constraints that a reader cannot tell apart from the message: "
+            "Nfreq must be an exact multiple of Nevery, AND Nevery*Nrepeat "
+            "must not exceed Nfreq. Both violations abort with the SAME "
+            "generic text, which names neither rule and does not print the "
+            "three numbers, so the fix is to check both by hand. The window "
+            "the fix averages is the LAST Nrepeat samples ending at each "
+            "Nfreq step, not the whole Nfreq interval — 'ave/time 10 5 1000' "
+            "averages five samples out of the final fifty steps of every "
+            "thousand and ignores the other 950. "
+            "Signal: 'ERROR: Illegal fix ave/time command "
+            "(../fix_ave_time.cpp:129)' for either violation. Widen the window "
+            "with Nrepeat, not with Nfreq. (Verified 2026-08-07)",
+
+"[Output] A fix's output can only be printed on steps where the "
+            "fix has fresh data, and SPARTA checks this the STRICT way: "
+            "'stats N' must be a multiple of the fix's Nfreq, so sampling the "
+            "stats table MORE often than the averaging window is a hard error, "
+            "not a repeated value. 'stats 50' against Nfreq 100 aborts; 'stats "
+            "200' against Nfreq 100 runs. 'compute reduce' reading a fix "
+            "raises the same objection with its own message. The check fires "
+            "at the start of the run, after setup has printed, so a deck can "
+            "look healthy for several screens before it stops. "
+            "Signal: 'ERROR: Stats and fix not computed at compatible times "
+            "(../stats.cpp:203)', and from the reduce path 'ERROR: Fix used in "
+            "compute reduce not computed at compatible time', which "
+            "compute_reduce.cpp raises from three different call sites (lines "
+            "778, 805 and 832) for a global, a per-grid and a per-surf input — "
+            "so match the text, not the line. (Verified 2026-08-07)",
+
+"[Output] The FIRST stats row of a run prints every f_<ID> of a "
+            "fix ave/* as a literal 0, because no averaging window has closed "
+            "yet. There is no warning and no sentinel value — the zero is "
+            "indistinguishable from a real measurement of zero, and it is the "
+            "row an agent reading the top of the table sees first. The same "
+            "zero reappears at the start of every subsequent 'run' command. "
+            "Signal: the f_<ID> column reads exactly 0 on the step-0 row and "
+            "jumps to a physical value on the first row at or after Nfreq. "
+            "Discard the first row; if you need a time series on disk instead "
+            "of in the table, add 'file <name>' to the fix ave/time line, "
+            "which writes one row per Nfreq step. (Verified 2026-08-07)",
         ],
     },
 }

@@ -1,13 +1,13 @@
 """Tier-2: the three ways `fix ave/time` refuses to give you a number.
 
-  rarefied_flow:9   Nfreq must be a multiple of Nevery AND Nevery*Nrepeat must
+  hypersonic_flow:7   Nfreq must be a multiple of Nevery AND Nevery*Nrepeat must
                     not exceed Nfreq; both violations share ONE generic message
                     that names neither rule.
-  rarefied_flow:10  'stats N' must be a MULTIPLE of Nfreq. Sampling the stats
+  hypersonic_flow:8  'stats N' must be a MULTIPLE of Nfreq. Sampling the stats
                     table more often than the averaging window is a HARD ERROR,
                     not a repeated value — which is the opposite of what a
                     reader expects, and it is why this is worth an entry.
-  rarefied_flow:11  the first stats row prints f_<ID> as a literal 0, with no
+  hypersonic_flow:9  the first stats row prints f_<ID> as a literal 0, with no
                     warning and no sentinel.
 
 Every deck here is the same 1 mm 2d argon box at rest; the only thing that
@@ -106,7 +106,7 @@ if not stats_rejected:
 rc_ok, err_ok, txt_ok = out["well_formed"]
 print(f"the_well_formed_deck_completes={rc_ok == 0 and not err_ok}")
 
-# rarefied_flow:11 — the step-0 row of f_f is a literal zero while c_gt (a
+# hypersonic_flow:9 — the step-0 row of f_f is a literal zero while c_gt (a
 # compute, evaluated on the spot) already carries a physical value on the same
 # row, and a later row of the SAME f_f column is non-zero. Both comparisons are
 # internal to this one run.

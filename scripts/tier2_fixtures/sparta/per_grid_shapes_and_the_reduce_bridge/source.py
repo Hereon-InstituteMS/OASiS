@@ -1,11 +1,11 @@
 """Tier-2: `compute property/grid` breaks the per-grid bracket rule, and
 `compute reduce` is the only road from a spatial compute to the stats table.
 
-  rarefied_flow:12  property/grid with ONE attribute is a per-grid VECTOR (c_ID,
+  rarefied_flow:9  property/grid with ONE attribute is a per-grid VECTOR (c_ID,
                     no bracket) and only with two or more an ARRAY (c_ID[i]) —
                     the reverse of compute grid / compute surf, which are always
                     arrays. It also carries GEOMETRY ONLY.
-  rarefied_flow:13  a per-particle / per-grid / per-surf compute cannot be named
+  rarefied_flow:10  a per-particle / per-grid / per-surf compute cannot be named
                     in stats_style; compute reduce is the bridge, and its
                     'replace' keyword needs min/max and two distinct columns.
 
@@ -125,7 +125,7 @@ if rc_ab == 0:
         volume_identity = abs(total - LX * LX) <= 1e-12 * LX * LX
 print(f"summed_cell_volume_is_the_box_volume_per_metre_depth={volume_identity}")
 
-# rarefied_flow:13 — a per-particle compute cannot be printed directly, and
+# rarefied_flow:10 — a per-particle compute cannot be printed directly, and
 # 'replace' needs min/max plus two distinct columns.
 rc_p, e_p, _ = go("compute kp ke/particle", "c_kp")
 STATS_MSG = "ERROR: Stats compute does not compute scalar (../stats.cpp:678)"
