@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 8,
+  "covers": ["time_dependent_heat::8"],
+  "mode": "python",
+  "expect_in_output": [
+    "serial_range_line=T in [0.0000, 1.0000]",
+    "serial_range_is_the_full_data_range=True",
+    "ghost_entries_are_included_in_the_local_array=True",
+    "range_line_printed_once_per_rank=True",
+    "some_rank_range_differs_from_the_serial_range=True",
+    "VERDICT=min_max_is_rank_local_and_the_print_is_duplicated"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "mpiexec_missing_at=",
+    "worker_failed_rc=",
+    "serial_range_line=absent",
+    "VERDICT=serial_and_parallel_agreed"
+  ],
+  "timeout_seconds": 300
+}

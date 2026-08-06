@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 9,
+  "covers": ["time_dependent_heat::9"],
+  "mode": "python",
+  "expect_in_output": [
+    "no_dt_blew_up_every_run_reported_reason_4=True",
+    "explicit_limit_costs_five_times_the_steps_for_no_gain=True",
+    "huge_dt_misses_the_wall_pulse_entirely=True",
+    "selected_probe_peak_error_exceeds_fifty_percent=True",
+    "selected_converged_and_bounded=True",
+    "VERDICT=implicit_dt_is_limited_by_accuracy_not_by_stability"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=an_implicit_step_hit_a_stability_limit"
+  ],
+  "timeout_seconds": 300
+}

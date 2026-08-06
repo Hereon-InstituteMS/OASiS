@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "discrete_maximum_principle_holds=True",
+    "galerkin_residual_at_free_dofs_is_machine_zero=True",
+    "wall_reactions_are_equal_and_opposite=True",
+    "reaction_imbalance_shrinks_towards_steady_state=True",
+    "second_run_prints_the_identical_min_max_history=True",
+    "residual_check_catches_the_second_run=True",
+    "min_max_check_catches_the_second_run=False",
+    "VERDICT=the_three_checks_hold_and_the_residual_catches_what_min_max_cannot"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=checks_did_not_discriminate"
+  ],
+  "timeout_seconds": 300
+}
