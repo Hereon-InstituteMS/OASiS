@@ -551,3 +551,47 @@ What CAN be said: the failure needed a derived quantity (a mask built by
 interpolation and sliced by leg) standing in for the thing being measured. Where
 a fixture can count the thing directly — dirichletBlocks, dof counts, non-zeros
 — it should, and this fixture now does.
+
+---
+
+# Four ways a fixture key misreports coverage
+
+All four were found by execution this session, each in a different backend, and
+each produced a number nobody could have caught by reading.
+
+**1. The key points at nothing.** `structural_dynamics:7` where the list ends at
+6; `stokes:7` where it ends at 3. The fixture is real and defends nothing while
+counting as coverage. Gated by `test_fixture_keys_point_at_real_claims`.
+
+**2. Two fixtures share one key.** The runner marks BOTH failed, so seven
+working FEniCSx fixtures sat red for bookkeeping reasons, and two Kratos IGA
+fixtures likewise. Gated by the same test.
+
+**3. Both agents withdraw the duplicate.** Two agents each found the other's
+fixture for the same claim and each deleted their own — turning a visible
+collision into a silent GAP. Caught only because both mentioned it in their
+reports. Not gated: nothing distinguishes "withdrawn because duplicate" from
+"never written".
+
+**4. The key names a real claim through the wrong axis.** SPARTA attaches 10
+UNIVERSAL_PITFALLS to every physics row, where they occupy slots 9-18. Six
+fixtures covered all ten and declared them `universal:<n>` — correct, and
+invisible to a counter walking `rarefied_flow`, which read 7/19 instead of
+19/19. SPARTA measured 76% and was actually at 98.7%. Verified independently:
+each of slots 9-18 appears in all 10 physics rows.
+
+The fix was to carry BOTH keys — `universal:n` and its positional alias
+`rarefied_flow:9+n` — with the coverage gate collapsing aliases onto the
+identity key so nothing is double-counted.
+
+WHAT THESE HAVE IN COMMON. Every one is a disagreement between two ways of
+naming the same claim, and in every case both namings were defensible. That is
+why they survive review: nobody wrote anything wrong. The metric has to be told
+which naming is canonical, and where two exist it has to be told how they map —
+which is exactly what the `covers` list is for, and why an unchecked `covers`
+list would be worse than none.
+
+And the direction of error is not consistent. Case 1 inflates, case 4 deflates
+by 23 points, cases 2 and 3 corrupt without moving the number predictably. A
+coverage figure is only as good as the key hygiene beneath it, and that hygiene
+is now three gates plus one thing no gate catches.
