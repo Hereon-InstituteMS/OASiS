@@ -54,10 +54,15 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / BACKEND
 # aspiration.
 #   2026-08-06  0.06 -> 0.58  (session's fixtures, minus five mis-keyed ones
 #                              whose claims went back to uncovered)
-MIN_COVERAGE_FRACTION = 0.65
+MIN_COVERAGE_FRACTION = 0.69
 
 # Counted on 2026-08-06. Coverage is a fraction, so shrinking the denominator
 # is a way to "improve" it without writing anything.
+# Claim-bearing fixtures that predate the T2_MUTATE convention and would
+# therefore pass with the pathology absent. Measured 2026-08-06; may only
+# go DOWN.
+MUTATION_CONTROL_DEBT = 6
+
 CLAIM_INVENTORY_FLOOR = 196
 
 
@@ -187,6 +192,50 @@ class TestFenicsTier2ClaimCoverage(unittest.TestCase):
             f"claims were retired because execution falsified them, lower "
             f"this floor in the same commit and say which ones; do not let "
             f"the coverage fraction rise by subtraction.")
+
+    def test_mutation_control_debt_does_not_grow(self) -> None:
+        """A fixture that counts toward coverage should FAIL when the pathology
+        is removed. The ones below predate that convention: they pass, but they
+        would pass with the pitfall absent too, so the claim they defend is
+        defended weakly. This test does not demand they be fixed today — it
+        pins the count so the debt cannot quietly grow while the coverage
+        fraction rises. Lower the number as controls are added.
+
+        The mutation control itself is `T2_MUTATE=1` in the fixture's source
+        (or in the shared translation unit its cmd.sh names), which runs the
+        CORRECT variant; the driver then requires an expectation to be lost.
+        """
+        import re
+        tracked = _tracked_fixture_names()
+        without = []
+        for d in sorted(p.parent for p in _FIXTURES.glob("*/fixture.json")):
+            if tracked and d.name not in tracked:
+                continue
+            meta = json.loads((d / "fixture.json").read_text())
+            declared = meta.get("covers")
+            if declared == []:
+                continue                      # synthetic: defends no claim
+            key = f"{meta.get('physics')}::{meta.get('pitfall_index')}"
+            if declared is None and key not in self.inventory:
+                continue                      # key names no claim: counts for 0
+            text = ""
+            for name in ("source.py", "cmd.sh"):
+                p = d / name
+                if p.exists():
+                    text += p.read_text()
+            shared = ""
+            m = re.search(r"run\.sh\"?\s+(\w+)", text)
+            if m:
+                cc = _FIXTURES / "_shared" / f"{m.group(1)}.cc"
+                if cc.exists():
+                    shared = cc.read_text()
+            if "T2_MUTATE" not in text + shared:
+                without.append(d.name)
+        self.assertLessEqual(
+            len(without), MUTATION_CONTROL_DEBT,
+            f"{len(without)} claim-bearing fixtures have no mutation control, "
+            f"above the recorded debt of {MUTATION_CONTROL_DEBT}. Every NEW "
+            f"fixture must carry one.\n  " + "\n  ".join(without))
 
 
 if __name__ == "__main__":                                # pragma: no cover
