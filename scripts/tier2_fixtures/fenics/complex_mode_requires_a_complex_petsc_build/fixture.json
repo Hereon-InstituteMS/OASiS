@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics helmholtz#3: the conda-forge dolfinx build is REAL, and the three ways that shows up. * numpy.issubdtype(default_scalar_type, complexfloating) is the check to make BEFORE building the form; * fem.form on a form carrying an imaginary coefficient raises ValueError; * Function.interpolate of a complex callable does not raise \u2014 it drops the imaginary part, with a ComplexWarning. Mutation control: T2_MUTATE=1 uses real coefficients throughout, so nothing is raised and nothing is discarded. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "helmholtz",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "build_is_complex=False",
+    "form_raised=True",
+    "Unexpected complex value in real expression",
+    "interpolate_raised=False",
+    "imaginary_part_kept=False",
+    "VERDICT=real_build_rejects_forms_and_discards_imaginary_parts"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=complex_survived"
+  ]
+}

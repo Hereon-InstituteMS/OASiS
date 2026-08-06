@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics helmholtz#1: the Helmholtz operator is indefinite, so CG does not merely converge slowly \u2014 PETSc stops it with DIVERGED_INDEFINITE_MAT (-10) after a handful of iterations, and problem.solve() does not raise. The fixture solves k = 20 on a 32x32 square with CG under four preconditioners and reports the converged reason of each, then shows LU converging on the same problem. Mutation control: T2_MUTATE=1 uses a direct LU solve, which converges. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "helmholtz",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "every_cg_variant_diverges=True",
+    "ilu_reports_minus_10=False",
+    "lu_converges=True",
+    "solve_raised=False",
+    "VERDICT=cg_diverges_on_the_indefinite_operator_lu_works"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cg_did_not_report_indefinite"
+  ],
+  "timeout_seconds": 300
+}
