@@ -225,18 +225,34 @@ KNOWLEDGE = {
             "displacement in one Newton call almost always "
             "diverges because the first linearization is too far "
             "from the solution manifold. Signal: solvers.Newton "
-            "returns (iters, conv) with iters == maxit and conv "
-            "still > maxerr — that is the divergence signal. "
-            "Reduce the step size or reduce dampfactor below 1.0.",
+            "returns (-1, maxit) and prints 'Warning: Newton might "
+            "not converge! Error = ' — the return is "
+            "(status, numit), an integer STATUS first (0 = "
+            "converged, -1 = gave up) and the iteration count "
+            "second, NOT (iters, conv); there is no error value in "
+            "the return at all, so 'conv > maxerr' is comparing "
+            "against an iteration count and a test written that "
+            "way misreads every run. Test status == 0. Reduce the "
+            "step size or reduce dampfactor below 1.0. (Return "
+            "contract verified 2026-08-06 on NGSolve 6.2.2604 — "
+            "Tier-2 fixture "
+            "plasticity_load_step_divergence_signature.)",
             "[API] solvers.Newton's dampfactor kwarg (default 1.0) "
             "scales every update by alpha in [0,1] — gfu += "
             "dampfactor * du. Reducing it to 0.5-0.7 trades "
             "iteration count for robustness when the initial "
             "guess is far from the converged solution. Signal: "
-            "with dampfactor=1.0 Newton diverges (conv stays at "
-            "1e+something); with dampfactor=0.5 it converges in "
-            "more iterations but the conv value drops below "
-            "maxerr.",
+            "with dampfactor=1.0 the far-from-equilibrium step "
+            "returns status -1 (or aborts inside the factorisation "
+            "once the iterate has gone non-physical), and raising "
+            "maxit does not rescue it; with dampfactor=0.5 or 0.25 "
+            "the same step returns status 0 and reaches the "
+            "prescribed displacement. Read the STATUS, not a "
+            "'conv' value — solvers.Newton returns "
+            "(status, numit) and no residual. (Return contract "
+            "verified 2026-08-06 on NGSolve 6.2.2604 — Tier-2 "
+            "fixtures plasticity_load_step_divergence_signature "
+            "and nonlinear_elasticity_dampfactor_rescue.)",
         ],
     },
 }
