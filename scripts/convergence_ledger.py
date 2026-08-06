@@ -202,6 +202,53 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
     backends_dir = repo / "src" / "backends"
     fixtures_dir = repo / "scripts" / "tier2_fixtures"
 
+    def _claims_with_a_fixture(fx_dir: Path) -> set[str]:
+        """Distinct CLAIMS a backend's fixtures attest to, not fixture count.
+
+        Counting fixture directories is wrong in both directions, and both
+        errors showed up on the same day:
+
+          * It UNDERSTATES. One fixture may legitimately cover several claims —
+            DUNE JIT-compiles C++ per distinct form, so splitting claims that
+            share a compiled module multiplies build time without adding
+            evidence. DUNE reads 34% by directory count and 80.2% by claim
+            attribution: 30 fixtures covering 89 of 111 claims.
+          * It OVERSTATES. 4C reads 104% because 14 legacy fixtures carry keys
+            matching no current claim. A coverage figure above 100% is proof on
+            its face that the metric is not measuring coverage.
+
+        So a fixture declares what it covers, and a `covers` entry naming a
+        claim that does not exist counts for nothing — otherwise the metric
+        could be raised by inventing keys. Fixtures with no `covers` key fall
+        back to their own physics/pitfall_index pair, which is how the older
+        ones are counted.
+
+        Deliberately silent about fixture QUALITY: this answers "is there a
+        fixture for this claim at all". Whether it passes is the runner's job,
+        and whether its mutation kills it is the mutation harness's — which was
+        itself scoring KILLED for fixtures that never ran until it was fixed.
+        """
+        found: set[str] = set()
+        if not fx_dir.is_dir():
+            return found
+        for d in sorted(fx_dir.iterdir()):
+            manifest = d / "fixture.json"
+            if not manifest.is_file():
+                continue
+            try:
+                spec = json.loads(manifest.read_text())
+            except (json.JSONDecodeError, OSError):
+                continue
+            covers = spec.get("covers")
+            if isinstance(covers, list) and covers:
+                found.update(str(c) for c in covers if isinstance(c, str))
+                continue
+            physics = spec.get("physics")
+            idx = spec.get("pitfall_index")
+            if physics is not None and idx is not None:
+                found.add(f"{physics}:{idx}")
+        return found
+
     def _signals_in(paths) -> set[str]:
         """Every distinct Signal-carrying string under these paths.
 
@@ -232,10 +279,16 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
         n_fx = 0
         if fx.is_dir():
             n_fx = len([d for d in fx.iterdir() if (d / "fixture.json").is_file()])
+        attributed = _claims_with_a_fixture(fx)
         out[name] = {
             "pitfall_claims": len(signals),
             "fixtures": n_fx,
-            "covered": round(n_fx / len(signals), 4) if signals else None,
+            # Fixture directories over claims. A FLOOR, not the figure: see
+            # _claims_with_a_fixture for why it is wrong in both directions.
+            "covered_crude": round(n_fx / len(signals), 4) if signals else None,
+            "claims_attributed": len(attributed),
+            "covered": (round(len(attributed) / len(signals), 4)
+                        if signals else None),
         }
 
     # The served surfaces that live outside src/backends/<name>/. Grouped under
@@ -282,24 +335,33 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
 
 def print_measured_coverage() -> None:
     rows = measured_pitfall_coverage()
-    print(f"\n{'surface':<15} {'pitfalls':>9} {'fixtures':>9} {'covered':>9}")
-    print("-" * 46)
-    tp = tf = 0
+    print(f"\n{'surface':<15} {'claims':>7} {'fixtures':>9} {'attributed':>11} "
+          f"{'covered':>9}  bar")
+    print("-" * 60)
+    tp = tf = ta = 0
     unmeasurable = []
     for be, d in sorted(rows.items()):
         tp += d["pitfall_claims"]
         tf += d["fixtures"]
+        ta += d.get("claims_attributed", 0)
         if d["covered"] is None:
-            cov = "UNMEASURABLE"
-            unmeasurable.append(be)
+            cov, bar = "UNMEASURABLE", ""
         else:
             cov = f"{d['covered']:.1%}"
-        print(f"{be:<15} {d['pitfall_claims']:>9} {d['fixtures']:>9} {cov:>9}")
-    print("-" * 46)
-    print(f"{'TOTAL':<15} {tp:>9} {tf:>9} "
-          f"{(tf / tp if tp else 0):>8.1%}")
-    print("\nsurface_covered for the freeze criterion is this column — computed "
-          "from the tree, identical in meaning for every surface.")
+            bar = "MEETS" if d["covered"] >= THRESHOLDS["surface_covered"] else ""
+        if d["covered"] is None:
+            unmeasurable.append(be)
+        print(f"{be:<15} {d['pitfall_claims']:>7} {d['fixtures']:>9} "
+              f"{d.get('claims_attributed', 0):>11} {cov:>9}  {bar}")
+    print("-" * 60)
+    print(f"{'TOTAL':<15} {tp:>7} {tf:>9} {ta:>11} "
+          f"{(ta / tp if tp else 0):>8.1%}")
+    print("\nsurface_covered for the freeze criterion is the `covered` column: "
+          "DISTINCT CLAIMS with a fixture, over claims. Not fixture count over "
+          "claims — that reads 34% for a backend measuring 80% (one fixture can "
+          "cover several claims) and 104% for another (legacy fixtures keyed to "
+          "claims that no longer exist). A ratio that can exceed 100% is not "
+          "measuring coverage.")
 
     if unmeasurable:
         # Loud, because an unmeasurable row is the one failure mode this table

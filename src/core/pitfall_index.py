@@ -85,6 +85,13 @@ CANONICAL_CATEGORIES = {
     "mesh": "Mesh",
     "validation": "Validation",
     "workflow": "Validation",         # singleton, same axis
+    # SPARTA's dominant axis, 22 of its 79 entries. Not a synonym for anything
+    # already here: getting a DSMC deck to START is a distinct failure surface
+    # from Input (a malformed keyword) or Integration (a missing dependency) —
+    # it covers grid/box/species declaration order and the mandatory commands a
+    # run needs before it will begin at all. Without this key, category
+    # filtering silently skipped SPARTA's largest group.
+    "setup": "Setup",
     # Axes that arrived with the compound convention in `_cross.py` (below).
     # Both are real and distinct: a units mismatch and a boundary-condition
     # semantic difference are the two failure modes that converge cleanly and
