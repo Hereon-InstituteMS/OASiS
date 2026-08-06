@@ -57,6 +57,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -237,12 +238,13 @@ struct Solid
     , dof(tria)
   {}
 
-  void make_grid(unsigned int nx, unsigned int ny, double L, double H)
+  void make_grid(unsigned int nx, unsigned int ny, double L, double H,
+                 bool colorize = true)
   {
     Lx = L;
     Ly = H;
     GridGenerator::subdivided_hyper_rectangle(
-      tria, {nx, ny}, Point<dim>(0, 0), Point<dim>(L, H), true);
+      tria, {nx, ny}, Point<dim>(0, 0), Point<dim>(L, H), colorize);
     dof.distribute_dofs(fe);
     sol.reinit(dof.n_dofs());
     rhs.reinit(dof.n_dofs());
@@ -2114,6 +2116,80 @@ static int umfpack_vs_cg()
   return 0;
 }
 
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#9 -- subdivided_hyper_rectangle defaults every face to
+// boundary_id 0, so a clamp meant for ONE face silently takes the whole
+// boundary with it.
+// ---------------------------------------------------------------------------
+static int colorize_boundary_ids()
+{
+  const bool colorize = mutate();
+  Solid      s(1);
+  s.bc = BC::cantilever;   // clamps boundary_id 0 and nothing else
+  s.make_grid(8, 8, 1.0, 1.0, colorize);
+  lame_from(1.0e4, 0.3, s.mu, s.lam);
+  std::cout << "colorize=" << (colorize ? "true" : "false") << std::endl;
+
+  // which boundary ids actually exist
+  std::set<types::boundary_id> ids;
+  unsigned int                 faces = 0, faces_with_id_zero = 0;
+  for (const auto &cell : s.tria.active_cell_iterators())
+    for (const auto &face : cell->face_iterators())
+      if (face->at_boundary())
+        {
+          ++faces;
+          ids.insert(face->boundary_id());
+          if (face->boundary_id() == 0)
+            ++faces_with_id_zero;
+        }
+  std::cout << "distinct_boundary_ids={";
+  bool first = true;
+  for (auto i : ids)
+    {
+      std::cout << (first ? "" : ",") << int(i);
+      first = false;
+    }
+  std::cout << "}" << std::endl;
+  std::cout << "n_distinct_boundary_ids=" << ids.size()
+            << " boundary_faces=" << faces
+            << " faces_carrying_id_zero=" << faces_with_id_zero << std::endl;
+  std::cout << "every_face_carries_id_zero="
+            << ((faces_with_id_zero == faces) ? "true" : "false") << std::endl;
+
+  s.set_bc(0.0, true);
+  s.allocate();
+  const IndexSet all_boundary = DoFTools::extract_boundary_dofs(s.dof);
+  unsigned int   constrained  = 0;
+  for (const auto i : all_boundary)
+    if (s.constraints.is_constrained(i))
+      ++constrained;
+  std::cout << "boundary_dofs=" << all_boundary.n_elements()
+            << " of_them_constrained=" << constrained << std::endl;
+  const bool all_clamped = (constrained == all_boundary.n_elements());
+  std::cout << "the_whole_boundary_is_clamped="
+            << (all_clamped ? "true" : "false") << std::endl;
+
+  // load it and see whether anything moves at all
+  Opts o;
+  o.end_traction_y = 40.0;   // shear on the face the user meant to leave free
+  NewtonOpts n;
+  n.max_it           = 25;
+  n.tol              = 1e-10;
+  n.line_search      = true;
+  const NewtonReport rep = newton(s, o, n);
+  report("loaded", rep);
+  std::cout << "displacement_linfty_norm=" << s.sol.linfty_norm() << std::endl;
+  const bool frozen = s.sol.linfty_norm() < 1e-12;
+  std::cout << "displacement_is_zero_everywhere=" << (frozen ? "true" : "false")
+            << std::endl;
+  std::cout << "VERDICT="
+            << (frozen ? "one_boundary_id_clamped_the_entire_boundary"
+                       : "only_the_intended_face_is_clamped")
+            << std::endl;
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   const std::string probe = (argc > 1) ? argv[1] : "";
@@ -2148,6 +2224,8 @@ int main(int argc, char **argv)
     return fesystem_gradient_containers();
   if (probe == "umfpack_vs_cg")
     return umfpack_vs_cg();
+  if (probe == "colorize_boundary_ids")
+    return colorize_boundary_ids();
   std::cout << "UNKNOWN_PROBE" << std::endl;
   return 3;
 }
