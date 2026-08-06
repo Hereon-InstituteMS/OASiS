@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM fracture::1: [Numerical] A mesh that is coarse compared with l0 makes the model TOUGHER, not weaker. The previously stated signal - that the computed fracture energy 'under-shoots Griffith's G_c * area by ~30-50% when h ~ l0' - is WRONG IN SIGN and was not reproduced. Signal: running the same specimen at a sequence of mesh sizes with l0 and Gc held fixed, the energy dissipated in breaking it comes out ABOVE Gc times the crack area at every resolution, the excess grows steadily as the mesh is coarsened, and the displacement at which the crack finally runs also rises with coarsening - a coarse run reports a specimen that is harder to break, not easier. Refining drives both quantities down monotonically towards the Griffith value. Use this as the convergence test: compute the dissipated energy, divide by Gc times the crack area, and refine until that ratio stops falling. WHAT THIS RUNS: a staggered AT2 phase-field solve of the same specimen at 8x8, 12x12 and 20x20 with l0 = 0.1 and Gc = 2.7e-3 held FIXED (h/l0 = 1.25, 0.833, 0.5), P1 displacement and P1 damage, E=210, nu=0.3, pre-crack seeded as a large history value along y=0.5 for x<0.5 so the crack area created is the remaining ligament 0.5, sixteen displacement-controlled steps to 1e-2; the dissipated energy is the rise of the regularised surface energy from just after seeding to the end of the ramp, and the crack-run displacement is the step of largest growth of the integrated damage. WHAT WAS PRINTED: dissipated/(Gc*0.5) = 1.4006, 1.3201, 1.2524 - above one at every resolution, falling monotonically under refinement, never approaching one from below, so the sign of the older claim is confirmed wrong; the crack-run displacement falls as well, 0.00750, 0.00688, 0.00625; and the ratio is still dropping at the finest mesh, so the sequence is not yet converged, which is exactly what the test is for. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 makes the mesh under test the fine 20x20 one, whose overshoot is 25% rather than 40%, and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 1,
+  "mode": "python",
+  "covers": ["fracture::1"],
+  "expect_in_output": [
+    "mesh_under_test_overshoots_griffith_by_over_thirty_five_percent=True",
+    "every_resolution_dissipates_more_than_gc_times_the_crack_area=True",
+    "the_excess_falls_monotonically_under_refinement=True",
+    "no_resolution_undershoots_griffith=True",
+    "the_crack_runs_at_a_smaller_displacement_as_the_mesh_refines=True",
+    "the_ratio_is_still_falling_at_the_finest_mesh=True",
+    "dissipated_over_Gc_times_crack_area=",
+    "VERDICT=a_coarse_mesh_dissipates_more_than_griffith_not_less"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_coarse_mesh_undershot_griffith"
+  ],
+  "timeout_seconds": 400
+}
