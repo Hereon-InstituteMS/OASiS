@@ -889,6 +889,20 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "MAT_Newtonian", "MAT_Carreau",
             "MAT_LinElast1D",
             "CAPA", "CONDUCT",
+            # ── Poro density laws and their parameter keys.
+            #    Added 2026-08-06 deliberately, NOT as a quiet
+            #    widening: porous_media#7 names MAT_PoroDensityLawExp
+            #    and BULKMODULUS, which are registered 4C material
+            #    entities no textbook uses, and which a critic can
+            #    grep in the source and in `4C --parameters`. They are
+            #    the same shape as MAT_Fourier / CAPA / CONDUCT above.
+            #    Time-integrator names (BDF2, One_Step_Theta, THETA)
+            #    were considered and DELIBERATELY LEFT OUT: those are
+            #    the textbook method words this gate exists to reject,
+            #    and admitting them would let "use BDF2" satisfy
+            #    Tier-0 while naming nothing 4C emits.
+            "MAT_PoroDensityLawExp", "MAT_PoroDensityLawConstant",
+            "MAT_PoroLawNeoHooke", "BULKMODULUS",
             # ── 4C input-spec builder classes (the ones that
             #    emit the empirical diagnostics) ─────────────────
             "InputSpec", "InputFile", "InputParameterContainer",
