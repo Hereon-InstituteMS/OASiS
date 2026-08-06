@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem nonlinear#2: basis.interpolate(u) returns a skfem.element.discrete_field.DiscreteField carrying .value and .grad; for a constant u the .grad array is uniformly zero. Measured on skfem 12.0.1. Also pins the failure an agent hits instead: naming a field that was never passed to assemble raises from the FormExtraParams dict.",
+  "backend": "skfem",
+  "physics": "nonlinear",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "interpolate_type_name=DiscreteField",
+    "has_value_attribute=True",
+    "has_grad_attribute=True",
+    "constant_field_grad_all_zero=True",
+    "linear_field_grad_matches_slope=True",
+    "missing_field_raises=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

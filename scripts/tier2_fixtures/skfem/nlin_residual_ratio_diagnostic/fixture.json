@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for skfem nonlinear#4 (previously 'claim inherited'). The claim's diagnostic is that a roughly CONSTANT residual ratio across iterations means the assembled Jacobian is wrong or inexact. Measured on skfem 12.0.1: the exact linearisation's log-residual roughly doubles its decrement per step (successive ratios fall by more than four orders of magnitude over the run) while the inexact operator's ratio stays inside a factor of 2.5. The diagnostic discriminates.",
+  "backend": "skfem",
+  "physics": "nonlinear",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "exact_successive_ratios_fall_by_over_100x=True",
+    "inexact_ratio_stays_within_2p5x=True",
+    "diagnostic_separates_the_two=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

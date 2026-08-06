@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem mixed_poisson#4 (previously 'claim inherited -- not yet empirically separated'). Measured on skfem 12.0.1 with the dual mixed RT0/P0 system on MeshTri().refined(3): leaving the outflow facet DOFs free lets the boundary flux settle at whatever the interior dictates, an O(1) deviation from any prescribed value; constraining those DOFs reproduces the prescribed flux to machine precision. NOTE the claim describes the flux trace as the NATURAL condition imposed by a test-side boundary integral -- in the dual mixed form implemented here it is the ESSENTIAL one (constrained RT0 DOFs) while the pressure/Dirichlet datum is the natural one. The observable in the claim's Signal reproduces either way and is what this fixture pins.",
+  "backend": "skfem",
+  "physics": "mixed_poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "unconstrained_flux_deviates_by_order_one=True",
+    "constrained_flux_matches_prescribed=True",
+    "facet_dof_count_on_right=8",
+    "rt0_and_p0_block_shapes_consistent=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem mixed_poisson#6: the reference-domain normal arrays are NOT unit length on slanted facets. Measured on skfem 12.0.1: RefTri norms [1, sqrt(2), 1], RefTet [1, 1, 1, sqrt(3)], RefWedge [1, sqrt(2), 1, 1, 1]; RefLine/RefQuad/RefHex all unit; and RefWedge.brefdom is None, uniquely among the 3-D refdoms. FINDING: the claim's stated workaround names 'FacetBasis.normal', which does not exist -- the attribute is FacetBasis.normalS, and that one IS unit length. The fixture pins the correct name.",
+  "backend": "skfem",
+  "physics": "mixed_poisson",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "reftri_hypotenuse_norm_is_sqrt2=True",
+    "reftet_slanted_norm_is_sqrt3=True",
+    "refwedge_diagonal_norm_is_sqrt2=True",
+    "line_quad_hex_all_unit=True",
+    "refwedge_brefdom_is_none=True",
+    "facetbasis_has_normal_singular=False",
+    "facetbasis_normals_are_unit=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

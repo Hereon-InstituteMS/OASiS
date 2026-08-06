@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem nonlinear#5 (previously 'claim inherited'). Measured on skfem 12.0.1 with the stiff -lap u + exp(u) = 200 problem on MeshTri().refined(3)/P1 from a zero initial guess: full steps (alpha=1) make the residual GROW by nearly three orders of magnitude on the first step and it never recovers within the iteration budget; halving backtracking gives a monotone decrease to machine precision. Thresholds and monotonicity only, no residual pinned.",
+  "backend": "skfem",
+  "physics": "nonlinear",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "full_step_residual_grows=True",
+    "backtracking_residual_monotone=True",
+    "backtracking_reaches_below_1e_9=True",
+    "full_step_never_reaches_1e_9=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
