@@ -218,3 +218,54 @@ def test_no_two_fixtures_claim_the_same_key(backend):
         f"which credits them twice and leaves others uncounted:\n  "
         + "\n  ".join(f"{k}: {', '.join(v)}" for k, v in
                       list(clashes.items())[:12]))
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_every_fixture_records_what_it_did(backend):
+    """The evidence record must not be a placeholder.
+
+    `_comment` is where a fixture says which claim it defends, what was run, and
+    what the software printed. It is the only part a person reads when deciding
+    whether the fixture actually exercises the claim its key names — and that
+    judgement cannot be automated, because a key can be syntactically valid and
+    still point at the wrong claim. Kratos hit exactly that: when moving 53
+    entries shifted 18 fixtures' indices, the machine-readable field was fixed
+    while the prose still quoted the OLD claim. The prose is the half that
+    misleads a human.
+
+    So a fixture whose comment reads PLACEHOLDER is a fixture nobody can audit
+    by reading. Measured when this was added: 63 FEniCSx and 25 deal.II
+    fixtures, the two backends whose authoring runs were interrupted most often;
+    every other backend was already at zero, which is why this is worth holding
+    rather than waiving.
+    """
+    fx = FIXTURES / backend
+    if not fx.is_dir():
+        pytest.skip(f"{backend} has no fixtures")
+
+    empty = []
+    for d in sorted(fx.iterdir()):
+        manifest = d / "fixture.json"
+        if not manifest.is_file():
+            continue
+        try:
+            spec = json.loads(manifest.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        comment = str(spec.get("_comment", "")).strip()
+        if not comment:
+            empty.append(f"{d.name}: no _comment")
+        elif comment.upper().startswith("PLACEHOLDER"):
+            empty.append(f"{d.name}: _comment is PLACEHOLDER")
+        elif len(comment) < 40:
+            empty.append(f"{d.name}: _comment too short to be a record "
+                         f"({len(comment)} chars)")
+
+    assert not empty, (
+        f"{backend}: {len(empty)} fixtures do not record what they did, so "
+        f"nobody can tell by reading whether they defend the claim their key "
+        f"names:\n  " + "\n  ".join(empty[:20])
+        + (f"\n  ... and {len(empty) - 20} more" if len(empty) > 20 else "")
+        + "\n\nState the claim in one line, what was run, and what the software "
+          "printed. Measured numbers belong here — the fixture is exactly "
+          "where they are allowed, unlike the knowledge text.")
