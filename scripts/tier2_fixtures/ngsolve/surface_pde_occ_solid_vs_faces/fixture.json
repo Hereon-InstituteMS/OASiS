@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for NGSolve surface_pde#5: OCCGeometry fed a shape that still carries a solid builds a VOLUME mesh, so ds runs over the volume boundary and a plain H1 lives on the ball. Verified on NGSolve 6.2.2604, maxh=0.4 Curve(4) (2026-08-06): the solid gives mesh.dim=3 with ne=215 and Integrate(1*dx)=4.188798 (ball volume) and H1 order-2 ndof=506, whereas Glue(sphere.faces) gives ne=0, Integrate(1*dx)=0.0, Integrate(1*ds)=12.566386 and ndof=378, with grad(u)*grad(v)*dx assembling an EMPTY matrix while NGSolve prints 'used dof inconsistency'. Records two corrections to the claim text: selecting the faces does NOT make Mesh.dim return 2 (it stays 3; the discriminator is ne==0), and forcing dim=2 flattens the sphere into a planar 2-D mesh of area 6.066810 instead of 4*pi.",
+  "backend": "ngsolve",
+  "physics": "surface_pde",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "solid_geo_mesh_dim=3",
+    "solid_geo_has_volume_elements=True",
+    "solid_geo_dx_is_ball_volume=True",
+    "solid_geo_ds_is_sphere_area=True",
+    "faces_geo_mesh_dim=3",
+    "faces_geo_n_volume_elements=0",
+    "faces_geo_dx_is_zero=True",
+    "faces_geo_ds_matches_4pi=True",
+    "solid_geo_plain_h1_bigger_than_surface=True",
+    "faces_geo_grad_dx_nnz_is_zero=True",
+    "used dof inconsistency",
+    "dim2_mesh_dim=2",
+    "dim2_vertex_point_dimension=2",
+    "dim2_area_far_from_4pi=True",
+    "faces_list_with_dim_kwarg_raised=True",
+    "incompatible constructor arguments"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

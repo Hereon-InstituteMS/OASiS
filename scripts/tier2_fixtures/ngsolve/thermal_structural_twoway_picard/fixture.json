@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve thermal_structural#3 (two-way coupling needs Picard sweeps; one-way is 5-20% off when k depends on the deformation). Verified 2026-08-03 on NGSolve 6.2.2604, unit_square maxh=0.3, T=100 on left / 0 on right, k(u)=1*(1+50*Trace(Strain(u))), structural part clamped on the left with alpha=2.0e-4 E=210 GPa nu=0.3. The Picard loop reaches ||dT||/||T|| and ||du||/||u|| < 1e-4 in 6 sweeps with a monotone residual history (1.54e-1, 1.93e-2, 2.59e-3, 6.92e-4, 5.29e-5), and the one-way field is 13.89% away from the converged one in relative L2 -- inside the documented 5-20% band and the documented 3-10 sweeps.",
+  "backend": "ngsolve",
+  "physics": "thermal_structural",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "thermal_space_type=h1ho structural_space_type=VectorH1",
+    "one_way_sweeps=1",
+    "one_way_error_gt_5pct=True",
+    "one_way_error_lt_20pct=True",
+    "picard_converged_below_1e-4=True",
+    "picard_sweeps_in_3_to_10=True",
+    "picard_residual_monotone=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#5, verified 2026-08-06 on skfem 12.0.1. SIPG on MeshTri().refined(3): the smallest eigenvalue of the symmetric operator is negative for sigma = 1, 2, 3 and positive from sigma = 4, so the coercivity threshold sits exactly at the catalog's rule of thumb 4*order^2; for ElementDG(ElementTriP2) sigma = 4 is not coercive and sigma = 16 is. At sigma = 1e13 cond(K) exceeds 1e14 and CG needs 30x the iterations of sigma = 4. PARTIAL FALSIFICATION: 'solution norm diverges under refinement' does not reproduce -- the L2 norm stays at ~0.50 at every level; what degrades is the L2 convergence rate (1.82 at sigma=4 vs 0.55 at sigma=1).",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "rule_of_thumb_sigma_order1=4",
+    "sigma_1_coercive=False",
+    "sigma_2_coercive=False",
+    "sigma_3_coercive=False",
+    "sigma_4_coercive=True",
+    "sigma_8_coercive=True",
+    "coercivity_threshold_is_the_rule_of_thumb=True",
+    "rule_of_thumb_sigma_order2=16",
+    "order2_sigma4_coercive=False",
+    "order2_sigma16_coercive=True",
+    "sigma_1_l2_rate_ge_1p5=False",
+    "sigma_4_l2_rate_ge_1p5=True",
+    "sigma_1_solution_norm_diverges=False",
+    "norm_divergence_claim_reproduces=False",
+    "cond_at_rule_of_thumb_lt_1e4=True",
+    "cond_at_huge_sigma_gt_1e14=True",
+    "cg_iterations_grow_gt_10x=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

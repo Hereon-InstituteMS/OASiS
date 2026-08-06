@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#8, verified 2026-08-06 on skfem 12.0.1. skfem.project emits DeprecationWarning('project is deprecated in favor of Basis.project (will be removed in the next release).') plus a second one from the projection() it delegates to; skfem.projection emits 'projection is deprecated in favor of Basis.project.'. skfem/__init__.py carries the '# TODO remove due to deprecation' marker on both __all__ entries. The recommended ib_p1.project(ib_dg.interpolator(u)) warns not at all and matches the legacy result to 1.3e-15.",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "module_level_project_exists=True",
+    "module_level_projection_exists=True",
+    "project_in_dunder_all=True",
+    "projection_in_dunder_all=True",
+    "project_emits_deprecationwarning=True",
+    "project is deprecated in favor of Basis.project (will be removed in the next release).",
+    "projection is deprecated in favor of Basis.project.",
+    "project_warning_mentions_removal=True",
+    "project_warning_names_basis_project=True",
+    "projection_emits_deprecationwarning=True",
+    "init_py_todo_flag_count=2",
+    "init_py_flags_project=True",
+    "init_py_flags_projection=True",
+    "basis_project_emits_no_warning=True",
+    "legacy_and_instance_method_agree_lt_1e-12=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

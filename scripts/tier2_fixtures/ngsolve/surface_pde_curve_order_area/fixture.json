@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for NGSolve surface_pde#3: mesh.Curve(order) controls the geometry error of ds integrals on a curved surface, and Curve(1) is a no-op. Verified on NGSolve 6.2.2604, OCCGeometry(Sphere(r=1)) maxh=0.3, ne=422 (2026-08-06): Integrate(1*ds) against 4*pi gives 12.31844056 (-1.973%) with no Curve, the bitwise same value under Curve(1), then 12.56426008 / 12.56657695 / 12.56637398 / 12.56637022 for Curve(2..5). The fixture also records the mechanism: mesh.GetCurveOrder() already returns 1 on a freshly generated mesh, so Curve(1) asks for what is there. mesh.Curve(0) segfaults this NGSolve build and is deliberately not exercised.",
+  "backend": "ngsolve",
+  "physics": "surface_pde",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "sphere_mesh_ne=422",
+    "fresh_mesh_curve_order=1",
+    "nocurve_rel_err_gt_1pct=True",
+    "curve1_area_bitwise_identical_to_nocurve=True",
+    "curve1_get_curve_order=1",
+    "curve1_rel_err_gt_1pct=True",
+    "curve2_rel_err_lt_1em3=True",
+    "curve3_rel_err_lt_1em4=True",
+    "curve5_rel_err_lt_1em6=True",
+    "curve_error_decreases_2_to_5=True",
+    "curve2_beats_nocurve_by_gt_10x=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
