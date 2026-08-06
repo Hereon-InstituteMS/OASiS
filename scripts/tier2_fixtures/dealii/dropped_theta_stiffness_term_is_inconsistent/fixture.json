@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii heat#1. Tier-2 for dealii heat#1 \u2014 probe \"dropped_theta_term\" of the shared transient-heat translation unit _shared/heat_family.cc, compiled once and cached so several fixtures share one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "heat",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "gap_to_reference_does_not_close=true",
+    "answers_converge_to_each_other=true",
+    "VERDICT=inconsistent_scheme_converges_to_the_wrong_answer"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=scheme_is_consistent"
+  ],
+  "timeout_seconds": 900
+}

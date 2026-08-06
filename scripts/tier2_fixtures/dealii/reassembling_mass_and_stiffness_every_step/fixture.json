@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii heat#0. Tier-2 for dealii heat#0 \u2014 probe \"reassemble_cost\" of the shared transient-heat translation unit _shared/heat_family.cc, compiled once and cached so several fixtures share one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "heat",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "reassembling_is_measurably_slower=true",
+    "assembly_fraction_in_claimed_60_to_80_band=false",
+    "VERDICT=reassembly_costs_multiples_for_the_same_answer"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=no_measurable_cost"
+  ],
+  "timeout_seconds": 900
+}
