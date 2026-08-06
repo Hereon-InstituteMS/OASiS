@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii nonlinear_elasticity#1. Traction-free roller extension of a unit block, 6x6 Q1, compressible Neo-Hookean, displacement controlled, NO line search so the load path is the only variable. The probe walks a single-step ladder in every invocation to find where one Newton solve actually stops working. Measured: a single step reaches stretch 1.1 in 3 Newton steps, 1.3 in 4, 1.6 in 5, 2.0 in 5, 2.6 in 7 and 3.0 in 8. It first fails at stretch 4.0, where it diverges in 2 Newton iterations with min det F = -1.14 -- elements turned inside out -- the residual goes to NaN and the inner CG then reports SolverControl::NoConvergence with 'The residual in the last step was -nan'. Fifteen increments reach the same stretch 4.0 and converge, 56 Newton steps in total, min det F staying at 1.72. FINDING against the claim: its threshold is wrong by about a factor of three. It says a single step diverges for stretch ratios > 1.1; a single step here is comfortable to 3.0. The rest of the claim is confirmed exactly -- when it does fail it fails inside 2-3 Newton iterations, and subdividing into 10-20 increments fixes it. The probe prints single_step_already_fails_at_stretch_1_1=false so the false part is on the record. T2_MUTATE=1 runs the fifteen increments. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "load_application=whole_extension_in_one_step",
+    "single_step_already_fails_at_stretch_1_1=false",
+    "diverged_within_three_newton_iterations=true",
+    "converged=false",
+    "VERDICT=single_step_newton_fails_at_this_stretch"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=load_path_reaches_the_target_stretch"
+  ],
+  "timeout_seconds": 900
+}

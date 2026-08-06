@@ -214,6 +214,7 @@ struct Opts
   bool   guard_detF          = false; // the user's own AssertThrow
   double body_force_y        = 0.0;
   double end_traction_y      = 0.0;   // shear traction on boundary id 1
+  double end_traction_x      = 0.0;   // axial traction on boundary id 1
 };
 
 struct Solid
@@ -408,14 +409,15 @@ struct Solid
               }
           }
         // end traction (shear) on boundary id 1
-        if (o.end_traction_y != 0.0)
+        if (o.end_traction_y != 0.0 || o.end_traction_x != 0.0)
           for (const auto &face : cell->face_iterators())
             if (face->at_boundary() && face->boundary_id() == 1)
               {
                 fef.reinit(cell, face);
                 for (unsigned int q = 0; q < qface.size(); ++q)
                   for (unsigned int i = 0; i < n; ++i)
-                    cv(i) += o.end_traction_y * fef[u].value(i, q)[1] *
+                    cv(i) += (o.end_traction_y * fef[u].value(i, q)[1] +
+                              o.end_traction_x * fef[u].value(i, q)[0]) *
                              fef.JxW(q);
               }
         cell->get_dof_indices(local);
@@ -547,6 +549,20 @@ struct Solid
   }
 
   // largest upward y-displacement anywhere -- the Cook membrane tip deflection
+  double max_ux() const
+  {
+    double best = 0.0;
+    std::vector<types::global_dof_index> local(fe.dofs_per_cell);
+    for (const auto &cell : dof.active_cell_iterators())
+      {
+        cell->get_dof_indices(local);
+        for (unsigned int i = 0; i < fe.dofs_per_cell; ++i)
+          if (fe.system_to_component_index(i).first == 0)
+            best = std::max(best, sol(local[i]));
+      }
+    return best;
+  }
+
   double max_uy() const
   {
     double best = 0.0;
@@ -2190,6 +2206,237 @@ static int colorize_boundary_ids()
   return 0;
 }
 
+
+// Observed order of the last three residuals: log(r3/r2)/log(r2/r1). About 2
+// for a consistent tangent, about 1 when the tangent is missing a term.
+static double observed_rate(const std::vector<double> &h)
+{
+  if (h.size() < 3)
+    return std::numeric_limits<double>::quiet_NaN();
+  // Residuals at the round-off floor flatten the apparent rate, so the tail is
+  // cut where it stops being meaningful rather than at the last entry.
+  const double        floor = 1e-9 * h.front();
+  std::vector<double> v;
+  for (double r : h)
+    {
+      if (!std::isfinite(r) || r <= 0.0 || r < floor)
+        break;
+      v.push_back(r);
+    }
+  for (int i = int(v.size()) - 1; i >= 2; --i)
+    if (v[i] < v[i - 1] && v[i - 1] < v[i - 2])
+      return std::log(v[i] / v[i - 1]) / std::log(v[i - 1] / v[i - 2]);
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
+// Traction-driven uniaxial extension; returns the axial displacement reached.
+static double stretch_block(unsigned int cells, bool reduced, double nu,
+                            double traction, bool &converged)
+{
+  Solid s(1);
+  // The right face must be FREE for a traction to do anything: compress_roller
+  // PRESCRIBES u_x there, which silently pins the load away.
+  s.bc = BC::cantilever;
+  s.make_grid(cells, cells, 1.0, 1.0);
+  lame_from(2.0 * 80.0 * (1.0 + nu), nu, s.mu, s.lam);
+  s.set_bc(0.0, true);
+  s.allocate();
+  NewtonReport last;
+  const unsigned int nsteps = 6;
+  for (unsigned int L = 1; L <= nsteps; ++L)
+    {
+      Opts o;
+      o.reduced_volumetric = reduced;
+      o.end_traction_x     = traction * double(L) / double(nsteps);
+      NewtonOpts n;
+      n.max_it      = 30;
+      n.tol         = 1e-10;
+      n.line_search = true;
+      last          = newton(s, o, n);
+      if (!last.converged)
+        break;
+    }
+  converged = last.converged;
+  return s.max_ux();
+}
+
+// ---------------------------------------------------------------------------
+// nonlinear_elasticity#0 -- the single-field element at the incompressible
+// limit, measured on traction-driven uniaxial extension.
+// ---------------------------------------------------------------------------
+static int quasi_incompressible_locking()
+{
+  const double nu  = (g_scan != 0.0) ? g_scan : 0.4999;
+  const double trc = 40.0;
+  bool         c_ref, c_lock, c_fix;
+  const double ref  = stretch_block(40, true, nu, trc, c_ref);
+  const double lock = stretch_block(8, false, nu, trc, c_lock);
+  const double fix  = stretch_block(8, true, nu, trc, c_fix);
+  std::cout << "poisson_ratio=" << nu << " axial_traction=" << trc
+            << std::endl;
+  std::cout << "reference_40x40_reduced_volumetric_axial_displacement=" << ref
+            << " converged=" << (c_ref ? "true" : "false") << std::endl;
+  std::cout << "coarse_8x8_full_integration_axial_displacement=" << lock
+            << " converged=" << (c_lock ? "true" : "false") << std::endl;
+  std::cout << "coarse_8x8_reduced_volumetric_axial_displacement=" << fix
+            << " converged=" << (c_fix ? "true" : "false") << std::endl;
+  const double e_lock = std::abs(lock - ref) / std::abs(ref);
+  const double e_fix  = std::abs(fix - ref) / std::abs(ref);
+  const double shortfall = std::abs(ref) / std::max(1e-300, std::abs(lock));
+  std::cout << "full_integration_relative_error=" << e_lock
+            << " reduced_volumetric_relative_error=" << e_fix << std::endl;
+  std::cout << "reference_over_full_integration_factor=" << shortfall
+            << std::endl;
+  const double e_under = mutate() ? e_fix : e_lock;
+  std::cout << "element_under_test="
+            << (mutate() ? "Q1_reduced_volumetric_integration"
+                         : "single_field_Q1_full_integration")
+            << std::endl;
+  std::cout << "relative_error_under_test=" << e_under << std::endl;
+  std::cout << "under_test_misses_the_reference_by_more_than_a_quarter="
+            << ((e_under > 0.25) ? "true" : "false") << std::endl;
+  // the claim's own magnitude, measured rather than restated
+  std::cout << "under_test_is_500_times_too_small="
+            << ((mutate() ? std::abs(ref) / std::max(1e-300, std::abs(fix))
+                          : shortfall) > 100.0
+                  ? "true"
+                  : "false")
+            << std::endl;
+  std::cout << "VERDICT="
+            << ((e_under > 0.25)
+                  ? "single_field_element_locks_at_the_incompressible_limit"
+                  : "element_under_test_reaches_the_reference")
+            << std::endl;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// nonlinear_elasticity#1 -- load stepping under EXTENSION, and the stretch
+// ratio at which a single step really stops working.
+// ---------------------------------------------------------------------------
+static int extension_load_stepping()
+{
+  const double total = (g_scan != 0.0) ? g_scan : 3.00;   // stretch 4.00
+  Opts         o;
+  NewtonOpts   base;
+  base.max_it = 12;
+  base.tol    = 1e-10;
+  std::cout << "prescribed_extension=" << total
+            << " target_stretch_ratio=" << (1.0 + total) << std::endl;
+
+  // Where does a SINGLE step actually stop working? The claim says 1.1.
+  std::cout << "single_step_ladder:" << std::endl;
+  double largest_single_step_stretch = 1.0;
+  for (double d : {0.10, 0.30, 0.60, 1.00, 1.60, 2.00, 3.00})
+    {
+      const NewtonReport r =
+        compress_run(1, d, BC::compress_roller, o, 6, base);
+      std::cout << "  stretch_ratio=" << (1.0 + d)
+                << " single_step_converged=" << (r.converged ? "true" : "false")
+                << " newton_steps=" << r.steps << std::endl;
+      if (r.converged)
+        largest_single_step_stretch = 1.0 + d;
+    }
+  std::cout << "largest_stretch_ratio_a_single_step_reaches="
+            << largest_single_step_stretch << std::endl;
+  std::cout << "single_step_already_fails_at_stretch_1_1="
+            << ((largest_single_step_stretch < 1.1) ? "true" : "false")
+            << std::endl;
+
+  const NewtonReport one =
+    compress_run(1, total, BC::compress_roller, o, 6, base);
+  const NewtonReport many =
+    compress_run(15, total, BC::compress_roller, o, 6, base);
+  report("one_shot", one);
+  report("fifteen_increments", many);
+  const NewtonReport &u = mutate() ? many : one;
+  std::cout << "load_application="
+            << (mutate() ? "fifteen_increments"
+                         : "whole_extension_in_one_step")
+            << std::endl;
+  std::cout << "diverged_within_three_newton_iterations="
+            << ((!u.converged && u.steps <= 3) ? "true" : "false") << std::endl;
+  std::cout << "converged=" << (u.converged ? "true" : "false") << std::endl;
+  std::cout << "VERDICT="
+            << (u.converged ? "load_path_reaches_the_target_stretch"
+                            : "single_step_newton_fails_at_this_stretch")
+            << std::endl;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// nonlinear_elasticity#2 -- a term missing from the hand-coded tangent. The
+// claim's own signal is the CONVERGENCE RATE, so that is what gets measured.
+// ---------------------------------------------------------------------------
+static int missing_tangent_term_rate()
+{
+#if defined(DEAL_II_WITH_ADOLC) || defined(DEAL_II_TRILINOS_WITH_SACADO)
+  std::cout << "ad_backend_available=true" << std::endl;
+#else
+  std::cout << "ad_backend_available=false" << std::endl;
+#endif
+  NewtonOpts base;
+  base.max_it      = 40;
+  base.tol         = 1e-11;
+  // Backtracking in BOTH runs. Without it the inconsistent tangent does not
+  // converge slowly, it diverges outright, and the claim is about a RATE.
+  base.line_search = true;
+  Opts oref, otest;
+  otest.drop_k_geo = true;
+  Solid *a = nullptr, *b = nullptr;
+  const double total = (g_scan != 0.0) ? g_scan : 1.60;
+  const NewtonReport ra =
+    compress_run(4, total, BC::compress_roller, oref, 6, base, &a);
+  const NewtonReport rb =
+    compress_run(4, total, BC::compress_roller, otest, 6, base, &b);
+  report("consistent_tangent", ra);
+  report("geometric_term_missing", rb);
+  const double q_ref  = observed_rate(ra.hist);
+  const double q_test = observed_rate(rb.hist);
+  std::cout << "consistent_tangent_observed_order=" << q_ref
+            << " total_steps=" << ra.steps
+            << " converged=" << (ra.converged ? "true" : "false") << std::endl;
+  std::cout << "missing_term_observed_order=" << q_test
+            << " total_steps=" << rb.steps
+            << " converged=" << (rb.converged ? "true" : "false") << std::endl;
+  Vector<double> d(b->sol);
+  d -= a->sol;
+  const double rel = d.l2_norm() / std::max(1e-300, a->sol.l2_norm());
+  std::cout << "relative_answer_difference=" << rel << std::endl;
+
+  // everything below is FOR THE VARIANT UNDER TEST
+  const double q_u   = mutate() ? q_ref : q_test;
+  const unsigned st  = mutate() ? ra.steps : rb.steps;
+  const bool   conv  = mutate() ? ra.converged : rb.converged;
+  std::cout << "tangent_under_test="
+            << (mutate() ? "consistent_hand_coded_tangent"
+                         : "hand_coded_tangent_missing_the_geometric_term")
+            << std::endl;
+  std::cout << "observed_order_under_test=" << q_u
+            << " total_steps_under_test=" << st << std::endl;
+  std::cout << "under_test_converged=" << (conv ? "true" : "false")
+            << std::endl;
+  std::cout << "under_test_converges_at_first_order="
+            << ((std::isfinite(q_u) && q_u < 1.4) ? "true" : "false")
+            << std::endl;
+  std::cout << "under_test_converges_at_second_order="
+            << ((std::isfinite(q_u) && q_u > 1.7) ? "true" : "false")
+            << std::endl;
+  std::cout << "under_test_costs_extra_newton_steps="
+            << ((st > (mutate() ? rb.steps : ra.steps)) ? "true" : "false")
+            << std::endl;
+  std::cout << "missing_term_reaches_the_same_answer="
+            << ((rel < 1e-8) ? "true" : "false") << std::endl;
+  std::cout << "VERDICT="
+            << ((std::isfinite(q_u) && q_u < 1.4 && conv)
+                  ? "a_missing_tangent_term_costs_the_convergence_rate"
+                  : "tangent_under_test_converges_at_second_order")
+            << std::endl;
+  delete a;
+  delete b;
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   const std::string probe = (argc > 1) ? argv[1] : "";
@@ -2226,6 +2473,12 @@ int main(int argc, char **argv)
     return umfpack_vs_cg();
   if (probe == "colorize_boundary_ids")
     return colorize_boundary_ids();
+  if (probe == "quasi_incompressible_locking")
+    return quasi_incompressible_locking();
+  if (probe == "extension_load_stepping")
+    return extension_load_stepping();
+  if (probe == "missing_tangent_term_rate")
+    return missing_tangent_term_rate();
   std::cout << "UNKNOWN_PROBE" << std::endl;
   return 3;
 }
