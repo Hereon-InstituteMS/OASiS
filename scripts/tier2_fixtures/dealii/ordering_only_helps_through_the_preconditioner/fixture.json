@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "advection_dg",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "unpreconditioned_gmres_count_is_the_same_under_every_ordering=true",
+    "block_preconditioned_count_depends_on_the_ordering=true",
+    "ordering_under_test_is_the_slower_one=true",
+    "VERDICT=ordering_changes_nothing_without_a_preconditioner"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "ordering_under_test_is_the_slower_one=false"
+  ],
+  "timeout_seconds": 1200
+}

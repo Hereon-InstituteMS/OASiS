@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "dg_transport",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "expect_in_output": [
+    "summary_hier_bc_crash_rc=139",
+    "summary_bern_bc_crash_rc=139",
+    "dg_boundary_values_map_is_empty=true",
+    "dg_affineconstraints_got_nothing=true",
+    "dg_strong_boundary_call_returned_normally=true",
+    "prescribed_inflow_value_appears_in_the_solution=false",
+    "VERDICT=strong_dirichlet_on_dg_leaves_the_inflow_datum_out"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=inflow_datum_entered_through_the_flux"
+  ],
+  "timeout_seconds": 900
+}

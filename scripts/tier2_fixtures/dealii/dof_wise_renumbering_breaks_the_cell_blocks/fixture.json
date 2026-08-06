@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "dg_transport",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "cell_dofs_are_contiguous=false",
+    "one_application_residual_is_finite_and_moderate=false",
+    "gmres_reported_a_failure=false",
+    "the_run_returned_without_an_exception_or_an_abort=true",
+    "VERDICT=dof_wise_renumbering_destroys_the_block_structure_silently",
+    "summary_release_rc=0",
+    "summary_debug_rc=0"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=block_structure_survived",
+    "summary_debug_rc=134"
+  ],
+  "timeout_seconds": 1200
+}

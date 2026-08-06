@@ -1,0 +1,27 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "advection_dg",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "phantom_add_message_files=0",
+    "flux_pattern_is_substantially_larger=true",
+    "face_entries_were_silently_dropped=true",
+    "summary_release_rc=0",
+    "summary_debug_rc=134",
+    "summary_release_assembly_returned=true",
+    "summary_debug_assembly_returned=false",
+    "(index != SparsityPattern::invalid_entry) || (value == number())",
+    "but this",
+    "entry does not exist in the sparsity pattern of this matrix."
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=no_entry_was_dropped",
+    "summary_debug_rc=0"
+  ],
+  "timeout_seconds": 1200
+}

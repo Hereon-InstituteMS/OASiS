@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "dg_advection_reaction",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "largest_real_part_under_test_is_positive=false",
+    "amplitude_under_test_grew_at_either_mesh_size=false",
+    "damping_of_the_rightmost_mode_under_test_halves_under_refinement=true",
+    "residue_under_test_is_more_than_ten_times_the_upwind_residue=true",
+    "VERDICT=flux_under_test_is_stable_but_leaves_a_residue_upwind_removes"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=flux_under_test_behaves_like_upwind",
+    "VERDICT=flux_under_test_has_growing_modes"
+  ],
+  "timeout_seconds": 1800
+}
