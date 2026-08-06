@@ -153,3 +153,58 @@ What survives is the finding itself, which two agents obtained the right way: by
 executing the entry and watching the symbol not exist. Cross-library vocabulary
 is real, it has been found in both directions, and it is worth checking during
 any knowledge pass — by hand, on the entries being touched, not by a sweep.
+
+---
+
+# The defect class, stated exactly
+
+Independently reproduced 2026-08-06, in seven lines of scipy:
+
+    saddle system with a one-dimensional pressure nullspace
+      MatrixRankWarning : NONE
+      isfinite(x).all() : True
+
+    structurally singular matrix
+      MatrixRankWarning : fires
+      isfinite(y).all() : False
+
+Two skfem entries (`hydraulic_resistance#2`, `navier_stokes#3`) told agents to
+guard the Stokes pressure nullspace by catching `MatrixRankWarning: Matrix is
+exactly singular`, with `np.isfinite` as the backstop. **Both halves are blind
+to the case they were written for.** The velocity is not merely finite — it
+matches the pinned solution to 5.5e-14. Only the pressure LEVEL is arbitrary,
+which is precisely why neither check can see anything.
+
+The warning is real. It fires on a structurally zero pivot and on an
+inf-sup-violating equal-order pair, and in both the result is non-finite, which
+is the case `isfinite` was the right partner for. So it is a SUFFICIENT signal
+of rank deficiency and never a NECESSARY one.
+
+This is the shape every backend keeps producing, and it is worth naming because
+it is not "the knowledge is wrong":
+
+  * the CAUTION is correct — an unpinned Stokes system really does have an
+    undetermined pressure level;
+  * the MECHANISM is correct — the block really is rank deficient;
+  * the OBSERVABLE is not produced.
+
+An agent following such an entry writes the prescribed guard, the guard stays
+silent, and the silence is read as success. The entry does not fail to help; it
+manufactures confidence. That is why a fixture must assert on something the run
+actually emits, and why "no measured number in the knowledge" and "the Signal
+must be observable" are the same rule seen from two sides.
+
+The corrected entries now give an observable that IS present: the nullity of the
+condensed block, or two solves with different pins — identical velocity,
+pressure differing by a constant.
+
+Sibling instances of the same shape found the same day:
+
+    scipy cg on an indefinite system   returns info=1000, raises nothing
+    NGSolve CG on a genuinely indefinite matrix   converges in 47 iterations
+                                                  with a block preconditioner
+    dolfinx failing solve              prints ZERO characters on fd 1
+    4C beams/contact/FBI               run to completion where the entry
+                                       promised an abort
+    SPARTA ambipolar_plasma:3          reports "broken" exactly when the deck
+                                       is correct
