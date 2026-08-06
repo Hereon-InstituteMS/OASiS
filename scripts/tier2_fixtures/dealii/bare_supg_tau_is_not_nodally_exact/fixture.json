@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii convection_diffusion#0. Tier-2 for dealii convection_diffusion#0 -- probe \"supg_tau\" of the shared translation unit _shared/convdiff_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. 1D transport, b = 1, 20 cells, inflow 0 and outflow 1, run at three cell Peclet numbers (0.05, 0.5, 5). Plain Galerkin is solved alongside in the same run so the undershoot the claim records is visible in every run, and the tau under test is compared with the analytic solution AT THE NODES -- the doubly-asymptotic tau is nodally exact in 1D, the bare h/(2|b|) is not. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "convection_diffusion",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "tau_under_test=bare_h_over_2b",
+    "plain_galerkin_leaves_the_zero_one_range=true",
+    "tau_under_test_is_nodally_exact=false",
+    "VERDICT=bare_tau_misses_the_exact_solution_at_the_nodes"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=doubly_asymptotic_tau_is_nodally_exact_at_every_peclet"
+  ],
+  "timeout_seconds": 900
+}

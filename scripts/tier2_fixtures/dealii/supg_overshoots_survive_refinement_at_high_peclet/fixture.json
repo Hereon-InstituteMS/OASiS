@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii convection_diffusion#3. Tier-2 for dealii convection_diffusion#3 -- probe \"supg_high_pe\" of the shared translation unit _shared/convdiff_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Skew advection (30 degrees to the mesh) of a discontinuous inflow datum with eps = 1e-6 -- the classic internal-layer test. The exact solution is bounded by its own inflow data, so any excursion outside [0, 1] is the stabilisation failing. Measured at three refinement levels, so 'does it go away when you refine' is answered rather than assumed. T2_MUTATE=1 runs the upwind DG(0) alternative the claim names. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "convection_diffusion",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "scheme_under_test=FE_Q1_with_SUPG",
+    "leaves_the_zero_one_range=true",
+    "excursion_survives_two_refinements=true",
+    "VERDICT=supg_still_oscillates_at_high_peclet"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=scheme_stays_inside_the_data_range"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii convection_diffusion#4. Tier-2 for dealii convection_diffusion#4 -- probe \"anisotropic_layer\" of the shared translation unit _shared/convdiff_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Both strategies are run in every invocation and the whole refinement history is printed. What is measured is the nodal INTERPOLATION error of an exponential layer of width 1e-3, so the comparison is about how many cells each strategy needs to represent the layer with no solver in the way. cell->set_refine_flag(RefinementCase<2>::cut_axis(0)) is the anisotropic call. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "convection_diffusion",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "strategy_under_test=isotropic",
+    "strategy_under_test_wastes_cells=true",
+    "VERDICT=isotropic_refinement_costs_multiples_of_the_cells"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=strategy_is_not_wasteful",
+    "VERDICT=target_not_reached"
+  ],
+  "timeout_seconds": 900
+}

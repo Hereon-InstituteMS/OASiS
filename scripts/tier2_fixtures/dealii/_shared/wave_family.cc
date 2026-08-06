@@ -413,7 +413,7 @@ static int newmark_beta_stability()
 // Re-assembling M and K inside the time loop.
 static int reassemble_each_step()
 {
-  const unsigned int nsteps = 30;
+  const unsigned int nsteps = 60;
   const double       dt = 0.002, beta = 0.25, gamma = 0.5;
   double total[2] = {0, 0}, asm_time[2] = {0, 0}, solve_time[2] = {0, 0};
   unsigned int cg_iters[2] = {0, 0};
@@ -433,45 +433,59 @@ static int reassemble_each_step()
       warm.step(dt, beta, gamma);
   }
 
+  // Each loop is timed TWICE and the shorter run kept: interference from other
+  // processes only ever adds time, so the minimum is the honest measurement and
+  // it tightens both sides of the comparison.
   for (int k = 1; k >= 0; --k)
     {
       const bool reassemble = (k == 0) && !mutate();
-      Wave       w;
-      w.setup(6, true);
-      w.assemble();
-      w.set_initial_state(true);
-      w.prepare(dt, beta, gamma);
-      ndofs = w.dof.n_dofs();
-      TimerOutput timer(std::cout, TimerOutput::never,
-                        TimerOutput::wall_times);
-      auto t_start = std::chrono::steady_clock::now();
-      for (unsigned int s = 0; s < nsteps; ++s)
+      total[k]              = 1e300;
+      for (int rep = 0; rep < 2; ++rep)
         {
-          {
-            TimerOutput::Scope sc(timer, "assemble_system");
-            if (reassemble)
+          Wave w;
+          w.setup(6, true);
+          w.assemble();
+          w.set_initial_state(true);
+          w.prepare(dt, beta, gamma);
+          ndofs = w.dof.n_dofs();
+          TimerOutput timer(std::cout, TimerOutput::never,
+                            TimerOutput::wall_times);
+          unsigned int iters   = 0;
+          auto         t_start = std::chrono::steady_clock::now();
+          for (unsigned int s = 0; s < nsteps; ++s)
+            {
               {
-                w.assemble();
-                w.prepare(dt, beta, gamma);
+                TimerOutput::Scope sc(timer, "assemble_system");
+                if (reassemble)
+                  {
+                    w.assemble();
+                    w.prepare(dt, beta, gamma);
+                  }
               }
-          }
-          {
-            TimerOutput::Scope sc(timer, "solve");
-            cg_iters[k] += w.step(dt, beta, gamma);
-          }
-        }
-      total[k] = std::chrono::duration<double>(
-                   std::chrono::steady_clock::now() - t_start)
-                   .count();
-      const auto data =
-        timer.get_summary_data(TimerOutput::OutputData::total_wall_time);
-      asm_time[k]   = data.at("assemble_system");
-      solve_time[k] = data.at("solve");
-      if (k == 0)
-        {
-          std::cout << "=== TimerOutput::print_summary of the loop under test"
+              {
+                TimerOutput::Scope sc(timer, "solve");
+                iters += w.step(dt, beta, gamma);
+              }
+            }
+          const double elapsed = std::chrono::duration<double>(
+                                   std::chrono::steady_clock::now() - t_start)
+                                   .count();
+          if (elapsed < total[k])
+            {
+              total[k] = elapsed;
+              const auto data = timer.get_summary_data(
+                TimerOutput::OutputData::total_wall_time);
+              asm_time[k]   = data.at("assemble_system");
+              solve_time[k] = data.at("solve");
+              cg_iters[k]   = iters;
+              if (k == 0)
+                {
+                  std::cout
+                    << "=== TimerOutput::print_summary of the loop under test"
                     << std::endl;
-          timer.print_summary();
+                  timer.print_summary();
+                }
+            }
         }
     }
 

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii convection_diffusion#1. Tier-2 for dealii convection_diffusion#1 -- probe \"dg_face_terms\" of the shared translation unit _shared/convdiff_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Upwind DG for pure advection on a 16x16 mesh with FE_DGQ(1). The probe counts the nonzero matrix entries that connect dofs of DIFFERENT cells, which is zero without the FEInterfaceValues face loop, and then hands the matrix to SparseDirectUMFPACK. The claim's own Signal -- a DG solution whose face jumps drop below 1e-8 -- does NOT happen: there is no solution to look at, because the cell-only operator is singular. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "convection_diffusion",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "interior_face_terms=none_FEValues_only",
+    "cells_are_coupled=false",
+    "direct_solve=threw",
+    "UMFPACK reports that the matrix is singular",
+    "VERDICT=no_interface_terms_leaves_the_cells_uncoupled"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=interface_terms_couple_the_cells"
+  ],
+  "timeout_seconds": 900
+}
