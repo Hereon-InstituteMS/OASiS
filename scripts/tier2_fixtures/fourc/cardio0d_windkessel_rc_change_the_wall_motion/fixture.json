@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::cardiovascular0d#0. R and C live in DESIGN SURF CARDIOVASCULAR 0D 4-ELEMENT WINDKESSEL CONDITIONS, one entry per cavity with C / R_p / Z_c / L / p_ref / p_0. On upstream cardiovascular0d_4elementwindkessel_structure_direct_genalpha, R_p 5 -> 500 on cavity 0 alone moves node 5 dispx -0.235921 -> -0.221994 (-5.9%) and breaks exactly one of the three result tests, the other cavities untouched; C 1.5 -> 0.015 collapses it to -0.017226, a factor 13.7, because a stiff Windkessel refuses volume. WINDKESSEL_PARAMETER_WARNINGS=0. The deck's STRUCT NOX/Status Test XML File is a relative path resolved against the WORKING DIRECTORY -- without cardiovascular0d_new_struc.xml in the cwd the run dies inside Teuchos FileInputStream with shell status 134 and no PROC 0 ERROR banner. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiovascular0d",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_BIGR=1",
+    "EXIT_SMALLC=1",
+    "BASE_TESTS_CORRECT=3",
+    "BIGR_TESTS_WRONG=1",
+    "SMALLC_TESTS_WRONG=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=-2.21994037404124572e-01",
+    "is WRONG --> actresult=-1.72261195959840553e-02",
+    "BIGR_WALL_MOTION_CHANGE_PERCENT=-5.9",
+    "SMALLC_WALL_MOTION_FACTOR=13.7",
+    "WINDKESSEL_PARAMETER_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_BIGR=0",
+    "EXIT_SMALLC=0",
+    "BIGR_TESTS_WRONG=0",
+    "BIGR_WALL_MOTION_CHANGE_PERCENT=0.0"
+  ],
+  "_mutation": {
+    "note": "remove the resistance mis-tuning: leave R_p at its calibrated value in the BIGR arm. That arm's result tests pass, EXIT_BIGR becomes 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "BIG_R_P=500",
+    "to": "BIG_R_P=5"
+  }
+}
