@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2: the OptimizationApplication response utilities want a DoubleCombinedTensorAdaptor built from a DoubleTensorAdaptor over a VariableTensorAdaptor \u2014 not a numpy array \u2014 and per-element design variables need per-element Properties first. Pitfall (kratos.optimization #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). None of the three adaptor classes is a core KratosMultiphysics attribute, so the natural dotted path fails before any gradient call; KOA.OptimizationUtils and its CreateEntitySpecificPropertiesForContainer \u2014 the per-element Properties step the claim requires \u2014 do resolve on the application. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "_comment": "Tier-2: the OptimizationApplication response utilities want a DoubleCombinedTensorAdaptor built from a DoubleTensorAdaptor over a VariableTensorAdaptor \u2014 not a numpy array \u2014 and per-element design variables need per-element Properties first. Pitfall (kratos.optimization #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). None of the three adaptor classes is a core KratosMultiphysics attribute, so the natural dotted path fails before any gradient call; KOA.OptimizationUtils and its CreateEntitySpecificPropertiesForContainer \u2014 the per-element Properties step the claim requires \u2014 do resolve on the application. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX RENUMBERED 2 -> 1: guidance entries were moved out of kratos.optimization's pitfalls list, which shifted the indices of the entries after them. The claim this fixture verifies is unchanged.",
   "backend": "kratos",
   "physics": "optimization",
-  "pitfall_index": 2,
+  "pitfall_index": 1,
   "mode": "python",
   "expect_in_output": [
     "probe[KM.DoubleCombinedTensorAdaptor]=False_expected=False",

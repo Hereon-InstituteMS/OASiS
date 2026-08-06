@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2: the KratosFemToDemApplication wheel is stuck at 10.2.3 with no CPython-3.12 wheel, so it cannot be installed into a Python 3.12 / Kratos 10.4.x stack. Pitfall (kratos.fem_to_dem #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). import KratosMultiphysics.FemToDemApplication raises ModuleNotFoundError; pip reports no installable distribution for KratosFemToDemApplication on this interpreter. Its prerequisites DEMApplication and StructuralMechanicsApplication both import. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "_comment": "Tier-2: the KratosFemToDemApplication wheel is stuck at 10.2.3 with no CPython-3.12 wheel, so it cannot be installed into a Python 3.12 / Kratos 10.4.x stack. Pitfall (kratos.fem_to_dem #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). import KratosMultiphysics.FemToDemApplication raises ModuleNotFoundError; pip reports no installable distribution for KratosFemToDemApplication on this interpreter. Its prerequisites DEMApplication and StructuralMechanicsApplication both import. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX RENUMBERED 1 -> 0: guidance entries were moved out of kratos.fem_to_dem's pitfalls list, which shifted the indices of the entries after them. The claim this fixture verifies is unchanged.",
   "backend": "kratos",
   "physics": "fem_to_dem",
-  "pitfall_index": 1,
+  "pitfall_index": 0,
   "mode": "python",
   "expect_in_output": [
     "kratos_version_present=True",

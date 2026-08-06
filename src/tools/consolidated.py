@@ -958,11 +958,22 @@ def register_consolidated_tools(mcp: FastMCP):
             # does not enumerate (rare in practice).
             backend = get_backend(solver)
             all_pitfalls = {}
+            # `guidance` holds entries that are real, useful advice but have
+            # NO failure mode and NO observable — "filter radius should be
+            # > 2-3x element edge length" and the like. They used to sit in
+            # `pitfalls` carrying a boilerplate Signal clause they could not
+            # deliver on, which made symptom lookup return them alongside
+            # genuine pitfalls and diluted it. They are surfaced here under a
+            # separate top-level key so nothing is lost, but they are not
+            # pitfalls and must not be counted or matched as such.
+            guidance = {}
             if backend:
                 for p in backend.supported_physics():
                     k = backend.get_knowledge(p.name)
                     if k and "pitfalls" in k:
                         all_pitfalls[p.name] = k["pitfalls"]
+                    if k and k.get("guidance"):
+                        guidance[p.name] = k["guidance"]
             try:
                 from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE
                 dicts = {"fourc": _4C_KNOWLEDGE, "4c": _4C_KNOWLEDGE,
@@ -996,6 +1007,8 @@ def register_consolidated_tools(mcp: FastMCP):
                          "category": c.get("category", ""), "confidence": c.get("confidence", 0)}
                         for c in community
                     ]
+                if guidance:
+                    all_pitfalls["_guidance_not_pitfalls"] = guidance
                 return json.dumps(all_pitfalls, indent=2)
             return f"No pitfalls found for {solver}"
 

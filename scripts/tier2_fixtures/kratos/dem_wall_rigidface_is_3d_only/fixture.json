@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2: DEM wall geometry uses RigidFace3D3N / RigidFace3D4N. Pitfall (kratos.dem #4: 'Wall geometry: use RigidFace3D3N elements or the walls_process_list'). The catalog Signal for this entry is the shared 'RuntimeError KeyError from JSON parsing' boilerplate, which is NOT what happens \u2014 the real signal is a registry rejection. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). RigidFace3D3N and RigidFace3D4N construct as CONDITIONS (not elements, as the pitfall's wording implies); RigidFace2D2N and RigidEdge3D2N raise 'is not registered', consistent with Kratos DEM being 3D-internal. FALSE-SIGNAL and element-vs-condition wording noted in the report. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "_comment": "Tier-2: DEM wall geometry uses RigidFace3D3N / RigidFace3D4N. Pitfall (kratos.dem #4: 'Wall geometry: use RigidFace3D3N elements or the walls_process_list'). The catalog Signal for this entry is the shared 'RuntimeError KeyError from JSON parsing' boilerplate, which is NOT what happens \u2014 the real signal is a registry rejection. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). RigidFace3D3N and RigidFace3D4N construct as CONDITIONS (not elements, as the pitfall's wording implies); RigidFace2D2N and RigidEdge3D2N raise 'is not registered', consistent with Kratos DEM being 3D-internal. FALSE-SIGNAL and element-vs-condition wording noted in the report. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX RENUMBERED 4 -> 2: guidance entries were moved out of kratos.dem's pitfalls list, which shifted the indices of the entries after them. The claim this fixture verifies is unchanged.",
   "backend": "kratos",
   "physics": "dem",
-  "pitfall_index": 4,
+  "pitfall_index": 2,
   "mode": "python",
   "expect_in_output": [
     "registered[RigidFace3D3N]=True_expected=True",

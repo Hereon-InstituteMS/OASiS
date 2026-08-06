@@ -155,17 +155,15 @@ KNOWLEDGE = {
             "damping": "Near-boundary damping to prevent mesh distortion",
         },
         "pitfalls": [
-                        '[Numerical] Shape gradients require adjoint solve or finite differences '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Mesh quality degrades with large shape changes: use mesh smoothing '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Filter radius should be > 2-3x element edge length '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Constrained optimization: use penalized projection or augmented Lagrangian '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] For manufacturing constraints: use bead optimization or geometric filtering '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                    ],
+            "[API] ShapeOptimizationApplication and OptimizationApplication are two SEPARATE applications with disjoint Python surfaces, and the shape-optimisation vocabulary lives entirely in the former. The mappers (MapperVertexMorphing and the sliding / in-plane variants), the utility classes (GeometryUtilities, DampingUtilities, MeshControllerUtilities, OptimizationUtilities) and the design variables (SHAPE_UPDATE, SHAPE_CHANGE, CONTROL_POINT_UPDATE, NORMALIZED_SURFACE_NORMAL, DF1DX) are attributes of ShapeOptimizationApplication only. Mappers are built through its own ShapeOptimizationApplication.mapper_factory.CreateMapper, not through a core factory. Signal: dotting any of these names off KratosMultiphysics or off OptimizationApplication raises AttributeError at attribute access, before a mapper is constructed or a gradient is asked for; the same name resolves on ShapeOptimizationApplication.",
+        ],
+        "guidance": [
+            "[Numerical] Shape gradients require adjoint solve or finite differences",
+            "[Numerical] Mesh quality degrades with large shape changes: use mesh smoothing",
+            "[Numerical] Filter radius should be > 2-3x element edge length",
+            "[Numerical] Constrained optimization: use penalized projection or augmented Lagrangian",
+            "[Numerical] For manufacturing constraints: use bead optimization or geometric filtering",
+        ]
     },
 }
 

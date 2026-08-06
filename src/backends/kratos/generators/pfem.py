@@ -44,31 +44,14 @@ KNOWLEDGE = {
                          "fluid_structure_with_topology_changes"],
         "solver_types": ["two_step_v_p_solver (velocity-pressure split)"],
         "pitfalls": [
-                        '[Integration] PFEM applications '
-                        '(PfemFluidDynamicsApplication, '
-                        'DelaunayMeshingApplication, '
-                        'PfemSolidMechanicsApplication, '
-                        'PFEM2Application) are NOT published on '
-                        'PyPI as of Kratos 10.4.2. The pip-install '
-                        'hint in some legacy templates fails with '
-                        '"ERROR: No matching distribution found for '
-                        'KratosPfemFluidDynamicsApplication". Build '
-                        'Kratos from source with '
-                        '-DPFEM_FLUID_DYNAMICS_APPLICATION=ON + '
-                        '-DDELAUNAY_MESHING_APPLICATION=ON to enable. '
-                        "Signal: pip install of any KratosPfem*"
-                        "Application package returns 'No matching "
-                        "distribution found' from the index. "
-                        "(Verified empirically 2026-06-01.)",
-                        '[Numerical] Requires DelaunayMeshingApplication for remeshing '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Physics] Alpha-shape parameter controls free-surface detection (default ~1.25) '
-                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
-                        '[Numerical] Time step must be small enough for remeshing stability '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Output: particles move, so mesh changes every step '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                    ],
+            "[Integration] PFEM applications (PfemFluidDynamicsApplication, DelaunayMeshingApplication, PfemSolidMechanicsApplication, PFEM2Application) are NOT published on PyPI as of Kratos 10.4.2. The pip-install hint in some legacy templates fails with \"ERROR: No matching distribution found for KratosPfemFluidDynamicsApplication\". Build Kratos from source with -DPFEM_FLUID_DYNAMICS_APPLICATION=ON + -DDELAUNAY_MESHING_APPLICATION=ON to enable. Signal: pip install of any KratosPfem*Application package returns 'No matching distribution found' from the index. (Verified empirically 2026-06-01.)",
+            "[Numerical] Requires DelaunayMeshingApplication for remeshing Signal: `import KratosMultiphysics.DelaunayMeshingApplication` raises ModuleNotFoundError and no wheel is published at any version, so the remeshing dependency cannot be satisfied on a pip stack at all.",
+        ],
+        "guidance": [
+            "[Physics] Alpha-shape parameter controls free-surface detection (default ~1.25)",
+            "[Numerical] Time step must be small enough for remeshing stability",
+            "[Numerical] Output: particles move, so mesh changes every step",
+        ]
     },
     "pfem_solid": {
         "description": "PFEM for large-deformation solid mechanics with remeshing",

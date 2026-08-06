@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2: plane-STRAIN constitutive laws ignore THICKNESS \u2014 for thickness-design optimisation use LinearElasticPlaneStress2DLaw, and set both THICKNESS and DENSITY on the Properties. Pitfall (kratos.optimization #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both laws exist and both instantiate, so nothing rejects the plane-strain choice \u2014 the gradient is simply meaningless. THICKNESS and DENSITY are core variables. The two laws are distinguishable by class, which is the only pre-solve signal available. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "_comment": "Tier-2: plane-STRAIN constitutive laws ignore THICKNESS \u2014 for thickness-design optimisation use LinearElasticPlaneStress2DLaw, and set both THICKNESS and DENSITY on the Properties. Pitfall (kratos.optimization #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both laws exist and both instantiate, so nothing rejects the plane-strain choice \u2014 the gradient is simply meaningless. THICKNESS and DENSITY are core variables. The two laws are distinguishable by class, which is the only pre-solve signal available. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX RENUMBERED 3 -> 2: guidance entries were moved out of kratos.optimization's pitfalls list, which shifted the indices of the entries after them. The claim this fixture verifies is unchanged.",
   "backend": "kratos",
   "physics": "optimization",
-  "pitfall_index": 3,
+  "pitfall_index": 2,
   "mode": "python",
   "expect_in_output": [
     "probe[SMA.LinearElasticPlaneStress2DLaw]=True_expected=True",
