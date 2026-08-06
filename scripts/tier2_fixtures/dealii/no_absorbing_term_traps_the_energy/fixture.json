@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii wave#4. Tier-2 for dealii wave#4 \u2014 probe \"reflecting_boundary\" of the shared wave translation unit _shared/wave_family.cc, compiled once and cached so six fixtures share one build. A Gaussian pulse on the unit square with the natural (do-nothing) boundary, integrated for two domain crossings: the discrete energy 0.5 v^T M v + 0.5 c^2 u^T K u is conserved to the digits printed, and the amplitude falls and then rises again \u2014 that rise is the reflected pulse. The absorbing form is the same code with a boundary damping term c * du/dt assembled on every boundary face (a boundary mass matrix entering the Newmark effective matrix as gamma*dt*C); it lets the energy leave. Mutation control: T2_MUTATE=1 turns that damping term on, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "wave",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "energy_stays_in_the_domain=true",
+    "absorbing_boundary_term=false",
+    "amplitude_rises_again_after_falling=true",
+    "VERDICT=reflecting_boundary_keeps_all_the_energy"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=absorbing_boundary_lets_the_energy_leave"
+  ],
+  "timeout_seconds": 900
+}
