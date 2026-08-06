@@ -1,0 +1,22 @@
+{
+  "_comment": "CLAIM error_estimation::0: [Numerical] Dual problem requires adjoint assembly. Signal: a goal-oriented refinement loop driven only by the PRIMAL residual (no dual) refines uniformly toward singularities regardless of the goal functional; the effectivity index (estimated / true error) is typically O(1) to 10x off without the \u2026 WHAT THIS RUNS: -- probe \"dwr_primal_only\" of the shared goal-oriented translation unit _shared/goal_family.cc, compiled once and cached so three fixture directories share ONE C++ build. -laplace(u) = 1 on the L-shaped domain with the r^(2/3) corner singularity at the origin, and a goal functional that is the mean of u over a square in the upper-left arm, nowhere near that corner. Three adaptive loops of five cycles run in the SAME program: one driven by the criterion under test, one by the dual-weighted residual, one by KellyErrorEstimator. The reference value of the functional comes from uniform Q2 solves at two refinement levels and the difference between them is printed, so the reference carries its own error bar. The entry's own number does not hold. It says the effectivity index is \"typically O(1) to 10x off without the dual\". Measured against the true goal error, the Kelly total is 253x off, while the dual-weighted estimator lands at 1.02 -- two orders of magnitude apart, not one. And \"refines uniformly toward singularities regardless of the goal functional\" is not what separates them: BOTH loops refine the reentrant corner, and the DWR loop actually places a slightly larger fraction of its cells there, because the dual solution is singular at that corner too. What the dual buys is the goal region, where it puts 23% of the cells against Kelly's 9%. T2_MUTATE=1 puts the dual-weighted criterion under test, and the fixture then fails its own expectations. OBSERVED, copied from the run: effectivity_under_test_is_within_a_factor_ten_of_one=false; primal_only_effectivity_is_within_a_factor_ten_of_one=false; dual_weighted_effectivity_is_within_a_factor_ten_of_one=true; criterion_under_test_puts_more_than_fifteen_percent_of_cells_in_the_goal_region=false; dwr_puts_more_cells_in_the_goal_region_than_kelly=true; kelly_puts_more_cells_at_the_reentrant_corner_than_dwr=false; (+1 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "error_estimation",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "effectivity_under_test_is_within_a_factor_ten_of_one=false",
+    "primal_only_effectivity_is_within_a_factor_ten_of_one=false",
+    "dual_weighted_effectivity_is_within_a_factor_ten_of_one=true",
+    "criterion_under_test_puts_more_than_fifteen_percent_of_cells_in_the_goal_region=false",
+    "dwr_puts_more_cells_in_the_goal_region_than_kelly=true",
+    "kelly_puts_more_cells_at_the_reentrant_corner_than_dwr=false",
+    "VERDICT=estimator_under_test_does_not_estimate_the_goal_error"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=estimator_under_test_tracks_the_goal_error"
+  ],
+  "timeout_seconds": 2400
+}
