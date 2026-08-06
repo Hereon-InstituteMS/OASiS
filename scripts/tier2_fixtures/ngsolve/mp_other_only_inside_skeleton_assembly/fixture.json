@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for NGSolve mixed_poisson#1, a signal-text correction. The prior text said the normal-flux jump integrand 'vanishes identically'. Measured on 6.2.2604: you do not get zero, you get an exception -- Integrate of (gfu*n - gfu.Other()*n)**2*dx(skeleton=True) on an HDiv GridFunction raises NgException('other mir not set, pls report to developers'), because .Other() is only wired up inside a BilinearForm skeleton assembly, not inside a standalone Integrate. The conformity itself is checked the way that does work: through a skeleton BilinearForm, whose assembled jump energy is at machine zero. The skeleton BilinearForm needs dgjumps=True on the space; without it the assembly raises NgException('SparseMatrixTM::AddElementMatrix: illegal dnums').",
+  "backend": "ngsolve",
+  "physics": "mixed_poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "other mir not set",
+    "standalone_integrate_raises=True",
+    "hdiv_space_type=hdivho",
+    "skeleton_bilinearform_jump_energy_at_machine_zero=True",
+    "discontinuous_field_has_nonzero_normal_jump=True"
+  ],
+  "forbid_in_output": [
+    "FAIL:"
+  ]
+}
