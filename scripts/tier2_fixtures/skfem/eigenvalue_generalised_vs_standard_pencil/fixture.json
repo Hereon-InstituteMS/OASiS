@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem eigenvalue#3, previously flagged 'claim inherited -- not yet empirically separated'. Now measured on skfem 12.0.1: eigsh(K, M=M, sigma=0) solves K x = lam M x and its sqrt matches the analytic angular frequency bracket; dropping M=M solves K x = lam x instead and returns values orders of magnitude off, silently, with no warning.",
+  "backend": "skfem",
+  "physics": "eigenvalue",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "generalised_lowest_in_analytic_bracket=True",
+    "standard_pencil_differs_by_over_10x=True",
+    "standard_pencil_raised_nothing=True",
+    "omega_is_sqrt_of_eigenvalue=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

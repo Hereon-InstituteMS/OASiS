@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem eigenvalue#2: the P1 Dirichlet Laplacian spectrum on the unit square is checked against the analytic pi^2*(m^2+n^2) sequence, including the DEGENERACY of the second and third eigenvalue, and the fact that P1 error grows up the spectrum and is one-sided (discrete eigenvalues lie ABOVE the analytic ones). Thresholds only -- no measured value pinned.",
+  "backend": "skfem",
+  "physics": "eigenvalue",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "all_within_5pct=True",
+    "all_discrete_above_analytic=True",
+    "error_grows_up_the_spectrum=True",
+    "second_third_degenerate=True",
+    "coarse_mesh_error_larger=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem linear_elasticity#1: skfem.models.elasticity.lame_parameters(E, nu) returns (lam, mu) equal to the textbook formulas to float64 precision, in that ORDER. Swapping the unpacking order is silent for nu near 1/3 only by coincidence; at nu=0.3 the two differ by ~1.5x. Also pins the nu->0.5 blow-up. Measured on skfem 12.0.1.",
+  "backend": "skfem",
+  "physics": "linear_elasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "lam_matches_formula=True",
+    "mu_matches_formula=True",
+    "returns_lam_then_mu_not_mu_then_lam=True",
+    "incompressible_limit_lam_blows_up=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

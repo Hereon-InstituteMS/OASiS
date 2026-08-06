@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem biharmonic#1: ElementTriArgyris carries 21 DOFs per triangle (18 vertex + 3 edge-normal), and it is one of only two shipped elements whose .hess survives ddot in a biharmonic form. The C^0 alternatives raise ValueError from numpy.einsum. Measured on skfem 12.0.1.",
+  "backend": "skfem",
+  "physics": "biharmonic",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "argyris_nbfun=21",
+    "p1_nbfun=3",
+    "morley_nbfun=6",
+    "argyris_bilaplace_assembles=True",
+    "p1_bilaplace_raises_valueerror=True",
+    "too many subscripts"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

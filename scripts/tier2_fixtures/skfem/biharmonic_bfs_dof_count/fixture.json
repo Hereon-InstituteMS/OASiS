@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem biharmonic#2: ElementQuadBFS carries 16 DOFs per quad (value, du/dx, du/dy, d2u/dxdy at 4 vertices) -- exactly 4x the C^0 ElementQuad1 count. BFS is quad-only: handing it a MeshTri raises ValueError. Measured on skfem 12.0.1.",
+  "backend": "skfem",
+  "physics": "biharmonic",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "bfs_nbfun=16",
+    "quad1_nbfun=4",
+    "bfs_is_four_times_quad1=True",
+    "bfs_on_meshtri_raises=True",
+    "bfs_bilaplace_assembles=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

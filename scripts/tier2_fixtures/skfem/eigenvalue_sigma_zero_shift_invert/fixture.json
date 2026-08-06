@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem eigenvalue#1: on the Dirichlet-restricted P1 Laplacian, eigsh(sigma=0, which='LM') returns the SMALLEST eigenvalues (shift-and-invert), which='SM' without sigma returns the same values, and plain eigsh with neither returns the TOP of the spectrum. Measured on skfem 12.0.1 / scipy 1.15.3.",
+  "backend": "skfem",
+  "physics": "eigenvalue",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "sigma0_and_SM_agree=True",
+    "default_returns_top_of_spectrum=True",
+    "default_min_exceeds_sigma0_max=True",
+    "sigma0_smallest_is_lowest_mode=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
