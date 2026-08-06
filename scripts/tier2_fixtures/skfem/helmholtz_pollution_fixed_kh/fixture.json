@@ -1,0 +1,31 @@
+{
+  "_comment": "skfem helmholtz#7 pollution: at FIXED k*h = 0.1 (63 elements per wavelength, nominally well-resolved) the P1 error is not k-independent -- it grows ~9.5x from k=5 to k=50 on the same unit domain, the k^3 h^2 = k*(k h)^2 signature -- while ElementQuad2 at the same h stays at round-off. Verified 2026-08-06 on skfem 12.0.1 on a one-element-thick MeshQuad strip (1002 P1 DOFs at k=50, h=0.002) instead of the ~2.5e5 DOFs a 2D domain would need. The phenomenon reproduces; the claimed MAGNITUDE is corrected and pinned: the k=50 unit-domain phase drift is 0.33% of a wavelength, not 5-10%; the claim's 5-10% corresponds instead to the relative L2 error after ~32 wavelengths of propagation (measured 4.8%). No measured floats are pinned. ('GridFunction' in the claim text is NGSolve vocabulary, not skfem.)",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshQuad1 fixed_kh=0.1",
+    "elements_per_wavelength_gt_60=True",
+    "low_k=5 low_k_element=ElementQuad1 low_k_n_dofs=102",
+    "high_k=50 high_k_element=ElementQuad1 high_k_n_dofs=1002",
+    "both_at_same_kh=True",
+    "pollution_drift_growth_gt_4x=True",
+    "pollution_l2_growth_gt_4x=True",
+    "growth_tracks_k_ratio=True",
+    "claimed_5_to_10pct_phase_drift_on_unit_domain=False",
+    "unit_domain_drift_lt_1pct_of_wavelength=True",
+    "long_run_l2_rel_in_2_to_10pct=True",
+    "long_run_l2_exceeds_unit_domain_l2=True",
+    "p2_element=ElementQuad2 p2_n_dofs=3003 same_mesh=True",
+    "p2_drift_lt_0p1pct_of_wavelength=True",
+    "p2_l2_rel_lt_1e-4=True",
+    "p_refinement_gain_gt_100x=True",
+    "p2_long_run_l2_rel_lt_1e-4=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

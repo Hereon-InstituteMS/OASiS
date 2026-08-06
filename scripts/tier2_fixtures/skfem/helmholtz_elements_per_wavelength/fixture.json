@@ -1,0 +1,29 @@
+{
+  "_comment": "skfem helmholtz#1: below 5 elements per wavelength the P1 phase velocity is visibly wrong. Verified 2026-08-06 on skfem 12.0.1 on a one-element-thick MeshQuad strip (k=8, 4 wavelengths; 26 DOFs coarse, 642 finest) -- the cheapest geometry that reproduces 2D dispersion exactly, since for a y-constant field the Q1 tensor operator reduces to h_y*(K_x - k^2 M_x). At 3 elements/wavelength (k*h = 2.09 > 1) the discrete wavenumber is k_h/k = 0.879, i.e. the wave arrives 12% early; at 20 elements/wavelength the error is 0.41%; the error decays at rate ~2 in h over a 4-mesh sequence; and above k*h = 2*sqrt(3) the assembled operator admits NO propagating mode. k_h is measured twice independently -- as a root of the assembled interior stencil against a plane-wave ansatz and from the end-to-end driven solve -- and both match the analytic P1 relation cos(k_h h) = (1-(kh)^2/3)/(1+(kh)^2/6) to 1e-9. No measured floats are pinned.",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshQuad1 element_class=ElementQuad1",
+    "coarse_elements_per_wavelength=3 coarse_n_dofs=26",
+    "coarse_kh_gt_1=True",
+    "coarse_phase_velocity_error_gt_10pct=True",
+    "coarse_arrival_time_error_in_10_to_30pct=True",
+    "solve_and_stencil_estimates_agree=True",
+    "assembled_stencil_matches_p1_dispersion_relation=True",
+    "fine_elements_per_wavelength=20 fine_n_dofs=162",
+    "fine_phase_velocity_error_lt_1pct=True",
+    "refinement_improves_by_gt_10x=True",
+    "dispersion_rate_ge_1p5=True",
+    "dispersion_rate_le_2p5=True",
+    "kh_above_2sqrt3=True",
+    "no_propagating_mode_at_kh_above_2sqrt3=True",
+    "analytic_relation_also_has_no_root=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

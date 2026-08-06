@@ -1,0 +1,32 @@
+{
+  "_comment": "skfem helmholtz#6: complex Helmholtz output must be split into .real and np.abs. Verified 2026-08-06 on skfem 12.0.1 / meshio 5.3.5: the pathology is real but the claim's quoted texts are wrong. meshio never says 'Cannot write complex array' -- .vtu raises KeyError: dtype('complex128'), .xdmf raises KeyError: 'complex128', and skfem's own Mesh.save propagates the same KeyError; nothing is truncated silently because no file is produced. The genuinely silent half is ndarray.tofile: it writes 2x the bytes and a float64 reader gets a doubled array with real and imaginary parts INTERLEAVED (not the real part). Writing {'u_real': u.real, 'u_abs': np.abs(u)} round-trips both fields.",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshTri1",
+    "solution_dtype=complex128",
+    "payload_dtype=complex128",
+    "tofile_bytes_is_double=True",
+    "float64_readback_len_is_double=True",
+    "float64_readback_is_interleaved=True",
+    "float64_readback_equals_real_part=False",
+    "vtu_writer_error_type=KeyError",
+    "dtype('complex128')",
+    "skfem_save_error_type=KeyError",
+    "writers_reject_complex128=True",
+    "vtu_file_written_anyway=False",
+    "claimed_cannot_write_complex_array_text_present=False",
+    "silently_truncated_to_real_part=False",
+    "split_write_roundtrip_ok=True",
+    "real_part_alone_loses_amplitude=True",
+    "abs_is_constant=True",
+    "real_part_ptp_gt_1=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

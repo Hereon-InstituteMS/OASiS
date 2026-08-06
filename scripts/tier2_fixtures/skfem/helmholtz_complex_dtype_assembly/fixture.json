@@ -1,0 +1,33 @@
+{
+  "_comment": "skfem helmholtz#0: the complex trap is at ASSEMBLY. Verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3 / numpy 1.26.4: a plain @BilinearForm on the kernel 1j*k*u*v assembles to dtype float64, nnz 0, max|A| exactly 0.0, with only a numpy ComplexWarning('Casting complex values to real discards the imaginary part') from skfem/assembly/form/bilinear_form.py; .astype(complex) afterwards recovers nothing; @BilinearForm(dtype=complex) on the SAME kernel gives complex128 whose max|A| equals the exact facet-mass value 2*k*h/3. The fixture also pins the consequence for the SHIPPED helmholtz_2d template (its ABC block is reproduced verbatim: the assembled system is bit-identical to the no-ABC system K - k^2 M) and the catalog CORRECTION that sparse float + complex arithmetic promotes to complex128 without any TypeError, the one TypeError being scalar assignment into a float lil matrix.",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshQuad1",
+    "abc_default_dtype=float64",
+    "abc_default_nnz=0",
+    "abc_default_max_abs_is_exactly_zero=True",
+    "complexwarning_raised=True",
+    "Casting complex values to real discards the imaginary part",
+    "complexwarning_origin=bilinear_form.py",
+    "astype_after_recovers_nothing=True",
+    "abc_complex_dtype=complex128",
+    "abc_complex_nnz=25",
+    "abc_complex_imag_nonzero=True",
+    "abc_complex_max_abs_matches_2kh_over_3=True",
+    "system_default_abc_is_real_symmetric=True",
+    "system_default_abc_equals_no_abc=True",
+    "system_complex_abc_is_non_hermitian=True",
+    "inplace_iadd_complex_dtype=complex128",
+    "float_plus_complex_sparse_raised=False",
+    "lil_scalar_assign_typeerror=True",
+    "float() argument must be a string or a real number, not"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
