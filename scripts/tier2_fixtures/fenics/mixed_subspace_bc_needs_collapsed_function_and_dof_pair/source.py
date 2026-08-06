@@ -11,9 +11,10 @@ types are supported:", listing four overloads, and ending with a line beginning
 
 The trap the fixture also pins: a Function built on the UNCOLLAPSED mixed space
 W does NOT raise, so the absence of a TypeError is not proof that the BC is
-right. The fixture solves a Stokes lid-driven cavity twice, once with the
-uncollapsed-W Function and once with the correct collapsed Function, and shows
-that the silently-accepted spelling imposes the wrong boundary velocity.
+right. Each of the two accepted spellings is applied with DirichletBC.set to a
+zeroed Function on the Taylor-Hood space and the imposed velocity dofs are read
+back: the correct one writes the lid speed, the silently-accepted uncollapsed-W
+one writes zero.
 
 Mutation control: T2_MUTATE=1 uses the correct spelling everywhere, so nothing
 raises and the boundary velocity is the intended one.

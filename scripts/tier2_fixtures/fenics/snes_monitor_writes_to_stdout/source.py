@@ -6,7 +6,7 @@ A hyperelastic (compressible Neo-Hookean) cantilever under a body force is
 solved in a CHILD process whose stdout and stderr are captured separately,
 because the two streams are indistinguishable once they are merged. Observed
 signal: the child's stdout carries one line per Newton iteration of the form
-"  0 SNES Function norm 1.093750000000e+00", its stderr carries none of them,
+"  0 SNES Function norm 2.304650717691e-02", its stderr carries none of them,
 and the final state is read back from problem.solver.getConvergedReason() and
 problem.solver.getIterationNumber(). The norm falls by orders of magnitude over
 the run, which is what a healthy Newton looks like.

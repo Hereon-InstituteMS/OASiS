@@ -10,7 +10,7 @@ pressure Poisson, velocity correction), each solved with a direct LU
 LinearProblem.
 
 Observed: judged by a FIXED NUMBER OF STEPS (60), dt = 0.05 drives max|u| from
-1.0 past 1e2 at step 24 and on to 1e12 within a few more steps, while all three
+1.0 past 1e2 at step 24 and past 1e6 at step 26, while all three
 LinearProblem.solver objects report CONVERGED_ITS (reason 4) on every single
 step. The identical dt looks perfectly healthy when the loop is stopped at a
 fixed end time of 0.6, because that is only 12 steps and max|u| is then 1.14.
