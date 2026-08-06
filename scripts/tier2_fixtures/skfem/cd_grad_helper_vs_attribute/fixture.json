@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem convection_diffusion#0, a catalog-drift correction. Measured on skfem 12.0.1, MeshTri().refined(2) / ElementTriP1: skfem.helpers.grad(u) and u.grad[i] both assemble to a matrix bit-identical to skfem.models.poisson.laplace (nnz 105, max abs difference exactly 0.0), so the prior 'grad(u) raises NameError' claim is false. What DOES bite is the numpy @ operator on the (dim, n_elem, n_qp) DiscreteField arrays, which raises the gufunc core-dimension ValueError; and a genuinely undefined free function raises the ordinary Python NameError at call time, which is how the two are told apart.",
+  "backend": "skfem",
+  "physics": "convection_diffusion",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "nnz_all_105=True",
+    "helper_matches_laplace_exactly=True",
+    "attribute_matches_laplace_exactly=True",
+    "matmul: Input operand 1 has a mismatch in its core dimension",
+    "name 'curlgrad' is not defined",
+    "undefined_name_is_plain_nameerror=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

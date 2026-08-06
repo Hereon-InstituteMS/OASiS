@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem convection_diffusion#3. Measured on skfem 12.0.1, a 1-D-in-x advection-diffusion boundary layer on MeshQuad, eps=1e-3, inlet 0 / outlet 1: plain CG undershoots at every mesh in a four-level refinement sweep (nx 10..80, cell Peclet 50 down to 6.25) and the undershoot never clears; SUPG with the standard coth-tau removes it at EVERY level including the coarsest. Sharpens the claim's 'do not damp under refinement': the undershoot does shrink, but it survives as long as the cell Peclet exceeds ~1, so clearing it by refinement alone costs more than an order of magnitude in DOFs.",
+  "backend": "skfem",
+  "physics": "convection_diffusion",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "cg_undershoots_at_every_level=True",
+    "supg_clean_at_every_level=True",
+    "cg_undershoot_survives_to_finest=True",
+    "supg_fixes_coarsest_mesh=True",
+    "cell_peclet_above_one_at_every_level=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
