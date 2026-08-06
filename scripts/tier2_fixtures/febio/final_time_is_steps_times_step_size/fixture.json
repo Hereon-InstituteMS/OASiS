@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::hyperelasticity#4. Two decks differing only in <step_size> (10 x 1.0 and 10 x 0.1) both reach normal termination with exit 0 and both report 10 completed steps \u2014 the fixture asserts that equality, because it is what makes the step count useless as a check \u2014 while the last *Time in the logfile CSV is 10 for the first and 1 for the second. Both final times are required to equal time_steps x step_size. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "hyperelasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "final_time_not_step_count=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -415,6 +415,31 @@ def logfile(*items):
             + "\n    </logfile>\n  </Output>")
 
 
+def add_logfile(deck: str, *items) -> str:
+    """Add <logfile> rows to a deck, merging into any existing <Output>.
+
+    items are (record_type, data, filename) triples, e.g.
+    ("element_data", "sx;sy;sz;J", "e.csv").
+
+    Merging matters: a fixture that simply appends a second <Output>
+    section to a template that already has one is measuring its own
+    broken deck, and every run comes back rc=1 while the fixture prints
+    a confident-looking comparison of two empty lists.
+    """
+    rows = "\n".join(f'      <{kind} data="{data}" delim="," file="{fn}"/>'
+                     for kind, data, fn in items)
+    if "<logfile>" in deck:
+        return deck.replace("<logfile>", "<logfile>\n" + rows, 1)
+    if "<Output>" in deck:
+        return deck.replace(
+            "<Output>", "<Output>\n    <logfile>\n" + rows
+            + "\n    </logfile>", 1)
+    return deck.replace(
+        "</febio_spec>",
+        "  <Output>\n    <logfile>\n" + rows
+        + "\n    </logfile>\n  </Output>\n</febio_spec>")
+
+
 def parse_log_csv(text: str):
     """Parse an FEBio logfile CSV into [(time, {id: [floats]}), ...].
 
@@ -441,7 +466,11 @@ def parse_log_csv(text: str):
             continue
         if s.startswith("*") or not s:
             continue
-        bits = s.split(",")
+        # A <node_data> / <element_data> row without a delim= attribute
+        # is SPACE separated, not comma separated. Splitting only on
+        # commas silently yields no rows at all, and a fixture then
+        # compares two empty lists and calls them equal.
+        bits = s.split(",") if "," in s else s.split()
         try:
             rows[int(bits[0])] = [float(x) for x in bits[1:]]
         except ValueError:

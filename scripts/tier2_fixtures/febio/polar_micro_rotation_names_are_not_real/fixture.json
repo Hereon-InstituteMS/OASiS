@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::polar_fluid#0. Three name observations: <var type=\"micro_rotation\"/> reads SUCCESS and then aborts with 'FATAL ERROR: Output variable \"micro_rotation\" is not defined'; <bc type=\"zero micro-rotation\"> is a parse error; and the micro-rotation DOFs cannot be logged at all \u2014 <node_data data=\"gvx\"/> is refused with '\"gvx\" is not a valid field variable name', so \"read the field\" means reading the .xplt, not a CSV. Plus the measured caveat: deleting the wall BC moves the logged element data by far less than a solution change would, so a quiet result is not evidence the BC is right. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "polar_fluid",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "polar_micro_rotation_names=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

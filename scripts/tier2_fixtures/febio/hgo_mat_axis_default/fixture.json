@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::fiber_reinforced#0. An HGO material with <mat_axis> DELETED produces logged data BIT-IDENTICAL to the same material with a = (1,0,0), d = (0,1,0) written out, while a frame aligned with the load gives measurably different stresses. All three runs reach normal termination with exit 0 and no warning, which is why the omission survives a smoke test. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "fiber_reinforced",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "hgo_mat_axis_default=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::active_contraction#1. A `solid mixture` with <mat_axis> DELETED gives logged element and node data BIT-IDENTICAL to the same deck with <a>1,0,0</a><d>0,1,0</d> written out \u2014 that identity is how the silent default is established rather than assumed \u2014 and both differ from the shipped z-axis frame. All three runs reach normal termination with exit 0 and no warning. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "active_contraction",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "active_mat_axis_default=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}
