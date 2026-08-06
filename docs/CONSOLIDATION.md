@@ -112,3 +112,44 @@ The attempt before that used `git merge-tree --write-tree`, which does not exist
 in git 2.25 (it arrived in 2.38). It reported CONFLICT for all twelve with an
 empty file list. An empty conflict list is the tell that the tool failed, not
 that the merge did.
+
+---
+
+# A checker that was built, failed four times, and withdrawn
+
+Two agents independently found knowledge entries written in another library's
+vocabulary — skfem entries saying "a pressure GridFunction" and "applying a
+DirichletBC", where `hasattr(skfem, "GridFunction")` is False and the 12.x API
+is `condense` / `enforce` / `penalize`. An agent following those reaches for a
+symbol that does not exist and gets an AttributeError unrelated to the pitfall.
+
+That looked mechanically checkable, so it got a checker. It was wrong four
+times, each time in the direction of accusing correct text:
+
+1. **A hard-coded ownership table.** 47 hits, 12 real. `dune.fem.GridFunction`
+   and `dune.ufl.DirichletBC` both EXIST — DUNE shares UFL with FEniCSx and has
+   its own GridFunction — and `condense` is core deal.II
+   (`AffineConstraints::condense`). 35 correct entries would have been rewritten.
+2. **CamelCase treated as an API signal.** 576 hits on skfem alone, flagging
+   CRITICAL, Safer, Downstream, LUMPED, Underlying, Quadrature.
+3. **A trailing paren treated as a call.** `get_quadrature(RefTet, 9) WORKS (45
+   points...)` and `Krylov-Uzawa (skfem example 30)` both put an ordinary word
+   before a paren. Also flagged `NotImplementedError`, a Python builtin, and
+   every entry that CORRECTLY says a symbol is absent — "Don't reach for a
+   skfem.NewtonSolver, it doesn't exist" is the knowledge being right.
+4. **Dependencies excluded.** `meshio._exceptions.WriteError` is real; the probe
+   searched only skfem's own modules.
+
+After all four fixes it still reported 115 on NGSolve: `Curve`, `Cylinder`,
+`Glue`, `gfT.Set`. Every one real. `Curve` is a METHOD on `Mesh`, `Cylinder`
+lives in `netgen.occ`, and `gfT.Set` is a method on an instance. A module-level
+`hasattr` sweep cannot see any of those, and no amount of pattern tuning fixes
+that — the approach is unsound for object-oriented APIs, which is all of them.
+
+**Withdrawn rather than shipped.** A gate at 115 false accusations would be
+switched off within a day, and it would take the trustworthy gates with it.
+
+What survives is the finding itself, which two agents obtained the right way: by
+executing the entry and watching the symbol not exist. Cross-library vocabulary
+is real, it has been found in both directions, and it is worth checking during
+any knowledge pass — by hand, on the entries being touched, not by a sweep.
