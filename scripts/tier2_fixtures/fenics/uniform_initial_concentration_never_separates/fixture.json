@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM cahn_hilliard::1: [Numerical] The initial condition must contain a random perturbation. The commonly quoted rule that 'c = 0.5 exactly gives no phase separation because it is the unstable symmetric mean' gets the right answer for the wrong reason, and the wrong reason will mislead you: ANY uniform initial \u2026 WHAT THIS RUNS: the initial condition must carry a random perturbation. The usual explanation -- \"c = 0.5 exactly is the unstable symmetric mean, so it cannot separate\" -- gets the right answer for the wrong reason: ANY uniform initial concentration is frozen, and 0.5 is not special. Unit square 24x24, P1 x P1 mixed, lmbda = 1e-2, M = 1, theta = 0.5, dt = 5e-6, 30 backward-Euler/Crank-Nicolson steps, four initial conditions run side by side: uniform 0.5, uniform 0.63 (the value usually recommended as the \"safe\" one), 0.5 + 0.02*(0.5 - rng.random()) and 0.63 + the same noise. Observed on dolfinx 0.10.0: uniform 0.5 stays at exactly 0.5 with standard deviation 0.0, uniform 0.63 stays at 0.63 with standard deviation at round-off (order 1e-16), while BOTH noisy runs separate out past [0, 1]. Every one of the four runs converges at every step, so the solver reports nothing at all about the frozen ones. OBSERVED, copied from the run: uniform_0p5_never_separates=True; uniform_0p63_never_separates=True; mean_0p5_plus_noise_separates=True; mean_0p63_plus_noise_separates=True; zero_point_five_is_not_special=True; every_run_converged_so_the_solver_says_nothing=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "cahn_hilliard",
   "pitfall_index": 1,
   "mode": "python",
-  "covers": ["cahn_hilliard::1"],
+  "covers": [
+    "cahn_hilliard::1"
+  ],
   "expect_in_output": [
     "uniform_0p5_never_separates=True",
     "uniform_0p63_never_separates=True",

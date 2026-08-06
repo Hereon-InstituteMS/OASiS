@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM nonlinear_pde::1: [Integration] `problem.solve()` returns the solution Function whether or not SNES converged; the dolfinx 0.10 docstring states 'the user is responsible for asserting convergence of the SNES solver'. Assert `problem.solver.getConvergedReason() > 0`. Signal: measured on a Bratu problem (-div(grad u) \u2026 WHAT THIS RUNS: problem.solve() hands back the solution Function whether or not SNES converged, so the caller must assert problem.solver.getConvergedReason() > 0 itself. Wrong variant: solve the Bratu problem -div(grad u) = lambda*exp(u) past its turning point (lambda = 20 on the unit square, whose fold sits near lambda = 7) with the undamped 'basic' line search and an 8-iteration budget, then trust the returned field because it looks finite. Observed on dolfinx 0.10.0: solve() raises nothing, the SNES converged reason is -5 (DIVERGED_MAX_IT), and the field that comes back is completely finite with a maximum of order 1e-4 -- small and tidy enough to pass any \"is it finite / is it O(1)\" check. Turning on \"snes_error_if_not_converged\" makes the identical run raise petsc4py.PETSc.Error with the text 'Error: error code 91' / 'SNESSolve has not converged'. OBSERVED, copied from the run: solve_raised_without_the_option=False; reason_is_negative=True; a_function_came_back=True; returned_field_is_finite_and_tidy=True; Error: error code 91; SNESSolve has not converged; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 1,
   "mode": "python",
-  "covers": ["nonlinear_pde::1"],
+  "covers": [
+    "nonlinear_pde::1"
+  ],
   "expect_in_output": [
     "solve_raised_without_the_option=False",
     "reason_is_negative=True",

@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM matrix_free_poisson::9: [API] `dolfinx.PETScKrylovSolver` does not exist in dolfinx 0.10.0. Signal: `AttributeError: module 'dolfinx' has no attribute 'PETScKrylovSolver'`. If you want PETSc's CG instead of a hand-written loop, create it directly through petsc4py (`PETSc.KSP().create(comm)`); if you want dolfinx's high- \u2026 WHAT THIS RUNS: `dolfinx.PETScKrylovSolver` does not exist in dolfinx 0.10.0. If you want PETSc's CG instead of a hand-written loop, create it directly through petsc4py (PETSc.KSP().create(comm)); if you want dolfinx's high-level wrapper for the ASSEMBLED problem, that is dolfinx.fem.petsc.LinearProblem, which requires the keyword-only argument petsc_options_prefix. Wrong variant: dolfinx.PETScKrylovSolver(...), and LinearProblem(a, L, bcs=...) without petsc_options_prefix. Right variant: PETSc.KSP().create(msh.comm), or LinearProblem(..., petsc_options_prefix=\"mf_\"). Observed on dolfinx 0.10.0 / petsc4py 3.24.5: \"AttributeError: module 'dolfinx' has no attribute 'PETScKrylovSolver'\", and no module in the dolfinx package tree exports that name at all (the scan over dolfinx, dolfinx.fem, dolfinx.fem.petsc, dolfinx.la, dolfinx.nls, dolfinx.nls.petsc and dolfinx.cpp returns an empty list). Omitting the keyword gives \"TypeError: LinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'\". Both correct routes are exercised here and agree on the same solution to 1e-12. OBSERVED, copied from the run: AttributeError: module 'dolfinx' has no attribute 'PETScKrylovSolver'; missing 1 required keyword-only argument: 'petsc_options_prefix'; names_containing_krylov_in_dolfinx_tree=[]; petsckrylovsolver_raises_attributeerror=True; no_krylov_name_anywhere_in_dolfinx=True; linearproblem_without_prefix_raises_typeerror=True; (+3 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "matrix_free_poisson",
   "pitfall_index": 9,
   "mode": "python",
-  "covers": ["matrix_free_poisson::9"],
+  "covers": [
+    "matrix_free_poisson::9"
+  ],
   "expect_in_output": [
     "AttributeError: module 'dolfinx' has no attribute 'PETScKrylovSolver'",
     "missing 1 required keyword-only argument: 'petsc_options_prefix'",

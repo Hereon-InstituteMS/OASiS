@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM magnetostatics::8: [API] `dolfinx.fem.petsc.LinearProblem` requires the keyword-only argument `petsc_options_prefix`. Signal: `TypeError: LinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'`. On this install PETSc uses 32-bit indices (PETSc.IntType is int32) and MUMPS is \u2026 WHAT THIS RUNS: `dolfinx.fem.petsc.LinearProblem` requires the keyword-only argument `petsc_options_prefix`, and the MUMPS direct solve the magnetostatics recipe asks for is usable on this install because PETSc was built with 32-bit indices. Wrong variant: construct LinearProblem the 0.9 way, without the prefix. Observed: TypeError: LinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'. The second half of the claim is checked by measurement: PETSc.IntType is int32 here, and 'pc_factor_mat_solver_type': 'mumps' solves the coil problem with converged reason 4; superlu_dist, the replacement the claim names for 64-bit builds, is also present. \"Traceback\" is deliberately NOT in this fixture's forbid_in_output: the TypeError leaves a half-constructed LinearProblem whose __del__ then raises AttributeError on self._solver, and Python prints that as an ignored-exception traceback on stderr. That noise is dolfinx's, not the fixture's. OBSERVED, copied from the run: prefix_omitted_construction_raised=True; missing 1 required keyword-only argument: 'petsc_options_prefix'; error_names_the_missing_kwarg=True; petsc_index_type=int32; petsc_int_is_32_bit=True; mumps_solve_converged=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "magnetostatics",
   "pitfall_index": 8,
   "mode": "python",
-  "covers": ["magnetostatics::8"],
+  "covers": [
+    "magnetostatics::8"
+  ],
   "expect_in_output": [
     "prefix_omitted_construction_raised=True",
     "missing 1 required keyword-only argument: 'petsc_options_prefix'",

@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM cahn_hilliard::6: [API] Refresh the previous-step Function INSIDE the time loop -- u0.x.array[:] = u.x.array must run before every problem.solve(), and there is nothing in dolfinx that will do it for you or warn you. Signal: if u0 is left at the initial state, the first step advances normally and then every later \u2026 WHAT THIS RUNS: the previous-step Function must be refreshed INSIDE the time loop -- u0.x.array[:] = u.x.array before every problem.solve() -- and nothing in dolfinx does it for you or warns you. Wrong variant: u0 left at the initial state. Unit square 24x24, P1 x P1 mixed, lmbda = 1e-2, M = 1, theta = 0.5, dt = 5e-6, 25 steps, run twice: once refreshing u0, once not. Observed on dolfinx 0.10.0: the first step advances normally and every later step re-solves the identical problem whose solution is already in hand, so SNES converges after a single iteration from the second step onward (mean iteration count about 1, against about 17 for the correct loop), every step reports a POSITIVE converged reason, the mass drift stays at round-off so the mass check cannot see the bug -- and the concentration simply stops evolving: its spread stays at the initial noise level while the correct run separates past [0, 1]. (The knowledge text says \"0 iterations from the second step onward\"; on this install with the default snes tolerances it is exactly 1.) OBSERVED, copied from the run: stale_u0_iteration_count_collapses=True; every_stale_step_reported_convergence=True; stale_u0_mass_conservation_still_looks_perfect=True; stale_u0_field_stopped_evolving=True; refreshed_loop_separated=True; VERDICT=stale_u0_freezes_the_run_and_every_check_still_passes. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "cahn_hilliard",
   "pitfall_index": 6,
   "mode": "python",
-  "covers": ["cahn_hilliard::6"],
+  "covers": [
+    "cahn_hilliard::6"
+  ],
   "expect_in_output": [
     "stale_u0_iteration_count_collapses=True",
     "every_stale_step_reported_convergence=True",

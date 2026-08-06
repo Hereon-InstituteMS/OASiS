@@ -1,9 +1,11 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM time_dependent_heat::8: [API] `T.x.array.min()` / `.max()` are RANK-LOCAL and include ghost entries, and an unguarded `print` emits one copy per rank. Slice to `T.x.array[:V.dofmap.index_map.size_local]` and reduce with `comm.allreduce(..., MPI.MIN/MPI.MAX)`, and guard printing with `if comm.rank == 0:`. Signal: \u2026 WHAT THIS RUNS: `T.x.array.min()` / `.max()` are RANK-LOCAL and include ghost entries, and an unguarded `print` emits one copy per rank. The fix is to slice to `T.x.array[:V.dofmap.index_map.size_local]`, reduce with `comm.allreduce(..., MPI.MIN/MPI.MAX)` and guard the print with `if comm.rank == 0:`. This fixture is its own MPI worker: run without T2_TDH8_WORKER it drives two subprocesses - one plain serial run and one `mpiexec -n 2` run of the same file - and compares what they printed. The worker solves the transient heat problem on a 16x16 unit square (T = 1 on the left wall, 0 on the right, 40 backward-Euler steps of dt = 0.05, i.e. essentially the steady state) and reports the range. Observed: serial prints 'range_line T in [0.0000, 1.0000]'. Under mpiexec -n 2 the same unguarded code prints the line TWICE, once per rank, and neither copy is the global range: the two lines are [0.0000, 0.8125] and [0.1875, 1.0000]. Both local arrays are longer than the owned range (165 against 142 entries and 162 against 147), so the figures also include ghost entries. The guarded allreduce over owned dofs prints one single line, [0.0000, 1.0000], matching serial. OBSERVED, copied from the run: serial_range_line=T in [0.0000, 1.0000]; serial_range_is_the_full_data_range=True; ghost_entries_are_included_in_the_local_array=True; range_line_printed_once_per_rank=True; some_rank_range_differs_from_the_serial_range=True; VERDICT=min_max_is_rank_local_and_the_print_is_duplicated. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "time_dependent_heat",
   "pitfall_index": 8,
-  "covers": ["time_dependent_heat::8"],
+  "covers": [
+    "time_dependent_heat::8"
+  ],
   "mode": "python",
   "expect_in_output": [
     "serial_range_line=T in [0.0000, 1.0000]",

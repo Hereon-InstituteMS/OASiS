@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM magnetostatics::3: [Numerical] The 3D curl-curl operator without a gauge is singular - every gradient is in its kernel - and this does NOT show up as a solver failure. Every solver reports success and returns a different A. Signal: measured on a 6x6x6 unit cube with N1curl degree 1 and no gauge term, MUMPS-LU, \u2026 WHAT THIS RUNS: the 3D curl-curl operator without a gauge is singular -- every gradient is in its kernel -- and this does NOT show up as a solver failure. Every solver reports success, no zero pivot is reported, and each one returns a DIFFERENT vector potential A while returning the SAME B = curl A. Wrong variant: assemble only inner(curl(A), curl(w))*dx on N1curl and solve it with three different solvers (MUMPS-LU, CG/Jacobi, GMRES/ILU) on a 6x6x6 unit cube with a divergence-free source, then post-process A itself. Mutation control: T2_MUTATE=1 adds the regularising mass term + inner(A, w)*dx, which makes the operator nonsingular; A is then the same for all three solvers and the solver-dependence signal disappears. OBSERVED, copied from the run: every_solver_reported_converged=True; A_differs_between_solvers_by_more_than_2x=True; curl_A_agrees_across_solvers_to_9_digits=True; VERDICT=ungauged_curl_curl_is_silently_solver_dependent_in_A. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "magnetostatics",
   "pitfall_index": 3,
   "mode": "python",
-  "covers": ["magnetostatics::3"],
+  "covers": [
+    "magnetostatics::3"
+  ],
   "expect_in_output": [
     "every_solver_reported_converged=True",
     "A_differs_between_solvers_by_more_than_2x=True",

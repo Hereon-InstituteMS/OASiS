@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM nonlinear_pde::7: [Numerical] The line search changes WHICH failure you get, not whether you get one, so never infer correctness from the mere fact that a run finished. Signal: measured on the same Bratu problem past its turning point (lambda = 20, 30-iteration budget), the four PETSc line searches returned four \u2026 WHAT THIS RUNS: the PETSc line search changes WHICH failure you get, not whether you get one, and every one of the failed runs hands back a finite, innocent-looking field. Wrong variant: shopping for a line search to make Bratu converge past its turning point (lambda = 20 on the unit square, 30-iteration budget) and then trusting whichever run \"finished\". Observed on dolfinx 0.10.0 / PETSc 3.24, same problem, only snes_linesearch_type changed: basic -> reason -5 (DIVERGED_MAX_IT) after the full 30 iterations, max(u) of order 1e-4 bt -> reason -6 (DIVERGED_LINE_SEARCH) after 23 iterations, max(u) exactly 0.0 l2 -> reason -9 (DIVERGED_DTOL) after 2 iterations, max(u) of order 1e+01 cp -> same as basic All four fields are finite and free of NaNs, and they disagree with each other by orders of magnitude, so \"it ran and the numbers are finite\" is no evidence at all. OBSERVED, copied from the run: name=DIVERGED_MAX_IT; name=DIVERGED_LINE_SEARCH; name=DIVERGED_DTOL; at_least_three_distinct_reasons=True; no_line_search_converged=True; every_field_is_finite_and_nan_free=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 7,
   "mode": "python",
-  "covers": ["nonlinear_pde::7"],
+  "covers": [
+    "nonlinear_pde::7"
+  ],
   "expect_in_output": [
     "name=DIVERGED_MAX_IT",
     "name=DIVERGED_LINE_SEARCH",

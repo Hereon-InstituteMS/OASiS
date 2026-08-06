@@ -1,9 +1,11 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM time_dependent_heat::7: [Input] Any coefficient you intend to vary in space must be a `fem.Function` on a DG0 space, populated per cell (from cell midpoints via `mesh.compute_midpoints`, or from MeshTags); a single `fem.Constant` cannot represent a layered conductivity. And any coefficient you intend to vary in TIME must \u2026 WHAT THIS RUNS: a coefficient that varies in SPACE has to be a `fem.Function` on a DG0 space populated per cell (here from cell midpoints via `dolfinx.mesh.compute_midpoints`); a single `fem.Constant` cannot represent a layered conductivity. A coefficient that varies in TIME has to be a `fem.Constant` updated in place with `c.value = ...`; rebinding a Python name has no effect at all and nothing is raised either way. Time part: assemble `c * dx` over the unit square with c a bare Python float 2.0, then rebind the name to 10.0 and assemble the SAME compiled form again. Space part: 16x16 unit square, T = 1 on the left wall, T = 0 on the right, 60 backward-Euler steps of dt = 0.05 (long enough to reach the steady state), with k = 1 for x < 0.5 and k = 100 for x > 0.5. The two-layer analytic interface temperature is 1/101 = 0.009901. Observed: the float form still assembles to 2.0000 after the rebinding while `fem.Constant.value = 10.0` gives 10.0000 at once, and neither route raises. The DG0 conductivity reproduces the analytic interface value (0.009901 against 0.009901), while a single Constant - whether 1, 100 or the arithmetic mean 50.5 - puts the interface at 0.500000 in every case, i.e. it cannot represent the layers at all. OBSERVED, copied from the run: python_float_rebinding_has_no_effect=True; fem_constant_value_update_is_seen_immediately=True; neither_coefficient_route_raised=True; dg0_layered_matches_the_two_layer_analytic_value=True; every_single_constant_puts_the_interface_at_one_half=True; selected_time_change_had_no_effect=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "time_dependent_heat",
   "pitfall_index": 7,
-  "covers": ["time_dependent_heat::7"],
+  "covers": [
+    "time_dependent_heat::7"
+  ],
   "mode": "python",
   "expect_in_output": [
     "python_float_rebinding_has_no_effect=True",

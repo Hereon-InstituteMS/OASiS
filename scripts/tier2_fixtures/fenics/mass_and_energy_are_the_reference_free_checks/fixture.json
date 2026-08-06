@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM cahn_hilliard::5: [Physics] Verify a Cahn-Hilliard run with two checks that need no reference solution: total mass must be conserved exactly, and the total free energy must decrease monotonically. Assemble mass = fem.assemble_scalar(fem.form(c*ufl.dx)) and energy = fem.assemble_scalar(fem.form((100*c**2*(1-c)**2 + \u2026 WHAT THIS RUNS: verify a Cahn-Hilliard run with two checks that need no reference solution -- total mass must be conserved and the total free energy must decrease monotonically. The fixture assembles mass = fem.assemble_scalar(fem.form(c*dx)) and energy = fem.assemble_scalar(fem.form((100*c^2*(1-c)^2 + 0.5*lmbda*inner(grad(c), grad(c)))*dx)) at every step of two otherwise identical runs (unit square 24x24, P1 x P1 mixed, lmbda = 1e-2, M = 1, theta = 0.5, dt = 5e-6, 25 steps), the second one with the wrong variant: a Dirichlet condition on c over the whole boundary. Observed on dolfinx 0.10.0: with no Dirichlet condition the mass drift over the run is at round-off (order 1e-16) and the free energy is strictly non-increasing; the same run with c pinned on the boundary drifts by order 1e-2 -- thirteen orders of magnitude more -- while every step still converges and the energy still decreases. A visible drift means a boundary condition is leaking mass, not that the solver is inaccurate. OBSERVED, copied from the run: no_bc_mass_drift_at_roundoff=True; no_bc_free_energy_monotonically_decreasing=True; dirichlet_on_c_leaks_mass=True; drift_ratio_is_many_orders_of_magnitude=True; dirichlet_run_still_converged_and_still_lost_energy=True; VERDICT=mass_drift_means_a_leaking_bc_not_an_inaccurate_solver. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "cahn_hilliard",
   "pitfall_index": 5,
   "mode": "python",
-  "covers": ["cahn_hilliard::5"],
+  "covers": [
+    "cahn_hilliard::5"
+  ],
   "expect_in_output": [
     "no_bc_mass_drift_at_roundoff=True",
     "no_bc_free_energy_monotonically_decreasing=True",

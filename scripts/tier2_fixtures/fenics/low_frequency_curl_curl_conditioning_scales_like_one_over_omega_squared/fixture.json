@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM maxwell::3: [Numerical] Low-frequency breakdown: curl-curl + omega^2-mass formulation becomes ill-conditioned as omega \u2192 0 because the gradient kernel of curl is no longer regularised by the mass term. Use mixed (A, phi) formulation with a Lagrange multiplier on the divergence. Signal: KSP iteration count for \u2026 WHAT THIS RUNS: the curl-curl + omega^2-mass formulation loses its regularisation as omega -> 0, because the only thing keeping the gradient kernel of curl out of the operator's null space is the omega^2 mass term. Wrong variant: (curl A, curl v) + omega^2 (A, v) = (f, v) on N1curl degree 1, 8x8 unit square, natural boundary condition, f = (1, 0) so the right-hand side has a gradient component. Measured on dolfinx 0.10.0 for omega = 1, 1e-1, 1e-2, 1e-3: the spectral condition number (dense SVD of the assembled matrix, no solver involved) is 2.59e+03, 2.59e+05, 2.59e+07, 2.59e+09 -- exactly a factor 100 per decade of omega, i.e. 1/omega^2 -- and GMRES/Jacobi needs 3, 6, 33, 150 iterations for the same tolerance. The fix the claim names -- the mixed (A, phi) formulation with a Lagrange multiplier enforcing (A, grad q) = 0 -- is measured alongside: its condition number is 7.98e+04, 1.06e+04, 1.02e+04, 1.02e+04 over the same omegas, i.e. flat. OBSERVED, copied from the run: ams_preconditioner_unusable_from_linearproblem=True; under_test_condition_number_grows_100x_per_decade_of_omega=True; gmres_iterations_grow_by_more_than_10x=True; mixed_A_phi_condition_number_stays_bounded=True; VERDICT=low_frequency_conditioning_degrades_like_one_over_omega_squared. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "maxwell",
+  "pitfall_index": 3,
+  "mode": "python",
+  "covers": [
+    "maxwell::3"
+  ],
+  "expect_in_output": [
+    "ams_preconditioner_unusable_from_linearproblem=True",
+    "under_test_condition_number_grows_100x_per_decade_of_omega=True",
+    "gmres_iterations_grow_by_more_than_10x=True",
+    "mixed_A_phi_condition_number_stays_bounded=True",
+    "VERDICT=low_frequency_conditioning_degrades_like_one_over_omega_squared"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=conditioning_was_omega_independent"
+  ]
+}

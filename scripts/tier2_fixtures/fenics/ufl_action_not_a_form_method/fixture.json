@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM matrix_free_poisson::0: [API] Build the operator action with `M = ufl.action(a, ui)`; `a.action(ui)` is not a UFL Form method. Then compile it once with `M_fem = fem.form(M, dtype=dtype)` and reuse the compiled form in every CG iteration - recompiling inside the loop is the single biggest avoidable cost. Signal: \u2026 WHAT THIS RUNS: build the operator action with `M = ufl.action(a, ui)`; `a.action(ui)` is not a UFL Form method. Then compile it once with `M_fem = fem.form(M, dtype=dtype)` and reuse the compiled form in every CG iteration. Wrong variant: `a.action(ui)`, and handing the raw UFL form to fem.assemble_vector without fem.form. Right variant: ufl.action(a, ui) compiled once with fem.form and assembled in place. Observed on dolfinx 0.10.0: `a.action(ui)` raises \"AttributeError: 'Form' object has no attribute 'action'\" at the line that builds M -- ufl.form.Form simply has no such method. The claim's second half is call-form dependent: the in-place two-argument call fem.assemble_vector(y.array, M) with an UNCOMPILED form raises \"AttributeError: 'Form' object has no attribute '_cpp_object'\" exactly as claimed, while the one-argument fem.assemble_vector(M) raises \"AttributeError: 'Form' object has no attribute 'function_spaces'\" instead. Neither is the previously quoted \"RuntimeError: cannot assemble: form has not been compiled\", which appears nowhere. The compiled form assembles and its result equals a plain matrix-vector product with the assembled stiffness matrix. OBSERVED, copied from the run: AttributeError: 'Form' object has no attribute 'action'; AttributeError: 'Form' object has no attribute '_cpp_object'; AttributeError: 'Form' object has no attribute 'function_spaces'; form_dot_action_raises_attributeerror=True; uncompiled_inplace_assembly_raises_attributeerror=True; previously_quoted_runtime_error_text_absent=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "matrix_free_poisson",
   "pitfall_index": 0,
   "mode": "python",
-  "covers": ["matrix_free_poisson::0"],
+  "covers": [
+    "matrix_free_poisson::0"
+  ],
   "expect_in_output": [
     "AttributeError: 'Form' object has no attribute 'action'",
     "AttributeError: 'Form' object has no attribute '_cpp_object'",

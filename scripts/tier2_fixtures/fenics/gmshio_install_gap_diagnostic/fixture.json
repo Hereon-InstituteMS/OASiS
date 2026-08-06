@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for fenics stokes#: dolfinx.io.gmshio is an OPTIONAL submodule that only loads when the Python 'gmsh' package is installed. The current ofa-fenicsx env does not include gmsh, so any catalog generator calling dolfinx.io.gmshio.model_to_mesh raises ImportError. This fixture is a live diagnostic recorder — it ALWAYS PASSES and just prints whether gmshio is currently importable. When gmsh is installed via 'conda install -c conda-forge gmsh python-gmsh', the recorded status flips. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 SYNTHETIC (stokes::90, the sentinel range the coverage metric excludes): reports whether dolfinx.io.gmshio and the gmsh module are importable in this environment. RE-KEYED 2026-08-06 off stokes::7, an index no pitfall occupies, and one with nothing to do with Stokes \u2014 not one fenics pitfall mentions gmsh at all. An install diagnostic is worth keeping; it is not evidence for a numerical claim.",
   "backend": "fenics",
   "physics": "stokes",
-  "pitfall_index": 7,
+  "pitfall_index": 90,
   "mode": "python",
   "expect_in_output": [
     "gmshio_present=",
@@ -12,5 +12,6 @@
   "forbid_in_output": [
     "Traceback",
     "FAIL:"
-  ]
+  ],
+  "covers": []
 }

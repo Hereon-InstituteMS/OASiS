@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM matrix_free_poisson::5: [Integration] The CG inner products must run over OWNED DOFs only: `nr = b.index_map.size_local` then `comm.allreduce(np.vdot(v0[:nr], v1[:nr]), MPI.SUM)`. Using the full ghost-padded array double-counts every shared DOF. Signal: on 2 ranks rnorm/rnorm0 climbs 1.2e+04 (it 100), 1.6e+06 (it 140), \u2026 WHAT THIS RUNS: the CG inner products must run over OWNED DOFs only -- `nr = b.index_map.size_local` then `comm.allreduce(np.vdot(v0[:nr], v1[:nr]), MPI.SUM)`. Using the full ghost-padded array double-counts every shared DOF. Wrong variant: gdot(v0, v1) = comm.allreduce(np.vdot(v0, v1), MPI.SUM) over the whole local array including ghosts. Right variant: slice to [:nr] first. This is an MPI-only failure, so the fixture is a driver: it writes one child script and runs it on 1 rank and on 2 ranks, with the ghost-padded and the owned-only inner product, through the mpirun that ships next to this interpreter. OBSERVED, copied from the run: two_rank_residual_ratio_climbs_above_one_and_keeps_growing=True; two_rank_field_magnitude_exceeds_1e3=True; two_rank_run_never_converged=True; one_rank_has_no_ghost_dofs_two_ranks_do=True; serial_run_converges_normally=True; owned_only_inner_product_fixes_the_two_rank_run=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "matrix_free_poisson",
   "pitfall_index": 5,
   "mode": "python",
-  "covers": ["matrix_free_poisson::5"],
+  "covers": [
+    "matrix_free_poisson::5"
+  ],
   "expect_in_output": [
     "two_rank_residual_ratio_climbs_above_one_and_keeps_growing=True",
     "two_rank_field_magnitude_exceeds_1e3=True",

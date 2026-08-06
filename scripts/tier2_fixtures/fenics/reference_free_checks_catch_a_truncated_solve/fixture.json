@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM nonlinear_pde::9: [Physics] Reference-free checks that actually catch a wrong nonlinear solve, all used in the minimal_working_example: (1) the Galerkin residual assembled at the converged u must vanish at every UNCONSTRAINED degree of freedom; (2) the energy identity - taking v = u in the weak form gives int \u2026 WHAT THIS RUNS: the four reference-free checks that catch a wrong nonlinear solve -- (1) the Galerkin residual must vanish at every UNCONSTRAINED dof, (2) the energy identity int D(u)|grad u|^2 dx = int f*u dx (v = u is admissible because u vanishes on the Dirichlet boundary), (3) the maximum principle u >= 0 for f > 0 with homogeneous data, (4) a non-zero spread of D(u), without which the run was effectively linear. Wrong variant: take the field back from a solve that ran out of iterations (snes_max_it = 1) and check only that it is finite, non-negative and that the diffusivity varies -- which it is, and which it does. Observed on dolfinx 0.10.0 with D(u) = 1 + u^2, f = 10, 16x16 P1, u = 0 on the whole boundary: * converged run: residual over the free dofs of order 1e-11, energy identity closing to a relative gap of order 1e-12, u in [0, 6.46e-01], D(u) in [1.000000, 1.410773]. * truncated run (reason -5): u is still non-negative and D(u) still varies, so checks (3) and (4) pass, but the free-dof residual is of order 1e-2 and the energy identity is off by ~9e-02 relative -- the two checks that carry the information catch it. OBSERVED, copied from the run: converged_run_passes_all_four_checks=True; truncated_solve_fails_the_residual_check=True; truncated_solve_fails_the_energy_identity=True; maximum_principle_and_d_spread_do_not_catch_it=True; as_written_reason_is_negative=True; VERDICT=residual_and_energy_identity_catch_the_truncated_solve. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 9,
   "mode": "python",
-  "covers": ["nonlinear_pde::9"],
+  "covers": [
+    "nonlinear_pde::9"
+  ],
   "expect_in_output": [
     "converged_run_passes_all_four_checks=True",
     "truncated_solve_fails_the_residual_check=True",

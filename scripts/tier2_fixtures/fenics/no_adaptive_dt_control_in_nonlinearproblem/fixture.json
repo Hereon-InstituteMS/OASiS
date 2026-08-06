@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM cahn_hilliard::3: [API] dolfinx.fem.petsc.NonlinearProblem performs NO adaptive time stepping, so no dt-control message can ever appear; if a step fails you must catch it and shrink dt yourself in the Python loop. Signal: the string 'step rejected, reducing dt' is emitted by nothing in this stack. It does not occur \u2026 WHAT THIS RUNS: dolfinx.fem.petsc.NonlinearProblem does no adaptive time stepping, so no dt-control message can ever appear; if a step fails you must catch it and shrink dt yourself in the Python loop. Wrong variant: a fixed-dt loop that waits for the stack to say something like \"step rejected, reducing dt\". Observed on dolfinx 0.10.0 / PETSc 3.24.5: * a case-sensitive byte search of the installed libpetsc shared object finds 0 occurrences of \"step rejected\", 0 of \"Step rejected\" and 0 of \"reducing dt\"; * the only related symbol is DIVERGED_STEP_REJECTED, which belongs to PETSc.TS.ConvergedReason -- the time-stepper object NonlinearProblem never creates. problem.solver is a petsc4py SNES and PETSc.SNES.ConvergedReason has no DIVERGED_STEP_REJECTED member at all; * the failing step reports DIVERGED_MAX_IT (-5) or DIVERGED_LINE_SEARCH (-6) and prints nothing on stdout, and dt is exactly the value the caller set; * shrinking dt in the Python loop after a failure is what actually rescues the run. OBSERVED, copied from the run: petsc_library_has_no_step_rejected_message=True; petsc_library_does_contain_DIVERGED_STEP_REJECTED=True; snes_convergedreason_has_diverged_step_rejected=False; ts_convergedreason_has_diverged_step_rejected=True; problem_solver_is_a_snes_not_a_ts=True; failing_solve_printed_no_rejection_message=True; (+4 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "cahn_hilliard",
   "pitfall_index": 3,
   "mode": "python",
-  "covers": ["cahn_hilliard::3"],
+  "covers": [
+    "cahn_hilliard::3"
+  ],
   "expect_in_output": [
     "petsc_library_has_no_step_rejected_message=True",
     "petsc_library_does_contain_DIVERGED_STEP_REJECTED=True",

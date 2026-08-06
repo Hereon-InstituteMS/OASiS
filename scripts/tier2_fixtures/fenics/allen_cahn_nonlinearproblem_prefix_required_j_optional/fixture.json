@@ -1,9 +1,11 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM multiphase::9: [API] `dolfinx.fem.petsc.NonlinearProblem` takes `petsc_options_prefix` as a REQUIRED keyword-only argument, and `J` as an OPTIONAL one. Signal: omitting the prefix gives `TypeError: NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'`. Wrapping the \u2026 WHAT THIS RUNS: `dolfinx.fem.petsc.NonlinearProblem` takes `petsc_options_prefix` as a REQUIRED keyword-only argument and `J` as an OPTIONAL one, and the deprecated `dolfinx.nls.petsc.NewtonSolver(comm, problem)` cannot wrap the resulting object. Wrong variant 1: `NonlinearProblem(F, phi)` on the Allen-Cahn residual -> `TypeError: NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'`. Wrong variant 2: build it correctly, then wrap it -> `AttributeError: 'NonlinearProblem' object has no attribute 'a'`. Right variant: pass the prefix, leave J out (UFL differentiates the residual for you) and drive the solve through `problem.solve()` / `problem.solver`. `sys.unraisablehook` is silenced because the half-built objects raise a second time from their own `__del__` at garbage-collection time, which would otherwise put an unrelated traceback on stderr. OBSERVED, copied from the run: prefix_omitted_error=TypeError: NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'; j_omitted_construction_succeeded=True; newtonsolver_wrap_error=AttributeError: 'NonlinearProblem' object has no attribute 'a'; problem_solver_route_works=True; VERDICT=prefix_is_required_j_is_optional_newtonsolver_cannot_wrap. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "multiphase",
   "pitfall_index": 9,
-  "covers": ["multiphase::9"],
+  "covers": [
+    "multiphase::9"
+  ],
   "mode": "python",
   "expect_in_output": [
     "prefix_omitted_error=TypeError: NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'",

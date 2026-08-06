@@ -1,0 +1,28 @@
+{
+  "_comment": "CLAIM stokes_darcy::3: [Numerical] The Brinkman/Stokes system is a saddle point, so the velocity and pressure spaces must satisfy the LBB (inf-sup) condition; the Darcy drag term does not rescue an unstable pair. Signal: with equal-order P1/P1 nothing is raised, getConvergedReason() returns 4, the mass balance is still \u2026 WHAT THIS RUNS: the Brinkman/Stokes system is a saddle point, so the velocity and pressure spaces must satisfy the LBB (inf-sup) condition; the Darcy drag term does not rescue an unstable pair. Wrong variant: equal-order P1/P1 velocity/pressure (and, differently wrong, P1 velocity with DG0 pressure). Right variant: Taylor-Hood P2/P1 (or P3/P2). Single-mesh Brinkman on the unit square: porous lower half with K = 1e-4, free upper half, no-slip on the two horizontal walls, unit pressure imposed weakly at the inlet x = 0 and zero at the outlet x = 1, MUMPS LU. OBSERVED, copied from the run: equal_order_oscillation_ratio_between_0p7_and_0p99_everywhere=True; equal_order_peak_pressure_far_above_the_imposed_inlet_value=True; equal_order_raised_nothing=True; equal_order_converged_reason_is_four=True; equal_order_mass_balance_is_machine_zero=True; stable_pair_oscillation_is_a_few_percent_and_halves=True; (+5 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 3,
+  "mode": "python",
+  "covers": [
+    "stokes_darcy::3"
+  ],
+  "expect_in_output": [
+    "equal_order_oscillation_ratio_between_0p7_and_0p99_everywhere=True",
+    "equal_order_peak_pressure_far_above_the_imposed_inlet_value=True",
+    "equal_order_raised_nothing=True",
+    "equal_order_converged_reason_is_four=True",
+    "equal_order_mass_balance_is_machine_zero=True",
+    "stable_pair_oscillation_is_a_few_percent_and_halves=True",
+    "stable_pair_peak_pressure_equals_the_inlet_value=True",
+    "p1_dg0_fails_loudly_with_reason_minus_eleven_and_nonfinite=True",
+    "p3_p2_is_clean_like_p2_p1=True",
+    "n=16 P1/DG0 reason=-11 finite=False peak_abs_p=inf",
+    "VERDICT=equal_order_brinkman_pressure_oscillates_silently"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=equal_order_brinkman_pressure_was_fine"
+  ],
+  "timeout_seconds": 300
+}

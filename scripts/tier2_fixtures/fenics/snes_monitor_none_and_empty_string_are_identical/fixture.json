@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM nonlinear_pde::6: [API] Turn on the SNES history with `\"snes_monitor\": None` in petsc_options; the empty string works identically. Without it a failed solve tells you only the final reason, which does not distinguish 'the load step was too big' from 'the tangent is wrong'. Signal: measured, both `snes_monitor: \u2026 WHAT THIS RUNS: the SNES iteration history is switched on with \"snes_monitor\": None in petsc_options, the empty string does exactly the same thing, and WITHOUT it a solve reports nothing but its final reason. Wrong variant: no \"snes_monitor\" key at all. The run then produces zero per-iteration lines, so a failure cannot be told apart from a too-large load by looking at the output -- only the final integer reason is left. Each arm runs in a CHILD process, because the monitor is written by PETSc at C level onto file descriptor 1 and has to be captured there. Arms: monitor None, monitor '', no monitor, and one diverging arm (Bratu lambda = 20 past the fold) with the monitor on. OBSERVED, copied from the run: SNES Function norm; none_and_empty_string_produce_identical_lines=True; monitor_line_count_matches_iterations=True; no_monitor_arm_has_zero_monitor_lines=True; healthy_run_residual_falls_by_orders_of_magnitude=True; failing_run_residual_stalls=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 6,
   "mode": "python",
-  "covers": ["nonlinear_pde::6"],
+  "covers": [
+    "nonlinear_pde::6"
+  ],
   "expect_in_output": [
     "SNES Function norm",
     "none_and_empty_string_produce_identical_lines=True",

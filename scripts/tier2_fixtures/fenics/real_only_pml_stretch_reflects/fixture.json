@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM maxwell::2: [Numerical] PML (Perfectly Matched Layer): requires coordinate stretching of the form x_i \u2192 x_i*(1 + i*sigma(x_i)/omega) inside the PML region. A real-only stretching (real sigma) gives a lossy real boundary, NOT a radiating PML. Signal: a fem.Function evaluated in the PML region decays by orders \u2026 WHAT THIS RUNS: a PML needs the COMPLEX coordinate stretch x -> x (1 + i sigma(x)/omega). A real-only stretch is not a radiating layer. Wrong variant: the 1D Helmholtz PML -(1/s u')' - k^2 s u = 0 on [0, 1.5], k = 20, physical region [0, 1], layer [1, 1.5], sigma = 40 ((x-1)/0.5)^2, u(0) = 1, u(1.5) = 0, P2 on 600 elements, with s = 1 + sigma/k (real) instead of s = 1 + i sigma/k. Run on the complex dolfinx build (env FENICS_PYTHON). Observed: with the complex stretch |u| is flat across the physical region - the standing-wave ratio max|u|/min|u| on [0.1, 0.9] is 1.0000 - and the field decays by orders of magnitude through the layer. With the real stretch the ratio is about 1.9e3: the layer does not absorb at all (a real stretch adds no loss, only an impedance gradient), the wave reflects off it and the physical region fills with a standing wave whose nodes are near zero. OBSERVED, copied from the run: scalar_type_is_complex=True; tested_standing_wave_ratio_above_10=True; tested_layer_decay_below_10x=True; complex_stretch_standing_wave_ratio_below_1p05=True; complex_stretch_decays_by_more_than_100x=True; VERDICT=only_the_complex_coordinate_stretch_radiates. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "maxwell",
+  "pitfall_index": 2,
+  "mode": "python",
+  "env": {
+    "FENICS_PYTHON": "/home/alexander/miniconda3/envs/fenicsc/bin/python"
+  },
+  "expect_in_output": [
+    "scalar_type_is_complex=True",
+    "tested_standing_wave_ratio_above_10=True",
+    "tested_layer_decay_below_10x=True",
+    "complex_stretch_standing_wave_ratio_below_1p05=True",
+    "complex_stretch_decays_by_more_than_100x=True",
+    "VERDICT=only_the_complex_coordinate_stretch_radiates"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=real_stretch_behaved_like_a_pml"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM cahn_hilliard::4: [API] Build the residual from ufl.split(u) and ufl.split(u0), NEVER from u.sub(0)/u.sub(1). The u.sub(i) spelling is not caught by UFL and not caught by the form compiler -- ufl.form() succeeds, NonlinearProblem is constructed, and the failure only shows up when you solve. Signal: on the identical \u2026 WHAT THIS RUNS: build the residual from ufl.split(u) and ufl.split(u0), NEVER from u.sub(0)/u.sub(1). The u.sub(i) spelling is caught by nothing -- dolfinx.fem.form() succeeds and NonlinearProblem is constructed -- and the damage only surfaces at solve time. Root cause, measured: u.sub(0) is a separate UFL Coefficient, so the residual does not depend on u at all and ufl.derivative(F, u) assembles to a matrix of norm exactly 0.0 (the ufl.split residual gives a nonzero one). Observed signal on dolfinx 0.10.0 / PETSc 3.24.5: solve() RAISES `petsc4py.PETSc.Error: error code 73` out of PCSetUp_LU / MatLUFactorSymbolic_SeqAIJ with the text \"Matrix is missing diagonal entry 0\", and the concentration is left exactly at its initial values. NOTE the knowledge text quotes \"DIVERGED_PC_FAILED\", \"PC failed due to FACTOR_OTHER\" and \"DIVERGED_LINEAR_SOLVE\" with SNES reason -3 / KSP reason -11; none of those appear on this install -- the all-zero tangent fails in the SYMBOLIC factorisation and PETSc raises instead of reporting a diverged reason. The fixture pins the behaviour that actually occurs. OBSERVED, copied from the run: fem_form_accepted_the_u_sub_residual=True; u_sub_jacobian_is_exactly_zero=True; ufl_split_jacobian_is_nonzero=True; petsc4py.PETSc.Error: error code 73; Matrix is missing diagonal entry 0; u_sub_solve_raised_a_hard_petsc_error=True; (+4 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "cahn_hilliard",
   "pitfall_index": 4,
   "mode": "python",
-  "covers": ["cahn_hilliard::4"],
+  "covers": [
+    "cahn_hilliard::4"
+  ],
   "expect_in_output": [
     "fem_form_accepted_the_u_sub_residual=True",
     "u_sub_jacobian_is_exactly_zero=True",

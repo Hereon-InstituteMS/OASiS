@@ -1,9 +1,11 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM multiphase::6: [Numerical] Initialise phi with the tanh profile that BELONGS to your eps: phi0 = tanh(d/(eps*sqrt(2))) with d the signed distance to the interface. Any other width makes the first steps spend themselves re-profiling the interface rather than moving it, so early-time results are meaningless. \u2026 WHAT THIS RUNS: initialise phi with the tanh profile that BELONGS to your eps, phi0 = tanh(d/(eps*sqrt(2))). Any other width makes the first steps spend themselves re-profiling the interface instead of moving it, so early-time results are meaningless. Nothing errors; the only visible sign is a steep knee in the free-energy history, so print the free energy every step. 32x32 unit square, eps = 3h, droplet of radius 0.25, 20 backward-Euler steps of dt = 1e-3. Wrong variant: the initial profile uses a width of eps/6. Right variant: the width is eps. Observed: the too-sharp start begins at free energy 4.1753 and loses 0.70375 in the FIRST step, while the consistent tanh starts at 1.4819 and loses 0.00288 - a factor of ~244 in first-step energy release. Twenty steps later the too-sharp run is still relaxing ~8x faster per step. Every SNES solve in both runs converged and nothing was raised. OBSERVED, copied from the run: sharp_start_energy_is_higher=True; first_step_release_ratio_exceeds_50=True; still_relaxing_faster_after_20_steps=True; every_step_converged_in_both_runs=True; nothing_was_raised=True; selected_first_step_release_is_at_least_50x_the_consistent_one=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "multiphase",
   "pitfall_index": 6,
-  "covers": ["multiphase::6"],
+  "covers": [
+    "multiphase::6"
+  ],
   "mode": "python",
   "expect_in_output": [
     "sharp_start_energy_is_higher=True",

@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM magnetostatics::5: [API] `ufl.curl` applied to a 2D SCALAR returns the 2-vector (dAz/dy, -dAz/dx) - exactly the plane restriction of the 3D curl((0, 0, Az)) - so there is no need to write the components by hand and no sign convention to get wrong. Signal: verified for Az = y, `ufl.curl(Az)` interpolates to [1., 0.], \u2026 WHAT THIS RUNS: `ufl.curl` applied to a 2D SCALAR returns the 2-vector (dAz/dy, -dAz/dx) -- exactly the plane restriction of the 3D curl((0, 0, Az)) -- so there is nothing to write by hand and no sign convention to get wrong. The trap is the OTHER direction: `ufl.curl(<2D scalar>)` has shape (2,) while `ufl.curl(<2D vector>)` has shape (), BOTH compile through fem.form, and for a scalar s the curl-curl energy inner(curl(s), curl(s))*dx assembles bit-for-bit the same number as the Laplacian energy inner(grad(s), grad(s))*dx -- so a scalar/vector mix-up in a curl-curl form is completely silent. Wrong variant: build the curl-curl energy on a SCALAR Lagrange space (a vector potential component) as if it were the vector unknown. Mutation control: T2_MUTATE=1 puts the intended 2D VECTOR field in the same form. curl then has shape (), the curl energy stops agreeing with the gradient energy, and the silent-equality signal disappears. OBSERVED, copied from the run: curl_2d_scalar=[1.0, 0.0]; hand_written_as_vector=[1.0, 0.0]; curl_3d_of_0_0_Az=[1.0, 0.0, 0.0]; all_three_spellings_agree=True; curl_of_2d_scalar_shape=(2,); curl_of_2d_vector_shape=(); (+3 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "magnetostatics",
   "pitfall_index": 5,
   "mode": "python",
-  "covers": ["magnetostatics::5"],
+  "covers": [
+    "magnetostatics::5"
+  ],
   "expect_in_output": [
     "curl_2d_scalar=[1.0, 0.0]",
     "hand_written_as_vector=[1.0, 0.0]",

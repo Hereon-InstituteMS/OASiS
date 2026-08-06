@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM nonlinear_pde::4: [Numerical] Semilinear source terms that grow super-linearly (R(u) = exp(u)) have a load beyond which no steady solution exists; past it Newton cannot converge no matter what you do to the solver. Signal: measured, lambda = 1 converges in 3 iterations to max(u) = 7.78e-02, while lambda = 20 \u2026 WHAT THIS RUNS: a super-linear source (R(u) = lambda*exp(u)) has a load beyond which NO steady solution exists, and past it Newton cannot be made to converge by any solver setting. Wrong variant: solve Bratu, -div(grad u) = lambda*exp(u) with u = 0 on the whole boundary, straight at lambda = 20 on the unit square and try to rescue it with a bigger iteration budget or a different line search. Observed on dolfinx 0.10.0 (16x16, P1): * lambda = 1 converges in a couple of iterations to max(u) ~ 7.8e-02. * lambda = 20 fails for every combination tried: budget 30 and budget 200, line search 'basic' and 'bt'. 'basic' burns the whole budget (reason -5, DIVERGED_MAX_IT, at 30 and again at 200 iterations); 'bt' stops itself with reason -6 (DIVERGED_LINE_SEARCH) after the same 23 iterations whatever the budget. * load continuation, reusing the previous solution as the initial iterate, walks up to lambda = 6 and then fails at lambda = 7 -- the turning point of the continuous problem, which no solver option can move. OBSERVED, copied from the run: small_load_converges=True; big_load_fails_in_every_arm=True; raising_snes_max_it_does_not_help=True; changing_the_line_search_does_not_help=True; continuation_stalls_below_the_target=True; VERDICT=past_the_fold_no_solver_setting_converges. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 4,
   "mode": "python",
-  "covers": ["nonlinear_pde::4"],
+  "covers": [
+    "nonlinear_pde::4"
+  ],
   "expect_in_output": [
     "small_load_converges=True",
     "big_load_fails_in_every_arm=True",

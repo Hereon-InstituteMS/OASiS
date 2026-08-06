@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM magnetostatics::6: [Integration] `LinearProblem.solve()` never raises when the KSP fails; the dolfinx 0.10 docstring says outright that 'the user is responsible for asserting convergence of the KSP solver'. Assert `problem.solver.getConvergedReason() > 0` or pass `\"ksp_error_if_not_converged\": True`. Signal: on a \u2026 WHAT THIS RUNS: `LinearProblem.solve()` never raises when the KSP fails. The dolfinx 0.10 docstring says so outright, the failing solve returns a Function full of whatever the Krylov method had reached, the script goes on to WRITE ITS OUTPUT FILE and would exit 0. The only way to notice is `problem.solver.getConvergedReason() > 0` (or passing `\"ksp_error_if_not_converged\": True`). Wrong variant: solve the 2D coil magnetostatics problem with CG capped at 2 iterations and trust the returned field. Observed: converged reason -3 (DIVERGED_MAX_IT), no exception, and the XDMF file is written anyway. Healthy runs on the same problem report 4 (CONVERGED_ITS) for a direct solve and 2 (CONVERGED_RTOL) for CG. Mutation control: T2_MUTATE=1 passes \"ksp_error_if_not_converged\": True, and the same capped solve raises PETSc.Error instead of returning silently. OBSERVED, copied from the run: The user is responsible for asserting convergence of the KSP; docstring_says_user_must_assert_convergence=True; failing_solve_raised=False; failing_reason_is_negative=True; failing_reason_is_diverged_max_it=True; wrote_output_after_a_failed_solve=True; (+3 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "magnetostatics",
   "pitfall_index": 6,
   "mode": "python",
-  "covers": ["magnetostatics::6"],
+  "covers": [
+    "magnetostatics::6"
+  ],
   "expect_in_output": [
     "The user is responsible for asserting convergence of the KSP",
     "docstring_says_user_must_assert_convergence=True",

@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "PLACEHOLDER COVERS TRIMMED 2026-08-06: this fixture also named maxwell::0, which vector_lagrange_cannot_carry_the_normal_jump owns. The two claims ask for different observables and each fixture measures its own: magnetostatics::2 is about the discrete curl-curl SPECTRUM being wrong (this fixture compares eigenvalues against lambda/pi^2 = 1,1,2,4,4,5,5), while maxwell::0 is about the post-processed B field carrying spurious normal jumps and the error refusing to fall below a few per cent. Crediting one claim to two fixtures counts it twice and leaves the other looking uncovered.",
   "backend": "fenics",
   "physics": "magnetostatics",
   "pitfall_index": 2,
   "mode": "python",
-  "covers": ["magnetostatics::2", "maxwell::0"],
+  "covers": [
+    "magnetostatics::2"
+  ],
   "expect_in_output": [
     "curl_curl_form_compiles_on_every_family=True",
     "reference_n1curl_matches_exact_within_1_percent=True",

@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM nonlinear_pde::2: [Numerical] A diffusivity that is singular at the starting iterate (the p-Laplacian D = |grad u|^(p-2) with p < 2, evaluated at u = 0) must be regularised as D = (|grad u|^2 + eps^2)^((p-2)/2) with eps around 1e-6. Signal: measured with p = 1.5 and u0 = 0, SNES returns converged reason -4 \u2026 WHAT THIS RUNS: a diffusivity that is singular at the starting iterate must be regularised. The p-Laplacian D = |grad u|^(p-2) with p = 1.5, evaluated at the zero initial iterate, is 0^(-1/4) = inf. Wrong variant: D = (grad u . grad u)**((p-2)/2) with u starting at 0. Right variant: D = (grad u . grad u + eps**2)**((p-2)/2), eps = 1e-6. Observed on dolfinx 0.10.0: * neither assembling the residual nor assembling the Jacobian raises anything -- in particular no ZeroDivisionError -- but the assembled residual vector is entirely NaN and the Jacobian assembled at u = 0 DOES contain NaN entries (its PETSc norm is nan). The claim's remark that 'nan entries in J' do not reproduce is wrong; what does not reproduce is an exception. * SNES returns converged reason -4 (DIVERGED_FNORM_NAN) at iteration 0 and leaves u exactly at zero, so np.isnan(u.x.array).any() is False: a NaN check on the solution does not catch the failure. * the eps-regularised form converges in a handful of iterations with a positive reason. OBSERVED, copied from the run: assembly_raised_an_exception=False; jacobian_at_the_start_has_nan_entries=True; unregularised_reason_is_fnorm_nan=True; solution_left_exactly_at_zero=True; nan_check_on_the_solution_misses_it=True; eps_regularisation_converges=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 2,
   "mode": "python",
-  "covers": ["nonlinear_pde::2"],
+  "covers": [
+    "nonlinear_pde::2"
+  ],
   "expect_in_output": [
     "assembly_raised_an_exception=False",
     "jacobian_at_the_start_has_nan_entries=True",

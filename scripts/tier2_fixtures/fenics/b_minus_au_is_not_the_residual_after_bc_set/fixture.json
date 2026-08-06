@@ -1,10 +1,12 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "CLAIM matrix_free_poisson::3: [Integration] After the CG loop, `bc.set(u.x.array, alpha=1.0)` writes the prescribed Dirichlet values into the solution. From that moment on, `b - A*u` is NO LONGER the residual of the system that was solved, because b already carries the lifting term -A*u_bc. Signal: recomputing ||b - A*u|| / \u2026 WHAT THIS RUNS: after the CG loop, `bc.set(u.x.array, alpha=1.0)` writes the prescribed Dirichlet values into the solution. From that moment on, `b - A*u` is NO LONGER the residual of the system that was solved, because b already carries the lifting term -A*u_bc. Wrong variant: recompute ||b - A*u|| / ||b|| after the bc.set and report it as \"the residual\". Right variant: assemble the Galerkin residual of the FULL solution, action(a, u) - L, zeroed at the constrained DOFs. Observed on dolfinx 0.10.0 with a converged matrix-free CG solve (16x16, P2, rtol 1e-10): before the bc.set the same expression is the residual of the reduced system and comes out at the Krylov tolerance, of order 1e-11; after the bc.set it jumps to 1.0 -- 9.999e-01 with the constrained rows zeroed and 1.000e+00 without -- for a solve whose reference-free Galerkin residual is of order 1e-9. The misleading number is the size of A*u_bc, not an error in the solution. OBSERVED, copied from the run: cg_converged=True; b_minus_Au_over_b_AFTER_bc_set=; reduced_residual_before_bc_set_is_at_the_krylov_tolerance=True; galerkin_residual_of_full_solution_is_small=True; b_minus_Au_after_bc_set_is_order_one=True; b_minus_Au_after_bc_set_is_at_least_1e7_times_the_galerkin_residual=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
   "backend": "fenics",
   "physics": "matrix_free_poisson",
   "pitfall_index": 3,
   "mode": "python",
-  "covers": ["matrix_free_poisson::3"],
+  "covers": [
+    "matrix_free_poisson::3"
+  ],
   "expect_in_output": [
     "cg_converged=True",
     "b_minus_Au_over_b_AFTER_bc_set=",
