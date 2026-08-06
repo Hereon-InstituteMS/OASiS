@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for dealii nonlinear#3. Tier-2 for dealii nonlinear#3: the Differentiation::AD helpers the claim tells you to choose between do not exist on every install, and \"the header is there\" is the WRONG availability test. The whole body of deal.II/differentiation/ad/ad_helpers.h -- CellLevelBase, EnergyFunctional, ResidualLinearization -- sits behind if defined(DEAL_II_WITH_ADOLC) || defined(DEAL_II_TRILINOS_WITH_SACADO) so on a source build configured without either (the case here) the header is installed, includes cleanly, and yields NOTHING. The failure only surfaces when a class is named. The reliable test is config.h. The claim's substantive assertion -- that swapping EnergyFunctional for CellLevelBase gives a tangent with the wrong sign on the off-diagonals -- is NOT testable on this install, because neither AD backend is present. Mutation control: T2_MUTATE=1 compiles the same file without naming any AD class, so it builds and the diagnostic disappears. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "nonlinear",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "adolc_enabled=false",
+    "sacado_enabled=false",
+    "ad_enabled=false",
+    "header_present=true",
+    "header_includes_cleanly=true",
+    "names_an_ad_class=true",
+    "compiles=false",
+    "is not a member of"
+  ],
+  "forbid_in_output": [
+    "No such file or directory",
+    "undefined reference",
+    "header_present=false"
+  ],
+  "timeout_seconds": 600
+}

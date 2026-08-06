@@ -10,8 +10,12 @@
 # (the CG iteration counts of the two loops are equal).
 #
 # The entry's two quantitative clauses are measured rather than repeated:
-# "assemble_system dominating at 60-80%" and "scaling as O(ndof^2)". Both come
-# out false here, and the fixture pins them false.
+# "assemble_system dominating at 60-80%" and "scaling as O(ndof^2)". The
+# assembly share of the wall time is printed but NOT pinned — it moved between
+# 0.31 and 0.60 across repeated runs on this host, straddling the lower edge of
+# the claimed band, so it is not a reproducible observation. The scaling
+# exponent is pinned: it measures 0.7-1.1 over a 15x range of dof counts, i.e.
+# linear, not quadratic.
 #
 # Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant
 # (assemble once), and the fixture then fails its own expectations.

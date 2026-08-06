@@ -8,7 +8,6 @@
     "assemble_system",
     "reassembling_is_measurably_slower=true",
     "cg_iteration_count_is_unchanged=true",
-    "assembly_fraction_in_claimed_60_to_80_band=false",
     "assembly_scales_quadratically_in_ndofs=false",
     "VERDICT=reassembling_every_step_costs_multiples_for_the_same_answer"
   ],

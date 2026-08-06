@@ -1,5 +1,5 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "Tier-2 for dealii hp_adaptive#4. Tier-2 for dealii hp_adaptive#4 \u2014 probe \"p_interface_without_constraints\" of the shared hp translation unit _shared/hp_family.cc, compiled once and cached so seven fixtures share one build. A UNIFORM 4x4 mesh \u2014 no h-hanging nodes anywhere \u2014 with FE_Q(1) on the left half and FE_Q(3) on the right. Every constraint that DoFTools::make_hanging_node_constraints produces on this mesh is therefore the p-projection the entry is about (the probe prints how many there are). Solved without them, the trace of the solution differs on the two sides of each p-transition face: the probe walks every interior face, evaluates both neighbours with FEFaceValues at matched physical points, and reports the worst difference. Faces between equal-degree cells are the control and stay continuous to round-off, so the jump is specific to the p-transition. Mutation control: T2_MUTATE=1 applies the constraints, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
   "backend": "dealii",
   "physics": "hp_adaptive",
   "pitfall_index": 4,
