@@ -2098,10 +2098,10 @@ def matched_tsi_plane_strain_input(
 ) -> str:
     """4C thermo-elastic PLANE STRAIN via a pseudo-2D thin slab (one-way TSI).
 
-    Why this exists (T14 evaluation campaign, 2026-07): 4C has NO 2D TSI
-    elements — every TSI corpus test is 3D SOLIDSCATRA. Agents given a 2D
-    plane-strain thermo-mechanical problem tried the two 2D structural
-    eletypes and hit hard errors on the deployed binary:
+    Why this exists: 4C has NO 2D TSI elements — every TSI corpus test is
+    3D SOLIDSCATRA. A 2D plane-strain thermo-mechanical problem written
+    with either 2D structural eletype hits a hard error on the deployed
+    binary (observed 2026-07):
       * WALL QUAD4  + MAT_Struct_ThermoStVenantK
           -> "Invalid type of material law for wall element" (4C_w1_mat.cpp:179)
       * SOLID QUAD4 (any material, this build)
@@ -2714,10 +2714,11 @@ def matched_thermo_transient_mms_input(n: int = 48,
     force at t_n / t_{n+1}, i.e. trapezoid quadrature, and consistent
     initial rates are computed), ~1 for theta=1 (backward Euler).
     Note the error vs the exact solution saturates at the spatial Q1
-    floor; grade the order from Richardson differences of
-    consecutive-dt solutions on the same mesh where needed
-    (live study 2026-08-01: Richardson orders 2.018/2.004 at
-    theta=0.5; 0.95/1.00/1.05 vs exact at theta=1.0).
+    floor, so an error-vs-exact dt table flattens at small dt no matter
+    how good the time integrator is. Grade the order from Richardson
+    differences of consecutive-dt solutions on the SAME mesh: the
+    spatial error is identical in both and cancels in the difference,
+    leaving the temporal order alone (exercised live 2026-08-01).
 
     Final-time nodal temperatures land in
     <prefix>-vtk-files/thermo-<step>-0.vtu (point_data key

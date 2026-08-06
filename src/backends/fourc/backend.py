@@ -1376,10 +1376,10 @@ class FourcBackend(SolverBackend):
             # plane-strain thermo-mechanics. 4C has NO 2D TSI elements
             # (module solid_scatra_3D_ele; every TSI corpus test is 3D)
             # and the 2D structural eletypes both dead-end with the
-            # thermo material on the deployed binary (T14 campaign
-            # 2026-07: WALL QUAD4 -> "Invalid type of material law for
-            # wall element"; SOLID QUAD4 -> "Element 'SOLID' does not
-            # seem to know cell type 'quad4'"). One SOLIDSCATRA HEX8
+            # thermo material on the deployed binary (observed 2026-07:
+            # WALL QUAD4 -> "Invalid type of material law for wall
+            # element"; SOLID QUAD4 -> "Element 'SOLID' does not seem
+            # to know cell type 'quad4'"). One SOLIDSCATRA HEX8
             # layer with u_z fixed everywhere is exact plane strain;
             # temp_expr imposes a (partner-computed) temperature field.
             "tsi_plane_strain_2d":
@@ -1472,12 +1472,14 @@ class FourcBackend(SolverBackend):
                                              / p.get("dt", 0.1)))),
                 timestep=p.get("dt", 0.1)),
             # thermo_transient_mms/temporal_mms_2d: unsteady-heat MMS
-            # family graded on TEMPORAL convergence order (E3,
-            # 2026-08-01). Fixed fine mesh keyed off "n" (capped in
-            # the inline builder), dt-halving to the same T_end;
-            # One-Step-Theta shows measured order ~2 at theta=0.5
-            # (Richardson 2.018/2.004) and ~1 at theta=1.0
-            # (0.95/1.00/1.05 vs exact) on this build. The volumetric
+            # family graded on TEMPORAL convergence order. Fixed fine
+            # mesh keyed off "n" (capped in the inline builder),
+            # dt-halving to the same T_end, so the only thing varying
+            # is dt. One-Step-Theta is 2nd-order in time at theta=0.5
+            # and 1st-order at theta=1; grade theta=0.5 from Richardson
+            # differences of consecutive-dt solutions rather than from
+            # an error-vs-exact table, which saturates at the fixed
+            # mesh's spatial floor. The volumetric
             # MMS source goes through the PLAIN "DESIGN SURF NEUMANN
             # CONDITIONS" — the THERMO-prefixed Neumann sections are
             # silently ignored in standalone Thermo (see the

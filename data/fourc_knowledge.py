@@ -1761,8 +1761,10 @@ FOURC_KNOWLEDGE = {
                 "imposed volume-wide via DESIGN VOL THERMO DIRICH + a "
                 "symbolic FUNCT (param temp_expr — pass the partner code's "
                 "temperature solution). Verified against the 4C binary "
-                "2026-08-01: tip displacement within 0.5% of the analytic "
-                "plane-strain thermal-expansion value. (T14 campaign fix.)"
+                "2026-08-01: the slab route reproduces the analytic "
+                "plane-strain thermal-expansion behaviour, so check your own "
+                "run against that closed form before trusting a 2D-looking "
+                "TSI result."
             ),
             (
                 "[Input] Without CLONING MATERIAL MAP, 4C "
