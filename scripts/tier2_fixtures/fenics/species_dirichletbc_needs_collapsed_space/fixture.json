@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#3: a Dirichlet condition on ONE species of a mixed space needs the collapsed sub-space in BOTH the dof lookup and the value. The only combination that works is V0, _ = W.sub(0).collapse() dofs = fem.locate_dofs_topological((W.sub(0), V0), fdim, facets) g = fem.Function(V0) bc = fem.dirichletbc(g, dofs, W.sub(0)) Wrong variants tried here: a fem.Constant instead of a Function on V0; the dof lookup without the (W.sub(0), V0) space pair; and dropping the trailing W.sub(0). Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "TypeError: __init__(): incompatible function arguments. The following argument types are supported:",
+    "Invoked with types: dolfinx.cpp.fem.DirichletBC_float64, dolfinx.cpp.fem.Constant_float64, list, dolfinx.cpp.fem.FunctionSpace_float64",
+    "constant_instead_of_function_raised=True",
+    "dofs_without_the_space_pair_raised=True",
+    "trailing_subspace_omitted_raised=True",
+    "all_three_wrong_spellings_raise_typeerror=True",
+    "correct_spelling_constrains_the_located_species_dofs=True",
+    "VERDICT=species_bc_needs_the_collapsed_space_everywhere"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=a_wrong_species_bc_spelling_was_accepted"
+  ],
+  "timeout_seconds": 300
+}
