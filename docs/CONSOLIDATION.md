@@ -320,3 +320,49 @@ So the full statement is:
 An agent watching iteration counts catches the first and is ACTIVELY MISLED by
 the second. Neither bug announces itself, and the only reliable detection is
 comparing the ANSWER against a reference — never watching the solver.
+
+---
+
+# Cannot verify here, versus not done
+
+Some claims cannot be executed on this machine at all. That is a different
+statement from "nobody got to it", and the paper must not blur them — a reader
+who finds a gap will ask which it was.
+
+Measured from the installs themselves, not from documentation:
+
+    deal.II   config.h:  DEAL_II_WITH_MPI      undef
+                         DEAL_II_WITH_P4EST    undef
+                         DEAL_II_WITH_PETSC    undef
+                         DEAL_II_WITH_TRILINOS undef
+                         DEAL_II_WITH_SUNDIALS undef
+                         DEAL_II_WITH_ADOLC    undef
+              -> parallel_poisson (7 claims) unreachable; the SUNDIALS half of
+                 time_dependent_heat#1 unreachable; the AD half of
+                 hyperelasticity#7 unreachable
+
+    FEBio     binary carries no MKL and no Pardiso
+              -> the claims about those solver paths unreachable
+
+    4C        binary carries no ArborX and no preCICE
+              -> beam_interaction geometric search (2 claims) unreachable;
+                 preCICE coupling unreachable, which the coupling fixtures
+                 already pin as a NEGATIVE capability claim rather than a gap
+
+Excluding what cannot be verified, deal.II sits at 103/122 = 84% of its
+reachable surface rather than 76% of its nominal one.
+
+TWO REFINEMENTS FOUND BY AGENTS, both worth keeping:
+
+`parallel_poisson::0` is actually REACHABLE despite the six around it, because
+it is a claim about what happens with the features OFF: the distributed header
+compiles, MPI_InitFinalize reports one rank, and
+`parallel::distributed::Triangulation`'s constructor is `= delete`d, so the
+failure is a compile error with no link error and no runtime exception. A
+compile-outcome fixture covers it. Six blocked, not seven.
+
+And the evidence for the blockage is itself in the tree: the sentinel fixture
+`install_feature_flags_visible` reads those config flags, so "cannot verify
+here" is an executed observation rather than an assertion in a report. That is
+the right pattern for every environment limit — the claim that something is
+impossible on this host should be as verifiable as the claims that are.
