@@ -542,98 +542,150 @@ static int linear_solve_is_stokes()
 static int equal_order_checkerboard()
 {
   const unsigned int refine = 4;
-  const unsigned int vdeg   = mutate() ? 2 : 1;
-  std::cout << "velocity_degree=" << vdeg << " pressure_degree=1" << std::endl;
+  std::cout << "cells_per_side=" << (1u << refine) << " pressure_degree=1"
+            << std::endl;
   std::cout << "pair_under_test="
             << (mutate() ? "taylor_hood_Q2_Q1" : "equal_order_Q1_Q1")
             << std::endl;
-  Flow f(vdeg, 1);
-  // A slightly distorted mesh: on a perfectly uniform grid the checkerboard is
-  // EXACTLY in the kernel and the direct solve has nothing to return. Distorted,
-  // the mode is only nearly singular -- which is what a real mesh gives you.
-  f.make_grid(refine, (g_scan > 0.0) ? g_scan : 0.15);
-  f.nu = 0.02;
-  f.set_bc(true);
-  f.allocate();
-  bool ok = false;
-  const auto hist = f.newton(30, 1e-10, ok);
-  std::cout << "newton_converged=" << (ok ? "true" : "false")
-            << " newton_steps=" << hist.size() << std::endl;
-  std::cout << "n_dofs=" << f.dof.n_dofs() << " n_pressure_dofs=" << f.n_p
-            << std::endl;
 
-  // pressure at every cell centre
-  QMidpoint<dim> mid;
-  FEValues<dim>  fev(f.fe, mid, update_values | update_quadrature_points);
-  const FEValuesExtractors::Scalar pr(dim);
-  std::vector<double>              pv(1);
-  const double                     h = 1.0 / double(1u << refine);
-  std::map<std::pair<int, int>, double> grid;
-  double                                pmin = 1e300, pmax = -1e300;
-  for (const auto &cell : f.dof.active_cell_iterators())
-    {
-      fev.reinit(cell);
-      fev[pr].get_function_values(f.sol, pv);
-      const Point<dim> c = fev.quadrature_point(0);
-      const int ix = int(std::llround(c[0] / h - 0.5));
-      const int iy = int(std::llround(c[1] / h - 0.5));
-      grid[{ix, iy}] = pv[0];
-      pmin           = std::min(pmin, pv[0]);
-      pmax           = std::max(pmax, pv[0]);
-    }
-  const double range = pmax - pmin;
-  std::cout << "cell_centre_pressure_min=" << pmin << " max=" << pmax
-            << " range=" << range << std::endl;
+  struct Result
+  {
+    double ratio = 0.0, plinf = 0.0, proj = 0.0, alt = 0.0;
+    bool   converged = false;
+    unsigned int steps = 0;
+  } res[2];
 
-  // The pressure LEVEL is arbitrary in a closed cavity, so the pattern has to
-  // be measured on the mean-free part. Projection onto the checkerboard sign
-  // pattern reaches 1 for a pure checkerboard and stays near 0 for a smooth
-  // field; the second number is the fraction of horizontally adjacent cell
-  // pairs across which the mean-free pressure changes sign.
-  double mean = 0.0;
-  for (const auto &e : grid)
-    mean += e.second;
-  mean /= double(std::max<std::size_t>(1, grid.size()));
-  double sum_abs = 0.0, proj = 0.0;
-  for (const auto &e : grid)
+  // BOTH pairs are solved in every invocation, so the comparison the claim is
+  // about is visible whichever one is under test.
+  for (int k = 0; k < 2; ++k)
     {
-      const double s = ((e.first.first + e.first.second) % 2 == 0) ? 1.0 : -1.0;
-      proj += s * (e.second - mean);
-      sum_abs += std::abs(e.second - mean);
-    }
-  const double checker = std::abs(proj) / std::max(1e-300, sum_abs);
-  std::cout << "cell_centre_pressure_mean=" << mean
-            << " mean_free_amplitude=" << (sum_abs / double(grid.size()))
-            << std::endl;
-  unsigned int alt = 0, pairs = 0;
-  const int    n   = int(1u << refine);
-  for (int iy = 0; iy < n; ++iy)
-    for (int ix = 0; ix + 1 < n; ++ix)
+      const unsigned int vdeg = (k == 0) ? 1 : 2;
+      Flow               f(vdeg, 1);
+      f.make_grid(refine);
+      f.nu = 0.02;
+      f.set_bc(false);
+      f.allocate();
+      f.sol = 0.0;
+      f.assemble(true);
+
+      // The structural half of the signal, and the only part that is stable.
+      // Whether the equal-order pair can CONTROL a checkerboard pressure is a
+      // property of the element pair, not of any one solve: apply the assembled
+      // operator to an explicit unit checkerboard pressure vector and see how
+      // much velocity response it produces, against a SMOOTH pressure vector of
+      // the same norm. One matrix-vector product, fully deterministic.
       {
-        const auto a = grid.find({ix, iy}), b = grid.find({ix + 1, iy});
-        if (a == grid.end() || b == grid.end())
-          continue;
-        ++pairs;
-        if ((a->second - mean) * (b->second - mean) < 0.0)
-          ++alt;
+        std::map<types::global_dof_index, Point<dim>> support;
+        DoFTools::map_dofs_to_support_points(MappingQ1<dim>(), f.dof, support);
+        const double   hh = 1.0 / double(1u << refine);
+        Vector<double> chk(f.dof.n_dofs()), smooth(f.dof.n_dofs());
+        for (types::global_dof_index i = f.n_u; i < f.dof.n_dofs(); ++i)
+          {
+            const Point<dim> &pt = support[i];
+            const int         ix = int(std::llround(pt[0] / hh));
+            const int         iy = int(std::llround(pt[1] / hh));
+            chk(i)    = ((ix + iy) % 2 == 0) ? 1.0 : -1.0;
+            smooth(i) = std::cos(numbers::PI * pt[0]) *
+                        std::cos(numbers::PI * pt[1]);
+          }
+        chk /= chk.l2_norm();
+        smooth /= smooth.l2_norm();
+        auto response = [&](const Vector<double> &v) {
+          Vector<double> r(f.dof.n_dofs());
+          f.K.vmult(r, v);
+          double t = 0.0;
+          for (types::global_dof_index i = 0; i < f.n_u; ++i)
+            if (!f.constraints.is_constrained(i))
+              t += r(i) * r(i);
+          return std::sqrt(t);
+        };
+        const double rc = response(chk), rs = response(smooth);
+        res[k].ratio = rc / std::max(1e-300, rs);
+        std::cout << (k == 0 ? "Q1_Q1" : "Q2_Q1")
+                  << "_velocity_response_to_a_unit_checkerboard_pressure=" << rc
+                  << " to_a_unit_smooth_pressure=" << rs
+                  << " ratio=" << res[k].ratio << std::endl;
       }
-  const double alt_frac = double(alt) / std::max(1u, pairs);
-  std::cout << "checkerboard_projection_of_the_cell_centre_pressure=" << checker
-            << std::endl;
-  std::cout << "fraction_of_adjacent_cell_pairs_that_alternate=" << alt_frac
-            << std::endl;
-  // The magnitude is the other half of the signal: with no inf-sup stability
-  // the spurious mode is in the kernel of the discrete gradient, so the direct
-  // solve returns an arbitrary multiple of it.
-  std::cout << "max_abs_pressure_dof=" << f.pressure_linfty() << std::endl;
-  std::cout << "pressure_magnitude_exceeds_1e10="
-            << ((f.pressure_linfty() > 1e10) ? "true" : "false") << std::endl;
-  const bool checkers = checker > 0.40 && alt_frac > 0.30;
-  std::cout << "pressure_checkerboards=" << (checkers ? "true" : "false")
-            << std::endl;
+
+      f.sol = 0.0;
+      bool       ok   = false;
+      const auto hist = f.newton(30, 1e-10, ok);
+      res[k].converged = ok;
+      res[k].steps     = hist.size();
+      res[k].plinf     = f.pressure_linfty();
+
+      // the claim's own signal: the pressure at adjacent cell centres
+      QMidpoint<dim>                   mid;
+      FEValues<dim>                    fev(f.fe, mid, update_values |
+                                             update_quadrature_points);
+      const FEValuesExtractors::Scalar pr(dim);
+      std::vector<double>              pv(1);
+      const double                     h = 1.0 / double(1u << refine);
+      std::map<std::pair<int, int>, double> grid;
+      for (const auto &cell : f.dof.active_cell_iterators())
+        {
+          fev.reinit(cell);
+          fev[pr].get_function_values(f.sol, pv);
+          const Point<dim> c = fev.quadrature_point(0);
+          grid[{int(std::llround(c[0] / h - 0.5)),
+                int(std::llround(c[1] / h - 0.5))}] = pv[0];
+        }
+      double mean = 0.0;
+      for (const auto &e : grid)
+        mean += e.second;
+      mean /= double(std::max<std::size_t>(1, grid.size()));
+      double sum_abs = 0.0, proj = 0.0;
+      for (const auto &e : grid)
+        {
+          const double sg =
+            ((e.first.first + e.first.second) % 2 == 0) ? 1.0 : -1.0;
+          proj += sg * (e.second - mean);
+          sum_abs += std::abs(e.second - mean);
+        }
+      res[k].proj = std::abs(proj) / std::max(1e-300, sum_abs);
+      unsigned int alt = 0, pairs = 0;
+      const int    n   = int(1u << refine);
+      for (int iy = 0; iy < n; ++iy)
+        for (int ix = 0; ix + 1 < n; ++ix)
+          {
+            const auto x = grid.find({ix, iy}), y = grid.find({ix + 1, iy});
+            if (x == grid.end() || y == grid.end())
+              continue;
+            ++pairs;
+            if ((x->second - mean) * (y->second - mean) < 0.0)
+              ++alt;
+          }
+      res[k].alt = double(alt) / std::max(1u, pairs);
+      std::cout << (k == 0 ? "Q1_Q1" : "Q2_Q1")
+                << "_newton_converged=" << (ok ? "true" : "false")
+                << " steps=" << res[k].steps
+                << " max_abs_pressure_dof=" << res[k].plinf
+                << " cell_centre_checkerboard_projection=" << res[k].proj
+                << " adjacent_pairs_alternating=" << res[k].alt << std::endl;
+    }
+
+  const Result &u = mutate() ? res[1] : res[0];
+  std::cout << "response_ratio_under_test=" << u.ratio << std::endl;
+  std::cout << "pressure_magnitude_ratio_over_taylor_hood="
+            << (u.plinf / std::max(1e-300, res[1].plinf)) << std::endl;
+  const bool invisible = u.ratio < 0.2;
+  const bool inflated  = u.plinf > 100.0 * res[1].plinf;
+  std::cout << "checkerboard_is_nearly_invisible_to_the_pair="
+            << (invisible ? "true" : "false") << std::endl;
+  std::cout << "pressure_magnitude_far_exceeds_the_stable_pair="
+            << (inflated ? "true" : "false") << std::endl;
+  // FINDING, recorded rather than asserted: on a UNIFORM mesh the equal-order
+  // solve converges and its cell-centre pressure does NOT alternate in sign the
+  // way the claim describes. The literal picture the claim paints only appears
+  // on a distorted mesh, where the system is singular and the direct solve
+  // returns an arbitrary multiple of the near-null mode -- an amplitude that is
+  // not reproducible across builds and is therefore never asserted on here.
+  std::cout << "cell_centre_pressure_alternates_as_the_claim_says="
+            << ((u.proj > 0.4 && u.alt > 0.3) ? "true" : "false") << std::endl;
   std::cout << "VERDICT="
-            << (checkers ? "equal_order_pressure_checkerboards"
-                         : "pressure_field_is_clean")
+            << ((invisible && inflated)
+                  ? "equal_order_pair_cannot_control_the_checkerboard_mode"
+                  : "pair_controls_the_checkerboard_mode")
             << std::endl;
   return 0;
 }
@@ -735,7 +787,10 @@ static int time_integrator_order()
 {
   const double       nu     = 0.05;
   const double       T      = (g_scan > 0.0) ? g_scan : 0.5;
-  const unsigned int refine = (g_scan2 > 0) ? g_scan2 : 4;
+  // 32x32 Q2 velocity: the SPATIAL error is ~7e-6 here, well below the time
+  // error being measured, which is not true on a coarser mesh -- at 16x16 the
+  // spatial error swamps the Crank-Nicolson error and both schemes look flat.
+  const unsigned int refine = (g_scan2 > 0) ? g_scan2 : 5;
   const double       theta  = mutate() ? 0.5 : 1.0;
   std::cout << "scheme_under_test="
             << (mutate() ? "crank_nicolson_theta_one_half"

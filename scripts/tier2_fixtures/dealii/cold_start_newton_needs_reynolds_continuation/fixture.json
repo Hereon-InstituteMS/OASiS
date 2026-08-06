@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii navier_stokes#2. Lid-driven cavity, Taylor-Hood Q2/Q1, 32x32, target Re = 700. From a zero initial guess the Newton loop never converges: 30 iterations, the residual jumps from 7e-3 to 16 on iteration 4 and then wanders without settling. Continuation through Re = 10, 50, 100, 200, 400 reaches the same target and each stage converges in 4 to 6 Newton steps, the final one in 6 -- inside the 4-6 the claim predicts. FINDING against the claim's numbers: Re = 200 is NOT where the cold start breaks down on this discretisation. A cold start at Re = 200 converges here, and Re = 700 is the lowest target of those tried (400 at 16x16, 700/1000/2000 at 32x32) at which the cold start fails while continuation still succeeds; at Re = 1000 and above continuation fails too on this mesh. The claim's mechanism is confirmed, its threshold is not. T2_MUTATE=1 runs the continuation ladder. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "navier_stokes",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "start_under_test=cold_start_from_a_zero_initial_guess",
+    "newton_converged=false",
+    "VERDICT=cold_start_newton_fails_at_the_target_reynolds_number"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=the_starting_guess_reaches_the_target_reynolds_number"
+  ],
+  "timeout_seconds": 900
+}

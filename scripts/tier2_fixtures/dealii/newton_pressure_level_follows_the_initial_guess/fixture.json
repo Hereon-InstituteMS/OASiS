@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii navier_stokes#4. Closed lid-driven cavity at Re = 100, Taylor-Hood Q2/Q1 on 8x8, every inner solve by unpreconditioned GMRES so the iteration count per outer Newton step is visible. The probe runs the SAME problem twice, differing only in the pressure level of the starting vector: 0 and 1000. With no pressure constraint both converge in 6 Newton steps to the same velocity field and the same pressure SHAPE -- the two runs agree to 3e-12 in velocity and 1.2e-12 in mean-free pressure -- while the pressure means come out 0 and exactly 1000. The level is whatever the initial guess carried. FINDING against the claim: the pressure does NOT drift to >1e10; the largest pressure dof stays at 0.79 above the level of the start vector, and the GMRES counts per Newton step (126, 388, 357, 234, 63) do not grow monotonically across outer steps either. Both of the claim's quantitative signals are pinned false here while its physics is confirmed. T2_MUTATE=1 pins one pressure dof, and the level is then determined -- both runs land on the same mean regardless of where they start. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "navier_stokes",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "pressure_constraint=none",
+    "both_runs_converged=true",
+    "velocity_and_pressure_shape_agree=true",
+    "pressure_level_differs=true",
+    "pressure_exceeded_1e10=false",
+    "VERDICT=the_pressure_level_is_undetermined_without_a_constraint"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=the_pressure_level_is_determined"
+  ],
+  "timeout_seconds": 900
+}

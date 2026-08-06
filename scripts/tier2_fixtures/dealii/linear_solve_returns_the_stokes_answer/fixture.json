@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii navier_stokes#0. Lid-driven cavity, Taylor-Hood Q2/Q1, 16x16, nu = 1/200. The probe builds three fields in one run: a single linear solve with the convective term never assembled, a Stokes reference, and a Navier-Stokes answer converged by Reynolds continuation (10, 50, 100, 200). Measured: the single linear solve reproduces the Stokes reference to a relative L2 difference of exactly 0 and sits 34% away from the Navier-Stokes answer, so the Reynolds number the user intended has no effect on it whatsoever. The physical fingerprint is also measured: the Stokes cavity is symmetric under x -> 1-x with u_x even and u_y odd, and the probe finds that reflection defect at 1.7e-15 for the linear solve against 0.38 for the converged Navier-Stokes field. T2_MUTATE=1 runs the Newton iteration WITH the convective term, which matches the Navier-Stokes reference instead and breaks the reflection symmetry. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "navier_stokes",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "formulation_under_test=one_linear_solve_without_the_convective_term",
+    "matches_the_stokes_answer=true",
+    "differs_from_the_navier_stokes_answer=true",
+    "answer_under_test_is_reflection_symmetric=true",
+    "navier_stokes_reference_converged=true",
+    "VERDICT=a_single_linear_solve_returns_the_zero_reynolds_answer"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=the_convective_term_is_actually_solved_for"
+  ],
+  "timeout_seconds": 900
+}
