@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#19. One 1-element HEX8 cantilever whose true dispy at node 3 is 4.47909266337460053e-03 is checked four ways. TIGHT (VALUE 4.479...e-03, TOLERANCE 1e-12) exits 0. LOOSE claims VALUE 0.0 with TOLERANCE 1.0 and 4C prints 'is CORRECT, abs(diff)= 4.47909266337460053e-03 < 1.00000000000000000e+00' and exits 0 — abs(diff) is the entire quantity, so the self-check constrained nothing and never says WRONG. The two bounding failures are pinned too: TOLERANCE 0.0 is rejected at runtime with 'Tolerance for result test must be strictly positive!' from core/utils/src/result_test/4C_utils_result_test.cpp line 61, and omitting TOLERANCE never reaches the solver — 'Could not match this input' with \"[X] Expected parameter 'TOLERANCE'\" from the input-spec match tree. A tolerance that is merely far too big is therefore the only silent failure mode left. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 19,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TIGHT=0",
+    "EXIT_LOOSE=0",
+    "EXIT_ZERO=1",
+    "EXIT_NONE=1",
+    "processor 0 finished normally",
+    "is CORRECT, abs(diff)= 4.47909266337460053e-03 < 1.00000000000000000e+00",
+    "LOOSE_DIFF_IS_THE_WHOLE_ANSWER=1",
+    "LOOSE_REPORTED_WRONG=0",
+    "Tolerance for result test must be strictly positive!",
+    "4C_utils_result_test.cpp",
+    "Could not match this input",
+    "[X] Expected parameter 'TOLERANCE'"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_LOOSE=1",
+    "EXIT_ZERO=0",
+    "EXIT_NONE=0",
+    "LOOSE_REPORTED_WRONG=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: size the loose arm's tolerance against the quantity instead of against nothing. VALUE 0.0 with TOLERANCE 1e-6 no longer passes, LOOSE exits 1, and the rubber-stamp line vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "mk '      VALUE: 0.0\n      TOLERANCE: 1.0' \"$TMP/loose.yaml\"",
+    "to": "mk '      VALUE: 0.0\n      TOLERANCE: 1e-6' \"$TMP/loose.yaml\""
+  }
+}

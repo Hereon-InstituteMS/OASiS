@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::contact#11 — being listed by `4C --parameters` is necessary, not sufficient. Four runs of one two-block mortar deck (-0.3 over ten steps) plus a read of the binary's own schema, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: the STRATEGY Penalty control exits 0 with 'processor 0 finished normally'; STRATEGY: \"Uzawa\" exits 1 with 'This contact strategy is not yet considered!' from contact/4C_contact_strategy_factory.cpp line 1628; and 'SEMI_SMOOTH_NEWTON: false' — a perfectly valid boolean — exits 1 with 'Currently we support only the semi-smooth Newton case!' from contact/4C_contact_noxinterface.cpp line 264. The 'it IS listed' half is evidence rather than assertion: the fixture runs `4C --parameters` itself and reports UZAWA_IS_IN_THE_STRATEGY_ENUM=yes and SEMI_SMOOTH_NEWTON_IS_A_DOCUMENTED_KEY=yes. A fourth arm shows the schema really does filter, so 'it parsed' is not vacuous either: a STRATEGY value that is NOT in the enum (STEAMROLLER_IS_IN_THE_STRATEGY_ENUM=no) is refused earlier and with a different message, 'Could not match this input', and never reaches the strategy factory at all (UNKNOWN_STRATEGY_REACHED_THE_FACTORY=0).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CONTROL=0",
+    "EXIT_UZAWA=1",
+    "EXIT_NO_SEMISMOOTH=1",
+    "EXIT_UNKNOWN=1",
+    "processor 0 finished normally",
+    "This contact strategy is not yet considered!",
+    "4C_contact_strategy_factory.cpp",
+    "Currently we support only the semi-smooth Newton case!",
+    "4C_contact_noxinterface.cpp",
+    "Could not match this input",
+    "UNKNOWN_STRATEGY_REACHED_THE_FACTORY=0",
+    "UZAWA_IS_IN_THE_STRATEGY_ENUM=yes",
+    "SEMI_SMOOTH_NEWTON_IS_A_DOCUMENTED_KEY=yes",
+    "STEAMROLLER_IS_IN_THE_STRATEGY_ENUM=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_CONTROL=1",
+    "EXIT_UZAWA=0",
+    "EXIT_NO_SEMISMOOTH=0",
+    "UZAWA_IS_IN_THE_STRATEGY_ENUM=no",
+    "SEMI_SMOOTH_NEWTON_IS_A_DOCUMENTED_KEY=no",
+    "STEAMROLLER_IS_IN_THE_STRATEGY_ENUM=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: pick a strategy the code actually implements. 'This contact strategy is not yet considered!' disappears and EXIT_UZAWA becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"Uzawa\"   \"\"                              \"$TMP/uzawa.yaml\"",
+      "to": "deck \"Penalty\" \"\"                              \"$TMP/uzawa.yaml\""
+    },
+    {
+      "note": "remove the pathology from the semi-smooth arm: leave the key at its default. The noxinterface abort disappears and EXIT_NO_SEMISMOOTH becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"Penalty\" '  SEMI_SMOOTH_NEWTON: false\n'                                              \"$TMP/nosemi.yaml\"",
+      "to": "deck \"Penalty\" '  SEMI_SMOOTH_NEWTON: true\n'                                              \"$TMP/nosemi.yaml\""
+    }
+  ]
+}

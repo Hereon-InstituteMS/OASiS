@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#14. A claim about hardware is checked against what the binary reports. ldd on lib4C.so lists 5 Epetra libraries with soname libepetra.so.16 (Trilinos 16) and ZERO CUDA/HIP/SYCL/ROCm runtimes (LINKED_GPU_RUNTIMES=0), so the build has no GPU code path to reach. Running the same HEX8 deck plainly and then with CUDA_VISIBLE_DEVICES=0 KOKKOS_NUM_DEVICES=1 HIP_VISIBLE_DEVICES=0 KOKKOS_DEVICES=Cuda gives the same exit 0, the same 1 CORRECT result test, an identical abs(diff) (GPU_ENV_CHANGED_THE_ANSWER=no) and not one device/GPU/CUDA message anywhere in the log (GPU_ENV_PRODUCED_ANY_DEVICE_MESSAGE=0) — that is what 'zero effect' means without a stopwatch. Finally 4C's own Teuchos timer table, printed at the end of every run, carries exactly one Epetra class label, 'Epetra_CrsMatrix::Multiply(TransA,X,Y)' with 8 calls, and no Tpetra entry at all (TIMER_LABELS_TPETRA=0): the matrix-vector product this run executed was the Epetra one. Only labels and call counts are asserted; the elapsed columns are deliberately ignored. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 14,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "LINKED_EPETRA_LIBS=5",
+    "LINKED_GPU_RUNTIMES=0",
+    "TRILINOS_SONAME_MAJOR=libepetra.so.16",
+    "EXIT_PLAIN=0",
+    "EXIT_GPUENV=0",
+    "processor 0 finished normally",
+    "PLAIN_CORRECT=1",
+    "GPUENV_CORRECT=1",
+    "GPU_ENV_CHANGED_THE_ANSWER=no",
+    "GPU_ENV_PRODUCED_ANY_DEVICE_MESSAGE=0",
+    "TIMER_LABELS_EPETRA=1",
+    "TIMER_LABELS_TPETRA=0",
+    "EPETRA_MULTIPLY_CALLS=(8)"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PLAIN=1",
+    "EXIT_GPUENV=1",
+    "LINKED_EPETRA_LIBS=0",
+    "GPU_ENV_CHANGED_THE_ANSWER=yes",
+    "TIMER_LABELS_EPETRA=0"
+  ],
+  "_mutation": [
+    {
+      "note": "stop asking the binary and count the GPU runtimes in a pattern that always matches something: if the fixture's evidence for CPU-only came from anywhere but ldd on this library, LINKED_GPU_RUNTIMES stops being 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "echo \"LINKED_GPU_RUNTIMES=$(grep -ciE 'libcuda|libcudart|libamdhip|libhip|libsycl|librocm' \"$TMP/ldd.txt\")\"",
+      "to": "echo \"LINKED_GPU_RUNTIMES=$(grep -ciE 'lib' \"$TMP/ldd.txt\")\""
+    },
+    {
+      "note": "read the timer table for the GPU-capable stack instead: if 4C's linear algebra ran on Tpetra rather than Epetra, this is the label that would be there. It is not — TIMER_LABELS_EPETRA becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "echo \"TIMER_LABELS_EPETRA=$(grep -c '^Epetra_' \"$TMP/PLAIN.log\")\"",
+      "to": "echo \"TIMER_LABELS_EPETRA=$(grep -c '^Tpetra' \"$TMP/PLAIN.log\")\""
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::particles#9, and a falsification of its Signal and both of its numbers. The constraint is real but enforced up front, so the degraded neighbour search the entry describes cannot occur: setting BIN_SIZE_LOWER_BOUND to 2 under an INTERACTION_HORIZON of 3.0 on upstream particle_sph_2d_pdbody_gravity.4C.yaml aborts in the SPHPeridynamic constructor with 'Peridynamic INTERACTION_HORIZON must be smaller than BIN_SIZE_LOWER_BOUND!' from particle/src/interaction/4C_particle_interaction_sph_peridynamic.cpp line 60 — no bond-count line, no time step, nothing to inspect. The advice is off too. The guard is horizon <= bin, so a bin EQUAL to the horizon is accepted and passes every result test, contradicting 'must be > horizon'. And bin 3, bin 4.5 (the entry's 'ideally 1.5*horizon') and the upstream bin 5 all give the identical 1512-bond list with zero failures, so the recommendation buys nothing — bin size is a decomposition knob, not a physics knob. Finally the quoted target of ~4*pi*delta^2/dx^2 pairs per particle is 113.1 for this deck while the real 2-D lattice count is 18.7. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "EXIT_BIN5=0",
+    "EXIT_BIN3=0",
+    "EXIT_BIN4P5=0",
+    "EXIT_BIN2=1",
+    "processor 0 finished normally",
+    "BIN5_FAILURES=0",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "BIN3_FAILURES=0",
+    "BIN4P5_FAILURES=0",
+    "BIN_EQUAL_TO_HORIZON_IS_ACCEPTED=yes",
+    "Peridynamic INTERACTION_HORIZON must be smaller than BIN_SIZE_LOWER_BOUND!",
+    "4C_particle_interaction_sph_peridynamic.cpp, line 60",
+    "BIN2_BOND_COUNT_LINES=0",
+    "BIN2_STEPS_RUN=0",
+    "MEASURED_PAIRS_PER_PARTICLE=18.7",
+    "CLAIMED_PAIRS_PER_PARTICLE=113.1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BIN5=1",
+    "EXIT_BIN3=1",
+    "EXIT_BIN2=0",
+    "BIN3_FAILURES=8",
+    "BIN2_STEPS_RUN=3001"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: leave BIN_SIZE_LOWER_BOUND at the upstream 5 in the inadmissible arm. It then runs like the baseline, the constructor assertion disappears, BIN2_STEPS_RUN becomes 3001 and EXIT_BIN2 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  BIN_SIZE_LOWER_BOUND: 5/  BIN_SIZE_LOWER_BOUND: 2/'   \"$BASE\" > \"$TMP/bin2.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/bin2.yaml\""
+    },
+    {
+      "note": "remove the boundary case: raise the bin-equals-horizon arm to an uncontroversial 5. EXIT_BIN3 and BIN3_FAILURES then say nothing about the <= guard, and since the arm is now a duplicate of the baseline the evidence that bin == horizon is legal is gone; the run also drops the third 1512-bond line, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  BIN_SIZE_LOWER_BOUND: 5/  BIN_SIZE_LOWER_BOUND: 3/'   \"$BASE\" > \"$TMP/bin3.yaml\"",
+      "to": "sed 's/  BIN_SIZE_LOWER_BOUND: 5/  BIN_SIZE_LOWER_BOUND: 2/'   \"$BASE\" > \"$TMP/bin3.yaml\""
+    }
+  ]
+}

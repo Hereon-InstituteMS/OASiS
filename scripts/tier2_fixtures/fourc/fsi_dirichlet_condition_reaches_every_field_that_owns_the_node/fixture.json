@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#8, confirming the corrected template and adding the asymmetry the entry omits. Upstream fsi_fp_mono_fs_ga_ga.4C.yaml keeps its fields on disjoint node ids: DNODE 1 = fluid nodes 13-16 with a NUMDOF 4 Dirichlet, DNODE 2 = structure nodes 17-20 with a NUMDOF 3 Dirichlet. Adding one topology row 'NODE 13 DNODE 2' puts a 4-dof fluid node inside the structure's 3-entry condition and aborts before time step 1 with '3 DOFs given but 4 expected in Point Dirichlet boundary condition' from core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp line 292 inside Core::FE::Dbc::read_dirichlet_condition -- which is itself the proof that a DESIGN condition is evaluated against every discretisation owning its nodes. The mirror edit 'NODE 17 DNODE 1' (a 3-dof structure node inside the fluid's 4-entry condition) is accepted in silence: exit 0, 10 time steps, OK (6), zero DOF complaints, because the guard is `if (num_dbc_dofs < numdf)`. The retired wording 'NUMDOF mismatch'/'4C_dofset.cpp' appears in neither arm. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "FLUIDINTOSTRUCT_SHARED_ROWS=1",
+    "STRUCTINTOFLUID_SHARED_ROWS=1",
+    "EXIT_DISJOINT=0",
+    "EXIT_FLUIDINTOSTRUCT=1",
+    "EXIT_STRUCTINTOFLUID=0",
+    "processor 0 finished normally",
+    "OK (6)",
+    "3 DOFs given but 4 expected in Point Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "read_dirichlet_condition",
+    "FLUIDINTOSTRUCT_TIME_STEPS_RUN=0",
+    "STRUCTINTOFLUID_TIME_STEPS_RUN=10",
+    "STRUCTINTOFLUID_ANY_DOF_COMPLAINT=0",
+    "CLAIMED_NUMDOF_MISMATCH_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DISJOINT=1",
+    "EXIT_FLUIDINTOSTRUCT=0",
+    "EXIT_STRUCTINTOFLUID=1",
+    "FLUIDINTOSTRUCT_SHARED_ROWS=0",
+    "STRUCTINTOFLUID_SHARED_ROWS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the two fields on disjoint node sets. Both shared-row counters drop to 0 (forbidden), the DOF-count abort vanishes and EXIT_FLUIDINTOSTRUCT becomes 0 (forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "SHARE_A_NODE=yes",
+    "to": "SHARE_A_NODE=no"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#19 and a FALSIFICATION of the entry's own list. It tells the reader to 'copy verbatim from this list' and gives the partitioned values as iter_stagg_AITKEN_rel_force and iter_stagg_fixed_rel_force. Neither exists: the real spellings end in _rel_param. Feeding iter_stagg_AITKEN_rel_force to upstream fsi_fp_mono_fs_ga_ga.4C.yaml aborts at parse (0 time steps) with 'Could not match this input' from core/io/src/4C_io_input_spec_builders.cpp line 633, not with the claimed 'unknown coupling algorithm', and not from 4C_fsi_adapter.cpp, which does not exist in the tree. What 4C prints instead is the authoritative enumeration on the spot -- \"Candidate deprecated_selection 'COUPALGO' has wrong value, possible values: ...\" -- and this fixture pins that both _rel_param names are in it and both _rel_force names are not, so an agent never needs a memorised list. The corrected value is then run and accepted: FSI::Partitioned, 2 time steps, 'processor 0 finished normally' (that arm has RESULT DESCRIPTION removed because a partitioned scheme does not reproduce the deck's monolithic pinned values). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 19,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MONO=0",
+    "EXIT_CLAIMED=1",
+    "EXIT_REAL=0",
+    "OK (6)",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "Candidate deprecated_selection 'COUPALGO' has wrong value, possible values:",
+    "CLAIMED_TIME_STEPS_RUN=0",
+    "CLAIMED_SENTENCE_UNKNOWN_COUPLING_ALGORITHM=0",
+    "CLAIMED_SOURCE_FILE_FSI_ADAPTER=0",
+    "OFFERED_iter_stagg_AITKEN_rel_param=1",
+    "OFFERED_iter_stagg_fixed_rel_param=1",
+    "OFFERED_iter_monolithicfluidsplit=1",
+    "OFFERED_iter_monolithicstructuresplit=1",
+    "OFFERED_iter_mortar_monolithicfluidsplit=1",
+    "OFFERED_iter_sliding_monolithicfluidsplit=1",
+    "OFFERED_iter_stagg_AITKEN_rel_force=0",
+    "OFFERED_iter_stagg_fixed_rel_force=0",
+    "processor 0 finished normally",
+    "FSI::Partitioned",
+    "REAL_TIME_STEPS_RUN=2"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MONO=1",
+    "EXIT_CLAIMED=0",
+    "EXIT_REAL=1",
+    "OFFERED_iter_stagg_AITKEN_rel_force=1",
+    "OFFERED_iter_stagg_fixed_rel_force=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: put the real spelling into the arm that was meant to carry the entry's bogus one. The parse abort and its candidate line vanish, EXIT_CLAIMED becomes 0 (forbidden) and all the OFFERED_ counters go unprinted, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "CLAIMED_PARTITIONED_ALGO=iter_stagg_AITKEN_rel_force",
+    "to": "CLAIMED_PARTITIONED_ALGO=iter_stagg_AITKEN_rel_param"
+  }
+}

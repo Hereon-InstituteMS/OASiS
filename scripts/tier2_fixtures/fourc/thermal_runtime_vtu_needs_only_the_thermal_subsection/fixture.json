@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#5. Seven arms of one standalone Thermo deck (NUMSTEP 4). Two halves of the claim hold: INTERVAL_STEPS inside 'THERMAL DYNAMIC/RUNTIME VTK OUTPUT' is fatal, not ignored — exit 1 with 'Could not match this input' echoing the block, from 4C_io_input_spec_builders.cpp — and with no VTK section at all the run still succeeds writing only the three binary files (VTU_NONE=0, BINARY_FILES_NONE=3). Two halves are FALSE. 'Needs BOTH sections' is wrong: the thermal subsection ALONE writes 5 .vtu (VTU_THERMAL_SUBSECTION_ALONE=5) while the parent IO/RUNTIME VTK OUTPUT alone writes none (VTU_IO_SECTION_ALONE=0). And INTERVAL_STEPS does not 'live in the parent' in any useful sense: setting it to 2 there still yields 5 files (VTU_IO_INTERVAL_STEPS_2=5), whereas THERMAL DYNAMIC/RESULTSEVERY 2 yields 3 (VTU_THERMAL_RESULTSEVERY_2=3) — RESULTSEVERY is the frequency knob for the thermo writer. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NONE=0",
+    "EXIT_BOTH=0",
+    "EXIT_THERMAL=0",
+    "EXIT_IO_ONLY=0",
+    "EXIT_INTERVAL=1",
+    "VTU_NONE=0",
+    "VTU_BOTH=5",
+    "VTU_THERMAL_SUBSECTION_ALONE=5",
+    "VTU_IO_SECTION_ALONE=0",
+    "VTU_IO_INTERVAL_STEPS_2=5",
+    "VTU_THERMAL_RESULTSEVERY_2=3",
+    "BINARY_FILES_NONE=3",
+    "Could not match this input",
+    "THERMAL DYNAMIC/RUNTIME VTK OUTPUT:",
+    "4C_io_input_spec_builders.cpp",
+    "is CORRECT"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INTERVAL=0",
+    "EXIT_THERMAL=1",
+    "VTU_THERMAL_SUBSECTION_ALONE=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: drop INTERVAL_STEPS from the thermal subsection so the bad arm becomes the legal one. It then runs, EXIT_INTERVAL becomes 0 and the 'Could not match this input' echo disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "  TEMPERATURE: true\n  INTERVAL_STEPS: 1\n'",
+    "to": "  TEMPERATURE: true\n'"
+  }
+}

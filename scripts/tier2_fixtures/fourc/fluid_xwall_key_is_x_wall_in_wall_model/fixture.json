@@ -1,0 +1,60 @@
+{
+  "_comment": "Tier-2 for fourc::fluid#3, and a FALSIFICATION of both its key names and its Signal. The entry says x-wall is activated via 'FLUID DYNAMIC/WALL_NORMAL_NODE_DISTANCE and related XWALL_* keys'. WALL_NORMAL_NODE_DISTANCE appears nowhere in the 4C source; the real switch is the bool X_WALL inside the section 'FLUID DYNAMIC/WALL MODEL' (src/inpar/4C_inpar_fluid.cpp), which is exactly what the upstream turbulent-channel deck f3_cha_xwall_6x8x6.4C.yaml uses (REAL_KEY_IN_UPSTREAM_DECK=1, CLAIMED_KEY_IN_UPSTREAM_DECK=0). Untouched that deck exits 0 with sixteen result tests CORRECT. Flipping X_WALL to false does NOT degrade a near-wall profile — it kills the process: SIGABRT, exit 134, terminate called after throwing Teuchos::Exceptions::InvalidParameterName, 'Error!  The parameter \"xwalltoggle\" does not exist', because X_WALL is read while the mesh is being read to choose the element type, so the elements still ask for a parameter that is no longer in the list. The run never reaches its result test (OFF_REACHED_RESULT_TEST=0) and no log-law text is printed by either arm (CLAIMED_LOGLAW_TEXT=0), so the claimed ~5-percent log-law comparison is not observable at all. Both invented key spellings are left unmatched by core/io/src/4C_io_input_spec_builders.cpp. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "fluid",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "REAL_KEY_IN_UPSTREAM_DECK=1",
+    "CLAIMED_KEY_IN_UPSTREAM_DECK=0",
+    "OFF_DECK_HAS_XWALL_ON=0",
+    "EXIT_BASE=0",
+    "EXIT_OFF=134",
+    "EXIT_CLAIMKEY=1",
+    "EXIT_XWALLKEY=1",
+    "processor 0 finished normally",
+    "BASE_RESULT_FAILURES=0",
+    "BASE_RESULT_PASSES=16",
+    "Teuchos::Exceptions::InvalidParameterName",
+    "The parameter \"xwalltoggle\" does not exist",
+    "OFF_REACHED_RESULT_TEST=0",
+    "CLAIMED_LOGLAW_TEXT=0",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "CLAIMED_KEY_UNUSED=2",
+    "XWALL_PREFIXED_KEY_UNUSED=2"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "upstream_deck_changed",
+    "EXIT_BASE=1",
+    "EXIT_OFF=0",
+    "EXIT_CLAIMKEY=0",
+    "EXIT_XWALLKEY=0",
+    "OFF_DECK_HAS_XWALL_ON=1",
+    "OFF_REACHED_RESULT_TEST=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the switch arm: leave X_WALL on. OFF_DECK_HAS_XWALL_ON becomes 1, EXIT_OFF goes to 0 and the xwalltoggle abort disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^  X_WALL: true$|  X_WALL: false|' \"$BASE\" > \"$TMP/off.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/off.yaml\""
+    },
+    {
+      "note": "remove the pathology from the claimed-key arm: do not inject the invented key. EXIT_CLAIMKEY goes to 0, the unmatched-input abort and CLAIMED_KEY_UNUSED=2 both disappear, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^FLUID DYNAMIC:$|FLUID DYNAMIC:\\n  WALL_NORMAL_NODE_DISTANCE: 0.01|' \"$BASE\" > \"$TMP/claimkey.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/claimkey.yaml\""
+    },
+    {
+      "note": "remove the pathology from the XWALL_-prefixed arm the same way; XWALL_PREFIXED_KEY_UNUSED stops being 2 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^FLUID DYNAMIC/WALL MODEL:$|FLUID DYNAMIC/WALL MODEL:\\n  XWALL_TAUW_TYPE: \"constant\"|' \"$BASE\" > \"$TMP/xwallkey.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/xwallkey.yaml\""
+    }
+  ]
+}

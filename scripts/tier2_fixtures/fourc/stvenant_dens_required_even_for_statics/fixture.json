@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#11 \u2014 DENS is a REQUIRED key of MAT_Struct_StVenantKirchhoff in every analysis type, Statics included, and the fixture checks BOTH halves of the distinction the entry draws. Four arms of one 3D HEX8 deck, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. The value really is irrelevant under Statics: DENS 1.0 and DENS 1000000.0 both exit 0 and both pass the SAME RESULT DESCRIPTION pinned at 1e-12 (RESULT_FAILURES=0 for both), six orders of magnitude apart. The key is mandatory all the same: omitting it exits 1 under DYNAMICTYPE Statics AND under OneStepTheta, with \"Failed to match specification in section 'MATERIALS'\" from global_data/4C_global_data_read.cpp line 1377 and \"Expected parameter 'DENS'\" from core/io/4C_io_input_spec_builders.cpp line 633. The rejection is at parse, before anything is built: STATICS_NO_DENS_REACHED_FILL_COMPLETE=0 and OST_NO_DENS_REACHED_FILL_COMPLETE=0 against 2 for the working deck, with OST_NO_DENS_MISSING_KEY_REPORTS=1. So the common advice that density 'is only needed for dynamics' describes whether the number matters, never whether the line may be left out.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_STATICS_DENS1=0",
+    "EXIT_STATICS_DENS1E6=0",
+    "EXIT_STATICS_NO_DENS=1",
+    "EXIT_OST_NO_DENS=1",
+    "processor 0 finished normally",
+    "STATICS_DENS1_RESULT_FAILURES=0",
+    "STATICS_DENS1E6_RESULT_FAILURES=0",
+    "Failed to match specification in section 'MATERIALS'",
+    "Expected parameter 'DENS'",
+    "OST_NO_DENS_MISSING_KEY_REPORTS=1",
+    "OST_NO_DENS_REACHED_FILL_COMPLETE=0",
+    "4C_global_data_read.cpp",
+    "4C_io_input_spec_builders.cpp",
+    "STATICS_NO_DENS_REACHED_FILL_COMPLETE=0",
+    "STATICS_DENS1_REACHED_FILL_COMPLETE=2"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_STATICS_DENS1=1",
+    "EXIT_STATICS_DENS1E6=1",
+    "EXIT_STATICS_NO_DENS=0",
+    "EXIT_OST_NO_DENS=0",
+    "STATICS_DENS1E6_RESULT_FAILURES=1",
+    "OST_NO_DENS_MISSING_KEY_REPORTS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the Statics arm: put DENS back. The parse failure disappears and EXIT_STATICS_NO_DENS becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck Statics      \"$NO_DENS\"   \"\"     \"$TMP/statics_nodens.yaml\"",
+      "to": "deck Statics      \"$WITH_DENS\" \"\"     \"$TMP/statics_nodens.yaml\""
+    },
+    {
+      "note": "remove the pathology from the OneStepTheta arm too. EXIT_OST_NO_DENS becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck OneStepTheta \"$NO_DENS\"   \"$OST\" \"$TMP/ost_nodens.yaml\"",
+      "to": "deck OneStepTheta \"$WITH_DENS\" \"$OST\" \"$TMP/ost_nodens.yaml\""
+    }
+  ]
+}

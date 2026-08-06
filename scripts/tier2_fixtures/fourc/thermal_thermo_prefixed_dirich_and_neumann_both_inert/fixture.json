@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#0. Four runs of one 3-hex8 transient (OneStepTheta) PROBLEMTYPE: Thermo bar, in two pairs that differ in exactly one word. 'DESIGN SURF DIRICH CONDITIONS' holding the ends at 0/100 gives node 5 = 6.33050962998814626e+01; renaming that section to 'DESIGN SURF THERMO DIRICH CONDITIONS' gives EXACTLY 0.00000000000000000e+00 and exit 0 on a deck without a result test. Same for NEUMANN: plain gives 1.08603291977074412e+00, THERMO-prefixed gives exactly zero. Neither prefixed run emits any diagnostic — PREF_SECTION_NAME_REJECTED=0, PREF_DROP_DIAGNOSTIC=0 — and both still reach the result test, so the section parsed and was then discarded. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DIRICH_PLAIN=0",
+    "EXIT_DIRICH_PREF=1",
+    "EXIT_NEUMANN_PLAIN=0",
+    "EXIT_NEUMANN_PREF=1",
+    "is CORRECT",
+    "is WRONG --> actresult= 0.00000000000000000e+00, givenresult= 6.33050962998814626e+01",
+    "is WRONG --> actresult= 0.00000000000000000e+00, givenresult= 1.08603291977074412e+00",
+    "PREF_SECTION_NAME_REJECTED=0",
+    "PREF_DROP_DIAGNOSTIC=0",
+    "PREF_REACHED_RESULT_TEST=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DIRICH_PLAIN=1",
+    "EXIT_DIRICH_PREF=0",
+    "EXIT_NEUMANN_PREF=0",
+    "is not a valid section name"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the Dirichlet pair: give the second arm the PLAIN section name too. It then prescribes the temperature, node 5 reaches 63.305 and the 'actresult= 0.0' line disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "bar \"$(dirich  'THERMO DIRICH')\"",
+      "to": "bar \"$(dirich  'DIRICH')\"        "
+    },
+    {
+      "note": "same for the Neumann pair: the plain section name applies the heat flux, node 5 reaches 1.086 and EXIT_NEUMANN_PREF becomes 0.",
+      "file": "cmd.sh",
+      "from": "bar \"$(neumann 'THERMO NEUMANN')\"",
+      "to": "bar \"$(neumann 'NEUMANN')\"       "
+    }
+  ]
+}

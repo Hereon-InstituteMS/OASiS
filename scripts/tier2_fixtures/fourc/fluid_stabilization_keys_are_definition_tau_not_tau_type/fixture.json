@@ -1,0 +1,60 @@
+{
+  "_comment": "Tier-2 for fourc::fluid#1, and a FALSIFICATION of every identifier in it. The entry puts the stabilisation knobs in 'FLUID DYNAMIC/STABILIZATION' and says the tau parameter is raised through 'TAU_TYPE / TAU_DEF'; it also spells the grad-div flag 'GRAD-DIV'. Measured on a self-contained 2-D fluid deck at DYNVISCOSITY 1e-3: 'FLUID DYNAMIC/STABILIZATION' is rejected from core/io/src/4C_io_input_file.cpp as not a valid section name, and TAU_TYPE, TAU_DEF and the hyphenated GRAD-DIV are each left unmatched by core/io/src/4C_io_input_spec_builders.cpp with 'Could not match this input' and echoed back under 'The following data remains unused:'. The RULE survives: the residual-based default gives velx 9.97552834581135306e-01 at node 25, STABTYPE 'no_stabilization' gives 9.56217811466662959e-01, and the real key DEFINITION_TAU 'Taylor_Hughes_Zarins' inside 'FLUID DYNAMIC/RESIDUAL-BASED STABILIZATION' is accepted and gives 1.00063920214455182e+00 — so the tau definition is the knob, under a different name. The Signal is also unobservable: neither the default nor the unstabilised run reports any integrated kinetic energy (KINETIC_ENERGY_REPORTED=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "fluid",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "DEFAULT_VELX=9.97552834581135306e-01",
+    "NOSTAB_VELX=9.56217811466662959e-01",
+    "TAUOK_VELX=1.00063920214455182e+00",
+    "STABILIZATION_CHANGES_THE_ANSWER=yes",
+    "TAU_DEFINITION_CHANGES_THE_ANSWER=yes",
+    "Section 'FLUID DYNAMIC/STABILIZATION' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "TAU_TYPE_UNUSED=2",
+    "TAU_DEF_UNUSED=2",
+    "HYPHENATED_GRAD_DIV_UNUSED=2",
+    "The following data remains unused:",
+    "KINETIC_ENERGY_REPORTED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "STABILIZATION_CHANGES_THE_ANSWER=no",
+    "TAU_DEFINITION_CHANGES_THE_ANSWER=no",
+    "EXIT_STABSEC=0",
+    "EXIT_TAUTYPE=0",
+    "EXIT_TAUDEF=0",
+    "EXIT_GRADDIV=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the section-name arm: use the real section. Its 'not a valid section name' line disappears and the fixture must go red — that line is the falsification of the path the entry gives.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"stab_section\\\":\\\"FLUID DYNAMIC/STABILIZATION\\\",\\\"stab_body\\\":\\\"  SUPG: false\\n\\\"}\" \"$TMP/stabsec.yaml\"",
+      "to": "fluid \"{\\\"stab_body\\\":\\\"  SUPG: false\\n\\\"}\" \"$TMP/stabsec.yaml\""
+    },
+    {
+      "note": "remove the pathology from the TAU_TYPE arm: write the real key instead. The deck is accepted, TAU_TYPE_UNUSED stops being 2 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"stab_body\\\":\\\"  TAU_TYPE: \\\\\\\"Codina\\\\\\\"\\n\\\"}\" \"$TMP/tautype.yaml\"",
+      "to": "fluid \"{\\\"stab_body\\\":\\\"  DEFINITION_TAU: \\\\\\\"Codina\\\\\\\"\\n\\\"}\" \"$TMP/tautype.yaml\""
+    },
+    {
+      "note": "remove the numeric contrast: run the 'no_stabilization' arm with the default stabilisation. NOSTAB_VELX becomes the default value, STABILIZATION_CHANGES_THE_ANSWER flips to no and the fixture must go red — that comparison is the half of the entry that survives.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"visc\\\":0.001,\\\"stab_body\\\":\\\"  STABTYPE: \\\\\\\"no_stabilization\\\\\\\"\\n\\\",\\\"results\\\":[[$NODE,\\\"velx\\\",0.0,1e-30]]}\" \\",
+      "to": "fluid \"{\\\"visc\\\":0.001,\\\"results\\\":[[$NODE,\\\"velx\\\",0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "remove the hyphenated-flag arm's pathology: spell GRAD_DIV correctly. It is accepted, HYPHENATED_GRAD_DIV_UNUSED stops being 2 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"stab_body\\\":\\\"  GRAD-DIV: false\\n\\\"}\"          \"$TMP/graddiv.yaml\"",
+      "to": "fluid \"{\\\"stab_body\\\":\\\"  GRAD_DIV: false\\n\\\"}\"          \"$TMP/graddiv.yaml\""
+    }
+  ]
+}

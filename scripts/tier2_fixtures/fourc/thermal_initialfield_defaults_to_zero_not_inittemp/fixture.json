@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#7. One HEX8 SOLIDSCATRA cube, symmetry-constrained on three faces, no thermal boundary condition, INITTEMP 293, THEXPANS 1.2e-05, L=1. Two decks differing only in whether THERMAL DYNAMIC carries INITIALFIELD: \"field_by_function\" + INITFUNCNO: 1 (FUNCT1 = 293.0). With it, T = 293 = INITTEMP and dispx at node 2 is 0 — unstrained, exit 0. Without it the temperature is exactly 0.00000000000000000e+00, not INITTEMP, and the cube contracts by actresult=-3.51599999999999959e-03 = alpha*(0-293)*L at t=0. There is no diagnostic either way (INITIALFIELD_DIAGNOSTIC=0) and the deck still reaches the result test, so the only detector is a RESULT DESCRIPTION entry pinning the initial state. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITH_INITIALFIELD=0",
+    "EXIT_WITHOUT_INITIALFIELD=1",
+    "dispx    at node   2\t is CORRECT",
+    "temp     at node   7\t is CORRECT",
+    "temp     at node   7\t is WRONG --> actresult= 0.00000000000000000e+00",
+    "dispx    at node   2\t is WRONG --> actresult=-3.51599999999999959e-03",
+    "INITIALFIELD_DIAGNOSTIC=0",
+    "WITHOUT_REACHED_RESULT_TEST=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITH_INITIALFIELD=1",
+    "EXIT_WITHOUT_INITIALFIELD=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second deck the same INITIALFIELD lines. Its temperature is then 293 = INITTEMP, dispx is 0, EXIT_WITHOUT_INITIALFIELD becomes 0 and both WRONG lines disappear, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck '' > \"$TMP/without.yaml\"",
+    "to": "deck '  INITIALFIELD: \"field_by_function\"\n  INITFUNCNO: 1\n' > \"$TMP/without.yaml\""
+  }
+}

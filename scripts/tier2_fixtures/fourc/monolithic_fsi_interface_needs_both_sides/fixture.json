@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#11. Upstream fsi_fp_mono_fs_ga_ga.4C.yaml (COUPALGO iter_monolithicfluidsplit) is built the way the entry prescribes: exactly 4 coordinates carry two node ids each — nodes 13,14,15,16 (fluid) duplicated as 17,18,19,20 (structure) — and the FSI coupling condition names both DSURFACEs. It exits 0 with 6 result tests CORRECT. Removing the structure side of DESIGN FSI COUPLING SURF CONDITIONS gives 'got 0 master nodes but 4 slave nodes for coupling' from coupling/src/adapter/4C_coupling_adapter.cpp line 69, i.e. the coupling operator counting zero interface nodes on one side; removing both sides gives 'No nodes in matching FSI interface. Empty FSI coupling condition?' from fsi/src/monolithic/4C_fsi_monolithic.cpp line 410. Both exit 1 and run no result tests at all, so the entry's alternative — that the simulation would quietly run uncoupled — does not happen, and its quoted 'no FSI interface nodes found' appears nowhere (CLAIMED_NO_FSI_INTERFACE_NODES_FOUND_TEXT=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "UPSTREAM_COINCIDENT_NODE_PAIRS=4",
+    "UPSTREAM_DUPLICATED_NODES=[13, 14, 15, 16, 17, 18, 19, 20]",
+    "EXIT_GOOD=0",
+    "EXIT_ONESIDE=1",
+    "EXIT_NOINTERFACE=1",
+    "processor 0 finished normally",
+    "GOOD_CORRECT=6",
+    "got 0 master nodes but 4 slave nodes for coupling",
+    "4C_coupling_adapter.cpp",
+    "No nodes in matching FSI interface. Empty FSI coupling condition?",
+    "4C_fsi_monolithic.cpp",
+    "ONESIDE_RAN_RESULT_TESTS=0",
+    "NOINTERFACE_RAN_RESULT_TESTS=0",
+    "CLAIMED_NO_FSI_INTERFACE_NODES_FOUND_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "EXIT_GOOD=1",
+    "EXIT_ONESIDE=0",
+    "EXIT_NOINTERFACE=0",
+    "UPSTREAM_COINCIDENT_NODE_PAIRS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the one-sided arm: leave both FSI coupling surfaces declared. The 0-master-nodes diagnostic vanishes, that arm exits 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(tmp + \"/oneside.yaml\", \"w\").write(b.replace(both, fluid_only))",
+      "to": "open(tmp + \"/oneside.yaml\", \"w\").write(b)"
+    },
+    {
+      "note": "remove the pathology from the empty-interface arm: keep the coupling condition. The empty-interface diagnostic vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(tmp + \"/nointerface.yaml\", \"w\").write(b.replace(both, \"\"))",
+      "to": "open(tmp + \"/nointerface.yaml\", \"w\").write(b)"
+    }
+  ]
+}

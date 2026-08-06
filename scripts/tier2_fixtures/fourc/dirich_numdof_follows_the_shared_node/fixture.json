@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#2. Upstream fsi_fp_mono_fs_ga_ga.4C.yaml keeps the structure and fluid interface nodes separate (17-20 duplicating 13-16 at identical coordinates) and exits 0 with 6 result tests CORRECT. The probe changes exactly one thing — the structure element is rewired from nodes 17-20 onto the fluid's 13-16, the orphaned copies are deleted and the topology renamed — and asserts that not one condition block was touched (ONLY_THE_MESH_WAS_EDITED=yes). That alone turns the run into exit 1 with '3 DOFs given but 4 expected in Volume Dirichlet boundary condition' from core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp line 292: the structure's NUMDOF-3 volume Dirichlet is now read on the fluid discretisation, where the shared node carries 4 DOFs. There is no NUMDOF that rescues it — declaring that block with NUMDOF 4 just moves the complaint to the next condition on the same nodes ('3 DOFs given but 4 expected in Point Dirichlet boundary condition'). Two corrections: the entry's 'inconsistent NUMDOF on shared node' does not exist (0 occurrences) and the failure never comes from 4C_io_input_spec.cpp (BLAMED_INPUT_SPEC_CPP=0) — it is a runtime DOF check inside the DBC extractor, not a parse check. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "ONLY_THE_MESH_WAS_EDITED=yes",
+    "EXIT_SEPARATE=0",
+    "EXIT_SHARED=1",
+    "EXIT_SHARED4=1",
+    "processor 0 finished normally",
+    "SEPARATE_CORRECT=6",
+    "3 DOFs given but 4 expected in Volume Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "3 DOFs given but 4 expected in Point Dirichlet boundary condition",
+    "SHARED4_STILL_FAILS=1",
+    "CLAIMED_INCONSISTENT_NUMDOF_TEXT=0",
+    "BLAMED_INPUT_SPEC_CPP=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "ONLY_THE_MESH_WAS_EDITED=no",
+    "EXIT_SEPARATE=1",
+    "EXIT_SHARED=0",
+    "EXIT_SHARED4=0",
+    "SHARED4_STILL_FAILS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: let the structure keep its own copies of the interface nodes, which is what the entry prescribes. The DOF-count throw vanishes, SHARED exits 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "s = b.replace('\"1 SOLID HEX8 17 18 19 20 21 22 23 24 MAT 1 KINEM nonlinear\"',\n              '\"1 SOLID HEX8 13 14 15 16 21 22 23 24 MAT 1 KINEM nonlinear\"')\nassert s != b",
+      "to": "s = b\nassert s == b"
+    }
+  ]
+}

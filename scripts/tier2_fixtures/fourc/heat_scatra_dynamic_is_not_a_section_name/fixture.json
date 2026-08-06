@@ -1,0 +1,52 @@
+{
+  "_comment": "Tier-2 for fourc::heat#0 — the dynamics section name is 'SCALAR TRANSPORT DYNAMIC' in full, and every shortening is a hard abort at parse rather than a silent fall-back. Run on a self-contained 3-D HEX8 heat-conduction deck (TRANSP HEX8 + MAT_scatra, phi=1 on the x=0 face and 0 on the x=1 face, ten backward-Euler steps): the full spelling exits 0 with its result test CORRECT and prints 10 time steps (BASE_TIME_STEPS=10), while 'SCATRA DYNAMIC', 'SCALAR TRANSPORT' and 'TRANSPORT DYNAMIC' are each rejected by name from core/io/src/4C_io_input_file.cpp with \"Section '<name>' is not a valid section name.\" and never reach a single time step (ABBREV_TIME_STEPS=0). The 'unknown section' parser banner an earlier version of this entry quoted appears nowhere (CLAIMED_UNKNOWN_SECTION_TEXT=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "heat",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_ABBREV=1",
+    "EXIT_TRUNC=1",
+    "EXIT_TRANSPD=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "Section 'SCATRA DYNAMIC' is not a valid section name.",
+    "Section 'SCALAR TRANSPORT' is not a valid section name.",
+    "Section 'TRANSPORT DYNAMIC' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "BASE_TIME_STEPS=10",
+    "ABBREV_TIME_STEPS=0",
+    "CLAIMED_UNKNOWN_SECTION_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_ABBREV=0",
+    "EXIT_TRUNC=0",
+    "EXIT_TRANSPD=0",
+    "ABBREV_TIME_STEPS=10"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the abbreviated arm: spell the section in full. It becomes a second baseline, EXIT_ABBREV goes to 0, the rejection line and ABBREV_TIME_STEPS=0 both disappear, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"dyn_section\\\":\\\"SCATRA DYNAMIC\\\"}\"                  \"$TMP/abbrev.yaml\"",
+      "to": "heat \"{}\"                  \"$TMP/abbrev.yaml\""
+    },
+    {
+      "note": "remove the pathology from the truncated arm the same way; its rejection line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"dyn_section\\\":\\\"SCALAR TRANSPORT\\\"}\"                \"$TMP/trunc.yaml\"",
+      "to": "heat \"{}\"                \"$TMP/trunc.yaml\""
+    },
+    {
+      "note": "remove the pathology from the third wrong name; its rejection line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"dyn_section\\\":\\\"TRANSPORT DYNAMIC\\\"}\"               \"$TMP/transpd.yaml\"",
+      "to": "heat \"{}\"               \"$TMP/transpd.yaml\""
+    }
+  ]
+}

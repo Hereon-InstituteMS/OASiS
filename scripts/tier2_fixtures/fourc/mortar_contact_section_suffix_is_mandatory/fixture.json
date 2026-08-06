@@ -1,0 +1,65 @@
+{
+  "_comment": "Tier-2 for fourc::contact#13 — the dimension suffix is part of the mortar contact section name and there is no spelling without it. Six runs: a working 3D deck (two HEX8 blocks, DESIGN SURF MORTAR CONTACT CONDITIONS 3D) and a working 2D deck (two WALL QUAD4 blocks, DESIGN LINE MORTAR CONTACT CONDITIONS 2D), each also run with the suffix dropped and with the other dimension's suffix, everything else untouched. Run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: both correct spellings complete ten steps and exit 0; all four wrong spellings exit 1 before anything is built (REACHED_FILL_COMPLETE_*=0 for each) and are named back verbatim by core/io/4C_io_input_file.cpp line 546 — \"Section 'DESIGN SURF MORTAR CONTACT CONDITIONS' is not a valid section name.\", the same for the LINE form, and also for the cross-dimension spellings 'DESIGN SURF ... 2D' and 'DESIGN LINE ... 3D'. The check is on the whole section name, so a suffix that exists elsewhere in the grammar does not help; SURF pairs with 3D and LINE with 2D, and nothing else parses.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 13,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SURF_3D=0",
+    "EXIT_SURF_NOSUFIX=1",
+    "EXIT_SURF_2D=1",
+    "EXIT_LINE_2D=0",
+    "EXIT_LINE_NOSUFIX=1",
+    "EXIT_LINE_3D=1",
+    "processor 0 finished normally",
+    "STEPS_SURF_3D=10",
+    "STEPS_LINE_2D=10",
+    "Section 'DESIGN SURF MORTAR CONTACT CONDITIONS' is not a valid section name.",
+    "Section 'DESIGN SURF MORTAR CONTACT CONDITIONS 2D' is not a valid section name.",
+    "Section 'DESIGN LINE MORTAR CONTACT CONDITIONS' is not a valid section name.",
+    "Section 'DESIGN LINE MORTAR CONTACT CONDITIONS 3D' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "REACHED_FILL_COMPLETE_SURF_NOSUFIX=0",
+    "REACHED_FILL_COMPLETE_SURF_2D=0",
+    "REACHED_FILL_COMPLETE_LINE_NOSUFIX=0",
+    "REACHED_FILL_COMPLETE_LINE_3D=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_SURF_3D=1",
+    "EXIT_LINE_2D=1",
+    "EXIT_SURF_NOSUFIX=0",
+    "EXIT_SURF_2D=0",
+    "EXIT_LINE_NOSUFIX=0",
+    "EXIT_LINE_3D=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the suffix-less 3D arm its 3D suffix back. It runs, the 'not a valid section name' line for that spelling disappears and EXIT_SURF_NOSUFIX becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck3d \"DESIGN SURF MORTAR CONTACT CONDITIONS\"    \"$TMP/s_none.yaml\"",
+      "to": "deck3d \"DESIGN SURF MORTAR CONTACT CONDITIONS 3D\" \"$TMP/s_none.yaml\""
+    },
+    {
+      "note": "correct the cross-dimension 3D arm the same way. EXIT_SURF_2D becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck3d \"DESIGN SURF MORTAR CONTACT CONDITIONS 2D\" \"$TMP/s2d.yaml\"",
+      "to": "deck3d \"DESIGN SURF MORTAR CONTACT CONDITIONS 3D\" \"$TMP/s2d.yaml\""
+    },
+    {
+      "note": "correct the suffix-less 2D arm. EXIT_LINE_NOSUFIX becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck2d \"DESIGN LINE MORTAR CONTACT CONDITIONS\"    \"$TMP/l_none.yaml\"",
+      "to": "deck2d \"DESIGN LINE MORTAR CONTACT CONDITIONS 2D\" \"$TMP/l_none.yaml\""
+    },
+    {
+      "note": "correct the cross-dimension 2D arm. EXIT_LINE_3D becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck2d \"DESIGN LINE MORTAR CONTACT CONDITIONS 3D\" \"$TMP/l3d.yaml\"",
+      "to": "deck2d \"DESIGN LINE MORTAR CONTACT CONDITIONS 2D\" \"$TMP/l3d.yaml\""
+    }
+  ]
+}

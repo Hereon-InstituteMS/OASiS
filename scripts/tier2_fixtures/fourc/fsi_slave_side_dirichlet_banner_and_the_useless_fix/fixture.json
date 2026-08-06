@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#17 -- rule confirmed, Signal FALSIFIED, and the recommended fix shown not to be one. Upstream fsi_fp_mono_ss_ga_ga.4C.yaml (structuresplit) already declares a Dirichlet on DNODE 2, the structure side of the FSI interface, with all ONOFF entries 0. Turning them on aborts before time step 1 with a boxed banner headed 'DIRICHLET BOUNDARY CONDITIONS ON SLAVE SIDE OF FSI INTERFACE' containing 'The slave side of the interface is not allowed to carry Dirichlet boundary conditions.' and 'SLAVE   = STRUCTURE', from fsi/src/monolithic/model_evaluator/4C_fsi_monolithicstructuresplit.cpp line 131. The claimed sentence 'slave node carries Dirichlet' appears nowhere and the claimed file name 4C_fsi_monolithic_structuresplit.cpp (extra underscore) does not exist. The entry's fix -- switch to iter_monolithicfluidsplit -- also aborts, with the same banner from 4C_fsi_monolithicfluidsplit.cpp line 135 and 'SLAVE   = FLUID', because this deck's fluid interface nodes sit inside a domain-wide DESIGN VOL DIRICH with ONOFF [0,1,1,0]; a fourth control arm proves that is not an artefact of the structural edit, since the UNMODIFIED deck with only COUPALGO swapped fails identically (FIXCONTROL_TIME_STEPS_RUN=0, FIXCONTROL_SAME_BANNER=1). The real constraint is that whichever field is the slave must have a Dirichlet-free interface. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 17,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "SLAVEDIRICH_INTERFACE_FLAGS_ON=1",
+    "CLAIMEDFIX_USES_FLUIDSPLIT=1",
+    "EXIT_CLEAN=0",
+    "EXIT_SLAVEDIRICH=1",
+    "EXIT_CLAIMEDFIX=1",
+    "processor 0 finished normally",
+    "OK (12)",
+    "DIRICHLET BOUNDARY CONDITIONS ON SLAVE SIDE OF FSI INTERFACE",
+    "The slave side of the interface is not allowed to carry Dirichlet boundary conditions.",
+    "SLAVE   = STRUCTURE",
+    "4C_fsi_monolithicstructuresplit.cpp",
+    "SLAVEDIRICH_TIME_STEPS_RUN=0",
+    "SLAVEDIRICH_CLAIMED_SENTENCE=0",
+    "SLAVEDIRICH_CLAIMED_FILENAME=0",
+    "4C_fsi_monolithicfluidsplit.cpp",
+    "SLAVE   = FLUID",
+    "CLAIMEDFIX_TIME_STEPS_RUN=0",
+    "FIXCONTROL_TIME_STEPS_RUN=0",
+    "FIXCONTROL_SAME_BANNER=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLEAN=1",
+    "EXIT_SLAVEDIRICH=0",
+    "SLAVEDIRICH_INTERFACE_FLAGS_ON=0",
+    "FIXCONTROL_SAME_BANNER=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the interface Dirichlet switched off, as upstream ships it. The slave-side banner disappears from the structuresplit arm, EXIT_SLAVEDIRICH becomes 0 and SLAVEDIRICH_INTERFACE_FLAGS_ON becomes 0 (both forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "SLAVE_INTERFACE_ONOFF=\"[1, 1, 1]\"",
+    "to": "SLAVE_INTERFACE_ONOFF=\"[0, 0, 0]\""
+  }
+}

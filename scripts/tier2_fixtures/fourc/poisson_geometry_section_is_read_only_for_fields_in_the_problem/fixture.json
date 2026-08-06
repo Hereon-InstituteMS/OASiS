@@ -1,0 +1,56 @@
+{
+  "_comment": "Tier-2 for fourc::poisson#3, and a REFINEMENT of its 'a misdirected geometry section gives no message at all'. Five arms on a stationary TRANSP TRI3 deck, all naming the same absent_grid.exo. (1) The inline route needs no geometry section and no file: exit 0. (2) 'STRUCTURE GEOMETRY' is silent exactly as the entry says — valid section name, never read, exit 0, the file never touched (STRUCTURE_GEOM_TOUCHED_THE_FILE=0) — because a Scalar_Transport problem has no structure field. (3) 'FLUID GEOMETRY' is NOT silent: a Scalar_Transport problem does carry a fluid discretization, so the route is taken (FLUID_GEOM_ANNOUNCED_THE_READ=1) and the run aborts from core/io/src/4C_io_exodus.cpp with 'absent_grid.exo does not exist.'. The silence therefore depends on which field the section names, not on it being the wrong one. (4) 'TRANSPORT GEOMETRY' alongside the inline sections aborts from core/io/src/4C_io_meshreader.cpp with \"Multiple options to read mesh for discretization 'scatra'. Only one is allowed.\" listing 'TRANSPORT ELEMENTS' 'TRANSPORT GEOMETRY'. (5) 'POISSON GEOMETRY' is not a field and is rejected by name. The 'expected element category TRANSP but got SOLID' text an earlier version quoted is in none of the five logs. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "poisson",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_INLINE=0",
+    "EXIT_STRUCTURE=0",
+    "EXIT_FLUID=1",
+    "EXIT_TRANSPORT=1",
+    "EXIT_POISSONG=1",
+    "processor 0 finished normally",
+    "STRUCTURE_GEOM_TOUCHED_THE_FILE=0",
+    "STRUCTURE_GEOM_SECTION_NAME_REJECTED=0",
+    "FLUID_GEOM_ANNOUNCED_THE_READ=1",
+    "absent_grid.exo does not exist.",
+    "4C_io_exodus.cpp",
+    "Multiple options to read mesh for discretization 'scatra'. Only one is allowed.",
+    "'TRANSPORT ELEMENTS' 'TRANSPORT GEOMETRY'",
+    "4C_io_meshreader.cpp",
+    "Section 'POISSON GEOMETRY' is not a valid section name.",
+    "CLAIMED_ELEMENT_CATEGORY_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INLINE=1",
+    "EXIT_STRUCTURE=1",
+    "EXIT_FLUID=0",
+    "EXIT_TRANSPORT=0",
+    "EXIT_POISSONG=0",
+    "FLUID_GEOM_ANNOUNCED_THE_READ=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from arm 2: point the misdirected block at the scatra field. It collides with the inline mesh, EXIT_STRUCTURE becomes 1 and the fixture must go red — the silence exists only while the section names a field this problem does not have.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"extra_sections\\\":\\\"STRUCTURE GEOMETRY:\\n$BLOCK_SOLID\\\"}\"   \"$TMP/structure.yaml\"",
+      "to": "pois \"{\\\"extra_sections\\\":\\\"TRANSPORT GEOMETRY:\\n$BLOCK_TRANSP\\\"}\"   \"$TMP/structure.yaml\""
+    },
+    {
+      "note": "remove the pathology from arm 3: drop the FLUID GEOMETRY block. EXIT_FLUID goes to 0, the exodus abort and FLUID_GEOM_ANNOUNCED_THE_READ=1 both disappear, so the fixture must go red — that arm carries the refinement.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"extra_sections\\\":\\\"FLUID GEOMETRY:\\n$BLOCK_FLUID\\\"}\"       \"$TMP/fluid.yaml\"",
+      "to": "pois \"{}\"       \"$TMP/fluid.yaml\""
+    },
+    {
+      "note": "remove the pathology from arm 5: use a field name that exists. The 'not a valid section name' line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"extra_sections\\\":\\\"POISSON GEOMETRY:\\n$BLOCK_TRANSP\\\"}\"    \"$TMP/poissong.yaml\"",
+      "to": "pois \"{}\"    \"$TMP/poissong.yaml\""
+    }
+  ]
+}

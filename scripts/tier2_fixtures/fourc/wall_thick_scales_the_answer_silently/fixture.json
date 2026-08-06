@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#7, with one correction. The identical 2D plane-strain WALL QUAD4 cantilever under a Live line load is run at four out-of-plane depths and every arm exits 0 with nothing in any log mentioning thickness (ANY_ARM_WARNED_ABOUT_THICKNESS=0). dispy at node 3 is 8.66666666666698199e-03 / 4.33333333333345890e-03 / 2.16666666666683570e-03 / 1.08333333333348052e-03 for THICK 0.5 / 1.0 / 2.0 / 4.0 — the product dispy*THICK is invariant to within 1e-12 relative (DISPY_TIMES_THICK_IS_INVARIANT=yes) and the ratios are exactly 2.000000 and 4.000000. So THICK multiplies the stiffness while the Live line load is not scaled with it: writing the element edge length there divides the whole answer by that factor, silently. The correction: on this build the keyword is THICK (50 occurrences across the legacy element specs) and THICKNESS does not exist as an element key at all (SCHEMA_ELEMENT_KEY_THICKNESS=0), nor does PLANE_ASSUMPTION appear anywhere in the schema (0), so a deck written with the newer spelling does not merely behave differently, it does not parse. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_T05=0",
+    "EXIT_T10=0",
+    "EXIT_T20=0",
+    "EXIT_T40=0",
+    "processor 0 finished normally",
+    "ANY_ARM_WARNED_ABOUT_THICKNESS=0",
+    "DISPY_THICK_0p5=8.66666666666698199e-03",
+    "DISPY_THICK_1p0=4.33333333333345890e-03",
+    "DISPY_THICK_2p0=2.16666666666683570e-03",
+    "DISPY_THICK_4p0=1.08333333333348052e-03",
+    "DISPY_TIMES_THICK_IS_INVARIANT=yes",
+    "RATIO_THICK1_OVER_THICK2=2.000000",
+    "RATIO_THICK1_OVER_THICK4=4.000000",
+    "SCHEMA_ELEMENT_KEY_THICK=50",
+    "SCHEMA_ELEMENT_KEY_THICKNESS=0",
+    "SCHEMA_HAS_PLANE_ASSUMPTION_ANYWHERE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_T05=1",
+    "EXIT_T10=1",
+    "EXIT_T20=1",
+    "EXIT_T40=1",
+    "DISPY_TIMES_THICK_IS_INVARIANT=no",
+    "SCHEMA_ELEMENT_KEY_THICKNESS=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give every arm the same unit depth, so the four runs are the same problem. All four answers collapse onto 4.333e-03, the distinct pinned values disappear and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk 0.5 \"$TMP/t05.yaml\"",
+      "to": "mk 1.0 \"$TMP/t05.yaml\""
+    },
+    {
+      "note": "same removal on the doubled-depth arm: THICK 2.0 back to unit depth, so the 2.166e-03 value and the exact factor-of-two vanish and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk 2.0 \"$TMP/t20.yaml\"",
+      "to": "mk 1.0 \"$TMP/t20.yaml\""
+    }
+  ]
+}

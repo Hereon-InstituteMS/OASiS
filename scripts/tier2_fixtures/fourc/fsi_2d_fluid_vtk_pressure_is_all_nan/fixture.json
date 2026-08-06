@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#15 -- CONFIRMED in full, including the 'garbage vz' detail, by decoding the file rather than opening it in ParaView. Upstream 2D deck fsi_dc_part_ait_ga_ga.4C.yaml already has an IO/RUNTIME VTK OUTPUT/FLUID block; adding VELOCITY: true and PRESSURE: true and base64+zlib-decoding the last of the ten fluid .vtu files gives 4096 of 4096 pressure points NaN, velocity components 0 and 1 finite, and velocity component 2 spanning roughly -1.4e-1 to 1.4e-1 in a problem that has no third dimension -- while displacement and grid-velocity have component 2 identically zero, so the writer is not simply padding every vector with noise. The solve is unaffected: 10 time steps, exit 0, zero result-test failures, OK (4), and one of those four pinned tests is fluid PRESSURE at node 2155 matched to 1e-10. Pressure is correct inside 4C and wrong only in the VTK file, exactly as the entry says. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 15,
+  "mode": "cmd",
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_VTK=0",
+    "OK (4)",
+    "processor 0 finished normally",
+    "VTK_TIME_STEPS_RUN=10",
+    "VTK_RESULT_FAILURES=0",
+    "FLUID_VTU_FILES_WRITTEN=10",
+    "VTU_PRESSURE_POINTS=4096",
+    "VTU_PRESSURE_NAN_POINTS=4096",
+    "VTU_PRESSURE_ALL_NAN=yes",
+    "VTU_VELOCITY_COMP0_FINITE=yes",
+    "VTU_VELOCITY_COMP1_FINITE=yes",
+    "VTU_VELOCITY_VZ_IS_NONZERO_IN_2D=yes",
+    "VTU_DISPLACEMENT_COMP2_IS_ZERO=yes",
+    "VTU_GRID_VELOCITY_COMP2_IS_ZERO=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_VTK=1",
+    "VTU_PRESSURE_ALL_NAN=no",
+    "VTU_PRESSURE_NAN_POINTS=0",
+    "VTU_VELOCITY_VZ_IS_NONZERO_IN_2D=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: do not ask the runtime VTK writer for pressure. No pressure array is written, VTU_PRESSURE_NAN_POINTS becomes 0 and VTU_PRESSURE_ALL_NAN becomes no (both forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "REQUEST_VTK_PRESSURE=true",
+    "to": "REQUEST_VTK_PRESSURE=false"
+  }
+}

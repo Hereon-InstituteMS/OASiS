@@ -1,0 +1,54 @@
+{
+  "_comment": "Tier-2 for fourc::fluid#0 — the fluid section names, plus the one wrong name section-name validation does NOT catch. On a self-contained 2-D deck (unit square of FLUID QUAD4 + MAT_fluid, u=1 driven in on the left edge, no-slip top and bottom, pressure pinned at a corner) the correct pair 'FLUID DYNAMIC' + 'FLUID ELEMENTS' exits 0 with its result test CORRECT. 'FLUID', 'FLUID_DYN' and the bare 'STRUCTURE' are each rejected verbatim from core/io/src/4C_io_input_file.cpp with \"Section '<name>' is not a valid section name.\" — so the bare word the entry warns about is not even a section. The fourth arm is the trap: 'STRUCTURE ELEMENTS' IS a real section name and is NOT rejected (STRUCTELE_SECTION_NAME_REJECTED=0); the elements simply never reach the fluid field, and the abort blames something else entirely — 'Pressure map empty. Wrong DIM value in input file?' from src/fluid/4C_fluid_implicit_integration.cpp, with no mention of FLUID ELEMENTS anywhere in the log (STRUCTELE_BLAMED_THE_ELEMENT_SECTION=0), while PROBLEM SIZE/DIM is in fact correct. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "fluid",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_FLUIDSEC=1",
+    "EXIT_FLUIDDYN=1",
+    "EXIT_STRUCTSEC=1",
+    "EXIT_STRUCTELE=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "Section 'FLUID' is not a valid section name.",
+    "Section 'FLUID_DYN' is not a valid section name.",
+    "Section 'STRUCTURE' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "STRUCTELE_SECTION_NAME_REJECTED=0",
+    "Pressure map empty. Wrong DIM value in input file?",
+    "4C_fluid_implicit_integration.cpp",
+    "STRUCTELE_BLAMED_THE_ELEMENT_SECTION=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_FLUIDSEC=0",
+    "EXIT_FLUIDDYN=0",
+    "EXIT_STRUCTSEC=0",
+    "EXIT_STRUCTELE=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the first wrong section name: use the real one. EXIT_FLUIDSEC goes to 0 and its rejection line disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"dyn_section\\\":\\\"FLUID\\\"}\"                   \"$TMP/fluidsec.yaml\"",
+      "to": "fluid \"{}\"                   \"$TMP/fluidsec.yaml\""
+    },
+    {
+      "note": "remove the pathology from the underscored variant the same way; its rejection line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"dyn_section\\\":\\\"FLUID_DYN\\\"}\"               \"$TMP/fluiddyn.yaml\"",
+      "to": "fluid \"{}\"               \"$TMP/fluiddyn.yaml\""
+    },
+    {
+      "note": "remove the pathology from the misdirected element section: put the elements back under FLUID ELEMENTS. EXIT_STRUCTELE goes to 0 and the misleading DIM diagnostic disappears, so the fixture must go red — that arm is the one that carries the trap.",
+      "file": "cmd.sh",
+      "from": "fluid \"{\\\"element_section\\\":\\\"STRUCTURE ELEMENTS\\\"}\"  \"$TMP/structele.yaml\"",
+      "to": "fluid \"{}\"  \"$TMP/structele.yaml\""
+    }
+  ]
+}

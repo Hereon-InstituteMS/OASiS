@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#5 -- both halves executed, one confirmed and one FALSIFIED. Confirmed: upstream fsi_fp_mono_fs_ga_ga.4C.yaml defines a single SOLVER 1 block and points all four consumers (structure, fluid, ALE, monolithic FSI) at it; it runs to 'processor 0 finished normally' with OK (6) and 4C never remarks on the sharing, so per-field solvers are a preference and not a requirement. Falsified: the entry claimed a dangling LINEAR_SOLVER reference 'raises SOLVER N not found at setup'. Pointing ALE DYNAMIC at LINEAR_SOLVER: 7 with no SOLVER 7 block yields no 4C diagnostic at all -- no PROC 0 ERROR block, no MPI_ABORT banner, no mention of ALE DYNAMIC. Trilinos throws Teuchos::Exceptions::InvalidParameterName ('Error!  The parameter \"SOLVER\" does not exist in the parameter (sub)list \"ROOT->SOLVER 7\".') uncaught, std::terminate runs and the process dies on SIGABRT with exit status 134; the only pointer to the offending section is the mangled Adapter::AleBaseAlgorithm::setup_ale frame in the signal backtrace. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "UPSTREAM_SOLVER_BLOCKS=1",
+    "UPSTREAM_FIELDS_POINTING_AT_A_SOLVER=4",
+    "DANGLING_ALE_SOLVER_ID=7",
+    "DANGLING_HAS_THAT_SOLVER_BLOCK=0",
+    "EXIT_SHARED=0",
+    "EXIT_DANGLING=134",
+    "processor 0 finished normally",
+    "OK (6)",
+    "SHARED_SOLVER_WARNINGS=0",
+    "terminate called after throwing an instance of",
+    "Teuchos::Exceptions::InvalidParameterName",
+    "The parameter \"SOLVER\" does not exist",
+    "in the parameter (sub)list \"ROOT->SOLVER 7\".",
+    "AleBaseAlgorithm9setup_ale",
+    "DANGLING_HAS_PROC0_ERROR_BLOCK=0",
+    "DANGLING_HAS_MPI_ABORT_BANNER=0",
+    "DANGLING_CLAIMED_TEXT=0",
+    "DANGLING_NAMES_ALE_DYNAMIC=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SHARED=1",
+    "EXIT_DANGLING=0",
+    "DANGLING_HAS_THAT_SOLVER_BLOCK=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: point ALE DYNAMIC back at the solver block that exists. The Teuchos throw disappears, EXIT_DANGLING becomes 0 and DANGLING_HAS_THAT_SOLVER_BLOCK becomes 1 (both forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "ALE_LINEAR_SOLVER=7",
+    "to": "ALE_LINEAR_SOLVER=1"
+  }
+}

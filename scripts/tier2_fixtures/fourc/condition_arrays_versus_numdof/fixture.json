@@ -1,0 +1,56 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#23 on a 1-element HEX8 deck. Five arms show that NUMDOF is checked in three different places. Arrays of length 2 under NUMDOF: 3 fail the input SPEC at parse time — \"Candidate parameter 'ONOFF' has incorrect size\" plus the same for VAL and FUNCT, under \"Failed to match condition specification in section 'DESIGN SURF DIRICH CONDITIONS'\". A self-consistent Dirichlet NUMDOF: 2 with length-2 arrays passes the spec (DIRI2_FAILED_THE_SPEC=0) and only then throws '2 DOFs given but 3 expected in Surface Dirichlet boundary condition' from core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp line 292. A Neumann block with the classic surplus NUMDOF: 6 exits 0 and reproduces the NUMDOF: 3 answer bit-for-bit ('is CORRECT, abs(diff)= 0.00000000000000000e+00' against the pinned 4.47909266337460053e-03 at TOLERANCE 1e-12), while a Neumann NUMDOF: 2 dies from a third site: 'Fewer functions or curves defined than the element has dofs.' in solid_3D_ele/4C_solid_3D_ele_surface_evaluate.cpp line 122. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 23,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_SHORT=1",
+    "EXIT_DIRI2=1",
+    "EXIT_NEU6=0",
+    "EXIT_NEU2=1",
+    "processor 0 finished normally",
+    "Candidate parameter 'ONOFF' has incorrect size",
+    "Candidate parameter 'VAL' has incorrect size",
+    "Candidate parameter 'FUNCT' has incorrect size",
+    "Failed to match condition specification in section 'DESIGN SURF DIRICH CONDITIONS'",
+    "2 DOFs given but 3 expected in Surface Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "DIRI2_FAILED_THE_SPEC=0",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "Fewer functions or curves defined than the element has dofs.",
+    "4C_solid_3D_ele_surface_evaluate.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_SHORT=0",
+    "EXIT_DIRI2=0",
+    "EXIT_NEU6=1",
+    "EXIT_NEU2=0",
+    "DIRI2_FAILED_THE_SPEC=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the short-array arm: give ONOFF/VAL/FUNCT the NUMDOF entries they owe. The spec-size complaints vanish and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$D3_SHORT_ARRAYS\"  \"$N3\" \"$TMP/short.yaml\"",
+      "to": "mk \"$D3\"  \"$N3\" \"$TMP/short.yaml\""
+    },
+    {
+      "note": "remove the pathology from the Dirichlet NUMDOF: 2 arm: declare the 3 DOFs the HEX8 node has. The DBC extractor throw vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$D2\"               \"$N3\" \"$TMP/dnumdof2.yaml\"",
+      "to": "mk \"$D3\"               \"$N3\" \"$TMP/dnumdof2.yaml\""
+    },
+    {
+      "note": "remove the pathology from the Neumann NUMDOF: 2 arm. The surface-evaluate throw vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$D3\"               \"$N2\" \"$TMP/nnumdof2.yaml\"",
+      "to": "mk \"$D3\"               \"$N3\" \"$TMP/nnumdof2.yaml\""
+    }
+  ]
+}

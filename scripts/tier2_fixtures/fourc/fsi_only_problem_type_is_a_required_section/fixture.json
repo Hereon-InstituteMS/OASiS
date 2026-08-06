@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#0 and a FALSIFICATION of its Signal. The entry claimed that an FSI input missing ANY of PROBLEM TYPE / STRUCTURAL DYNAMIC / FLUID DYNAMIC / ALE DYNAMIC / FSI DYNAMIC / CLONING MATERIAL MAP aborts with 'missing required section' from 4C_io_input_file.cpp. Deleting each section in turn from upstream fsi_fp_mono_fs_ga_ga.4C.yaml produced five different outcomes and the claimed phrase in none of them (CLAIMED_MISSING_REQUIRED_SECTION=0): only PROBLEM TYPE gives a required-section abort, and its wording is \"Required section 'PROBLEM TYPE' not found in input file.\"; the three field DYNAMIC sections each abort from their own adapter about LINEAR_SOLVER having no default (4C_adapter_str_structure.cpp / 4C_adapter_fld_base_algorithm.cpp / 4C_adapter_ale.cpp); and FSI DYNAMIC is not required at all -- 4C silently falls back to a PARTITIONED scheme with a 200-step budget and runs 13 time steps before dying on a negative fluid Jacobian. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_FULL=0",
+    "processor 0 finished normally",
+    "OK (6)",
+    "EXIT_NOPROB=1",
+    "Required section 'PROBLEM TYPE' not found in input file.",
+    "4C_io_input_file.cpp",
+    "no linear solver defined for structural field",
+    "4C_adapter_str_structure.cpp",
+    "no linear solver defined for fluid problem",
+    "4C_adapter_fld_base_algorithm.cpp",
+    "No linear solver defined for ALE problems",
+    "4C_adapter_ale.cpp",
+    "NOFSI_TIME_STEPS_RUN=13",
+    "NOFSI_USES_PARTITIONED_SCHEME=1",
+    "NOFSI_STEP_BUDGET=200",
+    "CLAIMED_MISSING_REQUIRED_SECTION=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FULL=1",
+    "EXIT_NOPROB=0",
+    "NOFSI_TIME_STEPS_RUN=0",
+    "NOFSI_USES_PARTITIONED_SCHEME=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop deleting sections, so every arm runs the complete upstream deck. All five diagnostics vanish, NOFSI_TIME_STEPS_RUN becomes 10 and EXIT_NOPROB becomes 0 (a forbidden token), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "DELETE_SECTIONS=yes",
+    "to": "DELETE_SECTIONS=no"
+  }
+}

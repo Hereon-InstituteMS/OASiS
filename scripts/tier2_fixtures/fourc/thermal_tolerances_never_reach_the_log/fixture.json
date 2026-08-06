@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#6. Upstream tsi_lincompression_1waydisp with four distinctive tolerances injected shows both fields in one log: NOX echoes the structural pair verbatim ('Converged....Structure-Update-Norm = 0.000e+00 < 4.2e-09' for TOLDISP 4.2e-09 and 'Converged....Structure-F-Norm = 0.000e+00 < 3.700e-07' for TOLRES 3.7e-07) while the injected thermal TOLTEMP 5.3e-09 and TOLRES 6.1e-07 appear nowhere (THERMAL_TOLTEMP_IN_LOG=0, THERMAL_TOLRES_IN_LOG=0, THERMAL_KEYWORDS_IN_LOG=0); the thermo field prints only 'Predictor thermo absolute res-norm' and the numiter/abs-res-norm/abs-temp-norm/wct table. Upstream thermo3D_FBC_ost with TOLTEMP 1e-30 and MAXITER 3 gives the one place a thermal tolerance surfaces: 'Newton unconverged in 3 iterations' from 4C_thermo_timint_impl.cpp, exit 1. The same deck with NORMCOMBI_RESFTEMP: \"Or\" converges in 1 Newton step per time step against the baseline's 2 (5 steps each way), which is the behavioural confirmation the key was read. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ECHO=0",
+    "EXIT_BASE=0",
+    "EXIT_TIGHT=1",
+    "EXIT_COMBI=0",
+    "Converged....Structure-Update-Norm = 0.000e+00 < 4.2e-09",
+    "Converged....Structure-F-Norm = 0.000e+00 < 3.700e-07",
+    "THERMAL_TOLTEMP_IN_LOG=0",
+    "THERMAL_TOLRES_IN_LOG=0",
+    "THERMAL_KEYWORDS_IN_LOG=0",
+    "numiter      abs-res-norm     abs-temp-norm",
+    "Predictor thermo absolute res-norm",
+    "Newton unconverged in 3 iterations",
+    "4C_thermo_timint_impl.cpp",
+    "BASE_STEPS_AT_NUMITER_1=0",
+    "BASE_STEPS_AT_NUMITER_2=5",
+    "COMBI_OR_STEPS_AT_NUMITER_1=5",
+    "COMBI_OR_STEPS_AT_NUMITER_2=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ECHO=1",
+    "EXIT_TIGHT=0",
+    "THERMAL_TOLTEMP_IN_LOG=1",
+    "THERMAL_TOLRES_IN_LOG=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the thermal Newton tolerance reachable (drop the impossible TOLTEMP and the small MAXITER). The TIGHT arm then converges, 'Newton unconverged in 3 iterations' disappears and EXIT_TIGHT becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "\"  LINEAR_SOLVER: 1\\n  TOLTEMP: 1e-30\\n  MAXITER: 3\\n\", 1))",
+    "to": "\"  LINEAR_SOLVER: 1\\n\", 1))                                 "
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#4. Upstream tsi_lincompression_1waydisp run three ways. Adding NUMSTEP: 7 to STRUCTURAL DYNAMIC changes nothing: 30 steps, banner 'STEP =   30/ 200' (200 is TSI DYNAMIC's own default), all result tests CORRECT, exit 0, and no message about the unused key (IGNORED_KEY_DIAGNOSTIC=0). Adding the same NUMSTEP: 7 to TSI DYNAMIC stops the run at 7, banner 'STEP =    7/   7', exit 1. The TIMESTEP half is visible in the untouched deck too: both field sections say TIMESTEP: 0.01 (STRUCT_TIMESTEP_IN_DECK=2) while all 30 steps march at TSI DYNAMIC's DT = 1.000e-01 (MARCHED_AT_TSI_TIMESTEP=30). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_STRUCT_NUMSTEP=0",
+    "EXIT_TSI_NUMSTEP=1",
+    "STEPS_BASE=30",
+    "STEPS_STRUCT_NUMSTEP_7=30",
+    "STEPS_TSI_NUMSTEP_7=7",
+    "STEP =   30/ 200",
+    "STEP =    7/   7",
+    "STRUCT_TIMESTEP_IN_DECK=2",
+    "MARCHED_AT_TSI_TIMESTEP=30",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "IGNORED_KEY_DIAGNOSTIC=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_STRUCT_NUMSTEP=1",
+    "EXIT_TSI_NUMSTEP=0",
+    "STEPS_STRUCT_NUMSTEP_7=7"
+  ],
+  "_mutation": {
+    "note": "apply the fix the pitfall recommends: put the NUMSTEP in TSI DYNAMIC instead of STRUCTURAL DYNAMIC. It then takes effect, the arm runs 7 steps instead of 30 and the 'STEP =   30/ 200' evidence disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(s_anchor, s_anchor + \"  NUMSTEP: 7\\n\", 1))",
+    "to": "open(sys.argv[2], \"w\").write(t.replace(t_anchor, t_anchor + \"  NUMSTEP: 7\\n\", 1))"
+  }
+}

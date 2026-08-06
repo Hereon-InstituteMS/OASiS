@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#9. One HEX8 SOLIDSCATRA cube, transient thermal field starting from 293 and driven to 393, two decks identical except for which section carries the 393. DESIGN VOL THERMO DIRICH CONDITIONS on the DVOL that lists all 8 nodes clamps every node: node 7 reads exactly 393, the cube expands uniformly by alpha*(393-293)*L = 1.2e-03, both result tests CORRECT, exit 0. DESIGN SURF THERMO DIRICH on the x=0 face alone prescribes the same 393 (SURF_PRESCRIBES_SAME_VALUE=1) and leaves the interior free: node 7 reads 2.93004731462221912e+02, still essentially its initial value, and the expansion collapses to 3.33374339339256561e-04. Nothing is warned about (SURF_DIAGNOSTIC=0) and the run reaches the result test, so the only detector is a pinned RESULT DESCRIPTION. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_VOL_CLAMP=0",
+    "EXIT_SURF_CLAMP=1",
+    "temp     at node   7\t is CORRECT",
+    "dispx    at node   2\t is CORRECT",
+    "temp     at node   7\t is WRONG --> actresult= 2.93004731462221912e+02",
+    "dispx    at node   2\t is WRONG --> actresult= 3.33374339339256561e-04",
+    "SURF_PRESCRIBES_SAME_VALUE=1",
+    "SURF_DIAGNOSTIC=0",
+    "SURF_REACHED_RESULT_TEST=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_VOL_CLAMP=1",
+    "EXIT_SURF_CLAMP=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the volume condition as well. Every node is then clamped, node 7 reads 393, EXIT_SURF_CLAMP becomes 0 and both WRONG lines disappear, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"$SURF\" > \"$TMP/surf.yaml\"",
+    "to": "deck \"$VOL\"  > \"$TMP/surf.yaml\""
+  }
+}

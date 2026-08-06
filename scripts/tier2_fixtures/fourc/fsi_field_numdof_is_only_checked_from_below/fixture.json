@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#7 -- the per-field NUMDOF convention is real but the check is ONE-SIDED and the Signal is FALSIFIED. The entry claimed a wrong NUMDOF 'aborts at setup with invalid NUMDOF'. The real gate is Core::FE::Dbc::read_dirichlet_condition at core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp line 292, whose source condition is `if (num_dbc_dofs < numdf)`. On upstream 3D deck fsi_fp_mono_fs_ga_ga.4C.yaml: shrinking the fluid point Dirichlet from NUMDOF 4 to 3 aborts with '3 DOFs given but 4 expected in Point Dirichlet boundary condition'; shrinking the ALE volume Dirichlet from 3 to 2 aborts with '2 DOFs given but 3 expected in Volume Dirichlet boundary condition'; but GROWING the structural point Dirichlet from 3 to 4 is accepted silently -- exit 0, 10 time steps, OK (6), zero NUMDOF warnings. 'invalid NUMDOF' appears in none of the arms and the abort never names the field it came from. The dangerous direction, over-declaring (a 3D block pasted into a 2D deck), is exactly the one 4C does not catch. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CORRECT=0",
+    "EXIT_FLUIDSHORT=1",
+    "EXIT_ALESHORT=1",
+    "EXIT_STRUCTLONG=0",
+    "OK (6)",
+    "processor 0 finished normally",
+    "3 DOFs given but 4 expected in Point Dirichlet boundary condition",
+    "2 DOFs given but 3 expected in Volume Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "STRUCTLONG_TIME_STEPS_RUN=10",
+    "STRUCTLONG_NUMDOF_WARNINGS=0",
+    "CLAIMED_INVALID_NUMDOF=0",
+    "ABORT_MESSAGE_NAMES_THE_FIELD=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CORRECT=1",
+    "EXIT_FLUIDSHORT=0",
+    "EXIT_ALESHORT=0",
+    "EXIT_STRUCTLONG=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave every Dirichlet block at the DOF count its field really has. All three arms become copies of the working deck, EXIT_FLUIDSHORT and EXIT_ALESHORT drop to 0 (both forbidden) and the two DOF-count aborts vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MISDECLARE_NUMDOF=yes",
+    "to": "MISDECLARE_NUMDOF=no"
+  }
+}

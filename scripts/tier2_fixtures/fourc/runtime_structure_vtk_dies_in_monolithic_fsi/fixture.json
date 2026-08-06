@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#13. The rule holds for MONOLITHIC FSI and the quoted Signal is fabricated. Upstream fsi_fp_mono_fs_ga_ga.4C.yaml (COUPALGO iter_monolithicfluidsplit) exits 0 with 6 result tests CORRECT. Prepending IO/RUNTIME VTK OUTPUT + IO/RUNTIME VTK OUTPUT/STRUCTURE makes it exit 1 with 'Runtime output is not available in the old structure time integration! You need to take the new one, i.e. set `INT_STRATEGY: Standard`!' from src/structure/4C_structure_timint.cpp line 262, and zero .vtu written. That advice is a dead end: INT_STRATEGY already defaults to Standard, and writing it explicitly into STRUCTURAL DYNAMIC produces the identical abort (MONOSTD_SAME_ABORT=1, MONOSTD_VTU=0), because FSI::MonolithicBase::create_structure_time_integrator constructs the deprecated Adapter::StructureBaseAlgorithm unconditionally. The catalogue's 'inconsistent integration strategy' appears nowhere (CLAIMED_INCONSISTENT_INT_STRATEGY_TEXT=0). The rule is also narrower than the entry says: PARTITIONED FSI is unaffected — the identical two sections on upstream volmortar2D_fsi.4C.yaml (COUPALGO iter_stagg_*) exit 0 with 6 tests CORRECT and do write .vtu. So it is monolithic FSI that has to fall back to post_vtu, not FSI in general. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 13,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "EXIT_mono=0",
+    "EXIT_monovtk=1",
+    "EXIT_monostd=1",
+    "EXIT_partvtk=0",
+    "processor 0 finished normally",
+    "MONO_CORRECT=6",
+    "Runtime output is not available in the old structure time integration! You need to take the new one, i.e. set `INT_STRATEGY: Standard`!",
+    "4C_structure_timint.cpp",
+    "MONOVTK_VTU=0",
+    "MONOSTD_SAME_ABORT=1",
+    "MONOSTD_VTU=0",
+    "CLAIMED_INCONSISTENT_INT_STRATEGY_TEXT=0",
+    "PARTVTK_CORRECT=6",
+    "PARTVTK_WROTE_VTU=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "EXIT_mono=1",
+    "EXIT_monovtk=0",
+    "EXIT_monostd=0",
+    "EXIT_partvtk=1",
+    "MONOSTD_SAME_ABORT=0",
+    "PARTVTK_WROTE_VTU=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: stop asking monolithic FSI for runtime structural output. That arm reverts to the baseline, exits 0, and the abort message vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "{ printf '%s' \"$VTK\"; cat \"$MONO\"; } > \"$TMP/monovtk/in.4C.yaml\"",
+      "to": "cp \"$MONO\" \"$TMP/monovtk/in.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the partitioned control arm instead: without the VTK sections it writes no .vtu, PARTVTK_WROTE_VTU becomes no, and the fixture loses the evidence that the restriction is monolithic-only — so it must go red.",
+      "file": "cmd.sh",
+      "from": "{ printf '%s' \"$VTK\"; cat \"$PART\"; } > \"$TMP/partvtk/in.4C.yaml\"",
+      "to": "cp \"$PART\" \"$TMP/partvtk/in.4C.yaml\""
+    }
+  ]
+}

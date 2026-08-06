@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#1. Upstream tsi_lincompression_1waydisp runs to 'processor 0 finished normally'; deleting its CLONING MATERIAL MAP section aborts with exit 1, so the rule holds. The Signal was fabricated: 'cannot clone material for thermo field' and the origin 4C_adapter_str_factory.cpp do not occur (CLAIMED_CANNOT_CLONE_TEXT=0, CLAIMED_STR_FACTORY_ORIGIN=0). What 4C prints is the generic message of the shared cloning utility, 'At least one material pairing required in --CLONING MATERIAL MAP.' from core/fem/src/general/utils/4C_fem_general_utils_createdis.hpp, which names neither TSI nor thermo (DIAGNOSTIC_LINE_NAMES_THERMO=0) and still spells the section in the retired --SECTION dat form; only the demangled backtrace mentions ThermoStructureCloneStrategy and setup_tsi. The upstream deck confirms the standard form structure -> thermo. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MAPPED=0",
+    "EXIT_UNMAPPED=1",
+    "processor 0 finished normally",
+    "At least one material pairing required in --CLONING MATERIAL MAP.",
+    "4C_fem_general_utils_createdis.hpp",
+    "ThermoStructureCloneStrategy",
+    "setup_tsi",
+    "CLAIMED_CANNOT_CLONE_TEXT=0",
+    "CLAIMED_STR_FACTORY_ORIGIN=0",
+    "DIAGNOSTIC_LINE_NAMES_THERMO=0",
+    "UPSTREAM_SRC_FIELD_STRUCTURE=1",
+    "UPSTREAM_TAR_FIELD_THERMO=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MAPPED=1",
+    "EXIT_UNMAPPED=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the CLONING MATERIAL MAP in the second arm. The thermo field clones, EXIT_UNMAPPED becomes 0 and the diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t[:i] + t[j:])",
+    "to": "open(sys.argv[2], \"w\").write(t)             "
+  }
+}

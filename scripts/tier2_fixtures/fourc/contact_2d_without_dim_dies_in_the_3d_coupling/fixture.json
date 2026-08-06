@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::contact#12 — a 2D contact deck that omits 'PROBLEM SIZE: DIM: 2' gets all the way into the THREE-dimensional mortar coupling before failing, so the message points at geometry rather than at the missing key. Two runs of one self-contained 2D deck (two unit squares 0.1 apart, WALL QUAD4 plane_strain, DESIGN LINE MORTAR CONTACT CONDITIONS 2D, upper block pushed down over ten steps), the PROBLEM SIZE section the only difference, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: with DIM: 2 the deck completes all ten steps and exits 0; without it the deck still parses, still builds the mesh and still reaches 'Building contact interface' (NO_DIM_BUILT_THE_CONTACT_INTERFACE=1) before aborting with 'auxiliary_plane called for unknown element type' from contact/4C_contact_coupling3d.cpp line 63 and zero finalised steps. The trap is that the message names neither the missing key nor a dimension (MESSAGE_NAMES_THE_MISSING_KEY=no, MESSAGE_NAMES_A_DIMENSION=no), so it reads as a mesh or element problem; the file name is the only clue that a 3D routine was reached at all.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITH_DIM=0",
+    "EXIT_NO_DIM=1",
+    "processor 0 finished normally",
+    "STEPS_WITH_DIM=10",
+    "STEPS_NO_DIM=0",
+    "auxiliary_plane called for unknown element type",
+    "4C_contact_coupling3d.cpp",
+    "NO_DIM_BUILT_THE_CONTACT_INTERFACE=1",
+    "MESSAGE_NAMES_THE_MISSING_KEY=no",
+    "MESSAGE_NAMES_A_DIMENSION=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_WITH_DIM=1",
+    "EXIT_NO_DIM=0",
+    "STEPS_NO_DIM=10",
+    "MESSAGE_NAMES_THE_MISSING_KEY=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the PROBLEM SIZE block. It then runs all ten steps, the auxiliary_plane abort disappears and EXIT_NO_DIM becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"\"      \"$TMP/no_dim.yaml\"",
+    "to": "deck \"$DIM2\" \"$TMP/no_dim.yaml\""
+  }
+}
