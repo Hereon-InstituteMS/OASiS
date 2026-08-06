@@ -1,0 +1,15 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "default_scalar_type=float64",
+    "constant_construction_raised=False",
+    "form_raised=True",
+    "array_assign_raised=True",
+    "VERDICT=complex_rejected_at_form_and_array_not_at_constant"
+  ],
+  "forbid_in_output": ["Traceback"]
+}

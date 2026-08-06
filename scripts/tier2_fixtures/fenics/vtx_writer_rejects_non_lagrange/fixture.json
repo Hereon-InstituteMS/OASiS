@@ -1,0 +1,15 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "stage=raised_at_construction",
+    "Only (discontinuous) Lagrange functions are supported",
+    "old_string_1_present=False",
+    "old_string_2_present=False",
+    "VERDICT=vtx_rejects_non_lagrange_at_construction"
+  ],
+  "forbid_in_output": ["Traceback"]
+}

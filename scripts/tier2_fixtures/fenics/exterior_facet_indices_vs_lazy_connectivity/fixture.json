@@ -1,0 +1,14 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "lazy_path_ok=True",
+    "eager_exterior_facet_indices_raised=True",
+    "Facet to cell connectivity has not been computed",
+    "VERDICT=eager_needs_connectivity_lazy_does_not"
+  ],
+  "forbid_in_output": ["Traceback"]
+}
