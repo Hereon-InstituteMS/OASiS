@@ -261,3 +261,46 @@ a failure, the entry must also say what happens when the failure does NOT
 appear. Where the honest answer is "it converges cleanly and every internal
 check passes", that sentence is the most valuable one in the entry, because it
 tells the agent its guards cannot help and it must compare against a reference.
+
+---
+
+# Two failure modes that look alike and are opposites
+
+A deal.II pass separated these by measurement, and the distinction refines advice
+that had been circulating in this project in half-form. Newton on a
+hyperelasticity problem, same mesh, same load:
+
+    wrong TANGENT (K_geo sign error)   converges quadratically
+                                       to the SAME answer, 2.2e-16 away
+                                       cost: one extra step (16 vs 15)
+
+    wrong STRESS  (residual is wrong)  converges quadratically
+                                       to a DIFFERENT answer, 7.3% away
+                                       cost: FEWER steps (12 vs 15)
+
+**A wrong tangent costs iterations, not accuracy. A wrong residual costs
+accuracy, not iterations.** The framework differentiates whatever residual it is
+handed, so a consistently-differentiated wrong stress converges beautifully onto
+the wrong solution — and it converges FASTER, because the fabricated problem
+happens to be easier.
+
+The practical consequence is sharp: an agent watching iteration counts to detect
+a stress error will see the count go DOWN. The catalog entry this corrects
+claimed the tangent error is "off by 2x" and blamed the wrong bug for the wrong
+symptom.
+
+Two other backends found the halves independently, which is why they were being
+conflated:
+
+    skfem hyperelasticity#2   PK2 stress in the PK1 slot: entry says "Newton
+                              diverges"; measured, converges to 8e-16 onto a
+                              field 0.45%/1.43% off at 5%/20% stretch
+    NGSolve nonlinear_elasticity#3   factor-2 hand-coded P: entry says linear
+                              convergence; measured, QUADRATIC convergence to a
+                              wrong displacement. Linear convergence needs a
+                              tangent inconsistent with the residual — which is
+                              the OTHER bug
+
+So all three agree once separated: neither bug announces itself, and the only
+reliable detection is comparing the ANSWER against a reference, never watching
+the solver.
