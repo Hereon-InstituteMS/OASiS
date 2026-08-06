@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#6, whose wording was wrong in a way that would send an agent looking for the wrong thing. It said the symptom is 'structure-*.vtu files but no beams-*.vtu'. On upstream beam_runtime_ghosting_output — a beams-only mesh — OUTPUT_BEAMS: true yields three files named structure-beams-NNNNN-0.vtu and a res-structure-beams.pvd, and zero plain structure-*.vtu. Turn OUTPUT_BEAMS to false and the run writes NO .vtu and NO .pvd whatsoever, despite OUTPUT_STRUCTURE: true, because the structure writer has no non-beam elements to write. Both arms exit 0 and neither says anything about missing output. So the real signal is an empty visualisation tree after a successful run, and the file prefix to look for is structure-beams. Each arm runs in its own directory since 4C writes its VTU tree relative to the working directory. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ON=0",
+    "EXIT_OFF=0",
+    "processor 0 finished normally",
+    "ON_BEAM_VTU=3",
+    "OFF_BEAM_VTU=0",
+    "ON_ANY_VTU=3",
+    "OFF_ANY_VTU=0",
+    "OFF_ANY_PVD=0",
+    "ON_PLAIN_STRUCTURE_VTU=0",
+    "OFF_OUTPUT_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ON=1",
+    "EXIT_OFF=1",
+    "ON_BEAM_VTU=0",
+    "OFF_ANY_VTU=3"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave OUTPUT_BEAMS on in the second arm. It then writes the same three files as the first, OFF_BEAM_VTU becomes 3, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  OUTPUT_BEAMS: true/  OUTPUT_BEAMS: false/' on.yaml > off.yaml",
+    "to": "cp on.yaml off.yaml"
+  }
+}
