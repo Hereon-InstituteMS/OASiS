@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#1, and the execution that FALSIFIED it. The entry said MATID in SCALAR TRANSPORT DYNAMIC must reference the MAT_matlist and that pointing it at a MAT_ion aborts with 'expected matlist, got ion' from 4C_scatra_factory.cpp. Measured on upstream elch_2D_tertiary_twoEqu_ENC_varParams_ndb_2iter: MATID: 3 (a MAT_ion) runs and passes all ten result tests, and so does the deck with the MATID line deleted — the key is inert here (4C documents it as the material for automatic mesh generation). The load-bearing reference is the ELEMENT LINE's 'MAT <id>': repointing that at a MAT_ion on upstream elch_1D_10ele_3ions_stab_fdcheck aborts with 'Invalid material type!' from src/scatra_ele/4C_scatra_ele_calc_service_elch_NP.cpp inside check_elch_element_parameter. Neither the quoted text nor the file it was attributed to appears (CLAIMED_EXPECTED_MATLIST_TEXT=0, CLAIMED_SCATRA_FACTORY_FILE=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "ELEMENT_LINES_REPOINTED=10",
+    "EXIT_MATID_ION=0",
+    "EXIT_MATID_ABSENT=0",
+    "EXIT_ELEMENT_MAT_ION=1",
+    "MATID_ION_PASSED=10",
+    "MATID_ABSENT_PASSED=10",
+    "processor 0 finished normally",
+    "Invalid material type!",
+    "4C_scatra_ele_calc_service_elch_NP.cpp",
+    "check_elch_element_parameter",
+    "CLAIMED_EXPECTED_MATLIST_TEXT=0",
+    "CLAIMED_SCATRA_FACTORY_FILE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MATID_ION=1",
+    "EXIT_MATID_ABSENT=1",
+    "EXIT_ELEMENT_MAT_ION=0",
+    "MATID_ION_PASSED=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the element arm: leave the element lines pointing at the matlist. 'Invalid material type!' disappears, EXIT_ELEMENT_MAT_ION becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/MAT 4 TYPE ElchNP/MAT 1 TYPE ElchNP/' \"$ION\" > \"$TMP/element_mat_ion.yaml\"",
+      "to": "cp \"$ION\" \"$TMP/element_mat_ion.yaml\""
+    },
+    {
+      "note": "make the inertness claim untestable: leave MATID pointing at the matlist. The arm then demonstrates nothing about a mis-pointed MATID; ELEMENT_LINES_REPOINTED is unaffected but the mutated sed no longer produces the ion-pointed deck, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/^  MATID: 1$/  MATID: 3/' \"$TERT\" > \"$TMP/matid_ion.yaml\"\ngrep -v '^  MATID: 1$'           \"$TERT\" > \"$TMP/matid_absent.yaml\"",
+      "to": "cp \"$TERT\" \"$TMP/matid_ion.yaml\"\ncp \"$TERT\" \"$TMP/matid_absent.yaml\"\nsed -i 's/QUANTITY: \"phi1\"/QUANTITY: \"phi9\"/' \"$TMP/matid_absent.yaml\""
+    }
+  ]
+}

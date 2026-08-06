@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::scalar_transport#4, and the execution that FALSIFIED it. The entry said ONOFF/VAL/FUNCT must each have exactly one entry for scalar transport and that the parser aborts with 'array size mismatch' or 'expected NUMDOF entries' otherwise. Measured: NUMDOF 3 with three-entry arrays on a one-scalar problem runs without a single complaint (NUMDOF3_COMPLAINTS=1 is only the deliberate recording result-test) and returns the IDENTICAL nodal value 4.99859504821351386e-01, even with distinct surplus VALs — the extra entries address DOFs the field does not have and are dropped in silence (OVERDECLARED_NUMDOF_CHANGES_THE_ANSWER=no). What IS enforced is array length == NUMDOF, and its message is neither of the two quoted: \"Failed to match condition specification in section 'DESIGN LINE DIRICH CONDITIONS'.\" from core/fem/src/condition/4C_fem_condition_definition.cpp plus 'Could not match this input'. Both fabricated phrasings are asserted absent. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "scalar_transport",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "NUMDOF1_VALUE=4.99859504821351386e-01",
+    "NUMDOF3_VALUE=4.99859504821351386e-01",
+    "OVERDECLARED_NUMDOF_CHANGES_THE_ANSWER=no",
+    "Failed to match condition specification in section 'DESIGN LINE DIRICH CONDITIONS'.",
+    "4C_fem_condition_definition.cpp",
+    "Could not match this input",
+    "CLAIMED_ARRAY_SIZE_MISMATCH=0",
+    "CLAIMED_EXPECTED_NUMDOF_ENTRIES=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "OVERDECLARED_NUMDOF_CHANGES_THE_ANSWER=yes",
+    "EXIT_NUMDOF3=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology by making the surplus entries stop being surplus: move a different value into the FIRST array slot, which is the one the single scalar DOF actually reads. The applied boundary value changes, NUMDOF3_VALUE no longer equals the NUMDOF-1 reading, and the fixture must go red — which is also what shows the comparison is sensitive to the arrays at all.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"numdof\\\":3,\\\"onoff\\\":\\\"[1, 1, 1]\\\",\\\"val\\\":\\\"[1.0, 5.0, 9.0]\\\",\\\"funct\\\":\\\"[1, 0, 0]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "sca \"{\\\"numdof\\\":3,\\\"onoff\\\":\\\"[1, 1, 1]\\\",\\\"val\\\":\\\"[9.0, 5.0, 9.0]\\\",\\\"funct\\\":\\\"[1, 0, 0]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "remove the pathology from the ragged arm: make the arrays the length NUMDOF declares. The condition-spec rejection disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"numdof\\\":1,\\\"onoff\\\":\\\"[1, 1, 1]\\\",\\\"val\\\":\\\"[1.0]\\\",\\\"funct\\\":\\\"[1]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "sca \"{\\\"numdof\\\":1,\\\"onoff\\\":\\\"[1]\\\",\\\"val\\\":\\\"[1.0]\\\",\\\"funct\\\":\\\"[1]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    }
+  ]
+}

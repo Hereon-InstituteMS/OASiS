@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#2 — the transported-scalar count is the matlist's NUMMAT plus one for the electric potential, and 4C states the expected number itself. Upstream elch_1D_10ele_3ions_stab_fdcheck has MAT_matlist NUMMAT 4 and NUMDOF 5 on every condition; cutting the point Dirichlet block to NUMDOF 4 aborts with '4 DOFs given but 5 expected in Point Dirichlet boundary condition' from core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp. That falsifies the entry's Signal twice over: the failure is not silent (SHORT_REACHED_RESULT_TEST=0 — the run never reaches its result tests) and the quoted phrasing 'INITIALFIELD component count mismatch' does not exist (CLAIMED_INITIALFIELD_COUNT_MISMATCH=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "MATLIST_NUMMAT=4",
+    "DIRICH_NUMDOF=5",
+    "EXIT_BASELINE=0",
+    "EXIT_SHORT=1",
+    "BASELINE_PASSED=10",
+    "processor 0 finished normally",
+    "4 DOFs given but 5 expected in Point Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "SHORT_REACHED_RESULT_TEST=0",
+    "CLAIMED_INITIALFIELD_COUNT_MISMATCH=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASELINE=1",
+    "EXIT_SHORT=0",
+    "BASELINE_PASSED=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the Dirichlet block at the full NUMDOF 5. The DOF-count abort disappears, EXIT_SHORT becomes 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "t = t.replace(block, \"\"\"  - E: 1\n    NUMDOF: 4\n    ONOFF: [1, 1, 1, 1]\n    VAL: [1, 2, 2, 1]\n    FUNCT: [0, 0, 0, 0]\"\"\")",
+    "to": "pass"
+  }
+}
