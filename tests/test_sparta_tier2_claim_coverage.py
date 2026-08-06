@@ -70,7 +70,9 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / "sparta"
 #               fixtures
 #   2026-08-06  0.93 (70 of 75) after the wall-flux-balance fixture
 #   2026-08-06  0.96 (72 of 75) after the adaptation-targeting fixture
-MIN_COVERAGE_FRACTION = 0.96
+#   2026-08-06  0.97 (73 of 75) after the unresolved-shear fixture
+#   2026-08-06  0.98 (74 of 75) after the surface-flux steady-state fixture
+MIN_COVERAGE_FRACTION = 0.98
 
 # Counted 2026-08-06 by identity, not by walking the dict. See the module
 # docstring for why those differ by a factor of 2.2 on this backend.

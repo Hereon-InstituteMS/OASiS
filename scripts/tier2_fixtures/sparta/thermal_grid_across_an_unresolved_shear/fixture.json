@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow: compute thermal/grid across an unresolved velocity gradient — the effect is real and it is nothing like the size the entry implies. Six decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial): a Couette slab of argon between two diffuse walls at the same temperature translating at -1000 and +1000 m/s, well above the thermal speed, on a 4-cell and a 40-cell grid, three seeds each. TWO CONFOUNDS had to be removed first, and an earlier attempt at this claim was abandoned over the first. rarefied_flow:6's low-occupancy bias pushes the cell-average DOWN and refining the grid lowers occupancy, so it acts in the same direction as the effect under test; everything here is read through 'fix ave/grid', which the thermal_grid_is_biased_low_at_few_particles fixture establishes removes that bias at every resolution (occupancy here falls 1250 -> 12.5 across the refinement). And because a DSMC cell average is stochastic, each grid is run on three seeds and the question asked is whether the two CLUSTERS separate rather than whether two numbers differ. CORRECTED: the entry said the temperature 'FALLS SUBSTANTIALLY when you refine the grid' and offered that as the test. Measured, the fall is 4.6 percent — coarse 1153.8/1161.6/1170.1 against fine 1106.6/1110.5/1109.8, no overlap between the clusters and about three times the coarse seed spread, so it is real and resolvable, but an agent told to look for a substantial fall would not recognise four percent as the signal and on a single seed pair it is only a few times the noise. The magnitude follows from the mechanism: the sub-cell velocity spread is (dU/dy)*dy, so its variance enters as the SQUARE of the cell size and in only one of three velocity components. The entry now states that. No temperature is pinned; the assertions are the cluster separation, the drop measured against the seed spread, and an upper bound that encodes the correction. COVERS: rarefied_flow:5.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 5,
+  "covers": [
+    "rarefied_flow:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "every_run_exits_zero_with_no_error_and_no_warning=True",
+    "all_six_runs_produced_a_reading=True",
+    "refining_lowers_the_reading_on_every_seed_pairing=True",
+    "the_effect_is_resolvable_above_the_seed_spread=True",
+    "but_the_drop_is_only_a_few_percent_NOT_substantial=True",
+    "the_occupancy_confound_was_removed_by_routing_through_fix_ave_grid=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
