@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "deal_ii_with_sundials=false",
+    "fd_bound_is_not_the_fe_limit=true",
+    "bounded_at_every_dt_tried=false",
+    "VERDICT=conditionally_stable_bisection_found_the_limit"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=unconditionally_stable_over_the_range_tried"
+  ],
+  "timeout_seconds": 900
+}

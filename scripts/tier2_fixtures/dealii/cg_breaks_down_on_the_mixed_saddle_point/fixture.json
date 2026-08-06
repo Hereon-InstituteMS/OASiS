@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "mixed_laplacian",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "matrix_is_indefinite=true",
+    "negative_eigenvalue_count_equals_the_pressure_dof_count=true",
+    "cg_failure_kind=SolverControl_NoConvergence",
+    "cg_last_value_is_not_a_number=true",
+    "solver_under_test_converged=false",
+    "schur_complement_cg_converged=true",
+    "schur_complement_pressure_matches_the_direct_solve=true",
+    "minres_on_the_full_system_converged=true",
+    "VERDICT=cg_cannot_solve_the_indefinite_mixed_system"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=solver_under_test_handled_the_saddle_point_system"
+  ],
+  "timeout_seconds": 900
+}

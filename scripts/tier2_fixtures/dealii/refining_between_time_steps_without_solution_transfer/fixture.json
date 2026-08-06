@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "norm_before_refinement=",
+    "used_solution_transfer=false",
+    "solution_lost_across_mesh_change=true",
+    "VERDICT=skipping_solution_transfer_zeroes_the_state"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=state_carried_across"
+  ],
+  "timeout_seconds": 600
+}
