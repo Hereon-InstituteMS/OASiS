@@ -208,3 +208,56 @@ Sibling instances of the same shape found the same day:
                                        promised an abort
     SPARTA ambipolar_plasma:3          reports "broken" exactly when the deck
                                        is correct
+
+---
+
+# The largest open risk, sized
+
+440 entries across the corpus state a solver failure as their ONLY observable —
+"Newton diverges", "CG raises", "the run aborts", "NaN appears" — with nothing
+in the entry acknowledging the failure might be silent:
+
+    fourc 132   fenics 72   kratos 54   ngsolve 46   skfem 42
+    dune 32     dealii 30   febio 26    coupling 4   sparta 2
+
+These are candidates, not proven defects. But the sample that has been RUN is
+not encouraging. Every instance executed so far falsified, in five independent
+codebases:
+
+    skfem hyperelasticity#2   "Newton diverges"  -> converges to 8e-16 silently
+                                                    onto a different field
+    skfem stokes#0            "cg returns info!=0" -> info=0 on all 9 RHS tried
+    NGSolve dg_methods#6      "CG raises"        -> exhausts its cap, returns a
+                                                    field with rel. error 208
+    NGSolve contact#3         flipped normals    -> Newton status 0 while the
+                                                    penalty drives bodies together
+    deal.II dg_transport::4   "GMRES NoConvergence
+                               at step 0-1, NaN"  -> converged in 3 steps,
+                                                    last_value 0, no exception
+    deal.II advection_dg::1   "L2 norm diverges" -> error keeps falling, rate
+                                                    stays above 2, CG converges
+    4C fbi#0, ehl#0, fpsi#5   "aborts with X"    -> runs to completion, exits 0,
+                                                    passes every result test
+    FEniCSx (whole backend)   quoted console text -> a FAILING dolfinx solve
+                                                    prints ZERO characters
+
+Two independent codebases produced the SAME wrong claim about DG penalty and
+central flux (NGSolve dg_methods#3/#4, deal.II advection_dg::1 and
+dg_advection_reaction::0) and the same true behaviour on measurement. That
+suggests the errors are inherited from shared folklore rather than invented per
+backend, which is worth knowing: the same wrong sentence will be in other
+people's documentation too.
+
+WHY THIS CANNOT BE GATED, only measured
+---------------------------------------
+Whether a solver actually fails is a property of the run, not of the text. No
+static check can distinguish "Newton diverges" (true here, false there) from
+"Newton diverges" (never). The only instrument is execution, which is exactly
+what a tier-2 fixture is — so the fixture programme IS the remedy, and this
+number is the estimate of how much of it remains meaningful.
+
+The practical rule for anyone writing or reviewing an entry: if the Signal names
+a failure, the entry must also say what happens when the failure does NOT
+appear. Where the honest answer is "it converges cleanly and every internal
+check passes", that sentence is the most valuable one in the entry, because it
+tells the agent its guards cannot help and it must compare against a reference.
