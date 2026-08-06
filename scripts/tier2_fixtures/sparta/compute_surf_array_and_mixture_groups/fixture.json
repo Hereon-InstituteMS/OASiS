@@ -1,8 +1,11 @@
 {
-  "_comment": "Tier-2 for sparta surface_interaction: 'compute grid'/'compute surf' always produce ARRAYS (bare c_ID is never valid), and the column count is ngroup*nvalue where ngroup is 1 for the built-in 'all' mixture, for a mixture defined without 'group', AND for one defined with 'group <name>'. Only 'group SELF' or the built-in 'species' mixture give per-species columns. A fix ave/* fed ONE value is the opposite: a VECTOR read bare as f_ID.",
+  "_comment": "Tier-2 for sparta surface_interaction: 'compute grid'/'compute surf' always produce ARRAYS (bare c_ID is never valid), and the column count is ngroup*nvalue where ngroup is 1 for the built-in 'all' mixture, for a mixture defined without 'group', AND for one defined with 'group <name>'. Only 'group SELF' or the built-in 'species' mixture give per-species columns. A fix ave/* fed ONE value is the opposite: a VECTOR read bare as f_ID. COVERS (added 2026-08-06): surface_interaction:5 only. This script uses 'compute grid', so it verifies the per-GRID forms; surface_interaction:4 and conjugate_heat_transfer:3 quote the per-SURF messages (fix_ave_surf.cpp:150, dump_surf.cpp:569, compute_reduce.cpp:293) and this script produces their per-grid twins instead, so neither is attributed here.",
   "backend": "sparta",
   "physics": "surface_interaction",
   "pitfall_index": 5,
+  "covers": [
+    "surface_interaction:5"
+  ],
   "mode": "python",
   "timeout_seconds": 600,
   "expect_in_output": [

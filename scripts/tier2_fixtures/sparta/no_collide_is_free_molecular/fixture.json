@@ -3,6 +3,9 @@
   "backend": "sparta",
   "physics": "rarefied_flow",
   "pitfall_index": 13,
+  "covers": [
+    "universal:4"
+  ],
   "mode": "python",
   "timeout_seconds": 600,
   "expect_in_output": [

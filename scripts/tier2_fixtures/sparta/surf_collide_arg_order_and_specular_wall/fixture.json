@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for surface_interaction:0 and :1. Seven wall models on one deck. surface_interaction:0 — 'diffuse 0.5 300' aborts with 'ERROR: Illegal surf_collide diffuse command (../surf_collide_diffuse.cpp:50)' and so does 'diffuse 300 -0.1'; 'diffuse 0.0 1.0' gives 'ERROR: Surf_collide tsurf <= 0.0 (../surf_collide.cpp:125)'; and the case the entry exists for, 'diffuse 0.9 0.3' — a swapped pair that happens to land in range, so a 0.9 KELVIN wall — runs with rc=0, no ERROR and no WARNING. surface_interaction:1 — 'specular' leaves the per-surf etot at round-off while surface collisions keep accumulating; the diffuse control on the identical deck is fifteen orders of magnitude higher, and 'specular 300' aborts with 'ERROR: Illegal surf_collide specular command (../surf_collide_specular.cpp:42)'. The specular assertion is a MAGNITUDE RATIO against the control run in the same script, never a stored value: a DSMC wall tally moves with the seed in value and in sign, so only the round-off-versus-physical separation is asserted. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025).",
+  "backend": "sparta",
+  "physics": "surface_interaction",
+  "pitfall_index": 0,
+  "covers": ["surface_interaction:0", "surface_interaction:1"],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "every_quoted_surf_collide_message_is_verbatim=True",
+    "in_range_argument_swap_is_completely_silent=True",
+    "specular_wall_energy_is_round_off_vs_diffuse=True",
+    "specular_wall_still_registers_collisions=True",
+    "diffuse_control_transfers_real_energy=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

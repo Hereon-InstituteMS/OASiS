@@ -1,8 +1,9 @@
 {
-  "_comment": "Tier-2 for sparta (all physics): every generator the catalog advertises is generated, validated, data-staged and RUN on the installed binary \u2014 12 variants across 10 physics rows, all rc=0. Also gates payload hygiene: get_knowledge() must contain no absolute host path (the old 'installed_build' block hard-coded four) and every pitfall must carry a Signal: clause. The binary part skips cleanly when SPARTA is absent; the hygiene part always runs.",
+  "_comment": "Tier-2 for sparta (all physics): every generator the catalog advertises is generated, validated, data-staged and RUN on the installed binary \u2014 12 variants across 10 physics rows, all rc=0. Also gates payload hygiene: get_knowledge() must contain no absolute host path (the old 'installed_build' block hard-coded four) and every pitfall must carry a Signal: clause. The binary part skips cleanly when SPARTA is absent; the hygiene part always runs. KEY DRIFT FIXED 2026-08-06: this fixture was keyed pitfall_index 9, which on rarefied_flow is the universal [Setup] claim that 'global nrho ... fnum ...' must precede create_particles \u2014 a claim it never touches. So that claim read as covered while the evidence pointed at a catalog smoke test, the same defect found in three of FEBio's six pre-existing fixtures. The index is now SYNTHETIC (past the end of every pitfall list) and 'covers' is explicitly empty: this fixture is a catalog gate, not evidence for a pitfall. The nrho-ordering claim now has its own fixture, global_nrho_before_create_particles.",
   "backend": "sparta",
   "physics": "rarefied_flow",
-  "pitfall_index": 9,
+  "pitfall_index": 900,
+  "covers": [],
   "mode": "python",
   "timeout_seconds": 2400,
   "expect_in_output": [

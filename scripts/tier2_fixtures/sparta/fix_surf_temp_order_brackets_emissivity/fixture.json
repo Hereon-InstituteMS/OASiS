@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for the three fix surf/temp claims in one deck. Ten variants run on the installed binary. cht:0 — the intuitive order (surf_collide before the fix) and a MISSING fix produce the SAME message, 'ERROR: Surf_collide tsurf could not find custom attribute (../surf_collide.cpp:141)', which is the entry's point: the diagnostic cannot tell you which mistake you made. cht:1 — a bare compute source, which is what the SPARTA doc page's own example passes, aborts with 'ERROR: Fix surf/temp compute does not compute per-surf vector (../fix_surf_temp.cpp:82)', and 'c_q[*]' aborts identically because the wildcard parses as index 0; 'c_q[1]' runs; a single-value fix ave/surf over-indexed as f_aq[1] gives 'ERROR: Fix surf/temp fix does not compute per-surf array (../fix_surf_temp.cpp:112)'. cht:2 — emissivity 0.0 and 1.5 both give 'ERROR: Fix surf/temp emissivity must be > 0.0 and <= 1 (../fix_surf_temp.cpp:125)' while 1.0 exactly is accepted. Every quoted message matched verbatim including the (file:line) suffix. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025).",
+  "backend": "sparta",
+  "physics": "conjugate_heat_transfer",
+  "pitfall_index": 0,
+  "covers": ["conjugate_heat_transfer:0", "conjugate_heat_transfer:1",
+             "conjugate_heat_transfer:2"],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "every_quoted_fix_surf_temp_message_is_verbatim=True",
+    "forms_the_entry_calls_correct_all_run=True",
+    "wrong_order_and_missing_fix_give_the_same_message=True",
+    "doc_page_bare_compute_form_does_not_work=True",
+    "wildcard_index_fails_exactly_like_the_bare_form=True",
+    "emissivity_zero_is_rejected_not_read_as_no_radiation=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

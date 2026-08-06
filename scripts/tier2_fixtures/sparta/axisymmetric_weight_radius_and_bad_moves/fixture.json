@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for axisymmetric:3 and :5. axisymmetric:3 \u2014 'global weight cell radius' has two ordering constraints with two DIFFERENT messages, both matched verbatim: 'ERROR: Cannot use weight cell radius unless axisymmetric (../grid.cpp:1997)' when the boundary is not 'ar', and 'ERROR: Cannot weight cells before grid is defined (../grid.cpp:1983)' when it precedes create_grid; boundary-then-grid-then-weight runs. axisymmetric:5 \u2014 the 'Axisymm bad moves = 0' line is printed by all three completed runs INCLUDING the plain 'boundary o o p' non-axisymmetric one, which is the entry's point: presence carries no information, only a nonzero value does. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025). ATTRIBUTION: axisymmetric:3 is executed here too, but it is also executed by the older axisymmetric_boundary_letter_forms fixture, so it is counted there and this fixture claims only axisymmetric:5. Double-counting one claim across two fixtures would inflate the coverage fraction.",
+  "backend": "sparta",
+  "physics": "axisymmetric",
+  "pitfall_index": 5,
+  "covers": [
+    "axisymmetric:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "both_quoted_weight_radius_messages_are_verbatim=True",
+    "the_two_ordering_constraints_have_different_messages=True",
+    "weight_radius_after_boundary_and_grid_runs=True",
+    "axisymm_bad_moves_line_appears_in_every_completed_run=True",
+    "it_appears_even_in_a_non_axisymmetric_run=True",
+    "so_only_a_nonzero_value_carries_information=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

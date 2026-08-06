@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for collision_relaxation:0, :1 and :3. Nine decks on the installed binary; every quoted message matched verbatim with its (file:line): collide_vss.cpp:47, collide_vss.cpp:924 ('ERROR on proc 0: Species Ar did not appear in VSS parameter file' — the sprintf %s resolved to the real species name), collide.cpp:159, collide.cpp:155, collide.cpp:1727, input.cpp:1425, fix_vibmode.cpp:50 and react_tce.cpp:40. The half of collision_relaxation:1 worth having is verified by OMISSION: the subset-mixture deck aborts at the first run, and the byte-identical deck with the 'run' line deleted exits 0 and reports nothing, so a validation-only pass never sees it. collision_relaxation:3's claim that the collide_modify message does not name the offending keyword is checked by looking for 'vibrat' in the message and not finding it. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025).",
+  "backend": "sparta",
+  "physics": "collision_relaxation",
+  "pitfall_index": 0,
+  "covers": ["collision_relaxation:0", "collision_relaxation:1",
+             "collision_relaxation:3"],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "every_quoted_collide_message_is_verbatim=True",
+    "subset_mixture_is_rejected_at_the_first_run=True",
+    "same_deck_without_a_run_reports_nothing_and_exits_zero=True",
+    "collide_modify_typo_message_does_not_name_the_keyword=True",
+    "all_three_no_collide_hard_error_forms_abort=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

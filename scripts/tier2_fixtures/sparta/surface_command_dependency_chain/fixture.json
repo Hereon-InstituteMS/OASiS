@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for the SPARTA surface dependency chain, three claims in one deck. Nine wrong orderings are fed to the installed binary and each one aborts NON-ZERO with the message the knowledge quotes, verbatim including the (file:line) suffix: read_surf.cpp:73, surf.cpp:227, surf.cpp:230, surf.cpp:260, surf.cpp:343 twice, domain.cpp:100 and domain.cpp:253 twice. The partial-binding case is the load-bearing one — binding only 'group left surf id <= 25' of a 50-element data.circle reports 'ERROR: 25 surface elements not assigned to a collision model', so N is the count STILL UNBOUND, exactly as claimed, not the total. Four forms the entries call correct all run: correct_order, surf_collide declared before read_surf, both groups bound, and an 's' face bound with bound_modify. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025). Skips when no binary is present, and the skip prints no expected key, so the runner records a failure rather than a pass.",
+  "backend": "sparta",
+  "physics": "surface_interaction",
+  "pitfall_index": 3,
+  "covers": ["surface_interaction:2", "surface_interaction:3",
+             "surface_interaction:9"],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "every_wrong_ordering_aborts_nonzero=True",
+    "every_quoted_message_is_verbatim=True",
+    "partial_binding_reports_the_unbound_count_not_the_total=True",
+    "surf_collide_may_precede_read_surf=True",
+    "every_form_the_entry_calls_correct_runs=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

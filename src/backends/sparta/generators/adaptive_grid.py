@@ -122,10 +122,17 @@ KNOWLEDGE = {
             "has produced output, so its Nevery must be a multiple of that "
             "fix's Nfreq — and the stats interval that prints any dependent "
             "quantity is subject to the same rule. The failure is a mid-run "
-            "abort right after the step-0 stats line, not a setup error. "
-            "Signal: 'ERROR: Stats and fix not computed at compatible times "
-            "(../stats.cpp:203)' or 'ERROR: Fix used in compute reduce not "
-            "computed at compatible time (../compute_reduce.cpp:805)'.",
+            "abort right after the step-0 stats line, not a setup error. There "
+            "are THREE different messages depending on who reads the fix, and "
+            "the one for the adapt itself is easy to miss — an earlier wording "
+            "listed only the other two, so a guard built from it would not fire "
+            "on the mistake the entry is about. "
+            "Signal: 'ERROR: Fix for adapt not computed at compatible time "
+            "(../adapt_grid.cpp:502)' when the adapt Nevery is not a multiple "
+            "of the fix Nfreq; 'ERROR: Stats and fix not computed at compatible "
+            "times (../stats.cpp:203)' when stats_style prints f_<ID> directly; "
+            "'ERROR: Fix used in compute reduce not computed at compatible time "
+            "(../compute_reduce.cpp:805)' when a compute reduce reads it.",
 
             "[Physics] Adapting on particle count refines where particles "
             "already are, which is not where the gradients are: in a "

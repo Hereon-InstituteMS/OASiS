@@ -90,9 +90,15 @@ KNOWLEDGE = {
             "faster than one face injects and the particle count falls, "
             "silently, for the whole run — the flow you are sampling is "
             "thinner than the freestream you specified. "
-            "Signal: the Np column decreases monotonically over the run "
-            "instead of levelling off. Either drive the case to steady state "
-            "and check Np has flattened, or emit on every inflow face.",
+            "Signal: NOT that the Np column keeps falling — an earlier "
+            "wording said it 'decreases monotonically over the run instead of "
+            "levelling off' and told you to drive the case to steady state and "
+            "check Np has flattened. Executed, it DOES flatten, at a bit under "
+            "60 % of the seeded count, so that check passes on the broken "
+            "deck. Compare instead against an otherwise identical deck that "
+            "emits on every inflow face: that one holds the seeded count to "
+            "within a couple of percent. A plateau well below the density you "
+            "asked for is the symptom, not the absence of a plateau.",
 
             "[Physics] Surface heat flux and pressure need statistical steady "
             "state, which for a hypersonic case is several flow-through times. "
@@ -117,10 +123,14 @@ KNOWLEDGE = {
             "re-evaluates it each adaptation step, but driven by a FIX (f_ID) "
             "it can only act on steps where that fix has produced output. Set "
             "the fix Nfreq and the adapt Nevery to the same value. "
-            "Signal: 'ERROR: Fix used in compute reduce not computed at "
-            "compatible time (../compute_reduce.cpp:805)' or 'ERROR: Stats and "
-            "fix not computed at compatible times (../stats.cpp:203)' — both "
-            "abort mid-run, right after the step-0 stats line.",
+            "Signal: the adapt's OWN complaint is 'ERROR: Fix for adapt not "
+            "computed at compatible time (../adapt_grid.cpp:502)' — that is the "
+            "one this entry is about, and an earlier wording omitted it. The "
+            "other two fire when something else reads the fix: 'ERROR: Fix used "
+            "in compute reduce not computed at compatible time "
+            "(../compute_reduce.cpp:805)' and 'ERROR: Stats and fix not "
+            "computed at compatible times (../stats.cpp:203)'. All abort "
+            "mid-run, right after the step-0 stats line.",
 
             "[Setup] Over-refinement is unbounded unless you cap it: each "
             "refinement level multiplies the cell count, and the particle "

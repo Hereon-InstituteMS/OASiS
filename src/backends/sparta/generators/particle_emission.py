@@ -80,9 +80,19 @@ KNOWLEDGE = {
             "the other faces faster than one face injects, so Np falls "
             "throughout the run with rc = 0 and no warning. This is the "
             "difference between an inflow boundary and an initial condition. "
-            "Signal: the Np column decreases monotonically instead of "
-            "levelling off, while Nexit stays nonzero. Either seed the domain "
-            "with create_particles as well, or emit on every inflow face.",
+            "Signal: NOT flatness of the Np column — an earlier wording said "
+            "it 'decreases monotonically instead of levelling off' and that is "
+            "measurably false. A seeded box emitting on xlo alone drops ~28 % "
+            "over the first stats interval and then FLATTENS: over the last "
+            "interval it moves by a fraction of a percent, holding at a bit "
+            "under 60 % of the seeded count. The recommended 'run to steady "
+            "state and check Np has flattened' therefore PASSES on the broken "
+            "deck. The discriminating test is a second run that emits on every "
+            "inflow face ('fix in emit/face <mix> xlo ylo yhi'): that one holds "
+            "within a couple of percent of the seeded count, while the "
+            "one-face run plateaus far below it and Nexit stays nonzero on "
+            "both. Either seed the domain with create_particles as well, or "
+            "emit on every inflow face.",
 
             "[Physics] A mixture with vstream 0 still emits — the thermal "
             "flux through a face is nonzero even for a gas at rest — but the "

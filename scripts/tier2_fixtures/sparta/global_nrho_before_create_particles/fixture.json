@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for the universal [Setup] claim in _common.py: 'global nrho <n> fnum <F>' issued AFTER create_particles, or omitted, leaves the domain empty and says nothing. Executes the entry's full Signal — the setup line reads 'Created 0 particles' AND the Np column is 0 on all three stats lines — plus the three properties that make it dangerous: rc=0, zero ERROR lines, zero WARNING lines, and a complete stats table still printed. The control run is the SAME deck with the global line moved before create_particles: 999 particles, Np nonzero throughout. Nothing is pinned; the assertion is nonzero-versus-exactly-zero. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025). This claim previously looked covered by generators_execute_on_installed_build, which was keyed to it while executing a catalog-wide generator smoke test that never touches nrho ordering.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 9,
+  "covers": ["universal:0"],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "control_run_with_global_first_is_populated=True",
+    "created_line_reads_exactly_zero_both_ways=True",
+    "np_is_zero_on_every_stats_line=True",
+    "a_full_stats_table_is_still_printed=True",
+    "failure_is_completely_silent_rc0_no_error_no_warning=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

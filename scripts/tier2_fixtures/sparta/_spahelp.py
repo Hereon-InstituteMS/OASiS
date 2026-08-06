@@ -18,13 +18,29 @@ import tempfile
 from pathlib import Path
 
 _CANDIDATES = [
-    os.environ.get("SPARTA_BINARY"),
     shutil.which("spa_serial"),
     shutil.which("spa_mpi"),
     str(Path.home() / "sparta" / "src" / "spa_serial"),
     "/home/alexander/Schreibtisch/sparta/src/spa_serial",
 ]
-BINARY = next((c for c in _CANDIDATES if c and Path(c).is_file()), None)
+
+# SPARTA_BINARY is AUTHORITATIVE when set: if it names something that is not a
+# file, the answer is "absent", not "fall through to whatever else is lying
+# around". Two reasons, and the second is the load-bearing one.
+#
+# Naming a binary and silently getting a different one is how a run reports a
+# result for a build the caller never chose. And with the search list closed the
+# way it was — including a HARD-CODED path on this workstation — the
+# no-binary branch of every SPARTA fixture was unreachable here, so the
+# requirement that a fixture must not pass without the binary could only be
+# argued from reading the code. It can now be executed:
+#
+#     SPARTA_BINARY=/nonexistent python source.py
+_ENV_BINARY = os.environ.get("SPARTA_BINARY")
+if _ENV_BINARY is not None:
+    BINARY = _ENV_BINARY if Path(_ENV_BINARY).is_file() else None
+else:
+    BINARY = next((c for c in _CANDIDATES if c and Path(c).is_file()), None)
 
 
 def _roots() -> list[Path]:
@@ -48,6 +64,47 @@ def find_data(name: str) -> Path | None:
         if hits:
             return hits[0]
     return None
+
+
+def find_example(subdir: str, name: str) -> Path | None:
+    """Resolve a data file from ONE NAMED example directory.
+
+    ``find_data`` globs ``examples/*/<name>`` and takes the first sorted hit,
+    which is wrong whenever the same filename means different things in
+    different example directories — and it does. ``data.circle`` in
+    ``examples/adapt`` is a different geometry from ``examples/ambi``'s, and
+    ``data/air.surf`` is a different surface-reaction set from
+    ``examples/ambi/air.surf``. A fixture that reproduces one upstream deck has
+    to name the directory it is reproducing, or it silently runs a different
+    problem than the one its claim is about.
+    """
+    for root in _roots():
+        cand = root / "examples" / subdir / name
+        if cand.is_file():
+            return cand
+    return None
+
+
+def require_example(subdir: str, *names: str) -> dict[str, Path] | None:
+    found = {}
+    for n in names:
+        p = find_example(subdir, n)
+        if p is None:
+            return None
+        found[n] = p
+    return found
+
+
+def skip_if_example_unavailable(subdir: str, *names: str):
+    """Exit 0 with a SKIP line if the binary or the named example is missing."""
+    if BINARY is None:
+        print("SKIP: no SPARTA binary found (set SPARTA_BINARY)")
+        sys.exit(0)
+    data = require_example(subdir, *names)
+    if data is None:
+        print(f"SKIP: SPARTA examples/{subdir} not found (set SPARTA_ROOT)")
+        sys.exit(0)
+    return data
 
 
 def require(*names: str) -> dict[str, Path] | None:
