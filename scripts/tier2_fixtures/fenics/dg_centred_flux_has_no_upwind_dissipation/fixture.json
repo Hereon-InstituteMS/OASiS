@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#3: the DG advection flux must be UPWIND \u2014 the value taken from the upstream side. A centred flux 0.5*(u('+') + u('-')) gives an operator without the upwind dissipation. Wrong variant: the interior flux written as bn('+')*avg(u), i.e. the upwind trace with its dissipative half removed. One fem.Constant theta multiplies that half, so theta = 1 is the upwind flux, theta = 0 the centred flux, and the two operators come from the same compiled form on the same mesh \u2014 the dissipation is literally the only difference. Two things are measured. First the operator: A_upwind - A_centred is assembled and checked to be symmetric, positive semi-definite and non-zero, which is what \"the upwind dissipation\" means as a matrix statement. Second the consequence on a steady pure-advection problem with inflow data in [0, 1]. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "upwind_dissipation_is_symmetric_psd_and_nonzero=True",
+    "slot_reason_is_diverged_pc_failed=True",
+    "slot_solve_raised_nothing=True",
+    "slot_solution_all_nonfinite=True",
+    "u: min=inf, max=inf",
+    "upwind_reference_reason_is_converged=True",
+    "upwind_reference_within_5pc_of_inflow_data_range=True",
+    "VERDICT=centred_flux_loses_the_dissipation_and_the_operator"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=centred_flux_behaves_like_upwind"
+  ],
+  "timeout_seconds": 300
+}

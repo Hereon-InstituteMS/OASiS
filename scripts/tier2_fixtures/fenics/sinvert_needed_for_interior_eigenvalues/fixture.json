@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics eigenvalue#1: a shift-and-invert spectral transformation is what makes SLEPc look at INTERIOR eigenvalues. Setting eps.setTarget(sigma) on the dolfinx-assembled stiffness matrix and solving with the default spectral transform returns the extreme eigenvalues instead. Wrong variant: eps.setTarget(sigma) alone, default ST (plain shift) and default which (LARGEST_MAGNITUDE). Right variant: eps.setTarget(sigma) plus eps.setWhichEigenpairs(TARGET_MAGNITUDE) plus eps.getST().setType(SLEPc.ST.Type.SINVERT). 16x16 P1 Dirichlet Laplacian stiffness matrix (289 dofs, assembled with bcs=[bc], diag left at 1). sigma = 3.0 sits inside the spectrum; the nearest true eigenvalues are 2.9760 and 2.9176. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "eigenvalue",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_returned_the_largest_eigenvalue_of_the_matrix=True",
+    "primary_stayed_more_than_one_away_from_the_target=True",
+    "sinvert_clustered_inside_ten_percent_of_the_target=True",
+    "sinvert_needed_at_least_five_times_fewer_iterations=True",
+    "VERDICT=sinvert_is_what_moves_slepc_onto_the_interior_target"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=target_alone_already_found_the_interior_eigenvalues"
+  ],
+  "timeout_seconds": 300
+}
