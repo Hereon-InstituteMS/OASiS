@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem adaptive_poisson#5, verified 2026-08-06 on skfem 12.0.1. Claim: the L-shape re-entrant corner gives u ~ r^(2/3); uniform refinement converges at H^1 rate 2/3 while adaptive recovers 1, and one uniform refinement should precede the adaptive loop 'to give the estimator enough elements to discriminate'. Ran: MeshTri.init_lshaped() (8 vertices, 6 elements, origin IS a vertex), a log-log fit of the EXACT |grad u| over four decades in r, four uniform levels, and a twelve-step Dorfler(theta=0.5) loop, all with an interior-facet gradient-jump indicator. Printed: the exponent fit gives -0.333333 against the analytic -1/3, so u ~ r^(2/3) and |grad u| is unbounded at the corner. Uniform refinement does not dilute the difficulty -- the top elemental indicator's share of the total RISES from 2.79e-01 to 3.38e-01 as elements are added everywhere. Adaptive reaches the SAME minimum corner radius (4.6585e-02) with 263 DOFs against uniform's 833, a 3.167x saving, and puts 2.29% of its elements within r < 0.1 against uniform's 0.78%. TWO CORRECTIONS: the pre-refinement advice is right but not for the stated reason -- on the 6-element mesh every element already has a non-zero indicator, they are merely nearly EQUAL (spread 2.67), and one uniform refinement raises the spread to 23.55; and with an h-weighted facet-jump indicator the LARGEST elemental value is NOT on the elements nearest the corner (radius rank 0.50 rising to 0.75), because the h factor suppresses the small corner elements. NOT VERIFIED HERE, deliberately: the numerical rates 2/3 and 1. The H^1 error against the analytic gradient is not computable to that accuracy on this domain because the exact gradient is unbounded at the corner and its quadrature diverges as the mesh approaches the singularity, so any measured rate from that route would be a quadrature artefact.",
+  "backend": "skfem", "physics": "adaptive_poisson", "pitfall_index": 5, "mode": "python",
+  "expect_in_output": [
+    "lshape_elements=6",
+    "origin_is_a_vertex=True",
+    "exponent_matches_minus_one_third=True",
+    "gradient_is_unbounded_at_the_corner=True",
+    "unrefined_indicator_is_nearly_uniform=True",
+    "one_uniform_refinement_sharpens_the_indicator=True",
+    "peak_indicator_element_is_not_the_closest_to_the_corner=True",
+    "uniform_peak_share_does_not_fall=True",
+    "uniform_peak_share_even_rises=True",
+    "same_corner_resolution=True",
+    "adaptive_reaches_it_with_fewer_dofs=True",
+    "adaptive_saves_at_least_2x=True",
+    "adaptive_concentrates_more_near_the_corner=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

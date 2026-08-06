@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem adaptive_poisson#3, verified 2026-08-06 on skfem 12.0.1. Claim: m.f2t is (2, n_facets) with -1 in the second row for boundary facets, and dereferencing f2t[1, fi] as an element id without the >= 0 check raises IndexError 'index -1 is out of bounds'. Ran: MeshTri().refined(2) -- 32 elements, 56 facets -- inspecting f2t, indexing m.t by f2t[1] under catch_warnings, and comparing against the guarded interior selection. Printed: the shape and the -1 sentinel are exact, and the 16 entries equal to -1 are precisely m.boundary_facets(). THE QUOTED IndexError NEVER FIRES: numpy reads -1 as 'the last element', so m.t[:, m.f2t[1]] returns a full (3, 56) array with the LAST element's connectivity silently substituted on all 16 boundary facets -- no exception, no warning, and the SAME SHAPE a correct result would have, so neither try/except nor a shape check catches it. All 16 substituted columns differ from the real neighbouring element, so a jump computed that way picks up an unrelated element from the far side of the mesh. The guard that works is the mask f2t[1] >= 0, which selects exactly the 40 interior facets.",
+  "backend": "skfem", "physics": "adaptive_poisson", "pitfall_index": 3, "mode": "python",
+  "expect_in_output": [
+    "f2t_shape=(2, 56)",
+    "f2t_second_row_min=-1",
+    "minus_one_marks_boundary_facets=True",
+    "minus_one_set_matches_boundary_facets=True",
+    "indexing_by_minus_one_raises=False",
+    "indexing_warnings=[]",
+    "indexing_is_silent=True",
+    "neighbour_array_has_the_expected_shape=True",
+    "boundary_columns_equal_the_last_element=True",
+    "every_boundary_facet_is_corrupted=True",
+    "interior_plus_boundary_equals_all=True",
+    "guarded_indices_are_all_valid=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
