@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for dune::poisson#17 and _general.natural_bc_measured.Signal_unmasked_ds. Measured 2026-08-06 on dune-fem 2.12.0.2, wall time 30 s warm (two schemes). Problem: -Laplace(u)=0 on [0,1]^2 with u=0 on x=0 and du/dn=1 on x=1, whose answer is u=x. With the coordinate mask the P1 solution came back max 1.000000 and ||u_h - x||_L2 = 3.233e-16 — exact, because u=x lies in the P1 space and linear.tolerance was set to 1e-14. Writing the flux as g*v*ds instead of g*mask*v*ds gave max(u_h) = 2.163782, converged, no exception and no warning: a flux result that is a small multiple of the expected one is almost always this. NOTE on the tolerance: at the DEFAULT linear.tolerance the masked error is 1.038e-10, not 3.233e-16 — the 1e-16 figure is a solver-tolerance floor, not a discretisation one. The sibling claim poisson#8 is NOT re-tested here; the 'never' variant of dirichletbc_not_in_scheme_list_silent already solves that singular system, and duplicating it cost this fixture a 764 s run that had to be killed.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 17,
+  "covers": [
+    "poisson:17",
+    "_general:natural_bc_measured.Signal_unmasked_ds"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "masked_converged=True",
+    "masked_max=1.000000",
+    "masked_l2_error_against_x=3.233e-16",
+    "masked_is_exact=True",
+    "unmasked_converged=True",
+    "unmasked_max=2.163782",
+    "unmasked_is_a_small_multiple_of_the_answer=True",
+    "dune_unmasked_ds_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

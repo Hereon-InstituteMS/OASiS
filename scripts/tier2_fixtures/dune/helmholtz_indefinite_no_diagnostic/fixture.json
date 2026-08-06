@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for dune::helmholtz#0, dune::helmholtz#3 and dune::maxwell#1 — k^2 is a dune.ufl.Constant so sweeping k is free and only the direct-solver scheme is a second module; wall time 212 s on 2026-08-06, dune-fem 2.12.0.2. Manufactured solution u = sin(pi x) sin(pi y) of -Laplace(u) - k^2 u = (2 pi^2 - k^2) u on a 16x16 P1 grid. At k=2 (definite) CG gives L2 error 2.252561e-03; at k=10 (indefinite) it RAISES NOTHING, emits no warning, and reports converged=True with iterations=0 and linear_iterations=1 — the exact triple the catalog records. The sharpest evidence for 'you get NO diagnostic' is that the info dict is BYTE-IDENTICAL across the definite CG solve, the indefinite CG solve and the indefinite direct solve: (True, 0, 1) in all three cases, so the report cannot distinguish them. Here the indefinite CG answer happens to be FINE — 1.095096e-03, the same discretisation error as the direct solve — which is the point: nothing in the run tells you whether you were lucky, so the manufactured solution is the only detector. Two further checks: the string 'matrix not positive definite' occurs 0 times across both dune namespace roots, so the retraction of that Signal stands; and helmholtz#3's 'vanilla ILU stalls' is FALSE — 'ilu' and 'amg' are not in the preconditioner enumeration at all and are rejected with RuntimeError at scheme construction, so there is no ILU to stall.",
+  "backend": "dune",
+  "physics": "helmholtz",
+  "pitfall_index": 0,
+  "covers": [
+    "helmholtz:0",
+    "helmholtz:3",
+    "maxwell:1"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1500,
+  "expect_in_output": [
+    "k2_small_answer_is_right=True",
+    "k10_raised_nothing=True",
+    "k10_warnings=[]",
+    "k10_converged=True",
+    "k10_iterations=0",
+    "k10_linear_iterations=1",
+    "k10_reports_success=True",
+    "solver_reports={'definite_cg': (True, 0, 1), 'indefinite_cg': (True, 0, 1), 'indefinite_direct': (True, 0, 1)}",
+    "solver_report_is_identical_for_all_three=True",
+    "errors_are_discretisation_sized=True",
+    "only_the_answer_can_detect_it=True",
+    "matrix_not_positive_definite_occurrences=0",
+    "retracted_string_is_absent=True",
+    "preconditioner_ilu_rejected=RuntimeError",
+    "preconditioner_amg_rejected=RuntimeError",
+    "ilu_does_not_exist_so_it_cannot_stall=True",
+    "dune_indefinite_helmholtz_silence_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for dune::heat#0 and dune::heat#1 — two forms (steady and transient) serve both, and dt is a dune.ufl.Constant so the dt sweep is free; wall time 99 s on 2026-08-06 (dune-fem 2.12.0.2). Measured on an 8x8 P1 grid: DirichletBC(space, 100.0) gives left mean 100.0000 and right mean 100.0000 — one constant cannot serve two segments — while DirichletBC(space, conditional(x[0]<0.5, 100, 0)) gives 100.0000 and 0.0000. With the mass term the field mean marches 23.4719, 28.4493, 31.8874, 34.4721, 36.5051; with the stiffness term ALONE it reads 46.0567 at every one of five steps, which is exactly the steady-state solution — the transient is simply absent. The tell is dt: raising dt from 0.01 to 100 changed the transient's first step (46.0444, then straight to 46.0567), while the stiffness-only loop is dt-independent by construction.",
+  "backend": "dune",
+  "physics": "heat",
+  "pitfall_index": 0,
+  "covers": [
+    "heat:0",
+    "heat:1"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "constant_bc_cannot_separate_segments=True",
+    "conditional_bc_separates_segments=True",
+    "transient_field_evolves=True",
+    "stiffness_only_is_steady_at_every_step=True",
+    "stiffness_only_equals_the_steady_solution=True",
+    "transient_depends_on_dt=True",
+    "dune_heat_transient_traps_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
