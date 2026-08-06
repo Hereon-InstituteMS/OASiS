@@ -1,9 +1,9 @@
-"""Tier-2: ConvectionDiffusionSettings is core and must be on ProcessInfo.
+"""Tier-2: ConvectionDiffusionSettings must be on ProcessInfo, and its absence is silent.
 
-The elements read their diffusion / source / unknown variables
-through this settings object. Without it on ProcessInfo the
-lookup fails; the class itself is not where the application's
-name suggests.
+The claim is that the settings must be set before the solve.
+Measured, the omission cannot be caught by the obvious guard:
+reading the key returns None instead of raising, and the read
+ITSELF inserts the key, so a later Has() reports True.
 """
 from __future__ import annotations
 
@@ -47,9 +47,17 @@ def main() -> int:
         bad += 1
     if not _probe('KM.CONVECTION_DIFFUSION_SETTINGS', lambda: (KM.CONVECTION_DIFFUSION_SETTINGS), True):
         bad += 1
-    if not _probe('lookup_before_set', lambda: (KM.Model().CreateModelPart('p1').ProcessInfo[KM.CONVECTION_DIFFUSION_SETTINGS]), False):
+
+    # The three-step sequence that makes the omission silent.
+    _mp = KM.Model().CreateModelPart('cds')
+    if not _probe('fresh_Has_is_true', lambda: (_mp.ProcessInfo.Has(KM.CONVECTION_DIFFUSION_SETTINGS)), False):
         bad += 1
-    if not _probe('lookup_after_set', lambda: ((lambda m: (m.ProcessInfo.SetValue(KM.CONVECTION_DIFFUSION_SETTINGS, KM.ConvectionDiffusionSettings()), m.ProcessInfo[KM.CONVECTION_DIFFUSION_SETTINGS] is not None)[1])(KM.Model().CreateModelPart('p2'))), True):
+    if not _probe('unset_subscript_is_None', lambda: (_mp.ProcessInfo[KM.CONVECTION_DIFFUSION_SETTINGS] is None), True):
+        bad += 1
+    if not _probe('Has_true_after_a_mere_read', lambda: (_mp.ProcessInfo.Has(KM.CONVECTION_DIFFUSION_SETTINGS)), True):
+        bad += 1
+    _mp.ProcessInfo.SetValue(KM.CONVECTION_DIFFUSION_SETTINGS, KM.ConvectionDiffusionSettings())
+    if not _probe('after_set_subscript_is_None', lambda: (_mp.ProcessInfo[KM.CONVECTION_DIFFUSION_SETTINGS] is None), False):
         bad += 1
     print(f"probe_mismatches={bad}")
     return 0 if bad == 0 else 2

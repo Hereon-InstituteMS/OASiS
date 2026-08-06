@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: ConvectionDiffusionSettings MUST be set on ProcessInfo before the solve. Pitfall (kratos.poisson #3). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The settings class and the CONVECTION_DIFFUSION_SETTINGS ProcessInfo key both live on core KratosMultiphysics and on NEITHER ConvectionDiffusionApplication, which is the module a reader would reach for. A ProcessInfo that has not had the key set raises on lookup, and setting it makes the same lookup return the settings object \u2014 so the round trip is the discriminator. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "_comment": "Tier-2: ConvectionDiffusionSettings MUST be set on ProcessInfo before the solve. Pitfall (kratos.poisson #3). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Three measured facts, in order. (1) The settings class lives on core KratosMultiphysics and NOT on ConvectionDiffusionApplication, the module a reader would reach for. (2) THE OMISSION IS SILENT: on a fresh ModelPart, ProcessInfo[CONVECTION_DIFFUSION_SETTINGS] returns None rather than raising. (3) WORSE, THE READ ITSELF INSERTS THE KEY: Has() is False before the subscript and True immediately after it, without anything having been set. So the natural defensive check \u2014 read it, then guard on Has() \u2014 reports all-clear on a ModelPart that has no settings at all. Nothing resembling the boilerplate Signal ('RuntimeError KeyError from JSON parsing') occurs anywhere. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
   "backend": "kratos",
   "physics": "poisson",
   "pitfall_index": 3,
@@ -8,8 +8,10 @@
     "probe[KM.ConvectionDiffusionSettings]=True_expected=True",
     "probe[CDA.ConvectionDiffusionSettings]=False_expected=False",
     "probe[KM.CONVECTION_DIFFUSION_SETTINGS]=True_expected=True",
-    "probe[lookup_before_set]=False_expected=False",
-    "probe[lookup_after_set]=True_expected=True",
+    "probe[fresh_Has_is_true]=False_expected=False",
+    "probe[unset_subscript_is_None]=True_expected=True",
+    "probe[Has_true_after_a_mere_read]=True_expected=True",
+    "probe[after_set_subscript_is_None]=False_expected=False",
     "probe_mismatches=0"
   ],
   "forbid_in_output": [
