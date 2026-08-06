@@ -1,0 +1,20 @@
+{
+  "_comment": "CLAIM matrix_free::4: [Numerical] Geometric multigrid essential for preconditioning. Signal: SolverCG without PreconditionAMG/MGSmootherRelaxation on a MatrixFree Laplace problem converges in ~O(h^-1) iterations (gets worse with refinement, visible in SolverControl::log_history()); GMG keeps it at ~10-20 iterations \u2026 WHAT THIS RUNS: -- probe \"mf_cg_needs_a_preconditioner\" of the shared multigrid translation unit _shared/multigrid_family.cc, compiled once and cached so five fixture directories share ONE C++ build. A MatrixFree FE_Q(2) Laplace operator at four refinement levels. At each level the matrix-free cell_loop is checked against the assembled SparseMatrix product on the same vector (relative difference ~3.6e-16), so the two iteration counts below are counts for the SAME operator and are comparable. unpreconditioned CG   29, 60, 118, 238   -- doubling per refinement, the O(h^-1) growth the entry names GMG-preconditioned CG  6,  7,   7,   7   -- flat, and well inside the entry's \"~10-20\" WHAT WAS NOT USED: the transfer here is MGTransferPrebuilt over assembled level matrices, not step-37's MGTransferMatrixFree. The claim under test is about the ITERATION COUNT, which is a property of the operator and the preconditioner and not of how the operator is applied; the matrix-free/assembled agreement above is what licenses reading it that way. Mutation control: T2_MUTATE=1 puts the GMG-preconditioned count under test, it stops growing, and the fixture fails its own expectations. OBSERVED, copied from the run: preconditioner_under_test=none; iteration_count_under_test_more_than_doubles_over_three_refinements=true; gmg_iteration_count_is_flat_across_the_same_refinements=true; gmg_iteration_count_stays_under_thirty=true; VERDICT=preconditioner_under_test_does_not_hold_the_count_flat. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "matrix_free",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "preconditioner_under_test=none",
+    "iteration_count_under_test_more_than_doubles_over_three_refinements=true",
+    "gmg_iteration_count_is_flat_across_the_same_refinements=true",
+    "gmg_iteration_count_stays_under_thirty=true",
+    "VERDICT=preconditioner_under_test_does_not_hold_the_count_flat"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=preconditioner_under_test_holds_the_count_flat"
+  ],
+  "timeout_seconds": 2400
+}

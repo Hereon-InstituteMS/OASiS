@@ -1,0 +1,19 @@
+{
+  "_comment": "CLAIM multigrid::2: [Numerical] Smoother choice: PreconditionChebyshev or a relaxation smoother (SOR/Jacobi via mg::SmootherRelaxation) for SPD problems; a few steps of a Krylov smoother for indefinite ones. Signal: applying an SPD smoother to an indefinite saddle-point system produces V-cycles whose residual GROWS \u2026 WHAT THIS RUNS: -- probe \"mg_smoother_on_indefinite\" of the shared multigrid translation unit _shared/multigrid_family.cc, compiled once and cached so five fixture directories share ONE C++ build. The same step-16 hierarchy and the same SOR relaxation smoother, applied to the INDEFINITE operator K - 300 M instead of the SPD Laplace -- the shift puts several eigenvalues below zero while changing nothing else in the setup. The V-cycle is run as a STATIONARY iteration, so the residual of each cycle is visible instead of being hidden inside a Krylov method, exactly the cycle-to-cycle quantity the entry names. It does not shrink. It grows by a factor of about 1.9e5 per cycle, from 3.4e-2 to 1.9e+30 in six cycles. One thing the entry does not predict: the OUTER CG still reports convergence (192 iterations) with this diverging V-cycle as its preconditioner, so watching the solver's own success flag would not have caught it -- the per-cycle residual is what shows it. Mutation control: T2_MUTATE=1 removes the shift, the same smoother on the SPD Laplace contracts every cycle, and the fixture fails its own expectations. OBSERVED, copied from the run: operator_under_test=laplace_minus_300_times_mass_indefinite; v_cycle_residual_grows_from_cycle_to_cycle=true; v_cycle_reduced_the_residual=false; VERDICT=spd_smoother_on_the_operator_under_test_diverges. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "multigrid",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "operator_under_test=laplace_minus_300_times_mass_indefinite",
+    "v_cycle_residual_grows_from_cycle_to_cycle=true",
+    "v_cycle_reduced_the_residual=false",
+    "VERDICT=spd_smoother_on_the_operator_under_test_diverges"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=v_cycle_is_a_contraction_on_the_operator_under_test"
+  ],
+  "timeout_seconds": 1200
+}
