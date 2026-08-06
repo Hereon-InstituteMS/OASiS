@@ -352,6 +352,28 @@ Measured from the installs themselves, not from documentation:
 Excluding what cannot be verified, deal.II sits at 103/122 = 84% of its
 reachable surface rather than 76% of its nominal one.
 
+A WARNING ABOUT THIS COLUMN, learned the expensive way. 4C reported four claims
+as blocked and **three of those reports were wrong**:
+
+    beam_interaction:3/:4   reported ArborX-blocked. FOUR_C_WITH_ARBORX=OFF only
+                            rules out `bounding_volume_hierarchy`, which exactly
+                            8 of ~1974 upstream decks select — verified by
+                            counting them. The default bruteforce_with_binning
+                            runs fine; the right deck takes two seconds and
+                            yields 13 coupled segments.
+    multiscale:5            reported as needing a stopwatch. It needed a
+                            COUNTABLE observable instead — macro elements per
+                            rank, 8/24/32 where even splits are 2-3-3.
+    pasi:2                  reported as having no single-run observable. It had
+                            one.
+
+The agent's own diagnosis: "I generalised from one failing deck and stopped
+looking." A blocked claim is a claim nobody will revisit, so it costs more than
+an uncovered one — an uncovered claim is visibly work remaining, while a blocked
+claim looks settled. The bar for this column must therefore be higher than for
+any other: name the exact flag or missing library, and show the check that reads
+it, as deal.II's sentinel fixture does.
+
 TWO REFINEMENTS FOUND BY AGENTS, both worth keeping:
 
 `parallel_poisson::0` is actually REACHABLE despite the six around it, because
