@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: for POINT_LOAD on NODES use AssignVectorVariableProcess; there is no AssignVectorByDirectionProcess class on StructuralMechanicsApplication, and the CORE python module of that name genuinely fails on load variables because it tries to fix/free the DOF. Pitfall (kratos.linear_elasticity #6). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). This is the linear_elasticity copy; the structural_dynamics copy (#6 there) has its own fixture, point_load_direction_process_rejects. Measured: SMA.AssignVectorByDirectionProcess raises AttributeError (route (a) of the claim), while the core modules assign_vector_by_direction_process, assign_vector_variable_process and assign_vector_by_direction_to_condition_process all import and all expose Factory \u2014 so the directional process really does exist as a core module, which is what makes route (b) reachable and the claim's two-failure-mode structure correct. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "linear_elasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[SMA.AssignVectorByDirectionProcess]=False_expected=False",
+    "probe[core_assign_vector_by_direction_process]=True_expected=True",
+    "probe[core_assign_vector_variable_process]=True_expected=True",
+    "probe[core_assign_vector_by_direction_to_condition_process]=True_expected=True",
+    "probe[SMA.POINT_LOAD]=True_expected=True",
+    "probe[KM.POINT_LOAD]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

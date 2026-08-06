@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: max_iteration is a POSITIONAL constructor argument of ResidualBasedNewtonRaphsonStrategy, not a field on the ResidualCriteria. Pitfall (kratos.linear_elasticity #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The eight-argument constructor carrying max_iteration=30 builds; the four-argument call without it raises TypeError '__init__(): incompatible constructor arguments', so the value cannot be omitted and defaulted. And ResidualCriteria(1e-6, 1e-9) has no max_iteration attribute at all \u2014 the place the claim warns readers not to look for it really has nothing there. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "linear_elasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[strategy_ctor_with_max_iteration]=True_expected=True",
+    "probe[strategy_ctor_without_max_iteration]=False_expected=False",
+    "probe[ResidualCriteria_has_max_iteration]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

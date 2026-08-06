@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: TANGENT_OPERATOR_ESTIMATION selects how the generic isotropic plasticity laws build their tangent; the default second-order perturbation tangent throws condition-number errors, 0 makes Newton stagnate, and 3 (secant) is the robust choice. Pitfall (kratos.constitutive_laws #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The variable resolves on ConstitutiveLawsApplication and NOT on core, and a Properties object round-trips the value 3 the claim recommends. Nothing validates the setting \u2014 the failure the claim describes is a diverging Newton residual at run time, so the knob's existence and its home module are what a fixture can hold. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[CLA.TANGENT_OPERATOR_ESTIMATION]=True_expected=True",
+    "probe[KM.TANGENT_OPERATOR_ESTIMATION]=False_expected=False",
+    "probe[properties_roundtrip_secant_3]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2: CableNetApplication's own Register() exposes 5 elements with a Sliding/Ring/EmpiricalSpring vocabulary, NOT the simpler CableElement3D2N / MembraneElement3D3N / MembraneElement3D4N the catalog historically grouped under cable_net \u2014 those live in StructuralMechanicsApplication and are reachable only because CableNet's loader imports SMA first. Pitfall (kratos.cable_net #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). MEASURED IN TWO SUBPROCESSES, because once both applications are loaded in one interpreter the split is invisible: with only StructuralMechanicsApplication imported, CableElement3D2N and both Membrane elements construct while SlidingCableElement3D3N, RingElement3D3N and EmpiricalSpringElement3D2N all raise 'is not registered'; with CableNetApplication imported, all six construct. That asymmetry is exactly the claim's point about what happens if a user loads CableNet in isolation or drops the SMA dependency. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "sma_only[CableElement3D2N]=True",
+    "sma_only[MembraneElement3D3N]=True",
+    "sma_only[MembraneElement3D4N]=True",
+    "sma_only[SlidingCableElement3D3N]=False",
+    "sma_only[RingElement3D3N]=False",
+    "sma_only[EmpiricalSpringElement3D2N]=False",
+    "cablenet[CableElement3D2N]=True",
+    "cablenet[SlidingCableElement3D3N]=True",
+    "cablenet[RingElement3D3N]=True",
+    "cablenet[EmpiricalSpringElement3D2N]=True",
+    "cablenet_registry_split_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 600
+}
