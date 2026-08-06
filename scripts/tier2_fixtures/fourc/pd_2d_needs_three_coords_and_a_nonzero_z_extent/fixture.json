@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#9. Both halves of the rule hold and both quoted Signals are wrong. (a) POS is a fixed-size 3-vector, so dropping z makes the parser take the next token as the missing component and fail on IT: \"Could not parse 'PDBODYID' as a double value.\" from core/io/src/4C_io_value_parser.cpp line 107 — the message blames the optional state after POS, never mentions coordinates, and there is no 'expected 3 coordinates' string in 4C. (b) a zero z-extent in DOMAINBOUNDINGBOX does not 'conflict with binning' politely: 4C divides the domain length by the bin size and dies inside ParticleEngine::init_binning_strategy with Signal: Floating point exception (8) / divide-by-zero (3), no PROC 0 ERROR block, no message, exit status 136 rather than 1 — so an agent watching for a non-zero-but-normal exit and a diagnostic gets neither. The thin-slab arm is the control and passes. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_THINSLAB=0",
+    "EXIT_TWOCOORD=1",
+    "EXIT_FLATBOX=136",
+    "processor 0 finished normally",
+    "THINSLAB_FAILURES=0",
+    "Could not parse 'PDBODYID' as a double value.",
+    "4C_io_value_parser.cpp, line 107",
+    "CLAIMED_EXPECTED_3_COORDINATES_TEXT=0",
+    "TWOCOORD_DIAGNOSTIC_MENTIONS_COORDINATES=no",
+    "Signal: Floating point exception (8)",
+    "Floating point divide-by-zero (3)",
+    "init_binning_strategy",
+    "FLATBOX_HAS_PROC_ERROR_BLOCK=0",
+    "FLATBOX_DIED_ON_A_SIGNAL=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_THINSLAB=1",
+    "EXIT_TWOCOORD=0",
+    "EXIT_FLATBOX=0",
+    "FLATBOX_DIED_ON_A_SIGNAL=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the first pathology: keep the z coordinate on the particle line. The parse error vanishes and EXIT_TWOCOORD becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|POS -4.50E+00 -4.50E+00 0.000000000000000e+00 PDBODYID 0|POS -4.50E+00 -4.50E+00 PDBODYID 0|' \"$BASE\" > \"$TMP/twocoord.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/twocoord.yaml\""
+    },
+    {
+      "note": "remove the second pathology: keep the thin-slab z extent. The divide-by-zero and its signal vanish and EXIT_FLATBOX becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|DOMAINBOUNDINGBOX: \"-20.0 -20.0 -0.01 20.0 20.0 0.01\"|DOMAINBOUNDINGBOX: \"-20.0 -20.0 0.0 20.0 20.0 0.0\"|' \"$BASE\" > \"$TMP/flatbox.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/flatbox.yaml\""
+    }
+  ]
+}

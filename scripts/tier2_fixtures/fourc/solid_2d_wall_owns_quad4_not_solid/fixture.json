@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::solid_mechanics#4 — on 4C 2026.2.0-dev WALL owns 2D structural cells. The full WALL QUAD4 line (MAT KINEM EAS THICK STRESS_STRAIN GP) runs to completion; 'SOLID QUAD4' is rejected with \"Element 'SOLID' does not seem to know cell type 'quad4'.\" from core/fem/src/general/element/4C_fem_general_element_definition.cpp; and a WALL line carrying SOLID's shorter key set is rejected with \"Required value 'STRESS_STRAIN' not found in input line\" — a different message from a different code path, which is how you tell 'wrong element type' from 'right element type, wrong keys'. The SOLID diagnostic never contains the string 'wall' (SOLID_DIAGNOSTIC_NAMES_WALL=0), so grepping the error for what you should have written teaches nothing. Distinct from linear_elasticity#4's fixture structural_2d_solid_quad4_not_wall, which probes the same vocabulary under a different physics key. Verified by execution 2026-08-06 against /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "solid_mechanics",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_WALL=0",
+    "EXIT_SOLID2D=1",
+    "EXIT_WALL_SHORT=1",
+    "processor 0 finished normally",
+    "Element 'SOLID' does not seem to know cell type 'quad4'.",
+    "4C_fem_general_element_definition.cpp",
+    "Required value 'STRESS_STRAIN' not found in input line",
+    "SOLID_DIAGNOSTIC_NAMES_WALL=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WALL=1",
+    "EXIT_SOLID2D=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: declare the 2D cell with the element type this build actually registers. The cell-type diagnostic vanishes and EXIT_SOLID2D becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"SOLID QUAD4 1 2 3 4 MAT 1 KINEM nonlinear THICKNESS 1.0 PLANE_ASSUMPTION plane_stress\"        \"$TMP/solid.4C.yaml\"",
+      "to": "deck \"WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none THICK 1.0 STRESS_STRAIN plane_stress GP 2 2\"        \"$TMP/solid.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: give the WALL line its full required key set. The missing-key diagnostic vanishes and EXIT_WALL_SHORT becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear\"                                                     \"$TMP/short.4C.yaml\"",
+      "to": "deck \"WALL QUAD4 1 2 3 4 MAT 1 KINEM nonlinear EAS none THICK 1.0 STRESS_STRAIN plane_stress GP 2 2\"                                                     \"$TMP/short.4C.yaml\""
+    }
+  ]
+}

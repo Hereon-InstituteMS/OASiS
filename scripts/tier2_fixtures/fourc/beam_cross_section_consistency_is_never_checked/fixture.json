@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::beams#7 — CROSSAREA, MOMIN2, MOMIN3 and MOMINPOL of MAT_BeamReissnerElastHyper are four independent inputs and 4C never checks that they describe the same section. Two arms on one cantilever loaded axially and transversely: a genuine r=0.1 circle, and the same second moments with CROSSAREA 1.0 (the 'A = 1.0 but Iyy = 0.01 for a circular section' mistake the entry names). Both parse, both converge, both finish all ten steps, and CROSS_SECTION_WARNINGS=0 — the code says nothing. The consequence is asymmetric and that is the part worth knowing: the axial response follows A and flips sign, while the bending response is untouched to under one per cent, so a bending-only sanity check will not catch it. The numbers are read back out of 4C's own result-test lines, forced to print by an unmatchable RESULT DESCRIPTION. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "CONSISTENT_STEPS=10",
+    "INCONSISTENT_STEPS=10",
+    "CROSS_SECTION_WARNINGS=0",
+    "is WRONG --> actresult=",
+    "AXIAL_RESPONSE_SIGN_FLIPPED=yes",
+    "BENDING_RESPONSE_RELCHANGE_UNDER_1PCT=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "AXIAL_RESPONSE_SIGN_FLIPPED=no",
+    "BENDING_RESPONSE_RELCHANGE_UNDER_1PCT=no",
+    "CONSISTENT_STEPS=0",
+    "INCONSISTENT_STEPS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the consistent circular area too. The two arms then agree exactly, so the axial sign flip disappears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"1.0\"                  > \"$TMP/inconsistent.yaml\"",
+    "to": "deck \"0.031415926535897934\" > \"$TMP/inconsistent.yaml\""
+  }
+}

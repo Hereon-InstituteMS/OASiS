@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::fsi_xfem#0 and a FALSIFICATION. The entry claimed that ALE DYNAMIC or CLONING MATERIAL MAP in an FSI-XFEM input aborts with 'XFEM and ALE are mutually exclusive' from 4C_xfem_fluid_setup.cpp. Neither the string nor the file exists in 4C. Adding BOTH sections to the upstream monolithic deck xfsi_3D_boxes leaves the run identical: exit 0, 'processor 0 finished normally', zero of its seven result tests failing, and zero mentions of an ALE/XFEM conflict. The sections are parsed and dropped. Note the deck already creates a discretization named 'ale' with or without them, so an agent grepping the log for 'ale' is misled in the other direction too. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fsi_xfem",
+  "pitfall_index": 0,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CLEAN=0",
+    "EXIT_ALED=0",
+    "ALED_HAS_ALE_DYNAMIC=1",
+    "ALED_HAS_CLONING_MAP=1",
+    "processor 0 finished normally",
+    "ALED_RESULT_FAILURES=0",
+    "CLAIMED_MUTUALLY_EXCLUSIVE_TEXT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: point the injection at a section name the deck does not contain, so neither ALE DYNAMIC nor CLONING MATERIAL MAP is added. Both HAS_ markers drop to 0 and the arm proves nothing, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "t = t.replace(\"XFEM GENERAL:\", \"\"\"ALE DYNAMIC:",
+    "to": "t = t.replace(\"XFEM GENERAL_ABSENT:\", \"\"\"ALE DYNAMIC:"
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ALED=1",
+    "EXIT_CLEAN=1",
+    "ALED_HAS_ALE_DYNAMIC=0",
+    "ALED_HAS_CLONING_MAP=0"
+  ]
+}

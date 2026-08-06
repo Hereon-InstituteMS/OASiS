@@ -1,0 +1,29 @@
+{
+  "_comment": "Tier-2 for fourc::solid_mechanics#1 — MAXITER: 1 is an abort, not an early exit. One single-HEX8 static deck with a surface Neumann, run twice. With MAXITER: 30 it converges in nine Newton iterations ('Number of Iterations = 9 < 30', 'Finalised step 1 / 1 ... nlniter 9') and exits 0. With MAXITER: 1 and nothing else changed, 4C prints 'Failed.......Number of Iterations = 1 < 1', throws from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp and exits 1 without finalising a single step (MAXITER1_STEPS_FINALISED=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "solid_mechanics",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_MAXITER30=0",
+    "EXIT_MAXITER1=1",
+    "processor 0 finished normally",
+    "Number of Iterations = 9 < 30",
+    "Failed.......Number of Iterations = 1 < 1",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "MAXITER1_STEPS_FINALISED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MAXITER30=1",
+    "EXIT_MAXITER1=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm a workable iteration budget. It then converges like the first, exits 0, and the 'Failed.......Number of Iterations = 1 < 1' line disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck 1  \"$TMP/one.4C.yaml\"",
+    "to": "deck 30  \"$TMP/one.4C.yaml\""
+  }
+}

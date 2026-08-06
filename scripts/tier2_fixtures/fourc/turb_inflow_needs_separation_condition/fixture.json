@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::fluid_turbulence#5. The rule (a laminar inlet wastes a long development length, so use turbulent inflow generation) stands, but the two methods the entry named are not what 4C implements and are not findable in its output. 4C's mechanism is a precursor inflow section: FLUID DYNAMIC/TURBULENT INFLOW with TURBULENTINFLOW: true, NUMINFLOWSTEP development steps, CANONICAL_INFLOW and INFLOW_HOMDIR for sampling, plus a geometric separation declared by the FLUID TURBULENT INFLOW VOLUME condition and DESIGN SURF TURBULENT INFLOW TRANSFER. Enabling the flag alone on the upstream channel deck f3_cha_8x8x8_recongradl2 aborts with 4C's own typo, 'homogeneuous plane for channel flow was specified incorrectly.' from 4C_fluid_turbulence_statistics_cha.cpp; adding INFLOW_HOMDIR gets one step further and aborts with 'Nodes with separation condition expected!' from 4C_fluid_discret_extractor.cpp. Neither 'Lund', 'Jarrin', 'synthetic eddy' nor 'recycling' occurs in either log. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fluid_turbulence",
+  "pitfall_index": 5,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_FLAGONLY=1",
+    "EXIT_WITHHOMDIR=1",
+    "processor 0 finished normally",
+    "homogeneuous plane for channel flow was specified incorrectly.",
+    "4C_fluid_turbulence_statistics_cha.cpp",
+    "Nodes with separation condition expected!",
+    "4C_fluid_discret_extractor.cpp",
+    "CLAIMED_METHOD_NAMES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave TURBULENTINFLOW off in both mutant arms by pointing the injection at a section the deck does not have. Both aborts vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed \"s|^FLUID DYNAMIC/TURBULENCE MODEL:|$HOMD|\" \"$BASE\" > \"$TMP/withhomdir.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/withhomdir.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_FLAGONLY=0",
+    "EXIT_WITHHOMDIR=0"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#2, and a falsification of its Signal. Substituting rigidphase for boundaryphase in upstream particle_sph_2d_pdbody_gravity.4C.yaml produces neither 'unknown particle phase: rigidphase' nor 'rigidphase incompatible with PD interaction'. rigidphase is a valid type; the deck parses, the run completes, and 4C emits no warning at all. What actually happens is that the rigid container applies ZERO force to the pdphase body, which free-falls: velx comes out as 2.354e+02, i.e. g*t for g=9810 and t=3000*8e-6, and vely is O(1e-10). Eight of ten result tests fail while the pd_damage_phi tests still pass, so a reader checking only for cracks sees a healthy run. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BOUNDARYPHASE=0",
+    "EXIT_RIGIDPHASE=1",
+    "processor 0 finished normally",
+    "BOUNDARYPHASE_FAILURES=0",
+    "RIGIDPHASE_REACHED_RESULT_TEST=10",
+    "RIGIDPHASE_FAILURES=8",
+    "Result check failed with 8 errors out of 10 tests",
+    "is WRONG --> actresult= 2.35440000000",
+    "PD_BODY_IS_IN_FREE_FALL=yes",
+    "CLAIMED_UNKNOWN_PARTICLE_PHASE_TEXT=0",
+    "CLAIMED_INCOMPATIBLE_WITH_PD_TEXT=0",
+    "ANY_RIGIDPHASE_WARNING=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BOUNDARYPHASE=1",
+    "EXIT_RIGIDPHASE=0",
+    "PD_BODY_IS_IN_FREE_FALL=no",
+    "RIGIDPHASE_FAILURES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep boundaryphase in the second arm. The container then carries load again, the free-fall velocity disappears, the deck passes its own result tests and EXIT_RIGIDPHASE becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "    -e 's|TYPE boundaryphase|TYPE rigidphase|g' \"$BASE\" > \"$TMP/rigid.yaml\"",
+    "to": "    \"$BASE\" > \"$TMP/rigid.yaml\"; cp \"$BASE\" \"$TMP/rigid.yaml\""
+  }
+}

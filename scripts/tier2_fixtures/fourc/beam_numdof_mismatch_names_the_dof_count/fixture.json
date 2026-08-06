@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::beams#1 \u2014 a beam DESIGN POINT DIRICH block whose NUMDOF does not match the element's DOF count is caught by the DBC reader, which prints '3 DOFs given but 6 expected in Point Dirichlet boundary condition' from core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp. The entry's older wording 'inconsistent DOF count for beam element' exists in no 4C source file and is asserted absent. Worth knowing about the shape of the failure: the mesh has already been read and fill_complete()d when this fires, so the log looks healthy right up to the abort. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) on upstream deck beam3r_line2_static_test1.4C.yaml.",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_SIX=0",
+    "EXIT_THREE=1",
+    "processor 0 finished normally",
+    "3 DOFs given but 6 expected in Point Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "CLAIMED_INCONSISTENT_DOF_TEXT=0",
+    "MESH_WAS_READ_BEFORE_ABORT=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SIX=1",
+    "EXIT_THREE=0",
+    "MESH_WAS_READ_BEFORE_ABORT=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave NUMDOF at the element's 6. The DOF-count diagnostic then never fires and the second arm exits 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(good, bad, 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

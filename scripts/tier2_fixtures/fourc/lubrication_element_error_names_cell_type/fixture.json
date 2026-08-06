@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::lubrication#1. The rule (LUBRICATION elements are 2D surface elements) holds, but the Signal was fabricated: 4C has no 4C_lubrication_factory.cpp and never says 'unsupported element type for lubrication'. Rewriting element 1 of upstream lubrication_sb_2d.4C.yaml as a HEX8 aborts inside the generic mesh reader with \"Element 'LUBRICATION' does not seem to know cell type 'hex8'.\" from core/fem/src/general/element/4C_fem_general_element_definition.cpp line 29 — before any lubrication code runs, so REACHED_TIME_LOOP=0. Both fabricated strings are asserted absent so the correction stays pinned. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "lubrication",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_QUAD4=0",
+    "EXIT_HEX8=1",
+    "processor 0 finished normally",
+    "Element 'LUBRICATION' does not seem to know cell type 'hex8'.",
+    "4C_fem_general_element_definition.cpp",
+    "CLAIMED_UNSUPPORTED_ELEMENT_TEXT=0",
+    "CLAIMED_LUBRICATION_FACTORY_FILE=0",
+    "REACHED_TIME_LOOP=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_QUAD4=1",
+    "EXIT_HEX8=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave element 1 as the correct QUAD4 surface element. The abort and its cell-type diagnostic vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/1 LUBRICATION QUAD4 1 2 3 4 MAT 3/1 LUBRICATION HEX8 1 2 3 4 5 6 7 8 MAT 3/' \\\n    \"$BASE\" > \"$TMP/hex8.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/hex8.yaml\""
+  }
+}

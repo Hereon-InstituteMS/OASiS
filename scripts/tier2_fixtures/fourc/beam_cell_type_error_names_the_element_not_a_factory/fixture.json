@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::beams#10. The RULE is right — BEAM3R registers line2/line3/line4/line5 (LINE5 runs here), BEAM3EB registers line2 only — but the Signal was fabricated: neither 'Unknown beam element cell type' nor a file called beam_factory exists in 4C, and both are asserted absent. The real diagnostic is the generic element-definition lookup, \"Element 'BEAM3R' does not seem to know cell type 'line6'.\" from core/fem/src/general/element/4C_fem_general_element_definition.cpp, which echoes the cell type in LOWER CASE — so grepping the log for the LINE6 you wrote finds nothing (DIAGNOSTIC_ECHOES_UPPERCASE_LINE6=0). Also worth pinning: LINE6 is a valid 4C cell type, just not a beam one, and the message only appears if the element line carries the right NUMBER of nodes; with too few nodes the value parser fails first with an unrelated complaint about 'MAT'. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_LINE5=0",
+    "EXIT_LINE6=1",
+    "EXIT_EBLINE3=1",
+    "processor 0 finished normally",
+    "Element 'BEAM3R' does not seem to know cell type 'line6'.",
+    "Element 'BEAM3EB' does not seem to know cell type 'line3'.",
+    "4C_fem_general_element_definition.cpp",
+    "CLAIMED_UNKNOWN_BEAM_CELLTYPE_TEXT=0",
+    "CLAIMED_BEAM_FACTORY_FILE=0",
+    "DIAGNOSTIC_ECHOES_UPPERCASE_LINE6=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_LINE5=1",
+    "EXIT_LINE6=0",
+    "EXIT_EBLINE3=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the BEAM3R arm: ask for LINE4, which IS registered (four nodes, twelve triad values). The cell-type diagnostic then never fires for that arm and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"  - \\\"1 BEAM3R LINE6 1 2 3 4 5 6 MAT 1 TRIADS $T18\\\"\" > \"$TMP/line6.yaml\"",
+      "to": "deck \"  - \\\"1 BEAM3R LINE4 1 2 3 4 MAT 1 TRIADS 0 0 0 0 0 0 0 0 0 0 0 0\\\"\n  - \\\"2 BEAM3R LINE2 4 6 MAT 1 TRIADS 0 0 0 0 0 0\\\"\" > \"$TMP/line6.yaml\""
+    },
+    {
+      "note": "remove the pathology from the BEAM3EB arm: ask for LINE2, the one cell type it registers. That arm then exits 0 and its diagnostic disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"  - \\\"1 BEAM3EB LINE3 1 2 3 MAT 1\\\"\" > \"$TMP/eb_line3.yaml\"",
+      "to": "deck \"  - \\\"1 BEAM3EB LINE2 1 2 MAT 1\\\"\" > \"$TMP/eb_line3.yaml\""
+    }
+  ]
+}

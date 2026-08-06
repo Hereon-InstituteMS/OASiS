@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::beams#5, and a FALSIFICATION of its Signal. The advice (GenAlphaLieGroup for beam dynamics) is right, but you cannot observe the symptom the entry promised, because 4C will not run the wrong variant at all. On upstream beam3r_line3_genalpha_liegroup_3Dtwistmoment, switching DYNAMICTYPE to GenAlpha aborts at post_setup with 'MASSLIN=ml_rotations is not supported by classical GenAlpha! Choose GenAlphaLieGroup instead!' from structure_new/src/implicit/4C_structure_new_impl_genalpha.cpp. Also dropping MASSLIN to none — the only way GenAlpha would accept the deck — does not give a drifting solution either: beam3r keeps its rotational state inside the element, so the inertia routine dereferences state it never received and the process dies of SIGSEGV in Beam3r::calc_inertia_force_and_mass_matrix with GANOMASS_4C_DIAGNOSTICS=0, i.e. no 4C error message whatsoever. GENALPHA_STEPS=0 and GANOMASS_STEPS=0 pin that no angular-momentum history exists to inspect. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_LIEGROUP=0",
+    "EXIT_GENALPHA=1",
+    "processor 0 finished normally",
+    "LIEGROUP_STEPS=20",
+    "LIEGROUP_RESULT_FAILURES=0",
+    "MASSLIN=ml_rotations is not supported by classical GenAlpha! Choose GenAlphaLieGroup instead!",
+    "4C_structure_new_impl_genalpha.cpp",
+    "Signal: Segmentation fault (11)",
+    "calc_inertia_force_and_mass_matrix",
+    "GANOMASS_4C_DIAGNOSTICS=0",
+    "GENALPHA_STEPS=0",
+    "GANOMASS_STEPS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_LIEGROUP=1",
+    "EXIT_GENALPHA=0",
+    "LIEGROUP_RESULT_FAILURES=3"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from arm 2: leave DYNAMICTYPE at GenAlphaLieGroup. That arm then runs all 20 steps and exits 0, so its refusal message vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/DYNAMICTYPE: \"GenAlphaLieGroup\"/DYNAMICTYPE: \"GenAlpha\"/' \"$BASE\" > \"$TMP/genalpha.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/genalpha.yaml\""
+    },
+    {
+      "note": "remove the pathology from arm 3: keep both GenAlphaLieGroup and MASSLIN rotations. The segfault then does not happen, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed -e 's/DYNAMICTYPE: \"GenAlphaLieGroup\"/DYNAMICTYPE: \"GenAlpha\"/' \\\n    -e 's/MASSLIN: \"rotations\"/MASSLIN: \"none\"/' \"$BASE\" > \"$TMP/genalpha_nomasslin.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/genalpha_nomasslin.yaml\""
+    }
+  ]
+}

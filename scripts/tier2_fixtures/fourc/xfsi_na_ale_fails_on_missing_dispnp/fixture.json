@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::fsi_xfem#6. The rule (FSI-XFEM fluid element blocks must use NA: Euler) holds; the Signal was fabricated. There is no string 'fluid element kinematic type incompatible with XFEM' and no file 4C_fluid_xfem_factory.cpp in 4C. On the upstream monolithic deck xfsi_3D_boxes, NA: ALE parses cleanly and fails at the first assembly with 'Cannot find state dispnp in discretization fluid' from 4C_fem_discretization.hpp, reached through FluidBoundaryImpl::evaluate_neumann. The stack frame is the only hint that ALE kinematics were requested; the message itself names neither XFEM nor ALE nor NA. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fsi_xfem",
+  "pitfall_index": 6,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_EULER=0",
+    "EXIT_NAALE=1",
+    "processor 0 finished normally",
+    "EULER_RESULT_FAILURES=0",
+    "Cannot find state dispnp in discretization fluid",
+    "4C_fem_discretization.hpp",
+    "FluidBoundaryImpl",
+    "CLAIMED_KINEMATIC_TEXT=0",
+    "CLAIMED_FACTORY_FILE=0",
+    "MESSAGE_NAMES_ALE_KEYWORD=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the fluid elements Eulerian. The abort, its source file and its stack frame all vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/        NA: Euler/        NA: ALE/' \"$BASE\" > \"$TMP/naale.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/naale.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_EULER=1",
+    "EXIT_NAALE=0"
+  ]
+}

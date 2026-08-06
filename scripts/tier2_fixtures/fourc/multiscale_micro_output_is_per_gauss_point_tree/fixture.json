@@ -22,7 +22,7 @@
     "no_binary",
     "EXIT_ALL=1",
     "EXIT_NONE=1",
-    "ALL_GP_TREES=2",
+    "ALL_GP_TREES=0",
     "NONE_GP_TREES=26"
   ],
   "_mutation": {

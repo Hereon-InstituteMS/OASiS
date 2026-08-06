@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::fbi#0, and a FALSIFICATION of its Signal. The entry claimed that including ALE DYNAMIC in an FBI input 'aborts with FBI is incompatible with ALE from 4C_fbi_factory.cpp'. Adding a complete ALE DYNAMIC block to upstream fbi_mortar_solidcoupling.4C.yaml runs to completion, exits 0 and passes all six of the deck's result tests; the claimed phrase and the claimed file name appear nowhere, no warning is printed, and no ALE discretisation is built (ALE_DISCRETISATIONS_BUILT=0 against FIELDS_BUILT=5). The section is silently swallowed. The deck's NOX status-test XML is resolved against the CWD, so the fixture copies beam_flow_solver.xml into its scratch dir and runs there. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fbi",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "ALE_SECTION_IN_DECK=yes",
+    "EXIT_NOALE=0",
+    "EXIT_WITHALE=0",
+    "processor 0 finished normally",
+    "OK (6)",
+    "is CORRECT, abs(diff)=",
+    "CLAIMED_INCOMPATIBLE_TEXT=0",
+    "CLAIMED_FBI_FACTORY_FILE=0",
+    "ALE_WARNINGS=0",
+    "ALE_DISCRETISATIONS_BUILT=0",
+    "RESULT_TESTS_FAILED_WITH_ALE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "ALE_SECTION_IN_DECK=no",
+    "EXIT_WITHALE=1",
+    "EXIT_NOALE=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop injecting the ALE DYNAMIC section. ALE_SECTION_IN_DECK flips to 'no' — there is then no ALE section whose silent acceptance could be demonstrated — so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "ADD_ALE_SECTION=yes",
+    "to": "ADD_ALE_SECTION=no"
+  }
+}

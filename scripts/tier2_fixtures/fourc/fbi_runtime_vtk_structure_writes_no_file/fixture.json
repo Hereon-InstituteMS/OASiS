@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::fbi#4. The rule holds — beam visualisation needs IO/RUNTIME VTK OUTPUT/BEAMS — but the entry said the STRUCTURE subsection 'produces empty output'. It produces NO FILE: replacing the BEAMS block of upstream fbi_mortar_solidcoupling.4C.yaml with IO/RUNTIME VTK OUTPUT/STRUCTURE (OUTPUT_STRUCTURE + DISPLACEMENT) drops the structure-beams .vtu files to zero and the .pvd collections from 3 to 2, with no replacement structure-*.vtu of any kind. The run still exits 0, passes all six result tests, and keeps writing the beam-to-fluid coupling .vtu files, which is precisely what makes it look like output worked. No diagnostic is printed. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fbi",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_BEAMS=0",
+    "EXIT_STRUCTURE=0",
+    "processor 0 finished normally",
+    "OK (6)",
+    "BEAMS_ARM_BEAM_VTU=2",
+    "STRUCTURE_ARM_BEAM_VTU=0",
+    "STRUCTURE_ARM_ANY_STRUCTURE_VTU=0",
+    "BEAMS_ARM_PVD=3",
+    "STRUCTURE_ARM_PVD=2",
+    "STRUCTURE_ARM_COUPLING_VTU=4",
+    "STRUCTURE_OUTPUT_WARNINGS=0",
+    "STRUCTURE_ARM_FAILED_TESTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BEAMS=1",
+    "EXIT_STRUCTURE=1",
+    "BEAMS_ARM_BEAM_VTU=0",
+    "STRUCTURE_ARM_BEAM_VTU=2"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the correct BEAMS subsection. It then writes the same beam files as the first, STRUCTURE_ARM_BEAM_VTU becomes 2 (a forbidden token) and STRUCTURE_ARM_PVD becomes 3, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "WRONG_OUTPUT_SECTION='IO/RUNTIME VTK OUTPUT/STRUCTURE:\\n  OUTPUT_STRUCTURE: true\\n  DISPLACEMENT: true\\n'",
+    "to": "WRONG_OUTPUT_SECTION='IO/RUNTIME VTK OUTPUT/BEAMS:\\n  OUTPUT_BEAMS: true\\n  DISPLACEMENT: true\\n'"
+  }
+}

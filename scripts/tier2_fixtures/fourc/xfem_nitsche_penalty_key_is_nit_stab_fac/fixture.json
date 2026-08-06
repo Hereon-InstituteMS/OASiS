@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#5 and a FALSIFICATION of both the key name and the symptoms. NITSCHE_PENALTY_PARAMETER does not exist anywhere in 4C; writing it into XFLUID DYNAMIC/STABILIZATION fails to match the section and 4C prints its candidate list, which contains the real name, 'Defaulted parameter NIT_STAB_FAC' (default 35, plus NIT_STAB_FAC_TANG). The claimed symptoms do not appear either: on the upstream Nitsche weak-Dirichlet deck xfluid_channel_constWDBC_straightCut_hex20_EOS_GP_2ndGP, NIT_STAB_FAC swept from 1e-3 to 1e12 reproduces all four result tests at TOLERANCE 1e-13, exits 0 both times, and never mentions a condition number or an unconverged Newton step. Nitsche's method is consistent, so on a field the space reproduces exactly the penalty weight cancels. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "xfem_fluid",
+  "pitfall_index": 5,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DEFAULT=0",
+    "EXIT_LO=0",
+    "EXIT_HI=0",
+    "EXIT_CLAIMED=1",
+    "Could not match this input",
+    "NITSCHE_PENALTY_PARAMETER: 30",
+    "Defaulted parameter 'NIT_STAB_FAC'",
+    "LO_RESULT_FAILURES=0",
+    "HI_RESULT_FAILURES=0",
+    "HI_NEWTON_STALLED=0",
+    "CLAIMED_CONDITION_NUMBER_TEXT=0",
+    "processor 0 finished normally"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: write the real key name instead of the claimed one. The parse failure and both quoted lines vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  NIT_STAB_FAC: 30/  NITSCHE_PENALTY_PARAMETER: 30/' \"$BASE\" > \"$TMP/claimed.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/claimed.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLAIMED=0",
+    "EXIT_HI=1",
+    "EXIT_LO=1"
+  ]
+}

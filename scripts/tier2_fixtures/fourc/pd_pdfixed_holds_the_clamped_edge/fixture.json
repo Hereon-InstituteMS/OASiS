@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#11, confirmed by execution. PROVENANCE WARNING: PDFIXED and the deck particle_sph_2d_pdbody_precrack_fixedflag.4C.yaml are NOT in upstream 4C main — they are local branch work on bond-based peridynamics in the checkout this ran against, so this certifies branch behaviour and aborts loudly (no_upstream_decks) where the deck is absent. The deck clamps a ten-particle left column with PDFIXED 1 and pulls with gravity; stripping the flag leaves everything structural identical (same pre-crack segment, same 974 initialised bonds) and 4C emits no warning, but ten of the fourteen result tests then fail including the clamped particle's own position and velocity. The two pd_damage_phi tests still pass, so a reader checking only the crack sees a healthy run. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "CLAMPED_PARTICLE_LINES=10",
+    "EXIT_CLAMPED=0",
+    "EXIT_FREE=1",
+    "processor 0 finished normally",
+    "CLAMPED_FAILURES=0",
+    "CLAMPED_EXACT_ZERO_DIFFS=14",
+    "Number of pre-crack segments: 1",
+    "Number of initialized peridynamic bonds on this proc: 974",
+    "FREE_WARNINGS=0",
+    "FREE_FAILURES=10",
+    "Result check failed with 10 errors out of 14 tests",
+    "FREE_DAMAGE_TESTS_STILL_PASSING=2"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLAMPED=1",
+    "EXIT_FREE=0",
+    "FREE_FAILURES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep PDFIXED on the second arm's particle lines. The clamp holds, the deck passes its own result tests, FREE_FAILURES becomes 0 and EXIT_FREE becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/ PDFIXED 1\"/\"/' \"$BASE\" > \"$TMP/free.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/free.yaml\""
+  }
+}

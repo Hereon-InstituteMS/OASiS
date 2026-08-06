@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#0 and a FALSIFICATION of its Signal. The entry claimed a parser warning 'ALE DYNAMIC ignored under XFEM' or a runtime 'incompatible ALE+XFEM combination'. Neither string exists in 4C. Bolting a full ALE DYNAMIC section onto the upstream Fluid_XFEM deck xfluid_ls_neumann_inflow_stab changes nothing: exit 0, 'processor 0 finished normally', zero result-test failures, and zero mentions of ALE in the log. The section is read and dropped. The genuinely fatal variant is NA: ALE on the FLUID element block, and its diagnostic is 'Cannot find state dispnp in discretization fluid' from 4C_fem_discretization.hpp -- a missing-state message that never names XFEM. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "physics": "xfem_fluid",
+  "pitfall_index": 0,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_ALEDYN=0",
+    "EXIT_NAALE=1",
+    "ALEDYN_HAS_ALE_SECTION=1",
+    "processor 0 finished normally",
+    "ALEDYN_RESULT_FAILURES=0",
+    "CLAIMED_ALE_WARNING=0",
+    "Cannot find state dispnp in discretization fluid",
+    "4C_fem_discretization.hpp"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the inertness arm: point the injection at a section name that is not in the deck, so no ALE DYNAMIC is added. ALEDYN_HAS_ALE_SECTION drops to 0 and the arm proves nothing, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "t = t.replace(\"XFEM GENERAL:\", \"\"\"ALE DYNAMIC:",
+      "to": "t = t.replace(\"XFEM GENERAL_ABSENT:\", \"\"\"ALE DYNAMIC:"
+    },
+    {
+      "note": "remove the pathology from the fatal arm: leave the fluid elements Eulerian. The abort and both of its quoted strings vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/NA: Euler/NA: ALE/' \"$BASE\" > \"$TMP/naale.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/naale.yaml\""
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ALEDYN=1",
+    "EXIT_NAALE=0",
+    "ALEDYN_HAS_ALE_SECTION=0"
+  ]
+}

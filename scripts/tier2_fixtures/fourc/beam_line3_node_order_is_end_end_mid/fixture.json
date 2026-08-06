@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::beams#3 — LINE3 beam elements are written endpoint1 endpoint2 midpoint. Rewriting upstream beam3r_line3_static_test1's element lines from '1 3 2' to sequential '1 2 3' produces NO parse error, NO warning, and ten finalised load steps with converged Newton; only the deck's own 1e-08 result test catches it, with 'Result check failed with 3 errors out of 3 tests'. That silence is the finding, and WRONG_ORDER_STILL_CONVERGES=yes pins it. The entry's magnitude claim ('element length is halved, stiffness wrong by factor 2-4') is not what happens: the tip displacement shifts by roughly two per cent, small enough to survive an eyeball check. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_ENDENDMID=0",
+    "EXIT_SEQUENTIAL=1",
+    "processor 0 finished normally",
+    "SEQUENTIAL_STEPS=10",
+    "SEQUENTIAL_PARSE_ERRORS=0",
+    "WRONG_ORDER_STILL_CONVERGES=yes",
+    "SEQUENTIAL_RESULT_FAILURES=3",
+    "ENDENDMID_RESULT_FAILURES=0",
+    "is WRONG --> actresult=",
+    "Result check failed with 3 errors out of 3 tests"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ENDENDMID=1",
+    "EXIT_SEQUENTIAL=0",
+    "WRONG_ORDER_STILL_CONVERGES=no",
+    "SEQUENTIAL_RESULT_FAILURES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the element lines in the correct endpoint-endpoint-midpoint order. The result test then passes, the second arm exits 0, and the failure count drops to zero, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(out)",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

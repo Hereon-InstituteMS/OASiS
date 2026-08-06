@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::fbi#2, and a FALSIFICATION of its Signal. The entry claimed a beam outside the fluid mesh 'produces a beam outside fluid domain error from 4C_fbi_partitioner.cpp'. Translating the single BEAM3R of upstream fbi_mortar_solidcoupling.4C.yaml to x=5, far outside the fluid cube [-0.5,0.5]^3, produces no such error and no search diagnostic at all: both fields are built, NOX reports 'The solver wil not attempt to solve this system' (4C's own spelling) because the beam carries no load, and the beam displacement is EXACTLY 0.0 — only the deck's own result test notices. A half-outside beam is worse still: 4 of 6 tests move and nothing warns. No file named 4C_fbi_partitioner.cpp exists in 4C. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fbi",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_INSIDE=0",
+    "EXIT_OUTSIDE=1",
+    "EXIT_HALFOUT=1",
+    "processor 0 finished normally",
+    "OK (6)",
+    "is WRONG --> actresult=",
+    "The solver wil not attempt to solve this system",
+    "Result check failed with 2 errors out of 6 tests",
+    "Result check failed with 4 errors out of 6 tests",
+    "CLAIMED_BEAM_OUTSIDE_TEXT=0",
+    "CLAIMED_FBI_PARTITIONER_FILE=0",
+    "OUTSIDE_SEARCH_DIAGNOSTICS=0",
+    "OUTSIDE_BEAM_DISPLACEMENT=exactly_zero"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INSIDE=1",
+    "EXIT_OUTSIDE=0",
+    "OUTSIDE_BEAM_DISPLACEMENT=nonzero"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the beam where the upstream deck puts it, inside the fluid. It then feels the fluid, moves, and passes the result test, so the exactly-zero displacement and the failing OUTSIDE arm both vanish and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "BEAM_X_OFFSET=5.0",
+    "to": "BEAM_X_OFFSET=0.0"
+  }
+}
