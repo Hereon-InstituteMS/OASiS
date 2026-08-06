@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: RingElement3D3N's Check verifies only Id, current length and node count \u2014 NOT CROSS_AREA / YOUNG_MODULUS / DENSITY, which it later reads, so a missing CROSS_AREA or YOUNG_MODULUS gives k_0 = 0 and a Newton solve that fails with no actionable error. Pitfall (kratos.cable_net #7, edge 1 of two). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). MEASURED CONSEQUENCE, not just the permissiveness: a RingElement3D3N built on a Properties object with NOTHING set initialises without complaint and its CalculateLeftHandSide returns a stiffness matrix whose largest absolute entry is EXACTLY 0.0. The same element with YOUNG_MODULUS, DENSITY and CROSS_AREA set returns a non-zero matrix. So the element is not merely indifferent to the missing properties \u2014 it silently drops out of the global system, which is the claim's 'silent zero stiffness'. Edge 2 (every translational DOF receiving the full ring mass) is named in the report as not yet done. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "initialize_with_empty_properties_raised=False",
+    "empty_properties_stiffness_is_exactly_zero=True",
+    "full_properties_stiffness_is_nonzero=True",
+    "ring_check_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: SlidingCableElement3D3N REQUIRES CONSTITUTIVE_LAW on Properties \u2014 its Init() errors by name if it is missing, unlike RingElement and EmpiricalSpringElement which read properties directly. Pitfall (kratos.cable_net #6, edge 1 of three). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). With YOUNG_MODULUS, DENSITY and CROSS_AREA set but no law, Initialize raises 'Error: A constitutive law needs to be specified for the element with ID 1'; adding SMA.TrussConstitutiveLaw() \u2014 the 1D law the claim recommends \u2014 makes the same Initialize succeed. Only edge 1 of this three-part claim is covered; edges 2 (mIsCompressed silent zero-stiffness) and 3 (FRICTION_COEFFICIENT Capstan sliding) need a converged multi-step solve and are named in the report as not yet done. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "created_without_constitutive_law=True",
+    "initialize_without_law_raised=True",
+    "observed=constitutive_law_needed_for_element",
+    "initialize_with_law_raised=False",
+    "sliding_cable_law_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 300
+}

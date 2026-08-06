@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: EmpiricalSpringElement3D2N's CalculateMassMatrix unconditionally fills only the diagonal \u2014 there is no consistent-mass path, and setting COMPUTE_LUMPED_MASS_MATRIX has zero effect for this element. Pitfall (kratos.cable_net #5). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Measured on a 1 m spring, A=1e-4, rho=7850: the 6x6 mass matrix has max|off-diagonal| EXACTLY 0.0 with a non-zero diagonal, and it is still exactly 0.0 after setting ProcessInfo[COMPUTE_LUMPED_MASS_MATRIX] to False, which is the knob that would request a consistent matrix. The flag being ignored is the defect; the element raises nothing. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[mass_matrix_has_nonzero_diagonal]=True_expected=True",
+    "probe[default_offdiag_is_zero]=True_expected=True",
+    "probe[offdiag_still_zero_with_flag_False]=True_expected=True",
+    "probe[offdiag_nonzero_with_flag_False]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 300
+}
