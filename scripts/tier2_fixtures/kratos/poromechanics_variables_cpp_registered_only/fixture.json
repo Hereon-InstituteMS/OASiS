@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: poromechanics material variables are registered in the C++ kernel only \u2014 attributes of neither KratosMultiphysics nor the Poromechanics Python module; fetch them via KratosGlobals.GetVariable. Pitfall (kratos.poromechanics #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). KM.DENSITY_SOLID raises AttributeError 'Module KratosMultiphysics has no attribute DENSITY_SOLID' and PoromechanicsApplication.DENSITY_SOLID raises AttributeError \"module 'KratosMultiphysics.PoromechanicsApplication' has no attribute 'DENSITY_SOLID'\", while GetVariable('DENSITY_SOLID') returns the variable. The naming half is pinned too: GetVariable('DENSITY_FLUID') raises 'Variable DENSITY_FLUID is unknown' \u2014 the stem is *_LIQUID. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "poromechanics",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.DENSITY_SOLID]=False_expected=False",
+    "probe[PORO.DENSITY_SOLID]=False_expected=False",
+    "probe[GetVariable_DENSITY_SOLID]=True_expected=True",
+    "probe[GetVariable_DENSITY_FLUID]=False_expected=False",
+    "probe[GetVariable_LIQUID_PRESSURE]=True_expected=True",
+    "probe[GetVariable_PERMEABILITY_XX]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

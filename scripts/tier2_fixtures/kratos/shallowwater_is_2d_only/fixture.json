@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: ShallowWaterApplication is depth-averaged, hence 2D only. Pitfall (kratos.shallow_water #1, '2D only (depth-averaged)'). The catalog's Signal for this entry is the shared 'Convergence is not achieved' boilerplate, which is NOT the real behaviour: the constraint is enforced by the element registry. Executed on Kratos 10.4.3 / ShallowWaterApplication 10.4.3: BoussinesqElement2D3N and 2D4N construct, while every 3D spelling (BoussinesqElement3D4N/3D8N, ShallowWaterElement3D4N) raises 'is not registered'. This fixture imports KratosMultiphysics for real; with Kratos absent the import fails, the process exits non-zero and the runner records a failure/skip, never a pass.",
+  "backend": "kratos",
+  "physics": "shallow_water",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[BoussinesqElement2D3N]=True_expected=True",
+    "registered[BoussinesqElement2D4N]=True_expected=True",
+    "registered[BoussinesqElement3D4N]=False_expected=False",
+    "registered[BoussinesqElement3D8N]=False_expected=False",
+    "registered[ShallowWaterElement3D4N]=False_expected=False",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

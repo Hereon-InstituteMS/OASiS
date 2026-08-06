@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: TOTAL_FORCES lives in core KratosMultiphysics, not in the DEM module \u2014 unlike CONTACT_FORCES and ELASTIC_FORCES which are DEM-module attributes. Pitfall (kratos.dem_structures_coupling #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). DEMApplication.TOTAL_FORCES_Z raises AttributeError while KM.TOTAL_FORCES_Z resolves; the reverse holds for CONTACT_FORCES / ELASTIC_FORCES / DEM_NODAL_AREA. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem_structures_coupling",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DEM.TOTAL_FORCES_Z]=False_expected=False",
+    "probe[KM.TOTAL_FORCES_Z]=True_expected=True",
+    "probe[DEM.CONTACT_FORCES]=True_expected=True",
+    "probe[KM.CONTACT_FORCES]=False_expected=False",
+    "probe[DEM.ELASTIC_FORCES]=True_expected=True",
+    "probe[DEM.DEM_NODAL_AREA]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: SmallStrainJ2PlasticityPlaneStrain2DLaw reports GetStrainSize()==4 and is therefore silently incompatible with the 2D solid elements, which build a 3-component B-matrix. Pitfall (kratos.constitutive_laws #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). The law instantiates and IS registered \u2014 nothing rejects it, which is why the pitfall calls the failure silent. Measured strain sizes: J2 plane-strain law 4; SmallStrainIsotropicPlasticityPlaneStrainVonMisesVonMises 3; LinearElasticPlaneStrain2DLaw 3; LinearElasticPlaneStress2DLaw 3. The size mismatch is the only available signal. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[J2PlaneStrain_size_is_4]=True_expected=True",
+    "probe[J2PlaneStrain_size_is_3]=False_expected=False",
+    "probe[generic_planestrain_size_is_3]=True_expected=True",
+    "probe[elastic_planestrain_size_is_3]=True_expected=True",
+    "probe[elastic_planestress_size_is_3]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

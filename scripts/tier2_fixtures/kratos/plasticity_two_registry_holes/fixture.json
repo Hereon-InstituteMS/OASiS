@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: exactly two ConstitutiveLawsApplication Python classes are absent from the string registry that Materials.json resolves against: SmallStrainKinematicPlasticityPlaneStrainVonMisesVonMises and FiniteStrainIsotropicPlasticityFactory. Pitfall (kratos.constitutive_laws #5). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). Both resolve as Python attributes while Kernel.HasConstitutiveLaw() is False for both \u2014 so the JSON route fails loudly while the Python-instance route reaches the solver. The isotropic sibling IS registered, which is what makes this a hole rather than a family-wide absence. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[kinematic_python_attr]=True_expected=True",
+    "probe[kinematic_registered]=False_expected=False",
+    "probe[factory_python_attr]=True_expected=True",
+    "probe[factory_registered]=False_expected=False",
+    "probe[isotropic_sibling_registered]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

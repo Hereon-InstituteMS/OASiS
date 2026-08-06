@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: PotentialWallCondition needs a shape suffix. Pitfall (kratos.compressible_potential #0: 'Far-field BC: use PotentialWallCondition for solid walls'). The catalog Signal is the shared 'Convergence is not achieved' boilerplate, which is NOT the real behaviour \u2014 the bare name never reaches a solve. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). PotentialWallCondition2D2N and 3D3N construct; the bare 'PotentialWallCondition' the pitfall text spells out raises RuntimeError 'The Condition \"PotentialWallCondition\" is not registered!'. FALSE-SIGNAL noted. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "compressible_potential",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[PotentialWallCondition2D2N]=True_expected=True",
+    "registered[PotentialWallCondition3D3N]=True_expected=True",
+    "registered[PotentialWallCondition]=False_expected=False",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

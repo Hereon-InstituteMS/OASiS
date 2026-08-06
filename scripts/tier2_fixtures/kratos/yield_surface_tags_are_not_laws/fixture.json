@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2: the yield-surface tags VonMises / Tresca / DruckerPrager / MohrCoulomb / ModifiedMohrCoulomb / Rankine / SimoJu are not constitutive laws on their own \u2014 they exist only as substrings inside a composite law name. Pitfall (kratos.constitutive_laws #7). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). Kernel.HasConstitutiveLaw() is False for all seven bare tags and True for the composite SmallStrainIsotropicPlasticity3DVonMisesVonMises, so {\"constitutive_law\": {\"name\": \"VonMises\"}} in Materials.json cannot resolve. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[registered_VonMises]=False_expected=False",
+    "probe[registered_Tresca]=False_expected=False",
+    "probe[registered_DruckerPrager]=False_expected=False",
+    "probe[registered_MohrCoulomb]=False_expected=False",
+    "probe[registered_ModifiedMohrCoulomb]=False_expected=False",
+    "probe[registered_Rankine]=False_expected=False",
+    "probe[registered_SimoJu]=False_expected=False",
+    "probe[registered_composite]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

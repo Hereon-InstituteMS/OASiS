@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2: Kratos 10.4.x renamed the poromechanics u-Pw formulation to u-Pl. Pitfall (kratos.poromechanics #1): UPwSmallStrainElement2D4N is not registered; UPlSmallStrainElement2D4N is. Executed on Kratos 10.4.3 (PoromechanicsApplication 10.4.3): the UPw name raises RuntimeError 'The Element \"UPwSmallStrainElement2D4N\" is not registered!' while the UPl name constructs a 2D quad element. This fixture runs against a real KratosMultiphysics import; with Kratos absent the import fails and the runner records a skip, never a pass.",
+  "backend": "kratos",
+  "physics": "poromechanics",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "registered_ok=UPlSmallStrainElement2D4N",
+    "rejected_name=UPwSmallStrainElement2D4N",
+    "is not registered"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

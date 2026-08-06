@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2: the ShallowWaterApplication element stem is Boussinesq, not ShallowWater. Pitfall (kratos.shallow_water #0). Executed on Kratos 10.4.3: CreateNewElement('ShallowWaterElement2D3N', ...) raises RuntimeError 'The Element \"ShallowWaterElement2D3N\" is not registered!'; 'BoussinesqElement2D3N' constructs. Distinct from the existing rans_shallowwater_element_naming fixture, which covers the RANS stem. This fixture runs against a real KratosMultiphysics import; with Kratos absent the import fails and the runner records a skip, never a pass.",
+  "backend": "kratos",
+  "physics": "shallow_water",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "registered_ok=BoussinesqElement2D3N",
+    "rejected_name=ShallowWaterElement2D3N",
+    "is not registered"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

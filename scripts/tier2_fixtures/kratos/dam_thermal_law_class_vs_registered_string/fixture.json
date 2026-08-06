@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: DamApplication thermal laws have a Python CLASS name that differs from the string under which they are registered for Materials.json. Pitfall (kratos.dam #0). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). hasattr(DAM, 'ThermalLinearElastic2DPlaneStrain') is True while HasConstitutiveLaw of that same string is False; the registered strings are ThermalLinearPlaneStrain / ThermalLinearPlaneStress / ThermalElasticIsotropic3D, none of which is a Python attribute. Pick the route first, then the name. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dam",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[python_attr_ThermalLinearElastic2DPlaneStrain]=True_expected=True",
+    "probe[registered_ThermalLinearElastic2DPlaneStrain]=False_expected=False",
+    "probe[registered_ThermalLinearPlaneStrain]=True_expected=True",
+    "probe[registered_ThermalLinearPlaneStress]=True_expected=True",
+    "probe[registered_ThermalElasticIsotropic3D]=True_expected=True",
+    "probe[python_attr_ThermalLinearPlaneStrain]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

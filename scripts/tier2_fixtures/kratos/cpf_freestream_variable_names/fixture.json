@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: the compressible-potential freestream variables are FREE_STREAM_VELOCITY / FREE_STREAM_MACH (two words, underscore-separated) and live on CompressiblePotentialFlowApplication, not on core. Pitfall (kratos.compressible_potential #1) instructs the reader to 'set FREESTREAM_VELOCITY and MACH_INFINITY'. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). BOTH OF THOSE NAMES ARE FALSE: neither resolves on CPF nor on KM. The real names do. This fixture pins the correction. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "compressible_potential",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[CPF.FREESTREAM_VELOCITY]=False_expected=False",
+    "probe[CPF.MACH_INFINITY]=False_expected=False",
+    "probe[KM.MACH_INFINITY]=False_expected=False",
+    "probe[CPF.FREE_STREAM_VELOCITY]=True_expected=True",
+    "probe[CPF.FREE_STREAM_MACH]=True_expected=True",
+    "probe[CPF.FREE_STREAM_DENSITY]=True_expected=True",
+    "probe[KM.FREE_STREAM_MACH]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

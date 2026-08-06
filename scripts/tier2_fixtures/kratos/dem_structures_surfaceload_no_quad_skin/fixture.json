@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: SurfaceLoadFromDEMCondition3D4N is not registered, so a hexahedral (quad-skin) structure cannot receive the DEM load \u2014 the structure must be meshed with tetrahedra. Pitfall (kratos.dem_structures_coupling #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). With DemStructuresCouplingApplication imported, SurfaceLoadFromDEMCondition3D3N and LineLoadFromDEMCondition2D2N construct, while the 3D4N spelling raises RuntimeError 'The Condition \"SurfaceLoadFromDEMCondition3D4N\" is not registered!'. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem_structures_coupling",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[SurfaceLoadFromDEMCondition3D3N]=True_expected=True",
+    "registered[LineLoadFromDEMCondition2D2N]=True_expected=True",
+    "registered[SurfaceLoadFromDEMCondition3D4N]=False_expected=False",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

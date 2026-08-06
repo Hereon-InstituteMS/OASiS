@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: POINT_LOAD lives in StructuralMechanicsApplication, not in core KratosMultiphysics; same module split for THICKNESS_SENSITIVITY. Pitfall (kratos.optimization #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). KM.POINT_LOAD raises AttributeError 'Module KratosMultiphysics has no attribute POINT_LOAD' while SMA.POINT_LOAD resolves; the PointLoadCondition2D1N the pitfall requires for the nodal value to be assembled does construct. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "optimization",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.POINT_LOAD]=False_expected=False",
+    "probe[SMA.POINT_LOAD]=True_expected=True",
+    "probe[KM.THICKNESS_SENSITIVITY]=False_expected=False",
+    "probe[SMA.THICKNESS_SENSITIVITY]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

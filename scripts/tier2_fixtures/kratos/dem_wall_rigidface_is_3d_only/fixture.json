@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: DEM wall geometry uses RigidFace3D3N / RigidFace3D4N. Pitfall (kratos.dem #4: 'Wall geometry: use RigidFace3D3N elements or the walls_process_list'). The catalog Signal for this entry is the shared 'RuntimeError KeyError from JSON parsing' boilerplate, which is NOT what happens \u2014 the real signal is a registry rejection. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). RigidFace3D3N and RigidFace3D4N construct as CONDITIONS (not elements, as the pitfall's wording implies); RigidFace2D2N and RigidEdge3D2N raise 'is not registered', consistent with Kratos DEM being 3D-internal. FALSE-SIGNAL and element-vs-condition wording noted in the report. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[RigidFace3D3N]=True_expected=True",
+    "registered[RigidFace3D4N]=True_expected=True",
+    "registered[RigidFace2D2N]=False_expected=False",
+    "registered[RigidEdge3D2N]=False_expected=False",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
