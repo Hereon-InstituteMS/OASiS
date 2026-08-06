@@ -93,6 +93,34 @@ def main() -> int:
             fail.append(f"the equal-order system at nx={nx} did not "
                         f"solve; the claim is that it assembles and "
                         f"solves and is wrong only in the pressure")
+    # A STABLE pair on the same grid, so the equal-order oscillation is
+    # measured against something rather than against a bare threshold.
+    # Without this control a mutation that swaps in the stable pair
+    # passes the fixture — found by mutation testing.
+    Wc, ac, Lc, xc = stokes_pieces(structuredGrid([0, 0], [1, 1], [16, 16]),
+                                   2, 1)
+    inlet_c = lt(xc[0], TOL)
+    walls_c = Or(lt(xc[1], TOL), gt(xc[1], 1 - TOL))
+    sch_c = galerkin([ac == Lc,
+                      DirichletBC(Wc, [xc[1] * (1 - xc[1]), 0, None],
+                                  inlet_c),
+                      DirichletBC(Wc, [0, 0, None], walls_c)],
+                     solver=("suitesparse", "umfpack"), parameters=PARAMS)
+    whc = Wc.interpolate([0, 0, 0], name="stable16")
+    sch_c.solve(target=whc)
+    osc_stable = float(np.abs(np.diff(pressure_of(Wc, whc))).mean())
+    print(f"stable_pair_nx16_pressure_oscillation={osc_stable:.6e}")
+    print(f"equal_order_oscillation_over_stable="
+          f"{osc[16] / osc_stable:.4e}")
+    print(f"equal_order_is_orders_of_magnitude_worse="
+          f"{osc[16] > 100 * osc_stable}")
+    if osc[16] <= 100 * osc_stable:
+        fail.append(f"the equal-order pressure oscillation "
+                    f"({osc[16]:.3e}) is not orders of magnitude larger "
+                    f"than the inf-sup stable pair's ({osc_stable:.3e}) "
+                    f"on the same grid, so this fixture is not "
+                    f"measuring an LBB violation")
+
     ratio = osc[16] / osc[8]
     print(f"equal_order_oscillation_ratio={ratio:.4f}")
     print(f"equal_order_mode_does_not_shrink={ratio > 0.5}")
