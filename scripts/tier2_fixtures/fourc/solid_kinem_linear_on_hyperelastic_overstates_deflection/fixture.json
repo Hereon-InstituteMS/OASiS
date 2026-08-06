@@ -1,7 +1,7 @@
 {
-  "_comment": "Tier-2 for fourc::solid_mechanics#0 — one slender inline HEX8 cantilever, MAT_ElastHyper + ELAST_CoupNeoHooke, tip traction ramped over 8 static steps. KINEM: nonlinear gives tip dispz -5.75473889952457363e+00 and exits 0 against the deck's own result test; flipping the single token to KINEM: linear and changing nothing else gives -8.68233111826721071e+00, 50.9% larger, and 4C prints no warning of any kind (KINEM_WARNINGS=0, and the string 'kinem' never appears in the log). The silence is the dangerous half: nothing in the output tells you the kinematics assumption does not match the material. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "_comment": "Tier-2 for fourc::solid_mechanics#0 \u2014 one slender inline HEX8 cantilever, MAT_ElastHyper + ELAST_CoupNeoHooke, tip traction ramped over 8 static steps. KINEM: nonlinear gives tip dispz -5.75473889952457363e+00 and exits 0 against the deck's own result test; flipping the single token to KINEM: linear and changing nothing else gives -8.68233111826721071e+00, 50.9% larger, and 4C prints no warning of any kind (KINEM_WARNINGS=0, and the string 'kinem' never appears in the log). The silence is the dangerous half: nothing in the output tells you the kinematics assumption does not match the material. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
   "backend": "fourc",
-  "physics": "solid_mechanics",
+  "physics": "linear_elasticity",
   "pitfall_index": 0,
   "mode": "cmd",
   "timeout_seconds": 300,

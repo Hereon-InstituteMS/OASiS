@@ -1,7 +1,7 @@
 {
-  "_comment": "Tier-2 for fourc::solid_mechanics#1 — MAXITER: 1 is an abort, not an early exit. One single-HEX8 static deck with a surface Neumann, run twice. With MAXITER: 30 it converges in nine Newton iterations ('Number of Iterations = 9 < 30', 'Finalised step 1 / 1 ... nlniter 9') and exits 0. With MAXITER: 1 and nothing else changed, 4C prints 'Failed.......Number of Iterations = 1 < 1', throws from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp and exits 1 without finalising a single step (MAXITER1_STEPS_FINALISED=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "_comment": "Tier-2 for fourc::solid_mechanics#1 \u2014 MAXITER: 1 is an abort, not an early exit. One single-HEX8 static deck with a surface Neumann, run twice. With MAXITER: 30 it converges in nine Newton iterations ('Number of Iterations = 9 < 30', 'Finalised step 1 / 1 ... nlniter 9') and exits 0. With MAXITER: 1 and nothing else changed, 4C prints 'Failed.......Number of Iterations = 1 < 1', throws from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp and exits 1 without finalising a single step (MAXITER1_STEPS_FINALISED=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
   "backend": "fourc",
-  "physics": "solid_mechanics",
+  "physics": "linear_elasticity",
   "pitfall_index": 1,
   "mode": "cmd",
   "timeout_seconds": 240,

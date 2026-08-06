@@ -1,7 +1,7 @@
 {
   "_comment": "Tier-2 for fourc::solid_mechanics#5, and a FALSIFICATION of it. The entry claimed structural Neumann conditions need NUMDOF: 6 and that NUMDOF: 3 'silently drops the moment components'. On a 3D SOLID mesh a node carries three dofs: NUMDOF: 3 runs and exits 0; NUMDOF: 6 with the last three slots zeroed runs, exits 0 and passes the SAME result test pinned to 1e-12 (NUMDOF6_ZEROED_RESULT_FAILURES=0), so the extra slots change nothing; and NUMDOF: 6 with one moment slot switched ON aborts with 'Number of Dimensions in Neumann_Evaluation is 3. Further DoFs are not considered.' from solid_3D_ele/4C_solid_3D_ele_surface_evaluate.cpp and exit 1. Nothing is dropped silently. NUMDOF: 6 is the SHELL7P convention and NUMDOF: 9 the BEAM3R one; on SOLID it is 3. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
   "backend": "fourc",
-  "physics": "solid_mechanics",
+  "physics": "linear_elasticity",
   "pitfall_index": 5,
   "mode": "cmd",
   "timeout_seconds": 240,

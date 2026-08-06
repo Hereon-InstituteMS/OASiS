@@ -1,7 +1,7 @@
 {
   "_comment": "Tier-2 for fourc::solid_mechanics#2, and a FALSIFICATION of the claim that DENS 'can be omitted' for quasi-static problems. DENS is required:true in MAT_Struct_StVenantKirchhoff, so deleting the line is a parse error ('Could not match this input' from core/io/src/4C_io_input_spec_builders.cpp), not a default. Its VALUE is genuinely inert under Statics without gravity: the same single-HEX8 deck with DENS 1.0 and with DENS 0.0 both exit 0 and both pass the same result test pinned to 1e-10 (STATICS_DENS0_RESULT_FAILURES=0). Under DYNAMICTYPE GenAlpha the same DENS 0.0 throws 'You are about to invert a singular matrix!' from structure_new/4C_structure_new_integrator.cpp before any step is finalised. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
   "backend": "fourc",
-  "physics": "solid_mechanics",
+  "physics": "linear_elasticity",
   "pitfall_index": 2,
   "mode": "cmd",
   "timeout_seconds": 300,

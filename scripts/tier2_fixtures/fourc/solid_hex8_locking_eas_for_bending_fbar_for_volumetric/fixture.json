@@ -1,7 +1,7 @@
 {
-  "_comment": "Tier-2 for fourc::solid_mechanics#3 — one slender inline HEX8 cantilever (10x1x1, L/h=20) run six ways. TECH: eas_full is pinned as the deck's result test and exits 0 (-1.58679680112244814e-01, within 1% of the Euler-Bernoulli value for this beam). Plain HEX8 with no TECH key returns -5.76902808309564530e-02, 2.75x too stiff — that is the bending locking. TECH: fbar returns -7.91986184341200855e-02 and does NOT cure it: fbar is the volumetric cure, and the NUE 0.499 pair shows that side, -2.31437433652808937e-02 without it against -9.13261217768375072e-02 with it. The TECH slot is an enum, so a plausible-looking 'eas' is rejected with \"Could not parse value 'eas' as an enum constant of type 'ElementTechnology'.\" Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "_comment": "Tier-2 for fourc::solid_mechanics#3 \u2014 one slender inline HEX8 cantilever (10x1x1, L/h=20) run six ways. TECH: eas_full is pinned as the deck's result test and exits 0 (-1.58679680112244814e-01, within 1% of the Euler-Bernoulli value for this beam). Plain HEX8 with no TECH key returns -5.76902808309564530e-02, 2.75x too stiff \u2014 that is the bending locking. TECH: fbar returns -7.91986184341200855e-02 and does NOT cure it: fbar is the volumetric cure, and the NUE 0.499 pair shows that side, -2.31437433652808937e-02 without it against -9.13261217768375072e-02 with it. The TECH slot is an enum, so a plausible-looking 'eas' is rejected with \"Could not parse value 'eas' as an enum constant of type 'ElementTechnology'.\" Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
   "backend": "fourc",
-  "physics": "solid_mechanics",
+  "physics": "linear_elasticity",
   "pitfall_index": 3,
   "mode": "cmd",
   "timeout_seconds": 300,
