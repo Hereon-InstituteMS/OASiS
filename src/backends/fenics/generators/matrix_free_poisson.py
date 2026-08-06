@@ -86,11 +86,20 @@ KNOWLEDGE = {
         "RHS via `bc.set(b.array, alpha=0.0)` so the iterative "
         "solver doesn't try to update them. "
         "Signal: the CG iteration count balloons (>200) without "
-        "convergence; the final L2 error against the exact "
-        "solution (1 + x^2 + 2*y^2 on the unit square with f=-6) "
-        "is ~1e-1 instead of ~1e-6. Or: the boundary values in "
-        "the result are not equal to uD after `bc.set(u.x.array, "
-        "alpha=1.0)`.",
+        "convergence; against any manufactured solution the final "
+        "L2 error is around five orders of magnitude worse than a "
+        "correct run of the same problem — the failure is that "
+        "large, so it needs no reference value to recognise. Or: "
+        "the boundary values in the result are not equal to uD "
+        "after `bc.set(u.x.array, alpha=1.0)`.",
+        # This clause used to name a closed form — "the exact solution
+        # (1 + x^2 + 2*y^2 on the unit square with f=-6)". That is the dolfinx
+        # tutorial's standard demo problem, so it is public rather than secret,
+        # but shipping it here still hands an agent a ready answer for any
+        # unit-square Poisson problem it is later asked to solve, and the
+        # diagnostic never needed it: the tell is the SIZE of the jump, not the
+        # value it jumps from. Stating the ratio keeps the knowledge and drops
+        # the answer.
 
         "[Numerical] Custom CG without a preconditioner is the "
         "demonstration baseline — for ill-conditioned problems "

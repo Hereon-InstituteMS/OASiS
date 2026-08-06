@@ -82,6 +82,33 @@ MEASURED_ORDER_PATTERNS = [
     r"\borders?\s+\d+\.\d{2,}\s*/\s*\d+\.\d{2,}",
 ]
 
+# A PARAMETER TUNED FOR ONE SPECIFIC PROBLEM.
+#
+# This is the shape the other patterns all missed, and it is the one that gives
+# most away: not a measured result but a settled ANSWER — "for the unit square
+# split at x=0.5, use theta=0.42". An agent reading that skips the work the
+# evaluation is asking it to do, and it compromises every future draw from the
+# distribution, not just the instance it names.
+#
+# The discriminator is SPECIFIC GEOMETRY plus a CONCRETE VALUE. General guidance
+# must survive untouched, because it is the knowledge we are trying to build:
+#   * a formula is general        — "theta ~ 1/(1+rho)"
+#   * a problem CLASS is general — "theta = 0.5 for problems with source terms"
+#   * a named domain with numbers, next to a value, is not.
+_TUNED_FOR_A_GEOMETRY = re.compile(
+    r"(?:for|on)\s+(?:the\s+)?"
+    r"(?:unit\s+(?:square|cube|interval)|\(0\s*,\s*[\d/.]+\)|"
+    r"\d+\s*[x×]\s*\d+\s+(?:mesh|grid|domain)|"
+    r"(?:square|cube|rectangle|box|domain)\s+split\s+at)"
+    # The bridge must allow '.', because the geometry itself carries decimals —
+    # "split at x=0.5". A first version excluded '.' to stop the match running
+    # across a sentence boundary, and that made it miss the primary case while
+    # catching the two easier ones. Bounded length does the same job.
+    r"[^\n]{0,80}?"
+    r"(?:use|set|take|choose|with)\s+\w{1,24}\s*(?:=|\bof\b|\bto\b)\s*"
+    r"[-+]?\d*\.?\d+",
+    re.IGNORECASE)
+
 # TWO PATTERNS THAT WERE TRIED AND DELIBERATELY NOT KEPT
 #
 # A gate has to be precise or it gets switched off, and a gate that fires on
@@ -194,6 +221,44 @@ def test_no_absolute_host_paths_in_served_knowledge_payloads():
         "An absolute host path is served to agents as knowledge. Describe how "
         "to locate the install; do not hard-code one machine's layout.\n  "
         + "\n  ".join(hits[:8]))
+
+
+def test_no_parameter_tuned_for_one_specific_problem():
+    """The shape every other pattern missed, and the one that gives most away.
+
+    Not a measured result but a settled ANSWER: "for the unit square split at
+    x=0.5, use theta=0.42". An agent reading that skips the work the evaluation
+    is asking it to do — and unlike a leaked instance, it compromises every
+    future draw from the problem distribution, because the tuning is general.
+
+    Calibrated in both directions, since general guidance is the knowledge we
+    are trying to build and a guard that eats it would be worse than none:
+    formulas ("theta ~ 1/(1+rho)"), problem CLASSES ("theta = 0.5 for problems
+    with source terms"), qualitative rules ("put Dirichlet on the softer
+    subdomain") and element facts ("P1 locks at nu = 0.4999") all pass.
+    """
+    hits = _hits(_TUNED_FOR_A_GEOMETRY.pattern)
+    assert not hits, (
+        "a parameter tuned for one specific geometry is shipped in "
+        "agent-reachable knowledge. State the rule or the formula, not the "
+        "answer for one domain.\n  " + "\n  ".join(hits[:8]))
+
+
+def test_the_tuned_parameter_guard_discriminates():
+    """Proof the predicate works, because an untested guard is decoration."""
+    for planted in ("for the unit square split at x=0.5 use theta=0.42",
+                    "on the unit cube with 16 elements per side, set "
+                    "relaxation = 0.3",
+                    "for the 32x32 mesh choose dt of 0.001"):
+        assert _TUNED_FOR_A_GEOMETRY.search(planted), planted
+    for legitimate in ("theta ~ 1/(1+rho) with rho the conductance ratio",
+                       "theta = 0.5 is required for problems WITH source terms",
+                       "put Dirichlet on the softer subdomain",
+                       "for nearly incompressible materials use a mixed "
+                       "formulation",
+                       "P1 elements lock at nu = 0.4999; use P2",
+                       "the unit square is the usual test domain"):
+        assert not _TUNED_FOR_A_GEOMETRY.search(legitimate), legitimate
 
 
 # Prose ABOUT exact solutions is legitimate and must not be flagged: the
