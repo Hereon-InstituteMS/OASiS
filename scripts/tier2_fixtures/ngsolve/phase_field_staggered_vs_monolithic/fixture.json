@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for NGSolve phase_field#4: staggered alternate minimisation converges from a cold start in 5-20 outer iterations, monolithic Newton on the same Variation-based AT2 energy does not converge from a cold start at all. Verified on NGSolve 6.2.2604, unit_square maxh=0.15 (ne=96), VectorH1 order 1 dirichlet='bottom|top', H1 order 1, E=1 nu=0.3 Gc=1e-3 l0=0.1 (2026-08-06): staggered needs 5/8/12 outer iterations at disp 0.01/0.02/0.03 reaching d_max 0.01429550/0.05539218/0.11852371; monolithic Newton at disp=0.03 returns flag -1 after 60 iterations with d_max=2.70677637 while printing 'Warning: Newton might not converge! Error = '; warm-started from the staggered solution the same monolithic solve converges in 2 iterations to d_max=0.11852278. Correction recorded: the 'same solution' half of the claim holds, but from a cold start monolithic is not an alternative - it needs the staggered answer as its initial guess.",
+  "backend": "ngsolve",
+  "physics": "phase_field",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "compound_space_class=ProductSpace",
+    "staggered_iters_in_5_to_20=True",
+    "staggered_iters_increase_with_load=True",
+    "staggered_dmax_increases_with_load=True",
+    "staggered_is_a_fixed_point=True",
+    "monolithic_cold_start_converged=False",
+    "monolithic_cold_start_dmax_exceeds_1=True",
+    "monolithic_warning_emitted=True",
+    "Newton might not converge! Error =",
+    "monolithic_warm_started_converged=True",
+    "monolithic_warm_iters_lt_staggered=True",
+    "warm_started_monolithic_matches_staggered=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
