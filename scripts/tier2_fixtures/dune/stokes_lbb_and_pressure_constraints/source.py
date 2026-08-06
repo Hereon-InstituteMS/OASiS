@@ -217,24 +217,39 @@ def main() -> int:
     info_z = sch_zero_p.solve(target=wh_z)
     p_z = pressure_of(W, wh_z)
     v_z = velocity_of(W, wh_z)
-    # the pressure really is pinned on the constrained boundary
+    # The pressure really is pinned on the constrained boundary.
+    #
+    # 2026-08-06 CORRECTION. The previous version of these four lines
+    # built the boundary mask by interpolating [x[0], x[1], 0] and
+    # slicing the PRESSURE leg — which returns the constant-0 third
+    # component, so every pressure dof tested as lying on x = 0 and the
+    # "inlet maximum" was really the GLOBAL maximum. On that reading the
+    # 0 entry looked as if it left the pressure at 1.543121 instead of
+    # pinning it, and stokes#5 was recorded here as not reproduced.
+    # Interpolating the coordinate INTO the pressure leg instead shows
+    # the boundary pressure is exactly zero. The claim holds; the
+    # earlier verdict was a slicing artefact. stokes#5 is now owned by
+    # scripts/tier2_fixtures/dune/stokes_pressure_slot_none_versus_zero,
+    # which counts the constrained dofs rather than reading a maximum.
     nv, npre = W._leg_sizes
-    coords = np.array(W.interpolate([x[0], x[1], 0],
-                                    name="coords").as_numpy)[nv:]
-    on_inlet = coords < TOL
-    pinned = float(np.abs(p_z[on_inlet]).max())
-    free = float(np.abs(p_a[on_inlet]).max())
+    px = np.array(W.interpolate([0, 0, x[0]],
+                                name="coords_px").as_numpy)[nv:]
+    py = np.array(W.interpolate([0, 0, x[1]],
+                                name="coords_py").as_numpy)[nv:]
+    on_constrained = (px < TOL) | (py < TOL) | (py > 1 - TOL)
+    pinned = float(np.abs(p_z[on_constrained]).max())
+    free = float(np.abs(p_a[on_constrained]).max())
     print(f"zero_pressure_entry_converged={bool(info_z['converged'])}")
-    print(f"zero_pressure_entry_inlet_pressure_max={pinned:.6e}")
-    print(f"none_pressure_entry_inlet_pressure_max={free:.6e}")
+    print(f"zero_pressure_entry_boundary_pressure_max={pinned:.6e}")
+    print(f"none_pressure_entry_boundary_pressure_max={free:.6e}")
     print(f"zero_entry_pins_the_pressure={pinned < 1e-9 < free}")
     print(f"zero_entry_changes_the_velocity="
           f"{float(np.abs(v_z - v_a).max()) > 1e-9}")
-    # stokes#5 is NOT claimed as covered: measured, a 0 in the pressure
-    # slot did NOT drive the inlet pressure to zero (|p| max 1.543121
-    # against 2.000000 with None) — it changes the solution but not in
-    # the way the claim describes. Printed, not asserted.
-    print("zero_pressure_entry_claim_not_reproduced=True")
+    if not (pinned < 1e-9 < free):
+        fail.append(f"a 0 in the pressure slot did not drive the "
+                    f"constrained-boundary pressure to zero "
+                    f"({pinned:.6e} against {free:.6e} with None); this "
+                    f"fixture's 2026-08-06 correction says it does")
 
     if not fail:
         print("dune_stokes_constraint_traps_verified=True")

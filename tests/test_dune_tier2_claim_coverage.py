@@ -46,7 +46,12 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / "dune"
 #   2026-08-06  0.31 -> 0.63 (thirteen more; 71 of 111)
 #   2026-08-06  0.63 -> 0.65 (stokes solver cost; 73 of 111)
 #   2026-08-06  0.65 -> 0.80 (nine more fixtures; 89 of 111 — the target)
-MIN_COVERAGE_FRACTION = 0.80
+#   2026-08-06  0.80 -> 0.82 (three more: poisson_mms:2, stokes:5,
+#               mixed_methods:6; 92 of 111. Measured against the
+#               REGISTRY — supported_physics() then the pitfalls list,
+#               counting DISTINCT claim texts — that same set is
+#               84 of 103 = 81.6 %.)
+MIN_COVERAGE_FRACTION = 0.82
 
 
 def _claim_inventory() -> dict[str, str]:
