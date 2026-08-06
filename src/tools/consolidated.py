@@ -1286,10 +1286,26 @@ def _narrow_coupling_by_signal(groups: dict, signal: str) -> dict:
     coupling than for every backend is a trap rather than a feature.
 
     The local fallback below exists only for trees where that module is not
-    present yet. It does the two things a symptom lookup cannot be useful
-    without — the same normalisation, and a distinctive-token overlap — and
-    deliberately nothing more: no synonyms, so it can never claim a match the
+    present yet. It mirrors the canonical matcher's TIERS — verbatim in the
+    recorded symptom, verbatim anywhere in the entry, every distinctive query
+    word present, and a labelled-weak majority overlap — because a fallback
+    that is quietly STRICTER is the more dangerous kind of wrong. Measured
+    here: a first version tested only for a full token subset, so paraphrased
+    queries the canonical matcher surfaces as weak leads ("the interface flux
+    balances to roundoff but the result is wrong") came back as "no recorded
+    failure mode matches", and for a silent-wrong mode an authoritative-sounding
+    absence is exactly the answer that gets an agent to trust a converged run.
+    It carries no synonym table, so it can still never claim a match the
     canonical matcher would not.
+
+    RESULTS ARE RANKED, and ties break towards the SHORTER entry. Unranked
+    output meant the first entry of the first group won every tie, and the
+    longest, most-general entry collects the most token matches — so the one
+    entry that mentions everything was answering queries that belonged to its
+    neighbours. Preferring the entry with the smaller vocabulary is a
+    specificity tie-break, and the canonical matcher has the same tie problem
+    (measured: a query of three generic words returned 19 candidates ranked by
+    corpus order).
 
     Never returns an empty result silently: a query that matches nothing comes
     back with a note saying so, because an empty answer reads as "nothing is
@@ -1313,8 +1329,16 @@ def _narrow_coupling_by_signal(groups: dict, signal: str) -> dict:
                 "catalogued, NOT that your coupling is right. "
                 "knowledge(topic='pitfalls', solver='coupling') returns all "
                 f"{result['total_available']} entries."]}
-        kept["_filter"] = [f"signal={signal!r}: {result['shown']} of "
-                           f"{result['total_available']} entries"]
+        modes = result.get("match_modes") or {}
+        note = (f"signal={signal!r}: {result['shown']} of "
+                f"{result['total_available']} entries, best match first. For "
+                f"the complete set: knowledge(topic='pitfalls', "
+                f"solver='coupling')")
+        if modes and set(modes) <= {"some_tokens"}:
+            note += (". EVERY match below is a partial word overlap, not a "
+                     "match on a recorded symptom — treat them as leads to "
+                     "read, not as an identification of your failure.")
+        kept["_filter"] = [note]
         return kept
 
     import re as _re
@@ -1331,24 +1355,39 @@ def _narrow_coupling_by_signal(groups: dict, signal: str) -> dict:
                 "more most other some such only same too very can will just "
                 "should now use used using you your we our error warning "
                 "message output file files line lines code".split())
+    def _toks(s: str) -> set[str]:
+        return {w for w in _re.findall(r"[a-z_][a-z0-9_]{2,}", s)
+                if w not in _STOP}
+
     q = _norm(signal)
-    qt = {w for w in _re.findall(r"[a-z_][a-z0-9_]{2,}", q) if w not in _STOP}
-    kept: dict[str, list[str]] = {}
+    qt = _toks(q)
+    scored: list[tuple[float, int, str, str, str]] = []
     for group, entries in groups.items():
         for text in entries:
             whole = _norm(text)
             sig = whole.split("signal:", 1)[1] if "signal:" in whole else ""
+            wt = _toks(whole)
+            hit = qt & wt
+            frac = len(hit) / len(qt) if qt else 0.0
             if sig and q in sig:
-                mode = "matches recorded symptom"
+                score, mode = 1.0, "matches recorded symptom"
             elif q in whole:
-                mode = "matches entry text"
-            elif qt and qt <= {w for w in
-                               _re.findall(r"[a-z_][a-z0-9_]{2,}", whole)
-                               if w not in _STOP}:
-                mode = "all query terms present"
+                score, mode = 0.85, "matches entry text"
+            elif qt and frac >= 1.0:
+                score, mode = 0.7, "all query terms present"
+            elif frac >= 0.6 and len(hit) >= 2:
+                # Labelled WEAK, never presented as an identification. Below
+                # 0.6, or on a single word, an overlap is a coincidence.
+                score, mode = 0.3 + 0.3 * frac, "WEAK: partial term overlap"
             else:
                 continue
-            kept.setdefault(group, []).append(f"{text}  <- match: {mode}")
+            # Tie-break on entry vocabulary size: the shorter entry is the more
+            # specific one, and without this the longest entry wins every tie.
+            scored.append((score, len(wt), group, text, mode))
+    scored.sort(key=lambda t: (-t[0], t[1]))
+    kept: dict[str, list[str]] = {}
+    for _score, _n, group, text, mode in scored:
+        kept.setdefault(group, []).append(f"{text}  <- match: {mode}")
     total = sum(len(v) for v in groups.values())
     if not kept:
         return {"no_match": [
@@ -1358,9 +1397,14 @@ def _narrow_coupling_by_signal(groups: dict, signal: str) -> dict:
             f"knowledge(topic='pitfalls', solver='coupling') returns all "
             f"{total} entries."]}
     shown = sum(len(v) for v in kept.values())
-    kept["_filter"] = [f"signal={signal!r}: {shown} of {total} entries. For "
-                       f"the complete set: knowledge(topic='pitfalls', "
-                       f"solver='coupling')"]
+    note = (f"signal={signal!r}: {shown} of {total} entries, best match first. "
+            f"For the complete set: knowledge(topic='pitfalls', "
+            f"solver='coupling')")
+    if all(m.startswith("WEAK") for *_ , m in scored):
+        note += (". EVERY match below is a partial word overlap, not a match on "
+                 "a recorded symptom — treat them as leads to read, not as an "
+                 "identification of your failure.")
+    kept["_filter"] = [note]
     return kept
 
 
