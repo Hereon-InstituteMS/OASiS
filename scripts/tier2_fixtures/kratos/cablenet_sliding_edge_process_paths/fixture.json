@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for kratos::cable_net#13 — SlidingEdgeProcess through every documented path. EXECUTED 2026-08-06 with /usr/bin/python3 (Kratos 10.4 Release, GCC-14.2, CableNetApplication present; the repo .venv wheel wants GLIBC_2.32 and cannot load on this host, so the runner needs KRATOS_PYTHON=/usr/bin/python3). Printed, verbatim: python wrapper with a PARTIAL parameter block -> RuntimeError 'The item with name \"angled_initial_line\" is present in this Parameters but NOT in the default values'. That is not the error the claim predicts and the reason is worth recording — python_scripts/sliding_edge_process.py calls default_settings.ValidateAndAssignDefaults(settings) with receiver and argument INVERTED, so the wrapper's own defaults are validated against the user block and the first default key is reported as an unknown extra. Python wrapper with the COMPLETE nine-key block -> NameError \"name 'model_part_name' is not defined\", exactly as claimed. C++ binding with the eight DECLARED keys -> constructs, ExecuteInitialize succeeds, and ExecuteInitializeSolutionStep raises RuntimeError 'Getting a value that does not exist. entry string : constraint_set_name'; the claim's schema/code mismatch is real but it leads with bucket_size, and constraint_set_name is the key actually hit first, at the first SOLUTION STEP rather than at construction. CLAIM FOUND PARTLY FALSE: with the four read-but-undeclared keys supplied (constraint_set_name, bucket_size, neighbor_search_radius, must_find_neighbor) the C++ process constructed, initialised, built 4 master-slave constraints and finalised without error. So 'ValidateAndAssignDefaults rejects them' and 'There is NO valid input configuration that runs end-to-end' are both false on this build; what is true is that the PYTHON wrapper is dead on both of its paths and the C++ path needs keys the defaults block never mentions. MUTATION EVIDENCE: substituting a repaired wrapper and a C++ process whose declared key set matches what it reads made the fixture print wrapper_validates_defaults_against_user_input=False, wrapper_reads_an_unbound_name=False, cpp_declared_keys_fail_on_undeclared_lookup=False and python_wrapper_is_unusable_by_both_paths=False, emit four FAIL: lines, drop the _verified sentinel and return 2. KratosMultiphysics and CableNetApplication are imported at module scope, so with Kratos absent the process dies on import and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 13,
+  "covers": [
+    "cable_net:13"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "wrapper_partial_input_error=RuntimeError",
+    "wrapper_validates_defaults_against_user_input=True",
+    "wrapper_complete_input_error=NameError",
+    "wrapper_reads_an_unbound_name=True",
+    "cpp_declared_keys_constructed=True",
+    "cpp_declared_keys_fail_on_undeclared_lookup=True",
+    "cpp_with_undeclared_keys_runs=True",
+    "cpp_with_undeclared_keys_constraints_built=4",
+    "python_wrapper_is_unusable_by_both_paths=True",
+    "claim_no_valid_input_configuration_is_false=True",
+    "cablenet_sliding_edge_process_paths_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
