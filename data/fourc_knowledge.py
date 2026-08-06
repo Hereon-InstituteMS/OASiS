@@ -4223,18 +4223,28 @@ RESULT DESCRIPTION:
         "time_integration": ["Semi-implicit Euler (SemiImplicitEuler)", "Velocity Verlet (VelocityVerlet)"],
 
         "vtk_output": {
-            "description": "CRITICAL: Particle VTK output must be explicitly configured",
+            "description": (
+                "Particle ParaView output needs no configuration at all "
+                "and cannot be configured: a Particle run writes it "
+                "unconditionally, at the RESULTSEVERY interval of "
+                "PARTICLE DYNAMIC."
+            ),
             "yaml_section": """
-IO/RUNTIME VTK OUTPUT:
-  INTERVAL_STEPS: 10
-IO/RUNTIME VTK OUTPUT/PARTICLES:
-  PARTICLE_OUTPUT: true
-  DISPLACEMENT: true
-  VELOCITY: true
-  ACCELERATION: false
-  OWNER: true""",
-            "output_format": "VTP (VTK PolyData) files, one per time step, with PVD time series",
-            "pitfall": "Without IO/RUNTIME VTK OUTPUT/PARTICLES section, 4C produces NO particle output files!",
+# Nothing to add. The knob is RESULTSEVERY:
+PARTICLE DYNAMIC:
+  RESULTSEVERY: 10""",
+            "output_format": (
+                "One .pvd per particle phase plus .vtu / .pvtu pieces "
+                "under <prefix>-vtk-files. Not .vtp."
+            ),
+            "pitfall": (
+                "There is NO IO/RUNTIME VTK OUTPUT/PARTICLES section and "
+                "no PARTICLE_OUTPUT key. Adding either turns a working "
+                "deck into a hard parse error, \"Section 'IO/RUNTIME VTK "
+                "OUTPUT/PARTICLES' is not a valid section name.\" 4C's "
+                "runtime-VTK vocabulary is IO/RUNTIME VTK OUTPUT plus "
+                "/BEAMS, /FLUID and /STRUCTURE only."
+            ),
         },
 
         "mandatory_sph_section": {
@@ -4477,6 +4487,87 @@ PARTICLE DYNAMIC/SPH:
                 "displacement over the simulation. (Audit "
                 "2026-06-02; corrected by execution "
                 "2026-08-06.)"
+            ),
+            (
+                "[Input] The two phase-mapping strings in "
+                "PARTICLE DYNAMIC do different jobs and fail "
+                "in wildly different ways, and the dangerous "
+                "one is the one that looks redundant. "
+                "PHASE_TO_DYNLOADBALFAC is what DECLARES the "
+                "phases; PHASE_TO_MATERIAL_ID gives each "
+                "declared phase a material id. Signal: get "
+                "the first wrong — omit it, or name a phase "
+                "your PARTICLES lines do not use — and you "
+                "get a clean, specific abort naming the "
+                "offending phase, \"particle type 'phase1' of "
+                "initial particle not defined!\" from "
+                "particle/src/algorithm/"
+                "4C_particle_algorithm.cpp. Get the SECOND "
+                "wrong the same way and there is no message "
+                "at all: the run dies on a raw 'Signal: "
+                "Segmentation fault (11)' with exit status "
+                "139, inside MaterialHandler::"
+                "initialize_parameters, before the first time "
+                "step and before any 4C error block. The "
+                "mechanism is that the handler sizes its "
+                "table from the largest key in an empty map. "
+                "This is engine-level, so it bites SPH, DEM "
+                "and PD identically. Always write both "
+                "strings, with the same phase names in the "
+                "same order. (Verified by execution "
+                "2026-08-07.)"
+            ),
+            (
+                "[Syntax] The PARTICLES section is a YAML list "
+                "of whitespace-delimited STRINGS, not a list "
+                "of mappings, and nothing else is accepted. "
+                "The grammar is 'TYPE <phase> POS <x> <y> <z>' "
+                "followed by optional tokens — RAD <r>, "
+                "RIGIDCOLOR <c>, and on branches carrying "
+                "peridynamics PDBODYID / PDFIXED / PDWEIGHT. "
+                "There is no MAT, VELOCITY or RADIUS key on a "
+                "particle line: the material comes from "
+                "PHASE_TO_MATERIAL_ID and the initial velocity "
+                "from INITIAL_VELOCITY_FIELD in PARTICLE "
+                "DYNAMIC/INITIAL AND BOUNDARY CONDITIONS. "
+                "Legal phase names are exactly phase1, phase2, "
+                "boundaryphase, rigidphase, dirichletphase, "
+                "neumannphase and pdphase — the set is closed "
+                "and you cannot invent one. Signal: a mapping-"
+                "shaped entry fails in the YAML/parser layer "
+                "with a message about the section rather than "
+                "about particles, which reads like a "
+                "formatting slip and not like a wrong schema. "
+                "Note that global particle ids are assigned in "
+                "FILE ORDER starting at 0, and that is the id "
+                "a RESULT DESCRIPTION PARTICLE entry means, so "
+                "inserting a particle renumbers every test "
+                "after it. (Verified by execution 2026-08-07.)"
+            ),
+            (
+                "[Input] BIN_SIZE_LOWER_BOUND is checked "
+                "against the INTERACTION DISTANCE that the "
+                "active method computes, not against anything "
+                "you wrote, so the number you must clear moves "
+                "when you change the physics. For DEM it is "
+                "twice the largest particle radius, plus "
+                "ADHESION_DISTANCE when an adhesion law is on; "
+                "for SPH it is the largest INITRADIUS; for PD "
+                "it is INTERACTION_HORIZON. Signal: the abort "
+                "prints both numbers, 'the particle "
+                "interaction distance is larger than the "
+                "minimal bin size (<distance> > <binsize>)!' "
+                "from particle/src/interaction/"
+                "4C_particle_interaction_base.cpp, at setup "
+                "and before any bond or neighbour count. That "
+                "makes it one of the few 4C particle "
+                "diagnostics you can act on directly: raise "
+                "BIN_SIZE_LOWER_BOUND to the first number. "
+                "Beware the trap that a radius DISTRIBUTION "
+                "sets the largest radius at run time, so "
+                "widening MAX_RADIUS can trip this check on a "
+                "deck whose bin size was previously fine. "
+                "(Verified by execution 2026-08-07.)"
             ),
         ],
     },

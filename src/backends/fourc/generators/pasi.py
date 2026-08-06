@@ -54,52 +54,97 @@ class PASIGenerator(BaseGenerator):
                 "IO",
                 "IO/RUNTIME VTK OUTPUT",
                 "IO/RUNTIME VTK OUTPUT/STRUCTURE",
-                "IO/RUNTIME VTK OUTPUT/PARTICLES",
+                # NOTE: there is no IO/RUNTIME VTK OUTPUT/PARTICLES
+                # section in 4C. Writing one is a hard parse error.
+                # Particle output is unconditional at RESULTSEVERY.
             ],
             "materials": {
-                "MAT_ParticleMaterialDEM": {
+                "MAT_ParticleDEM": {
                     "description": (
                         "Discrete element method (DEM) particle material.  "
-                        "Defines particle density, radius, and contact "
-                        "stiffness for granular particles."
+                        "It carries only geometry and mass: every contact "
+                        "property (stiffness, damping, restitution, "
+                        "friction, Young's modulus, Poisson ratio) lives "
+                        "in the PARTICLE DYNAMIC/DEM section instead, not "
+                        "in the material."
                     ),
                     "parameters": {
-                        "DENS": {
-                            "description": "Particle density",
+                        "INITRADIUS": {
+                            "description": (
+                                "Particle radius; also the source of the "
+                                "mass, m = INITDENSITY * (4/3) pi r^3"
+                            ),
                             "range": "> 0",
                         },
-                        "RADIUS": {
-                            "description": "Particle radius",
+                        "INITDENSITY": {
+                            "description": "Particle mass density",
                             "range": "> 0",
-                        },
-                        "YOUNG": {
-                            "description": "Contact Young's modulus",
-                            "range": "> 0",
-                        },
-                        "NUE": {
-                            "description": "Contact Poisson's ratio",
-                            "range": "[0, 0.5)",
                         },
                     },
                 },
-                "MAT_ParticleMaterialSPH": {
+                "MAT_ParticleWallDEM": {
                     "description": (
-                        "SPH particle material for fluid-like particles "
-                        "interacting with structural surfaces."
+                        "Wall material referenced by the MAT entry of a "
+                        "DESIGN SURFACE PARTICLE WALL condition (or by "
+                        "PARTICLE_WALL_MAT for a bounding-box wall).  It "
+                        "supplies the particle-to-WALL friction and "
+                        "adhesion only; the particle-to-particle values "
+                        "in PARTICLE DYNAMIC/DEM do not reach the wall.  "
+                        "All three keys are optional and default to -1.0, "
+                        "and MAT: -1 (no material at all) is legal as long "
+                        "as no tangential, rolling or adhesion law is on."
                     ),
                     "parameters": {
-                        "DENS": {
-                            "description": "Particle density",
+                        "FRICT_COEFF_TANG": {
+                            "description": "Wall tangential friction coefficient",
+                            "range": "0 is legal here and means a frictionless wall",
+                        },
+                        "FRICT_COEFF_ROLL": {
+                            "description": "Wall rolling friction coefficient",
+                            "range": "0 is legal here",
+                        },
+                        "ADHESION_SURFACE_ENERGY": {
+                            "description": "Wall adhesion surface energy",
+                            "range": "0 or negative disables wall adhesion silently",
+                        },
+                    },
+                },
+                "MAT_ParticleSPHFluid": {
+                    "description": (
+                        "SPH fluid particle material.  Nine keys are "
+                        "required and none has a default, so omitting any "
+                        "one is a MATERIALS parse error."
+                    ),
+                    "parameters": {
+                        "INITRADIUS": {
+                            "description": "Kernel support radius (2*dx cubic, 3*dx quintic)",
                             "range": "> 0",
                         },
-                        "DYNAMICVISCOSITY": {
-                            "description": "Dynamic viscosity",
+                        "INITDENSITY": {
+                            "description": "Reference mass density",
                             "range": "> 0",
+                        },
+                        "REFDENSFAC": {"description": "Reference density factor (GenTait only)"},
+                        "EXPONENT": {"description": "Tait exponent (GenTait only)"},
+                        "BACKGROUNDPRESSURE": {
+                            "description": (
+                                "Only read inside the transport-velocity "
+                                "branch; inert without "
+                                "TRANSPORTVELOCITYFORMULATION"
+                            ),
                         },
                         "BULK_MODULUS": {
-                            "description": "Bulk modulus for equation of state",
+                            "description": (
+                                "Sets the acoustic scale: the speed of "
+                                "sound is derived as "
+                                "sqrt(BULK_MODULUS / INITDENSITY).  There "
+                                "is no SOUNDSPEED key."
+                            ),
                             "range": "> 0",
                         },
+                        "DYNAMIC_VISCOSITY": {"description": "Physical dynamic viscosity"},
+                        "BULK_VISCOSITY": {"description": "Bulk viscosity"},
+                        "ARTIFICIAL_VISCOSITY": {"description": "Artificial viscosity"},
                     },
                 },
                 "MAT_ElastHyper / MAT_Struct_StVenantKirchhoff": {
@@ -354,8 +399,9 @@ class PASIGenerator(BaseGenerator):
             IO/RUNTIME VTK OUTPUT/STRUCTURE:
               OUTPUT_STRUCTURE: true
               DISPLACEMENT: true
-            IO/RUNTIME VTK OUTPUT/PARTICLES:
-              OUTPUT_PARTICLES: true
+            # No IO/RUNTIME VTK OUTPUT/PARTICLES section exists — writing
+            # one is a hard parse error. Particle output is written
+            # unconditionally at the PASI DYNAMIC RESULTSEVERY interval.
 
             # == Structure (deformable plate) ==================================
             STRUCTURAL DYNAMIC:
@@ -398,13 +444,18 @@ class PASIGenerator(BaseGenerator):
 
             # == Materials =====================================================
             MATERIALS:
-              # DEM particle material
+              # DEM particle material — geometry and mass ONLY.
+              # Contact stiffness / restitution / friction are keys of
+              # PARTICLE DYNAMIC/DEM, not of the material.
               - MAT: 1
-                MAT_ParticleMaterialDEM:
-                  DENS: <particle_density>
-                  RADIUS: <particle_radius>
-                  YOUNG: <particle_contact_Young_modulus>
-                  NUE: <particle_contact_Poisson_ratio>
+                MAT_ParticleDEM:
+                  INITRADIUS: <particle_radius>
+                  INITDENSITY: <particle_density>
+              # Wall material for the coupling surface. MAT_ParticleWallDEM
+              # supplies wall friction/adhesion only; an empty {} (or
+              # MAT: -1 on the condition) is legal for pure normal contact.
+              - MAT: 4
+                MAT_ParticleWallDEM: {}
               # Structural plate material
               - MAT: 2
                 MAT_ElastHyper:
@@ -426,12 +477,18 @@ class PASIGenerator(BaseGenerator):
                 FUNCT: [0, 0, 0]
 
             # == Particles =====================================================
+            # PARTICLES is a YAML list of whitespace-delimited STRINGS, not
+            # a list of mappings. The grammar is
+            #   TYPE <phasename> POS <x> <y> <z> [RAD <r>] [RIGIDCOLOR <c>]
+            # with the phase name drawn from phase1 / phase2 /
+            # boundaryphase / rigidphase / dirichletphase / neumannphase /
+            # pdphase. There is no MAT, VELOCITY or RADIUS key here: the
+            # material comes from PHASE_TO_MATERIAL_ID and the initial
+            # velocity from INITIAL_VELOCITY_FIELD. Global particle ids are
+            # assigned in file order starting at 0 — that is the ID a
+            # RESULT DESCRIPTION PARTICLE entry refers to.
             PARTICLES:
-              - TYPE: "DEM"
-                MAT: 1
-                POSITION: [<particle_position_x>, <particle_position_y>, <particle_position_z>]
-                VELOCITY: [<particle_velocity_x>, <particle_velocity_y>, <particle_velocity_z>]
-                RADIUS: <particle_radius>
+              - "TYPE phase1 POS <x> <y> <z>"
 
             # == Geometry ======================================================
             STRUCTURE GEOMETRY:

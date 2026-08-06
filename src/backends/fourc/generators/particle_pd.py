@@ -773,13 +773,11 @@ class ParticlePDGenerator(BaseGenerator):
               STDOUTEVERY: <OUTPUT_FREQUENCY>
               VERBOSITY: "Standard"
 
-            IO/RUNTIME VTK OUTPUT:
-              INTERVAL_STEPS: <VTK_OUTPUT_FREQUENCY>
-            IO/RUNTIME VTK OUTPUT/PARTICLES:
-              PARTICLE_OUTPUT: true
-              DISPLACEMENT: true
-              VELOCITY: true
-              OWNER: true
+            # NO IO/RUNTIME VTK OUTPUT/PARTICLES section — it does not
+            # exist and adding it is a hard parse error, "Section
+            # 'IO/RUNTIME VTK OUTPUT/PARTICLES' is not a valid section
+            # name." Particle ParaView output is written unconditionally
+            # at the RESULTSEVERY interval below.
 
             BINNING STRATEGY:
               BIN_SIZE_LOWER_BOUND: <HORIZON + margin>

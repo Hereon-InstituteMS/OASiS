@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#2. The DEM normal contact stiffness is an exclusive-or between NORMAL_STIFF and the pair (REL_PENETRATION, MAX_VELOCITY). Both upstream halves run clean; all THREE illegal combinations -- both keys, neither key, and REL_PENETRATION without MAX_VELOCITY -- abort at setup with one byte-identical sentence from 4C_particle_interaction_dem_contact_normal.cpp, so the message cannot tell you which half you got wrong. DISTINCT_MESSAGES=1 is the assertion that measures that directly rather than by proxy: the three logs are grepped for the sentence and the results deduplicated. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 builds the three broken decks WITHOUT their edit, i.e. three copies of the working stiffauto deck, so the pathology is absent. Unmutated the fixture PASSES; mutated it FAILS because XOR_ABORTS drops to 0, every ABORTED_* becomes 'no', EXIT_BOTH/NONE/NOVMAX become 0 and the quoted sentence is never printed. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STIFFAUTO=0",
+    "EXIT_STIFFSET=0",
+    "EXIT_BOTH=1",
+    "EXIT_NONE=1",
+    "EXIT_NOVMAX=1",
+    "ABORTED_BOTH=yes",
+    "ABORTED_NONE=yes",
+    "ABORTED_NOVMAX=yes",
+    "XOR_ABORTS=3",
+    "DISTINCT_MESSAGES=1",
+    "specify either the relative penetration along with the maximum velocity, or the normal stiffness, but neither both nor none of them!",
+    "SOURCE_FILE=4C_particle_interaction_dem_contact_normal.cpp",
+    "STIFFAUTO_CLEAN=yes",
+    "STIFFSET_CLEAN=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "XOR_ABORTS=0",
+    "ABORTED_BOTH=no",
+    "ABORTED_NONE=no",
+    "ABORTED_NOVMAX=no",
+    "EXIT_BOTH=0",
+    "EXIT_NONE=0",
+    "EXIT_NOVMAX=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the three 'broken' decks straight from the working stiffauto deck, with no edit at all. Every deck is then legal, nothing aborts and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

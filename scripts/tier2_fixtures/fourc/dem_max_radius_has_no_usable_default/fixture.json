@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#1. MAX_RADIUS defaults to 0.0 and 0.0 is rejected, so omitting it aborts with 'non-positive maximum allowed particle radius!' before the first time step (NOMAX_STEPS_PRINTED=0 counts the TIME: lines directly rather than inferring 'early' from the exit code). MIN_RADIUS above MAX_RADIUS has its own distinct message from the same file. The corroboration that this is mandatory in practice is counted, not asserted from memory: UPSTREAM_DECKS_WITHOUT_MAX_RADIUS=0 scans all of 4C's own particle_dem decks. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 rebuilds every probe deck from the untouched upstream file, so the pathology is absent; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NOMAX=1",
+    "EXIT_MINMAX=1",
+    "EXIT_BASE=0",
+    "non-positive maximum allowed particle radius!",
+    "OMITTED_MAX_ABORTS=yes",
+    "minimum allowed particle radius larger than maximum allowed particle radius!",
+    "MIN_ABOVE_MAX_ABORTS=yes",
+    "SOURCE_FILE=4C_particle_interaction_dem.cpp",
+    "NOMAX_STEPS_PRINTED=0",
+    "BASE_CLEAN=yes",
+    "UPSTREAM_DECKS_WITHOUT_MAX_RADIUS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NOMAX=0",
+    "EXIT_MINMAX=0",
+    "OMITTED_MAX_ABORTS=no",
+    "MIN_ABOVE_MAX_ABORTS=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the broken deck(s) straight from the untouched upstream deck, so the thing being claimed is simply absent. The diagnostic then never appears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

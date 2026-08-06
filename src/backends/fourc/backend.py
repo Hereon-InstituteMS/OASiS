@@ -144,6 +144,11 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("particle_sph", "Smoothed particle hydrodynamics", [2],
                               ["particle"],
                               ["poiseuille_2d", "dam_break_2d"]),
+            PhysicsCapability("particle_dem",
+                              "Discrete element method (granular contact, "
+                              "friction, rolling, adhesion, walls)",
+                              [1, 2, 3], ["particle"],
+                              ["normal_impact_1d"]),
             PhysicsCapability("tsi", "Thermo-structure interaction", [2, 3],
                               ["SOLIDSCATRA HEX8"],
                               ["monolithic_3d", "oneway_3d",
@@ -494,23 +499,33 @@ class FourcBackend(SolverBackend):
                 "summary": ("SPH dam-break: 2D rectangular "
                             "column of fluid collapsing onto a "
                             "rigid floor under gravity."),
-                "needs": ["MAT_PARTICLE with SPH_FLUID "
-                          "particle type (density, "
-                          "DYN_VISCOSITY, BULK_MODULUS, "
-                          "SOUNDSPEED)",
-                          "PARTICLE_PHASE for the fluid "
-                          "column + a boundaryphase for the "
-                          "floor/walls",
-                          "PARTICLE DYNAMIC with explicit "
-                          "time integration + appropriate "
-                          "CFL"],
-                "pitfalls": ["SOUNDSPEED too low → fluid "
-                             "compresses unrealistically; "
-                             "rule of thumb c >= 10 * v_max",
-                             "SMOOTHING_LENGTH too small → "
-                             "spurious tensile-instability "
-                             "voids; rule of thumb h ~ 1.3 * "
-                             "particle spacing"],
+                "needs": ["MAT_ParticleSPHFluid with all nine "
+                          "required keys: INITRADIUS, "
+                          "INITDENSITY, REFDENSFAC, EXPONENT, "
+                          "BACKGROUNDPRESSURE, BULK_MODULUS, "
+                          "DYNAMIC_VISCOSITY, BULK_VISCOSITY, "
+                          "ARTIFICIAL_VISCOSITY — none of them "
+                          "has a default",
+                          "PHASE_TO_MATERIAL_ID mapping phase1 "
+                          "to the fluid material and "
+                          "boundaryphase to a "
+                          "MAT_ParticleSPHBoundary for the "
+                          "floor/walls, plus the matching "
+                          "PHASE_TO_DYNLOADBALFAC",
+                          "PARTICLE DYNAMIC with TIMESTEP "
+                          "chosen by hand — 4C runs no "
+                          "stability check for SPH"],
+                "pitfalls": ["There is no SOUNDSPEED key. The "
+                             "speed of sound is DERIVED, "
+                             "sqrt(BULK_MODULUS / INITDENSITY), "
+                             "so the acoustic scale is set by "
+                             "raising BULK_MODULUS",
+                             "There is no SMOOTHING_LENGTH key "
+                             "either. The kernel support radius "
+                             "is the material's INITRADIUS, and "
+                             "the upstream convention is 2*dx "
+                             "for CubicSpline and 3*dx for "
+                             "QuinticSpline"],
             },
             ("porous_media", "terzaghi_2d"): {
                 "problemtype": "Poroelasticity",
@@ -718,11 +733,17 @@ class FourcBackend(SolverBackend):
                           "PARTICLE DYNAMIC (INTERACTION DEM) + "
                           "PASI DYNAMIC + STRUCTURAL DYNAMIC + a "
                           "BINNING STRATEGY with the domain box",
-                          "MAT_ParticleMaterialDEM + a structural "
-                          "material"],
-                "pitfalls": ["Explicit DEM time step must satisfy "
-                             "the Rayleigh/contact-stiffness CFL or "
-                             "it explodes",
+                          "MAT_ParticleDEM (INITRADIUS + "
+                          "INITDENSITY only) + optionally "
+                          "MAT_ParticleWallDEM for the coupling "
+                          "surface + a structural material"],
+                "pitfalls": ["The DEM time step is checked but "
+                             "never enforced: exceeding the "
+                             "critical step only prints "
+                             "'Warning: time step <dt> larger "
+                             "than critical time step <dtcrit>!' "
+                             "once per step and the run finishes "
+                             "with a wrong answer",
                              "DOMAINBOUNDINGBOX must enclose all "
                              "particle motion"],
             },
