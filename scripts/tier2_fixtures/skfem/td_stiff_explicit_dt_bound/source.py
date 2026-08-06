@@ -28,6 +28,15 @@ from scipy.linalg.eigh(K_free, M_free):
 """
 from __future__ import annotations
 
+import os
+
+# Pin the BLAS thread count BEFORE numpy is imported: the dense eigensolves
+# here are small, and thread oversubscription makes the run time depend on how
+# busy the host is rather than on the code.
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+           "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_v, "1")
+
 import sys
 import warnings
 

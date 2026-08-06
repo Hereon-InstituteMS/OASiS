@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem wave#6, verified 2026-08-06 on skfem 12.0.1 / meshio 5.3.5. Claim: meshio needs 3D points so a 2D mesh must be z-padded, signalled by meshio.write raising WriteError, and a wrong cell-type tag 'produces a silently malformed .vtu file'. Ran: meshio.write of a 4x4 MeshQuad with raw (16,2) points, then five cell tags (quad, triangle, quad8, line, tetra) on the same 9x4 connectivity, each written and read back. Printed: BOTH HALVES POINT THE WRONG WAY. 2D points raise NOTHING -- the file is written, reads back with a (16,3) point array whose third column meshio supplied as zeros, and the only notice is plain text on the process stdout ('Warning: VTU requires 3D points, but 2D points given.') that is not a Python warning (empty catch_warnings record) and escapes contextlib.redirect_stdout. A wrong tag USUALLY RAISES: triangle, quad8 and line all raise WriteError naming the expected nodes-per-cell. THE GENUINELY SILENT MIS-TAG is one with the same node count -- tagging 4-node quads as 'tetra' passes meshio's only check, writes without a murmur, and reads back as tetrahedra on a mesh whose z-coordinates are all zero.",
+  "backend": "skfem", "physics": "wave", "pitfall_index": 6, "mode": "python",
+  "expect_in_output": [
+    "meshio_version=",
+    "points_are_2d=True",
+    "twod_points_raise=False",
+    "twod_points_python_warnings=[]",
+    "twod_points_notice_escapes_redirect_stdout=True",
+    "twod_points_no_exception_and_no_python_warning=True",
+    "VTU requires 3D points, but 2D points given",
+    "meshio_supplied_the_third_column=True",
+    "third_column_is_zero=True",
+    "tag_triangle_exception=WriteError",
+    "mismatched_node_count_is_loud=True",
+    "same_node_count_wrong_tag_is_silent=True",
+    "tetra_file_claims_3d_cells_on_flat_mesh=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

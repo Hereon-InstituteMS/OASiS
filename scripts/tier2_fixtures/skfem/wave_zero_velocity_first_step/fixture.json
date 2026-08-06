@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem wave#4, verified 2026-08-06 on skfem 12.0.1. Claim: an IC with u_t(0)=0 needs the special first step u^{-1} = u^0 - 0.5 dt^2 M^-1 (-c^2 K u^0); skipping it introduces a spurious initial velocity and the centre amplitude 'drifts linearly with t instead of oscillating'. Ran: MeshQuad.init_tensor 11x11, ElementQuad1, c=1, row-sum-lumped mass, standing-wave IC, dt refined 4x, error at T=1 measured against the EXACT semi-discrete solution built spectrally from scipy.linalg.eigh of the same K and M_L, for three starts: u^0 + 0.5 dt^2 a, the entry's u^0 - 0.5 dt^2 a, and plain u^0. Printed: THE SIGN IN THE ENTRY IS WRONG. The PLUS sign converges at rates 2.005/2.001/2.000; the entry's MINUS sign converges at 1.029/1.013/1.006, i.e. first order, and its error is 1.992 times that of doing nothing at all -- following the entry as written is worse than omitting the correction. The 'drifts linearly instead of oscillating' signal is also absent: over six time units all three starts oscillate with 8 sign changes at the centre and none shows a monotone growing peak. The diagnostic that works is the ORDER of the error in dt.",
+  "backend": "skfem", "physics": "wave", "pitfall_index": 4, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=121",
+    "plus_sign_gives_second_order=True",
+    "entry_minus_sign_gives_first_order=True",
+    "no_correction_gives_first_order=True",
+    "entry_sign_worse_than_no_correction=True",
+    "correct_peak_is_monotone_growing=False",
+    "entry_sign_peak_is_monotone_growing=False",
+    "none_peak_is_monotone_growing=False",
+    "correct_oscillates=True",
+    "entry_sign_oscillates=True",
+    "none_oscillates=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
