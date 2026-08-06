@@ -595,3 +595,35 @@ And the direction of error is not consistent. Case 1 inflates, case 4 deflates
 by 23 points, cases 2 and 3 corrupt without moving the number predictably. A
 coverage figure is only as good as the key hygiene beneath it, and that hygiene
 is now three gates plus one thing no gate catches.
+
+---
+
+# Asserting on a stochastic code without pinning noise
+
+SPARTA is direct-simulation Monte Carlo, so every quantity carries statistical
+scatter and the obvious fixture — "the value is X" — is either pinned noise or a
+tolerance wide enough to pass anything. The design that solved it is worth
+copying wherever a code is stochastic, adaptive, or otherwise not bitwise
+reproducible:
+
+  * measure the noise floor from ONE seed's late windows;
+  * make every assertion against a DIFFERENT seed;
+  * assert a RATIO against that floor, never an absolute value.
+
+Wall-flux fixture: seed B's late windows all inside 3x seed A's floor, both
+first windows more than 10x outside. Surface-flux: floor 0.54%, seed B's ten
+late windows all inside 3x, its first window 26% and tens of times outside. No
+measured value is pinned anywhere, and the assertion is dimensionless.
+
+The shear fixture goes further and removes a CONFOUND rather than tolerating it.
+The occupancy bias of `rarefied_flow:6` pushes the same direction as the effect
+under test, so the fixture routes through `fix ave/grid` to eliminate it, then
+runs three seeds per grid and asks only whether the clusters SEPARATE. They do,
+with no overlap. Its mutation is the best control in the tree: zeroing both wall
+velocities collapses the signal from 4.55% to 0.54% and the clusters stop
+separating — which proves the residual is the shear and not a grid artifact.
+
+That last step is the one usually skipped. A mutation that removes the pathology
+shows the fixture responds to something; a mutation that removes the pathology
+AND lands on the independently measured noise floor shows it responds to the
+right thing.
