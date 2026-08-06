@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 6,
+  "covers": ["multiphase::6"],
+  "mode": "python",
+  "expect_in_output": [
+    "sharp_start_energy_is_higher=True",
+    "first_step_release_ratio_exceeds_50=True",
+    "still_relaxing_faster_after_20_steps=True",
+    "every_step_converged_in_both_runs=True",
+    "nothing_was_raised=True",
+    "selected_first_step_release_is_at_least_50x_the_consistent_one=True",
+    "VERDICT=inconsistent_initial_width_spends_the_first_steps_reprofiling"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=initial_width_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

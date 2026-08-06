@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "dof_count_fraction_is_frozen_over_most_of_the_run=True",
+    "integral_detects_more_motion_than_dof_counting=True",
+    "two_ranks_printed_two_different_dof_fractions=True",
+    "neither_rank_matched_the_serial_dof_fraction=True",
+    "VERDICT=dof_counting_is_quantised_and_rank_local"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=dof_counting_was_adequate",
+    "VERDICT=mpirun_unavailable"
+  ],
+  "timeout_seconds": 300
+}

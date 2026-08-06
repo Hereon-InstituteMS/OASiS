@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 2,
+  "covers": ["multiphase::2"],
+  "mode": "python",
+  "expect_in_output": [
+    "every_step_converged=True",
+    "volume_drift_exceeds_one_percent=True",
+    "volume_drift_is_monotone=True",
+    "energy_is_non_increasing_at_every_step=True",
+    "VERDICT=volume_drifts_while_the_energy_is_a_lyapunov_functional"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=volume_was_conserved"
+  ],
+  "timeout_seconds": 300
+}

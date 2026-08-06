@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "well_sized_steps_all_converged=True",
+    "dt_1e-2_is_above_the_explicit_limit=True",
+    "too_large_dt_fails_at_the_very_first_step=True",
+    "too_large_dt_field_stays_finite_and_bounded=True",
+    "too_large_dt_reason_names=['DIVERGED_LINE_SEARCH']",
+    "VERDICT=large_dt_fails_in_newton_not_as_an_instability"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=large_dt_behaved_differently"
+  ],
+  "timeout_seconds": 300
+}

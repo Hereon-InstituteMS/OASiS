@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "selected_h_newton_converged_every_step=True",
+    "selected_h_iterations_stay_below_five=True",
+    "selected_h_saw_diverged_fnorm_nan=False",
+    "derivative_through_the_material_law_is_a_ufl_form=True",
+    "selected_h_integral_moves_with_quadrature_degree=True",
+    "sharp_is_more_quadrature_sensitive_than_smooth=True",
+    "VERDICT=conditional_is_newton_safe_but_quadrature_dependent"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=selected_heaviside_is_quadrature_insensitive"
+  ],
+  "timeout_seconds": 300
+}
