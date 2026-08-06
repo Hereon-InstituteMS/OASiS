@@ -11,11 +11,11 @@ Right variant: the same loop with apply_lifting.
 
 Observed: both variants print the identical line 'T in [0.0000, 1.0000]' at
 every single step and both report KSP converged reason 4 at every step, yet the
-run without lifting stores 22x less heat (int T dx = 2.201e-02 against
-4.895e-01) and its mid-height profile is O(1e-2) where the correct one ramps
-from ~0.94 down to ~0.03. A min/max print cannot see this; the assembled
-Galerkin residual over the UNCONSTRAINED dofs can - it is at machine zero with
-lifting and O(1) without.
+run without lifting stores 19.6x less heat (int T dx = 2.2409e-02 against
+4.3840e-01) and its mid-height profile reads 0.0136, 0.0110, 0.0086, ... where
+the correct one ramps 0.8377, 0.6811, 0.5352, ... down to 0.0882. A min/max print
+cannot see this; the assembled Galerkin residual over the UNCONSTRAINED dofs can
+- it is 3.9e-15 with lifting and 9.8e-01 without.
 
 Mutation control: T2_MUTATE=1 calls apply_lifting in the checked variant; the
 residual drops to machine zero and the stored-heat deficit disappears.
