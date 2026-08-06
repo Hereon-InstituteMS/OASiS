@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM stokes_darcy::6: [Physics] The single-mesh Brinkman form does NOT impose the Beavers-Joseph-Saffman interface condition. There is one H1 velocity field over both regions, so the velocity - including its tangential component - is continuous across the interface by construction and no slip jump and no alpha_BJ parameter exist anywhere in the form. What the model does produce is a Brinkman screening layer: below the interface the tangential velocity decays exponentially, and the measured decay length approaches sqrt(K/mu_eff) from above as K decreases. Signal: numerical, not textual - with cells about ten times sqrt(K) the interface velocity is roughly a third below its resolved value and the total flux a couple of percent off, with no error message; refining until the cell size reaches sqrt(K) removes both errors. WHAT THIS RUNS: a pressure-driven Brinkman channel on the unit square, quadrilaterals, Taylor-Hood Q2/Q1, porous lower half, mu = mu_eff = 1, unit pressure at x=0 and zero at x=1, no-slip walls, MUMPS LU; the mesh is anisotropic (4 cells across, 8 to 320 along the channel) because the solution is one-dimensional, and the largest mesh costs about the same as a 32x32 one. The wrong variant sizes the mesh from the geometry (h = 10*sqrt(K)); the right one from sqrt(K). WHAT WAS PRINTED: the compiled bilinear form carries integral types ['cell'] only - no interface facet integral, no slip parameter - and the tangential velocity evaluated at the interface point from all four cells meeting there (two above, two below) reads 2.197202752e-03 from each, a jump of 3.6e-17, so there is no slip jump to measure. On resolved meshes the fitted decay length is 0.04994, 0.02500 and 0.01250 at K = 2.5e-3, 6.25e-4 and 1.5625e-4, i.e. 0.9988, 1.0000 and 1.0000 times sqrt(K/mu_eff). At h = 10*sqrt(K) nothing is raised and the KSP reason is 4 at every resolution, but the interface velocity is 0.6864 of its resolved value (31% low) and the flux 0.9778 (2.2% low); at h = sqrt(K) those become 0.9994 and 1.0000. DISCREPANCY: the claim says the decay length approaches sqrt(K/mu_eff) FROM ABOVE - on these resolved meshes the ratio is at or just below one, so only the limit is confirmed, not the direction of approach. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 sizes the mesh under test from sqrt(K) and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 6,
+  "mode": "python",
+  "covers": ["stokes_darcy::6"],
+  "expect_in_output": [
+    "cells_at_ten_times_sqrt_K_put_the_interface_velocity_a_third_low=True",
+    "cells_at_ten_times_sqrt_K_cost_a_couple_of_percent_of_the_flux=True",
+    "refining_to_h_equal_sqrt_K_removes_both_errors=True",
+    "velocity_is_one_h1_field_over_both_regions=True",
+    "form_has_cell_integrals_only_no_interface_coupling=True",
+    "tangential_velocity_jump_across_the_interface_is_machine_zero=True",
+    "no_error_message_at_any_resolution=True",
+    "decay_length_equals_sqrt_K_over_mu_eff_on_resolved_meshes=True",
+    "bilinear_form_integral_types=['cell']",
+    "VERDICT=brinkman_has_no_slip_jump_and_needs_a_mesh_sized_from_sqrt_K"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=brinkman_interface_behaved_differently"
+  ],
+  "timeout_seconds": 300
+}

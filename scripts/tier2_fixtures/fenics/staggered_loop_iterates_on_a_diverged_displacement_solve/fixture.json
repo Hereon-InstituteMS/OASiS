@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM fracture::7: [Integration] Neither problem.solve() raises on failure, so an unchecked staggered loop will happily iterate on a diverged displacement field. Signal: the loop keeps running and prints plausible damage values while SNES has been returning a negative converged reason for every sweep. Put `assert pu.solver.getConvergedReason() > 0` immediately after the displacement solve, and separately check that the regularised surface energy is non-decreasing across load steps - it is a cheap, reference-free indicator that the crack is growing rather than the solution falling apart. WHAT THIS RUNS: a force-controlled staggered AT2 phase-field solve on a 16x16 unit square, P1 displacement and P1 damage, E=210, nu=0.3, Gc=2.7e-3, l0=2h=0.125, k_res=0, pre-crack seeded as a large history value along y=0.5 for x<0.5, bottom edge clamped and a vertical traction ramped over twelve steps on the top edge, four staggered sweeps per step, SNES+MUMPS for the displacement step and MUMPS for the damage step; under force control the crack runs unstably and the degraded operator of the separated specimen stops being solvable. The mutant runs the identical loop with the assertion the claim asks for. WHAT WAS PRINTED: the first two load steps converge with SNES reason 3, the third turns at its fourth sweep (-5, DIVERGED_MAX_IT) and the remaining nine load steps report a negative reason (-5 / -6) on every one of their four sweeps; neither solve() raises anything, the damage KSP keeps returning reason 4, and the damage printed stays entirely plausible - max(d)=1.0000, min(d) around 8e-02, all finite - while max|u| reaches 1.207e+28. DISCREPANCY WORTH KEEPING: the regularised surface energy rises monotonically from 2.2390e-03 to 8.7745e-03 across exactly those diverged steps, so the second, cheap check the claim recommends does NOT catch this failure - only the converged reason does. With the assertion in place the loop stops at step 3 sweep 4 with 'AssertionError: displacement solve diverged, SNES reason -5'. Exact reason codes and the step where divergence starts move a little between runs (MUMPS on a nearly singular operator), so only the qualitative facts are asserted. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 adds the guard and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 7,
+  "mode": "python",
+  "covers": ["fracture::7"],
+  "expect_in_output": [
+    "displacement_solve_never_raised=True",
+    "damage_solve_never_raised=True",
+    "whole_sweep_diverged_on_at_least_three_load_steps=True",
+    "damage_values_stayed_plausible_while_the_solve_diverged=True",
+    "displacement_field_exceeded_1e10_on_those_steps=True",
+    "surface_energy_stayed_non_decreasing_so_that_check_missed_it=True",
+    "first_step_and_sweep_with_a_negative_reason=",
+    "number_of_load_steps_whose_every_sweep_diverged=",
+    "VERDICT=unchecked_staggered_loop_ran_on_a_diverged_displacement_field"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_staggered_loop_noticed_the_failure"
+  ],
+  "timeout_seconds": 400
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM fracture::6: [Numerical] Seeding a pre-crack by writing a large value into the history field makes the damage overshoot one slightly near the seed, which is harmless but will trip a naive assertion that d <= 1. Signal: max(d) comes out a fraction of a percent above one from the very first load step, at nodes on the boundary between seeded and unseeded cells; it is the AT2 gradient term smoothing a step change in the driving force, not a solver failure. Check min(d) >= 0 and that the regularised surface energy increases, rather than asserting a hard upper bound of one. The same overshoot region is where the small non-monotone decreases of d appear even with the history field enabled. WHAT THIS RUNS: a staggered AT2 phase-field solve on a 20x20 unit square, P1 displacement and P1 damage, E=210, nu=0.3, Gc=2.7e-3, l0=2h=0.1, pre-crack along y=0.5 for x<0.5 seeded as a large history value, three displacement-controlled load steps with the history maximum enabled; the mutant seeds the identical pre-crack with a Dirichlet condition d=1 on the notch nodes instead. WHAT WAS PRINTED: the damage subproblem is linear and unconstrained, so max(d) reads 1.0187 immediately after seeding - 1.87% over the bound - and stays above one at every load step (1.0178, 1.0152, 1.0101); the argmax node sits at (0.4500, 0.5000), the tip of the seeded band; min(d) stays non-negative (1.2e-03 to 2.1e-02) and the regularised surface energy rises 2.18e-03 -> 2.30e-03 -> 2.80e-03. A naive `assert d.x.array.max() <= 1.0` raises AssertionError. The worst non-monotone nodal decrease during loading, -0.00506, occurs at the same node (0.4500, 0.5000), which is the claim's last sentence. Dirichlet seeding gives max(d) = 1.0 exactly. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 seeds the pre-crack with a Dirichlet condition and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 6,
+  "mode": "python",
+  "covers": ["fracture::6"],
+  "expect_in_output": [
+    "max_d_exceeds_one_right_after_seeding=True",
+    "max_d_still_exceeds_one_at_every_load_step=True",
+    "overshoot_is_under_five_percent=True",
+    "min_d_is_non_negative=True",
+    "regularised_surface_energy_increases_every_step=True",
+    "overshoot_node_sits_on_the_seed_boundary=True",
+    "naive_assert_d_le_one_fails=True",
+    "worst_nonmonotone_decrease_is_in_the_overshoot_region=True",
+    "AssertionError: damage exceeded one",
+    "VERDICT=history_seeded_precrack_overshoots_one_harmlessly"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=history_seeded_precrack_stayed_at_or_below_one"
+  ],
+  "timeout_seconds": 300
+}

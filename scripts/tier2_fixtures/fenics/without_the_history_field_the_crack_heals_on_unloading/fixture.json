@@ -1,0 +1,22 @@
+{
+  "_comment": "CLAIM fracture::0: [Numerical] Irreversibility is not optional and its absence is not a small effect. Enforce it with a history field updated by an element-wise maximum after every displacement solve: H.x.array[:] = np.maximum(H.x.array, Hn.x.array) where Hn holds the interpolated tensile energy density. Signal: on a load-then-unload path WITHOUT the history update, individual nodes fall from fully damaged back to almost undamaged inside a single load step - the worst per-step change in d is close to minus one - and the damage integrated over the whole body has lost roughly forty percent of its peak by the time the load is back at zero, i.e. the crack visibly heals. WITH the history update the same integral loses exactly nothing during unloading. Caveat: the history field guarantees the DRIVING FORCE is monotone, not that every nodal value of d is; small decreases still occur while the load is increasing. WHAT THIS RUNS: a staggered AT2 phase-field solve on a 20x20 unit square, P1 displacement and P1 damage, E=210, nu=0.3, Gc=2.7e-3, l0=2h=0.1, pre-crack seeded as a large history value on a cell band at y=0.5 with x<0.5, displacement control on the top edge over eight steps up to 6.4e-3 and eight steps back to zero; the wrong variant drives the damage problem with the current tensile energy density (keeping only the seed as a floor, so only the accumulation is dropped), the right one takes the element-wise maximum against the previous history. WHAT WAS PRINTED: without the history update the worst per-step change of a single nodal damage value on the unloading path is -0.8084 and the integrated damage falls from a peak of 0.27063 to 0.16559 at zero load, losing 38.81% of its peak - 'roughly forty percent'; with the history update the same integral loses exactly nothing while unloading (peak 0.32380, final 0.32380, fraction 0.0000). The claim's caveat also reproduces: with the history field the worst nodal change while the load is still increasing is -0.0021, redistribution rather than healing. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 gives the run under test the history maximum and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 0,
+  "mode": "python",
+  "covers": ["fracture::0"],
+  "expect_in_output": [
+    "no_history_worst_nodal_step_change_is_near_minus_one=True",
+    "no_history_integrated_damage_lost_over_thirty_percent_of_its_peak=True",
+    "with_history_integrated_damage_loses_nothing_while_unloading=True",
+    "with_history_small_nodal_decreases_still_occur_while_loading=True",
+    "under_test: peak_integrated_damage=",
+    "with_history: peak_integrated_damage=",
+    "VERDICT=without_the_history_field_the_crack_heals"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=damage_stayed_irreversible_without_the_history_field"
+  ],
+  "timeout_seconds": 400
+}

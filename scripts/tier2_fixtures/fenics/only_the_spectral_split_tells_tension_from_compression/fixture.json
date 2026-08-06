@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM fracture::2: [Physics] Without a tension-compression split the model cannot tell tension from compression at all, and the standard volumetric-deviatoric split does not fix it. Signal: read the damage extremum straight off the dolfinx Function with d.x.array.max() at each load step: with no split, the identical specimen loaded in tension and loaded in compression produces damage fields that agree to every printed digit, and a full crack forms under pure compression. Switching to the volumetric-deviatoric (Amor) split changes almost nothing - uniaxial compression still drives the maximum damage to one. Only the SPECTRAL (Miehe) eigenvalue split works: it brings the maximum damage under uniaxial compression down by about an order of magnitude while leaving the tension case cracking normally, and it does NOT give exactly zero damage under compression because the lateral Poisson strains are tensile. WHAT THIS RUNS: a staggered AT2 phase-field solve on a homogeneous 16x16 unit square, P1 displacement and P1 damage, E=210, nu=0.3, Gc=2.7e-3, l0=2h=0.125, hybrid formulation (the displacement problem keeps the isotropically degraded stress so it stays linear, only the damage driving force uses the split), uniaxial roller loading with u_y prescribed top and bottom and one corner pinned in x so the lateral strain is free, ten steps to +/-6e-2, the same specimen in tension and in compression, for the three splits none / Amor / spectral. WHAT WAS PRINTED: with no split the two load directions give damage maxima that agree to every printed digit at all ten steps (0.277778, 0.606061, ... 0.974659 in both) and compression alone reaches 0.974659; the Amor split still reaches 0.964879 in compression; the spectral split gives 0.047120 in compression against 0.251029 in tension at the first load step, a ratio of 0.1877 (5.3x lower), while its tension case still cracks (0.971029), and its compression damage is small but not zero. DISCREPANCY: the order-of-magnitude gap belongs to the pre-saturation regime - pushed to 6e-2 imposed strain the spectral compression maximum climbs to 0.831793, so the split buys the ratio, not a bound; the fixture pins that too. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 makes the model under test the spectral split and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": ["fracture::2"],
+  "expect_in_output": [
+    "model_under_test_tension_and_compression_agree_to_every_printed_digit=True",
+    "model_under_test_compression_alone_drives_damage_above_0p95=True",
+    "amor_compression_alone_also_drives_damage_above_0p95=True",
+    "spectral_compression_is_at_least_five_times_lower_at_first_load=True",
+    "spectral_tension_still_cracks=True",
+    "spectral_compression_damage_is_small_but_not_zero=True",
+    "spectral_compression_damage_saturates_towards_one_at_large_strain=True",
+    "split=spectral  sign=-1 max_d_per_load_step=",
+    "VERDICT=only_the_spectral_split_separates_tension_from_compression"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_model_under_test_already_separated_tension_from_compression"
+  ],
+  "timeout_seconds": 300
+}
