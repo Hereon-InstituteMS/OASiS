@@ -947,8 +947,8 @@ def _stage_sparta_deck_refs(work_dir: Path, spec: dict) -> list[str]:
     The coupled path (couple()/run_coupling) runs raw commands in fresh
     work_dirs and — unlike SpartaBackend.run() — did no data staging, so a
     SPARTA participant died with 'Cannot open species file ar.species'
-    (../particle.cpp:711) unless the agent hand-copied every file (T15
-    campaign 2026-07; reproduced 2026-08-01). Here: scan work_dir for
+    (../particle.cpp:711) unless the agent hand-copied every file
+    (observed 2026-07; reproduced 2026-08-01). Here: scan work_dir for
     SPARTA-style decks and stage whatever they reference, searching the
     participant's data_dir / data_files parents FIRST (a task-specific
     circle.surf must beat the distribution example of the same name),

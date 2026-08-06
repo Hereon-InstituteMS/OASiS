@@ -83,7 +83,9 @@ def _sparta_data_dirs(binary: Optional[str] = None,
     data dir) come first, then SPARTA_DATA_DIR (colon-separated env, same
     precedence idea), then the distribution. A task-specific circle.surf
     must win over the distribution's example circle.surf of the same name
-    — the two are different geometries (T15 campaign, 2026-07)."""
+    — the two are different geometries, and losing that race is silent:
+    the deck reads the example surface and runs to completion on the
+    wrong body (observed 2026-07)."""
     dirs: list[Path] = []
     for d in extra_dirs:
         p = Path(d).expanduser()
@@ -141,7 +143,7 @@ def stage_deck_data_files(deck: str, work_dir: Path,
     which previously did NO staging at all: a SPARTA participant deck
     run by the coupling driver in a fresh work_dir died with
     'Cannot open species file ar.species' (../particle.cpp:711)
-    (T15 campaign 2026-07, reproduced 2026-08-01).
+    (observed 2026-07, reproduced 2026-08-01).
 
     Resolution per reference:
       1. already present in work_dir -> keep (never overwrite),

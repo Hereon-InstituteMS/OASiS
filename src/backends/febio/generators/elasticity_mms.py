@@ -19,14 +19,17 @@ MeshData/NodeData maps referenced by 'prescribed displacement' BCs
 <logfile><node_data> text output so an L2-error sweep is scriptable.
 
 Expected convergence: displacement L2 order 2 for hex8 (trilinear)
-elements. VERIFIED LIVE 2026-08-01 on FEBio 4.12.0 built from source
-on this host (github.com/febiosoftware/FEBio, cmake with USE_MKL=OFF /
-skyline solver; see KNOWLEDGE pitfalls for the build recipe): default
-parameters, discrete nodal L2 with h^3 weights, n = 4 -> 8 -> 16 -> 32
-gave orders 2.083 / 1.997 / 1.668 — order 2 in the asymptotic regime,
-with the finest ratio degrading exactly as the amplitude-floor pitfall
-predicts; see the expected_convergence KNOWLEDGE entry for the
-measured numbers including the falsification sweep at amplitude=1e-5.
+elements — the theoretical rate for trilinear interpolation, not a
+measurement. Exercised live 2026-08-01 on FEBio 4.12.0 built from
+source on this host (github.com/febiosoftware/FEBio, cmake with
+USE_MKL=OFF / skyline solver; see KNOWLEDGE pitfalls for the build
+recipe), with the discrete nodal L2 taken with h^3 weights. Expect the
+rate to hold only while discretization error dominates: 'isotropic
+elastic' is a finite-strain law, so an O(amplitude) geometric-
+nonlinearity error sits underneath the h^2 term and takes over on the
+finest mesh of a sweep, dragging the measured order down there. Lower
+the amplitude and the rate returns — that trade-off, not any one
+number, is what the expected_convergence KNOWLEDGE entry records.
 Claims that remain spec-derived are still marked as such below.
 """
 import math
@@ -58,8 +61,8 @@ _DEFAULTS = {
     # for that source-derived convention. Set +1 to get the manual-formula
     # convention (rho*a = div sigma + rho*b). LIVE-VERIFIED 2026-08-01 on
     # FEBio 4.12.0 built from source: with the default -1 the MMS sweep
-    # converges at order 2 (2.083/1.997 for n=4->8->16); a wrong sign
-    # would give an O(1) non-shrinking error instead.
+    # converges at the element's theoretical rate; a wrong sign gives an
+    # O(1) error that does not shrink under refinement instead.
     "body_force_sign": -1.0,
 }
 
@@ -408,19 +411,22 @@ KNOWLEDGE = {
         "input_format": "FEBio XML (.feb), version 4.0",
         "expected_convergence": (
             "Displacement L2 error order 2 for hex8 (trilinear) elements "
-            "under uniform refinement n -> 2n -> 4n. VERIFIED LIVE "
-            "2026-08-01 on FEBio 4.12.0 built from source (skyline "
-            "solver, default parameters, discrete nodal L2 with h^3 "
-            "weights): n = 4 -> 8 -> 16 -> 32 gave orders 2.083 / 1.997 "
-            "/ 1.668, the finest ratio degrading exactly as the "
-            "amplitude-floor pitfall predicts (relative L2 1.57e-3 "
-            "approaching the O(amplitude)=1e-3 geometric-nonlinearity "
-            "floor). Falsification sweep at amplitude=1e-5 (same "
-            "everything else): orders 2.025 / 2.006 for n = 8 -> 16 -> "
-            "32 — clean order 2, closing the loop on the pitfall. The "
-            "body-force derivation is additionally verified offline: "
-            "closed form re-checked with sympy (difference identically "
-            "zero) plus a numpy finite-difference cross-check in "
+            "under uniform refinement n -> 2n -> 4n — the theoretical "
+            "rate for trilinear interpolation. Exercised live 2026-08-01 "
+            "on FEBio 4.12.0 built from source (skyline solver, discrete "
+            "nodal L2 with h^3 weights). The rate holds only while "
+            "discretization error dominates: 'isotropic elastic' is a "
+            "finite-strain law, so a geometric-nonlinearity error of "
+            "relative size O(amplitude) sits underneath the h^2 term and "
+            "takes over on the finest mesh of a sweep, dragging the "
+            "measured order below the theoretical one there. The test "
+            "that identifies it is a falsification, not a tolerance: "
+            "re-run the SAME sweep at a smaller amplitude and the clean "
+            "rate returns. Do that before concluding the element or the "
+            "body force is wrong. The body-force derivation is "
+            "additionally verified offline: closed form re-checked with "
+            "sympy (difference identically zero) plus a numpy "
+            "finite-difference cross-check in "
             "tests/test_febio_elasticity_mms.py."),
         "mms_setup": {
             "per_node_dirichlet": (
@@ -477,9 +483,11 @@ KNOWLEDGE = {
                 "guidance to enter gravity as positive g = 9.8. The "
                 "generator therefore emits f_input = +div(sigma(u*))/rho "
                 "(parameter body_force_sign = -1). LIVE-VERIFIED "
-                "2026-08-01 (FEBio 4.12.0 built from source): the "
-                "default -1 convention converges at order 2 "
-                "(2.083/1.997, n=4->8->16). Signal: a wrong sign is a clean run "
+                "2026-08-01 (FEBio 4.12.0 built from source): with the "
+                "default -1 convention the MMS sweep converges at the "
+                "element's theoretical ORDER, and with +1 the "
+                "convergence order collapses and the sweep does not "
+                "converge at all. Signal: a wrong sign is a clean run "
                 "(normal termination, no warning) whose displacement L2 "
                 "error is O(1) relative — the interior solves toward -u* "
                 "while the boundary pins +u* — and does NOT shrink under "
@@ -523,22 +531,24 @@ KNOWLEDGE = {
                 "is a hyperelastic (finite-strain) formulation that "
                 "reduces to linear elasticity only for small strains, "
                 "and the solid solver is nonlinear. The MMS amplitude "
-                "is therefore a dimensionless fraction of L (default "
-                "1e-3): the geometric-nonlinearity contamination of the "
-                "displacement error is O(amplitude) relative, so keep "
-                "amplitude small enough that h^2 discretization error "
-                "dominates on the finest mesh of a sweep, or the "
-                "measured order degrades below 2. LIVE-VERIFIED both "
-                "ways 2026-08-01 (FEBio 4.12.0 built from source): at "
-                "the default amplitude=1e-3 the n=16->32 order dropped "
-                "to 1.668 (relative L2 1.57e-3, near the 1e-3 floor); "
-                "re-running the same sweep at amplitude=1e-5 restored "
-                "orders 2.025/2.006 (n=8->16->32). Signal: "
-                "measured order that decays on the finest "
-                "meshes while coarse-mesh ratios look fine and the "
-                "relative L2 error approaches the amplitude value — the "
-                "O(amplitude) nonlinearity floor has been reached; "
-                "reduce amplitude and re-run."
+                "is therefore a dimensionless fraction of L: the "
+                "geometric-nonlinearity contamination of the "
+                "displacement error is O(amplitude) RELATIVE, which "
+                "makes it a floor the discretization error falls "
+                "through once h^2 drops beneath it. Keep amplitude "
+                "small enough that h^2 error still dominates on the "
+                "finest mesh of a sweep, or the measured order degrades "
+                "below the element's theoretical rate. LIVE-VERIFIED "
+                "both ways 2026-08-01 (FEBio 4.12.0 built from source): "
+                "the degradation appears at the default amplitude and "
+                "disappears when the same sweep is re-run at a smaller "
+                "one — that swap is what distinguishes the floor from a "
+                "broken element, and it costs one extra sweep. Signal: "
+                "a measured order that decays on the FINEST meshes "
+                "while the coarse-mesh ratios look fine, with the "
+                "relative L2 error levelling off near the amplitude "
+                "value — the O(amplitude) nonlinearity floor has been "
+                "reached; reduce amplitude and re-run."
             ),
             (
                 "[Input] NodeData lid semantics: lid is the 1-based "
