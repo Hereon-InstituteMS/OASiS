@@ -512,3 +512,42 @@ correction pass should come from someone who did not write the corrections.
 Failing that, phrase every query as an observation with no mechanism in it —
 "the field stopped changing", "the answer got worse when I refined", "it ran but
 the number is wrong" — never as a description of the cause.
+
+---
+
+# A passing fixture that asserted a false statement
+
+This is the failure the whole programme is built to prevent, found inside the
+programme itself, and it deserves to be recorded plainly.
+
+`stokes_lbb_and_pressure_constraints` (DUNE) printed and asserted
+
+    zero_pressure_entry_claim_not_reproduced=True
+
+The claim IS reproduced. The fixture built its inlet mask by interpolating
+`[x[0], x[1], 0]` and slicing the PRESSURE leg, which returns the constant-0
+third component — so every pressure dof tested as lying on x = 0, and the
+"inlet maximum" it compared against was simply the global maximum. The fixture
+ran, passed, and certified the opposite of the truth.
+
+Counting `scheme.dirichletBlocks` instead settles it: both spellings constrain
+the same 264 velocity dofs at 8x8, but `None` constrains **0** pressure dofs
+while `0` constrains **68**, and the boundary pressure is exactly 0.0 versus
+2.0. Fixed, re-executed, sentinel replaced with `zero_entry_pins_the_pressure`.
+
+WHY IT MATTERS MORE THAN ANY SINGLE WRONG ENTRY. A wrong catalog entry misleads
+an agent. A wrong FIXTURE misleads everyone downstream, permanently, and wears
+the badge that is supposed to mean "executed". Coverage counted it. The mutation
+harness would have killed it — the mutation removes the pathology and the
+assertion changes — so even mutation evidence does not catch an assertion that
+is internally consistent and externally false.
+
+Nothing in the gate stack detects this. The only thing that caught it was an
+agent re-reading its own probe and asking what the mask actually selected. That
+is not a process that can be automated, and pretending otherwise would be the
+same error one level up.
+
+What CAN be said: the failure needed a derived quantity (a mask built by
+interpolation and sliced by leg) standing in for the thing being measured. Where
+a fixture can count the thing directly — dirichletBlocks, dof counts, non-zeros
+— it should, and this fixture now does.
