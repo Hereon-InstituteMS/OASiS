@@ -5231,10 +5231,12 @@ TRANSPORT ELEMENTS:
             "function of type ...', which is what you get for a "
             "SYMBOLIC_FUNCTION_OF_TIME where a space-time "
             "function is needed. "
-            "(Verified by execution 2026-08-06: Neumann "
-            "condition with FUNCT: [0, 7, 0] against no FUNCT "
-            "sections, against FUNCT1+FUNCT7 only, and against "
-            "a complete FUNCT1..FUNCT7 run, which succeeds.)",
+            "(Verified by execution 2026-08-03: Neumann "
+            "condition with FUNCT: [0, 7, 0] and no FUNCT7 "
+            "section. Extended by execution 2026-08-06: the "
+            "same condition against FUNCT1+FUNCT7 only fails "
+            "identically, while a complete FUNCT1..FUNCT7 run "
+            "succeeds and reproduces the FUNCT-0 answer.)",
 
             "[Input] Condition arrays must match NUMDOF exactly, "
             "and NUMDOF itself must match the nodal DOF count "
