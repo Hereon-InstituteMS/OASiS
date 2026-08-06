@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem heat_transient#2, verified 2026-08-06 on skfem 12.0.1. Claim: Crank-Nicolson is (M + 0.5 dt K) u_new = (M - 0.5 dt K) u_old + dt f and the symmetric right-hand side is required for second order; mixing up the (1-theta) factor degrades to slope 1 even with theta = 0.5 set. Ran: u_t = Laplace u on MeshTri.init_tensor 20x20 with ElementTriP1 (441 DOFs), T = 0.02, 4/8/16/32/64 steps against a 1024-step same-mesh reference, for the symmetric form, for the form with (M - 0.5 dt K) replaced by bare M, and for a true backward-Euler run. Printed: symmetric reduction factors 4.101/4.002/4.003/4.012; with the factor dropped they fall to 1.978/2.001/2.025/2.063 -- first order -- while the LEFT-hand side is untouched so nothing about the assembled system looks wrong. It is silent: empty warning list, finite, bounded. Naming it: the degraded scheme is NOT numerically identical to backward Euler but tracks one at a fixed error ratio 0.3124/0.3087/0.3068/0.3058/0.3053 (spread 0.0071) across every dt, so it is first order with a smaller constant. Reporting it as 'Crank-Nicolson, slightly less accurate' is the reading to avoid; it has lost an order.",
+  "backend": "skfem", "physics": "heat_transient", "pitfall_index": 2, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=441",
+    "symmetric_quarters_the_error=True",
+    "dropped_factor_only_halves_the_error=True",
+    "dropped_factor_still_quarters=False",
+    "dropped_factor_warnings=[]",
+    "dropped_factor_is_silent=True",
+    "dropped_factor_finite=True",
+    "dropped_factor_is_exactly_backward_euler=False",
+    "dropped_factor_tracks_backward_euler_at_a_fixed_ratio=True",
+    "both_are_first_order=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

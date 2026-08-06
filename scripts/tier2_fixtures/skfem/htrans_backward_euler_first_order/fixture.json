@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem heat_transient#0, verified 2026-08-06 on skfem 12.0.1. Claim: backward Euler is unconditionally stable but only first order, signalled by the L-infinity error decreasing by ~2 per dt halving instead of ~4. Ran: u_t = Laplace u on MeshTri.init_tensor 20x20 with ElementTriP1 (441 DOFs, 361 interior), homogeneous Dirichlet, IC sin(pi x) sin(pi y), T = 0.02, 4/8/16/32/64 steps for theta = 1 and theta = 0.5, errors as max|u_h - u_ref| over interior DOFs against a 1024-step SAME-MESH reference (against the analytic solution the spatial error saturates and the study is meaningless). Printed: backward Euler reduction factors 1.955/1.988/2.018/2.059, slopes 0.967/0.992/1.013/1.042; Crank-Nicolson on the same mesh gives 4.101/4.002/4.003/4.012, slopes ~2, so the entry's 2-vs-4 discriminator works and the two schemes never overlap. Unconditional stability checked separately: a single step covering the whole interval stays finite and decays to 0.718651.",
+  "backend": "skfem", "physics": "heat_transient", "pitfall_index": 0, "mode": "python",
+  "expect_in_output": [
+    "be_dofs_N=441",
+    "be_factor_is_about_two=True",
+    "be_slope_is_one=True",
+    "be_factor_is_about_four=False",
+    "cn_factor_is_about_four=True",
+    "cn_slope_is_two=True",
+    "the_two_schemes_are_distinguishable=True",
+    "single_giant_step_finite=True",
+    "single_giant_step_decayed=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}
