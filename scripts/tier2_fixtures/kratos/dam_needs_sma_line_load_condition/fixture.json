@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: DamHydroConditionLoadProcess only SETS nodal POSITIVE_FACE_PRESSURE; nothing applies it as a force unless load conditions exist, and DamApplication registers no 2D pressure condition of its own \u2014 use SMA's LineLoadCondition2D2N on the wet face. Pitfall (kratos.dam #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). LineLoadCondition2D2N constructs; the Dam-flavoured spellings a reader might guess (DamLineLoadCondition2D2N, HydroLineLoadCondition2D2N) are not registered, confirming that the condition has to come from StructuralMechanics. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dam",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[LineLoadCondition2D2N]=True_expected=True",
+    "registered[DamLineLoadCondition2D2N]=False_expected=False",
+    "registered[HydroLineLoadCondition2D2N]=False_expected=False",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

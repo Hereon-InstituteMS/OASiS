@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: IncrementalUpdateStaticSmoothingScheme smooths Cauchy stress to the nodes in FinalizeSolutionStep and therefore needs the full dam_mechanical_solver nodal set \u2014 NODAL_AREA, NODAL_CAUCHY_STRESS_TENSOR, NODAL_JOINT_WIDTH, NODAL_JOINT_AREA \u2014 even for a purely mechanical static run. Pitfall (kratos.dam #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The scheme resolves on DamApplication. Its required variables straddle two modules: NODAL_AREA is core, while NODAL_CAUCHY_STRESS_TENSOR, NODAL_JOINT_WIDTH and NODAL_JOINT_AREA are PoromechanicsApplication attributes \u2014 not Dam's, and not core's. A user of a Dam scheme has to import Poromechanics to name three of the four. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dam",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DAM.IncrementalUpdateStaticSmoothingScheme]=True_expected=True",
+    "probe[KM.NODAL_AREA]=True_expected=True",
+    "probe[PORO.NODAL_CAUCHY_STRESS_TENSOR]=True_expected=True",
+    "probe[KM.NODAL_CAUCHY_STRESS_TENSOR]=False_expected=False",
+    "probe[PORO.NODAL_JOINT_WIDTH]=True_expected=True",
+    "probe[PORO.NODAL_JOINT_AREA]=True_expected=True",
+    "probe[DAM.NODAL_CAUCHY_STRESS_TENSOR]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

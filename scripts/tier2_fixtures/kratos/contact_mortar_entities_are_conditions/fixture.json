@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: contact surfaces must be SubModelParts holding CONDITIONS of a Mortar type, not Elements. Pitfall (kratos.contact #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The distinction is a registry fact and is checked both ways for three mortar names: ALMFrictionlessMortarContactCondition2D2N, ALMFrictionalMortarContactCondition2D2N and PenaltyFrictionlessMortarContactCondition2D2N all construct via CreateNewCondition, and all three raise RuntimeError 'The Element \"...\" is not registered!' via CreateNewElement. Checking both directions is what makes this a discrimination rather than an existence check. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "contact",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "as_condition[ALMFrictionlessMortarContactCondition2D2N]=True",
+    "as_condition[ALMFrictionalMortarContactCondition2D2N]=True",
+    "as_condition[PenaltyFrictionlessMortarContactCondition2D2N]=True",
+    "as_element[ALMFrictionlessMortarContactCondition2D2N]=False",
+    "as_element[ALMFrictionalMortarContactCondition2D2N]=False",
+    "as_element[PenaltyFrictionlessMortarContactCondition2D2N]=False",
+    "is not registered",
+    "contact_entity_kind_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

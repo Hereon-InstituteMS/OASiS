@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: BIOT_COEFFICIENT is a required Properties entry of the UPl elements and is NOT derived from the bulk moduli \u2014 set it explicitly. Pitfall (kratos.poromechanics #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The variable resolves on PoromechanicsApplication and not on core, and a Properties object accepts and returns the value the claim prescribes. Both bulk moduli it might plausibly be derived from (BULK_MODULUS_SOLID, BULK_MODULUS_LIQUID) are separate variables that exist independently, which is what makes 'not derived' checkable rather than rhetorical. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "poromechanics",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[PORO.BIOT_COEFFICIENT]=True_expected=True",
+    "probe[KM.BIOT_COEFFICIENT]=False_expected=False",
+    "probe[properties_roundtrip]=True_expected=True",
+    "probe[BULK_MODULUS_SOLID_is_separate]=True_expected=True",
+    "probe[BULK_MODULUS_LIQUID_exists]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

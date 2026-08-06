@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: DamHydroConditionLoadProcess is C++-only with undocumented defaults, and its default interval [0.0, 0.0] means it silently does nothing unless an interval containing TIME is passed. Pitfall (kratos.dam #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The process class resolves on DamApplication and not on core, and POSITIVE_FACE_PRESSURE \u2014 the variable it writes, named in the claim's required keys \u2014 is a CORE variable, not a Dam one. That split is why a reader assembling the parameter block reaches for the wrong module for the variable name. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dam",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DAM.DamHydroConditionLoadProcess]=True_expected=True",
+    "probe[KM.DamHydroConditionLoadProcess]=False_expected=False",
+    "probe[KM.POSITIVE_FACE_PRESSURE]=True_expected=True",
+    "probe[DAM.POSITIVE_FACE_PRESSURE]=False_expected=False",
+    "probe[SMA.POSITIVE_FACE_PRESSURE]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

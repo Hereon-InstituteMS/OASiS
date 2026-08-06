@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: the problem_data section MUST include 'echo_level'; Kratos accesses it during stage initialisation without a default. Pitfall (kratos.structural_dynamics #7). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). This is the structural_dynamics copy of the claim; the linear_elasticity copy (#7 there) has its own fixture, echo_level_missing. Measured: Parameters('{\"problem_name\":\"x\"}')['echo_level'] raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' \u2014 a C++ Parameters::GetValue error, NOT a Python KeyError and not from RunSolutionLoop, exactly as this entry's corrected wording says. Adding the key makes the same lookup succeed. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[lookup_missing_echo_level]=False_expected=False",
+    "probe[lookup_present_echo_level]=True_expected=True",
+    "probe[Has_reports_absent]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

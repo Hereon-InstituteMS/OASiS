@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: wall nodal forces stay identically zero unless COMPUTE_FEM_RESULTS_OPTION is enabled \u2014 without it ComputeDEMFaceLoadUtility transfers nothing, silently. Pitfall (kratos.dem_structures_coupling #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The flag resolves on DEMApplication and not on core. DEM_SURFACE_LOAD, the quantity that stays zero, is on DemStructuresCouplingApplication \u2014 a THIRD module, neither core nor DEM \u2014 so a reader chasing the silent zero has two chances to dot the wrong module before reaching the flag. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem_structures_coupling",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DEM.COMPUTE_FEM_RESULTS_OPTION]=True_expected=True",
+    "probe[KM.COMPUTE_FEM_RESULTS_OPTION]=False_expected=False",
+    "probe[DSC.DEM_SURFACE_LOAD]=True_expected=True",
+    "probe[DEM.DEM_SURFACE_LOAD]=False_expected=False",
+    "probe[KM.DEM_SURFACE_LOAD]=False_expected=False",
+    "probe[DEM.DEM_NODAL_AREA]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
