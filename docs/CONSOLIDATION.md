@@ -301,6 +301,22 @@ conflated:
                               tangent inconsistent with the residual — which is
                               the OTHER bug
 
-So all three agree once separated: neither bug announces itself, and the only
-reliable detection is comparing the ANSWER against a reference, never watching
-the solver.
+A third measurement completed it, same instrument and same problem, with
+backtracking enabled in both runs (without it the inconsistent tangent does not
+converge slowly — it diverges, and the claim is about a RATE):
+
+    consistent tangent          observed order 1.993, 16 steps
+                                residuals squaring: 5175 -> 69.6 -> 0.995
+                                -> 2.1e-4 -> 1.2e-11
+    geometric term dropped      observed order 0.9996 — first order to four
+                                digits — 29 steps, near-constant contraction,
+                                SAME answer to 2.8e-13
+
+So the full statement is:
+
+    wrong TANGENT  -> right answer, convergence order 2 -> 1, MORE steps
+    wrong STRESS   -> wrong answer, order stays 2,        FEWER steps
+
+An agent watching iteration counts catches the first and is ACTIVELY MISLED by
+the second. Neither bug announces itself, and the only reliable detection is
+comparing the ANSWER against a reference — never watching the solver.
