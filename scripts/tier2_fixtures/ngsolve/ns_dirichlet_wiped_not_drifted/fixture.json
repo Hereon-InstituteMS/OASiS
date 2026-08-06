@@ -1,0 +1,21 @@
+{
+  "_comment": "ngsolve time_dependent_ns#2 (re-impose Dirichlet BCs after each solve). Run 2026-08-06 on NGSolve 6.2.2604: lid-driven cavity, unit square maxh 0.15, Taylor-Hood order 2/1, nu=1e-3, IMEX, 40 steps, two runs differing only in how the constrained rows are handled. CORRECTION: this is not a drift. An Inverse built on FreeDofs writes zero into every constrained row, so gfu.vec.data = inv*rhs -- the spelling the catalog's own IMEX template uses -- deletes the lid velocity on the FIRST step. The boundary L2 error is 0.7303 after step 1 and 0.7303 after step 40, a relative change of exactly 0, and 0.7303 is precisely the lid profile's own L2 norm over that edge, so the boundary condition is simply absent rather than degraded. An agent told to watch for slow divergence and sampling every hundred steps sees a constant error and may read it as a steady state. Writing the constrained DOFs back and solving for the free correction keeps the error at 3.9e-16 for every step. Nothing is raised or printed by either run, checked at the file-descriptor level. Mutation: making the naive branch also re-impose removes the difference and the fixture fails on naive_loses_the_bc.",
+  "backend": "ngsolve",
+  "physics": "time_dependent_ns",
+  "pitfall_index": 2,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "reimposing_keeps_the_bc=True",
+    "naive_loses_the_bc=True",
+    "naive_error_is_full_after_one_step=True",
+    "naive_failure_is_immediate_not_gradual=True",
+    "boundary_condition_effectively_absent=True",
+    "neither_run_printed_anything=True",
+    "failure_is_silent=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

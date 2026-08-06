@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve time_dependent_ns#0 (explicit convection has a CFL limit; the ratio dt*max|u|/h locates it). Run 2026-08-06 on NGSolve 6.2.2604: lid-driven cavity, unit square maxh 0.15, Taylor-Hood order 2/1, nu=1e-3, IMEX with the Stokes part implicit and convection explicit -- the split the catalog's own template uses. The lid Dirichlet value is written back into the constrained rows each step and only the free correction solved, so a boundary bug cannot be mistaken for a CFL bug. TWO CORRECTIONS. The threshold is lower than the claim's ~0.5: at ratio 0.33 the run already leaves double precision while at 0.13 the kinetic energy still decays. And the failure is not 'NaN within the first few time steps' -- at ratio 0.67 it takes 34 steps and arrives as overflow rather than NaN, so a guard that runs three steps and tests isnan sees neither. Step counts to divergence are 34/18/11 for ratios 0.67/1.33/2.67, ordering correctly with the ratio. Mutation: dropping the explicit convection term entirely makes every run stable and the fixture fails on above_0p5_all_leave_double_precision.",
+  "backend": "ngsolve",
+  "physics": "time_dependent_ns",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "below_0p2_all_decay=True",
+    "between_0p2_and_0p5_energy_grows_10x=True",
+    "above_0p5_all_leave_double_precision=True",
+    "steps_to_divergence_shrink_with_ratio=True",
+    "unstable_runs_grow_geometrically=True",
+    "divergence_took_more_than_a_few_steps=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

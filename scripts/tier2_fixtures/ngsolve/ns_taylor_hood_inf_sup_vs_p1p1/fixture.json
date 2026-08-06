@@ -1,0 +1,19 @@
+{
+  "_comment": "ngsolve time_dependent_ns#5 (Taylor-Hood satisfies inf-sup, equal-order P1/P1 does not). Run 2026-08-06 on NGSolve 6.2.2604, unit square at maxh 0.3/0.2/0.15. The claim's observable is an eyeball test for a checkerboard, so the fixture measures what causes it instead: the discrete inf-sup constant, taken as the square root of the smallest nonzero eigenvalue of Mq^-1 B K^-1 B^T with B the divergence block, K the velocity stiffness and Mq the pressure mass matrix -- all read off the same assembled forms. Taylor-Hood's kernel is one-dimensional on every mesh (the constant pressure that every enclosed-flow discretisation has) and its beta is 0.370/0.368/0.369, a relative spread of 0.6%: bounded away from zero, which is what inf-sup stability means. P1/P1 has 4 to 5 spurious modes beyond the constant -- those ARE the checkerboard -- and its beta is 0.058/0.016/0.026, smaller by 6x to 23x and with a 73% spread, i.e. not settling. Mutation: using order 2 for the 'P1P1' velocity space makes the two identical and the fixture fails on p1p1_has_spurious_pressure_modes.",
+  "backend": "ngsolve",
+  "physics": "time_dependent_ns",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "taylor_hood_kernel_is_only_the_constant=True",
+    "p1p1_has_spurious_pressure_modes=True",
+    "taylor_hood_beta_stable_under_refinement=True",
+    "taylor_hood_beta_beats_p1p1_by_5x_everywhere=True",
+    "p1p1_beta_does_not_settle=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
