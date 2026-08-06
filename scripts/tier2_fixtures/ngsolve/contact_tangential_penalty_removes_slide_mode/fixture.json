@@ -1,0 +1,19 @@
+{
+  "_comment": "ngsolve contact#4 (frictional contact needs a tangential penalty with a Coulomb cap; without it the bodies slide freely). Run 2026-08-06 on NGSolve 6.2.2604: unit-square elastic block E=1000 nu=0.3 on a plane inclined by theta, maxh 0.25, normal contact imposed exactly as a Dirichlet condition on u_y over the bottom edge so only the tangential direction is under test, gravity resolved in the inclined frame as (g sin theta, -g cos theta). 'Slides freely' is measured structurally rather than by watching a displacement grow: with no tangential term the free-DOF stiffness has one eigenvalue at 3.7e-13 against a next eigenvalue of 34.6, its eigenvector puts 100% of its norm in the x-DOFs with a relative spread of 3.4e-15 (a rigid tangential translation), and the applied load has a nonzero component along it -- so no equilibrium exists, at any mu. Adding the tangential penalty leaves the free-DOF count unchanged and lifts the smallest eigenvalue to 17.6. The Coulomb transition is then checked on both sides of arctan(0.3)=16.699 deg: at half that angle the trial tangential traction 14.76 is under the limit 29.68 (stick), at 1.6x it is 45.81 against 26.80 (slip). Mutation: adding the tangential penalty to the 'no tangential' branch removes the null mode and the fixture fails on tangential_slide_mode_costs_no_energy.",
+  "backend": "ngsolve",
+  "physics": "contact",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "tangential_slide_mode_costs_no_energy=True",
+    "exactly_one_such_mode=True",
+    "null_mode_is_tangential_translation=True",
+    "load_excites_the_slide_mode=True",
+    "same_free_dof_count=True",
+    "tangential_penalty_removes_the_null_mode=True",
+    "sticks_below_the_friction_angle=True",
+    "slips_above_the_friction_angle=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

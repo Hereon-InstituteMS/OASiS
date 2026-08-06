@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve contact#1 (active set is more accurate than pure penalty; penalty has an O(1/gamma) gap floor). Run 2026-08-06 on NGSolve 6.2.2604: the same obstacle problem solved twice on one mesh (maxh 0.2, elastic block E=1000 nu=0.3 fixed on top, body force 150, floor 0.01 below). Penalty through ngsolve.solvers.Newton over gamma 1e4..1e9 converges every time (status 0, 3 iterations) yet never reaches zero gap; the log-log slope of gap against gamma is -0.987, an O(1/gamma) floor, and the tightest gamma still leaves 7.2e-8. A primal active-set iteration on the assembled system -- bottom-edge y-DOFs in the active set held at exactly -G0 as extra Dirichlet data, membership updated from the sign of the reaction and of the remaining gap -- settles on a repeated active set in 2 outer iterations with a violation of exactly 0.0. Two departures from the claim's wording recorded: the floor exponent is measured rather than assumed, and the outer-iteration count is 2, below the claim's stated 3-10 range, so the fixture asserts the ceiling only. Mutations, both run: holding the active DOFs at -1.5*G0 instead of -G0 leaves a nonzero violation and the fixture fails on active_set_violation_is_exactly_zero and active_set_beats_every_penalty_gamma; flattening the gamma sweep to a single value destroys the slope measurement and it fails on penalty_floor_is_order_one_over_gamma.",
+  "backend": "ngsolve",
+  "physics": "contact",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "every_penalty_solve_converged=True",
+    "every_penalty_solve_leaves_a_positive_gap=True",
+    "penalty_floor_is_order_one_over_gamma=True",
+    "tightest_penalty_gap_still_nonzero=True",
+    "active_set_within_claimed_ceiling_of_10=True",
+    "active_set_violation_is_exactly_zero=True",
+    "active_set_is_a_strict_subset_or_all=True",
+    "active_set_beats_every_penalty_gamma=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

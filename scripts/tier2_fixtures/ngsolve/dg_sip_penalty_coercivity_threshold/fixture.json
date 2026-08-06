@@ -1,0 +1,23 @@
+{
+  "_comment": "ngsolve dg_methods#3 (SIP penalty alpha*order^2/h: too small loses coercivity, too large costs conditioning). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.5 and 0.3, L2 order 2, alpha swept over 0.05 .. 1e5*order^2, smallest eigenvalue of the symmetric part and cond(A) computed densely. TWO CORRECTIONS. (a) The claim's stated observable for small alpha -- 'discrete solution norm grows under refinement' -- is NOT what happens; the norm stays near the correct value while the error wanders, so an agent watching it sees nothing. What moves cleanly and on both meshes is the sign of lambda_min: negative for small alpha, positive above a threshold, monotone thereafter. The threshold sits below the claim's stated order^2 on both meshes. (b) The claim's large-alpha ceiling is wrong by orders of magnitude: cond at alpha=100*order^2 is 3.5e4, not >1e14, and the log-log slope of cond against alpha is 1.0001, i.e. strictly linear, so 1e14 would need an alpha around 1e14. The claim's own rule of thumb 4*(order+1)^2 does land on the coercive side. Mutation: pinning the penalty to a fixed 36/h so it no longer tracks alpha makes lambda_min positive at every swept alpha and flattens cond, and the fixture fails on mesh0_loses_coercivity_for_small_alpha, mesh1_loses_coercivity_for_small_alpha and cond_grows_linearly_in_alpha.",
+  "backend": "ngsolve",
+  "physics": "dg_methods",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "mesh0_loses_coercivity_for_small_alpha=True",
+    "mesh0_regains_coercivity_for_large_alpha=True",
+    "mesh1_loses_coercivity_for_small_alpha=True",
+    "mesh1_regains_coercivity_for_large_alpha=True",
+    "coercivity_is_monotone_in_alpha=True",
+    "threshold_found_on_both_meshes=True",
+    "rule_of_thumb_is_coercive=True",
+    "cond_at_100_order2_far_below_1e14=True",
+    "cond_grows_linearly_in_alpha=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

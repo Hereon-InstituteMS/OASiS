@@ -1,0 +1,18 @@
+{
+  "_comment": "ngsolve dg_methods#4 (upwind IfPos(b*n,u,u.Other()) vs the central average on pure-advection DG). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.5/0.3/0.2, L2 order 1, b=(1,0), spectrum of -M^-1 A computed densely and the forward-Euler step limit found by bisection on max|1+dt*lambda|<=1. CORRECTION: the claim's 'unconditional instability regardless of mesh' does NOT occur -- the outflow boundary term leaves a sliver of dissipation, both fluxes have all eigenvalues strictly in the left half-plane, and forward Euler at a small enough step is stable for the central flux too. An agent that tests by running and waiting for a blow-up concludes the central flux is fine. What is really lost is the INTERIOR dissipation: the damping rate collapses towards zero as h shrinks and the explicit step limit collapses with it, with the upwind/central ratio of step limits GROWING under refinement rather than staying fixed. Marched at half the upwind limit on the finest mesh, the upwind run decays and the central run grows without bound over the same 400 steps. Mutation: making the 'central' branch also use IfPos removes the difference and the fixture fails on upwind_more_damped_on_every_mesh and central_grows_at_this_dt.",
+  "backend": "ngsolve",
+  "physics": "dg_methods",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "both_fluxes_have_stable_spectrum=True",
+    "claimed_unconditional_instability_not_observed=True",
+    "upwind_more_damped_on_every_mesh=True",
+    "upwind_admits_larger_dt_on_every_mesh=True",
+    "dt_penalty_grows_under_refinement=True",
+    "upwind_decays_at_this_dt=True",
+    "central_grows_at_this_dt=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
