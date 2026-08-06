@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics eigenvalue#3: in a generalised problem A x = lambda B x with Dirichlet BCs, A and the mass matrix B must not both get the SAME Dirichlet diagonal, or every constrained dof contributes a spurious eigenvalue at A_ii / B_ii. Wrong variant: assemble_matrix(a, bcs=[bc]) and assemble_matrix(m, bcs=[bc]), both leaving diag at its default of 1. Right variant: keep A's diagonal at 1 and assemble B with diag=0.0, with the spectral transform set to SLEPc.ST.Type.SINVERT. 8x8 P1 unit square: 81 dofs, 32 of them constrained, 49 free. The reference is a dense scipy.linalg.eigvalsh of the interior blocks of the unconstrained A and B, i.e. the exactly reduced problem. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "eigenvalue",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_lowest_eigenvalues_are_exactly_one=True",
+    "no_spurious_mode_sits_at_zero=True",
+    "clean_recipe_matches_the_reduced_interior_problem=True",
+    "diagonal_kwarg_raises_typeerror=True",
+    "got an unexpected keyword argument 'diagonal'",
+    "VERDICT=shared_dirichlet_diagonal_puts_spurious_modes_at_lambda_one"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=shared_dirichlet_diagonal_was_harmless"
+  ],
+  "timeout_seconds": 300
+}

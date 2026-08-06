@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#7: two-way thermo-mechanical coupling needs a real feedback term before Picard iteration means anything, and once it is there the size of the effect -- not any error message -- is what matters. The feedback used here is conduction on the DEFORMED configuration pulled back to the reference mesh: F = Identity(d) + grad(u), J = det(F), a_T = kappa*J*inner(inv(F).T*grad(T), inv(F).T*grad(s))*dx, alternating with a thermo-elastic solve for u. Nothing raises either way. Measured on a clamped square, kappa = 45 W/m/K, steel constants: * the relative change norm(T_new - T_old)/norm(T_new), computed with fem.assemble_scalar, falls geometrically -- roughly 1.6e-1, 4.1e-5, 5.2e-9, 4.5e-13 at a thermal strain of 1.2e-3; * the relative error of the single non-iterated pass, measured against the converged loop, is proportional to the thermal strain alpha*(T - T_ref) and is about 0.19 times it -- 2.3e-4 at alpha*dT = 1.2e-3 and 5.7e-3 at alpha*dT = 3.0e-2; * so for metals one pass is already good to several digits, and the loop only pays for itself when the thermal strain reaches a few percent. The older \"one-shot error of order alpha*dT*L\" wording predicts a relative error of order one and overstates the measurement by roughly the inverse of the thermal strain. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "picard_change_falls_geometrically=True",
+    "one_shot_error_is_about_a_tenth_of_the_thermal_strain=True",
+    "error_over_strain_is_the_same_at_both_load_levels=True",
+    "single_pass_is_good_to_several_digits_for_metals=True",
+    "VERDICT=one_shot_error_scales_with_the_thermal_strain"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=one_shot_error_does_not_scale_with_the_thermal_strain"
+  ]
+}
