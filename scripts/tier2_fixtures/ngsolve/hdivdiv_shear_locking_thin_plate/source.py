@@ -100,6 +100,10 @@ def main() -> int:
     ok = True
     print(f"ngsolve_version={ngs.__version__}")
 
+    _mm = ngs.Mesh(unit_square.GenerateMesh(maxh=0.5))
+    print(f"moment_space_type={ngs.HDivDiv(_mm, order=1).type} "
+          f"deflection_space_type={ngs.H1(_mm, order=2).type}")
+
     # --- WRONG variant: displacement-only at h/t = 300 --------------------
     ref_thin = NAVIER_COEFF * Q / bending_rigidity(T_THIN)
     wc_lock = reissner_mindlin_displacement_only(T_THIN)

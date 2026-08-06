@@ -7,6 +7,7 @@
   "timeout_seconds": 120,
   "expect_in_output": [
     "ngsolve_version=",
+    "moment_space_type=hdivdiv deflection_space_type=h1ho",
     "no_mnn_dirichlet_more_than_2x_too_small=True",
     "no_mnn_dirichlet_leaves_bnd_mnn_nonzero=True",
     "catalog_10_to_20pct_smaller_band_reached=False",

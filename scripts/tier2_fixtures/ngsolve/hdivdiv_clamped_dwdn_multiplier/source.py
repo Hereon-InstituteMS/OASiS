@@ -77,6 +77,10 @@ def hhj_plate(maxh: float, order: int, kill_multiplier: bool):
 def main() -> int:
     ok = True
     print(f"ngsolve_version={ngs.__version__}")
+    _mm = ngs.Mesh(unit_square.GenerateMesh(maxh=0.5))
+    print(f"moment_space_type={ngs.HDivDiv(_mm, order=1).type} "
+          f"deflection_space_type={ngs.H1(_mm, order=2).type}")
+
     print(f"clamped_reference={W_CLAMPED:.6e} simply_supported_reference="
           f"{W_SIMPLE:.6e}")
 

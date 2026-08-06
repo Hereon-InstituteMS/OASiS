@@ -7,6 +7,7 @@
   "timeout_seconds": 120,
   "expect_in_output": [
     "ngsolve_version=",
+    "moment_space_type=hdivdiv deflection_space_type=h1ho",
     "no_dwdn_term_3x_to_4x_clamped=True",
     "no_dwdn_term_is_simply_supported=True",
     "no_dwdn_term_bnd_dwdn_unenforced=True",

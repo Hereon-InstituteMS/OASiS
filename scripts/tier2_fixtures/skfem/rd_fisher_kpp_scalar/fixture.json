@@ -1,0 +1,21 @@
+{
+  "_comment": "Verifies reaction_diffusion pitfall 8 on scikit-fem 12.0.1 (2026-08-06). Fisher-KPP D=1e-2 r=2 on 16x16 ElementQuad1, dt=0.05, 40 backward-Euler steps from a 0.1 Gaussian bump. Scalar Newton on M/dt + D*K - r*M_r: matrix 289x289, nnz 2401, mean spsolve 0.89 ms. The same problem set up as a block 2x2 system: 578x578, nnz 9604, mean spsolve 2.06 ms. The DOF count doubles as claimed, but the non-zero count QUADRUPLES (exactly 4.0x - each of the four blocks carries the scalar sparsity pattern) and the solve is 2.3x slower. Two block variants: with the second diffusivity equal to D the second field is a true copy and u matches the scalar answer to 1.1e-16 (pure waste); with the Schnakenberg d_v/d_u = 40 carried over, v leaks into u through the coupling and max|u_block - u_scalar| = 3.4e-01 against a true maximum of 0.527 - the 'spurious cross-diffusion' of the claim. Terminology note: the claim says GridFunction, which is NGSolve vocabulary; hasattr(skfem, 'GridFunction') is False.",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "element=ElementQuad1",
+    "skfem_has_GridFunction=False",
+    "n_dofs=289",
+    "scalar_matrix_shape=289x289 scalar_nnz=2401",
+    "block_matrix_shape=578x578 block_nnz=9604",
+    "scalar_max_u_between_seed_and_carrying_capacity=True",
+    "block_ndofs_is_double=True",
+    "block_nnz_ratio_eq_4=True",
+    "block_spsolve_slower_gt_1p3x=True",
+    "redundant_block_matches_scalar=True",
+    "contaminated_block_u_maxdev_gt_0p1=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

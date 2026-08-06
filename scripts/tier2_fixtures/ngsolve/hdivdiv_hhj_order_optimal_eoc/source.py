@@ -84,6 +84,10 @@ def main() -> int:
     ok = True
     print(f"ngsolve_version={ngs.__version__}")
 
+    _mm = ngs.Mesh(unit_square.GenerateMesh(maxh=0.5))
+    print(f"moment_space_type={ngs.HDivDiv(_mm, order=1).type} "
+          f"deflection_space_type={ngs.H1(_mm, order=2).type}")
+
     e1, eoc1 = study(1, "hdivdiv")
     print(f"hdivdiv_order1_l2={e1[0]:.5e},{e1[1]:.5e} eoc={eoc1:.3f}")
     print(f"hdivdiv_order1_eoc_in_1p5_2p5={1.5 <= eoc1 <= 2.5}")

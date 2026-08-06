@@ -7,6 +7,7 @@
   "timeout_seconds": 120,
   "expect_in_output": [
     "ngsolve_version=",
+    "moment_space_type=hdivdiv deflection_space_type=h1ho",
     "hdivdiv_order1_eoc_in_1p5_2p5=True",
     "hdivdiv_order2_eoc_ge_2p5=True",
     "hdivdiv_order2_beats_order1=True",
