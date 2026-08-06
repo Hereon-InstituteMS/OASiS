@@ -12,14 +12,26 @@ symmetric+skyline and non-symmetric+bicgstab reach the same element
 stress. The fixture requires agreement to a tight relative tolerance and
 requires both runs to complete, so it fails if the workaround ever starts
 changing the answer.
+
+MUTATION CONTROL. This fixture asserts an AGREEMENT — that the
+symmetric+skyline workaround reaches the same element stress as
+non-symmetric+bicgstab — so the control has to show the comparison can
+fail rather than that a pathology can be removed. T2_MUTATE=1 gives the
+second deck a 10% stiffer solid (E = 1100 instead of 1000). The
+relative difference then leaves the 1e-9 band and
+'symmetric_workaround=reproduced' is no longer printed. It proves the
+1e-9 gate is not satisfied by any two runs of this deck.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 HOLMES_MOW = ('      <permeability type="perm-Holmes-Mow">\n'
               "        <perm>0.001</perm><M>1.0</M><alpha>2.0</alpha>\n"
@@ -66,8 +78,13 @@ def sz(run):
 
 def main() -> int:
     a = L.run(deck("symmetric", ""), collect=("e.csv",), timeout=600)
-    b = L.run(deck("non-symmetric", '<linear_solver type="bicgstab"/>'),
-              collect=("e.csv",), timeout=600)
+    if MUTATE:
+        print("mutation=the_second_deck_gets_a_ten_percent_"
+              "stiffer_solid")
+    _deck_b = deck("non-symmetric", '<linear_solver type="bicgstab"/>')
+    if MUTATE:
+        _deck_b = _deck_b.replace("<E>1000.0</E>", "<E>1100.0</E>")
+    b = L.run(_deck_b, collect=("e.csv",), timeout=600)
     sa, sb = sz(a), sz(b)
     print(f"symmetric_skyline: rc={a.rc} normal={int(a.normal_termination)} "
           f"steps={a.steps_completed} sz={sa}")

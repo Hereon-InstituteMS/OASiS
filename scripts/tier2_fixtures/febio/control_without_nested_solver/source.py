@@ -9,14 +9,22 @@ The fixture also checks the type string is module-scoped: type="solid"
 runs, and a wrong-module solver name in a solid deck is rejected as an
 invalid attribute value rather than as a missing property, so the two
 mistakes are distinguishable from the message alone.
+
+MUTATION CONTROL. T2_MUTATE=1 gives the "no solver" slot the COMPLETE
+<Control> block, nested <solver type="solid"/> included — the pathology
+removed. Nothing is rejected, the missing-property message never
+appears, and 'control_no_solver=reproduced' is no longer printed.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 CTRL_NO_SOLVER = ("  <Control>\n"
                   "    <analysis>STATIC</analysis>\n"
@@ -32,7 +40,10 @@ CTRL_WRONG_TYPE = ("  <Control>\n"
 
 
 def main() -> int:
-    w = L.run(L.solid_deck(control=CTRL_NO_SOLVER))
+    if MUTATE:
+        print("mutation=the_no_solver_slot_runs_the_complete_control")
+    w = L.run(L.solid_deck(
+        control=None if MUTATE else CTRL_NO_SOLVER))
     t = L.run(L.solid_deck(control=CTRL_WRONG_TYPE))
     r = L.run(L.solid_deck())
 

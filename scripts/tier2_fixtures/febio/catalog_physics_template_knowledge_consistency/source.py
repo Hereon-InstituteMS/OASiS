@@ -29,13 +29,22 @@ Catalog falsifications #29 + #30 found via this scanner:
 
 Fix landed alongside this fixture (3 template stubs +
 2 knowledge entries).
+MUTATION CONTROL. This fixture is a catalog self-consistency gate, so
+the control shows the gate can fail. T2_MUTATE=1 deletes one shipped
+template from the in-memory registry, which is exactly the
+inconsistency the gate exists to catch: missing_templates stops being
+empty, so 'missing_templates=[]' is no longer printed and a FAIL: line
+appears. Nothing on disk is touched.
 """
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 PHYSICS_TO_MODULE = {
@@ -182,6 +191,12 @@ def main() -> int:
     templates = mod._TEMPLATES
     knowledge = mod._FEBIO_KNOWLEDGE
 
+    if MUTATE:
+        _victim = sorted(templates)[0]
+        print(f"mutation=the_template_{_victim}_is_removed_"
+              f"from_the_registry")
+        templates = {k: v for k, v in templates.items()
+                     if k != _victim}
     missing_templates = []
     missing_knowledge = []
     for cap in physics_list:

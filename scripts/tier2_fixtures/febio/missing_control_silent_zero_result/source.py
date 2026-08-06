@@ -21,6 +21,11 @@ them against the same deck WITH <Control> so the difference is
 attributable to that section alone.
 
 Verified 2026-08-03 on FEBio 4.12.0.86045466d.
+
+MUTATION CONTROL. T2_MUTATE=1 gives the "no Control" deck its <Control>
+section back — the pathology removed. That run then terminates
+normally with one completed step, the silent-failure assertions fail,
+and 'missing_control_silent=reproduced' is no longer printed.
 """
 from __future__ import annotations
 
@@ -31,6 +36,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 CONTROL = '''  <Control>
     <analysis>STATIC</analysis>
@@ -149,7 +156,9 @@ def main() -> int:
         return 1
 
     good = run(binary, HEAD + CONTROL + REST)
-    bad = run(binary, HEAD + REST)
+    if MUTATE:
+        print("mutation=the_no_control_deck_keeps_its_control_section")
+    bad = run(binary, HEAD + (CONTROL if MUTATE else "") + REST)
     for label, r in (("with_control", good), ("no_control", bad)):
         print(f"{label}: rc={r['rc']} read_success={int(r['read_success'])} "
               f"normal={int(r['normal'])} errterm={int(r['errterm'])} "

@@ -16,11 +16,26 @@ no complaint is the one that leaves the domain unbound.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    # MUTATION CONTROL. The pathology this fixture reproduces is the
+    # EDIT that turns a correct deck into the broken one, so removing
+    # the pathology means not making that edit. Neutralising L.swap /
+    # L.drop does exactly that: every deck built below is the correct
+    # one, the pitfall is never triggered, the diagnostic must not
+    # appear and the verdict token flips to not_reproduced.
+    print("mutation=the_deck_edits_that_introduce_the_pitfall_are_"
+          "neutralised")
+    L.swap = lambda deck, old, new, **kw: deck
+    L.drop = lambda deck, fragment: deck
+
 
 import hashlib
 
@@ -35,6 +50,11 @@ def main() -> int:
                  '    <SolidDomain name="Part1" mat="1"/>\n'
                  "  </MeshDomains>")
 
+    if MUTATE:
+        print("mutation=the_unnamed_material_gets_its_name_back")
+        mat_noname = mat_noname.replace(
+            '<material id="1" type=',
+            '<material id="1" name="Material1" type=')
     w1 = L.run(L.solid_deck(material=mat_noname))
     w2 = L.run(L.solid_deck(domains=dom_by_id))
     ok = L.run(L.solid_deck())

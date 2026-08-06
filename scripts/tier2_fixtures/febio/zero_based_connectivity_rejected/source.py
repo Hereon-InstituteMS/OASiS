@@ -25,14 +25,22 @@ deck) stands; its Signal did not.
 
 The fixture pins what was executed, on all four meshes, and requires the
 positive control to run clean on each.
+
+MUTATION CONTROL. T2_MUTATE=1 leaves the connectivity 1-BASED in the
+"wrong" slot — the pathology removed. No isolated-vertex warning, no
+negative jacobian, no failed initialisation, so
+'zero_based_connectivity=rejected_at_init' is no longer printed.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import re
 
@@ -52,7 +60,11 @@ def main() -> int:
     rows = []
     for n in (1, 2, 3, 4):
         mesh, _info = L.hex8_box(n)
-        w = L.run(L.solid_deck(mesh=shift_down(mesh), n=n))
+        if MUTATE and n == 1:
+            print("mutation=the_wrong_slot_keeps_a_1_based_"
+                  "connectivity")
+        w = L.run(L.solid_deck(
+            mesh=mesh if MUTATE else shift_down(mesh), n=n))
         r = L.run(L.solid_deck(mesh=mesh, n=n))
         warn = "1 isolated vertex removed." in w.text
         neg = "Negative jacobian detected during mesh initialization." in w.text

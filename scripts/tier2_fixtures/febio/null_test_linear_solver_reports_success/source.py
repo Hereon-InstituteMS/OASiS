@@ -34,6 +34,13 @@ news, update the pitfall) and if the two answers ever agree.
 Verified 2026-08-03 on FEBio 4.12.0.86045466d: reference
 (skyline, symmetric) sz = -2.00691787274, test-solver
 sz = -2.00200400802, both with exit 0 and the normal banner.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the "test solver" slot with the real
+skyline solver — the pathology (a null linear solver that returns
+without solving) removed. The two runs then agree to machine precision,
+the fixture's own "the null solver produced the reference answer" gate
+fires, and 'null_test_solver=clean_run_not_solved' is no longer
+printed.
 """
 from __future__ import annotations
 
@@ -44,6 +51,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DECK = '''<?xml version="1.0" encoding="ISO-8859-1"?>
 <febio_spec version="4.0">
@@ -163,8 +172,11 @@ def main() -> int:
     # (A non-symmetric reference would need bicgstab, which is
     # unpreconditioned and not robust — see biphasic#4.)
     ref = run(binary, "symmetric", "")
-    nul = run(binary, "non-symmetric",
-              '<linear_solver type="test"></linear_solver>')
+    if MUTATE:
+        print("mutation=the_null_solver_slot_uses_the_real_solver")
+    nul = (run(binary, "symmetric", "") if MUTATE
+           else run(binary, "non-symmetric",
+                    '<linear_solver type="test"></linear_solver>'))
     for label, r in (("reference", ref), ("test_solver", nul)):
         print(f"{label}: rc={r['rc']} normal={int(r['normal'])} "
               f"steps={r['steps']} sz={r['sz']}")

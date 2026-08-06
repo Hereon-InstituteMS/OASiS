@@ -47,6 +47,14 @@ stress error 3.46e-11, element-to-element spread 1.00e-13.
 Deliberately NOT using numpy: the tier-2 runner invokes febio
 fixtures with plain `sys.executable`, which is whatever python
 happens to be driving the harness.
+
+MUTATION CONTROL. This fixture is a numerical-correctness gate, so the
+control shows the gate can fail rather than that a pathology can be
+removed. T2_MUTATE=1 builds the expected Cauchy stress from SMALL-STRAIN
+linear elasticity instead of the St.Venant-Kirchhoff pushforward — i.e.
+it asserts the very constitutive law this fixture exists to rule out.
+The stress error then leaves the 1e-8 band and 'febio_patch_test=passed'
+is no longer printed.
 """
 from __future__ import annotations
 
@@ -56,6 +64,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 E_MOD = 1000.0
 POISSON = 0.3
@@ -278,6 +288,16 @@ def main() -> int:
         J = det3(F)
         FS = mat_mul(F, S)
         sig = [[v / J for v in row] for row in mat_mul(FS, Ft)]
+        if MUTATE:
+            print("mutation=the_expected_stress_uses_small_"
+                  "strain_linear_elasticity")
+            eps = [[0.5 * (F[i][j] + F[j][i])
+                    - (1.0 if i == j else 0.0)
+                    for j in range(3)] for i in range(3)]
+            tre = eps[0][0] + eps[1][1] + eps[2][2]
+            sig = [[lam * tre * (1.0 if i == j else 0.0)
+                    + 2 * mu * eps[i][j]
+                    for j in range(3)] for i in range(3)]
         expect = [sig[0][0], sig[1][1], sig[2][2],
                   sig[0][1], sig[1][2], sig[0][2], J]
 

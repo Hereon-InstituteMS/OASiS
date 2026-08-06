@@ -26,6 +26,11 @@ and if the wrong answer silently becomes the right one.
 Verified 2026-08-03 on FEBio 4.12.0.86045466d: correct run
 sx = sy = 1.64474220205, sz = 11.2026953216; degenerate run
 sx = 2.05167782746, sy = 1.48697290222, sz = 11.2776298464.
+
+MUTATION CONTROL. T2_MUTATE=1 gives the "degenerate" run the CORRECT
+eight-node connectivity — the pathology removed. The x/y symmetry is
+then intact and the two stresses agree, so the fixture's own gates fire
+and 'degenerate_hex8=clean_run_wrong_stress' is no longer printed.
 """
 from __future__ import annotations
 
@@ -35,6 +40,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DECK = '''<?xml version="1.0" encoding="ISO-8859-1"?>
 <febio_spec version="4.0">
@@ -148,7 +155,11 @@ def main() -> int:
         return 1
 
     rc_ok, norm_ok, s_ok, _ = run(binary, "1,2,3,4,5,6,7,8")
-    rc_bad, norm_bad, s_bad, out_bad = run(binary, "1,2,3,4,5,6,7,7")
+    if MUTATE:
+        print("mutation=the_degenerate_element_gets_its_eighth_"
+              "node_back")
+    rc_bad, norm_bad, s_bad, out_bad = run(
+        binary, "1,2,3,4,5,6,7,8" if MUTATE else "1,2,3,4,5,6,7,7")
     print(f"correct:    rc={rc_ok} normal={int(norm_ok)} stress={s_ok}")
     print(f"degenerate: rc={rc_bad} normal={int(norm_bad)} "
           f"stress={s_bad}")

@@ -8,17 +8,27 @@ you to hunt in a section that is correct.
 The fixture also pins the misdirection itself: the message names
 node_set, and the words MeshDomains / SolidDomain / domain appear nowhere
 in the output.
+
+MUTATION CONTROL. T2_MUTATE=1 leaves <MeshDomains> in place in the
+"wrong" slot — the pathology removed. The deck then reads and runs, the
+node_set misdirection never appears, and
+'meshdomains_missing=reproduced' is no longer printed.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 def main() -> int:
-    wrong = L.solid_deck(domains="")
+    if MUTATE:
+        print("mutation=the_wrong_slot_keeps_its_meshdomains_section")
+    wrong = L.solid_deck(domains=None if MUTATE else "")
     right = L.solid_deck()
     w = L.run(wrong)
     r = L.run(right)

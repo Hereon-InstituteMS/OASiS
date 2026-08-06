@@ -9,14 +9,22 @@ LU gives, and easy to misread as a modelling problem when it is a solver
 problem.
 
 The one-element run is the control: it is what rules out the deck.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the "2x2x2" slot on the SINGLE hex8
+— the pathology (a mesh bicgstab cannot get through) removed. That run
+then terminates normally without the linear-solver message, so
+'bicgstab_mesh_dependence=reproduced' is no longer printed.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 def deck(n: int) -> str:
     mesh, _info = L.hex8_box(n)
@@ -55,7 +63,10 @@ def deck(n: int) -> str:
 
 def main() -> int:
     one = L.run(deck(1), collect=("e.csv",), timeout=600)
-    many = L.run(deck(2), collect=("e.csv",), timeout=600)
+    if MUTATE:
+        print("mutation=the_refined_slot_runs_the_single_hex8")
+    many = L.run(deck(1 if MUTATE else 2), collect=("e.csv",),
+                 timeout=600)
     msg = "Linear solver failed to find solution"
     b = L.parse_log_csv(one.files.get("e.csv") or "")
     print(f"one_hex8: rc={one.rc} normal={int(one.normal_termination)} "

@@ -25,11 +25,26 @@ carry a number in the catalogue text.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    # MUTATION CONTROL. The pathology this fixture reproduces is the
+    # EDIT that turns a correct deck into the broken one, so removing
+    # the pathology means not making that edit. Neutralising L.swap /
+    # L.drop does exactly that: every deck built below is the correct
+    # one, the pitfall is never triggered, the diagnostic must not
+    # appear and the verdict token flips to not_reproduced.
+    print("mutation=the_deck_edits_that_introduce_the_pitfall_are_"
+          "neutralised")
+    L.swap = lambda deck, old, new, **kw: deck
+    L.drop = lambda deck, fragment: deck
+
 
 CSV = "heat_bar_T.csv"
 R_GAS, MOLAR_MASS, CP_N, K_COND, RHO = 8.31446, 0.029, 3.5, 0.026, 1.2
@@ -55,7 +70,10 @@ def field(run) -> list:
 
 def main() -> int:
     results = {}
-    for ratio in (0.1, 3.0):
+    if MUTATE:
+        print("mutation=the_under_resolved_case_runs_at_ratio_3")
+    for key in (0.1, 3.0):
+        ratio = 3.0 if (MUTATE and key == 0.1) else key
         te = t_end_for(ratio, N_ELEM)
         deck = flat_ramp(L.template("heat_3d_bar", n=N_ELEM,
                                     analysis="DYNAMIC", time_steps=10,
@@ -63,7 +81,7 @@ def main() -> int:
         r = L.run(deck, collect=(CSV,), timeout=900)
         vals = field(r)
         lo = min(vals) if vals else None
-        results[ratio] = (r, lo)
+        results[key] = (r, lo)
         print(f"ratio={ratio} t_end={te:.6g} rc={r.rc} "
               f"normal={int(r.normal_termination)} "
               f"steps={r.steps_completed} minT={lo} "

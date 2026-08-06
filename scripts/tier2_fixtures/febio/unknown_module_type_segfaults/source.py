@@ -26,6 +26,11 @@ by the module string and not by anything else in the deck.
 Verified 2026-08-03 on FEBio 4.12.0.86045466d: all four bad
 strings exit 139 (SIGSEGV) with no diagnostic; "solid" reads
 SUCCESS.
+
+MUTATION CONTROL. T2_MUTATE=1 replaces the four unregistered module
+strings with the REGISTERED name "solid" — the pathology removed. None
+of the four runs then dies undiagnosed, the crash count drops to 0 and
+'unknown_module_segfault_count=4' is no longer printed.
 """
 from __future__ import annotations
 
@@ -35,6 +40,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DECK = '''<?xml version="1.0" encoding="ISO-8859-1"?>
 <febio_spec version="4.0">
@@ -117,8 +124,11 @@ def main() -> int:
               "FEBIO_BINARY or symlink ~/FEBio/bin/febio4.")
         return 1
 
+    modules = ("solid",) * len(BAD_MODULES) if MUTATE else BAD_MODULES
+    if MUTATE:
+        print("mutation=every_module_string_is_the_registered_solid")
     crashed = 0
-    for m in BAD_MODULES:
+    for m in modules:
         rc, out, has_log = run_module(binary, m)
         # A crash is a negative returncode from subprocess (signal)
         # or 139 when a shell re-encodes it.
@@ -142,7 +152,7 @@ def main() -> int:
               "not read cleanly — the fixture deck itself is broken, "
               "so the crashes prove nothing")
         return 1
-    if crashed != len(BAD_MODULES):
+    if crashed != len(modules):
         print(f"FAIL: expected all {len(BAD_MODULES)} unregistered "
               f"module strings to die undiagnosed, got {crashed}. "
               f"If FEBio added validation this is good news — "

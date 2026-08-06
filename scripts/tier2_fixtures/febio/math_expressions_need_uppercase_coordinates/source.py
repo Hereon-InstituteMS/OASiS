@@ -9,14 +9,22 @@ assembly. No diagnostic names the bad symbol.
 The fixture asserts the read succeeded and the signal arrived — the
 combination is what makes "treat any early-timestep segfault in a deck
 with math expressions as a symbol-vocabulary suspect" actionable.
+
+MUTATION CONTROL. T2_MUTATE=1 leaves the body-load expression in
+UPPERCASE coordinates in the "wrong" slot — the pathology removed.
+There is no segfault, and 'lowercase_coordinate_symbols=reproduced' is
+no longer printed.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _febio_lib as L  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 def main() -> int:
     right = L.template("elasticity_mms_3d_cube_hex8", n=2)
@@ -30,7 +38,11 @@ def main() -> int:
     if lowered == loads:
         L.die("no uppercase coordinate symbols found in the body load — "
               "nothing was triggered")
-    wrong = right[:i] + lowered + right[j:]
+    if MUTATE:
+        print("mutation=the_wrong_slot_keeps_uppercase_coordinates")
+        wrong = right
+    else:
+        wrong = right[:i] + lowered + right[j:]
 
     w = L.run(wrong, timeout=600)
     r = L.run(right, timeout=600)
