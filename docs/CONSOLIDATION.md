@@ -582,7 +582,19 @@ each of slots 9-18 appears in all 10 physics rows.
 
 The fix was to carry BOTH keys — `universal:n` and its positional alias
 `rarefied_flow:9+n` — with the coverage gate collapsing aliases onto the
-identity key so nothing is double-counted.
+identity key so nothing is double-counted, and deduplicating by FIXTURE NAME so
+the collision rule is not weakened: one fixture under two conventions is one
+owner, two fixtures still collide. Verified after the change: 84 claims keyed,
+0 real collisions, all 10 aliases owned by their identity key's fixture.
+
+CHECKED FOR ELSEWHERE, and it is confined. Three backends have `covers` entries
+naming a physics different from their `physics` field — dune (poisson_mms,
+navier_stokes, maxwell, mixed_methods), dealii (dg_transport) and sparta. For
+dune and dealii every one of those IS a registered physics with its own pitfall
+list, so they are legitimate multi-claim fixtures that the identity-keyed metric
+already counts correctly. SPARTA's `universal` was the only axis that exists
+solely as a shared block appended to other rows, and therefore the only one a
+positional walk could miss.
 
 WHAT THESE HAVE IN COMMON. Every one is a disagreement between two ways of
 naming the same claim, and in every case both namings were defensible. That is
