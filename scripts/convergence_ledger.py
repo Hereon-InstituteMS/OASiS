@@ -168,33 +168,66 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
     one pass reported 69.3% from a metric that mixed execution counts with claim
     strings, while its own scripts printed 55.0% and a bare 184. Comparability
     beats sophistication when the number decides whether we freeze.
+
+    THE DENOMINATOR MUST COVER EVERY SERVED SURFACE, NOT JUST src/backends/<be>.
+    This walked only the per-backend directories, which quietly excluded three
+    things an agent can actually be served:
+
+      * `src/backends/_cross.py` — 35 cross-backend collation pitfalls, the ones
+        that fire only on the delta between two codes (units, node ordering,
+        Dirichlet strong-vs-penalty, restart incompatibility). Skipped because
+        the name starts with an underscore.
+      * `src/tools/deep_knowledge.py` — 100 entries, served through the same
+        pitfalls surface as a supplement for physics a backend does not
+        enumerate.
+      * `src/tools/consolidated.py` — 1.
+
+    Excluding them made the bar easier to clear on paper while an agent could
+    still be handed those 136 unverified entries, which is precisely backwards:
+    the freeze criterion exists to bound what a user can be told, so its
+    denominator has to be everything a user can be told.
+
+    COUPLING has the opposite failure and it is worse. It scored 0 pitfall
+    claims against 10 fixtures — not because it is verified, but because its
+    143,291 chars of knowledge carry no `Signal:` clause at all, so nothing here
+    can see it. A capability with an unmeasurable denominator cannot pass or
+    fail the 80% bar; it simply is not judged. That is reported explicitly below
+    rather than being allowed to look like a clean sheet, because the flagship
+    silently exempting itself from the freeze criterion is the last thing this
+    project can afford.
     """
     import ast
-    import json
 
     repo = repo or REPO
     backends_dir = repo / "src" / "backends"
     fixtures_dir = repo / "scripts" / "tier2_fixtures"
+
+    def _signals_in(paths) -> set[str]:
+        """Every distinct Signal-carrying string under these paths.
+
+        Deduplicated by value: a shared sub-dict attached by reference to many
+        physics entries is one claim to verify, and a naive walk inflated a
+        DUNE count 111 -> 127 exactly that way.
+        """
+        found: set[str] = set()
+        for py in paths:
+            try:
+                tree = ast.parse(py.read_text(errors="ignore"))
+            except (SyntaxError, OSError):
+                continue
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Constant)
+                        and isinstance(node.value, str)
+                        and "Signal:" in node.value):
+                    found.add(node.value)
+        return found
 
     out: dict[str, dict] = {}
     for be_dir in sorted(p for p in backends_dir.iterdir() if p.is_dir()):
         name = be_dir.name
         if name.startswith("_"):
             continue
-        # Pitfall claims: every string carrying a `Signal:` clause, deduplicated
-        # by value so a shared sub-dict attached by reference to many physics
-        # entries counts once. A DUNE audit found a naive walk inflating a count
-        # 111 -> 127 exactly that way.
-        signals: set[str] = set()
-        for py in be_dir.rglob("*.py"):
-            try:
-                tree = ast.parse(py.read_text(errors="ignore"))
-            except SyntaxError:
-                continue
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                    if "Signal:" in node.value:
-                        signals.add(node.value)
+        signals = _signals_in(be_dir.rglob("*.py"))
         fx = fixtures_dir / name
         n_fx = 0
         if fx.is_dir():
@@ -204,24 +237,85 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
             "fixtures": n_fx,
             "covered": round(n_fx / len(signals), 4) if signals else None,
         }
+
+    # The served surfaces that live outside src/backends/<name>/. Grouped under
+    # their own rows so they are visible in the table rather than folded into a
+    # backend's score, where they would dilute rather than be judged.
+    extra_surfaces = {
+        "cross_backend": [backends_dir / "_cross.py"],
+        "deep_knowledge": [repo / "src" / "tools" / "deep_knowledge.py"],
+    }
+    for label, paths in extra_surfaces.items():
+        sigs = _signals_in(p for p in paths if p.is_file())
+        if not sigs:
+            continue
+        fx = fixtures_dir / label
+        n_fx = len([d for d in fx.iterdir()
+                    if (d / "fixture.json").is_file()]) if fx.is_dir() else 0
+        out[label] = {
+            "pitfall_claims": len(sigs),
+            "fixtures": n_fx,
+            "covered": round(n_fx / len(sigs), 4),
+        }
+
+    # Fixture directories with no denominator at all. `coupling` is the one that
+    # matters: it has fixtures but its knowledge carries no Signal: clause, so
+    # the numerator is real and the denominator is missing. Reporting it as a
+    # row with covered=None makes the gap visible; omitting it would let the
+    # flagship look complete by being absent.
+    if fixtures_dir.is_dir():
+        for fx in sorted(p for p in fixtures_dir.iterdir() if p.is_dir()):
+            if fx.name in out:
+                continue
+            n_fx = len([d for d in fx.iterdir() if (d / "fixture.json").is_file()])
+            if n_fx:
+                out[fx.name] = {
+                    "pitfall_claims": 0,
+                    "fixtures": n_fx,
+                    "covered": None,
+                    "note": ("fixtures exist but the knowledge carries no "
+                             "Signal: clause, so coverage is UNMEASURABLE — "
+                             "not zero, and not complete"),
+                }
     return out
 
 
 def print_measured_coverage() -> None:
     rows = measured_pitfall_coverage()
-    print(f"\n{'backend':<10} {'pitfalls':>9} {'fixtures':>9} {'covered':>8}")
-    print("-" * 40)
+    print(f"\n{'surface':<15} {'pitfalls':>9} {'fixtures':>9} {'covered':>9}")
+    print("-" * 46)
     tp = tf = 0
+    unmeasurable = []
     for be, d in sorted(rows.items()):
         tp += d["pitfall_claims"]
         tf += d["fixtures"]
-        cov = "—" if d["covered"] is None else f"{d['covered']:.1%}"
-        print(f"{be:<10} {d['pitfall_claims']:>9} {d['fixtures']:>9} {cov:>8}")
-    print("-" * 40)
-    print(f"{'TOTAL':<10} {tp:>9} {tf:>9} "
-          f"{(tf / tp if tp else 0):>7.1%}")
+        if d["covered"] is None:
+            cov = "UNMEASURABLE"
+            unmeasurable.append(be)
+        else:
+            cov = f"{d['covered']:.1%}"
+        print(f"{be:<15} {d['pitfall_claims']:>9} {d['fixtures']:>9} {cov:>9}")
+    print("-" * 46)
+    print(f"{'TOTAL':<15} {tp:>9} {tf:>9} "
+          f"{(tf / tp if tp else 0):>8.1%}")
     print("\nsurface_covered for the freeze criterion is this column — computed "
-          "from the tree, identical in meaning for every backend.")
+          "from the tree, identical in meaning for every surface.")
+
+    if unmeasurable:
+        # Loud, because an unmeasurable row is the one failure mode this table
+        # cannot express as a number, and a blank cell reads as "fine".
+        print(f"\n!! {len(unmeasurable)} surface(s) CANNOT BE JUDGED: "
+              f"{', '.join(unmeasurable)}")
+        for be in unmeasurable:
+            note = rows[be].get("note")
+            if note:
+                print(f"   {be}: {note}")
+        print("   These have fixtures but no countable claims behind them. "
+              "They are neither passing nor failing the 80% bar — they are "
+              "exempt from it, which is worse. Give their knowledge the "
+              "corpus format ([Category] ... Signal: ...) so it can be "
+              "counted, retrieved by symptom, and held to the same bar as "
+              "every other surface.")
 
 
 if __name__ == "__main__":
