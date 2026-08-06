@@ -68,6 +68,7 @@ problems and mean nothing by it.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -249,8 +250,57 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
                 found.add(f"{physics}:{idx}")
         return found
 
+    def _registry_claims(backend: str) -> set[str] | None:
+        """Distinct pitfall TEXTS the backend actually serves, or None.
+
+        Two corrections in one, both measured rather than assumed.
+
+        THE REGISTRY, NOT THE SOURCE TREE. Reading Signal-bearing strings out of
+        `src/backends/<name>/**.py` with an AST walk misses claims that arrive by
+        merging, aliasing or importing across modules. It counted 252 for 4C
+        where the registry serves 382 — a third missing — and that undercount is
+        what made 4C look like 98% covered when it is 66%.
+
+        DISTINCT TEXTS, NOT POSITIONS. SPARTA appends 10 universal pitfalls to
+        every one of its 10 physics rows, so a positional count reports 165
+        claims where 75 distinct things exist; on another branch the same shape
+        gives 1343 positional against 53 distinct. Counting positions would let
+        a backend inflate its denominator by supporting more physics without
+        writing a single new claim, and would make its coverage unreachable for
+        no reason. Measured across all backends, the inflation is 1303 of 2677
+        positions — essentially all of it SPARTA, with 4C contributing 13 and
+        every other backend exactly zero.
+
+        Returns None when the backend cannot be loaded here, so the caller can
+        fall back rather than report a confident zero.
+        """
+        try:
+            sys.path.insert(0, str(repo / "src"))
+            from core.registry import get_backend, load_all_backends
+            load_all_backends()
+            be = get_backend(backend)
+        except Exception:
+            return None
+        if be is None:
+            return None
+        texts: set[str] = set()
+        try:
+            for cap in be.supported_physics():
+                k = be.get_knowledge(cap.name)
+                if isinstance(k, dict):
+                    for entry in (k.get("pitfalls") or []):
+                        if isinstance(entry, str):
+                            texts.add(entry)
+        except Exception:
+            return None
+        return texts or None
+
     def _signals_in(paths) -> set[str]:
         """Every distinct Signal-carrying string under these paths.
+
+        FALLBACK ONLY — see _registry_claims for why this undercounts. Kept
+        because a backend whose library is absent still has a knowledge surface
+        worth reporting approximately, but a number from here is a floor.
 
         Deduplicated by value: a shared sub-dict attached by reference to many
         physics entries is one claim to verify, and a naive walk inflated a
@@ -274,7 +324,11 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
         name = be_dir.name
         if name.startswith("_"):
             continue
-        signals = _signals_in(be_dir.rglob("*.py"))
+        signals = _registry_claims(name)
+        source = "registry"
+        if signals is None:
+            signals = _signals_in(be_dir.rglob("*.py"))
+            source = "source-tree floor"
         fx = fixtures_dir / name
         n_fx = 0
         if fx.is_dir():
@@ -287,6 +341,7 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
             # _claims_with_a_fixture for why it is wrong in both directions.
             "covered_crude": round(n_fx / len(signals), 4) if signals else None,
             "claims_attributed": len(attributed),
+            "denominator_source": source,
             "covered": (round(len(attributed) / len(signals), 4)
                         if signals else None),
         }
