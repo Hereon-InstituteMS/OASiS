@@ -6,6 +6,8 @@
   "mode": "python",
   "timeout_seconds": 240,
   "expect_in_output": [
+    "tangent_matrix_type=SparseMatrixd",
+    "disp_space_type=VectorH1",
     "elastic_state_tangents_identical=True",
     "plastic_state_tangents_differ_gt_10pct=True",
     "consistent_converged=True",

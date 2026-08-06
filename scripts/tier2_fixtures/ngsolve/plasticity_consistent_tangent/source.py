@@ -122,14 +122,14 @@ def mat_norm(mat) -> float:
     return float(np.linalg.norm(mat.AsVector().FV().NumPy()))
 
 
-def rel_matrix_diff(gfu) -> float:
+def rel_matrix_diff(gfu) -> tuple[float, str]:
     a = residual_form(0.0)
     a.AssembleLinearization(gfu.vec)
     ac = continuum_form(gfu)
     ac.Assemble()
     diff = a.mat.CreateMatrix()
     diff.AsVector().data = a.mat.AsVector() - ac.mat.AsVector()
-    return mat_norm(diff) / mat_norm(a.mat)
+    return mat_norm(diff) / mat_norm(a.mat), type(a.mat).__name__
 
 
 def newton(load: float, tangent: str, maxit: int):
@@ -163,7 +163,8 @@ def main() -> int:
     # --- validation: in an elastic state the two tangents must coincide -----
     elastic_probe = GridFunction(fes)
     elastic_probe.Set(CoefficientFunction((1e-5 * x, 0.0)))
-    d_el = rel_matrix_diff(elastic_probe)
+    d_el, mat_type = rel_matrix_diff(elastic_probe)
+    print(f"tangent_matrix_type={mat_type} disp_space_type={type(fes).__name__}")
     print(f"elastic_state_tangents_identical={d_el == 0.0}")
     if d_el != 0.0:
         print(f"FAIL: the continuum tangent does not reduce to the elastic "
@@ -173,7 +174,7 @@ def main() -> int:
     # --- and in a plastic state they must not -------------------------------
     plastic_probe = GridFunction(fes)
     plastic_probe.Set(CoefficientFunction((5e-3 * x, 0.0)))
-    d_pl = rel_matrix_diff(plastic_probe)
+    d_pl, _mt = rel_matrix_diff(plastic_probe)
     print(f"plastic_state_tangents_differ_gt_10pct={d_pl > 0.10}")
     if d_pl <= 0.10:
         print(f"FAIL: consistent and continuum tangents agree in the plastic "
