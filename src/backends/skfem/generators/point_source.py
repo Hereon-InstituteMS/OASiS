@@ -203,16 +203,24 @@ KNOWLEDGE: dict = {
             "analytic series sum by orders of magnitude "
             "(symptom of either the wrong source magnitude OR "
             "wrong BC orientation OR sign error in K).",
-            "[Output] VTK output for a 2D MeshTri needs "
+            "[Output] VTK output for a 2D MeshTri wants "
             "3D-padded points: "
             "`np.column_stack([m.p.T, np.zeros(m.p.shape[1])])`. "
-            "Forgetting the zero z-column raises ValueError in "
-            "`meshio.Mesh` when constructing the points array "
-            "(it requires shape (N, 3) for VTU/VTX output). "
-            "Signal: ValueError 'expected ndarray of shape "
-            "(N, 3), got (N, 2)' from meshio.Mesh constructor; "
-            "or the .vtu file writes but ParaView refuses to "
-            "render it as 'invalid 2D coordinates'.",
+            "Do NOT rely on an exception to catch the missing "
+            "z-column: meshio 5.3.5 does not raise on an (N, 2) "
+            "points array — `meshio.Mesh` constructs fine and the "
+            "writer prints 'Warning: VTU requires 3D points, but "
+            "2D points given. Appending 0 third component.' and "
+            "writes the file anyway. Pad explicitly if you want "
+            "the coordinates to be what you intended rather than "
+            "what meshio guessed. Signal: that warning line on "
+            "stdout (not stderr, not an exception) at the "
+            "meshio write call, and a .vtu whose point array has "
+            "3 columns you never supplied; there is no "
+            "'expected ndarray of shape (N, 3)' ValueError from "
+            "the meshio.Mesh constructor. (Quoted string "
+            "re-checked live 2026-08-06 on meshio 5.3.5 and found "
+            "absent.)",
         ],
         "references": [
             "scikit-fem ex17 (insertion of point load)",
