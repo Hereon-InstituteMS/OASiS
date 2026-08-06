@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: RADIUS must be set per particle (in the MDPA or via a process). Pitfall (kratos.dem #6). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The variable lives in core KratosMultiphysics, not on DEMApplication \u2014 DEM.RADIUS raises AttributeError while KM.RADIUS resolves. It is a nodal quantity: reading RADIUS off a node without adding it raises the variables-list container error, and adding it makes the same read return 0.0, which is the silent default a particle keeps when nothing sets it. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.RADIUS]=True_expected=True",
+    "probe[DEM.RADIUS]=False_expected=False",
+    "probe[nodal_read_without_variable]=False_expected=False",
+    "probe[nodal_default_is_zero]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

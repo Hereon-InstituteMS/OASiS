@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: the MaterialsDEM.json constitutive_law name must match exactly, e.g. 'DEM_D_Hertz_viscous_Coulomb'. Pitfall (kratos.dem #2). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). This is the DEM-section copy of the exactness claim; the constitutive_laws-section copy has its own fixture (dem_constitutive_law_names_exact). Measured: the three full names resolve on DEMApplication, the two natural abbreviations do not. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
+    "probe[DEM_D_Linear_viscous_Coulomb]=True_expected=True",
+    "probe[Hertz_viscous_Coulomb_abbrev]=False_expected=False",
+    "probe[DEM_D_Hertz_abbrev]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

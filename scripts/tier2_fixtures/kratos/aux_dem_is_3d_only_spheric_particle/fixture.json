@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: DEM is always 3D internally \u2014 the MDPA must reference SphericParticle3D even for a problem posed in a 2D plane, and there is NO SphericParticle2D. Pitfall (kratos._auxiliary_overview #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). CreateNewElement('SphericParticle2D', ...) raises RuntimeError 'The Element \"SphericParticle2D\" is not registered!'; SphericParticle3D constructs. This is the auxiliary-overview copy of the claim; the dem-section copy (dem #3) has its own fixture, dem_spheric_particle_2d_rejected. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "_auxiliary_overview",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[SphericParticle3D]=True_expected=True",
+    "registered[SphericParticle2D]=False_expected=False",
+    "registered[NanoParticle3D]=True_expected=True",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

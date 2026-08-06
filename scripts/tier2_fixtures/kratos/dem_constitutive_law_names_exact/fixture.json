@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: DEM constitutive laws are selected by an EXACT name in MaterialsDEM.json. Pitfall (kratos.constitutive_laws #1, 'Must be registered via constitutive_law.name in MaterialsDEM.json'; the same exactness claim appears as kratos.dem #2). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The registered Python classes on DEMApplication are DEM_D_Hertz_viscous_Coulomb, DEM_D_Linear_viscous_Coulomb and DEM_KDEM; the plausible abbreviations 'Hertz_viscous_Coulomb' and 'DEM_D_Hertz' do not resolve. Nothing normalises or fuzzy-matches the string. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DEM.DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
+    "probe[DEM.DEM_D_Linear_viscous_Coulomb]=True_expected=True",
+    "probe[DEM.DEM_KDEM]=True_expected=True",
+    "probe[DEM.Hertz_viscous_Coulomb]=False_expected=False",
+    "probe[DEM.DEM_D_Hertz]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

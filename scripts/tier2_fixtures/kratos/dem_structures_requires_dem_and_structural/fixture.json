@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: DEM-structures coupling requires DEMApplication + StructuralMechanicsApplication. Pitfall (kratos.dem_structures_coupling #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). All three modules \u2014 the two prerequisites and DemStructuresCouplingApplication itself \u2014 import on this stack, with a NoSuchKratosApplication negative control proving the probe discriminates. The coupling utilities the other claims in this section reference are only reachable once all three are loaded. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dem_structures_coupling",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[DEMApplication]=True_expected=True",
+    "importable[StructuralMechanicsApplication]=True_expected=True",
+    "importable[DemStructuresCouplingApplication]=True_expected=True",
+    "importable[NoSuchKratosApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

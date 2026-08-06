@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for Kratos plasticity#5: SmallStrainIsotropicPlasticityFactory() constructor takes NO arguments. Passing KM.Parameters raises TypeError 'incompatible constructor arguments'. Verified empirically 2026-06-01 after KratosConstitutiveLawsApplication was installed.",
+  "_comment": "Tier-2 for Kratos plasticity#5: SmallStrainIsotropicPlasticityFactory() constructor takes NO arguments. Passing KM.Parameters raises TypeError 'incompatible constructor arguments'. Verified empirically 2026-06-01 after KratosConstitutiveLawsApplication was installed. INDEX CORRECTED 5 -> 6: SmallStrainIsotropicPlasticityFactory ctor-args claim is plasticity #6, not #5 (#5 is the FRICTION_ANGLE module split). The fixture source was already testing the #6 claim; the recorded index pointed one entry earlier, so it was crediting the wrong pitfall.",
   "backend": "kratos",
   "physics": "plasticity",
-  "pitfall_index": 5,
+  "pitfall_index": 6,
   "mode": "python",
   "expect_in_output": [
     "TypeError",

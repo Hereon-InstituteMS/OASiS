@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: Chimera requires FluidDynamicsApplication. Pitfall (kratos.chimera #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). FluidDynamicsApplication imports; ChimeraApplication does not \u2014 and notably it fails with an ImportError naming a missing libKratosChimeraApplicationCore.so rather than a ModuleNotFoundError, because the wheel installs but is incomplete (see chimera_wheel_installs_but_import_fails). The dependency is satisfiable; the application is not. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "chimera",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "importable[ChimeraApplication]=False_expected=False",
+    "importable[NoSuchKratosApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

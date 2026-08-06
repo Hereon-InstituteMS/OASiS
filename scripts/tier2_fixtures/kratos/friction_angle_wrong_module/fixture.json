@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for Kratos plasticity#4: FRICTION_ANGLE (and other plasticity variables) lives in ConstitutiveLawsApplication (CLA), not in core KratosMultiphysics (KM). KM.FRICTION_ANGLE raises AttributeError at attribute lookup BEFORE properties.SetValue is reached. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for Kratos plasticity#4: FRICTION_ANGLE (and other plasticity variables) lives in ConstitutiveLawsApplication (CLA), not in core KratosMultiphysics (KM). KM.FRICTION_ANGLE raises AttributeError at attribute lookup BEFORE properties.SetValue is reached. Verified empirically 2026-06-01. INDEX CORRECTED 4 -> 5: FRICTION_ANGLE module split is plasticity #5, not #4 (#4 is the HARDENING_CURVE=3 perfect-plasticity entry). The fixture source was already testing the #5 claim; the recorded index pointed one entry earlier, so it was crediting the wrong pitfall.",
   "backend": "kratos",
   "physics": "plasticity",
-  "pitfall_index": 4,
+  "pitfall_index": 5,
   "mode": "python",
   "expect_in_output": [
     "AttributeError",

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: for new analyses prefer StructuralMechanicsApplication and ContactStructuralMechanicsApplication over the older SolidMechanicsApplication / ContactMechanicsApplication. Pitfall (kratos._auxiliary_overview #2). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The advice is enforced by availability, not by convergence: both legacy applications raise ModuleNotFoundError (no wheel at any version) while both modern ones import. On a pip stack the older path is not merely discouraged, it is unreachable. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "_auxiliary_overview",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[StructuralMechanicsApplication]=True_expected=True",
+    "importable[ContactStructuralMechanicsApplication]=True_expected=True",
+    "importable[SolidMechanicsApplication]=False_expected=False",
+    "importable[ContactMechanicsApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

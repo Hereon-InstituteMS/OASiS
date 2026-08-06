@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: PFEM requires DelaunayMeshingApplication for remeshing. Pitfall (kratos.pfem_fluid #1). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Neither DelaunayMeshingApplication nor PfemFluidDynamicsApplication imports \u2014 no wheel exists for either at any version \u2014 while the reference applications do. So the remeshing dependency the claim names is not obtainable on a pip stack, which is the same conclusion as pfem_fluid #0 reached from the other side. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "pfem_fluid",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[DelaunayMeshingApplication]=False_expected=False",
+    "importable[PfemFluidDynamicsApplication]=False_expected=False",
+    "importable[StructuralMechanicsApplication]=True_expected=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}
