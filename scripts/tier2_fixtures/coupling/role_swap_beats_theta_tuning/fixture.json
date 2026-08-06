@@ -1,5 +1,11 @@
 {
   "_comment": "COUPLING tier-2. 'If a coupling converges too slowly to be practical, SWAP WHICH SIDE IS DIRICHLET before doing anything else \u2014 that replaces rho by 1/rho and is usually a bigger win than any theta', and the observation that one asymmetric split failed to converge inside the iteration budget with the stiff subdomain on the Dirichlet side and converged comfortably once the roles were swapped. This is the only tuning advice in the knowledge that claims to beat a SEARCH, so the fixture sweeps six thetas in the stiff orientation rather than testing one: a claim that role-swapping beats theta tuning is only tested if theta tuning was attempted and lost. The swapped orientation gets no search at all \u2014 just the theta the 1/(1+rho) rule prescribes for the new ratio \u2014 and still wins. THE BUDGET IS NOT TUNED: max_iter=60 with tol=1e-8 is the iteration budget in the knowledge's own example couple(...) call, used unchanged, so the fixture cannot be accused of picking the one budget that makes the claim true. The swapped run's physics is checked against the closed form too, so a fast arrival at the wrong fixed point cannot win.",
+  "_mutation": {
+    "note": "Give the swapped orientation an arbitrary theta instead of the 1/(1+rho) the rule prescribes for its new ratio. The swap then fails to converge inside the same budget the stiff orientation failed in, and swap_did_not_converge fires. This isolates the part of the claim that is easy to lose: swapping the roles is not by itself the win \u2014 swapping AND recomputing theta for the new rho is. A fixture that only swapped would pass either way.",
+    "file": "source.py",
+    "from": "th_soft = p.theta_opt(\"right\")",
+    "to": "th_soft = 0.05"
+  },
   "backend": "coupling",
   "physics": "relaxation",
   "pitfall_index": 13,

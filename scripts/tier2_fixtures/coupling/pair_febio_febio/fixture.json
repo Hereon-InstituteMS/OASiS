@@ -1,5 +1,11 @@
 {
-  "_comment": "COUPLING tier-2. FEBio's sides-table row is the one that contains a refusal: 'yes | yes | FEBio-to-FEBio, both roles — ELASTICITY, not heat: FEBio 4 has no heat module'. The payload expands it: FEBioHeat was removed upstream and survives only as a plugin, so a conduction participant is impossible here, and the shipped script solves the exact linear analogue — a uniaxial-strain elastic bar where displacement plays temperature and the P-wave modulus plays conductivity. That analogue has its own closed form, so the claim is checkable on the same terms as the conduction pairs: interface displacement, interface traction with the sign each side's own outward normal implies, and conservation across the interface. M = E(1-nu)/((1+nu)(1-2nu)) is computed from E and nu rather than copied, so changing either constant in the shipped script moves the expected answer with it instead of silently invalidating the fixture. Reaching a converged, correct answer is also evidence the shipped deck names a module FEBio 4 registers: an unknown <Module type> SEGFAULTS without an error message, which reads exactly like a corrupted deck.",
+  "_comment": "COUPLING tier-2. FEBio's sides-table row is the one that contains a refusal: 'yes | yes | FEBio-to-FEBio, both roles \u2014 ELASTICITY, not heat: FEBio 4 has no heat module'. The payload expands it: FEBioHeat was removed upstream and survives only as a plugin, so a conduction participant is impossible here, and the shipped script solves the exact linear analogue \u2014 a uniaxial-strain elastic bar where displacement plays temperature and the P-wave modulus plays conductivity. That analogue has its own closed form, so the claim is checkable on the same terms as the conduction pairs: interface displacement, interface traction with the sign each side's own outward normal implies, and conservation across the interface. M = E(1-nu)/((1+nu)(1-2nu)) is computed from E and nu rather than copied, so changing either constant in the shipped script moves the expected answer with it instead of silently invalidating the fixture. Reaching a converged, correct answer is also evidence the shipped deck names a module FEBio 4 registers: an unknown <Module type> SEGFAULTS without an error message, which reads exactly like a corrupted deck.",
+  "_mutation": {
+    "note": "The elastic analogue of the conduction mutation: give both participants a Young's modulus 25% away from the one the closed form uses. The interface DISPLACEMENT is unchanged, because the stiffness ratio is preserved, and the traction balance still cancels \u2014 only the interface traction moves. A converged, balanced, wrong coupling that only the q_err check sees.",
+    "file": "../_lib/couplinglib.py",
+    "from": "\"E_MOD\": f\"{e}\", \"NU\": f\"{problem.nu}\",",
+    "to": "\"E_MOD\": f\"{1.25 * e}\", \"NU\": f\"{problem.nu}\","
+  },
   "backend": "coupling",
   "physics": "pair_febio_febio",
   "pitfall_index": 7,
@@ -16,5 +22,11 @@
     "pairs_run=2",
     "failures_count=0"
   ],
-  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "failures_count=1"]
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "failures_count=1"
+  ]
 }

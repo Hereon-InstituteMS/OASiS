@@ -53,7 +53,61 @@ from pathlib import Path
 
 logging.disable(logging.CRITICAL)
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+def _looks_like_the_checkout(d: Path) -> bool:
+    return ((d / "src" / "tools" / "coupling_knowledge.py").is_file()
+            and (d / "data" / "coupling_participants").is_dir())
+
+
+def _find_checkout(start: Path | None) -> Path | None:
+    if start is None:
+        return None
+    try:
+        start = start.resolve()
+    except OSError:
+        return None
+    for d in (start, *start.parents):
+        try:
+            if _looks_like_the_checkout(d):
+                return d
+        except OSError:
+            continue
+    return None
+
+
+# WHERE THE CHECKOUT IS, and why this is not just `parents[4]`.
+#
+# Normally the answer is "walk up from this file", and that is exact: it finds
+# the checkout this fixture belongs to, branch and all. But
+# scripts/mutate_tier2_fixtures.py copies a fixture into a scratch tree under
+# /tmp before mutating it, and from there walking up finds nothing — the fixture
+# would die on `import core.registry` and every mutation verdict would be
+# VACUOUS_BASELINE, which says only that nothing ran.
+#
+# So there are fallbacks, and the resolved root is PRINTED, because two of them
+# can answer with a DIFFERENT checkout of the same repo and a reader comparing
+# runs needs to see that rather than infer it.
+#
+#   OASIS_REPO   an explicit pin, for anyone who wants one.
+#   $PWD         the directory the RUNNER was invoked from. `subprocess.run`
+#                sets the child's working directory but leaves the inherited
+#                PWD alone, so this survives into a staged fixture and names
+#                the checkout the harness itself is working in — which is the
+#                one whose mutation is being tested.
+#   sys.executable  last, and only useful when the interpreter lives inside a
+#                checkout.
+_ENV_ROOT = os.environ.get("OASIS_REPO")
+_PWD = os.environ.get("PWD")
+REPO_ROOT = (_find_checkout(Path(__file__))
+             or _find_checkout(Path(_ENV_ROOT) if _ENV_ROOT else None)
+             or _find_checkout(Path(_PWD) if _PWD else None)
+             or _find_checkout(Path(sys.executable)))
+if REPO_ROOT is None:
+    print("FAIL: cannot locate an OASiS checkout from this fixture's own path, "
+          "from $OASIS_REPO, or from the running interpreter. A coupling "
+          "fixture needs the checkout for src/ and for the shipped participant "
+          "scripts; it cannot run without one.")
+    raise SystemExit(2)
+print(f"checkout={REPO_ROOT}")
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 PARTICIPANT_DIR = REPO_ROOT / "data" / "coupling_participants"

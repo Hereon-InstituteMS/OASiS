@@ -24,8 +24,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import _couplinglib as L                                    # noqa: E402
+# The shared library lives in a sibling `_lib/` DIRECTORY, not as a bare
+# file, because scripts/mutate_tier2_fixtures.py stages a fixture into a
+# scratch tree and copies only sibling directories whose name starts with
+# `_`. As a bare file it would not be copied, the staged fixture could not
+# import it, and every mutation verdict would be VACUOUS_BASELINE.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
+import couplinglib as L                                     # noqa: E402
 
 
 def body() -> None:

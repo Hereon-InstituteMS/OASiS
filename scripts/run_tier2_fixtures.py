@@ -537,15 +537,29 @@ def _eval_fixture(fixture_dir: Path,
     return result
 
 
-def run() -> dict:
+def run(backend: str | None = None, fixture: str | None = None) -> dict:
+    """Evaluate the fixtures, optionally narrowed to one backend and/or one
+    fixture id.
+
+    The filters exist because a whole-tree run is now hours: the coupling
+    fixtures alone drive two solvers through tens to hundreds of iterations
+    each. Without them, checking one fixture means either running everything or
+    invoking its `source.py` by hand, and running it by hand bypasses the
+    routing and the expectation matching — which is to say it does not check
+    the fixture, only the script inside it.
+    """
     out_map: dict[str, dict] = {}
     if not FIXTURES_DIR.is_dir():
         return out_map
     for backend_dir in sorted(FIXTURES_DIR.iterdir()):
         if not backend_dir.is_dir():
             continue
+        if backend and backend_dir.name != backend:
+            continue
         for fixture_dir in sorted(backend_dir.iterdir()):
             if not fixture_dir.is_dir():
+                continue
+            if fixture and fixture_dir.name != fixture:
                 continue
             meta_path = fixture_dir / "fixture.json"
             if not meta_path.is_file():
@@ -594,9 +608,32 @@ def main():
     ap.add_argument(
         "--write-results", action="store_true",
         help="persist results to scan_results/tier2_results.json")
+    ap.add_argument(
+        "--backend", default=None,
+        help="only fixtures under scripts/tier2_fixtures/<backend>/")
+    ap.add_argument(
+        "--fixture", default=None,
+        help="only the fixture directory with this name")
     args = ap.parse_args()
 
-    results = run()
+    # A PARTIAL run must never become the whole-tree record. That is the same
+    # defect d17ac19 fixed from the other side: there, `--write-results` was
+    # parsed and never read, so any exploratory run silently replaced the
+    # snapshot. Adding filters re-opens it — `--backend coupling
+    # --write-results` would write 18 rows over 108 and the summary would read
+    # as a catastrophic regression. So the two are refused together.
+    if (args.backend or args.fixture) and args.write_results:
+        print("refusing to write results from a filtered run: the snapshot is "
+              "a whole-tree record, and 18 rows written over 108 reads as a "
+              "regression rather than as a partial run. Re-run without "
+              "--backend/--fixture to persist.")
+        return
+
+    results = run(backend=args.backend, fixture=args.fixture)
+    if not results:
+        where = " ".join(x for x in (args.backend, args.fixture) if x)
+        print(f"no fixtures matched {where!r}")
+        return
 
     summary = {
         "n_fixtures": len(results),

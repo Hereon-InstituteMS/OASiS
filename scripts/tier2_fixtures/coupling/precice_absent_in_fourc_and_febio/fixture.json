@@ -1,5 +1,11 @@
 {
   "_comment": "COUPLING tier-2. Verifies the two 'CANNOT' verdicts in knowledge(topic='precice'): 4C has no preCICE entry point, and FEBio as installed has no preCICE in the binary and no Python API. Runs each of the three probes the claim itself names \u2014 ldd for linked libraries, nm -D for the dynamic symbol table, strings -a for anything textual the build left behind \u2014 on both binaries as resolved by the live registry, plus a walk of each binary's own source checkout for any path matching *precice*. Eight probes, all required to be zero. Then checks both payloads still redirect to `couple`, because a refusal with no alternative is how an agent concludes the coupling is impossible. This is the fixture that notices if somebody builds a preCICE-enabled 4C: the knowledge would silently become wrong and every agent would keep being steered to the file handshake. A POSITIVE CONTROL is built in: the same three probes are pointed at a binary that DOES link preCICE (precice-tools), and all three must find it. Eight zero counts from a detector never shown to return non-zero is not evidence \u2014 and the control has to be a preCICE CONSUMER, not libprecice itself, because a library does not link itself and `ldd libprecice.so` reports zero hits, looking exactly like 4C.",
+  "_mutation": {
+    "note": "Make the probe's needle something no output contains. Every count goes to zero \u2014 including the POSITIVE CONTROL's, which is the point: eight zeroes from the solver binaries mean nothing unless a binary that really does link preCICE still registers, so control_ldd_found_nothing fires. This is the precise failure the control was added for, after the first attempt used libprecice.so itself as the control and got ldd 0 hits, a library not linking itself, which looked exactly like 4C.",
+    "file": "source.py",
+    "from": "if \"precice\" in line.lower())",
+    "to": "if \"precice_needle_that_never_matches\" in line.lower())"
+  },
   "backend": "coupling",
   "physics": "precice_availability",
   "pitfall_index": 9,

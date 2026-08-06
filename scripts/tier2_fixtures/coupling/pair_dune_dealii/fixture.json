@@ -1,5 +1,11 @@
 {
-  "_comment": "COUPLING tier-2. The pair with no FEniCSx in it. The sides table names it twice, once in each row. It earns its own fixture because every other cross-code pair in the table has FEniCSx on one side: if the shipped FEniCSx participant and the driver happened to agree on a convention the knowledge states WRONGLY, every FEniCSx pair would still converge to the right answer and the error would be invisible. This pair removes that common factor — two participants written independently, neither of them the one the rest of the table is anchored to, meeting the same closed form. Both are also the awkward backends (DUNE JIT-compiles its forms on a fresh process every iteration; deal.II is a compiled executable driven by a wrapper through a plain-text input file), so it is the slowest pair in the set.",
+  "_comment": "COUPLING tier-2. The pair with no FEniCSx in it. The sides table names it twice, once in each row. It earns its own fixture because every other cross-code pair in the table has FEniCSx on one side: if the shipped FEniCSx participant and the driver happened to agree on a convention the knowledge states WRONGLY, every FEniCSx pair would still converge to the right answer and the error would be invisible. This pair removes that common factor \u2014 two participants written independently, neither of them the one the rest of the table is anchored to, meeting the same closed form. Both are also the awkward backends (DUNE JIT-compiles its forms on a fresh process every iteration; deal.II is a compiled executable driven by a wrapper through a plain-text input file), so it is the slowest pair in the set.",
+  "_mutation": {
+    "note": "Configure both participants with a conductivity 25% away from the one the closed form is computed from. The coupling stays SELF-CONSISTENT: it converges, the two sides still agree at the interface, and the flux balance is untouched because both subdomains moved together \u2014 the interface temperature does not even change, since the conductance RATIO is preserved. Only the interface FLUX moves, by the same 25%. So this is a converged, balanced, internally unimpeachable coupling of the wrong problem, which is the exact silent-wrong shape these fixtures exist to catch, and the q_err check is the only thing that sees it. Run by hand against the subject rather than the setup, the equivalent was flipping the sign of `normal_fluxes` in data/coupling_participants/participant_skfem.py (not stageable, so not declarable here): that produced a run which converged in 62 iterations and balanced to 3.9e-08 while landing 22 K from the exact interface temperature.",
+    "file": "../_lib/couplinglib.py",
+    "from": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{k}\", \"F_SRC\": \"0.0\",",
+    "to": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{1.25 * k}\", \"F_SRC\": \"0.0\","
+  },
   "backend": "coupling",
   "physics": "pair_dune_dealii",
   "pitfall_index": 6,
@@ -15,5 +21,11 @@
     "pairs_run=2",
     "failures_count=0"
   ],
-  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "failures_count=1"]
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "failures_count=1"
+  ]
 }

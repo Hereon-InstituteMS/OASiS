@@ -12,9 +12,15 @@ base to extend and the hardest to keep honest, because adding a row costs one
 line and proving it costs a working participant script.
 
 So this fixture reads the table AS SERVED, and for every unstarred "yes" it
-finds the sibling coupling fixture that puts that backend in that role, by
-parsing the arrangement calls rather than by a list kept in step by hand. Delete
-a pair fixture, or add a row to the table, and this goes red.
+finds the coupling fixture IN THE CHECKOUT that puts that backend in that role,
+by parsing the arrangement calls rather than by a list kept in step by hand.
+Delete a pair fixture, or add a row to the table, and this goes red.
+
+It reads the committed fixture set rather than its own neighbours on purpose.
+Those are the same directory in an ordinary run, and different ones once the
+mutation harness has staged this fixture into a scratch tree — where the
+neighbours do not exist and the coverage question would answer itself with
+"nothing is backed", which is not a finding about the table at all.
 
 What it deliberately does NOT do is assert that those fixtures passed. Reading a
 recorded results snapshot would make this fixture green or red according to a
@@ -28,11 +34,21 @@ import ast
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import _couplinglib as L                                    # noqa: E402
+# The shared library lives in a sibling `_lib/` DIRECTORY, not as a bare
+# file, because scripts/mutate_tier2_fixtures.py stages a fixture into a
+# scratch tree and copies only sibling directories whose name starts with
+# `_`. As a bare file it would not be copied, the staged fixture could not
+# import it, and every mutation verdict would be VACUOUS_BASELINE.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
+import couplinglib as L                                     # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-FIXTURES = HERE.parent
+# The COMMITTED fixture set in the checkout, not this file's own neighbours.
+# Those are the same directory in an ordinary run and different ones when the
+# fixture has been staged into a scratch tree, and only the first is a coverage
+# claim worth making: "the table's cells are backed by runs that exist in the
+# repository" — not "…by whatever happened to be copied next to me".
+FIXTURES = L.REPO_ROOT / "scripts" / "tier2_fixtures" / "coupling"
 
 # The table writes display names; the rest of the repo uses canonical ones.
 CANON = {"fenicsx": "fenics", "4c": "fourc", "ngsolve": "ngsolve",
@@ -72,7 +88,7 @@ def runs_by_fixture() -> dict[tuple[str, str], list[str]]:
     """
     found: dict[tuple[str, str], list[str]] = {}
     for src in sorted(FIXTURES.glob("*/source.py")):
-        if src.parent == HERE:
+        if src.parent.name == HERE.name:
             continue
         tree = ast.parse(src.read_text())
         for node in ast.walk(tree):

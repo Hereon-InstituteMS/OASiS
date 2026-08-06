@@ -1,5 +1,11 @@
 {
-  "_comment": "COUPLING tier-2. deal.II's sides-table row: unstarred yes in both columns, 'coupled to FEniCSx and DUNE-fem, both roles'. deal.II is the only participant that does not exist until it is built — its payload says 'THE PARTICIPANT IS TWO FILES: a compiled C++ solver and a thin Python wrapper', ships heat_iface_dealii.cc and a CMakeLists next to the script, and gives the cmake invocation. So this fixture BUILDS the shipped source before coupling anything: if it does not compile against this install's deal.II, the claim that a deal.II participant is available here is false and the fixture says so instead of skipping. The payload's silent-wrong warning is specific — 'THE NODAL FLUX MUST BE AVERAGED OVER BOTH ADJACENT CELLS ... last-writer-wins silently biases every interior interface node toward one cell' — and a biased nodal flux still converges, showing up only as an interface flux off by a factor related to the cell size, which the closed-form comparison catches and a convergence check does not.",
+  "_comment": "COUPLING tier-2. deal.II's sides-table row: unstarred yes in both columns, 'coupled to FEniCSx and DUNE-fem, both roles'. deal.II is the only participant that does not exist until it is built \u2014 its payload says 'THE PARTICIPANT IS TWO FILES: a compiled C++ solver and a thin Python wrapper', ships heat_iface_dealii.cc and a CMakeLists next to the script, and gives the cmake invocation. So this fixture BUILDS the shipped source before coupling anything: if it does not compile against this install's deal.II, the claim that a deal.II participant is available here is false and the fixture says so instead of skipping. The payload's silent-wrong warning is specific \u2014 'THE NODAL FLUX MUST BE AVERAGED OVER BOTH ADJACENT CELLS ... last-writer-wins silently biases every interior interface node toward one cell' \u2014 and a biased nodal flux still converges, showing up only as an interface flux off by a factor related to the cell size, which the closed-form comparison catches and a convergence check does not.",
+  "_mutation": {
+    "note": "Configure both participants with a conductivity 25% away from the one the closed form is computed from. The coupling stays SELF-CONSISTENT: it converges, the two sides still agree at the interface, and the flux balance is untouched because both subdomains moved together \u2014 the interface temperature does not even change, since the conductance RATIO is preserved. Only the interface FLUX moves, by the same 25%. So this is a converged, balanced, internally unimpeachable coupling of the wrong problem, which is the exact silent-wrong shape these fixtures exist to catch, and the q_err check is the only thing that sees it. Run by hand against the subject rather than the setup, the equivalent was flipping the sign of `normal_fluxes` in data/coupling_participants/participant_skfem.py (not stageable, so not declarable here): that produced a run which converged in 62 iterations and balanced to 3.9e-08 while landing 22 K from the exact interface temperature.",
+    "file": "../_lib/couplinglib.py",
+    "from": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{k}\", \"F_SRC\": \"0.0\",",
+    "to": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{1.25 * k}\", \"F_SRC\": \"0.0\","
+  },
   "backend": "coupling",
   "physics": "pair_fenics_dealii",
   "pitfall_index": 5,
@@ -15,5 +21,12 @@
     "pairs_run=2",
     "failures_count=0"
   ],
-  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "dealii_solver_built=False", "failures_count=1"]
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "dealii_solver_built=False",
+    "failures_count=1"
+  ]
 }

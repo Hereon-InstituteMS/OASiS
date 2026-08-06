@@ -1,5 +1,11 @@
 {
-  "_comment": "COUPLING tier-2. 'the best theta is theta ~ 1/(1+rho) ... swept over rho from 1/4 to 9, the fastest constant theta was 1/(1+rho) at EVERY ratio' — the single number the knowledge tells an agent to compute before running anything. An optimal claim cannot be checked by running the optimum; it needs neighbours, and neighbours that are themselves STABLE, or the comparison is against thetas that diverge and proves only the stability limit that theta_stability_limit already covers. So the bracket is multiplicative and rho-independent — 0.6x, 1.0x and 1.4x of 1/(1+rho), every one below the limit 2/(1+rho) at every rho by construction — and the contest is between three converging choices. Each run's physics is checked against the closed form as well, because a theta that reached the tolerance fastest by settling on the wrong fixed point would otherwise win.",
+  "_comment": "COUPLING tier-2. 'the best theta is theta ~ 1/(1+rho) ... swept over rho from 1/4 to 9, the fastest constant theta was 1/(1+rho) at EVERY ratio' \u2014 the single number the knowledge tells an agent to compute before running anything. An optimal claim cannot be checked by running the optimum; it needs neighbours, and neighbours that are themselves STABLE, or the comparison is against thetas that diverge and proves only the stability limit that theta_stability_limit already covers. So the bracket is multiplicative and rho-independent \u2014 0.6x, 1.0x and 1.4x of 1/(1+rho), every one below the limit 2/(1+rho) at every rho by construction \u2014 and the contest is between three converging choices. Each run's physics is checked against the closed form as well, because a theta that reached the tolerance fastest by settling on the wrong fixed point would otherwise win.",
+  "_mutation": {
+    "note": "Centre the bracket on HALF of 1/(1+rho), i.e. assert the rule is 1/(2(1+rho)). The three thetas tested become 0.3x, 0.5x and 0.7x of the true optimum, all of them below it, so the fastest is now the largest and best_mult comes out 1.4 rather than 1.0. This is the mutation that matters for an OPTIMALITY claim: it does not break convergence, it moves where the optimum is said to be, and only a fixture that actually races neighbours notices.",
+    "file": "source.py",
+    "from": "theta_opt = p.theta_opt(\"left\")",
+    "to": "theta_opt = 0.5 * p.theta_opt(\"left\")"
+  },
   "backend": "coupling",
   "physics": "relaxation",
   "pitfall_index": 12,
@@ -13,5 +19,10 @@
     "ratios_where_theta_opt_won=3",
     "failures_count=0"
   ],
-  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "failures_count=1"]
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
 }
