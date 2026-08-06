@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics contact#0: DOLFINx ships no contact object of any kind \u2014 no solver, no contact boundary, no gap function. The penalty residual has to be built by hand. Wrong variant: reaching for a contact class the way a structural-mechanics package would offer one. dolfinx.fem.ContactBoundary and dolfinx.fem.ContactProblem both fail with \"AttributeError: module 'dolfinx.fem' has no attribute 'Contact...'\", and filtering dir(dolfinx), dir(dolfinx.fem) and dir(dolfinx.fem.petsc) for names containing 'ontact' returns the empty list in every case. The separate dolfinx_contact package is not part of a standard installation either: importing it raises ModuleNotFoundError. The fixture also shows the cure is real, not hypothetical: the hand-written penalty residual gamma*max(phi - u, 0)*v*dx compiles and assembles into a non-zero vector on the same installation. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "module 'dolfinx.fem' has no attribute 'ContactBoundary'",
+    "module 'dolfinx.fem' has no attribute 'ContactProblem'",
+    "no_contact_names_anywhere=True",
+    "No module named 'dolfinx_contact'",
+    "hand_written_penalty_residual_assembles=True",
+    "VERDICT=no_contact_api_build_the_penalty_by_hand"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=contact_api_present"
+  ]
+}

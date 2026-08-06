@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#4: RT(k) pairs with DG(k-1), never DG(k). Pairing RT(1) with DG(1) makes the saddle-point matrix rank deficient -- the pressure block is bigger than the flux block can constrain -- and a plain LU factorisation stops with a zero pivot. The wrong variant is basix.ufl.mixed_element([RT(1), DG(1)]); the right one is [RT(1), DG(0)]. Both are assembled and both are factorised here, so the contrast is measured in-process: a dense SVD counts the null vectors and PETSc LU is asked to factor the same matrix. Observed on dolfinx 0.10.0: DG(1) has 96 pressure dofs against 56 RT(1) flux dofs on a 4x4 unit square, so the divergence block cannot have full row rank; the 152x152 matrix has 64 null vectors and the pivoting LAPACK LU stops with \"Zero pivot in LU factorization\". The RT(1)xDG(0) matrix has full rank and factors. NOTE PETSc's SPARSE LU does no pivoting at all and trips over the zero pressure block of BOTH pairs, so the fixture factors dense copies. The \"the pressure error does not converge under refinement\" half of the claim is not measurable separately: the singular system yields no solution to take an error from. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "dg_k_pressure_dofs_exceed_rt_flux_dofs=True",
+    "bad_pair_matrix_is_rank_deficient=True",
+    "bad_pair_lu_succeeded=False",
+    "good_pair_matrix_has_full_rank=True",
+    "good_pair_lu_succeeded=True",
+    "Zero pivot in LU factorization",
+    "VERDICT=rt_paired_with_dg_k_is_singular"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=rt_paired_with_dg_k_solved_fine"
+  ],
+  "timeout_seconds": 300
+}
