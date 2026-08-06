@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 CORRECTION: pitfall (kratos.auxiliary_overview #5) states that BOTH KratosContactStructuralMechanicsApplication (modern) AND the legacy KratosContactMechanicsApplication / KratosSolidMechanicsApplication are NOT published on PyPI, and that 'there is no pip-only path to Contact physics in Kratos 10.x'. THE FIRST HALF IS FALSE at 10.4.3: pip installs KratosContactStructuralMechanicsApplication==10.4.3 and import KratosMultiphysics.ContactStructuralMechanicsApplication succeeds. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The LEGACY half of the claim stands \u2014 ContactMechanicsApplication and SolidMechanicsApplication both raise ModuleNotFoundError and have no wheel at any version. This fixture pins the corrected state: modern contact IS pip-reachable, legacy contact is not. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "_auxiliary_overview",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[ContactStructuralMechanicsApplication]=True_expected=True",
+    "importable[ContactMechanicsApplication]=False_expected=False",
+    "importable[SolidMechanicsApplication]=False_expected=False",
+    "importable[StructuralMechanicsApplication]=True_expected=True",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

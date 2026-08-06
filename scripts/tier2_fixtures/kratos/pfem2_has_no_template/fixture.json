@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: pitfall (kratos.pfem2 #1) describes an availability-probe STUB template with Signal 'emitted script < 30 lines, results_summary.json has only a note key'. STALE for the same reason as pfem_solid: the stub generators were removed in the 2026-06-26 honesty audit. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). 'pfem2' remains a KNOWLEDGE key with no generator, so nothing is emitted and generate_input raises instead. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "pfem2",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "in_knowledge[pfem2]=True",
+    "generators_for[pfem2]=[]",
+    "stub_template_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

@@ -1,0 +1,59 @@
+"""Tier-2: GRAVITY_Z is a ProcessInfo scalar component, not nodal.
+
+The elements read ProcessInfo[GRAVITY_Z] only. Setting a
+GRAVITY vector, or trying to carry it nodally, leaves g at zero
+and the free surface never moves — with no error. The fixture
+pins where the value lives and shows the nodal route failing.
+"""
+from __future__ import annotations
+
+import os
+import sys
+import traceback
+
+os.environ.setdefault("OMP_NUM_THREADS", "2")
+
+import KratosMultiphysics as KM
+import KratosMultiphysics.ShallowWaterApplication as SW
+
+
+# (label, callable-returning-value, must_succeed)
+def _probe(label, fn, must_succeed):
+    """A probe FAILS if it raises, and equally if it returns False.
+
+    Both matter: some claims are 'this attribute does not resolve'
+    (an exception) and some are 'this predicate is false' (a bool).
+    Treating a returned False as success would let a fixture report a
+    pass while observing the opposite of what it claims.
+    """
+    try:
+        val = fn()
+        ok = val is not False
+        err = "" if ok else "returned False"
+    except Exception as exc:
+        ok = False
+        err = f"{type(exc).__name__}: {str(exc).strip().splitlines()[0] if str(exc).strip() else ''}"
+    print(f"probe[{label}]={ok}_expected={must_succeed}")
+    if not ok:
+        print(f"  message: {err[:150]}")
+    return ok == must_succeed
+
+
+def main() -> int:
+    bad = 0
+    if not _probe('GRAVITY_Z_resolves', lambda: (KM.GRAVITY_Z), True):
+        bad += 1
+    if not _probe('GRAVITY_Z_is_a_component_of_GRAVITY', lambda: ('component 2 of GRAVITY' in str(KM.GRAVITY_Z)), True):
+        bad += 1
+    if not _probe('processinfo_roundtrip_9_81', lambda: ((lambda m: (m.ProcessInfo.SetValue(KM.GRAVITY_Z, 9.81), m.ProcessInfo[KM.GRAVITY_Z] == 9.81)[1])(KM.Model().CreateModelPart('g1'))), True):
+        bad += 1
+    if not _probe('nodal_read_without_variable', lambda: ((lambda m: (m.SetBufferSize(1), m.CreateNewNode(1, 0.0, 0.0, 0.0), m.GetNode(1).GetSolutionStepValue(KM.GRAVITY_Z))[2])(KM.Model().CreateModelPart('g2'))), False):
+        bad += 1
+    if not _probe('nodal_read_with_variable_added', lambda: ((lambda m: (m.AddNodalSolutionStepVariable(KM.GRAVITY), m.SetBufferSize(1), m.CreateNewNode(1, 0.0, 0.0, 0.0), m.GetNode(1).GetSolutionStepValue(KM.GRAVITY_Z) == 0.0)[3])(KM.Model().CreateModelPart('g3'))), True):
+        bad += 1
+    print(f"probe_mismatches={bad}")
+    return 0 if bad == 0 else 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

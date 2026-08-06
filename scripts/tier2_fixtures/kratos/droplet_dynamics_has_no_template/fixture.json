@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: pitfall (kratos.droplet_dynamics #0) says the catalog template is an availability-probe STUB with Signal 'emitted script < 40 lines, results_summary.json has only note/reason/install_hint keys'. STALE: the stub generators were removed in the 2026-06-26 honesty audit. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). 'droplet_dynamics' remains a KNOWLEDGE key with no generator, and no KratosDropletDynamicsApplication wheel exists at any version, so no solve template is possible on a pip stack either. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "droplet_dynamics",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "in_knowledge[droplet_dynamics]=True",
+    "generators_for[droplet_dynamics]=[]",
+    "stub_template_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

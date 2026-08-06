@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: SwimmingDEM requires FluidDynamicsApplication + DEMApplication. Pitfall (kratos.swimming_dem #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both prerequisites import while SwimmingDEMApplication does not. Related measured fact for the sibling claim (swimming_dem #2): the KratosSwimmingDEMApplication wheel is still pinned at 10.4.0 and requires kratosmultiphysics==10.4.0, so installing it would DOWNGRADE a 10.4.3 core \u2014 it was deliberately not installed into this venv. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "swimming_dem",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "importable[DEMApplication]=True_expected=True",
+    "importable[SwimmingDEMApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

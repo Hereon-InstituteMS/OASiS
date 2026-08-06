@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 REGISTRY-VS-APPLICATION SPLIT (negative control NoSuchKratosApplication included so a green result proves the probe discriminates): GeoMechanicsApplication and PoromechanicsApplication both exist and both register u-P elements, under DIFFERENT stems. Pitfall (kratos.geomechanics #1) says 'U-Pw elements require both DISPLACEMENT and WATER_PRESSURE DOFs'. NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). MEASURED: the UPw stem is alive in GeoMechanicsApplication (UPwSmallStrainElement2D4N constructs once GMA is imported) while PoromechanicsApplication registers the UPl stem with LIQUID_PRESSURE. The poromechanics #1 claim's Signal \u2014 'UPwSmallStrainElement2D4N is not registered' \u2014 is therefore true only when GeoMechanics is NOT loaded. Which application is imported decides which spelling works; the rename was application-scoped, not version-scoped. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "geomechanics",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[GeoMechanicsApplication]=True_expected=True",
+    "importable[PoromechanicsApplication]=True_expected=True",
+    "importable[StructuralMechanicsApplication]=True_expected=True",
+    "importable[NoSuchKratosApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

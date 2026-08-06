@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: RANSApplication requires FluidDynamicsApplication as a dependency. A negative control (KratosMultiphysics.NoSuchKratosApplication) is included so a green result proves the import probe discriminates rather than always succeeding.  Pitfall (kratos.rans #1). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both import on this stack. The dependency is real and loaded transitively: the RANS Python loader imports FluidDynamics first, which is why a minimal build missing FluidDynamics fails on the INNER import rather than on the user's own import line \u2014 the mechanism the catalog's application_loader_pattern entry describes. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "rans",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "importable[RANSApplication]=True_expected=True",
+    "importable[NoSuchKratosApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: WindEngineering requires FluidDynamicsApplication + RANSApplication. Pitfall (kratos.wind_engineering #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both prerequisites import successfully while WindEngineeringApplication itself does not \u2014 so on this stack the dependencies are satisfiable and the application is the missing piece, which is the opposite ordering from what the boilerplate Signal ('solver reports Convergence is not achieved') would lead a reader to look for. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "wind_engineering",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "importable[RANSApplication]=True_expected=True",
+    "importable[WindEngineeringApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

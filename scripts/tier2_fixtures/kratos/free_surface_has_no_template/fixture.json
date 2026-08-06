@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: pitfall (kratos.free_surface #0) describes an availability-probe STUB template. STALE: the stub generators were removed in the 2026-06-26 honesty audit. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). 'free_surface' remains a KNOWLEDGE key with no generator; no KratosFreeSurfaceApplication wheel exists at any version. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "free_surface",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "in_knowledge[free_surface]=True",
+    "generators_for[free_surface]=[]",
+    "stub_template_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

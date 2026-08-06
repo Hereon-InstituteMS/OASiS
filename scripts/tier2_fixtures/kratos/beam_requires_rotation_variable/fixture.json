@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: DISPLACEMENT is the structural DOF; ROTATION must be added additionally for beams and shells. Pitfall (kratos.linear_elasticity #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The claim's precise part is verified: creating CrBeamElement3D2N with only DISPLACEMENT added succeeds AND elem.Initialize(ProcessInfo) does NOT raise; the failure appears only at the first GetSolutionStepValue(ROTATION_X), as RuntimeError 'This container only can store the variables specified in its variables list. The variables list doesn't have this variable:ROTATION_X'. Adding ROTATION makes the same read return 0.0. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "linear_elasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "created_without_rotation=True",
+    "initialize_without_rotation_raised=False",
+    "rotation_read_raised=True",
+    "observed=variables_list_container_error",
+    "rotation_read_with_variable=0.0",
+    "beam_rotation_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

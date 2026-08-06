@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: no KratosWindEngineeringApplication wheel exists, so a real solve template is impossible on a pip stack. Pitfall (kratos.wind_engineering #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). import KratosMultiphysics.WindEngineeringApplication raises ModuleNotFoundError and pip reports no distribution for KratosWindEngineeringApplication at any version. The claim's other half \u2014 its Signal, 'emitted script < 40 lines, results_summary.json has only note/reason/install_hint keys' \u2014 is STALE: a 2026-06-26 honesty audit removed the stub generator entirely, so no script is emitted at all (see wind_engineering_has_no_template). The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "wind_engineering",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[WindEngineeringApplication]=False_expected=False",
+    "importable[RANSApplication]=True_expected=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

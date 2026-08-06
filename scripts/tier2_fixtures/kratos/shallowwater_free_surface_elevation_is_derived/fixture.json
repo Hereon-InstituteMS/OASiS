@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: FREE_SURFACE_ELEVATION is a derived quantity, not solved \u2014 it stays at its initial value unless ShallowWaterUtilities().ComputeFreeSurfaceElevation(model_part) is called. Pitfall (kratos.shallow_water #6). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The three variables are ShallowWaterApplication attributes and not core ones, and the utility class carries the ComputeFreeSurfaceElevation method the claim names. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "shallow_water",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[SW.FREE_SURFACE_ELEVATION]=True_expected=True",
+    "probe[KM.FREE_SURFACE_ELEVATION]=False_expected=False",
+    "probe[SW.HEIGHT]=True_expected=True",
+    "probe[SW.TOPOGRAPHY]=True_expected=True",
+    "probe[ComputeFreeSurfaceElevation_exists]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

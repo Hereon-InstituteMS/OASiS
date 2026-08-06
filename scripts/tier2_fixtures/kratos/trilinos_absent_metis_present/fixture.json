@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: TrilinosApplication is not on PyPI and needs a source build against an MPI Trilinos, while MetisApplication does ship a wheel. Pitfall (kratos.auxiliary_overview #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). import KratosMultiphysics.TrilinosApplication raises ModuleNotFoundError and pip reports no distribution for KratosTrilinosApplication at any version; KratosMetisApplication resolves at 10.4.3. The written Signal for this entry ('RuntimeError KeyError from JSON parsing OR SubModelPart not found') describes neither. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. The Metis half asserts an INSTALLED optional wheel (KratosMetisApplication==10.4.3 in this venv); on a host without it the fixture FAILS loudly rather than passing, which is the intended direction.",
+  "backend": "kratos",
+  "physics": "_auxiliary_overview",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[TrilinosApplication]=False_expected=False",
+    "importable[MetisApplication]=True_expected=True",
+    "importable[LinearSolversApplication]=True_expected=True",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

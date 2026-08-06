@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: 'SurfaceLoadCondition' (bare) is not registered; the suffixed SurfaceLoadCondition3D3N/3D4N come from StructuralMechanicsApplication, and IGA's own surface-integration condition is SurfaceCondition3D3N (no 'Load'). Pitfall (kratos.iga #0). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The bare name raises RuntimeError 'The Condition \"SurfaceLoadCondition\" is not registered!'; all three suffixed spellings construct. Complements the existing iga_surface_condition_naming fixture by pinning the Load-vs-no-Load distinction the claim also makes. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "iga",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "registered[SurfaceLoadCondition]=False_expected=False",
+    "registered[SurfaceLoadCondition3D3N]=True_expected=True",
+    "registered[SurfaceLoadCondition3D4N]=True_expected=True",
+    "registered[SurfaceCondition3D3N]=True_expected=True",
+    "registry_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

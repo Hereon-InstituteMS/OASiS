@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: the KratosChimeraApplication wheel ships the pybind module but omits libKratosChimeraApplicationCore.so, so the import fails after a SUCCESSFUL pip install. Pitfall (kratos.chimera #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). MEASURED CORRECTION TO THE VERSION CLAIM: the pitfall pins this to the 10.4.2 wheel; the defect is UNFIXED at 10.4.3. KratosChimeraApplication==10.4.3 installs cleanly and then import KratosMultiphysics.ChimeraApplication raises ImportError 'libKratosChimeraApplicationCore.so: cannot open shared object file: No such file or directory'. This is a different failure from a missing wheel \u2014 the module IS present on disk, which is why 'pip install succeeded' is not evidence the application works. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "chimera",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[ChimeraApplication]=False_expected=False",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

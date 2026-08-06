@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: a Neumann heat flux goes on FACE_HEAT_FLUX, not on TEMPERATURE; targeting TEMPERATURE applies a Dirichlet pseudo-flux. Pitfall (kratos.heat #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). FACE_HEAT_FLUX resolves on core KratosMultiphysics and NOT on ConvectionDiffusionApplication (the module a reader would reach for), and KM.ApplyConstantScalarValueProcess \u2014 the process the claim names \u2014 exists. The wrong target, TEMPERATURE, is also a valid variable, which is why the mistake is silent rather than raising. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "heat",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.FACE_HEAT_FLUX]=True_expected=True",
+    "probe[CDA.FACE_HEAT_FLUX]=False_expected=False",
+    "probe[KM.TEMPERATURE]=True_expected=True",
+    "probe[ApplyConstantScalarValueProcess_exists]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
