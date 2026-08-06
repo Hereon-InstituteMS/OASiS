@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::porous_media#0 — renaming `porofluid_dynamic` to `POROFLUID DYNAMIC` on upstream porofluid_pressure_based_2D_quad4.4C.yaml aborts with \"Section 'POROFLUID DYNAMIC' is not a valid section name.\" from core/io/src/4C_io_input_file.cpp, exit 1, before a single time step is set up (BAD_TIME_STEPS_STARTED=0) and before any result test runs (BAD_RESULT_TESTS_PERFORMED=0). The 'unknown section' banner an earlier version of the entry quoted appears nowhere (CLAIMED_UNKNOWN_SECTION_TEXT=0), and there is no silent fallback to defaults. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "porous_media",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_BAD=1",
+    "processor 0 finished normally",
+    "Section 'POROFLUID DYNAMIC' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "BAD_RESULT_TESTS_PERFORMED=0",
+    "BAD_TIME_STEPS_STARTED=0",
+    "CLAIMED_UNKNOWN_SECTION_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_BAD=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the section name lower-case in the second arm. The abort and its diagnostic vanish and EXIT_BAD becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/^porofluid_dynamic:/POROFLUID DYNAMIC:/' \"$BASE\" > \"$TMP/bad.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/bad.yaml\""
+  }
+}
