@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for dealii hyperelasticity#7. The AD helpers the claim points at cannot be exercised on this install: config.h reports DEAL_II_WITH_ADOLC and DEAL_II_TRILINOS_WITH_SACADO both undefined, so Differentiation::AD::EnergyFunctional has no body here and the claim's AD-versus-manual comparison is untestable. What IS testable is the claim's Signal, that a manual tangent makes Newton converge to a WRONG solution off by 2x. It does not, and the probe separates two hand-derivation mistakes that have OPPOSITE signatures. Same problem, 6x6 Q1, 35% compression in four load steps, three implementations run every invocation. A sign error in the geometric tangent only -- inconsistent with the residual -- still converges, still quadratically, to a displacement that differs from the consistent answer by 2.2e-16, i.e. the SAME answer; it costs one extra Newton step, 16 against 15. A wrong STRESS, the squared-J volumetric form differentiated consistently into its own tangent, converges in FEWER steps (12) and just as cleanly, onto a displacement 7.3% away. So a wrong tangent costs iterations and not accuracy, while a wrong residual costs accuracy and not iterations -- and neither announces itself. The claim's 'off by 2x from an AD reference' is pinned false: the measured difference is 2.2e-16 and the probe prints tangent_sign_error_is_off_by_a_factor_of_two=false. T2_MUTATE=1 puts the fully consistent implementation under test. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "expect_in_output": [
+    "ad_backend_available=false",
+    "implementation_under_test=hand_derived_tangent_with_a_k_geo_sign_error",
+    "tangent_sign_error_reaches_the_same_answer=true",
+    "tangent_sign_error_is_off_by_a_factor_of_two=false",
+    "tangent_sign_error_costs_extra_steps=true",
+    "a_wrong_stress_does_move_the_answer=true",
+    "wrong_stress_still_converged=true",
+    "VERDICT=a_tangent_sign_error_costs_iterations_not_accuracy"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=implementation_under_test_matches_the_reference_exactly"
+  ],
+  "timeout_seconds": 900
+}

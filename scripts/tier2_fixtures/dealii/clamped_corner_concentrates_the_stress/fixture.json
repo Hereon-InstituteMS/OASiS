@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii hyperelasticity#6. Unit block compressed 55% in six load steps, 8x8 Q1, compressible Neo-Hookean, run twice in every invocation: left and right faces fully clamped against rollers that constrain only the normal component. Both converge. The clamped run puts its peak Cauchy von Mises at (0.974, 0.974) -- a corner, 0.037 away from it -- and reaches min det F = 0.299; the roller run peaks at (0.651, 0.849), 0.380 from any corner, and only reaches min det F = 0.599. So the claim's mechanism holds on both counts: the concentration sits at a clamped corner, and the clamped cells are the ones that approach element inversion first. FINDING against the claim's magnitude: it says the clamped corners see more than TEN times the material yield. The clamped peak here is 1.61 times the roller peak, not ten, and that ratio grows only slowly with load -- 1.33 at 35% compression, 1.46 at 45%, 1.61 at 55%. The probe prints peak_stress_exceeds_the_other_tenfold so the false part is visible rather than quietly dropped. T2_MUTATE=1 puts the roller run under test. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "expect_in_output": [
+    "boundary_condition_under_test=fully_clamped",
+    "worst_point_under_test_sits_at_a_corner=true",
+    "under_test_reaches_the_lower_det_F=true",
+    "peak_stress_exceeds_the_other_by_a_quarter=true",
+    "peak_stress_exceeds_the_other_tenfold=false",
+    "VERDICT=clamping_concentrates_the_stress_at_the_corner"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=boundary_condition_under_test_has_no_concentration"
+  ],
+  "timeout_seconds": 900
+}

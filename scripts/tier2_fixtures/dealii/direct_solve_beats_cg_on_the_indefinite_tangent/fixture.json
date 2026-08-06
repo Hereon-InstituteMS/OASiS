@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii hyperelasticity#12. A 50-dof Saint-Venant-Kirchhoff block driven to 62% compression, where the tangent's smallest free eigenvalue is -8750 and the matrix is genuinely indefinite. Both solvers are run on that same matrix and on the same right-hand side. FINDING against the claim: CG did NOT fail. It converged, to a relative true residual of 6.9e-11, while SparseDirectUMFPACK returned 7.3e-16 on the identical system. What separates them on an indefinite tangent is accuracy -- five orders of magnitude -- not failure, and the probe prints solver_under_test_failed_on_the_indefinite_tangent=false so that is on the record. SECOND FINDING, and the claim has it exactly backwards: it says UMFPACK 'fails LOUDLY on a genuinely singular matrix, which CG does not'. The probe assembles the same tangent with no Dirichlet constraints at all, so the rigid body modes make it singular by construction (smallest free eigenvalue -7.7e-12). UMFPACK reported NOTHING and handed back a vector with a 3.0% relative residual; CG threw SolverControl::NoConvergence with a last residual of 4.2e9. The iterative solver is the one that complains; the direct solver is the one that fails silently. T2_MUTATE=1 puts UMFPACK under test on the indefinite tangent. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "expect_in_output": [
+    "tangent_is_indefinite=true",
+    "solver_under_test=cg_with_ssor",
+    "relative_residual_under_test_below_1e-13=false",
+    "umfpack_complains_about_the_singular_matrix=false",
+    "cg_complains_about_the_singular_matrix=true",
+    "VERDICT=iterative_solve_stops_far_above_machine_precision"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=direct_solve_returns_machine_precision_on_the_indefinite_tangent"
+  ],
+  "timeout_seconds": 900
+}

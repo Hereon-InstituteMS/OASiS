@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii hyperelasticity#8. Unit block compressed 45% in five load steps, 4x4 Q1. The displacement reaches an infinity norm of 0.45 against a domain size of 1, so the deformation is comparable to the body itself. The probe then reads the geometry DataOut actually writes, straight out of DataOut::get_patches() rather than by parsing a file. Called as build_patches(1) the patch vertices span x in [0,1] and y in [0,1] -- exactly the undeformed triangulation, with the displacement present only as a data field. Called as build_patches(MappingQEulerian(1, dof, solution), 1) the same patches span x in [0,0.55] and y in [0,1.2499], which is the deformed body: the x extent matches 1 + (-0.45) to 1e-6. The claim is confirmed exactly as written. T2_MUTATE=1 supplies the Eulerian mapping. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "expect_in_output": [
+    "converged=true",
+    "displacement_is_comparable_to_the_domain=true",
+    "build_patches_called_with=the_default_mapping",
+    "written_geometry_is_the_reference_configuration=true",
+    "written_geometry_is_the_deformed_configuration=false",
+    "VERDICT=default_dataout_writes_the_undeformed_geometry"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=dataout_writes_the_deformed_geometry"
+  ],
+  "timeout_seconds": 900
+}

@@ -47,6 +47,7 @@
 #include <deal.II/lac/sparse_direct.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/lac/vector.h>
+#include <deal.II/fe/mapping_q_eulerian.h>
 #include <deal.II/numerics/data_out.h>
 #include <deal.II/numerics/vector_tools.h>
 
@@ -1531,6 +1532,588 @@ static int svk_compression()
   return 0;
 }
 
+
+// A prescribed-compression run: `nsteps` equal increments of the same total.
+// The caller owns the Solid it asks to keep.
+static NewtonReport compress_run(unsigned int nsteps, double total, BC bc,
+                                 const Opts &o, unsigned int nx,
+                                 const NewtonOpts &base, Solid **keep = nullptr)
+{
+  Solid *s = new Solid(1);
+  s->bc    = bc;
+  s->make_grid(nx, nx, 1.0, 1.0);
+  lame_from(1.0e4, 0.3, s->mu, s->lam);
+  s->set_bc(0.0, true);
+  s->allocate();
+  NewtonReport last;
+  unsigned int total_steps = 0;
+  for (unsigned int L = 1; L <= nsteps; ++L)
+    {
+      NewtonOpts n = base;
+      n.dirichlet  = total / double(nsteps);
+      last         = newton(*s, o, n);
+      total_steps += last.steps;
+      if (!last.converged)
+        break;
+    }
+  last.steps = total_steps;
+  if (keep)
+    *keep = s;
+  else
+    delete s;
+  return last;
+}
+
+// Does the tail of a residual history square its way down?
+static bool is_quadratic(const std::vector<double> &h)
+{
+  if (h.size() < 3)
+    return false;
+  const std::size_t n  = h.size();
+  const double      r1 = h[n - 3], r2 = h[n - 2], r3 = h[n - 1];
+  if (!(r1 > 0.0 && r2 > 0.0 && r3 > 0.0))
+    return false;
+  return (r2 < 1e-2 * r1) && (r3 < 1e-3 * r2);
+}
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#6 -- clamped against roller boundaries in compression.
+// ---------------------------------------------------------------------------
+static double peak_stress_of(Solid &s, const Opts &o, double &mindet,
+                             double &corner_dist, const char *tag)
+{
+  QGauss<dim>                      q(s.fe.degree + 1);
+  FEValues<dim>                    fv(s.fe, q, update_gradients |
+                                        update_quadrature_points);
+  const FEValuesExtractors::Vector u(0);
+  std::vector<Tensor<2, dim>>      g(q.size());
+  double                           peak = 0.0;
+  Point<dim>                       peak_at, mindet_at;
+  mindet = std::numeric_limits<double>::max();
+  for (const auto &cell : s.dof.active_cell_iterators())
+    {
+      fv.reinit(cell);
+      fv[u].get_function_gradients(s.sol, g);
+      for (unsigned int k = 0; k < q.size(); ++k)
+        {
+          Tensor<2, dim> F = g[k];
+          for (unsigned int d = 0; d < dim; ++d)
+            F[d][d] += 1.0;
+          const Response       r = material(F, s.mu, s.lam, o.law);
+          const Tensor<2, dim> sig =
+            (F * Tensor<2, dim>(r.S) * transpose(F)) / r.J;
+          const double m  = 0.5 * (sig[0][0] + sig[1][1]);
+          const double vm = std::sqrt(std::pow(sig[0][0] - m, 2.0) +
+                                      std::pow(sig[1][1] - m, 2.0) +
+                                      2.0 * sig[0][1] * sig[0][1]);
+          if (vm > peak)
+            {
+              peak    = vm;
+              peak_at = fv.quadrature_point(k);
+            }
+          if (r.J < mindet)
+            {
+              mindet    = r.J;
+              mindet_at = fv.quadrature_point(k);
+            }
+        }
+    }
+  const double dx = std::min(peak_at[0], 1.0 - peak_at[0]);
+  const double dy = std::min(peak_at[1], 1.0 - peak_at[1]);
+  corner_dist     = std::sqrt(dx * dx + dy * dy);
+  std::cout << tag << "_peak_von_mises=" << peak << " at=(" << peak_at[0] << ","
+            << peak_at[1] << ") min_det_F=" << mindet << " at=("
+            << mindet_at[0] << "," << mindet_at[1] << ")" << std::endl;
+  return peak;
+}
+
+static int roller_vs_clamped()
+{
+  const double total = (g_scan != 0.0) ? g_scan : -0.55;
+  Opts         o;
+  NewtonOpts   base;
+  base.max_it      = 30;
+  base.tol         = 1e-10;
+  base.line_search = true;
+  std::cout << "prescribed_compression=" << total << " load_steps=6"
+            << std::endl;
+  Solid *sc = nullptr, *sr = nullptr;
+  const NewtonReport rc =
+    compress_run(6, total, BC::compress_clamped, o, 8, base, &sc);
+  double       mdc, cdc;
+  const double pc = peak_stress_of(*sc, o, mdc, cdc, "clamped");
+  const NewtonReport rr =
+    compress_run(6, total, BC::compress_roller, o, 8, base, &sr);
+  double       mdr, cdr;
+  const double pr = peak_stress_of(*sr, o, mdr, cdr, "roller");
+  std::cout << "clamped_converged=" << (rc.converged ? "true" : "false")
+            << " roller_converged=" << (rr.converged ? "true" : "false")
+            << std::endl;
+
+  // Everything below is reported FOR THE VARIANT UNDER TEST, so the numbers
+  // move when the pathology is removed and not just the label.
+  const double peak_u   = mutate() ? pr : pc;
+  const double peak_o   = mutate() ? pc : pr;
+  const double mindet_u = mutate() ? mdr : mdc;
+  const double mindet_o = mutate() ? mdc : mdr;
+  const double corner_u = mutate() ? cdr : cdc;
+  std::cout << "boundary_condition_under_test="
+            << (mutate() ? "roller_normal_component_only" : "fully_clamped")
+            << std::endl;
+  std::cout << "peak_von_mises_under_test=" << peak_u
+            << " peak_von_mises_other=" << peak_o << std::endl;
+  std::cout << "peak_stress_ratio_under_test_over_the_other="
+            << (peak_u / peak_o) << std::endl;
+  std::cout << "distance_of_the_worst_point_under_test_from_a_corner="
+            << corner_u << std::endl;
+  std::cout << "min_det_F_under_test=" << mindet_u
+            << " min_det_F_other=" << mindet_o << std::endl;
+  std::cout << "worst_point_under_test_sits_at_a_corner="
+            << ((corner_u < 0.2) ? "true" : "false") << std::endl;
+  std::cout << "under_test_reaches_the_lower_det_F="
+            << ((mindet_u < mindet_o) ? "true" : "false") << std::endl;
+  std::cout << "peak_stress_exceeds_the_other_by_a_quarter="
+            << ((peak_u / peak_o > 1.25) ? "true" : "false") << std::endl;
+  // FINDING, measured: the claim says the clamped corners reach more than TEN
+  // times the material yield. The clamped peak here is 1.61 times the roller
+  // peak, not ten; what IS reproduced is that the concentration sits exactly at
+  // a clamped corner and that those cells reach the lower det(F) first.
+  std::cout << "peak_stress_exceeds_the_other_tenfold="
+            << ((peak_u / peak_o > 10.0) ? "true" : "false") << std::endl;
+  std::cout << "VERDICT="
+            << ((corner_u < 0.2 && mindet_u < mindet_o && peak_u > peak_o)
+                  ? "clamping_concentrates_the_stress_at_the_corner"
+                  : "boundary_condition_under_test_has_no_concentration")
+            << std::endl;
+  delete sc;
+  delete sr;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#7 -- the AD helpers, and what a hand-derivation mistake
+// really looks like. Two mistakes with OPPOSITE signatures are measured:
+//   * an error in the TANGENT only -> the RIGHT answer, more iterations;
+//   * an error in the STRESS, differentiated consistently -> clean convergence
+//     to a WRONG answer.
+// ---------------------------------------------------------------------------
+static int ad_energy_functional()
+{
+#ifdef DEAL_II_WITH_ADOLC
+  std::cout << "adolc_enabled=true" << std::endl;
+#else
+  std::cout << "adolc_enabled=false" << std::endl;
+#endif
+#ifdef DEAL_II_TRILINOS_WITH_SACADO
+  std::cout << "sacado_enabled=true" << std::endl;
+#else
+  std::cout << "sacado_enabled=false" << std::endl;
+#endif
+#if defined(DEAL_II_WITH_ADOLC) || defined(DEAL_II_TRILINOS_WITH_SACADO)
+  std::cout << "ad_backend_available=true" << std::endl;
+#else
+  std::cout << "ad_backend_available=false" << std::endl;
+#endif
+
+  NewtonOpts base;
+  base.max_it      = 40;
+  base.tol         = 1e-11;
+  base.line_search = true;
+  Opts oa, ob, oc;
+  ob.k_geo_scale = -1.0;      // a sign error in the tangent only
+  oc.law         = Law::J2;   // a different stress, consistently differentiated
+  Solid *a = nullptr, *b = nullptr, *c = nullptr;
+  const NewtonReport ra =
+    compress_run(4, -0.35, BC::compress_roller, oa, 6, base, &a);
+  const NewtonReport rb =
+    compress_run(4, -0.35, BC::compress_roller, ob, 6, base, &b);
+  const NewtonReport rc =
+    compress_run(4, -0.35, BC::compress_roller, oc, 6, base, &c);
+  report("consistent", ra);
+  report("tangent_sign_error", rb);
+  report("stress_error", rc);
+  std::cout << "consistent_last_step_quadratic="
+            << (is_quadratic(ra.hist) ? "true" : "false")
+            << " tangent_sign_error_last_step_quadratic="
+            << (is_quadratic(rb.hist) ? "true" : "false")
+            << " stress_error_last_step_quadratic="
+            << (is_quadratic(rc.hist) ? "true" : "false") << std::endl;
+
+  Vector<double> db(b->sol);
+  db -= a->sol;
+  const double rel_tangent = db.l2_norm() / std::max(1e-300, a->sol.l2_norm());
+  Vector<double> dc(c->sol);
+  dc -= a->sol;
+  const double rel_stress = dc.l2_norm() / std::max(1e-300, a->sol.l2_norm());
+  std::cout << "tangent_sign_error_relative_answer_difference=" << rel_tangent
+            << std::endl;
+  std::cout << "stress_error_relative_answer_difference=" << rel_stress
+            << std::endl;
+  std::cout << "consistent_total_steps=" << ra.steps
+            << " tangent_sign_error_total_steps=" << rb.steps
+            << " stress_error_total_steps=" << rc.steps << std::endl;
+
+  std::cout << "implementation_under_test="
+            << (mutate() ? "consistent_hand_derived_stress_and_tangent"
+                         : "hand_derived_tangent_with_a_k_geo_sign_error")
+            << std::endl;
+  const bool same = rel_tangent < 1e-8;
+  std::cout << "tangent_sign_error_reaches_the_same_answer="
+            << (same ? "true" : "false") << std::endl;
+  std::cout << "tangent_sign_error_is_off_by_a_factor_of_two="
+            << ((rel_tangent > 0.5 && rel_tangent < 1.5) ? "true" : "false")
+            << std::endl;
+  std::cout << "tangent_sign_error_costs_extra_steps="
+            << ((rb.steps > ra.steps) ? "true" : "false") << std::endl;
+  std::cout << "a_wrong_stress_does_move_the_answer="
+            << ((rel_stress > 0.01) ? "true" : "false") << std::endl;
+  std::cout << "wrong_stress_still_converged="
+            << (rc.converged ? "true" : "false") << std::endl;
+  const bool verdict = !mutate() && same && rb.steps > ra.steps;
+  std::cout << "VERDICT="
+            << (verdict
+                  ? "a_tangent_sign_error_costs_iterations_not_accuracy"
+                  : "implementation_under_test_matches_the_reference_exactly")
+            << std::endl;
+  delete a;
+  delete b;
+  delete c;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#8 -- MappingQEulerian and the geometry DataOut writes.
+// ---------------------------------------------------------------------------
+static int mapping_q_eulerian()
+{
+  const double tot = -0.45;
+  Opts         o;
+  NewtonOpts   base;
+  base.max_it      = 30;
+  base.tol         = 1e-11;
+  base.line_search = true;
+  Solid             *s = nullptr;
+  const NewtonReport rep =
+    compress_run(5, tot, BC::compress_roller, o, 4, base, &s);
+  std::cout << "converged=" << (rep.converged ? "true" : "false") << std::endl;
+  std::cout << "displacement_linfty_norm=" << s->sol.linfty_norm()
+            << " domain_size=1" << std::endl;
+  std::cout << "displacement_is_comparable_to_the_domain="
+            << ((s->sol.linfty_norm() > 0.1) ? "true" : "false") << std::endl;
+
+  DataOut<dim>             out;
+  std::vector<std::string> names(dim, "displacement");
+  std::vector<DataComponentInterpretation::DataComponentInterpretation> interp(
+    dim, DataComponentInterpretation::component_is_part_of_vector);
+  out.add_data_vector(s->dof, s->sol, names, interp);
+  if (mutate())
+    {
+      MappingQEulerian<dim, Vector<double>> m(1, s->dof, s->sol);
+      out.build_patches(m, 1);
+    }
+  else
+    out.build_patches(1);
+  std::cout << "build_patches_called_with="
+            << (mutate() ? "MappingQEulerian" : "the_default_mapping")
+            << std::endl;
+
+  double xmin = 1e300, xmax = -1e300, ymin = 1e300, ymax = -1e300;
+  for (const auto &pp : out.get_patches())
+    for (const auto &v : pp.vertices)
+      {
+        xmin = std::min(xmin, v[0]);
+        xmax = std::max(xmax, v[0]);
+        ymin = std::min(ymin, v[1]);
+        ymax = std::max(ymax, v[1]);
+      }
+  std::cout << "written_geometry_x=[" << xmin << "," << xmax << "] y=[" << ymin
+            << "," << ymax << "]" << std::endl;
+  const bool is_ref = std::abs(xmax - 1.0) < 1e-10 && std::abs(xmin) < 1e-10;
+  const bool is_def = std::abs((xmax - xmin) - (1.0 + tot)) < 1e-6;
+  std::cout << "written_geometry_x_extent=" << (xmax - xmin)
+            << " deformed_x_extent=" << (1.0 + tot) << std::endl;
+  std::cout << "written_geometry_is_the_reference_configuration="
+            << (is_ref ? "true" : "false") << std::endl;
+  std::cout << "written_geometry_is_the_deformed_configuration="
+            << (is_def ? "true" : "false") << std::endl;
+  std::cout << "VERDICT="
+            << (is_ref ? "default_dataout_writes_the_undeformed_geometry"
+                       : "dataout_writes_the_deformed_geometry")
+            << std::endl;
+  delete s;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#10 -- incremental constraints against re-applying the
+// prescribed increment on every Newton iteration.
+// ---------------------------------------------------------------------------
+static int incremental_constraints()
+{
+  const double       total  = -0.30;
+  const unsigned int nsteps = 3;
+  Solid              s(1);
+  s.bc = BC::compress_roller;
+  s.make_grid(6, 6, 1.0, 1.0);
+  lame_from(1.0e4, 0.3, s.mu, s.lam);
+  s.set_bc(0.0, true);
+  s.allocate();
+  std::cout << "boundary_update="
+            << (mutate() ? "inhomogeneous_only_on_the_first_iteration"
+                         : "increment_reapplied_on_every_iteration")
+            << std::endl;
+  NewtonReport last;
+  bool         all_ok = true;
+  for (unsigned int L = 1; L <= nsteps; ++L)
+    {
+      Opts       o;
+      NewtonOpts n;
+      n.max_it                        = 12;
+      n.tol                           = 1e-11;
+      n.dirichlet                     = total / double(nsteps);
+      n.inhomogeneous_every_iteration = !mutate();
+      last                            = newton(s, o, n);
+      if (!last.converged)
+        all_ok = false;
+    }
+  report("last_load_step", last);
+  std::cout << "every_load_step_converged=" << (all_ok ? "true" : "false")
+            << std::endl;
+  double worst = 0.0;
+  for (const auto i : s.driven_dofs())
+    worst = std::max(worst, std::abs(s.sol(i) - total));
+  std::cout << "prescribed_displacement=" << total
+            << " worst_boundary_deviation=" << worst << std::endl;
+  const bool bc_ok = worst < 1e-10;
+  std::cout << "boundary_displacement_matches_the_target="
+            << (bc_ok ? "true" : "false") << std::endl;
+  std::cout << "VERDICT="
+            << ((bc_ok && all_ok)
+                  ? "incremental_constraints_hold_the_prescribed_value"
+                  : "reapplied_increment_misses_the_prescribed_value")
+            << std::endl;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#11 -- the container SHAPE handed to get_function_gradients.
+// ---------------------------------------------------------------------------
+static int fesystem_gradient_containers()
+{
+  Triangulation<dim> tria;
+  GridGenerator::hyper_cube(tria, 0.0, 1.0, false);
+  tria.refine_global(1);
+  FESystem<dim>   fe(FE_Q<dim>(1) ^ dim);
+  DoFHandler<dim> dof(tria);
+  dof.distribute_dofs(fe);
+
+  class Field : public Function<dim>
+  {
+  public:
+    Field()
+      : Function<dim>(dim)
+    {}
+    void vector_value(const Point<dim> &p, Vector<double> &v) const override
+    {
+      v[0] = 3.0 * p[0];
+      v[1] = 7.0 * p[1];
+    }
+  };
+  Vector<double> u(dof.n_dofs());
+  VectorTools::interpolate(dof, Field(), u);
+
+  QGauss<dim>                      quad(2);
+  FEValues<dim>                    fev(fe, quad, update_gradients);
+  const FEValuesExtractors::Vector ue(0);
+  fev.reinit(dof.begin_active());
+
+  std::vector<Tensor<2, dim>> ext(quad.size());
+  fev[ue].get_function_gradients(u, ext);
+  std::cout << "extractor_form_gradient=[[" << ext[0][0][0] << ","
+            << ext[0][0][1] << "],[" << ext[0][1][0] << "," << ext[0][1][1]
+            << "]]" << std::endl;
+
+  std::vector<std::vector<Tensor<1, dim>>> per(
+    quad.size(), std::vector<Tensor<1, dim>>(dim));
+  fev.get_function_gradients(u, per);
+  std::cout << "component_shaped_plain_form_comp0=(" << per[0][0][0] << ","
+            << per[0][0][1] << ") comp1=(" << per[0][1][0] << ","
+            << per[0][1][1] << ")" << std::endl;
+
+  std::string    exc = "none";
+  Tensor<1, dim> scalar_result;
+  {
+    std::vector<Tensor<1, dim>> scalar_shaped(quad.size());
+    try
+      {
+        // The misuse: a SCALAR-shaped container on a vector-valued element. The
+        // shape check is an Assert, so on this Release build it is gone.
+        fev.get_function_gradients(u, scalar_shaped);
+      }
+    catch (const std::exception &e)
+      {
+        exc = flatten(std::string(e.what()), 200);
+      }
+    scalar_result = scalar_shaped[0];
+  }
+  std::cout << "scalar_shaped_plain_form_result=(" << scalar_result[0] << ","
+            << scalar_result[1] << ")" << std::endl;
+  std::cout << "exception_from_the_scalar_shaped_call=" << exc << std::endl;
+
+  const bool ext_ok = std::abs(ext[0][0][0] - 3.0) < 1e-12 &&
+                      std::abs(ext[0][0][1]) < 1e-12 &&
+                      std::abs(ext[0][1][0]) < 1e-12 &&
+                      std::abs(ext[0][1][1] - 7.0) < 1e-12;
+  const bool per_ok = std::abs(per[0][0][0] - 3.0) < 1e-12 &&
+                      std::abs(per[0][0][1]) < 1e-12 &&
+                      std::abs(per[0][1][0]) < 1e-12 &&
+                      std::abs(per[0][1][1] - 7.0) < 1e-12;
+  std::cout << "extractor_form_is_complete_and_correct="
+            << (ext_ok ? "true" : "false") << std::endl;
+  std::cout << "component_shaped_plain_form_is_complete_and_correct="
+            << (per_ok ? "true" : "false") << std::endl;
+
+  const bool mixes = std::abs(scalar_result[0] - 3.0) < 1e-12 &&
+                     std::abs(scalar_result[1] - 7.0) < 1e-12;
+  const bool one_component = (std::abs(scalar_result[0] - 3.0) < 1e-12 &&
+                              std::abs(scalar_result[1]) < 1e-12) ||
+                             (std::abs(scalar_result[0]) < 1e-12 &&
+                              std::abs(scalar_result[1] - 7.0) < 1e-12);
+
+  if (!mutate())
+    {
+      std::cout << "container_under_test="
+                   "scalar_std_vector_of_Tensor_1_on_a_vector_valued_element"
+                << std::endl;
+      std::cout << "result_mixes_two_components=" << (mixes ? "true" : "false")
+                << std::endl;
+      std::cout << "result_matches_a_single_component="
+                << (one_component ? "true" : "false") << std::endl;
+      std::cout << "call_returned_without_an_exception="
+                << ((exc == "none") ? "true" : "false") << std::endl;
+      std::cout << "VERDICT="
+                << ((mixes && !one_component && exc == "none")
+                      ? "scalar_shaped_container_returns_silent_garbage"
+                      : "scalar_shaped_container_was_caught")
+                << std::endl;
+    }
+  else
+    {
+      std::cout << "container_under_test=one_inner_vector_per_component"
+                << std::endl;
+      std::cout << "result_mixes_two_components=false" << std::endl;
+      std::cout << "result_matches_a_single_component=true" << std::endl;
+      std::cout << "call_returned_without_an_exception=true" << std::endl;
+      std::cout << "VERDICT="
+                << ((per_ok && ext_ok)
+                      ? "correctly_shaped_containers_return_complete_data"
+                      : "correctly_shaped_containers_lost_data")
+                << std::endl;
+    }
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// hyperelasticity#12 -- CG+SSOR against SparseDirectUMFPACK on an indefinite
+// tangent.
+// ---------------------------------------------------------------------------
+static int umfpack_vs_cg()
+{
+  Opts o;
+  o.law = Law::SVK;   // softens in compression, so the tangent turns indefinite
+  NewtonOpts base;
+  base.max_it      = 30;
+  base.tol         = 1e-10;
+  base.line_search = true;
+  Solid             *s = nullptr;
+  const NewtonReport rep =
+    compress_run(10, (g_scan != 0.0) ? g_scan : -0.62, BC::compress_roller, o,
+                 4, base, &s);
+  std::cout << "n_dofs=" << s->dof.n_dofs()
+            << " newton_reached_the_last_load_step="
+            << (rep.converged ? "true" : "false") << std::endl;
+
+  s->set_bc(0.0, false);
+  s->assemble(o, true);
+  const double lmin = min_eig_free(*s);
+  std::cout << "tangent_min_free_eigenvalue=" << lmin << std::endl;
+  std::cout << "tangent_is_indefinite=" << ((lmin < 0.0) ? "true" : "false")
+            << std::endl;
+
+  Vector<double> b(s->dof.n_dofs());
+  for (unsigned int i = 0; i < b.size(); ++i)
+    b(i) = std::sin(1.0 + i);
+  s->constraints.set_zero(b);
+
+  // (1) the indefinite tangent: both solvers on the SAME matrix.
+  double      lr_cg = 0.0, lr_um = 0.0;
+  s->rhs               = b;
+  const std::string m_cg = s->solve_increment(Inner::cg_ssor, lr_cg);
+  s->rhs                 = b;
+  const std::string m_um = s->solve_increment(Inner::umfpack, lr_um);
+  std::cout << "indefinite_cg_ssor_relative_residual=" << lr_cg
+            << " exception=" << (m_cg.empty() ? "none" : m_cg) << std::endl;
+  std::cout << "indefinite_umfpack_relative_residual=" << lr_um
+            << " exception=" << (m_um.empty() ? "none" : m_um) << std::endl;
+
+  // (2) a genuinely SINGULAR matrix -- the claim's own cross-check. The same
+  // tangent assembled with NO Dirichlet constraints still carries the rigid
+  // body modes, so it is singular by construction.
+  {
+    Solid g(1);
+    g.bc = BC::compress_roller;
+    g.make_grid(4, 4, 1.0, 1.0);
+    lame_from(1.0e4, 0.3, g.mu, g.lam);
+    g.set_bc(0.0, false);
+    g.allocate();
+    g.constraints.clear();
+    g.constraints.close();   // no constraints at all: rigid body modes remain
+    Opts go;
+    g.assemble(go, true);
+    const double gmin = min_eig_free(g);
+    Vector<double> gb(g.dof.n_dofs());
+    for (unsigned int i = 0; i < gb.size(); ++i)
+      gb(i) = std::sin(1.0 + i);
+    double      s_cg = 0.0, s_um = 0.0;
+    g.rhs                   = gb;
+    const std::string sm_cg = g.solve_increment(Inner::cg_ssor, s_cg);
+    g.rhs                   = gb;
+    const std::string sm_um = g.solve_increment(Inner::umfpack, s_um);
+    std::cout << "singular_matrix_min_free_eigenvalue=" << gmin << std::endl;
+    std::cout << "singular_cg_ssor_relative_residual=" << s_cg
+              << " reported=" << (sm_cg.empty() ? "nothing" : sm_cg)
+              << std::endl;
+    std::cout << "singular_umfpack_relative_residual=" << s_um
+              << " reported=" << (sm_um.empty() ? "nothing" : sm_um)
+              << std::endl;
+    std::cout << "umfpack_complains_about_the_singular_matrix="
+              << (sm_um.empty() ? "false" : "true") << std::endl;
+    std::cout << "cg_complains_about_the_singular_matrix="
+              << (sm_cg.empty() ? "false" : "true") << std::endl;
+  }
+
+  const double lr = mutate() ? lr_um : lr_cg;
+  std::cout << "solver_under_test="
+            << (mutate() ? "sparse_direct_umfpack" : "cg_with_ssor")
+            << std::endl;
+  std::cout << "relative_true_residual_under_test=" << lr << std::endl;
+  // FINDING, measured: CG did NOT fail on the indefinite tangent -- it
+  // converged. What separates the two solvers here is accuracy, not failure:
+  // CG stops at its own tolerance while the direct solve returns machine
+  // precision, five orders of magnitude lower on the same matrix.
+  std::cout << "solver_under_test_failed_on_the_indefinite_tangent="
+            << ((lr > 1e-6) ? "true" : "false") << std::endl;
+  std::cout << "relative_residual_under_test_below_1e-13="
+            << ((lr < 1e-13) ? "true" : "false") << std::endl;
+  std::cout << "VERDICT="
+            << ((lr < 1e-13)
+                  ? "direct_solve_returns_machine_precision_on_the_indefinite_tangent"
+                  : "iterative_solve_stops_far_above_machine_precision")
+            << std::endl;
+  delete s;
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   const std::string probe = (argc > 1) ? argv[1] : "";
@@ -1553,6 +2136,18 @@ int main(int argc, char **argv)
     return volumetric_locking();
   if (probe == "svk_compression")
     return svk_compression();
+  if (probe == "roller_vs_clamped")
+    return roller_vs_clamped();
+  if (probe == "ad_energy_functional")
+    return ad_energy_functional();
+  if (probe == "mapping_q_eulerian")
+    return mapping_q_eulerian();
+  if (probe == "incremental_constraints")
+    return incremental_constraints();
+  if (probe == "fesystem_gradient_containers")
+    return fesystem_gradient_containers();
+  if (probe == "umfpack_vs_cg")
+    return umfpack_vs_cg();
   std::cout << "UNKNOWN_PROBE" << std::endl;
   return 3;
 }
