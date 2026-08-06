@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem poisson#7. Confirms the L2 order deg+1 part of the claim for P1/P2/P3 by measuring it (brackets asserted, no rate pinned). FALSIFIES the claim's Signal clause: it says the DEFAULT intorder 'under-integrates a transcendental error integrand and can cost you an apparent order'. Measured on skfem 12.0.1, the default costs nothing -- default vs explicit intorder=2*deg+3 give the same orders to two decimals for all three degrees. What DOES destroy the answer is an explicitly too-low assembly intorder: P3 with intorder=2 produces an error ~1e14 and NEGATIVE rates. The fixture pins the real pathology and the falsification together.",
+  "backend": "skfem",
+  "physics": "poisson",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "P1_order_in_bracket=True",
+    "P2_order_in_bracket=True",
+    "P3_order_in_bracket=True",
+    "default_intorder_costs_no_order=True",
+    "P3_intorder2_error_exceeds_1e6=True",
+    "P3_intorder2_rate_is_negative=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

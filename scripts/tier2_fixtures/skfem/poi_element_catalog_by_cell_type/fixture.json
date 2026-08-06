@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem poisson#5 (previously 'catalog claim inherited; not separately Tier-2 falsified'). Now measured on skfem 12.0.1: every element name the catalog lists resolves on the skfem namespace, ElementTriP1 derives from ElementH1 and is an Element instance, and pairing an element with the wrong cell type raises ValueError('Incompatible Mesh and Element.') rather than assembling something wrong.",
+  "backend": "skfem",
+  "physics": "poisson",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "all_catalog_element_names_resolve=True",
+    "Incompatible Mesh and Element",
+    "trip1_on_meshquad_raises=True",
+    "quad1_on_meshtri_raises=True",
+    "trip1_is_element_instance=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

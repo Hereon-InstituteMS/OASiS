@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem heat#5. The existing heat::0 fixture checks that a short x raises 'out of bounds'; this one pins the ARITHMETIC of the message and finds the asymmetry the claim does not mention. Measured on skfem 12.0.1 (MeshQuad 5x5, ElementQuad1, left+right constrained): a short x of length len(D)=10 raises IndexError 'index 20 is out of bounds for axis 0 with size 10' -- the index is a GLOBAL DOF number and the size is len(x), which is why the numbers look unrelated to the BC. A too-LONG x does NOT raise at all: it is silently accepted and the extra entries ignored.",
+  "backend": "skfem",
+  "physics": "heat",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "out of bounds for axis 0 with size 10",
+    "short_x_raises_indexerror=True",
+    "reported_index_is_a_global_dof_number=True",
+    "reported_size_equals_len_short_x=True",
+    "long_x_silently_accepted=True",
+    "full_length_x_reproduces_prescribed_values=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

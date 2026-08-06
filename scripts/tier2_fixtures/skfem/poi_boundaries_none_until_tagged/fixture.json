@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem poisson#2: m.boundaries is None on a fresh mesh, get_dofs('left') then raises ValueError(\"Boundary 'left' not found.\"), with_boundaries returns a NEW mesh (the original stays untagged), and on a 5x5 ElementQuad1 tensor mesh the left-edge DofsView flattens to exactly 5 indices. Measured on skfem 12.0.1.",
+  "backend": "skfem",
+  "physics": "poisson",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "fresh_boundaries_is_none=True",
+    "not found",
+    "with_boundaries_returns_new_mesh=True",
+    "original_still_untagged=True",
+    "left_edge_dof_count=5"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

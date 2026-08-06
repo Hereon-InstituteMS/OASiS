@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem poisson#3 (catalog-drift correction): to_meshio was removed from the TOP-LEVEL skfem namespace but still exists at skfem.io.meshio.to_meshio. Measured on skfem 12.0.1: hasattr(skfem,'to_meshio') is False with AttributeError \"module 'skfem' has no attribute 'to_meshio'\"; the io.meshio one resolves and translates cell types correctly (MeshQuad -> 'quad', MeshTri -> 'triangle'); the resulting meshio.Mesh round-trips through .vtu.",
+  "backend": "skfem",
+  "physics": "poisson",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "no attribute 'to_meshio'",
+    "toplevel_has_to_meshio=False",
+    "io_meshio_has_to_meshio=True",
+    "quad_cell_type=quad",
+    "tri_cell_type=triangle",
+    "vtu_roundtrip_point_data_preserved=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
