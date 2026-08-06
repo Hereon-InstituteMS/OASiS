@@ -105,7 +105,11 @@ _NOT_A_DIAGNOSTIC = re.compile(
     # punctuation. `Basis.interpolate(u).grad` is a thing to WRITE, not a thing
     # the library PRINTS, and requiring it to appear verbatim in the source
     # accuses an entry that is simply showing correct usage.
-    r"|^[\w.]+(?:\([^)]*\))?(?:\.[\w]+(?:\([^)]*\))?)+$",
+    r"|^[\w.]+(?:\([^)]*\))?(?:\.[\w]+(?:\([^)]*\))?)+$"
+    # A weak-form / expression fragment: arithmetic operators outside of any
+    # sentence. `(sigma*n - sigma.Other()*n) * v * ds(skeleton=True)` is UFL an
+    # author is showing, not text a library prints.
+    r"|^[^A-Z]*[*+]\s*\w+.*\)\s*$",
     re.IGNORECASE)
 
 # Dependency trees whose messages legitimately surface through a backend.

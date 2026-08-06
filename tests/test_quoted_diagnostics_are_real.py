@@ -6,8 +6,9 @@ Every verification pass that EXECUTED knowledge rather than reading it came back
 with the same largest category of defect, on every backend:
 
     FEBio    25 invented error messages, 11 non-existent material names
-    4C       90% of quoted diagnostics absent from the source tree — 93 of the
-             103 that could be checked
+    4C       a majority of quoted diagnostics not found in the source tree
+             (see ON PRECISION below before quoting any rate — the first
+             version of this screen reported 91% and the figure was wrong)
     NGSolve  "Newton did not converge after N iterations" — nowhere in
              ngsolve/netgen; the real text is "Warning: Newton might not
              converge! Error = "
@@ -80,16 +81,29 @@ def test_quoted_diagnostics_exist_in_the_software(backend):
 
     absent = result["fragments_absent"]
     assert not absent, (
-        f"{backend}: {len(absent)} quoted diagnostics do not appear anywhere in "
-        f"the software that is supposed to emit them, out of "
-        f"{result['fragments_present'] + len(absent)} checked.\n\n"
+        f"{backend}: {len(absent)} quoted diagnostics could not be found in the "
+        f"software that is supposed to emit them, out of "
+        f"{result['fragments_present'] + len(absent)} checked. These are "
+        f"CANDIDATES TO ADJUDICATE, not proven fabrications — see the note on "
+        f"precision below.\n\n"
         + "\n".join(f"  {a['file']}\n      {a['fragment']}"
                     for a in absent[:25])
         + (f"\n  ... and {len(absent) - 25} more" if len(absent) > 25 else "")
         + "\n\nRun the software, capture what it ACTUALLY prints, and quote "
           "that. If the message turns out not to exist, say so in the entry — "
           "a documented retraction is exempt from this gate and is the right "
-          "way to record a falsified claim.")
+          "way to record a falsified claim.\n\n"
+          "ON PRECISION, because this list must not be pasted into a report as "
+          "a fabrication count. A hand adjudication of 57 NGSolve and skfem "
+          "strings — grepping the sources AND the vendored .so files, then "
+          "triggering the ones in doubt live — found 36 present, 13 already "
+          "documented as absent, 5 genuinely fabricated, 2 paraphrases and 1 "
+          "uncheckable. This screen flagged far more than 5. It catches real "
+          "fabrications (the ProxyFunction 'neighbour' message was one), but it "
+          "also flags messages from dependencies it cannot see, constants like "
+          "PETSc's DIVERGED_* that live outside the searched trees, and text "
+          "the extractor mangled. Treat every entry here as a lead to check by "
+          "running the software, never as a verdict.")
 
 
 def test_the_auditor_pairs_quotes_correctly():
