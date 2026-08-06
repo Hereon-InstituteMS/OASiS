@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic#8. Both halves of the claim executed on the biphasic template: a <material> with only id= gives 'tag \"material\" (line N) : missing attribute \"name\"', and a <NodeSet> written with <n id=.../> children gives 'tag \"NodeSet\" (line N) : invalid value:'. Each message is required ABSENT from the other run so neither half is satisfied by the wrong trigger. Positive control: the shipped heat_3d_bar / biphasic_3d_confined template, unmodified, which runs to normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "name_attr_and_nodeset=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic#1. Two wrong variants of the same material, and the claim is that they are distinguishable: a flat <E> inside `biphasic` gives 'tag \"E\" (line N) : unrecognized tag' and NOT a missing-property message, while deleting the nested <permeability> gives 'Component \"Material1\" needs to have property \"permeability\" defined (line N)' and NOT an unrecognized-tag message. Each message is required absent from the other run. Positive control: the shipped heat_3d_bar / biphasic_3d_confined template, unmodified, which runs to normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "biphasic_flat_vs_missing=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::heat#6. Three failing branches, each reading SUCCESS first and then naming the constant: no <Globals> block and <R>0</R> both give 'A positive universal gas constant R must be defined in Globals section'; <T>0</T> gives the matching T message. The fourth branch is the one that matters for a wrapper: omitting only <P> is NOT an error \u2014 the run reaches normal termination and prints the WARNING 'The referential absolute pressure P is calculated internally as <value>'. Positive control: the shipped heat_3d_bar / biphasic_3d_confined template, unmodified, which runs to normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "heat",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "globals_constants=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

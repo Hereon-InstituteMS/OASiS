@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::heat#8. <NodeSet> with <n id=.../> children gives 'tag \"NodeSet\" (line N) : invalid value:' with an EMPTY value after the colon, because the element's text content is empty. The fixture regex-matches the message and asserts the tail is empty \u2014 that specific detail is what stops a reader thinking the diagnostic was truncated. Positive control: the shipped heat_3d_bar / biphasic_3d_confined template, unmodified, which runs to normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "heat",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "nodeset_child_elements=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

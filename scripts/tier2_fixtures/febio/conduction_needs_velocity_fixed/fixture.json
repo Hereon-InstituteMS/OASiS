@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::heat#4, and a CORRECTION to its last clause. Omitting the 'zero fluid velocity' BC reproduces exactly as claimed: read SUCCESS, '------- failed to converge at time : 1', 0 completed steps, error termination, exit 1. But the claim's closing clause 'the logged temperature field is all zeros' is wrong on the shipped deck: the CSV holds one *Step = 0 block carrying the INITIAL CONDITION (300 everywhere). It is zeros only when the <Initial> block is removed as well, which the fixture executes as a third variant. So 'all zeros' is not a usable detection rule and the pitfall was amended. Positive control: the shipped heat_3d_bar / biphasic_3d_confined template, unmodified, which runs to normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "heat",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "thermofluid_free_velocity=reproduced_with_correction"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

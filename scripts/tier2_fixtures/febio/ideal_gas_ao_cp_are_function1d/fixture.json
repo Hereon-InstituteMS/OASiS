@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::heat#7. <cp>3.5</cp> inside `ideal gas` gives 'tag \"cp\" (line N) : invalid value for attribute \"type\"' with 'Reading file ...FAILED!' \u2014 the FEFunction1D slot needs <cp type=\"const\"><value>3.5</value></cp>. Positive control: the shipped heat_3d_bar / biphasic_3d_confined template, unmodified, which runs to normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "heat",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "cp_needs_type_attr=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}
