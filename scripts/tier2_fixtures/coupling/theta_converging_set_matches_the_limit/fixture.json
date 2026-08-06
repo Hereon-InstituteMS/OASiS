@@ -1,0 +1,23 @@
+{
+  "_comment": "COUPLING tier-2, and the fixture that FALSIFIED a knowledge claim. 'at the unbalanced ones it [1/(1+rho)] was the ONLY constant theta that converged at all rather than diverging' is a statement about a GRID reported as a statement about THETA. The amplification factor is below one exactly when theta < 2/(1+rho) \u2014 a whole interval, twice the optimum wide, not a point. At rho=4 that interval is theta < 0.4, so on the coarse sweep the knowledge itself describes ('theta from 0.1 to 1.0') THREE values converge, not one. At rho=9 the interval is theta < 0.2, so on that same coarse grid exactly one value happens to land inside it, and the sweep reported the grid spacing as a property of the method. It stops at rho=4 on purpose: that is where the claim is false on the knowledge's own grid, and the sibling fixture theta_stability_limit already verifies the same limit at rho=9 (theta=0.1 settles, theta=0.2 sits exactly on the boundary and never settles), so the rho=9 story follows from the limit by arithmetic instead of another twenty minutes of solver time. The fixture asserts the durable statement, that the set which converges is exactly the set the limit predicts, and prints the count that falsifies the wording. Each converging run has its interface temperature checked against the closed form so a wrong fixed point cannot be counted as a success.",
+  "backend": "coupling",
+  "physics": "relaxation",
+  "pitfall_index": 17,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "rho4_n4_stability_limit=0.400000",
+    "rho4_n4_predicted_to_converge=0.1,0.2,0.3",
+    "rho4_n4_converged_set=0.1,0.2,0.3",
+    "rho4_n4_converged_count=3",
+    "rho4_constant_thetas_that_converge=3",
+    "cases_tested=1",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

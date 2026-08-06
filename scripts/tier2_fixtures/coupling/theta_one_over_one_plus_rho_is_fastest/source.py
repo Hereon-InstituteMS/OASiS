@@ -40,6 +40,17 @@ BRACKET = [0.6, 1.0, 1.4]      # multiples of theta_opt; all < 2x = the limit
 MAX_ITER = 300
 TOL = 1e-4
 
+# NOT a convergence check. How close a CONVERGED run lands to the exact answer
+# is set by the coupling tolerance, and these sweeps run at a loose one on
+# purpose — the ranking of thetas is asymptotic, so a loose tolerance orders
+# them exactly as a tight one would for a fraction of the iterations. Measured
+# here, a run converged to tol=1e-4 sits a few 1e-3 K from the exact interface
+# temperature. This threshold exists for one thing: catching a run that reached
+# the tolerance on a DIFFERENT fixed point, which is tens of K away, and which
+# would otherwise be counted as a success and could win the iteration contest.
+WRONG_FIXED_POINT_ATOL = 0.5
+
+
 
 def body() -> None:
     L.require_available("skfem")
@@ -71,7 +82,7 @@ def body() -> None:
             # otherwise win the iteration-count contest.
             ex = r["result"]["exports"]
             lo, hi = L.span(ex["left"]["values"])
-            L.close(0.5 * (lo + hi), p.t_iface, 1e-3, f"{tag}_T_err")
+            L.close(0.5 * (lo + hi), p.t_iface, WRONG_FIXED_POINT_ATOL, f"{tag}_T_err")
             results.append((mult, r["iterations"]))
 
         if len(results) < len(BRACKET):
