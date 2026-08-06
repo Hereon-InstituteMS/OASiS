@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::ssti#4. The rule holds — SSTI CONTROL/MONOLITHIC must name a LINEAR_SOLVER — but the failure is nothing like the memory-cost warning the entry gave. LINEAR_SOLVER defaults to -1 and is not validated, so on upstream ssti_mono_3D_3hex8_elch_s2i_butlervolmerthermo_growthlaw.4C.yaml deleting it makes 4C look for a section 'SOLVER -1' and die inside Teuchos: 'Teuchos::Exceptions::InvalidParameterName ... in the parameter (sub)list \"ROOT->SOLVER -1\".', SIGABRT, exit 134. There is no PROC 0 ERROR banner, no source file, the word LINEAR_SOLVER never appears, and SSTI is named only inside mangled backtrace symbols, never in a readable message — the defaulted -1 is the only clue. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssti",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITHSOLVER=0",
+    "EXIT_NOSOLVER=134",
+    "processor 0 finished normally",
+    "WITHSOLVER_RESULT_TEST_FAILURES=0",
+    "Teuchos::Exceptions::InvalidParameterName",
+    "in the parameter (sub)list \"ROOT->SOLVER -1\".",
+    "NOSOLVER_HAS_4C_ERROR_BANNER=0",
+    "NOSOLVER_NAMES_LINEAR_SOLVER=0",
+    "NOSOLVER_NAMES_SSTI_IN_PROSE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHSOLVER=1",
+    "EXIT_NOSOLVER=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep LINEAR_SOLVER in the second arm. The solver id resolves, the Teuchos exception vanishes and EXIT_NOSOLVER becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "    t.replace(blk, 'SSTI CONTROL/MONOLITHIC:\\n  ABSTOLRES: 1e-11\\n', 1))",
+    "to": "    t)"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::ssti#5. The mechanism is real but the parameter name in the entry is wrong: in SSTI the thermal inelastic deformation gradient is MAT_InelasticDefgradLinTempIso and its reference temperature is RefTemp, not INITTEMP (which exists in 4C only on TSI plastic / thermo-StVenant materials and appears nowhere in the upstream SSTI deck, UPSTREAM_USES_INITTEMP=0). Moving RefTemp away from the prescribed initial temperature on upstream ssti_mono_3D_3hex8_elch_s2i_butlervolmerthermo_growthlaw.4C.yaml does not merely bias the answer: the spurious thermal strain inverts the growth tensor and 4C aborts with 'Determinante of growth must not become negative' from mat/4C_mat_inelastic_defgrad_factors.cpp, exit 1. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssti",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MATCHED=0",
+    "EXIT_MISMATCHED=1",
+    "processor 0 finished normally",
+    "Determinante of growth must not become negative",
+    "4C_mat_inelastic_defgrad_factors.cpp",
+    "UPSTREAM_USES_INITTEMP=0",
+    "UPSTREAM_USES_REFTEMP=2"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MATCHED=1",
+    "EXIT_MISMATCHED=0",
+    "UPSTREAM_USES_REFTEMP=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave RefTemp at the value that matches the initial temperature field. The growth tensor stays admissible, EXIT_MISMATCHED becomes 0 and the determinant diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/      RefTemp: 300/      RefTemp: 500/' \"$BASE\" > \"$TMP/mismatched.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/mismatched.yaml\""
+  }
+}

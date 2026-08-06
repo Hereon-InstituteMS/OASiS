@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::sti#2 — a FALSIFICATION. The entry told the reader to set TIMESTEP equal in the scatra and thermal DYNAMIC sections. There is only one: on upstream sti_mono_3D_hex8_elch_s2i_butlervolmerpeltier_adiabatic_mortar_standard.4C.yaml, adding TIMESTEP to STI DYNAMIC is a parse abort ('Could not match this input', core/io/src/4C_io_input_spec_builders.cpp) because STI DYNAMIC has no such parameter, and adding a whole THERMAL DYNAMIC section with a different TIMESTEP and NUMSTEP is accepted, silently ignored and leaves all 40 result tests passing with no warning. Halving SCALAR TRANSPORT DYNAMIC's TIMESTEP is the control arm and does move the results, so the thermo field simply inherits the one scatra time step. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "sti",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_REF=0",
+    "EXIT_STIDT=1",
+    "EXIT_THERMDT=0",
+    "EXIT_SCATRADT=1",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "THERMAL_DYNAMIC_RESULT_TEST_FAILURES=0",
+    "THERMAL_DYNAMIC_WARNINGS=0",
+    "is WRONG --> actresult=",
+    "VERDICT: STI_HAS_A_SEPARATE_THERMAL_TIMESTEP=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_REF=1",
+    "EXIT_STIDT=0",
+    "EXIT_THERMDT=1",
+    "EXIT_SCATRADT=0",
+    "SCATRA_TIMESTEP_RESULT_TEST_FAILURES=0",
+    "VERDICT: STI_HAS_A_SEPARATE_THERMAL_TIMESTEP=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the discriminating control: leave SCALAR TRANSPORT DYNAMIC's TIMESTEP alone. Nothing then shows that the deck responds to its one time step — SCATRA_TIMESTEP_RESULT_TEST_FAILURES becomes 0, EXIT_SCATRADT becomes 0 and no failure line prints — so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/^  TIMESTEP: 5$/  TIMESTEP: 2.5/' \"$BASE\" > \"$TMP/scatradt.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/scatradt.yaml\""
+    },
+    {
+      "note": "remove the pathology from the STIDT arm: do not add TIMESTEP to STI DYNAMIC. The parse abort vanishes and EXIT_STIDT becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/^STI DYNAMIC:$/STI DYNAMIC:\\n  TIMESTEP: 2.5/' \"$BASE\" > \"$TMP/stidt.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/stidt.yaml\""
+    }
+  ]
+}
