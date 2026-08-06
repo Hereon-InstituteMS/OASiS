@@ -929,7 +929,11 @@ KNOWLEDGE = {
     "helmholtz": {
         "description": (
             "Helmholtz equation -Δu - k²u = f. "
-            "Manufactured solution (MMS) with u_exact = sin(pi*x)*sin(pi*y) for verification."
+            "Verify with a manufactured solution: pick a smooth u that satisfies "
+            "your boundary conditions, substitute it to obtain f, and check that "
+            "the L2 error falls at the element's theoretical order. Do not reuse "
+            "a solution written down here — the field must be yours, or the "
+            "convergence study measures nothing about your discretisation."
         ),
         "solver": "galerkin with GMRES (system is indefinite for k² > smallest eigenvalue)",
         "spaces": "lagrange(gridView, order=2) — higher order for better phase accuracy",
