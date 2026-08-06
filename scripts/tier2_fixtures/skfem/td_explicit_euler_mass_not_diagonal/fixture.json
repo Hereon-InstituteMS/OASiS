@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem time_dependent#7, verified 2026-08-06 on skfem 12.0.1. Claim: explicit Euler with dt > 2/lambda_max blows up to NaN within a few steps, energy grows geometrically, and the assembled FEM mass matrix is NOT diagonal so explicit stepping needs M inverted every step. Ran: u_t = Laplace u on a 12x12 MeshTri.init_tensor with ElementTriP1 (169 DOFs), a hand-written mass BilinearForm, row-sum lumping, and explicit runs at 0.5x and 1.5x the bound dt_crit = 5.5930e-04. Printed: M is NOT diagonal -- 1081 non-zeros for 169 diagonal entries (6.40 per row), 912 non-zero off-diagonals, largest off-diagonal equal to the smallest diagonal; row-sum lumping gives exactly 169 non-zeros and conserves the total mass 1.000000. 'NaN WITHIN A FEW STEPS' IS WRONG ABOUT THE TIMING: after five steps the peak is 9.2909e-01, still BELOW the initial 1.0115e+00, so a short run looks like ordinary decay; NaN arrives only at step 1040. What IS exact is the growth factor: over fifteen consecutive steps the peak multiplies by 2.000000 every step, matching the analytic |1 - dt*lambda_max| = 2.000000. Watch the ratio, not the step count.",
+  "backend": "skfem", "physics": "time_dependent", "pitfall_index": 7, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=169",
+    "mass_is_diagonal=False",
+    "lumped_nnz=169",
+    "lumping_conserves_total_mass=True",
+    "safe_dt_decays=True",
+    "unstable_still_below_initial_after_5_steps=True",
+    "unstable_growth_is_geometric=True",
+    "growth_factor_matches_analytic=True",
+    "nan_within_a_few_steps=False",
+    "non_finite_value_is_nan=True",
+    "unstable_warnings=[]"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

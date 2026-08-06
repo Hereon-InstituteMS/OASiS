@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem time_dependent#5, verified 2026-08-06 on skfem 12.0.1. Claim: explicit/near-explicit stepping on stiff problems needs dt < 2/lambda_max with lambda_max from M^-1 K, and for reaction-diffusion with Da > 100 the required dt is infeasible. Ran: u_t = Laplace u - Da u on a 12x12 MeshTri.init_tensor with ElementTriP1 (169 DOFs), lambda_max from scipy.linalg.eigh on the free block, explicit runs at 0.9x and 1.1x the bound over 400 steps, a backward-Euler run at the unstable dt, and Da = 100 / 1e4 / 1e5. Printed: the bound is SHARP -- 0.9x decays from 1.0115e+00 to 3.0044e-11 while 1.1x grows to 2.4388e+26, both silently; adding the reaction shifts lambda_max by EXACTLY Da (residual -2.7e-12 and 5.5e-12); backward Euler at the unstable dt decays monotonically. THE Da > 100 THRESHOLD IS NOT UNIVERSAL: on this mesh the diffusive lambda_max is already 3.5759e+03, so Da = 100 barely moves the bound and only Da of the same order as lambda_max(M^-1 K) actually dominates -- at Da = 1e5 the bound falls to 1.9310e-05, i.e. 51788 steps per unit time.",
+  "backend": "skfem", "physics": "time_dependent", "pitfall_index": 5, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=169",
+    "da100_shift_is_exactly_da=True",
+    "da10000_shift_is_exactly_da=True",
+    "da_100_is_a_stiffness_threshold_on_this_mesh=False",
+    "explicit_below_bound_blew_up=False",
+    "explicit_above_bound_blew_up=True",
+    "explicit_above_bound_warnings=[]",
+    "implicit_same_dt_stays_bounded=True",
+    "implicit_decays_monotonically=True",
+    "stiff_dt_crit_smaller_than_mild=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

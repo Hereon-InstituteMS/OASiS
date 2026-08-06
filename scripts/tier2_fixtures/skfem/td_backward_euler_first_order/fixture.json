@@ -1,0 +1,14 @@
+{
+  "_comment": "Tier-2 for skfem time_dependent#0, verified 2026-08-06 on skfem 12.0.1. Claim: backward Euler (theta=1) is unconditionally stable and 1st order in time -- slope 1 on a log-log dt study; slope 2 means theta is mis-set to Crank-Nicolson, slope 0 means dt is too large. Ran: heat equation on a 24x24 MeshTri.init_tensor with ElementTriP1 (625 DOFs), homogeneous Dirichlet, IC sin(pi x) sin(pi y), integrated to T=0.02 with 4/8/16/32/64 steps for theta=1 and theta=0.5, errors measured BOTH against the analytic solution and against a 1024-step same-mesh semi-discrete reference. Printed: against the semi-discrete reference theta=1 gives slopes 0.967/0.992/1.013/1.042 and theta=0.5 gives 2.042/2.008/2.001/2.004, so the entry's diagnostic works. Against the ANALYTIC solution Crank-Nicolson's error saturates at the spatial error (8.69e-04 down to only 7.89e-04) and its measured slope collapses to 0.002 -- which the entry's own rule would misread as 'dt too large'. The reference has to be the semi-discrete solution, not the analytic one.",
+  "backend": "skfem", "physics": "time_dependent", "pitfall_index": 0, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=625",
+    "be_slope_is_one=True",
+    "cn_slope_is_two=True",
+    "be_and_cn_are_distinguishable=True",
+    "cn_analytic_slope_collapses=True",
+    "analytic_reference_would_misdiagnose_cn_as_dt_too_large=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}
