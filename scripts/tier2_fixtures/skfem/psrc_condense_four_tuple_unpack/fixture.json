@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem point_source#3, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Claim: condense returns 4 values that must go through skfem.solve; handing them to scipy raises ValueError('The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()') from linsolve.py because the third element binds to spsolve's use_umfpack flag -- NOT a positional-argument TypeError and not 'unhashable type: tuple'. Ran: MeshTri().refined(4), ElementTriP1, 289 DOFs, 64 boundary DOFs, a centre point load, condense inspected and then fed to scipy.sparse.linalg.spsolve, and finally to skfem.solve with a non-zero Dirichlet lift. Printed: condense returns exactly 4 objects of types csr_matrix/ndarray/ndarray/ndarray with the third of length 289; spsolve(*condense(...)) raises the quoted ValueError verbatim with a traceback through linsolve; it is NOT a TypeError, mentions no positional arguments and no unhashable tuple. skfem.solve consumes all four and returns a full 289-long vector whose Dirichlet entries carry the prescribed 0.25 while the interior does not.",
+  "backend": "skfem", "physics": "point_source", "pitfall_index": 3, "mode": "python",
+  "expect_in_output": [
+    "condense_returns_four=True",
+    "condense_types=['csr_matrix', 'ndarray', 'ndarray', 'ndarray']",
+    "spsolve_exception_type=ValueError",
+    "The truth value of an array with more than one element is ambiguous",
+    "quoted_valueerror_text_matches=True",
+    "traceback_comes_from_linsolve=True",
+    "is_a_TypeError=False",
+    "mentions_positional_arguments=False",
+    "mentions_unhashable_tuple=False",
+    "solve_returns_full_length_vector=True",
+    "dirichlet_entries_carry_prescribed_value=True"
+  ],
+  "forbid_in_output": ["FAIL:"]
+}

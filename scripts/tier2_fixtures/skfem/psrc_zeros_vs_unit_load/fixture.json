@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem point_source#1, verified 2026-08-06 on skfem 12.0.1. Claim: ib.zeros() gives a fresh float64 array of length ib.N and f[node]=1.0 is the right one-hot point load, while unit_load.assemble(ib) 'gives a 1.0 at every DOF' and yields a solution with 'peaks at all interior nodes'. Ran: MeshTri().refined(4), ElementTriP1, 289 DOFs, both right-hand sides solved with condense/solve, plus a Green's-function reciprocity check. Printed: the ib.zeros() half is exactly right (float64, length 289, all zero, fresh each call). BOTH unit_load claims are FALSE: unit_load holds the INTEGRAL of each basis function, ranging 6.51e-04 to 3.91e-03 and summing to the domain area 1.000000, not 1.0 per entry; and its solution is a single smooth bump with ONE interior maximum at the centre -- the same location the point-source solution peaks -- so counting peaks does not separate them. What does separate them is the peak value (0.600093 vs 0.073446). The sharp check is reciprocity: the integral of the point-source solution equals the unit-load solution AT the source to 3.8e-16 relative, because the Green's function is symmetric.",
+  "backend": "skfem", "physics": "point_source", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=289",
+    "zeros_is_float64=True",
+    "zeros_length_equals_N=True",
+    "zeros_all_zero=True",
+    "zeros_is_a_fresh_array=True",
+    "unit_load_is_one_at_every_dof=False",
+    "unit_load_sums_to_domain_area=True",
+    "unit_load_entries_are_basis_integrals=True",
+    "point_peak_exceeds_unit_load_peak=True",
+    "unit_load_argmax_is_also_the_centre=True",
+    "unit_load_has_peaks_at_all_interior_nodes=False",
+    "greens_function_reciprocity_holds=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for skfem point_source#0, verified 2026-08-06 on skfem 12.0.1. Claim: a Dirac source destroys regularity, so the FE solution does not converge in H^1 (error stays O(1)) while L^2 converges only at rate 1. Ran: unit load at the centre node, ElementTriP1 on MeshTri().refined(3..6), errors against an r=8 reference (66049 DOFs) evaluated at each mesh's DOFs, in the mass- and stiffness-matrix norms. Printed: L2 = 4.87e-02/1.94e-02/7.27e-03/2.42e-03 at rates 1.327/1.418/1.586 -- clearly short of the optimal 2 a smooth source would give; H1 = 1.119/0.898/0.678/0.456 at rates 0.317/0.407/0.572, far below 1. The substance holds but the wording overstates it: the H1 error is NOT flat and does NOT stay O(1) -- over an eightfold refinement it falls 2.455x while L2 falls 20.123x, so a gate asserting a flat H1 error goes red on a correct run. NEW: the pointwise PEAK grows monotonically 0.4890 -> 0.8210 (1.679x) under the same refinement, because the Green's function has a log singularity, so max(u) is a divergence check, not a convergence check.",
+  "backend": "skfem", "physics": "point_source", "pitfall_index": 0, "mode": "python",
+  "expect_in_output": [
+    "reference_refine=8",
+    "l2_rate_is_below_two=True",
+    "h1_rate_is_below_one=True",
+    "h1_rate_is_below_l2_rate=True",
+    "h1_barely_moves_while_l2_falls=True",
+    "h1_error_is_exactly_flat=False",
+    "peak_grows_monotonically_under_refinement=True",
+    "peak_is_not_converging=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

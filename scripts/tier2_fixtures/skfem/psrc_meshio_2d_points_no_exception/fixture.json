@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem point_source#5, verified 2026-08-06 on skfem 12.0.1 / meshio 5.3.5. Claim: VTK output wants 3D-padded points but meshio 5.3.5 does NOT raise on an (N,2) array -- meshio.Mesh constructs, the writer prints 'Warning: VTU requires 3D points, but 2D points given. Appending 0 third component.' on stdout and writes the file anyway, and there is no 'expected ndarray of shape (N, 3)' ValueError. Ran: MeshTri().refined(3) with a point-source solution as point_data, written once with raw (81,2) points and once z-padded, both read back. Printed: neither the constructor nor the writer raises; the file is written; the read-back point array has 3 columns against the 2 supplied, with the third all zero. NEW, and what makes this hard to catch: the notice is NOT a Python warning -- warnings.catch_warnings records an empty list, so simplefilter('error') cannot turn it into an exception -- and it escapes contextlib.redirect_stdout, so a caller cannot capture it that way either. The padded write round-trips its points exactly and agrees with the unpadded one, and the point data survives; comparing what came back against what you meant to send is the check that works.",
+  "backend": "skfem", "physics": "point_source", "pitfall_index": 5, "mode": "python",
+  "expect_in_output": [
+    "meshio_version=",
+    "mesh_constructor_raises=False",
+    "writer_raises=False",
+    "python_warnings_recorded=[]",
+    "notice_is_not_a_python_warning=True",
+    "notice_escapes_redirect_stdout=True",
+    "VTU requires 3D points, but 2D points given",
+    "read_back_has_three_columns=True",
+    "third_column_is_all_zero=True",
+    "meshio_added_a_column_you_never_supplied=True",
+    "padded_matches_what_was_sent=True",
+    "point_data_round_trips=True",
+    "expected_ndarray_shape_valueerror_present=False"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem point_source#2, verified 2026-08-06 on skfem 12.0.1. Claim: np.argmin on the vertex array snaps an off-node source to the nearest vertex with an error up to h/sqrt(2), it always returns an integer node id and never a barycentric position, and the fix is to find the containing triangle and split the load by barycentric coordinates. Ran: MeshTri().refined(4) (h = 0.0625, 289 DOFs), 200 random interior target points, then one concrete request at (0.3123, 0.7891) solved both by snapping and by barycentric distribution over the containing triangle found with m.element_finder(). Printed: argmin returns an int64; the maximum displacement over 200 targets is 0.042689 against the bound h/sqrt(2) = 0.044194, the mean is 0.022930 (a third of h) and NOT ONE target landed exactly on a vertex, so the rounding happens to essentially every off-node request. It is silent -- empty warning list, finite solution. The barycentric weights [0.0032, 0.3744, 0.6224] sum to 1 exactly and are all non-negative, the distributed load totals 1.000000000000, and the two placements differ by 1.56e-01 relative.",
+  "backend": "skfem", "physics": "point_source", "pitfall_index": 2, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=289",
+    "argmin_returns_integer=True",
+    "displacement_bounded_by_h_over_sqrt2=True",
+    "mean_displacement_is_a_real_fraction_of_h=True",
+    "fraction_landing_exactly_on_target=0.0000",
+    "rounding_warnings=[]",
+    "rounding_is_silent=True",
+    "rounded_solution_finite=True",
+    "barycentric_weights_sum_to_one=True",
+    "barycentric_weights_all_nonnegative=True",
+    "the_two_placements_differ=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
