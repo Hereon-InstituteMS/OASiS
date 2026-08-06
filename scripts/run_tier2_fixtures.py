@@ -51,6 +51,26 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
+
+def fixture_inventory_fingerprint() -> str:
+    """Identity of the fixture set: which fixtures exist and what they contain.
+
+    Deliberately NOT a claim about whether they pass — it records what was
+    summarised, so a summary can be told apart from a stale one. Every file in
+    every fixture directory is hashed, so editing a fixture's expectation or its
+    source counts as a change, not just adding or deleting one.
+    """
+    import hashlib
+
+    h = hashlib.sha256()
+    for d in sorted(p.parent for p in FIXTURES_DIR.glob("*/*/fixture.json")):
+        h.update(f"{d.parent.name}/{d.name}\n".encode())
+        for f in sorted(d.iterdir()):
+            if f.is_file():
+                h.update(f.name.encode())
+                h.update(hashlib.sha256(f.read_bytes()).digest())
+    return h.hexdigest()
+
 # Prefer the Debug-built deal.II at ~/Schreibtisch/dealii-debug
 # (Assert macros enabled — unlocks the Assert-gated Signal families
 # like ExcDimensionMismatch). Falls back to the conda Release install
@@ -367,15 +387,68 @@ def _eval_fixture(fixture_dir: Path,
         python = sys.executable
         REPO_VENV = REPO_ROOT / ".venv" / "bin" / "python"
 
-        def _route_to_repo_venv(env_var: str, label: str) -> str | None:
-            cand = env.get(env_var) or (
-                str(REPO_VENV) if REPO_VENV.is_file() else None)
-            if cand and Path(cand).is_file():
+        def _route_to_repo_venv(env_var: str, label: str,
+                               probe_module: str = "") -> str | None:
+            """Find an interpreter that can run this backend's fixture.
+
+            The first version looked only at `$ENV_VAR` and `REPO_ROOT/.venv`.
+            That fails in every git worktree and in any clone whose environment
+            lives elsewhere: measured here, 96 of 108 fixtures skipped and the
+            run then OVERWROTE `tier2_results.json` with `passed: 1`. A sibling
+            audit hit the same thing from the other side, rewriting 112 to 6.
+
+            So the search now widens, cheapest first, and — the part that
+            actually matters — it CHECKS the candidate can import the package
+            instead of assuming a path implies a working environment.
+            """
+            def _readable_file(p) -> bool:
+                # `is_file()` RAISES PermissionError on a path whose parent is
+                # unreadable — it does not return False. Scanning sibling
+                # directories walked into one such venv and killed the whole
+                # run before a single fixture reported.
+                try:
+                    return Path(p).is_file()
+                except OSError:
+                    return False
+
+            candidates = [env.get(env_var),
+                          str(REPO_VENV) if _readable_file(REPO_VENV) else None]
+            # A sibling checkout's venv: worktrees share one environment, and
+            # REPO_ROOT is the worktree, not the checkout that owns the venv.
+            try:
+                siblings = sorted(REPO_ROOT.parent.iterdir())
+            except OSError:
+                siblings = []
+            for sibling in siblings:
+                try:
+                    if sibling.is_dir():
+                        candidates.append(
+                            str(sibling / ".venv" / "bin" / "python"))
+                except OSError:
+                    continue
+            # The interpreter running this script, last: if it can import the
+            # package it is as good as any path we could guess.
+            candidates.append(sys.executable)
+
+            for cand in candidates:
+                if not cand or not _readable_file(cand):
+                    continue
+                if probe_module:
+                    try:
+                        probe = subprocess.run(
+                            [cand, "-c", f"import {probe_module}"],
+                            capture_output=True, timeout=120,
+                            stdin=subprocess.DEVNULL)
+                    except (OSError, subprocess.SubprocessError):
+                        continue
+                    if probe.returncode != 0:
+                        continue
                 return cand
+
             result.status = "skipped"
             result.notes.append(
-                f"{label} env python not found; set "
-                f"{env_var} or install repo .venv (task #18)")
+                f"{label}: no interpreter found that can import "
+                f"{probe_module or 'the package'}; set {env_var} to one")
             return None
 
         if backend == "fenics":
@@ -403,17 +476,17 @@ def _eval_fixture(fixture_dir: Path,
                     "DUNE_PYTHON or install ofa-dune conda env")
                 return result
         elif backend == "kratos":
-            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos")
+            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos", "KratosMultiphysics")
             if cand is None:
                 return result
             python = cand
         elif backend == "ngsolve":
-            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve")
+            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve", "ngsolve")
             if cand is None:
                 return result
             python = cand
         elif backend == "skfem":
-            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem")
+            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem", "skfem")
             if cand is None:
                 return result
             python = cand
@@ -547,9 +620,29 @@ def main():
     print()
     print(f"Tier-2 summary: {summary}")
 
+    # `--write-results` was PARSED AND NEVER READ, so the write was
+    # unconditional and the flag was decoration. Every exploratory run destroyed
+    # the recorded snapshot: a DUNE audit reported it rewriting 112 passes to 6,
+    # and it overwrote 108 with 1 under me before I noticed. A summary that any
+    # incidental run can clobber is not a record.
+    if not args.write_results:
+        print("\nresults NOT written (pass --write-results to persist). "
+              f"Recorded snapshot at {OUTPUT.relative_to(REPO_ROOT)} is "
+              f"untouched.")
+        return
+
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
         "summary": summary,
+        # Identity of the fixture set these results describe. Without it a
+        # committed snapshot cannot be told from a current one: an audit found
+        # `tier2_results.json` 18 commits stale, recording `passed: 113` on a
+        # host where 7 passed and 10 failed — and the floor test that reads it
+        # was green, including with the backend's binary hidden. The number
+        # travels with the repo, so every user gets our result reported as
+        # theirs. Comparing this fingerprint catches the fixture set having moved
+        # underneath a stale summary.
+        "fixture_fingerprint": fixture_inventory_fingerprint(),
         "results": results,
     }, indent=2))
     print(f"results written to "

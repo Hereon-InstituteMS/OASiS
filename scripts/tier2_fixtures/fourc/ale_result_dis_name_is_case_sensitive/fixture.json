@@ -1,0 +1,29 @@
+{
+  "_comment": "Tier-2 for fourc::ale#5. The rule (DIS is case-sensitive, use lowercase 'ale') holds, but the Signal the entry carried was fabricated: there is no 'discretisation ALE not found' message anywhere in 4C, and the run does not fail at the RESULT DESCRIPTION block. It completes the simulation, writes its restart, matches zero of the two result tests without comment, and aborts with 'expected 2 tests but performed 0' from core/utils/src/result_test/4C_utils_result_test.cpp. The mis-spelled field name is never echoed. Both negative observations are asserted so the correction stays pinned. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ale",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_LOWER=0",
+    "EXIT_UPPER=1",
+    "processor 0 finished normally",
+    "expected 2 tests but performed 0",
+    "4C_utils_result_test.cpp",
+    "CLAIMED_DISCRETISATION_NOT_FOUND_TEXT=0",
+    "MISSPELLED_NAME_ECHOED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_LOWER=1",
+    "EXIT_UPPER=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave DIS lowercase in the second arm. The two result tests then match, the run exits 0, and the count-mismatch diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/DIS: \"ale\"/DIS: \"ALE\"/' \"$BASE\" > \"$TMP/upper.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/upper.yaml\""
+  }
+}
