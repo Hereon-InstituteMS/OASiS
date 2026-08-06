@@ -145,6 +145,18 @@ class Run:
                       self.text)
         return int(m.group(1)) if m else -1
 
+    @property
+    def flat(self) -> str:
+        """stdout+stderr+log with the ERROR/WARNING box unwrapped.
+
+        The box breaks a long diagnostic after 71 columns and puts a `*`
+        at each end of every line, so a message that fits on one line in
+        the source does not appear as one string in the output. Anything
+        matching a WHOLE quoted message must go through this.
+        """
+        t = re.sub(r"\s*\*?\s*\n\s*\*?\s*", " ", self.text)
+        return re.sub(r"\s+", " ", t)
+
     def has(self, needle: str) -> bool:
         """Substring search over stdout+stderr+log, whitespace-collapsed.
 

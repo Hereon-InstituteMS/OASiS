@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::growth_remodeling#3, syntax half. <mat_axis> and the old <theta> spelling on a `kinematic growth` material each give 'tag \"<name>\" (line N) : unrecognized tag'; <MeshData> placed before </MeshDomains> gives 'MeshData must appear after MeshDomain section. (line N)', which is NOT a tag-family message \u2014 the fixture asserts that too, because a wrapper matching only the tag family will not recognise it. The default-axis half of the claim is a geometric measurement and is named as uncovered. Positive control: the shipped template, unmodified, which reaches normal termination. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "growth_remodeling",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "growth_axis_names=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::damage#1. Five variants: type=\"damage\" is not registered ('tag \"material\" (line N) : invalid value for attribute \"type\"'); deleting <elastic>, <damage> or <criterion> each gives 'Component \"Material1\" needs to have property \"<name>\" defined' with the name CHANGING to the deleted one \u2014 the fixture requires the other two names to be absent, so the discrimination is what is pinned; and flat elastic parameters give 'tag \"E\" (line N) : unrecognized tag'. Positive control: the shipped template, unmodified, which reaches normal termination. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "damage",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "elastic_damage_properties=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

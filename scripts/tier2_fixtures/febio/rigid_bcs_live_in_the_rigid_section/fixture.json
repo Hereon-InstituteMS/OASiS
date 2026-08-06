@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::rigid_body#0. Two wrong forms, two stages: a <rigid_bc> inside <Boundary> is caught at parse with 'tag \"rigid_bc\" (line N) : unrecognized tag'; a nodal <bc type=\"prescribed displacement\"> on the rigid body's own nodes READS SUCCESSFULLY and only then fails with 'Rigid nodes cannot be prescribed.', 'Boundary condition N (push) failed to initialize' and 'Model initialization failed'. The read_success assertion on the second is the point \u2014 a wrapper that checks only the reader line believes that deck is fine. Positive control: the shipped template, unmodified, which reaches normal termination. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "rigid_body",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "rigid_bc_section=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

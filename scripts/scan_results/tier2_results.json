@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 146,
-    "passed": 146,
+    "n_fixtures": 161,
+    "passed": 161,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -2037,6 +2037,21 @@
       "notes": [],
       "captured_head": "STATIC_in_biphasic: rc=1 read_failed=1 names_the_word=1\nSTEADY-STATE: rc=0 normal=1 last=[-105.555555556, 0.0]\nordinal_1: rc=0 normal=1 last=[-105.55555557, 1.6151728908e-08]\nTRANSIENT: rc=0 normal=1 last=[-105.55555557, 1.6151728908e-08]\nordinal_accepted=1 ordinal_1_equals_TRANSIENT=1 differs_from_STEADY_STATE=1\nanalysis_enum_scope=reproduced\n"
     },
+    "febio::biphasic::4": {
+      "key": "febio::biphasic::4",
+      "backend": "febio",
+      "physics": "biphasic",
+      "pitfall_index": 4,
+      "fixture_id": "bicgstab_converges_on_one_element_only",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "bicgstab_mesh_dependence=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "one_hex8: rc=0 normal=1 steps=10 solver_message=0 last_element=[-128.055555556, 22.5]\ntwo_by_two_by_two: rc=1 normal=0 steps=0 solver_message=1 error_termination=1\nbicgstab_mesh_dependence=reproduced\n"
+    },
     "febio::biphasic_fsi::0": {
       "key": "febio::biphasic_fsi::0",
       "backend": "febio",
@@ -2080,7 +2095,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "missing_solid: rc=1 read_failed=1 named_with_material_name=1\nmissing_fluid: rc=1 read_failed=1 named_with_material_name=1\nmissing_permeability: rc=1 read_failed=1 named_with_material_name=1\nidentical_runs_max_relative_deviation=4.458e-10 bit_identical=0\nphi0_omitted: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=6.827e-10\nphi0_zero: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=6.827e-10\nphi0_high: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=7.627e-10\nproperties_named_when_missing=3 of 3\nphi0_is_a_silent_default_not_a_named_error=1\nshipped_deck_cannot_see_phi0=1 (tolerance 1.0e-06)\nbiphasic_fsi_properties=reproduced_with_correction\n"
+      "captured_head": "missing_solid: rc=1 read_failed=1 named_with_material_name=1\nmissing_fluid: rc=1 read_failed=1 named_with_material_name=1\nmissing_permeability: rc=1 read_failed=1 named_with_material_name=1\nidentical_runs_max_relative_deviation=4.942e-10 bit_identical=0\nphi0_omitted: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=5.279e-10\nphi0_zero: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=5.068e-10\nphi0_high: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=9.510e-10\nproperties_named_when_missing=3 of 3\nphi0_is_a_silent_default_not_a_named_error=1\nshipped_deck_cannot_see_phi0=1 (tolerance 1.0e-06)\nbiphasic_fsi_properties=reproduced_with_correction\n"
     },
     "febio::multiphasic::1": {
       "key": "febio::multiphasic::1",
@@ -2179,6 +2194,21 @@
       "notes": [],
       "captured_head": "no_solver: rc=1 read_failed=1 message=1 empty_component_name=1\nout_of_module_solver: rc=1 read_failed=1 invalid_type=1 same_message_as_missing=0\nright: rc=0 normal=1 steps=2\ncontrol_no_solver=reproduced\n"
     },
+    "febio::damage::2": {
+      "key": "febio::damage::2",
+      "backend": "febio",
+      "physics": "damage",
+      "pitfall_index": 2,
+      "fixture_id": "damage_cap_is_range_checked",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "dmax_range_check=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Dmax_1.0: rc=0 normal=1 steps=60\nDmax_1.2: rc=1 read_success=1 invalid_value=1 empty_name_before_dot=1 init_failed=1\nDmax_-0.1: rc=1 read_success=1 invalid_value=1 empty_name_before_dot=1 init_failed=1\nout_of_range_rejected=2 of 2\ndmax_range_check=reproduced\n"
+    },
     "febio::linear_elasticity::7": {
       "key": "febio::linear_elasticity::7",
       "backend": "febio",
@@ -2208,6 +2238,21 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "ratio=0.1 t_end=7.23656 rc=0 normal=1 steps=10 minT=276.782912789 below_coldest_prescribed=1 warnings=0 errors=0\nratio=3.0 t_end=6512.9 rc=0 normal=1 steps=10 minT=300.0 below_coldest_prescribed=0 warnings=0 errors=0\nundershoot_kelvin=23.217087210999978\nsilent_wrong_answer=1 gone_at_ratio_3=1\ndiffusion_length_undershoot=reproduced\n"
+    },
+    "febio::damage::1": {
+      "key": "febio::damage::1",
+      "backend": "febio",
+      "physics": "damage",
+      "pitfall_index": 1,
+      "fixture_id": "elastic_damage_property_names",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "elastic_damage_properties=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "unregistered_type_damage: rc=1 read_failed=1 invalid_type=1\nmissing_elastic: rc=1 read_failed=1 names_this_property=1 names_no_other=1\nmissing_damage: rc=1 read_failed=1 names_this_property=1 names_no_other=1\nmissing_criterion: rc=1 read_failed=1 names_this_property=1 names_no_other=1\nflat_parameters: rc=1 read_failed=1 unrecognized_tag=1\ncontrol: rc=0 normal=1 steps=60\nproperties_named_individually=3 of 3\nelastic_damage_properties=reproduced\n"
     },
     "febio::linear_elasticity::9": {
       "key": "febio::linear_elasticity::9",
@@ -2314,6 +2359,21 @@
       "notes": [],
       "captured_head": "no_solutes: rc=1 read_failed=1 names_the_dof=1 never_names_Globals_or_Solutes=1\nundeclared_c9: rc=1 read_failed=1 names_the_dof=1\nright: rc=0 normal=1 steps=10\nglobals_solutes=reproduced\n"
     },
+    "febio::growth_remodeling::3": {
+      "key": "febio::growth_remodeling::3",
+      "backend": "febio",
+      "physics": "growth_remodeling",
+      "pitfall_index": 3,
+      "fixture_id": "growth_axis_is_the_growth_tensor_fiber",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "growth_axis_names=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "mat_axis_on_material: rc=1 read_failed=1 unrecognized_tag=1\ntheta_on_material: rc=1 read_failed=1 unrecognized_tag=1\nmeshdata_before_meshdomains: rc=1 read_failed=1 own_message=1 not_a_tag_message=1\ncontrol: rc=0 normal=1 steps=10\nrejected_by_name=2 of 2\ngrowth_axis_names=reproduced\n"
+    },
     "febio::linear_elasticity::98": {
       "key": "febio::linear_elasticity::98",
       "backend": "febio",
@@ -2329,6 +2389,21 @@
       "notes": [],
       "captured_head": "febio_exit_code=0\nfebio_normal_termination=1\ninterior_node_disp_err=1.388e-17\nanalytic_J=1.019898000000\nanalytic_sigma_xx=27.913436847\nmax_cauchy_stress_err=3.461e-11\nelementwise_stress_spread=1.000e-13\nfebio_patch_test=passed\n"
     },
+    "febio::fiber_reinforced::2": {
+      "key": "febio::fiber_reinforced::2",
+      "backend": "febio",
+      "physics": "fiber_reinforced",
+      "pitfall_index": 2,
+      "fixture_id": "hgo_kappa_range_is_closed_zero_third",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "kappa_range=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "kappa=0: rc=0 normal=1 steps=10 rejected=0\nkappa=0.1: rc=0 normal=1 steps=10 rejected=0\nkappa=0.3333333333: rc=0 normal=1 steps=10 rejected=0\nkappa=0.34: rc=1 read_success=1 names_material_and_parameter=1 init_failed=1\nkappa=0.5: rc=1 read_success=1 names_material_and_parameter=1 init_failed=1\nkappa=1.0: rc=1 read_success=1 names_material_and_parameter=1 init_failed=1\nkappa=-0.1: rc=1 read_success=1 names_material_and_parameter=1 init_failed=1\naccepted=3 of 3 rejected=4 of 4\nkappa_range=reproduced\n"
+    },
     "febio::heat::7": {
       "key": "febio::heat::7",
       "backend": "febio",
@@ -2343,6 +2418,21 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "wrong: rc=1 read_failed=1 msg[0]=1 msg[1]=1\nright: rc=0 read_success=1 normal=1 steps=1 msg_absent=1\ncp_needs_type_attr=reproduced\n"
+    },
+    "febio::growth_remodeling::0": {
+      "key": "febio::growth_remodeling::0",
+      "backend": "febio",
+      "physics": "growth_remodeling",
+      "pitfall_index": 0,
+      "fixture_id": "kinematic_growth_is_top_level",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "kinematic_growth_shape=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "missing_growth: rc=1 read_failed=1 named=1\nmissing_elastic: rc=1 read_failed=1 named=1\nuncoupled_elastic_child: rc=1 read_success=1 initialisation_message=1\nunregistered_type: rc=1 read_failed=1 invalid_type=1\nwrapped_in_solid_mixture: rc=1 read_success=1 max_iterations_reached=1 failed_to_converge=1 error_termination=1 steps=0 negative_jacobians_ABSENT=1\ncontrol: rc=0 normal=1 steps=10\nproperties_named=2 of 2\nkinematic_growth_shape=reproduced\n"
     },
     "febio::linear_elasticity::4": {
       "key": "febio::linear_elasticity::4",
@@ -2388,6 +2478,36 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "material_no_name: rc=1 read_failed=1 message=1 not_the_nodeset_message=1\nnodeset_children: rc=1 read_failed=1 message=1 not_the_name_message=1\nright: rc=0 normal=1 steps=10\nname_attr_and_nodeset=reproduced\n"
+    },
+    "febio::elasticity_mms::2": {
+      "key": "febio::elasticity_mms::2",
+      "backend": "febio",
+      "physics": "elasticity_mms",
+      "pitfall_index": 2,
+      "fixture_id": "math_expressions_need_uppercase_coordinates",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "lowercase_coordinate_symbols=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "lowercase: rc=-11 sigsegv=1 read_success=1 read_failed=0 names_a_symbol=0 error_box=0\nuppercase: rc=0 read_success=1 normal=1 steps=1\nlowercase_coordinate_symbols=reproduced\n"
+    },
+    "febio::hyperelasticity::5": {
+      "key": "febio::hyperelasticity::5",
+      "backend": "febio",
+      "physics": "hyperelasticity",
+      "pitfall_index": 5,
+      "fixture_id": "max_ups_belongs_to_qn_method",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "max_ups_placement=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "flat_in_solver: rc=1 unrecognized_tag=1\nin_JFNK: rc=1 unrecognized_tag=1\nin_BFGS: rc=0 normal=1 steps=10\nunregistered_strategy: rc=1 invalid_type=1 not_the_max_ups_message=1\nmax_ups_placement=reproduced\n"
     },
     "febio::linear_elasticity::1": {
       "key": "febio::linear_elasticity::1",
@@ -2554,6 +2674,81 @@
       "notes": [],
       "captured_head": "sol_child: rc=1 read_failed=1 unrecognized_tag=1 not_the_dof_message=1\nundeclared_species: rc=1 read_failed=1 invalid_value=1 not_an_unrecognized_tag=1\nright: rc=0 normal=1 steps=10\nconcentration_dof_child=reproduced\n"
     },
+    "febio::rigid_body::0": {
+      "key": "febio::rigid_body::0",
+      "backend": "febio",
+      "physics": "rigid_body",
+      "pitfall_index": 0,
+      "fixture_id": "rigid_bcs_live_in_the_rigid_section",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "rigid_bc_section=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "rigid_bc_in_Boundary: rc=1 read_failed=1 parse_error=1\nnodal_bc_on_rigid_nodes: rc=1 read_success=1 rigid_nodes_message=1\ncontrol: rc=0 normal=1 steps=10\nrigid_bc_section=reproduced\n"
+    },
+    "febio::rigid_body::1": {
+      "key": "febio::rigid_body::1",
+      "backend": "febio",
+      "physics": "rigid_body",
+      "pitfall_index": 1,
+      "fixture_id": "rigid_dof_spelling_per_bc_type",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "rigid_dof_spelling=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "capital_R_on_translation: rc=1 read_failed=1 quotes_Rz=1\nlowercase_on_rotation: rc=1 read_failed=1 quotes_u=1\ncontrol: rc=0 normal=1 steps=10\nrigid_dof_spelling=reproduced\n"
+    },
+    "febio::biphasic::3": {
+      "key": "febio::biphasic::3",
+      "backend": "febio",
+      "physics": "biphasic",
+      "pitfall_index": 3,
+      "fixture_id": "skyline_cannot_store_unsymmetric_biphasic",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "biphasic_solver_sweep=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "solver=skyline          expected=matrix_format          got=matrix_format          ok\nsolver=fgmres           expected=matrix_format          got=matrix_format          ok\nsolver=cg               expected=matrix_format          got=matrix_format          ok\nsolver=superlu_mt       expected=matrix_format          got=matrix_format          ok\nsolver=accelerate       expected=matrix_format          got=matrix_format          ok\nsolver=diagonal         expected=matrix_format          got=matrix_format          ok\nsolver=hypre_gmres      expected=matrix_format          got=matrix_format          ok\nsolver=hypre_pcg_amg    expected=matrix_format          got=matrix_format          ok\nsolver=boomeramg        expected=matrix_format          got=matrix_format          ok\nsolver=ichol            ex"
+    },
+    "febio::rigid_body::5": {
+      "key": "febio::rigid_body::5",
+      "backend": "febio",
+      "physics": "rigid_body",
+      "pitfall_index": 5,
+      "fixture_id": "surfacepair_and_contact_type_strings",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "contact_syntax=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "master_slave: rc=1 read_failed=1 message=1\nspace_not_hyphen: rc=1 read_failed=1 message=1\nfebio2_type_string: rc=1 read_failed=1 message=1\nunknown_surface_pair: rc=1 read_failed=1 message=1\nempty_contact_body: rc=1 read_failed=1 message=1\ncontrol: rc=0 normal=1 steps=10\nrejected_with_the_quoted_message=5 of 5\ncontact_syntax=reproduced\n"
+    },
+    "febio::biphasic::7": {
+      "key": "febio::biphasic::7",
+      "backend": "febio",
+      "physics": "biphasic",
+      "pitfall_index": 7,
+      "fixture_id": "symmetric_stiffness_workaround_keeps_the_answer",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "symmetric_workaround=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "symmetric_skyline: rc=0 normal=1 steps=4 sz=-68.489270181\nnonsymmetric_bicgstab: rc=0 normal=1 steps=4 sz=-68.489270181\nrelative_difference=0.000e+00 tolerance=1e-09\nsymmetric_workaround=reproduced\n"
+    },
     "febio::heat::3": {
       "key": "febio::heat::3",
       "backend": "febio",
@@ -2568,6 +2763,36 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "wrong: rc=1 read_success=1 read_failed=0 msg[0]=1 msg[1]=1\nright: rc=0 read_success=1 normal=1 steps=1 msg_absent=1\nthermofluid_needs_bicgstab=reproduced\n"
+    },
+    "febio::hyperelasticity::0": {
+      "key": "febio::hyperelasticity::0",
+      "backend": "febio",
+      "physics": "hyperelasticity",
+      "pitfall_index": 0,
+      "fixture_id": "uncoupled_materials_require_bulk_modulus",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "uncoupled_needs_k=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "uncoupled_without_k: rc=1 read_success=1 read_failed=0 message=1\nuncoupled_with_k: rc=0 normal=1 steps=10 message_absent=1\ncoupled_neo_hookean_no_k_parameter: rc=0 normal=1 steps=10 message_absent=1\nuncoupled_needs_k=reproduced\n"
+    },
+    "febio::viscoelasticity::1": {
+      "key": "febio::viscoelasticity::1",
+      "backend": "febio",
+      "physics": "viscoelasticity",
+      "pitfall_index": 1,
+      "fixture_id": "uncoupled_viscoelastic_child_kind",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "viscoelastic_child_kind=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "coupled_neo_hookean: rc=1 read_failed=1 message=Component \"Material1\" needs to have property \"elastic\" defined (line 22)\ncoupled_isotropic_elastic: rc=1 read_failed=1 message=Component \"Material1\" needs to have property \"elastic\" defined (line 22)\nno_child_at_all: rc=1 read_failed=1 message=Component \"Material1\" needs to have property \"elastic\" defined (line 19)\nall_three_give_the_same_message_modulo_line_number=1\ndistinct_raw_messages=2 (the line number moves when a block is deleted)\ncontrol_mooney_rivlin: rc=0 normal=1 steps=50\nviscoelastic_child_kind=reproduced\n"
     },
     "febio::heat::0": {
       "key": "febio::heat::0",

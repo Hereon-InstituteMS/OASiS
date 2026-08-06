@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic#3, and the fixture that FALSIFIED one entry of its solver list. Twenty registered FELINEARSOLVER_ID names swept on the shipped confined-compression deck, each asserted into a named bucket: matrix-format error (12 names), 'Linear solver failed to find solution' (LU), 'Fatal error in factorization' (ilu0, ilut), 'An error occurred during preprocessing' (block), not a registered type (pardiso), needs a sub-solver (strategy), needs A_solver (schur), runs (bicgstab, test). The claim listed `strategy` among the matrix-format emitters; it is refused at PARSE with 'Component \"linear_solver\" needs to have property \"solver1\" defined' and never reaches the matrix. Pitfall corrected in the same pass. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "biphasic_solver_sweep=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::hyperelasticity#5. <max_ups> flat inside <solver> and inside <qn_method type=\"JFNK\"> both give 'tag \"max_ups\" (line N) : unrecognized tag'; inside <qn_method type=\"BFGS\"> it is accepted and the deck runs to normal termination; and an unregistered strategy name gives 'tag \"qn_method\" (line N) : invalid value for attribute \"type\"' and NOT the max_ups message. All four required. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "hyperelasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "max_ups_placement=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

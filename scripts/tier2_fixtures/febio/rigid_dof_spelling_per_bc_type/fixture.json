@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::rigid_body#1. <dof>Rz</dof> on a rigid_displacement gives 'tag \"dof\" (line N) : invalid value: Rz'; <dof>u</dof> on a rigid_rotation gives 'tag \"dof\" (line N) : invalid value: u'. The fixture requires the QUOTED VALUE to be the string it supplied, so the assertion cannot be satisfied by any other parse error. Positive control: the shipped template, unmodified, which reaches normal termination. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "rigid_body",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "rigid_dof_spelling=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

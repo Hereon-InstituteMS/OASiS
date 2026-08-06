@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::viscoelasticity#1. A coupled `neo-Hookean` child, a coupled `isotropic elastic` child and NO child at all all give the same message 'Component \"Material1\" needs to have property \"elastic\" defined (line N)'. PRECISION on the claim's word \"byte-identical\": the two coupled-child variants are byte-identical, the no-child variant differs in the parenthesised line number because the deck is shorter. The fixture extracts the message from each run, strips the line number, and requires the three to be EQUAL \u2014 that equality is the claim, because it is what proves the diagnostic cannot distinguish \"wrong kind of child\" from \"no child\". The shipped Mooney-Rivlin form is the positive control and runs to normal termination. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "viscoelasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "viscoelastic_child_kind=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

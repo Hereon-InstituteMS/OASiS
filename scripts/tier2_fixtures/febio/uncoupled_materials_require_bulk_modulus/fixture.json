@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::hyperelasticity#0. A Mooney-Rivlin material without <k> gives 'K must be a positive number.' and exit 1; the same material with <k> runs to normal termination; and the shipped coupled neo-Hookean, which has no <k> parameter at all, also runs. All three are required, because the claim is the DISTINCTION between coupled and uncoupled materials, not the message alone. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "hyperelasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "uncoupled_needs_k=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}
