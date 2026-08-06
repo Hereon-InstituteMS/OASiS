@@ -1,0 +1,27 @@
+{
+  "_comment": "COUPLING tier-2. Verifies the two 'CANNOT' verdicts in knowledge(topic='precice'): 4C has no preCICE entry point, and FEBio as installed has no preCICE in the binary and no Python API. Runs each of the three probes the claim itself names — ldd for linked libraries, nm -D for the dynamic symbol table, strings -a for anything textual the build left behind — on both binaries as resolved by the live registry, plus a walk of each binary's own source checkout for any path matching *precice*. Eight probes, all required to be zero. Then checks both payloads still redirect to `couple`, because a refusal with no alternative is how an agent concludes the coupling is impossible. This is the fixture that notices if somebody builds a preCICE-enabled 4C: the knowledge would silently become wrong and every agent would keep being steered to the file handshake.",
+  "backend": "coupling",
+  "physics": "precice_availability",
+  "pitfall_index": 9,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "fourc_ldd_precice_hits=0",
+    "fourc_nm_D_precice_hits=0",
+    "fourc_strings_precice_hits=0",
+    "fourc_source_tree_precice_files=0",
+    "febio_ldd_precice_hits=0",
+    "febio_nm_D_precice_hits=0",
+    "febio_strings_precice_hits=0",
+    "febio_source_tree_precice_files=0",
+    "binaries_probed=2",
+    "probes_per_binary=4",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

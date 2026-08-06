@@ -1,0 +1,31 @@
+{
+  "_comment": "COUPLING tier-2, the fixture that justifies every other one asserting a closed form instead of `converged`. Runs the SAME coupling twice, changing exactly one constant: the right subdomain's outer boundary temperature, written once in kelvin and once as the same physical temperature in degrees Celsius. `couple` cannot tell them apart — both converge in a comparable number of iterations to a comparable residual, both have an EMPTY validation block, and both balance the interface flux to roundoff (the mismatched run balanced BETTER than the correct one, because conservation is a property of the fixed point and holds whatever units the boundary data is in). The difference is visible only against an independent answer, and it is not subtle: the interface temperature is out by tens of percent and the flux by an order of magnitude. Then check_monolithic_consistency is run explicitly on both, and fires on exactly one. The control run is the built-in mutation: remove the unit mismatch and the 'disagrees with the closed form' assertions fail.",
+  "backend": "coupling",
+  "physics": "silent_wrong",
+  "pitfall_index": 15,
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "closed_form_T_iface=",
+    "consistent_converged=True",
+    "consistent_validation_entries=0",
+    "consistent_balance_warnings=0",
+    "consistent_T_disagreement_with_closed_form=0.0pct",
+    "mismatched_converged=True",
+    "mismatched_validation_entries=0",
+    "mismatched_balance_warnings=0",
+    "mismatched_T_disagreement_with_closed_form=",
+    "mismatched_q_disagreement_with_closed_form=",
+    "monolithic_check_on_control=0",
+    "monolithic_check_on_mismatch=1",
+    "runs_compared=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "mismatched_T_disagreement_with_closed_form=0.0pct",
+    "failures_count=1"
+  ]
+}

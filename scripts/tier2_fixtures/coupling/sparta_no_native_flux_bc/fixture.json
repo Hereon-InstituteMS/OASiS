@@ -1,0 +1,26 @@
+{
+  "_comment": "COUPLING tier-2. Verifies SPARTA's row in the sides table, which is the one row that says a backend CANNOT take a side: 'not natively' in the Neumann column. Derives the nine surf_collide styles from the SurfCollideStyle(...) registrations in the installed SPARTA source, derives the four that take a thermal datum from which of them call SPARTA's own parse_tsurf (a surface TEMPERATURE parser), and asserts nothing in surf_collide_*.{cpp,h} mentions a flux at all. Then verifies the INDIRECT route the knowledge offers instead — fix_surf_temp.cpp's T = (q/(sigma*emisurf))^(1/4) gray-body conversion and the disclaimer the knowledge quotes verbatim from SPARTA's own doc — because a 'cannot' that hides a workaround steers agents away from a coupling that is possible, which is how this sentence was wrong once already. Finally checks the served payload and the sides table still carry the negative. A negative claim needs a fixture MORE than a positive one: a capability fails loudly the first time somebody uses it, a refusal is never exercised at all.",
+  "backend": "coupling",
+  "physics": "sides_capabilities",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "sparta_src=",
+    "surf_collide_styles=9",
+    "thermal_styles=4",
+    "thermal_names=cll,diffuse,impulsive,td",
+    "surf_collide_flux_mentions=0",
+    "fix_surf_temp_sb_prefactor=True",
+    "fix_surf_temp_fourth_root=True",
+    "doc_disclaimer_present=True",
+    "claims_checked=7",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

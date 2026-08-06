@@ -1,0 +1,26 @@
+{
+  "_comment": "COUPLING tier-2. The nine per-backend participant scripts are claimed to be served 'complete and runnable' and served VERBATIM from the shipped files, the stated reason being that 'the text an agent is served and the text that was proven to run cannot drift apart'. That reasoning only holds if something executes the SERVED text, and the existing suite executes the FILE. So this goes through the registered `knowledge` tool, cuts the script out of the fenced block in the reply, asserts it is byte-identical to the shipped file, asserts it parses, and RUNS it in a fresh work_dir with no imports.json (the iteration-1 fallback path), checking the exports.json it writes. Also checks the launch text per backend: the four WRAPPER backends (4C, FEBio, SPARTA, deal.II) must say `command` runs the wrapper and must name the constant the binary path goes into — four `.replace()` calls meant to do this were silent no-ops, so all four served the generic 'get the interpreter from discover' and an agent following it would put a compiled solver binary where a Python interpreter belongs. SPARTA and Kratos are not executed and the output says why on a named line, not as a silent skip.",
+  "backend": "coupling",
+  "physics": "participant_scripts",
+  "pitfall_index": 16,
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "fenics_served_verbatim=True",
+    "fourc_launch_says_wrapper=True",
+    "fourc_launch_names_FOURC_BIN=True",
+    "dealii_launch_names_DEALII_EXE=True",
+    "febio_launch_names_FEBIO=True",
+    "sparta_launch_names_SPARTA=True",
+    "payloads_served=9",
+    "scripts_served_verbatim=9",
+    "scripts_executed=7",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": "COUPLING tier-2, the flagship pair. The sides table gives 4C an unstarred yes in BOTH columns ('coupled to FEniCSx, both roles') and the 4C payload notes this contradicts the deprecated coupled_solve docstring, which lists 4C on the Neumann side only. One of the two statements about 4C in this repo is wrong and nothing decided which; this fixture runs 4C on the Dirichlet side, on the Neumann side, and in the right subdomain where its outward normal points the other way. It is also the pair with the most ways to converge to a wrong answer, all of them listed in the payload: a spatially varying 4C boundary datum is VAL x FUNCT with FUNCT a symbolic expression fitted by least squares, so a bad fit is a silently wrong BC and not an error; VTU output is scatra-<step>-<rank>.vtu and sorting on the trailing RANK returns the all-zero initial condition, which reads as a converged solve of a trivial problem; a QUAD4 VTU repeats every node once per element, so a participant that does not collapse duplicates exports four times too many points. Each produces a run that converges. The closed form is what separates them. 4C's participant is a WRAPPER — `command` runs plain Python with numpy and meshio and the binary path goes into FOURC_BIN inside the script — which is the distinction four dead .replace() calls used to drop from the served launch text.",
+  "backend": "coupling",
+  "physics": "pair_fenics_fourc",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "fourc_D_fenics_N_iterations=",
+    "fourc_D_fenics_N_left_T_err=",
+    "fourc_D_fenics_N_left_q_err=",
+    "fourc_D_fenics_N_flux_balance_rel=",
+    "fenics_D_fourc_N_iterations=",
+    "fenics_D_fourc_N_right_q_err=",
+    "fenics_N_fourc_D_iterations=",
+    "fenics_N_fourc_D_left_T_err=",
+    "pairs_run=3",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "failures_count=1"
+  ]
+}

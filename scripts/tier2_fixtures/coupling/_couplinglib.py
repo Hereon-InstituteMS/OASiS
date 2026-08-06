@@ -409,6 +409,218 @@ def workroot(tag: str) -> Path:
     return Path(tempfile.mkdtemp(prefix=f"t2cpl_{tag}_"))
 
 
+# ── one arrangement of one pair, checked against the closed form ───────────
+#
+# Every pair fixture is the same body with different backends in the two slots,
+# so it lives here once. `dirichlet` is which SUBDOMAIN takes the Dirichlet
+# role; the two backends' POSITIONS are given by which slot they sit in. Those
+# are independent, which is what the sides table means by "all four
+# role/position combinations".
+
+def heat_arrangement(tag: str, backend_left: str, backend_right: str,
+                     dirichlet: str, mesh_l=(16, 16), mesh_r=(14, 12),
+                     theta: float | None = None, problem: Problem | None = None,
+                     max_iter: int = 200, tol: float = 1e-8,
+                     t_atol: float = 1e-3, q_atol: float = 5e-3) -> dict:
+    """Couple two backends on the split conduction problem and check the
+    physics against the closed form. Returns the `couple` result."""
+    p = problem or DEFAULT
+    if theta is None:
+        theta = p.theta_opt(dirichlet)
+    roles = {"left": "dirichlet" if dirichlet == "left" else "neumann",
+             "right": "dirichlet" if dirichlet == "right" else "neumann"}
+    print(f"--- {tag}: left={backend_left}/{roles['left']} "
+          f"right={backend_right}/{roles['right']} theta={theta:.6f}")
+    root = workroot(tag)
+    specs = [
+        stage(root, "left", backend_left,
+              heat_edits(p, "left", roles["left"], "right", mesh_l)),
+        stage(root, "right", backend_right,
+              heat_edits(p, "right", roles["right"], "left", mesh_r)),
+    ]
+    res = pair(specs, max_iter=max_iter, tol=tol,
+               accelerator="constant", theta=theta)
+    if not check(bool(res.get("converged")), f"{tag}_did_not_converge",
+                 str(res.get("error"))[:300]):
+        return res
+    print(f"{tag}_iterations={res['iterations']}")
+    print(f"{tag}_residual={res['residual']:.3e}")
+    _check_interface_physics(tag, res, p.t_iface, p.q, t_atol, q_atol)
+    return res
+
+
+def elastic_arrangement(tag: str, backend_left: str, backend_right: str,
+                        dirichlet: str, mesh_l=(16, 8), mesh_r=(12, 6),
+                        theta: float | None = None, max_iter: int = 200,
+                        tol: float = 1e-8, u_atol: float = 1e-9,
+                        q_atol: float = 1e-4) -> dict:
+    """The same, for the elastic analogue FEBio solves — FEBio 4 has no heat
+    module, so a conduction participant is impossible there and the shipped
+    script is a uniaxial-strain bar instead."""
+    p = ElasticProblem()
+    if theta is None:
+        rho = (p.cl / p.cr) if dirichlet == "left" else (p.cr / p.cl)
+        theta = 1.0 / (1.0 + rho)
+    roles = {"left": "dirichlet" if dirichlet == "left" else "neumann",
+             "right": "dirichlet" if dirichlet == "right" else "neumann"}
+    print(f"--- {tag}: left={backend_left}/{roles['left']} "
+          f"right={backend_right}/{roles['right']} theta={theta:.6f}")
+    root = workroot(tag)
+    specs = [
+        stage(root, "left", backend_left,
+              elastic_edits(p, "left", roles["left"], "right", mesh_l)),
+        stage(root, "right", backend_right,
+              elastic_edits(p, "right", roles["right"], "left", mesh_r)),
+    ]
+    res = pair(specs, max_iter=max_iter, tol=tol,
+               accelerator="constant", theta=theta)
+    if not check(bool(res.get("converged")), f"{tag}_did_not_converge",
+                 str(res.get("error"))[:300]):
+        return res
+    print(f"{tag}_iterations={res['iterations']}")
+    print(f"{tag}_residual={res['residual']:.3e}")
+    _check_interface_physics(tag, res, p.u_iface, p.q, u_atol, q_atol,
+                             value="u")
+    return res
+
+
+# ── the relaxation study: rho, theta, and what the iteration does ──────────
+
+SWEEP_T_INIT = 290.0    # see probe_theta: away from every ratio's answer
+
+
+def problem_with_rho(rho: float) -> Problem:
+    """A split conduction problem whose Dirichlet-side conductance ratio is
+    exactly `rho`, built by moving ONE constant.
+
+    rho is (Dirichlet-side interface conductance) / (Neumann-side one), with
+    "interface conductance" = k / (distance from the interface to that
+    subdomain's own outer boundary). Holding the geometry and the right
+    conductivity fixed and solving for the left one keeps everything else about
+    the problem — including its closed form — comparable across ratios.
+    """
+    right = DEFAULT.kr / (DEFAULT.xr - DEFAULT.xi)
+    return Problem(kl=rho * right * (DEFAULT.xi - DEFAULT.xl))
+
+
+def probe_theta(tag: str, rho: float, theta: float, max_iter: int,
+                tol: float = 1e-8, dirichlet: str = "left",
+                backend: str = "skfem", mesh_l=(16, 16), mesh_r=(14, 12),
+                quiet: bool = False) -> dict:
+    """Run one (rho, theta) with a CONSTANT accelerator and report what the
+    iteration did — without asserting any physics, because a diverging run has
+    none to assert.
+
+    Returns `converged`, `iterations`, `residual`, and `deviation`: how far the
+    interface value ended from the exact answer, relative to it.
+
+    `deviation` rather than the raw magnitude, and that choice matters. The
+    interface temperature sits near 306 K and starts a few K wrong, so an
+    iteration can amplify its ERROR fifty-fold and still leave the VALUE inside
+    a factor of two of the right answer — measured here, a genuinely diverging
+    run at rho=4 registered 0.2 orders of magnitude on the raw values after
+    thirty iterations, indistinguishable from a converging one. The deviation
+    from the exact answer grows as the amplification factor to the power of the
+    iteration count with nothing to hide behind, which is what separates a slow
+    iteration from a runaway one at a bearable iteration budget.
+
+    The residual is not that discriminator either: it is normalised by the raw
+    export magnitude, so a diverging run SATURATES it near a constant of order
+    one rather than sending it to infinity.
+    """
+    import math
+    p = problem_with_rho(rho)
+    roles = {"left": "dirichlet" if dirichlet == "left" else "neumann",
+             "right": "dirichlet" if dirichlet == "right" else "neumann"}
+    root = workroot(tag)
+    specs = []
+    for pos, mesh in (("left", mesh_l), ("right", mesh_r)):
+        partner = "right" if pos == "left" else "left"
+        edits = heat_edits(p, pos, roles[pos], partner, mesh)
+        # The shipped script's iteration-1 fallback is 310 K, which happens to
+        # BE the exact answer at rho=1. Starting a stability study from the
+        # solution would measure nothing, so the sweep starts well away from
+        # every ratio's answer and each run's initial deviation is comparable.
+        edits["T_INIT"] = f"{SWEEP_T_INIT}"
+        specs.append(_quiet_stage(root, pos, backend, edits, quiet))
+    res = pair(specs, max_iter=max_iter, tol=tol,
+               accelerator="constant", theta=theta)
+    worst = 0.0
+    for ex in res.get("exports", {}).values():
+        for v in ex.get("values", []) or []:
+            d = abs(float(v) - p.t_iface)
+            if math.isfinite(d):
+                worst = max(worst, d)
+            else:
+                worst = float("inf")
+    deviation = worst / abs(p.t_iface) if math.isfinite(worst) else float("inf")
+    out = {"converged": bool(res.get("converged")),
+           "iterations": int(res.get("iterations", 0)),
+           "residual": float(res.get("residual", float("nan"))),
+           "deviation": deviation, "theta": theta, "rho": rho,
+           "amplification": p.amplification(dirichlet, theta),
+           "result": res}
+    return out
+
+
+def _quiet_stage(root: Path, name: str, backend: str, edits: dict,
+                 quiet: bool) -> dict:
+    """`stage` prints the interpreter it resolved, which is the right thing for
+    a pair fixture and far too noisy for a sweep of thirty runs."""
+    if not quiet:
+        return stage(root, name, backend, edits)
+    import contextlib, io
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        spec = stage(root, name, backend, edits)
+    return spec
+
+
+def _check_interface_physics(tag: str, res: dict, exact_value: float,
+                             exact_q: float, v_atol: float, q_atol: float,
+                             value: str = "T") -> None:
+    """The four things a converged coupling has to get right."""
+    ex = res["exports"]
+
+    # Non-matching interface discretisation is the normal case for a
+    # partitioned coupling, and every pair claim states it explicitly.
+    nl, nr = len(ex["left"]["coordinates"]), len(ex["right"]["coordinates"])
+    print(f"{tag}_n_points={nl}/{nr}")
+    check(nl != nr, f"{tag}_matching_meshes",
+          f"both sides used {nl} interface points, so the claim about "
+          f"NON-matching interface meshes was not exercised")
+
+    # (1) the interface value, from BOTH sides, against the closed form
+    for side in ("left", "right"):
+        lo, hi = span(ex[side]["values"])
+        print(f"{tag}_{side}_{value}_span=[{lo:.10g},{hi:.10g}]")
+        close(0.5 * (lo + hi), exact_value, v_atol, f"{tag}_{side}_{value}_err")
+        check(hi - lo < max(v_atol, 1e-12), f"{tag}_{side}_{value}_not_uniform",
+              f"the exact interface {value} has no y-variation, got a spread "
+              f"of {hi - lo:.3e}")
+
+    # (2) the interface flux. The two sides export with respect to their OWN
+    # outward normals, which are anti-parallel, so the signs differ.
+    for side, sign in (("left", +1.0), ("right", -1.0)):
+        lo, hi = span(ex[side]["normal_fluxes"])
+        print(f"{tag}_{side}_q_span=[{lo:.10g},{hi:.10g}]")
+        close(0.5 * (lo + hi), sign * exact_q, q_atol, f"{tag}_{side}_q_err")
+
+    # (3) conservation: what leaves one subdomain enters the other.
+    net_l, net_r = net_flux(ex["left"]), net_flux(ex["right"])
+    scale = max(abs(net_l), abs(net_r), 1e-30)
+    print(f"{tag}_flux_balance_rel={abs(net_l + net_r) / scale:.3e}")
+    check(abs(net_l + net_r) / scale < 1e-4, f"{tag}_flux_not_balanced",
+          f"net(left)={net_l:.6e} net(right)={net_r:.6e}")
+    bal = check_balance(res)
+    check(not bal, f"{tag}_balance_check_complained", "; ".join(bal)[:300])
+
+    # (4) an empty `validation` block is what an agent is told to expect from a
+    # coupling that is right.
+    check(not res["validation"], f"{tag}_validation_not_empty",
+          "; ".join(res["validation"])[:300])
+
+
 # ── measuring the physics out of a coupling result ─────────────────────────
 
 def net_flux(export: dict) -> float:
