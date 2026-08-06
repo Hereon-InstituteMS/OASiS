@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem navier_stokes#1, verified 2026-08-06 on skfem 12.0.1. Claim: the block system is [[A_visc + C(u), B^T],[B, 0]]; omitting C(u) leaves a Stokes Jacobian and Newton converges linearly with 'residual ratio ~0.5 per iteration' instead of geometrically. Ran: lid-driven cavity at Re=100, Taylor-Hood ElementVector(TriP2)/TriP1 on MeshTri().refined(3), one pressure DOF pinned, full Jacobian vs Jacobian with the convection block omitted, with the residual ALWAYS taken from the full Navier-Stokes equations so only the Jacobian differs. Printed: the ORDER claim is confirmed -- the full Jacobian falls 1.177e-02 / 1.484e-04 / 1.881e-09 / 1.605e-17 in 4 iterations (quadratic) while the Stokes Jacobian takes 15 at a constant ratio. THE QUOTED RATE IS WRONG in the safe-looking direction: the measured ratio settles near 0.17, not 0.5, so the inexact iteration converges considerably FASTER than the entry implies and a gate watching for 'ratio about 0.5' never fires. It still converges, silently, to the same solution to 1.071e-12 relative -- the defect costs iterations, not correctness, so only the ORDER reveals it and a single-tolerance run cannot.",
+  "backend": "skfem", "physics": "navier_stokes", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "reynolds=100",
+    "full_jacobian_converged=True",
+    "stokes_jacobian_converged=True",
+    "stokes_needs_more_iterations=True",
+    "full_jacobian_is_quadratic=True",
+    "stokes_jacobian_rate_is_constant_linear=True",
+    "stokes_ratio_is_about_one_half=False",
+    "stokes_ratio_is_far_below_one_half=True",
+    "same_solution_to_round_off=True",
+    "defect_costs_iterations_not_correctness=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}
