@@ -9,7 +9,12 @@ assembled operator to it. If the constant really is in the kernel, the result is
 at round-off relative to the matrix norm.
 
 Mutation control: T2_MUTATE=1 pins one pressure dof, which removes the kernel;
-the same product is then O(1).
+the same relative product then measures 8.256e-03 instead of 2.939e-18, fifteen
+orders of magnitude above round-off.
+
+The pin must be spelled with the dof PAIR expected by a sub-space bc. The
+single-array spelling raises TypeError, and a mutation that dies of a TypeError
+proves nothing about the null space.
 """
 from __future__ import annotations
 
@@ -56,8 +61,14 @@ def main() -> int:
     Q0, q_map = W.sub(1).collapse()
     if MUTATE:
         pin = dolfinx.fem.Function(Q0)
+        # A dirichletbc on a SUB-space needs the dof pair (parent dofs,
+        # collapsed dofs). Passing a single array raises
+        # "TypeError: __init__(): incompatible function arguments", which
+        # would make the mutation look successful by crashing instead of by
+        # actually pinning the pressure.
         bcs.append(dolfinx.fem.dirichletbc(
-            pin, np.array([q_map[0]], dtype=np.int32), W.sub(1)))
+            pin, [np.array([q_map[0]], dtype=np.int32),
+                  np.array([0], dtype=np.int32)], W.sub(1)))
 
     A = dolfinx.fem.petsc.assemble_matrix(dolfinx.fem.form(a), bcs=bcs)
     A.assemble()
