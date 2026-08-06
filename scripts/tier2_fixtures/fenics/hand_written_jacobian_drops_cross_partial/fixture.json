@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#5: do NOT supply J to NonlinearProblem and do NOT reach for ufl.variable / ufl.diff -- dolfinx differentiates the residual exactly. The real risk is the hand-written Jacobian: drop one cross-species partial and Newton degrades to a linear iteration. Two-species 2A <-> B on a 16x16 unit square, P1 x P1, one backward-Euler step, no-flux boundaries (so no Dirichlet rows blur the matrix comparison). Observed on dolfinx 0.10.0: * dolfinx.fem.petsc.NonlinearProblem builds its Jacobian with derivative_block(F, u), whose docstring says \"This is identical to calling `ufl.derivative` directly\", and the two matrices assembled at the same state differ by exactly 0.000e+00. * ufl.diff(k1*a*a*b - k2*b, a) on a species pulled out with ufl.split raises ValueError: Expecting a Variable or SpatialCoordinate in diff. Wrapping the species in ufl.variable makes it compile, but the result is a VariableDerivative -- a scalar expression, not a bilinear form -- so it still has to be assembled by hand. * A hand Jacobian that drops the -k2*dB cross partial still solves, but takes more Newton iterations with a linear residual ratio instead of the 3 quadratic ones of the automatic Jacobian. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "calling `ufl.derivative` directly",
+    "auto_jacobian_equals_ufl_derivative_exactly=True",
+    "ValueError: Expecting a Variable or SpatialCoordinate in diff.",
+    "ufl_diff_on_a_split_species_raises=True",
+    "ufl_variable_diff_is_not_a_bilinear_form=True",
+    "hand_jacobian_reaches_the_same_solution=True",
+    "dropping_a_cross_partial_costs_more_iterations=True",
+    "dropping_a_cross_partial_makes_the_rate_linear=True",
+    "VERDICT=let_dolfinx_differentiate_the_residual"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=hand_jacobian_was_as_good"
+  ],
+  "timeout_seconds": 300
+}
