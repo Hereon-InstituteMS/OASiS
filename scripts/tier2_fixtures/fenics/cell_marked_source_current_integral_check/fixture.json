@@ -1,0 +1,17 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "staircase_relative_error_below_1_percent=True",
+    "total_current_off_by_more_than_5x=True",
+    "max_Az_off_by_more_than_10x=True",
+    "VERDICT=missing_cell_data_is_caught_by_the_current_integral"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=model_agrees_with_the_intended_coil"
+  ]
+}

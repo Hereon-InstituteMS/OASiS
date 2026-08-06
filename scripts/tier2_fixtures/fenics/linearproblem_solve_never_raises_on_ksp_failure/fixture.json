@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "docstring_states_user_must_assert_convergence=True",
+    "healthy_configurations_report_positive_reasons=True",
+    "failed_solve_raised=False",
+    "failed_reason_is_negative=True",
+    "output_written_after_failed_solve=True",
+    "VERDICT=solve_returned_normally_after_a_diverged_ksp"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=solve_reported_the_failure_itself"
+  ]
+}

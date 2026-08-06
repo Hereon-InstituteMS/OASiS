@@ -1,0 +1,18 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "TypeError: LinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'",
+    "typeerror_raised=True",
+    "petsc_int_type=int32",
+    "mumps_solve_reason_is_positive=True",
+    "VERDICT=petsc_options_prefix_is_required_and_mumps_is_available"
+  ],
+  "forbid_in_output": [
+    "VERDICT=prefix_is_optional",
+    "constructor_returned=True"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "magnitude_agrees_with_curl_reference=True",
+    "direction_agrees_with_curl_reference=False",
+    "alignment_is_minus_one=True",
+    "three_spellings_agree_for_Az_equal_y=True",
+    "curl_of_2d_scalar_shape=(2,)",
+    "curl_of_2d_vector_shape=()",
+    "both_ranks_compile_through_fem_form=True",
+    "scalar_curl_energy_equals_grad_energy=True",
+    "VERDICT=sign_flip_keeps_the_magnitude_and_reverses_the_field"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=hand_written_components_match_ufl_curl"
+  ]
+}
