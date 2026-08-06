@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve convection_diffusion#3 (swapping the IfPos arguments gives downwind advection, unconditionally unstable). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.5/0.3/0.2, L2 order 1 dgjumps=True, b=(1,0). 'Unconditionally' is checked where it lives -- in the spectrum of the semi-discrete operator -M^-1 A, formed densely. The upwind operator has every eigenvalue strictly in the left half-plane on all three meshes (max Re -6.0, -9.0, -10.7); the swapped one has eigenvalues with POSITIVE real part on all three (+8.0, +19.3, +29.8), which is why no time step can cure it, and the growth rate INCREASES under refinement so refining makes it worse. Marched at half the upwind explicit limit on the finest mesh, upwind decays to 4.6e-49 and the swapped run reaches 1.1e+30 over the same 300 steps. The two variants are built by one helper and differ only in the order of the IfPos arguments. Mutation: making the swapped branch use the upwind order removes the difference and the fixture fails on swapped_has_positive_growth_everywhere.",
+  "backend": "ngsolve",
+  "physics": "convection_diffusion",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "upwind_spectrum_in_left_half_plane_everywhere=True",
+    "swapped_has_positive_growth_everywhere=True",
+    "swapped_growth_rate_increases_under_refinement=True",
+    "unconditional_because_the_continuous_solution_grows=True",
+    "upwind_decays=True",
+    "swapped_grows_without_bound=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

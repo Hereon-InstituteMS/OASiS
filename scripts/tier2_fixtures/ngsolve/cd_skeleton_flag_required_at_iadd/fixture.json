@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve convection_diffusion#2 (a jump integrand needs skeleton=True). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3, L2 order 1 dgjumps=True. The literal NgException 'DG-facet terms need either skeleton=True or element_boundary=True' is exact, the prior catalog wording the claim rules out is absent, and the 'silently integrates against bulk dx' branch does not happen -- the form never reaches a usable state. CORRECTION, the same one dg_methods#2 carries: the exception comes from BilinearForm.__iadd__, not from .Assemble() as the Signal says, so a try/except wrapped around Assemble never sees it. The message names a SECOND accepted spelling and the fixture checks it is actionable: dx(element_boundary=True) assembles and produces the same 444 cross-element entries as dx(skeleton=True). Mutation: writing the bad form with skeleton=True removes the exception and the fixture fails on plain_dx_message_literal.",
+  "backend": "ngsolve",
+  "physics": "convection_diffusion",
+  "pitfall_index": 2,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "plain_dx_raised=True",
+    "plain_dx_message_literal=True",
+    "raised_at_iadd_not_assemble=True",
+    "assemble_never_reached=True",
+    "prior_catalog_wording_absent=True",
+    "no_silent_bulk_dx_integration=True",
+    "skeleton_couples_elements=True",
+    "messages_second_spelling_is_actionable=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

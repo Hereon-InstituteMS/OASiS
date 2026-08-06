@@ -1,0 +1,23 @@
+{
+  "_comment": "ngsolve convection_diffusion#4 (interior-penalty alpha: too small loses coercivity, too large ruins conditioning). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.5 and 0.3, L2 order 2, alpha swept 0.05 .. 1e5*order^2. A coercivity threshold does exist on both meshes and is monotone, and the claim's own rule of thumb 4*order^2 is on the coercive side. THREE CORRECTIONS. (a) 'Solution norm diverges with mesh refinement' does not happen: at the alphas that are non-coercive on BOTH meshes the norm ratio coarse-to-fine is 1.14 and 1.01, and the largest deviation from the rule-of-thumb value is 15% -- bounded, not divergent, so an agent watching the norm sees nothing. (b) 'LU pivots approach zero' is no warning either: the umfpack solve succeeds and returns a finite answer at every alpha, coercive or not. (c) cond(K) never reaches 1e14 by raising alpha -- at 1e5*order^2 it is 3.5e7 and the log-log slope against alpha is 1.0013, i.e. strictly linear, so 1e14 would need an alpha around 1e14. Mutation: pinning the penalty to a fixed 16/h so it stops tracking alpha makes lambda_min positive everywhere and flattens cond, and the fixture fails on threshold_found_on_both_meshes and cond_grows_linearly_in_alpha.",
+  "backend": "ngsolve",
+  "physics": "convection_diffusion",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "threshold_found_on_both_meshes=True",
+    "coercivity_monotone_in_alpha=True",
+    "rule_of_thumb_is_coercive=True",
+    "solution_norm_does_not_diverge_under_refinement=True",
+    "deviation_is_bounded_not_divergent=True",
+    "direct_solve_succeeded_at_every_alpha=True",
+    "lu_pivots_are_no_warning=True",
+    "cond_never_reaches_1e14=True",
+    "cond_grows_linearly_in_alpha=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

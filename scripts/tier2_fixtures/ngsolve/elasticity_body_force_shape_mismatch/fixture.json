@@ -1,0 +1,27 @@
+{
+  "_comment": "ngsolve linear_elasticity#1 (body-force CoefficientFunction must match the vector space's shape). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3 and unit_cube maxh 0.6, VectorH1 order 1. The correctly shaped source assembles to a non-zero load vector, and the rule really is 'match the space' -- a 3-tuple is the mismatch in 2D and the correct one in 3D, with the 2-tuple swapping roles. THREE CORRECTIONS to the Signal. (a) The failure point: both mismatches raise from LinearForm.__iadd__, never reaching .Assemble(), so a guard wrapped around Assemble as the Signal instructs sees neither. (b) The claim's OWN example, a scalar fx on a vector space, produces no dimension message at all -- the product is vector-valued and NGSolve says 'SymbolicLFI needs scalar-valued CoefficientFunction', the same string mhd#7 is about, so grepping for a dimension mismatch on the claim's own example finds nothing. (c) The 3-component case does give a dimension message but the literal text is \"Dimensions don't match, op = * dims1 = 0: 3, dims2 = 0: 2\" -- contracted, not the claim's 'dimensions do not match', so a substring guard written from the claim misses it. Mutation: passing the correct 2-tuple in the scalar branch removes that exception and the fixture fails on scalar_gives_the_symboliclfi_message.",
+  "backend": "ngsolve",
+  "physics": "linear_elasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "correct_2tuple_assembles=True",
+    "correct_2tuple_load_is_nonzero=True",
+    "scalar_gives_the_symboliclfi_message=True",
+    "scalar_gives_no_dimension_wording=True",
+    "scalar_raised_at_iadd=True",
+    "three_tuple_literal_is_contracted=True",
+    "three_tuple_reports_both_dims=True",
+    "three_tuple_raised_at_iadd=True",
+    "claimed_wording_in_neither_message=True",
+    "neither_reached_assemble=True",
+    "3d_three_tuple_assembles=True",
+    "3d_two_tuple_gives_dimension_message=True",
+    "rule_is_match_the_space=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

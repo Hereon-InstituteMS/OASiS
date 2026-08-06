@@ -1,0 +1,27 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#8 (solvers.Newton returns (status, numit), status FIRST). Run 2026-08-06 on NGSolve 6.2.2604: a Neo-Hookean cantilever on VectorH1 order 2, 4x1 domain maxh 0.4, solved twice at the SAME load and differing only in the iteration budget so both returns come from real solves. With maxit 12 the return is (0, 11); with maxit 2 it is (-1, 2). Both entries are ints and there is no float anywhere in the return, so 'there is no error value in the return at all' is checked rather than assumed, and the docstring's own 'first one is 0 if' is confirmed. Unpacking the SAME return value as (iters, conv) reproduces the damage the claim describes: the converged solve reports iters=0 and the failed one reports iters=-1. The error norm appears only in NGSolve's own line 'Warning: Newton might not converge! Error = ', captured at the file-descriptor level on the failing run and absent on the converged one; the fabricated wording 'Newton did not converge after' appears in neither. Mutation: giving the hard run maxit 12 as well makes it converge and the fixture fails on hard_first_entry_is_minus_one.",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "docstring_says_first_entry_is_the_status=True",
+    "return_is_a_two_tuple=True",
+    "both_entries_are_ints=True",
+    "no_float_in_the_return=True",
+    "easy_first_entry_is_zero=True",
+    "easy_second_entry_is_a_real_iteration_count=True",
+    "pair_is_status_then_numit=True",
+    "misreading_reports_iters_0_on_a_converged_solve=True",
+    "hard_first_entry_is_minus_one=True",
+    "misreading_reports_iters_minus_1_on_a_failed_solve=True",
+    "real_warning_present_on_the_hard_solve=True",
+    "fabricated_wording_absent=True",
+    "easy_solve_printed_no_warning=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
