@@ -1,0 +1,26 @@
+{
+  "_comment": "CLAIM hyperelasticity::5: [Physics] Saint-Venant-Kirchhoff unstable in compression. Use Neo-Hookean instead for any compression > ~30%. Signal: SolverControl knows nothing about Newton \u2014 it reports only on the INNER linear solve, so there is no 'Newton breakdown' for it to report. What you observe is your own Newton \u2026 WHAT THIS RUNS: -- probe \"svk_compression\" of the shared translation unit _shared/hyperelastic_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. A 1x1 block (4x4 Q1, roller ends) is walked down a displacement ladder in 5% steps to 60% compression, once with S = lambda tr(E) I + 2 mu E (Saint-Venant-Kirchhoff) and once with the compressible Neo-Hookean law. After every converged step the smallest eigenvalue of the tangent restricted to the free dofs is computed with LAPACK, which is the observable that actually reports the loss of stability. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: law_under_test=saint_venant_kirchhoff; svk_first_negative_tangent_eigenvalue_at_compression=0.4; neo_hookean_first_negative_tangent_eigenvalue_at_compression=-1; law_under_test_lost_positive_definiteness=true; claimed_non_monotone_newton_residual_observed=false; claimed_inner_solver_nan_observed=false; (+1 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 5,
+  "covers": [
+    "hyperelasticity::5"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "law_under_test=saint_venant_kirchhoff",
+    "svk_first_negative_tangent_eigenvalue_at_compression=0.4",
+    "neo_hookean_first_negative_tangent_eigenvalue_at_compression=-1",
+    "law_under_test_lost_positive_definiteness=true",
+    "claimed_non_monotone_newton_residual_observed=false",
+    "claimed_inner_solver_nan_observed=false",
+    "VERDICT=svk_loses_stability_in_compression_neo_hookean_does_not"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "converged=false",
+    "VERDICT=law_stays_stable_through_the_whole_ladder"
+  ],
+  "timeout_seconds": 600
+}

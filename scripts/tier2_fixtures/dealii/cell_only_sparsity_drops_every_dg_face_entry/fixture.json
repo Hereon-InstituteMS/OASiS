@@ -1,0 +1,33 @@
+{
+  "_comment": "CLAIM advection_dg::0: [API] Sparsity pattern must include face-coupling: DoFTools::make_flux_sparsity_pattern(). Signal: using the regular make_sparsity_pattern() on a DG discretization gives a matrix with missing off-diagonal entries for face-coupling DOFs; assembly then aborts with `SparseMatrix::add() requires \u2026 WHAT THIS RUNS: -- probe \"cell_only_sparsity\" of the shared DG translation unit _shared/dgip_family.cc, compiled once per build type and cached so every fixture that names a probe of that unit shares ONE C++ build. Upwind FE_DGQ(1) advection on a globally refined unit square, assembled into a matrix whose pattern came from DoFTools::make_sparsity_pattern instead of make_flux_sparsity_pattern. Both patterns are built for the same DoFHandler in every run, so the entry's cheap positive check is measured rather than asserted: 4608 against 1024 non-zeros, a ratio of 4.5. A dry run over the interior faces then counts 3584 entries the assembly wants that the cell-only pattern does not have. WHAT HAPPENS NEXT DEPENDS ON THE BUILD TYPE, so both run here: Release  rc=0. The Assert in SparseMatrix::add is compiled out, the face contributions are SILENTLY DROPPED, \"after_face_assembly\" is reached, and the answer is O(1) wrong (max difference 1.18 on a field of amplitude 1.18). Debug    rc=134, an ABORT from sparse_matrix.templates.h with the violated condition \"value == number()\" and the message \"You are trying to access the matrix entry with index <4,1>, but this entry does not exist in the sparsity pattern of this matrix\" -- \"after_face_assembly\" is never reached. Neither build raises anything a try/catch could see; the Debug path is an abort, which is why this fixture asserts on the exit code. The two greps check the two exception strings this entry and dg_transport::0 used to promise. Neither string is in any header or source of this tree. Mutation control: T2_MUTATE=1 makes the probe use DoFTools::make_flux_sparsity_pattern, and the fixture then fails its own expectations. OBSERVED, copied from the run: sparsity_builder=make_sparsity_pattern; flux_pattern_is_substantially_larger=true; face_coupling_entries_are_missing=true; summary_release_rc=0; summary_debug_rc=134; summary_release_reached_after_face_assembly=true; (+7 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "advection_dg",
+  "pitfall_index": 0,
+  "covers": [
+    "advection_dg::0",
+    "dg_transport::0"
+  ],
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "sparsity_builder=make_sparsity_pattern",
+    "flux_pattern_is_substantially_larger=true",
+    "face_coupling_entries_are_missing=true",
+    "summary_release_rc=0",
+    "summary_debug_rc=134",
+    "summary_release_reached_after_face_assembly=true",
+    "summary_debug_reached_after_face_assembly=false",
+    "value == number()",
+    "entry does not exist in the sparsity pattern of this matrix",
+    "answer_differs_from_the_correct_one=true",
+    "phantom_add_message_files=0",
+    "phantom_excmessage_files=0",
+    "VERDICT=cell_only_pattern_silently_drops_the_face_coupling"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=flux_pattern_holds_every_face_entry"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM dg_transport::1: [Syntax] FEInterfaceValues needed for face integrals (jump/average operators on cell interfaces). Using FEValues alone produces only cell-interior contributions. Signal: SolverGMRES converges but DataOut shows a smooth (non-DG) solution; jump-across-face values from \u2026 WHAT THIS RUNS: -- probe \"gmres_without_face_terms\" of the shared DG translation unit _shared/dg_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Upwind DG advection-reaction (FE_DGQ(1), b = (1, 0.3), sigma = 1, inflow datum 1 below y = 0.5 and 0 above) assembled with FEValues ONLY: the cell-interior and boundary-face terms are there, the FEInterfaceValues interior-face terms are not. A reaction term is present so the cell-local blocks stay invertible and the broken operator can actually be handed to a Krylov solver, which is what the entry's Signal presupposes. The entry's Signal has two halves and they do not agree with each other: \"SolverGMRES converges\"  -- TRUE. Jacobi-preconditioned GMRES reports convergence in 9 steps on the uncoupled operator, against 231 steps for the correctly assembled one. Nothing is raised in any build: the missing face terms are entries never written, not entries written wrongly. \"jump-across-face values are 1e-8 (effectively zero) ... where they should be O(1)\"  -- FALSE, and backwards. Omitting the interface terms decouples the cells (0 inter-cell matrix couplings against 1920), so nothing smooths anything: the answer is not a continuous-looking field but a per-cell blow-up of amplitude 1.1e5 where the inflow datum is bounded by 1, with a maximum interior jump of 1.6e5. The reference assembly in the same invocation is the one that shows the O(1) jump (0.80) the entry expects to be missing. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant (interior faces via FEInterfaceValues), and the fixture then fails its own expectations. OBSERVED, copied from the run: interior_face_terms=none_FEValues_only; cells_are_coupled=false; gmres_converged=true; jump_collapses_to_effectively_zero_as_the_claim_says=false; amplitude_exceeds_the_reference_by_an_order_of_magnitude=true; cells_uncoupled_and_jumps_are_not_small=true; (+1 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent. COVERS TRIMMED 2026-08-06: it also named convection_diffusion::1, which dg_without_feinterfacevalues_leaves_cells_uncoupled already owns. The two claims state the same defect for two physics rows and each has its own fixture; naming both here counts one claim twice and leaves the other reading as uncovered.",
+  "backend": "dealii",
+  "physics": "dg_transport",
+  "pitfall_index": 1,
+  "covers": [
+    "dg_transport::1"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "interior_face_terms=none_FEValues_only",
+    "cells_are_coupled=false",
+    "gmres_converged=true",
+    "jump_collapses_to_effectively_zero_as_the_claim_says=false",
+    "amplitude_exceeds_the_reference_by_an_order_of_magnitude=true",
+    "cells_uncoupled_and_jumps_are_not_small=true",
+    "VERDICT=omitting_feinterfacevalues_is_silent_and_leaves_the_cells_uncoupled"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=interface_terms_couple_the_cells"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM hyperelasticity::1: [Physics] MUST implement line search checking J=det(F) > 0. Without it, elements invert and the simulation crashes for any significant compression. Signal: assembly raises no such message exists in deal.II \u2014 there is no constitutive-model layer to raise it, so it has to be YOUR AssertThrow(J > 0, \u2026 WHAT THIS RUNS: -- probe \"det_f_guard\" of the shared translation unit _shared/hyperelastic_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Load control (body force 1600 in -y on a Neo-Hookean cantilever, 12x3 Q1), so the constraints stay homogeneous and the step length is free on every iteration: the ONLY difference between the two variants is whether the Newton step is backtracked until every quadrature point still has det F > 0. The probe also runs one assembly with the AssertThrow(J > 0, ...) guard the claim tells the user to write, to show that the message can only come from the user's own code. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: step_length=full_newton_step_alpha_1; det_F_went_non_positive=true; tangent_filled_with_nan=true; bending_inner_solver_message=SolverControl::NoConvergence Iterative method reported convergence failure in step 0. The residual in the last step was -nan.; own_assertthrow_message=det(F) <= 0 at quadrature point; VERDICT=unguarded_full_step_inverts_elements_silently. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 1,
+  "covers": [
+    "hyperelasticity::1"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "step_length=full_newton_step_alpha_1",
+    "det_F_went_non_positive=true",
+    "tangent_filled_with_nan=true",
+    "bending_inner_solver_message=SolverControl::NoConvergence Iterative method reported convergence failure in step 0. The residual in the last step was -nan.",
+    "own_assertthrow_message=det(F) <= 0 at quadrature point",
+    "VERDICT=unguarded_full_step_inverts_elements_silently"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=det_F_line_search_keeps_the_elements_valid"
+  ],
+  "timeout_seconds": 600
+}
