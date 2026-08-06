@@ -411,3 +411,46 @@ whose only observable is a solver failure that mostly does not occur; a wrong
 Newton residual converging FASTER onto a wrong answer; and these two couplings.
 Watching the solver never suffices. Comparing the answer against a reference
 does.
+
+---
+
+# A second checker withdrawn, and the hazard it failed to catch
+
+THE HAZARD IS REAL. `src/backends/fenics/backend.py` records that for 17 of
+FEniCSx's physics `src/tools/deep_knowledge.py` is CANONICAL, and the matching
+`KNOWLEDGE` dicts in `src/backends/fenics/generators/*.py` are "DEAD CODE and
+may have drifted — do NOT edit them and expect a behaviour change."
+
+I briefed an agent to correct three falsified entries "in src/backends/fenics/".
+Two of the three live in the dead half. It read the ordering comment, noticed,
+and put the corrections where they are served — which is the only reason that
+pass changed anything. A whole verification pass was one wrong assumption away
+from editing files nobody reads, and that failure mode is silent and cheerful:
+the edit applies, the tests pass, the diff looks right, the payload is untouched.
+
+THE CHECKER FOR IT DID NOT WORK. It compared, per physics name, the pitfall
+count written in a generator file against the count actually served. On its
+first real run it reported `boundary_conditions: served 6, generator file 3` —
+and that is not a divergence. `boundary_conditions` is a SUB-KEY that recurs
+under many different physics in the same file, each with its own short list;
+the checker's `max()` took the largest of those (3) and compared it against a
+served list (6) that is the union across physics. Two different things with the
+same name.
+
+Withdrawn rather than tuned. Comparing counts cannot distinguish "the same list
+in two places" from "two different lists that share a key", and the fix would
+need a structural model of how each backend assembles its knowledge — which is
+precisely the thing that differs per backend and defeated the AST reader in the
+coverage metric earlier.
+
+WHAT TO DO INSTEAD, since the hazard stands: name the canonical file in the
+brief. That is now the rule for any knowledge-correction task — establish where
+the served copy lives BEFORE editing, by reading the backend's own source-of-
+truth note or by asking the registry, and say so explicitly in the instruction.
+The agent that caught this did exactly that unprompted, and its report opens
+with the scope correction rather than burying it.
+
+That is two checkers withdrawn this session (the other: cross-library
+vocabulary, unsound for object-oriented APIs) against eight that shipped. Both
+withdrawals came from running the checker against real data and reading the
+first hit rather than the count.
