@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "advection_dg",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "matrix_under_test_is_indefinite=true",
+    "l2_error_under_test_diverges_under_refinement=false",
+    "solution_norm_under_test_grows_under_refinement=false",
+    "solution_norm_under_test_settles_under_refinement=true",
+    "l2_rate_under_test_reaches_order_one_point_five=true",
+    "cg_on_the_matrix_under_test_converged=true",
+    "huge_alpha_condition_number_above_1e14=false",
+    "huge_alpha_gmres_stagnated=true",
+    "VERDICT=under_penalised_sipg_loses_definiteness_but_not_the_rate"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=penalty_under_test_keeps_the_form_positive_definite"
+  ],
+  "timeout_seconds": 2400
+}

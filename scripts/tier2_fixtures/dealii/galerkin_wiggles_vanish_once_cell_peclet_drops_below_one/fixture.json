@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "phase_field",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "oscillation_under_test_while_cell_peclet_exceeds_one=true",
+    "oscillation_under_test_survives_several_refinements_above_peclet_one=true",
+    "oscillation_under_test_gone_once_cell_peclet_drops_below_one=true",
+    "VERDICT=scheme_under_test_oscillates_until_the_cell_peclet_drops_below_one"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=scheme_under_test_stays_inside_the_data_range"
+  ],
+  "timeout_seconds": 900
+}
