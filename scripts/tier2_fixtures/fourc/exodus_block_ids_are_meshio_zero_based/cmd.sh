@@ -32,7 +32,8 @@ ds.variables["eb_prop1"][:] += 1
 ds.close()
 for f in ("m_meshio.e", "m_patched.e"):
     ds = netCDF4.Dataset(f)
-    print("EB_PROP1_%s=%s" % (f.split(".")[0], list(ds.variables["eb_prop1"][:])))
+    print("EB_PROP1_%s=%s" % (f.split(".")[0],
+                              [int(v) for v in ds.variables["eb_prop1"][:]]))
     ds.close()
 PY
 
@@ -112,7 +113,7 @@ grep -m1 -F "cell-block 0 (): 1 cells of type hex8" "$TMP/ID1MESHIO.log"
 grep -m1 -F "cell-block 1 (): 1 cells of type hex8" "$TMP/ID1PATCHED.log"
 # The mismatched arm dies with no 4C diagnostic whatsoever.
 echo "MISMATCH_FOURC_ERROR_BLOCKS=$(grep -c 'PROC 0 ERROR' "$TMP/ID1MESHIO.log")"
-echo "MISMATCH_MENTIONED_THE_BLOCK_ID=$(grep -ci 'block.*id\|ID: 1' "$TMP/ID1MESHIO.log")"
+echo "MISMATCH_WARNED_ABOUT_THE_BLOCKS=$(grep -ci 'ELEMENT_BLOCKS\|no elements\|element block\|does not exist' "$TMP/ID1MESHIO.log")"
 grep -m1 -F "terminate called after throwing an instance of 'std::runtime_error'" "$TMP/ID1MESHIO.log"
 grep -m1 -F "umfpack_solve has error code: -3" "$TMP/ID1MESHIO.log"
 echo "CLAIMED_PRESSURE_MAP_EMPTY_TEXT=$(grep -ci 'Pressure map empty' "$TMP/ID1MESHIO.log")"

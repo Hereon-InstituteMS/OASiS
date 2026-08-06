@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#0, rule confirmed and Signal corrected. meshio 5.3.5 writes a one-hex ExodusII mesh with eb_prop1=[0] and the netCDF4 patch (eb_prop1 += 1) turns it into [1]; 4C echoes exactly that as 'cell-block 0 ()' and 'cell-block 1 ()' in its mesh summary. Pointing ELEMENT_BLOCKS at ID: 1 against the unpatched meshio mesh produces NO 4C diagnostic at all — zero PROC 0 ERROR blocks, zero mentions of ELEMENT_BLOCKS / no elements / element block anywhere in the log — and the run dies later inside the linear solver with \"terminate called after throwing an instance of 'std::runtime_error'\" and 'umfpack_solve has error code: -3', shell status 134. The claimed 'Pressure map empty' signal appears nowhere (0 occurrences). The only clue is the mesh-summary line disagreeing with the ID in the deck. Both correct spellings work and agree: ID: 0 against the meshio mesh and ID: 1 against the netCDF4-patched mesh each exit 0, pass the pinned dispy 4.47909266337460053e-03 at TOLERANCE 1e-12, and report the identical abs(diff) (FIX_REPRODUCES_THE_ANSWER=yes). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EB_PROP1_m_meshio=[0]",
+    "EB_PROP1_m_patched=[1]",
+    "EXIT_ID1MESHIO=134",
+    "EXIT_ID0MESHIO=0",
+    "EXIT_ID1PATCHED=0",
+    "cell-block 0 (): 1 cells of type hex8",
+    "cell-block 1 (): 1 cells of type hex8",
+    "MISMATCH_FOURC_ERROR_BLOCKS=0",
+    "MISMATCH_WARNED_ABOUT_THE_BLOCKS=0",
+    "terminate called after throwing an instance of 'std::runtime_error'",
+    "umfpack_solve has error code: -3",
+    "CLAIMED_PRESSURE_MAP_EMPTY_TEXT=0",
+    "processor 0 finished normally",
+    "ID0MESHIO_CORRECT=1",
+    "ID1PATCHED_CORRECT=1",
+    "FIX_REPRODUCES_THE_ANSWER=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_meshio_or_netcdf4",
+    "EB_PROP1_m_meshio=[1]",
+    "EXIT_ID0MESHIO=1",
+    "EXIT_ID1PATCHED=1",
+    "MISMATCH_FOURC_ERROR_BLOCKS=1",
+    "FIX_REPRODUCES_THE_ANSWER=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: name the block id meshio actually wrote. The UMFPACK abort vanishes, EXIT_ID1MESHIO becomes 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk 1 m_meshio.e  \"$TMP/id1_meshio.yaml\"",
+      "to": "mk 0 m_meshio.e  \"$TMP/id1_meshio.yaml\""
+    },
+    {
+      "note": "remove the recorded fix: stop patching eb_prop1 with netCDF4, so the 'patched' mesh is still 0-indexed. It then fails the same way the unpatched one does, EXIT_ID1PATCHED stops being 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "ds.variables[\"eb_prop1\"][:] += 1",
+      "to": "ds.variables[\"eb_prop1\"][:] += 0"
+    }
+  ]
+}

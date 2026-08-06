@@ -49,8 +49,11 @@ print("TOTAL_RVES=%d" % (8 * t.count('SOLID HEX8')))
 PY
 
 mpiprobe() {  # $1 = label, $2 = number of ranks
-  ( cd "$TMP" && mpirun -np "$2" --oversubscribe "$BIN" "$TMP/macro.yaml" "$TMP/o_$1" ) \
-      > "$TMP/$1.log" 2>&1
+  # --bind-to none matters: on a loaded box OpenMPI's default core binding can
+  # fail outright under --oversubscribe, which would turn a scheduling
+  # measurement into a spurious red.
+  ( cd "$TMP" && mpirun -np "$2" --oversubscribe --bind-to none \
+        "$BIN" "$TMP/macro.yaml" "$TMP/o_$1" ) > "$TMP/$1.log" 2>&1
   echo "EXIT_$1=$?"
 }
 mpiprobe NP1 1
