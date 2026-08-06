@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::active_contraction#3. A near-step activation (full amplitude in the first fiftieth of the run) and a linear ramp over the whole run, both under <analysis>STATIC</analysis>: both complete every step with exit 0, neither prints '------- failed to converge at time', and their final node positions agree to well within five decimal places. This is the executed form of the entry's own falsification of an older claim that a step change in T0 makes the first step fail and that SMOOTH interpolation is required. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "active_contraction",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "static_ramp_shape=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

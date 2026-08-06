@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::damage#0, and a NARROWING of it. The shipped deck ramps to three different amplitudes and cannot answer a two-identical-cycle question, so the fixture substitutes the 0 -> A -> 0 -> A history the claim prescribes and sweeps Dmax. Executed: the second cycle repeats the first to within a fraction of a percent at Dmax = 0, 0.3 AND 0.6, and is markedly softer only at 0.9. The claim said the peaks are \"bit-identical\" at 0 and 0.3 and that 0.6 AND 0.9 soften \u2014 the saturated peaks agree closely but not bit for bit, and 0.6 is on the saturated side. The fixture asserts the STRUCTURE (a saturated set, a softening set, and the saturated caps all below the softening ones) and deliberately does not pin the boundary, which is deck-dependent. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "damage",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "damage_cycles=reproduced_with_correction"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

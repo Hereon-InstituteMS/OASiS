@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::rigid_body#4. Reversing the node order of every quad4 on the block's top contact surface returns the FULL contact travel as interpenetration \u2014 as if no <Contact> section existed \u2014 while the run still reaches normal termination with exit 0, the same completed-step count as the correct run, and no ERROR or WARNING. The fixture asserts that indistinguishability, which is what makes a reversed surface dangerous. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "rigid_body",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "facet_winding=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::damage#3. <beta> on the `CDF Weibull` property is rejected at parse with 'tag \"beta\" (line N) : unrecognized tag'. With a small <mu> on a two-equal-cycle history the second cycle's peak equals the first to within a fraction of a percent while sitting far below the undamaged (Dmax = 0) reference \u2014 the knockdown was fully applied during cycle 1 \u2014 whereas the shipped <mu> still softens between cycles. The comparison against the undamaged reference is required, because equal peaks alone are equally consistent with a model that never damaged anything. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "damage",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "damage_scale=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

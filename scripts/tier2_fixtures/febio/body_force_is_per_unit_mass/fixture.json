@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::elasticity_mms#1. Doubling <density> alone on the generated MMS deck: both runs reach normal termination with exit 0 and no warning; every prescribed boundary node is unchanged to the last digit because they are Dirichlet; and the interior displacement scales by the density ratio. The boundary/interior split is the assertion \u2014 a uniform rescaling could be divided back out, and this is not one, which is why the error survives a smoke test. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "elasticity_mms",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "mms_density_coupling=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

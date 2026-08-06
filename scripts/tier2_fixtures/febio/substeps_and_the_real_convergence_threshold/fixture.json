@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::hyperelasticity#1. Four runs on the shipped cube at fixed t_end: neo-Hookean converges in ONE load step at 50% and at 300% nominal strain, so the \"10 substeps past 10% strain\" rule of thumb is wrong by orders of magnitude for a coupled material; Mooney-Rivlin fails in one step at 100% with 'N negative jacobians detected.' and converges in TWO. That last pair is the claim in one comparison \u2014 the failure is real, substeps are the fix, and the threshold is material-dependent and nowhere near 10%. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "hyperelasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "substep_threshold=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

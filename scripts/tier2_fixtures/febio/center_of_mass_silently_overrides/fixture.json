@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::rigid_body#6. A rigid body rotated 0.5 rad about x: omitting <center_of_mass> pivots it about its own geometric centre; writing <center_of_mass>0,0,5</center_of_mass> pivots it about that point and moves the body a long way; adding <override_com>1</override_com> gives a BIT-IDENTICAL result to the previous run, so the companion flag is neither needed nor effective. All three reach normal termination with exit 0 \u2014 the only detection is reading node positions back out. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "rigid_body",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "center_of_mass=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

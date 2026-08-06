@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::plasticity#0. H/E swept over three decades on the shipped uniaxial deck: every value runs to normal termination with exit 0 and no diagnostic, and the peak |sz| rises monotonically with H by more than a factor of two from the lowest ratio to the highest. That monotone rise is what makes \"a peak stress well above Y is the correct answer, not a missed yield\" checkable. The fixture computes the peaks; no number is carried in the catalogue text. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "plasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "hardening_sweep=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}
