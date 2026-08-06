@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#1, verified 2026-08-06 on skfem 12.0.1. Claim: W = mu/2(I1-2) - mu lnJ + lam/2 lnJ^2, and flipping the lnJ sign gives a symmetric-but-WRONG-SIGN tangent with the residual growing ~10x per Newton iteration; sanity: at F=I, P must be 0. Ran: hand-coded PK1 residual and exact tangent on MeshTri().refined(3) / ElementVector(ElementTriP1), 162 DOFs, mu=lam=1, left edge clamped, right edge pulled to 5% stretch, correct vs flipped sign side by side. Printed: the F=I residual is exactly 0 for the correct law and 1.369e+00 for the flipped one, so the claim's own sanity check discriminates before any step is taken; BUT the flipped tangent is symmetric AND positive definite (0 negative eigenvalues), so 'wrong sign' is not the mechanism and a definiteness check misses it; and there is no ~10x-per-iteration ramp -- the first Newton step overshoots the 5% BC to 1.18 peak displacement, det(F) goes non-positive, log(J) returns NaN, and every later residual is NaN (measured ratios all nan, steady-10x-growth=False). Fixture asserts the mechanism (F=I residual separates the signs; flipped stays definite; flipped overshoots and goes NaN while correct converges quadratically), not the magnitudes.",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "dofs_N=162",
+    "correct_stress_free_at_reference=True",
+    "flipped_stress_free_at_reference=False",
+    "F_eq_I_check_discriminates=True",
+    "flipped_tangent_symmetric=True",
+    "flipped_tangent_negative_eigenvalues=0",
+    "flipped_tangent_positive_definite=True",
+    "flipped_first_step_overshoots_bc_by_gt_10x=True",
+    "correct_converges_quadratically=True",
+    "flipped_reaches_nan=True",
+    "correct_stays_finite=True",
+    "flipped_shows_steady_10x_growth=False"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

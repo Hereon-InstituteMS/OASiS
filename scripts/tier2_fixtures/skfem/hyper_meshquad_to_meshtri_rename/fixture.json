@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#7, verified 2026-08-06 on skfem 12.0.1. Claim: MeshQuad.to_simplex() was renamed to .to_meshtri(); the legacy call raises AttributeError \"'MeshQuad1' object has no attribute 'to_simplex'\" and hasattr(...,'to_simplex') is False. Ran: MeshQuad.init_tensor on a 5x5 tensor grid (16 quads, 25 vertices), both hasattr probes, the legacy call, the modern call, and a Poisson stiffness assembly on both meshes. Printed: hasattr_to_meshtri=True, hasattr_to_simplex=False, the AttributeError message verbatim naming the CONCRETE class MeshQuad1; to_meshtri returns a MeshTri1 with 32 elements (exactly 2x the 16 quads) on the same 25 vertices; the triangulated stiffness matrix is the same 25x25 shape but SPARSER (105 non-zeros vs 169) because the split drops the quad's diagonal couplings, which is a structural fingerprint that the connectivity really changed.",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "skfem_version=",
+    "quad_class=MeshQuad1",
+    "hasattr_to_meshtri=True",
+    "hasattr_to_simplex=False",
+    "to_simplex_raises_AttributeError=True",
+    "object has no attribute 'to_simplex'",
+    "message_names_MeshQuad1=True",
+    "to_meshtri_is_MeshTri=True",
+    "each_quad_split_into_two_triangles=True",
+    "vertices_preserved=True",
+    "converted_mesh_assembles=True",
+    "same_vertex_count_but_sparser=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

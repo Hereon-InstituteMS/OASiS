@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#9, verified 2026-08-06 on skfem 12.0.1 / numpy 1.26.4. Claim: numpy's @ does not work on skfem (d,d,n_elem,n_quad) tensor fields; it tries the last-two-dims convention and aborts with 'matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?)'. Ran: A @ B on a (2,2,8,3) field, then on a (2,2,3,3) field, then einsum and skfem.helpers.mul on the same data. Printed: the (2,2,8,3) case raises ValueError with the quoted prefix verbatim (concrete tail '(size 8 is different from 3)' -- numpy contracted over the ELEMENT and QUADRATURE axes, not the tensor indices). NEW AND MORE DANGEROUS: when n_elem == n_quad the shapes are conformable and @ raises NOTHING -- it returns a right-shaped (2,2,3,3) array whose entries deviate from the true tensor product by 1.5e+01, i.e. a silent wrong contraction. helpers.mul and einsum both reproduce the true product to 0.000e+00. Fixture asserts both branches so the silent one cannot regress unnoticed.",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 9,
+  "mode": "python",
+  "expect_in_output": [
+    "skfem_version=",
+    "tensor_shape=(2, 2, 8, 3)",
+    "matmul_raises=True",
+    "matmul_exception_type=ValueError",
+    "quoted_prefix_matches=True",
+    "matmul_raises_when_nelem_eq_nqp=False",
+    "matmul_shape_looks_right=True",
+    "matmul_silently_wrong=True",
+    "helpers_mul_is_correct=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

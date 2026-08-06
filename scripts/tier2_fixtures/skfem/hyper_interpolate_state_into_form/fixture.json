@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#6, verified 2026-08-06 on skfem 12.0.1. Claim: use ib.interpolate(u) to get the displacement/gradient at quadrature points inside the form; touching u directly raises NameError, or with an outer closure computes against the LAST u instead of the current Newton iterate. Ran: MeshTri().refined(3), ElementVector(ElementTriP1), 162 DOFs, a bare undefined name in a kernel body, a form body that writes `u`, an assemble() with the state kwarg omitted, and six Newton steps toward a 10% stretch with the state passed through assemble(ib, disp=...) versus a factory-frozen closure. Printed: a bare undefined name raises NameError naming the identifier; a MISSING assemble kwarg raises KeyError naming 'disp'; but `u` itself IS bound inside a @BilinearForm (to the trial function), so writing u and meaning the displacement assembles a 162x162 matrix with no error at all -- a silent type confusion, not a NameError. The stale closure is the silent case: the kwarg Newton falls 2.14e-03 -> 4.29e-06 -> 4.09e-12 -> 5.03e-16 while the frozen closure returns EXACTLY 2.14e-03 at every one of six iterations, emits no warning, stays finite, and lands 6.4e-03 relative away from the correct solution.",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "dofs_N=162",
+    "bare_name_raises_NameError=True",
+    "name_u_inside_form_raises=False",
+    "name_u_is_bound_to_trial_function=True",
+    "missing_kwarg_raises_KeyError=True",
+    "missing_kwarg_names_the_key=True",
+    "kwarg_converges=True",
+    "frozen_converges=False",
+    "frozen_residual_stalls=True",
+    "frozen_warnings=[]",
+    "frozen_failure_is_silent=True",
+    "frozen_solution_finite=True",
+    "frozen_answers_differ=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

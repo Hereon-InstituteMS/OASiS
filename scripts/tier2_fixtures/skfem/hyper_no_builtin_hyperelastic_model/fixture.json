@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#0, verified 2026-08-06 on skfem 12.0.1. Claim: skfem ships no hyperelastic model and the only elasticity helper is linear_elasticity. Ran: probed 13 hyperelastic model names against skfem.models.elasticity and the skfem top level, and assembled linear_elasticity on ElementVector(ElementTriP1) over MeshTri().refined(2). Printed: `from skfem.models.elasticity import neohookean` raises ImportError('cannot import name neohookean from skfem.models.elasticity'); all 13 names absent from both namespaces; models.elasticity's public surface is exactly BilinearForm/ddot/eye/lame_parameters/linear_elasticity/linear_stress/plane_stress/sym_grad/trace; linear_elasticity assembles a 50x50 symmetric matrix with 480 non-zeros and gives an IDENTICAL matrix at a deformed state, i.e. it is state-independent and cannot stand in for a hyperelastic law.",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "skfem_version=",
+    "neohookean_import_raises_ImportError=True",
+    "hyperelastic_names_in_models_elasticity=[]",
+    "hyperelastic_names_in_skfem_toplevel=[]",
+    "no_hyperelastic_model_anywhere=True",
+    "linear_elasticity_present=True",
+    "linear_elasticity_assembles=True",
+    "linear_elasticity_nnz=480",
+    "linear_elasticity_state_independent=True",
+    "linear_elasticity_symmetric=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
