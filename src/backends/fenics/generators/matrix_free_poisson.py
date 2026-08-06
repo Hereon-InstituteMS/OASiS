@@ -86,11 +86,24 @@ KNOWLEDGE = {
         "RHS via `bc.set(b.array, alpha=0.0)` so the iterative "
         "solver doesn't try to update them. "
         "Signal: the CG iteration count balloons (>200) without "
-        "convergence; the final L2 error against the exact "
-        "solution (1 + x^2 + 2*y^2 on the unit square with f=-6) "
-        "is ~1e-1 instead of ~1e-6. Or: the boundary values in "
-        "the result are not equal to uD after `bc.set(u.x.array, "
-        "alpha=1.0)`.",
+        "convergence; against any manufactured solution the final "
+        "L2 error is around five orders of magnitude worse than a "
+        "correct run of the same problem — the failure is that "
+        "large, so it needs no reference value to recognise. Or: "
+        "the boundary values in the result are not equal to uD "
+        "after `bc.set(u.x.array, alpha=1.0)`.",
+        # This clause used to quote the dolfinx tutorial's demo problem — its
+        # closed-form solution and source term, on the unit square. Public
+        # rather than secret, but it still handed an agent a ready answer for any
+        # unit-square Poisson it might later be asked to solve, and the
+        # diagnostic never needed it: the tell is the SIZE of the error jump,
+        # not the value it jumps from. Stating the ratio keeps the knowledge and
+        # drops the answer.
+        #
+        # The removed form is deliberately NOT repeated here. The contamination
+        # gate scans comments as well as strings, and it caught this very
+        # comment when it first quoted what it was removing — correctly, because
+        # a form sitting in a comment is one copy-paste away from being served.
 
         "[Numerical] Custom CG without a preconditioner is the "
         "demonstration baseline — for ill-conditioned problems "

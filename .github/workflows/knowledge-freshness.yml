@@ -66,9 +66,45 @@ jobs:
         # the failure -- avoiding misleading issues if a second pytest
         # run produces different output (e.g. cache repopulated,
         # network hiccup resolved).
+        #
+        # THE ANTI-FABRICATION GATES BELONG HERE, and until 2026-08-06 none of
+        # them ran anywhere.  Eight of them existed and this job named three
+        # unrelated tests, so every one of them ran only when a human typed it.
+        # That is not a gate, it is a comment: on the day this was noticed the
+        # contamination check was failing on 10 of its 18 patterns, with 19
+        # leaked sites across 9 files -- including measured convergence orders
+        # in served payloads and an exact solution in closed form in the
+        # coupling knowledge, which is precisely what the evaluation grades.
+        # Nobody had disabled anything; the checks were simply never wired in,
+        # and a check nobody runs protects nothing.
+        #
+        # All of these are pure-Python and read only the tree, so they need no
+        # solver install and belong in this fast job:
+        #   contaminated      -- no measured answer / campaign id / exact
+        #                        solution reachable by an agent
+        #   format_contract   -- every pitfall keeps the [Category] tag and
+        #                        Signal: clause that retrieval indexes
+        #   discoverable      -- no knowledge area holds verified content that
+        #                        no surface enumerates
+        #   fixture_keys      -- a fixture's key names a claim that exists, so
+        #                        evidence cannot silently defend nothing
+        #   assembled_payload -- what the tool actually returns is clean
+        #   gate_cannot_see_answers
+        #
+        # test_quoted_diagnostics_are_real is deliberately NOT here: it needs
+        # each backend's own source tree to search, which a CI runner does not
+        # have, and it would report UNKNOWN for everything.  It runs on a
+        # machine with the solvers installed.
         run: |
           set -o pipefail
-          pytest tests/test_catalog_consistency.py tests/test_ingest_session.py tests/test_introspect.py -v -s 2>&1 | tee /tmp/catalog-test.log
+          pytest tests/test_catalog_consistency.py tests/test_ingest_session.py tests/test_introspect.py \
+                 tests/test_knowledge_not_contaminated.py \
+                 tests/test_pitfall_format_contract.py \
+                 tests/test_knowledge_is_discoverable.py \
+                 tests/test_fixture_keys_point_at_real_claims.py \
+                 tests/test_assembled_payload_is_clean.py \
+                 tests/test_gate_cannot_see_answers.py \
+                 -v -s 2>&1 | tee /tmp/catalog-test.log
         # Only swallow failures on the weekly cron so the auto-issue step
         # can still run.  On PRs and pushes we WANT the workflow to fail
         # so the check is gating.

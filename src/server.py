@@ -14,16 +14,15 @@ import logging
 
 from mcp.server.fastmcp import FastMCP
 
-# Ablation toggles for the HOE held-out evaluation. Off by default; the eval
-# protocol sets these per-condition for component-attribution analysis.
-# They never affect normal MCP usage.
-#   OFA_DISABLE_CRITIC=1   → strip the MANDATORY CRITIC paragraph from the
-#                            server instructions
-#   OFA_DISABLE_PITFALLS=1 → knowledge surfaces strip pitfall-DB content
-#                            (per-backend pitfalls incl. Signal: anchors,
-#                            post-mortems, cross-backend collation catalog);
-#                            implemented in tools/consolidated.py
-_ABLATE_CRITIC = os.environ.get("OFA_DISABLE_CRITIC", "0") == "1"
+# OFA_DISABLE_PITFALLS=1 → knowledge surfaces strip pitfall-DB content
+# (per-backend pitfalls incl. Signal: anchors, post-mortems, cross-backend
+# collation catalog); implemented in tools/consolidated.py. It only ever makes
+# OASiS weaker, so it cannot inflate a result.
+#
+# There was an OFA_DISABLE_CRITIC toggle here that stripped the critic
+# paragraph. The critic requirement is no longer a paragraph an agent may
+# choose to follow — the server holds the review record and checks it — so the
+# toggle is gone along with the runtime bypass it paired with.
 
 _CRITIC_BLOCK = (
     "- MANDATORY CRITIC: For every major step, spawn a sub-agent as an independent "
@@ -31,10 +30,31 @@ _CRITIC_BLOCK = (
     "setup, challenge parameter choices, verify the problem description is correct, "
     "look for bugs, check units, check discretization adequacy, and search online "
     "to validate against published literature and benchmarks. Only proceed to the "
-    "next step once the critic approves. This is not optional — always do it. "
-    "The run and coupling tools (run_simulation, run_with_generator, "
-    "coupled_solve, couple, couple_precice) take a critic_approved parameter "
-    "— set it to True only after the critic has approved.\n"
+    "next step once the critic approves. This is not optional — always do it.\n"
+    "- THIS IS ENFORCED, NOT REQUESTED. Setting critic_approved=True does NOT "
+    "make a result verified: OASiS looks the review up in its own record rather "
+    "than taking your word for it. After the critic reports, call "
+    "`submit_critic_review(solver=..., setup=<the exact deck you will run>, "
+    "findings=<what the critic actually checked and concluded>)`, then run. The "
+    "review is bound to that deck — edit it afterwards and it no longer counts, "
+    "so review the setup you intend to run. The gated tools are run_simulation, "
+    "run_with_generator, verify_mesh_independence, coupled_solve, couple and "
+    "couple_precice; the coupling ones take `coupling_args` (a JSON object of "
+    "the arguments you will pass) in place of `setup`.\n"
+    "- PROVE THE OUTPUT SOLVES THE PROBLEM. run_simulation and run_with_generator "
+    "take `verify_pde`: a JSON declaration of the problem, e.g. "
+    '{\"operator\": \"diffusion\", \"source\": \"2*pi**2*sin(pi*x)*sin(pi*y)\", '
+    '\"dim\": 2, \"domain_measure\": 1.0}. OASiS then assembles that operator on '
+    "the mesh your run produced and measures whether the field satisfies it. Use "
+    "it whenever the problem is a scalar diffusion/Poisson-type equation. The "
+    "source term is part of the problem statement, not the answer, so declaring "
+    "it gives nothing away. Without it, a field that is finite, structurally "
+    "sane and solves nothing passes every other check.\n"
+    "- REPORT NUMBERS OASiS COMPUTED. Every completed run returns "
+    "`oasis_computed`, with the L2 norm and maximum taken from the run's own "
+    "data files together with the file and its hash. Report those. Do not report "
+    "a number you read out of your script's print statements, and never one you "
+    "did not obtain from a run.\n"
 )
 
 logging.basicConfig(
@@ -52,8 +72,7 @@ mcp = FastMCP(
         # The critic requirement is safety-critical, so it goes FIRST: some MCP
         # clients truncate a server's instructions string when folding it into
         # the model's context, and a mid-string block can be dropped (issue #45).
-        + ("" if _ABLATE_CRITIC else
-           "## MANDATORY CRITIC — READ THIS FIRST\n" + _CRITIC_BLOCK + "\n")
+        + "## MANDATORY CRITIC — READ THIS FIRST\n" + _CRITIC_BLOCK + "\n"
         + "## Available Backends\n"
         "Call `discover(query='list')` for the current availability "
         "status on this install. The catalog ships generators for "
@@ -66,7 +85,7 @@ mcp = FastMCP(
         "- **NGSolve**: Python. Maxwell, Helmholtz, DG/HDG, high-order, eigenvalues, symbolic PDE.\n"
         "- **scikit-fem**: Pure Python. Assembly-level control, 50+ element types, Stokes, biharmonic.\n"
         "- **Kratos Multiphysics**: Python/JSON. Structural, fluid, FSI, DEM, MPM, CoSimulation (39 catalog physics rows on this install).\n"
-        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, VEM, h/p-adaptivity (install: `conda create -n ofa-dune -c conda-forge dune-fem` — the conda-forge channel is the supported path, not PyPI).\n"
+        "- **DUNE-fem**: Python/UFL. Shares UFL with FEniCS, DG methods, h/p-adaptivity (install: `pip install dune-fem`; also install `mpi4py`, which the wheel needs but does not declare. This line previously recommended `conda create -n ofa-dune -c conda-forge dune-fem` and called conda-forge the supported path rather than PyPI — that is backwards: the channel returns `No match found for: dune-fem`, and every working install on this machine came from PyPI, which `conda list` reports as `pypi_0`. Call `knowledge(topic='install')` before trying to install anything.).\n"
         "- **FEBio**: XML. Biomechanics (biphasic / multiphasic tissue, active contraction). Install the binary from https://febio.org/downloads/ or set the FEBIO_BINARY env var.\n\n"
         "## Workflow\n"
         "1. Understand the physics the user wants to solve\n"
@@ -79,6 +98,15 @@ mcp = FastMCP(
         "5. Cross-solver coupling: `coupled_solve(problem, solver_a, solver_b)`\n\n"
         "Other tools: `knowledge(topic, solver, physics)`, `discover(query)`, "
         "`examples(keyword, solver)`, `developer(action, solver)`, `generate_mesh(geometry)`\n\n"
+        "## Mesh independence\n"
+        "For any problem WITHOUT a manufactured/exact solution, do not report "
+        "results from a single mesh: run "
+        "`verify_mesh_independence(solver, input_template, resolution)` — it "
+        "re-runs the same problem at refined resolutions (template carries a "
+        "__RESOLUTION__ placeholder) and accepts the solution only if global "
+        "norms AND probe-point values stop changing materially. A NOT "
+        "CONVERGED verdict means refine further, never report the coarse "
+        "answer.\n\n"
         "## Key Principles\n"
         "- Always study real test files before writing input — use "
         "`examples(keyword, solver, action='search')`\n"

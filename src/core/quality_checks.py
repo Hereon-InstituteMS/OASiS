@@ -298,9 +298,24 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
     denom = max(abs(fa), abs(fb), 1e-30)
     rel = abs(fa + fb) / denom            # A exports +flux, B imports -flux → sum≈0
     if rel > rtol:
+        # Name the convention. The most common cause of this warning is not a
+        # non-conservative coupling but both sides exporting their flux with
+        # the SAME sign — which a correct coupling does if nobody said which
+        # normal to use. Saying only "not balanced" sends the agent looking for
+        # a physics bug that is not there.
+        same_sign = fa * fb > 0 and abs(abs(fa) - abs(fb)) / denom <= rtol
+        hint = (" The two magnitudes match but the signs agree, which is the "
+                "signature of a SIGN-CONVENTION error rather than a "
+                "conservation error: each participant must export the flux "
+                "through the interface with respect to ITS OWN outward normal, "
+                "and those normals are anti-parallel, so the two sums should "
+                "cancel. Note this is the opposite of the BC value you APPLY, "
+                "which is the same number on both sides."
+                if same_sign else "")
         w.append(
             f"Interface flux NOT balanced: net({label_a})={fa:.4g}, net({label_b})={fb:.4g}, "
             f"imbalance {rel:.1%} > {rtol:.0%} — coupling may be non-conservative (silent error)."
+            + hint
         )
     return w
 

@@ -1,17 +1,24 @@
 """Tests for the verification-gate verdict (_stamp_verification).
 
-OASiS enforces verification IN SOFTWARE: OASiS verifies via numerical checks and
-*attestation* — binding every reported number to run evidence — but does not
-validate. The independent pre-execution critic is MANDATORY: a result is
-trustworthy ONLY when it passes attestation + numerical checks AND the critic
-approved (critic_approved=True). Enforced by verdict, never by error. These tests
-pin exactly that, plus the anti-fabrication labelling and the eval ablation
-(OFA_DISABLE_CRITIC lifts only the critic requirement).
+OASiS enforces verification IN SOFTWARE: it verifies via numerical checks on the
+RUN (completed, produced output, finite / converged / balanced) but does not
+validate. It does NOT currently bind a reported NUMBER to that run — an audit
+showed an invented value attached to a real run still passes — so these tests
+pin what the gate actually does, not what it was once described as doing.
+
+The independent pre-execution critic is MANDATORY and UNCONDITIONAL: a result is
+trustworthy ONLY when it passes the numerical checks AND a critic review of that
+exact setup is on the server's record. `critic_approved=True` is a self-report
+and verifies nothing by itself; there is no environment switch that lifts the
+requirement. Enforced by verdict, never by error. These tests pin exactly that,
+plus the anti-fabrication labelling.
 """
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 SRC = str(Path(__file__).resolve().parent.parent / "src")
 sys.path.insert(0, SRC)
@@ -19,9 +26,47 @@ sys.path.insert(0, SRC)
 from tools.consolidated import _stamp_verification  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _fresh_critic_registry(monkeypatch):
+    """Each test gets its own review record.
+
+    Without this, a review registered by one test verifies a LATER test's run:
+    the registry is module-level, and several tests here share the same solver
+    and the same one-line deck, so their digests collide. That was observed —
+    an unreviewed-run test came back "reviewed (submitted review matches this
+    setup)" and passed for entirely the wrong reason. Shared critic state
+    manufactures exactly the false green this whole gate exists to prevent.
+    """
+    import tools.consolidated as _C
+    from core.critic_gate import CriticRegistry
+    monkeypatch.setattr(_C, "_CRITIC_REGISTRY", CriticRegistry())
+
+
+def _review_on_record(solver: str, setup_text: str) -> None:
+    """Register a critic review the way an agent must.
+
+    The gate resolves the critic from the server's own record, not from the
+    caller's `critic_approved` flag, so a test that wants a VERIFIED verdict
+    has to put a review there first. Tests that skip this step are asserting
+    the behaviour of an unreviewed run, which is the interesting case anyway.
+    """
+    # Use the ONE definition rather than rebuilding it. This helper used to
+    # call `setup_digest` directly and so became a third, stale copy the moment
+    # referenced-file fingerprinting was added — four gate tests went red while
+    # the gate itself was correct.
+    from tools.consolidated import _CRITIC_REGISTRY, review_digest
+    _CRITIC_REGISTRY.submit_review(
+        solver=solver, digest=review_digest(solver, setup_text),
+        findings="Checked the problem statement, boundary conditions, units "
+                 "and discretisation against the stated physics; no issues "
+                 "found that would invalidate the run.")
+
+
 def test_evidence_and_critic_is_verified():
-    # A verified result needs BOTH attestation and the mandatory critic.
-    r = _stamp_verification({}, evidence_ok=True, critic_approved=True)
+    # A verified result needs BOTH run evidence and the mandatory critic.
+    _review_on_record("skfem", "deck")
+    r = _stamp_verification({}, evidence_ok=True, critic_approved=True,
+                            solver="skfem", setup_text="deck")
     assert r["trustworthy_result"] is True
     assert r["verification"].startswith("VERIFIED")
     # Verification is not validation — the verdict must say so.
@@ -42,14 +87,28 @@ def test_critic_is_mandatory_for_trust():
     """The whole point of OASiS: verification is enforced in software. A run that
     passes every automated check but was NOT reviewed by the mandatory critic is
     still NOT verified — enforced by verdict, not by an error."""
-    with_critic = _stamp_verification({}, evidence_ok=True, critic_approved=True)
-    without = _stamp_verification({}, evidence_ok=True, critic_approved=False)
+    _review_on_record("skfem", "mandatory-critic-deck")
+    with_critic = _stamp_verification({}, evidence_ok=True, critic_approved=True,
+                                      solver="skfem",
+                                      setup_text="mandatory-critic-deck")
+    without = _stamp_verification({}, evidence_ok=True, critic_approved=False,
+                                  solver="skfem", setup_text="unreviewed-deck")
     assert with_critic["trustworthy_result"] is True
     assert without["trustworthy_result"] is False        # critic is MANDATORY
     assert without["verification"].startswith("NOT VERIFIED")
     assert "MANDATORY" in without["verification"]
-    assert with_critic["critic_review"] == "approved"
-    assert "REQUIRED" in without["critic_review"]
+    # The note names WHERE the approval came from — a server-side record, not
+    # the caller's assertion.
+    assert "reviewed" in with_critic["critic_review"]
+    # Two distinct ways to be unreviewed, and the note must tell them apart:
+    # nothing reviewed for this solver at all …
+    never = _stamp_verification({}, evidence_ok=True, critic_approved=False,
+                                solver="dealii", setup_text="anything")
+    assert never["trustworthy_result"] is False
+    assert "no critic review is on record" in never["critic_review"]
+    # … versus a review that exists but was for a different setup, which is the
+    # review-a-clean-deck-then-run-another-one route.
+    assert "changed after it was reviewed" in without["critic_review"]
 
 
 def test_failed_checks_stay_unverified_even_with_critic_approved():
@@ -59,25 +118,42 @@ def test_failed_checks_stay_unverified_even_with_critic_approved():
     assert r["trustworthy_result"] is False
 
 
-def _critic_review_under_ablation() -> str:
+def _trust_under_env(**extra_env) -> str:
+    """What verdict does an evidence-backed but unreviewed run get, under an
+    environment an evaluation harness might plausibly be running with?"""
     code = ("import sys; sys.path.insert(0, %r);"
             "from tools.consolidated import _stamp_verification;"
-            "r=_stamp_verification({}, evidence_ok=True, critic_approved=False);"
-            "print(r['critic_review']); print(r['trustworthy_result'])" % SRC)
-    env = dict(os.environ, OFA_DISABLE_CRITIC="1")
+            "r=_stamp_verification({}, evidence_ok=True, critic_approved=True,"
+            "                      solver='skfem', setup_text='deck');"
+            "print(r['trustworthy_result'])" % SRC)
+    env = dict(os.environ, **extra_env)
     out = subprocess.run([sys.executable, "-c", code], env=env,
                          capture_output=True, text=True, timeout=120)
     assert out.returncode == 0, out.stderr[-2000:]
-    return out.stdout
+    return out.stdout.strip()
 
 
-def test_ablation_lifts_the_mandatory_critic_requirement():
-    """OFA_DISABLE_CRITIC (the held-out eval's ablation) lifts ONLY the mandatory
-    critic requirement, so an evidence-backed run verifies without critic
-    approval — this is how the eval measures the critic's contribution."""
-    review, trust = _critic_review_under_ablation().splitlines()
-    assert review == "disabled for evaluation"
-    assert trust == "True"   # under ablation, attestation alone verifies
+def test_no_environment_variable_lifts_the_mandatory_critic_requirement():
+    """This test used to assert the OPPOSITE.
+
+    OFA_DISABLE_CRITIC was an ablation switch that lifted the mandatory-critic
+    requirement, so an unreviewed run came back VERIFIED. A mandatory gate with
+    an environment-variable off-switch is not mandatory: a stray export, a
+    harness default, or a copied shell script silently converts every verdict in
+    a campaign, and nothing in the output says so. The switch is removed, and
+    the ablation arm it existed for is not run — the design is OASiS or no
+    OASiS. What is asserted here is that setting it now changes nothing.
+    """
+    assert _trust_under_env(OFA_DISABLE_CRITIC="1") == "False"
+    assert _trust_under_env() == "False"
+
+
+def test_a_tool_that_does_not_identify_its_setup_fails_closed():
+    """A caller that cannot say what it ran cannot have had that thing
+    reviewed, so the gate must refuse rather than wave it through."""
+    r = _stamp_verification({}, evidence_ok=True, critic_approved=True)
+    assert r["trustworthy_result"] is False
+    assert "did not identify its setup" in r["critic_review"]
 
 
 # ── Finiteness scan (attestation's numeric side) ─────────────────────────
@@ -217,6 +293,7 @@ def _run_sim(backend, **kw):
 
 def test_run_simulation_verified_with_finite_output_and_critic(tmp_path):
     f = tmp_path / "out.vtu"; _write_vtu(f, [1.0, 2.0, 3.0, 4.0])
+    _review_on_record("fenics", "print('x')")   # _run_sim's deck
     d = _run_sim(_Backend([f]), critic_approved=True)
     assert d["status"] == "completed"
     assert d["trustworthy_result"] is True
@@ -257,7 +334,9 @@ def test_run_simulation_no_output_is_completed_unverified(tmp_path):
     d = _run_sim(_Backend([]), critic_approved=True)
     assert d["status"] == "completed_unverified"
     assert d["trustworthy_result"] is False
-    assert d["critic_review"] == "approved"   # critic set, but no run evidence
+    # The claim is recorded and contradicted rather than silently accepted:
+    # asserting approval with no review on record is itself worth reporting.
+    assert "critic_approved=True" in d["critic_review"]
 
 
 def test_run_simulation_error_is_not_verified(tmp_path):
@@ -285,6 +364,11 @@ def _run_precice(logs, converged=True, **kw):
 
 
 def test_couple_precice_verified_on_clean_logs():
+    from tools.consolidated import _coupling_setup_text
+    _review_on_record("couple_precice", _coupling_setup_text(
+        participants='[{"name":"A"},{"name":"B"}]', data="[]", exchanges="[]",
+        scheme="serial-explicit", dimensions=2, max_time=10.0,
+        time_window=1.0))
     d = _run_precice({"B": "coupling ok, residual 1e-9"}, critic_approved=True)
     assert d["trustworthy_result"] is True
 

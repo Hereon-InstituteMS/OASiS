@@ -28,9 +28,99 @@ logger = logging.getLogger("oasis.fourc")
 FOURC_ROOT = Path(os.environ["FOURC_ROOT"]) if os.environ.get("FOURC_ROOT") else None
 
 
+_FOURC_IDENT_CACHE: dict[str, tuple[bool, str]] = {}
+
+
+def _identifies_as_fourc(binary) -> tuple[bool, str]:
+    """Does this executable actually identify itself as 4C?
+
+    Cheap and conservative. 4C prints its usage to stderr and exits non-zero
+    when run with no arguments, and that text names the program — so the check
+    is "run it with no arguments and look for 4C's own vocabulary". Anything
+    that produces neither is not 4C.
+
+    Deliberately fails OPEN on an inability to look (timeout, permission,
+    OSError): a check that cannot run must not condemn a working install. It
+    fails CLOSED only when the program ran and said something that is not 4C,
+    which is the case that matters — `/bin/true` runs, says nothing, and used to
+    be reported as an available solver.
+
+    Cached per path, because `check_availability` is called repeatedly by
+    `discover` and every knowledge surface, and this spawns a process.
+    """
+    import subprocess
+
+    key = str(binary)
+    if key in _FOURC_IDENT_CACHE:
+        return _FOURC_IDENT_CACHE[key]
+
+    verdict: tuple[bool, str]
+    try:
+        # stdin MUST be closed. An audit pointed this at `/bin/cat`, which
+        # consumed the PARENT's entire stdin and made the verdict a function of
+        # that text; pointed at a real solver it hung the full timeout and then
+        # failed open. Under an MCP stdio server the parent's stdin is the
+        # JSON-RPC stream, so an identity probe could eat the protocol.
+        r = subprocess.run([key], capture_output=True, timeout=20,
+                           stdin=subprocess.DEVNULL)
+        blob = (r.stdout + r.stderr).decode("utf-8", errors="replace").lower()
+        # 4C's banner names itself in full. The first version matched "4c",
+        # "dat file" and "input file", all of which are far too weak: "4c" is
+        # two characters, so `/bin/pwd` and `/bin/ls` pass whenever the working
+        # directory contains it, and `/usr/bin/env` passes whenever ANY
+        # environment variable does — which is the normal state for a 4C user,
+        # since LD_LIBRARY_PATH=/opt/4C-dependencies/lib contains it. And
+        # "input file" passes `/usr/bin/gcc`, whose no-argument output is "no
+        # input files". Four measured false positives from three sloppy tokens.
+        # What 4C ACTUALLY emits with no arguments, measured rather than
+        # assumed: it does not print a banner at all. It throws
+        # `FourC::Core::Exception` with "Please provide both <input> and
+        # <output> arguments." and aborts. An audit recommended matching the
+        # project's full name, "Comprehensive Computational Community Code" —
+        # that appears in the banner on a successful start, NOT on this path, so
+        # matching it refused the real binary. Both the first token set and its
+        # proposed replacement were wrong in opposite directions, which is why
+        # this now uses strings taken from the observed output.
+        #
+        # `fourc::` is the C++ namespace and is specific enough on its own: no
+        # ordinary executable emits it. The argument message is a second,
+        # independent witness.
+        markers = ("fourc::", "provide both <input> and <output>", "lib4c.so")
+        if not blob.strip():
+            verdict = (False, "produced no output at all when run with no "
+                              "arguments; 4C aborts with a named exception")
+        elif any(t in blob for t in markers):
+            verdict = (True, "identified itself")
+        else:
+            verdict = (False, "its output carries none of 4C's own markers: "
+                              + " ".join(blob.split())[:120])
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        # Could not look — do not accuse a possibly-working install.
+        # ValueError is deliberately NOT caught here: UnicodeDecodeError is a
+        # ValueError, so catching it sent every non-UTF-8 binary down the
+        # fail-open path and ACCEPTED it (`/usr/bin/gzip` passed). Decoding is
+        # now explicit with errors="replace", so there is nothing left for a
+        # ValueError to mean except a real bug, which should surface.
+        verdict = (True, f"identity not checked ({type(exc).__name__})")
+
+    _FOURC_IDENT_CACHE[key] = verdict
+    return verdict
+
+
 def _find_fourc_binary() -> Optional[Path]:
     """Locate the 4C binary."""
+    # An explicit override that does not resolve must not fall through to the
+    # search path — see the FEBio equivalent for what that costs. Kept as a
+    # warning-and-None here rather than an exception, because this finder is
+    # called from more places than FEBio's and a raise would change behaviour
+    # in paths I have not tested.
     env_path = os.environ.get("FOURC_BINARY")
+    if env_path and not Path(env_path).is_file():
+        logger.warning(
+            "FOURC_BINARY is set to %r, which is not a file; NOT falling back "
+            "to the search path, because the binary OASiS tests must be the one "
+            "you named", env_path)
+        return None
     if env_path and Path(env_path).is_file():
         return Path(env_path)
     if FOURC_ROOT:
@@ -81,6 +171,20 @@ class FourcBackend(SolverBackend):
         local_gen = Path(__file__).parent / "generators" / "__init__.py"
         if not local_gen.exists():
             return BackendStatus.MISCONFIGURED, "4C generators not found in oasis"
+
+        # Confirm the binary IS 4C, not merely that a file exists and is
+        # executable. `FOURC_BINARY=/bin/true` used to report
+        # "available — 4C at /bin/true", so a stale path, a wrong build, or a
+        # same-named program on PATH was indistinguishable from a working
+        # install. An agent consults `discover`, believes it, and every run then
+        # fails for a reason the availability report has already ruled out —
+        # which is the worst place to be wrong.
+        ident_ok, ident_why = _identifies_as_fourc(binary)
+        if not ident_ok:
+            return BackendStatus.MISCONFIGURED, (
+                f"the binary at {binary} does not identify itself as 4C "
+                f"({ident_why}). Point FOURC_BINARY at a real 4C build; a file "
+                f"that merely exists and is executable is not a solver.")
         return BackendStatus.AVAILABLE, f"4C at {binary}"
 
     def input_format(self) -> InputFormat:
@@ -92,7 +196,7 @@ class FourcBackend(SolverBackend):
             return None
         import subprocess
         try:
-            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5, stdin=subprocess.DEVNULL)
             for line in r.stdout.splitlines():
                 if "version" in line.lower():
                     return line.strip()
@@ -1370,10 +1474,12 @@ class FourcBackend(SolverBackend):
             # thermo_transient_mms/temporal_mms_2d: unsteady-heat MMS
             # family graded on TEMPORAL convergence order. Fixed fine
             # mesh keyed off "n" (capped in the inline builder),
-            # dt-halving to the same T_end; One-Step-Theta is
-            # theoretically 2nd order at theta=0.5 and 1st order at
-            # theta=1.0 — grade the actual order from the run's own
-            # Richardson differences. The volumetric
+            # dt-halving to the same T_end, so the only thing varying
+            # is dt. One-Step-Theta is 2nd-order in time at theta=0.5
+            # and 1st-order at theta=1; grade theta=0.5 from Richardson
+            # differences of consecutive-dt solutions rather than from
+            # an error-vs-exact table, which saturates at the fixed
+            # mesh's spatial floor. The volumetric
             # MMS source goes through the PLAIN "DESIGN SURF NEUMANN
             # CONDITIONS" — the THERMO-prefixed Neumann sections are
             # silently ignored in standalone Thermo (see the
@@ -1555,7 +1661,18 @@ class FourcBackend(SolverBackend):
         mesh_rel = tutorials[key][1]
         mesh_path = FOURC_ROOT / "tests" / mesh_rel
         if mesh_path.exists():
-            content = f"# MESH_FILE: {mesh_path}\n" + content
+            # Give the RELATIVE location as well as the resolved one. The
+            # absolute path is what this host needs to run the deck, but it is
+            # also what an agent copies — and a served deck naming
+            # `/home/<someone>/4C/tests/...` is a dead end on every other
+            # machine. These meshes ship WITH 4C, so anyone who has 4C has them;
+            # only the prefix differs. Naming FOURC_ROOT turns an unusable
+            # absolute path into a locatable one.
+            content = (f"# MESH_FILE: {mesh_path}\n"
+                       f"# MESH_FILE_RELATIVE: $FOURC_ROOT/tests/{mesh_rel}"
+                       f"  (ships with 4C; the absolute path above is this "
+                       f"host's — resolve it against your own FOURC_ROOT)\n"
+                       + content)
         return content
 
     def _resolve_mesh_references(self, content: str) -> str:
@@ -1567,7 +1684,15 @@ class FourcBackend(SolverBackend):
             mesh_name = match.group(1)
             # Search for the mesh in tests/
             for mesh_path in FOURC_ROOT.rglob(mesh_name):
-                content = f"# MESH_FILE: {mesh_path}\n" + content
+                try:
+                    rel = mesh_path.relative_to(FOURC_ROOT)
+                except ValueError:
+                    rel = mesh_path.name
+                content = (f"# MESH_FILE: {mesh_path}\n"
+                           f"# MESH_FILE_RELATIVE: $FOURC_ROOT/{rel}"
+                           f"  (the absolute path above is this host's — "
+                           f"resolve it against your own FOURC_ROOT)\n"
+                           + content)
                 break
         return content
 

@@ -393,12 +393,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "matrix", "vector_norm",
             "energy_norm", "L2_norm", "H1_norm",
             "solver_iterations", "iter_count",
-            # ── PETSc-status tokens that NGSolve also surfaces
-            #    via krylovspace bindings ──────────────────────
-            "KSPSolve", "KSP",
-            "DIVERGED_INDEFINITE_PC",
-            "DIVERGED_BREAKDOWN", "DIVERGED_MAX_IT",
-            "DIVERGED_FNORM_NAN", "DIVERGED_INF",
+            # PETSc status tokens were allowlisted here, justified as ones
+            # "NGSolve also surfaces via krylovspace bindings". Measured:
+            # `strings -n 6` over NGSolve's shared library finds NO PETSc KSP
+            # strings at all. The knowledge was telling agents to watch for
+            # `KSPSolve: DIVERGED_BREAKDOWN` and `DIVERGED_INDEFINITE_PC` from a
+            # library that cannot emit them, and this list was what let those
+            # Signals pass tier 0. Removed. If an NGSolve build ever links
+            # PETSc, re-add them after confirming the strings are present in
+            # THAT build rather than on the strength of a plausible comment.
             "DivisionByZero", "ZeroDivisionError",
             # ── NGSolve special CoefficientFunctions / normals
             "specialcf", "normal", "tangential",
@@ -1136,10 +1139,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Newtonian", "Carreau", "Bingham",
             "fluid_solute", "isotropic_Fourier",
             "Bauschinger_shift", "yield_stress",
-            # ── Solver / NOX-status tokens that real FEBio logs
-            #    emit ───────────────────────────────────────────
-            "NOX", "FullNewton", "BFGS", "Quasi",
-            "DIVERGED_LINE_SEARCH", "DIVERGED_FNORM_NAN",
+            # `NOX`, `DIVERGED_LINE_SEARCH` and `DIVERGED_FNORM_NAN` were
+            # allowlisted here as "tokens that real FEBio logs emit". They are
+            # Trilinos and PETSc names and FEBio links NEITHER — confirmed
+            # against febio4 and all twelve of its shared libraries. An audit
+            # found 25 fabricated FEBio Signals, and this entry is why they
+            # passed: the gate was made green by declaring the fabrications
+            # real. FullNewton/BFGS/Quasi are genuine FEBio solver names and
+            # stay.
+            "FullNewton", "BFGS", "Quasi",
             "MaxIters", "lc", "load_controller",
             "step_size", "dt_0", "Jacobian",
             "max_refs", "max_ups", "Rtol", "Etol",
@@ -1158,10 +1166,12 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "rigid_displacement", "shedding_period",
             # ── Output / runtime helpers ─────────────────────────
             "write_vtu", "post_vtu", "xplt", "plt",
-            # ── More FEBio runtime / PETSc-via-FEBio identifiers
-            #    extracted from actual error logs and catalog
-            #    Signal: prose ──────────────────────────────────
-            "KSPSolve", "ALE", "Hookean", "HGO",
+            # A second `KSPSolve` sat here, described as a "PETSc-via-FEBio"
+            # identifier "extracted from actual error logs". FEBio links no
+            # PETSc, so no log can have contained it. Two separate entries in
+            # one backend's list, both with a confident provenance note, is why
+            # this now has a guard rather than a code review.
+            "ALE", "Hookean", "HGO",
             "Holzapfel_Gasser_Ogden",
             "kappa", "fiber", "Elements", "node",
             "prescribed", "concentration", "sol",

@@ -121,7 +121,7 @@ def _find_dune_python() -> Optional[str]:
     for python in ordered:
         try:
             result = subprocess.run(
-                [python, "-c", "import dune.fem; print('OK')"],
+                [python, "-c", "import dune.fem; print('OK')"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=30,
             )
             if result.returncode == 0:
@@ -148,7 +148,7 @@ def _interpreter_prefix(python: str) -> str:
     import subprocess
     try:
         out = subprocess.run(
-            [python, "-c", "import sys; print(sys.prefix)"],
+            [python, "-c", "import sys; print(sys.prefix)"], stdin=subprocess.DEVNULL,
             capture_output=True, text=True, timeout=15,
         )
         if out.returncode == 0 and out.stdout.strip():

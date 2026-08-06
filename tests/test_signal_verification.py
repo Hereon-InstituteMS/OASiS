@@ -580,6 +580,23 @@ class TestHarnessSelfChecks(unittest.TestCase):
         by scripts/run_tier2_fixtures.py) and fails if the
         passed count drops below TestDealiiSignalFloor.
         MIN_TIER2_RUNNER_PASSED.
+
+        WHAT THIS DOES AND DOES NOT ESTABLISH. It reads a
+        COMMITTED snapshot; it does not run a fixture. So a green
+        result means "the recorded number has not regressed", NOT
+        "the fixtures pass on this machine" — and the file travels
+        with the repo, so without a currency check every user gets
+        our result reported as theirs. An audit found exactly that:
+        the snapshot was 18 commits stale, recording `passed: 113`
+        on a host where 7 passed and 10 failed, and this test was
+        green even with the backend's binary hidden.
+
+        The fingerprint below is the currency check. It identifies
+        the fixture SET the snapshot describes, so a fixture added,
+        deleted or edited since makes the summary detectably stale
+        instead of silently wrong. A missing fingerprint is treated
+        as stale rather than waved through, because "we cannot tell"
+        must never read as "fine".
         """
         import json
         from pathlib import Path
@@ -591,6 +608,26 @@ class TestHarnessSelfChecks(unittest.TestCase):
                 "present — run scripts/run_tier2_fixtures.py "
                 "first")
         data = json.loads(path.read_text(encoding="utf-8"))
+
+        # Currency first: a number describing a different fixture set says
+        # nothing about this one.
+        sys.path.insert(0, str(repo / "scripts"))
+        from run_tier2_fixtures import fixture_inventory_fingerprint
+        live = fixture_inventory_fingerprint()
+        recorded = data.get("fixture_fingerprint")
+        self.assertIsNotNone(
+            recorded,
+            "tier2_results.json carries no fixture_fingerprint, so there is no "
+            "way to tell whether its counts describe the fixtures now in the "
+            "tree. Re-run scripts/run_tier2_fixtures.py --write-results. An "
+            "unverifiable floor must not report as green.")
+        self.assertEqual(
+            recorded, live,
+            "tier2_results.json summarises a DIFFERENT fixture set than the one "
+            "in the tree — a fixture was added, deleted or edited since it was "
+            "written, so its passed count does not describe these fixtures. "
+            "Re-run scripts/run_tier2_fixtures.py --write-results.")
+
         passed = data.get("summary", {}).get("passed", 0)
         self.assertGreaterEqual(
             passed,

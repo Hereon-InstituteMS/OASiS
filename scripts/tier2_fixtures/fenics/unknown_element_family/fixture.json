@@ -2,7 +2,7 @@
   "_comment": "Tier-2: FEniCSx (dolfinx) raises ValueError 'Unknown element family' when basix is asked for a family it doesn't have. Generic name-typo Signal family \u2014 pitfall index 96 reserved for cross-cutting FEniCSx element-family typos. [Re-linked to catalog: index 96 \u2192 8 after fenics linear_elasticity Table-1 promotion 2026-05-31.]",
   "backend": "fenics",
   "physics": "linear_elasticity",
-  "pitfall_index": 8,
+  "pitfall_index": 6,
   "mode": "python",
   "env": {
     "PYTHONUNBUFFERED": "1"
@@ -11,5 +11,6 @@
     "ValueError",
     "Unknown element family"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_key_correction": "off-by-one drift: keyed 8 where the list ends at 7; the element-family claim IS index 6"
 }

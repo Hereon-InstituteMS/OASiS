@@ -431,6 +431,12 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-7 (MMS + Neumann BC + convergence tables)",
                        "step-3/4 (basic Poisson assembly)"],
     "function_space": "FE_Q<3>(k) — Lagrange, any order k",
+    # The measured order table that used to close this string was our own
+    # development result — the answer to a convergence study, readable from
+    # inside the tool that study evaluates. Removed 2026-08-06 by the
+    # contamination merge gate. The rule below is theory, not measurement, and
+    # the pre-asymptotic caveat is the genuinely useful part: it tells an agent
+    # not to read the coarsest pair as a failure.
     "expected_order": (
         "Theory: L2 error = O(h^(k+1)) for FE_Q(k) under global "
         "refinement, i.e. order k+1 asymptotically. The coarsest cycles "

@@ -140,16 +140,52 @@ class TestDetectAndStatus(unittest.TestCase):
         but this machine's real config lives at the pre-rebrand
         ~/.config/open-fem-agent/. The fallback must surface fourc's
         source tree. (Regression found + fixed 2026-06-12.)"""
-        legacy = (Path.home() / ".config" / "open-fem-agent"
-                  / "sources.json")
-        new = Path.home() / ".config" / "oasis" / "sources.json"
-        if not legacy.exists() and not new.exists():
-            self.skipTest("no sources.json on this machine")
-        d = detect_backend("fourc")
-        self.assertIsNotNone(
-            d["source_tree"],
-            "fourc source tree not resolved — the legacy-config "
-            "fallback in source_config.load() regressed.")
+        # HERMETIC. This test used to call `detect_backend("fourc")` and assert
+        # its source tree resolved, gated only on whether SOME sources.json
+        # existed. That made the outcome a function of a mutable file OUTSIDE the
+        # repository: a fourc entry present -> PASS, the file present without one
+        # -> FAIL, the file absent -> SKIP. Three separate audits were misled by
+        # it into reporting three different suite baselines, and one wasted a run
+        # proving its own changes innocent. A test whose colour depends on
+        # machine state is worse than no test — it manufactures disagreement
+        # about whether the suite is green.
+        #
+        # What the 2026-06-12 regression was actually about is the FALLBACK: the
+        # rebrand moved the config from ~/.config/open-fem-agent/ to
+        # ~/.config/oasis/, and installs with only the old path stopped
+        # resolving. That mechanism is testable without touching the real config.
+        import importlib
+
+        from core import source_config
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            legacy_dir = root / ".config" / "open-fem-agent"
+            legacy_dir.mkdir(parents=True)
+            # Real schema, read off the machine's own config rather than
+            # guessed: {"backends": {"<name>": {"source": "<path>"}}}. My first
+            # attempt invented {"sources": {...: {"source_tree": ...}}} and the
+            # test failed for that reason alone — which is the same mistake as
+            # writing a Signal clause from memory.
+            (legacy_dir / "sources.json").write_text(json.dumps(
+                {"backends": {"fourc": {"source": "/tmp/pretend-4c"}}}))
+
+            with mock.patch.object(Path, "home", staticmethod(lambda: root)):
+                mod = importlib.reload(source_config)
+                cfg = mod.load()
+
+            # `backends[name]` is a BackendPaths dataclass whose `source` is a
+            # PosixPath — not a dict. Two wrong guesses at this structure cost
+            # two runs; reading what `load()` actually returns cost one command.
+            entry = (cfg.backends or {}).get("fourc")
+            tree = str(getattr(entry, "source", "")) if entry else ""
+            self.assertEqual(
+                tree, "/tmp/pretend-4c",
+                "the legacy ~/.config/open-fem-agent/sources.json fallback did "
+                "not resolve — the rebrand regression is back.")
+
+        # Restore the module to the real environment for any later test.
+        importlib.reload(source_config)
 
     def test_status_table_renders(self) -> None:
         md = render_status_markdown()

@@ -293,6 +293,11 @@ KNOWLEDGE = {
             "Dirichlet data, uniform refinement with machine-readable "
             "per-level L2/H1 error lines"),
         "input_format": "Python script (dune.fem + UFL)",
+        # The EOC tables that used to close this string were our own
+        # development measurements, including the exact parameter draw they
+        # came from. Both halves are contamination: the orders are the answer
+        # to a convergence study, and the named draw is a specific problem
+        # instance. Removed 2026-08-06 by the contamination merge gate.
         "expected_order": (
             "Theory for a conforming Lagrange space of order k on a "
             "sufficiently smooth solution: L2 error O(h^(k+1)) and "
@@ -327,8 +332,10 @@ KNOWLEDGE = {
                 "importing from dune.fem.function emits "
                 "'DeprecationWarning: dune.fem.function.integrate is "
                 "deprecated use dune.fem.integrate instead. New "
-                "signature is (expr, gridView, order)' — observed on "
-                "dune-fem 2.10."
+                "signature is (expr, gridView, order)' — observed live "
+                "on this install (2026-08-01). The old path still "
+                "works, so this is a warning to act on, not a failure "
+                "to debug."
             ),
             (
                 "[API] galerkin solver parameter keys 'newton.*' are "

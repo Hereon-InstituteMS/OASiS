@@ -2714,9 +2714,11 @@ def matched_thermo_transient_mms_input(n: int = 48,
     force at t_n / t_{n+1}, i.e. trapezoid quadrature, and consistent
     initial rates are computed), ~1 for theta=1 (backward Euler).
     Note the error vs the exact solution saturates at the spatial Q1
-    floor; grade the order from Richardson differences of
-    consecutive-dt solutions on the same mesh, which cancels that floor
-    exactly.
+    floor, so an error-vs-exact dt table flattens at small dt no matter
+    how good the time integrator is. Grade the order from Richardson
+    differences of consecutive-dt solutions on the SAME mesh: the
+    spatial error is identical in both and cancels in the difference,
+    leaving the temporal order alone (exercised live 2026-08-01).
 
     Final-time nodal temperatures land in
     <prefix>-vtk-files/thermo-<step>-0.vtu (point_data key

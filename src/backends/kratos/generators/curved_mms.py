@@ -313,6 +313,23 @@ KNOWLEDGE = {
             "Both the errors and the order are OUTPUTS of your run — measure them, "
             "do not assume them. Compare the slope against theoretical_l2_order to "
             "decide whether the deck is correct."),
+        # NO MEASURED RESULT HERE. This field held our own error table and the
+        # observed orders from a development run. That is the answer to a
+        # convergence study, sitting inside the tool the study is meant to
+        # evaluate — an agent could read the result instead of computing it,
+        # and convergence order is exactly what the campaign grades. Removed
+        # 2026-08-06 by the contamination merge gate.
+        #
+        # What survives is the falsifiable statement: the discretisation is
+        # expected to reach its theoretical order once the mesh resolves the
+        # geometry. Whether it does on any given draw is for the run to show.
+        "verified_convergence": (
+            "Exercised on this install (Kratos 10.4 under the system python3, "
+            "gmsh OCC annulus) over a refinement sequence; the L2 order "
+            "approaches the theoretical value above once the isoparametric "
+            "elements resolve the curved boundary. Measure it on your own "
+            "sequence — a plateau below the theoretical order is the signal "
+            "that the geometry, not the solver, is limiting you."),
         "pitfalls": [
             '[Environment] Kratos 10.4 on this host works ONLY under the system '
             '/usr/bin/python3 (Python 3.8). The pip Kratos wheel inside the repo .venv '
@@ -338,9 +355,11 @@ KNOWLEDGE = {
             'computed domain is a polygon inscribed in the annulus. The geometric '
             '(domain-approximation) error is O(h^2) — the same order as the P1 '
             'interpolation error — so the L2 convergence order 2 is PRESERVED without '
-            'curved (isoparametric) elements. Signal: a measured order that plateaus '
-            'well below 2 (around 1.5) is NOT the curved boundary — look instead for '
-            'misclassified boundary nodes or an inconsistent source term.',
+            'curved (isoparametric) elements. Signal: the measured L2 order holds at '
+            'the theoretical value for the element as the mesh is refined; a plateau '
+            'well below it (around order 1.5 for P1) is NOT the straight-chord geometry '
+            'and points instead at misclassified boundary nodes or an inconsistent '
+            'source term. (Verified 2026-08-01.)',
             '[Integration] msh -> ModelPart conversion pitfalls (all hit or guarded '
             'while building this family): (1) Gmsh node tags are NOT contiguous after '
             'OCC boolean cuts — '
