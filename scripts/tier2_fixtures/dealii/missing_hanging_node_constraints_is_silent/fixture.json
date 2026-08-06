@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii poisson#4. Tier-2 for dealii poisson#4 \u2014 probe \"hanging_nodes_silent\" of the shared adaptive-Poisson translation unit _shared/poisson_family.cc, compiled once and cached. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "poisson",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "symmetry_cannot_distinguish=true",
+    "max_abs_distinguishes=true",
+    "error_without_constraints_stalls=true",
+    "error_with_constraints_improves=true",
+    "VERDICT=missing_hanging_nodes_is_silent_except_in_the_error_trend"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=not_reproduced"
+  ],
+  "timeout_seconds": 900
+}
