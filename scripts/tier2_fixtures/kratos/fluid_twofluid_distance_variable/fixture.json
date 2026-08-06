@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: for the free-surface TwoFluid solver the level-set DISTANCE variable must be initialised before the first solve and re-distanced every step. Pitfall (kratos.fluid #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). DISTANCE resolves on core KratosMultiphysics and not on FluidDynamicsApplication. Its nodal default is 0.0 \u2014 an uninitialised DISTANCE field puts the zero level set through every node at once, which is the degenerate interface the claim's 'spurious zero-crossings inside the bulk fluid' describes, and nothing raises. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "fluid",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.DISTANCE]=True_expected=True",
+    "probe[FDA.DISTANCE]=False_expected=False",
+    "probe[nodal_read_without_variable]=False_expected=False",
+    "probe[nodal_default_is_zero]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

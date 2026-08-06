@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: the OptimizationApplication response utilities want a DoubleCombinedTensorAdaptor built from a DoubleTensorAdaptor over a VariableTensorAdaptor \u2014 not a numpy array \u2014 and per-element design variables need per-element Properties first. Pitfall (kratos.optimization #2). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). None of the three adaptor classes is a core KratosMultiphysics attribute, so the natural dotted path fails before any gradient call; KOA.OptimizationUtils and its CreateEntitySpecificPropertiesForContainer \u2014 the per-element Properties step the claim requires \u2014 do resolve on the application. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "optimization",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.DoubleCombinedTensorAdaptor]=False_expected=False",
+    "probe[KM.VariableTensorAdaptor]=False_expected=False",
+    "probe[KM.DoubleTensorAdaptor]=False_expected=False",
+    "probe[KOA.OptimizationUtils]=True_expected=True",
+    "probe[CreateEntitySpecificPropertiesForContainer]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

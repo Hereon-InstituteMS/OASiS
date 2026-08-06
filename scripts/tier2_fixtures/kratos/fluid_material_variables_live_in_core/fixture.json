@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: fluid materials are defined with DENSITY and DYNAMIC_VISCOSITY, and forgetting either leaves the constitutive call returning zero stress. Pitfall (kratos.fluid #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both variables resolve on core KratosMultiphysics and on NEITHER FluidDynamicsApplication \u2014 so the module a reader would dot into for a fluid-specific material property is the wrong one, and that AttributeError fires before any solve. The claim's own failure mode is silent (a converged trivial flow), which is why the module location is the checkable part. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "fluid",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.DENSITY]=True_expected=True",
+    "probe[FDA.DENSITY]=False_expected=False",
+    "probe[KM.DYNAMIC_VISCOSITY]=True_expected=True",
+    "probe[FDA.DYNAMIC_VISCOSITY]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

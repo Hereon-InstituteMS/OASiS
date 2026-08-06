@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: plane-STRAIN constitutive laws ignore THICKNESS \u2014 for thickness-design optimisation use LinearElasticPlaneStress2DLaw, and set both THICKNESS and DENSITY on the Properties. Pitfall (kratos.optimization #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both laws exist and both instantiate, so nothing rejects the plane-strain choice \u2014 the gradient is simply meaningless. THICKNESS and DENSITY are core variables. The two laws are distinguishable by class, which is the only pre-solve signal available. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "optimization",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[SMA.LinearElasticPlaneStress2DLaw]=True_expected=True",
+    "probe[SMA.LinearElasticPlaneStrain2DLaw]=True_expected=True",
+    "probe[KM.THICKNESS]=True_expected=True",
+    "probe[KM.DENSITY]=True_expected=True",
+    "probe[laws_are_different_classes]=True_expected=True",
+    "probe[laws_are_the_same_class]=False_expected=False",
+    "probe[SMA.THICKNESS]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

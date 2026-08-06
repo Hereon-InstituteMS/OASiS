@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: the python-layer LinearStrainEnergyResponseFunction needs the full OptimizationProblem + ExecutionPolicyDecorator stack, whereas the compiled statics under KOA.ResponseUtils give the same values directly on a programmatic ModelPart. Pitfall (kratos.optimization #5). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both LinearStrainEnergyResponseUtils and MassResponseUtils resolve under KOA.ResponseUtils and NOT as top-level KOA attributes \u2014 the nesting is the part a reader gets wrong, and dotting the flat name raises AttributeError before the analysis-stage machinery is ever reached. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "optimization",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KOA.ResponseUtils]=True_expected=True",
+    "probe[KOA.ResponseUtils.MassResponseUtils]=True_expected=True",
+    "probe[KOA.ResponseUtils.LinearStrainEnergyResponseUtils]=True_expected=True",
+    "probe[KOA.MassResponseUtils_flat]=False_expected=False",
+    "probe[KOA.LinearStrainEnergyResponseUtils_flat]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

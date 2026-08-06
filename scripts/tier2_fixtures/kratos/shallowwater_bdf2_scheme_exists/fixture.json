@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: the BDF2 wave scheme ShallowWaterResidualBasedBDFScheme needs SetBufferSize(3), and the time loop must not solve until the buffer is full. Pitfall (kratos.shallow_water #5). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The scheme class resolves on ShallowWaterApplication and not on core. The buffer requirement is pinned by construction: a ModelPart accepts SetBufferSize(3) and reports GetBufferSize()==3, while the default buffer a fresh part carries is smaller \u2014 solving at step 1 with a default buffer reads a zero-filled history slot, which is the corruption the claim describes and which raises nothing. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "shallow_water",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[SW.ShallowWaterResidualBasedBDFScheme]=True_expected=True",
+    "probe[KM.ShallowWaterResidualBasedBDFScheme]=False_expected=False",
+    "probe[buffer_three_accepted]=True_expected=True",
+    "probe[default_buffer_is_three]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

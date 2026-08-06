@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: Newmark average acceleration uses beta=0.25, gamma=0.5; gamma < 0.5 is unconditionally unstable. Pitfall (kratos.structural_dynamics #0). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The scheme classes the claim's Signal names \u2014 ResidualBasedNewmarkDisplacementScheme and ResidualBasedBossakDisplacementScheme \u2014 resolve on core KratosMultiphysics and NOT on StructuralMechanicsApplication, which is where a reader would look for a structural time scheme. Nothing rejects an unstable gamma, so the growth the claim describes is the only run-time evidence and the class location is the pre-solve one. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.ResidualBasedNewmarkDisplacementScheme]=True_expected=True",
+    "probe[SMA.ResidualBasedNewmarkDisplacementScheme]=False_expected=False",
+    "probe[KM.ResidualBasedBossakDisplacementScheme]=True_expected=True",
+    "probe[SMA.ResidualBasedBossakDisplacementScheme]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

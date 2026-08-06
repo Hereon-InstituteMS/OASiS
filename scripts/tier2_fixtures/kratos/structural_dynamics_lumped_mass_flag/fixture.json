@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: the mass matrix is consistent by default, with a lumped option that is faster for explicit runs. Pitfall (kratos.structural_dynamics #2). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The switch is the core ProcessInfo/Properties flag COMPUTE_LUMPED_MASS_MATRIX, which resolves on KratosMultiphysics and not on StructuralMechanicsApplication. A fresh ProcessInfo has not had it set, so the lookup raises; setting it True round-trips. The default being 'not present' rather than 'False' is why the consistent matrix is what you get unless you act. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KM.COMPUTE_LUMPED_MASS_MATRIX]=True_expected=True",
+    "probe[SMA.COMPUTE_LUMPED_MASS_MATRIX]=False_expected=False",
+    "probe[unset_lookup_raises]=False_expected=False",
+    "probe[set_true_roundtrip]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
