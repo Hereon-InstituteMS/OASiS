@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem navier_stokes#2, verified 2026-08-06 on skfem 12.0.1. Claim (already corrected once): the convection term needs ElementVector, no AttributeError announces it because CellBasis DOES have split, the no-argument call raises TypeError 'AbstractBasis.split() missing 1 required positional argument: x', and the working guard is a SHAPE check. Ran: MeshTri().refined(2), scalar ElementTriP2 (81 DOFs) vs ElementVector(ElementTriP2) (162), the split attribute and both call forms, convection assembled on each basis, and the wrong-sized block stacked with scipy.sparse.bmat. Printed: every part of the corrected entry reproduces -- class is CellBasis, split exists, the no-arg call raises the quoted TypeError verbatim, and split(x) returns one (array, basis) pair per dimension with scalar-sized arrays. The shape guard works: vector N is exactly dim times scalar N. The failure is silent and dimensional: the scalar convection block assembles to a perfectly valid square 81x81 matrix with non-zeros, exactly dim times too small for the 162x162 viscous block, and the only objection comes from scipy.sparse.bmat with ValueError 'inconsistent shapes' -- a message naming neither the basis nor the element.",
+  "backend": "skfem", "physics": "navier_stokes", "pitfall_index": 2, "mode": "python",
+  "expect_in_output": [
+    "class_is_CellBasis=True",
+    "vector_N_is_dim_times_scalar=True",
+    "cellbasis_has_split=True",
+    "getattr_split_raises_AttributeError=False",
+    "split_no_arg_raises_TypeError=True",
+    "quoted_typeerror_matches=True",
+    "message_mentions_element_type=False",
+    "split_gives_one_part_per_dimension=True",
+    "split_parts_are_scalar_sized=True",
+    "scalar_block_is_square_and_valid=True",
+    "scalar_block_is_dim_times_too_small=True",
+    "vector_block_matches_viscous_block=True",
+    "stacking_scalar_block_raises=True",
+    "stacking_message_names_the_basis=False",
+    "stacking_message_names_the_element=False"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

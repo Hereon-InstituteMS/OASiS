@@ -226,7 +226,13 @@ KNOWLEDGE: dict = {
             "'unsupported operand type for *' from "
             "scipy.sparse.bmat when 0 is used instead of None.",
 
-            "[Numerical] A Stokes saddle-point system has a "
+            "[Numerical] READ THIS BEFORE THE REST: the earlier "
+            "version of this entry was wrong about ITS OWN "
+            "TEMPLATE, not merely about the symptom to watch "
+            "for. It asserted that this system carries a "
+            "constant-pressure null space and that the solver "
+            "fails without a pin. It does not, and it does not. "
+            "A Stokes saddle-point system has a "
             "constant-pressure null space ONLY when nothing sets "
             "the pressure level. THIS TEMPLATE IS NOT SUCH A "
             "CASE: the inlet pressure traction is a natural BC "
