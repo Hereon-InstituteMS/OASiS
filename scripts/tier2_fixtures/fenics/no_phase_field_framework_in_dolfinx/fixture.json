@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics fracture#5. Tier-2 for fenics fracture#5: there is no phase-field anything in DOLFINx, and the third-party frameworks are not installed by default - write the staggered scheme yourself. Wrong variant: reach for a ready-made phase-field package (`import phasefieldx`) or for a DOLFINx phase-field/damage class. Right variant: assemble the staggered scheme out of the ordinary DOLFINx pieces - fem.functionspace for the three fields, NonlinearProblem for the displacement step, LinearProblem for the damage step, and fem.Expression + Function.interpolate for the history update. Observed on dolfinx 0.10.0: `import phasefieldx` raises \"ModuleNotFoundError: No module named 'phasefieldx'\", a scan of dolfinx, dolfinx.fem, dolfinx.fem.petsc, dolfinx.mesh, dolfinx.io and dolfinx.la for any name containing phasefield/phase_field/damage/fracture/crack/griffith returns an empty list, and every one of the five ordinary pieces the claim names is present and does its job on a 8x8 unit square. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "ModuleNotFoundError: No module named 'phasefieldx'",
+    "dolfinx_names_matching_phase_field_or_damage=[]",
+    "every_third_party_phase_field_package_absent=True",
+    "dolfinx_name_scan_is_empty=True",
+    "hand_written_staggered_scheme_works=True",
+    "VERDICT=no_phase_field_api_write_the_staggered_scheme_yourself"
+  ],
+  "forbid_in_output": [
+    "third_party_import_phasefieldx=IMPORTED",
+    "VERDICT=a_phase_field_api_was_available"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics multiphase#1. Tier-2 for fenics multiphase#1: the interface width eps must cover at least about two cells. Under-resolving it does NOT produce NaNs or a solver failure - it produces a small bounded overshoot of the physical range [-1, 1], and the only way to catch it is to test max|phi| against 1 explicitly. 32x32 unit square, circular droplet, Allen-Cahn, 10 backward Euler steps of dt = 1e-4. The fixture sweeps eps/h = 2.56, 1.28, 0.64, 0.32 and records the extreme values of phi and the SNES converged reason of every step. The under-resolved configuration the pitfall warns about (eps/h = 0.32) is the one the verdict is built on: it leaves [-1, 1] by about one percent, stays finite, and SNES reports CONVERGED_FNORM_RELATIVE at every single step - no DIVERGED_FNORM_NAN anywhere, and the overshoot is nowhere near the 10-30% that was previously claimed. Mutation control: T2_MUTATE=1 selects eps/h = 2.56 for the checked run; the range violation disappears. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "overshoot_grows_as_eps_over_h_falls=True",
+    "resolved_eps_over_h_2p56_stays_in_physical_range=True",
+    "selected_leaves_physical_range=True",
+    "selected_overshoot_is_only_a_few_percent=True",
+    "selected_snes_converged_every_step=True",
+    "selected_solution_is_finite=True",
+    "selected_saw_diverged_fnorm_nan=False",
+    "VERDICT=under_resolved_eps_overshoots_while_snes_reports_converged"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=resolution_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}
