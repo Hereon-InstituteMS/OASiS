@@ -62,7 +62,8 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / "sparta"
 #   2026-08-06  measured 0.17 (13 of 75) before this pass
 #   2026-08-06  0.39 (29 of 75) after the covers-attribution pass
 #   2026-08-06  0.53 (40 of 75) after the three zero-coverage-area fixtures
-MIN_COVERAGE_FRACTION = 0.53
+#   2026-08-06  0.70 (53 of 75) after the four cross-cutting fixtures
+MIN_COVERAGE_FRACTION = 0.70
 
 # Counted 2026-08-06 by identity, not by walking the dict. See the module
 # docstring for why those differ by a factor of 2.2 on this backend.

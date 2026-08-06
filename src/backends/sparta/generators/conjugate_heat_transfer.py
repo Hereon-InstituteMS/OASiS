@@ -152,7 +152,11 @@ KNOWLEDGE = {
 
             "[Setup] A half-body surface used with a symmetry plane is an OPEN "
             "curve and fails the watertight test. Put the open endpoints "
-            "exactly on a box face and read with 'read_surf <file> clip'. "
+            "exactly on a box face. The 'clip' keyword is NOT the remedy and "
+            "an earlier wording implied it was: measured, an open curve in the "
+            "interior fails the watertight test with 'clip' exactly as without "
+            "it, and a curve whose endpoints sit on a box face is accepted "
+            "either way. "
             "Signal: 'Watertight check failed' followed by the number of "
             "unmatched points.",
         ],
