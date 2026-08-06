@@ -1,0 +1,20 @@
+{
+  "_comment": "CLAIM time_dependent_ns::1: [Numerical] Requires NS + energy equation coupling. Signal: solving NS in isolation (no buoyancy term in momentum) gives ZERO flow on a side-heated cavity \u2014 the canonical Boussinesq test. The momentum equation needs -rho * beta * (T - T_ref) * g_hat as a FEValuesExtractors::Vector source; without \u2026 WHAT THIS RUNS: -- probe \"buoyancy_coupling\" of the shared transient translation unit _shared/transient_family.cc, compiled once and cached so both fixtures of that unit share ONE C++ build. The canonical Boussinesq test the entry names: a side-heated cavity, hot left wall and cold right wall, no-slip everywhere, in the infinite-Prandtl (Stokes) form that step-31 uses. Taylor-Hood Q2/Q1 for velocity and pressure, Q2 for the temperature, both DoFHandlers on one triangulation, and ten coupled steps so a flow that only appears through the coupling has every chance to appear. With the momentum equation solved \"in isolation\" -- no Ra * T * e_y term -- the right-hand side of the Stokes system is the zero vector and the velocity comes back IDENTICALLY zero: max speed 0, kinetic energy 0, after the first solve and again after ten coupled steps. The temperature field is a perfectly good nonzero field the whole time; it simply never reaches the momentum equation. T2_MUTATE=1 puts the buoyancy term back at Ra = 1e4: max speed 39 and kinetic energy 335 on the first solve. The fixture then fails its own expectations. OBSERVED, copied from the run: buoyancy_term_in_momentum=false; first_solve_max_speed=0; velocity_under_test_is_identically_zero=true; temperature_stayed_coupled_to_nothing=true; VERDICT=momentum_without_the_buoyancy_term_gives_no_flow. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "time_dependent_ns",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "buoyancy_term_in_momentum=false",
+    "first_solve_max_speed=0",
+    "velocity_under_test_is_identically_zero=true",
+    "temperature_stayed_coupled_to_nothing=true",
+    "VERDICT=momentum_without_the_buoyancy_term_gives_no_flow"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=buoyancy_term_drives_the_cavity"
+  ],
+  "timeout_seconds": 900
+}
