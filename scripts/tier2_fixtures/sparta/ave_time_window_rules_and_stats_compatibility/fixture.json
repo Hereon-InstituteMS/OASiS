@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow:9, :10 and :11 — the three ways 'fix ave/time' refuses to hand you a number, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). rarefied_flow:9 — 'ave/time 3 5 10' (Nfreq not a multiple of Nevery) and 'ave/time 10 5 10' (Nevery*Nrepeat > Nfreq) abort with the IDENTICAL text 'ERROR: Illegal fix ave/time command (../fix_ave_time.cpp:129)', matched verbatim, and the fixture additionally checks the message contains none of the words Nfreq / Nevery / Nrepeat / multiple, which is why both rules have to be stated in prose. rarefied_flow:10 — 'stats 50' against Nfreq 100 is a HARD ERROR ('ERROR: Stats and fix not computed at compatible times (../stats.cpp:203)'), not a repeated value, so the stats interval must be a MULTIPLE of Nfreq and not a divisor; the reduce path raises the same objection with its own message, and because compute_reduce.cpp emits that text from three call sites (778 global, 805 per-grid, 832 per-surf) the fixture matches the text and the file, not one line. rarefied_flow:11 — in the well-formed deck the f_f column is exactly 0 on the step-0 row while c_gt on the SAME row already carries a physical value, and a later row of the same f_f column is non-zero; both comparisons are internal to one run, so nothing is pinned. No temperature, count or tolerance is asserted anywhere. COVERS: rarefied_flow:9, rarefied_flow:10, rarefied_flow:11. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the three broken decks are repaired to the SAME window arithmetic and stats interval the good deck uses (10 5 100, stats 100) and to Nfreq 200 / stats 200 on the reduce deck, with box, grid, seed, run length, compute and collide untouched. All four then complete at rc = 0 with an empty error list. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: both_window_violations_share_one_message=True, the_message_names_neither_constraint=True, stats_must_be_a_multiple_of_nfreq=True, the_reduce_path_objects_too=True. The step-0-zero assertions are deliberately outside the hook — they are a property of the WELL-FORMED deck, which the mutation does not touch, and no deck edit can remove them. Re-verify: cd scripts/tier2_fixtures/sparta/ave_time_window_rules_and_stats_compatibility && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 9,
+  "covers": [
+    "rarefied_flow:9",
+    "rarefied_flow:10",
+    "rarefied_flow:11"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "both_window_violations_share_one_message=True",
+    "the_message_names_neither_constraint=True",
+    "stats_must_be_a_multiple_of_nfreq=True",
+    "the_well_formed_deck_completes=True",
+    "first_stats_row_of_a_fix_is_exactly_zero=True",
+    "a_later_row_of_the_same_column_is_nonzero=True",
+    "a_compute_on_the_same_row_is_already_live=True",
+    "the_reduce_path_objects_too=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

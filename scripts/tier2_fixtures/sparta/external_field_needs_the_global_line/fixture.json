@@ -1,0 +1,27 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow:15, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). Seven decks, all the same 1 mm 2d argon box at rest. THE NO-OP: 'variable ax grid 1e10' plus 'fix ff field/grid ax NULL NULL' with no 'global field' line completes at rc = 0 and produces a compute-temp column IDENTICAL row for row to a control deck carrying no fix at all — that identity is the assertion, not a tolerance. Add 'global field grid ff 0' and the same box heats, so the direction confirms the field really is inert without it; the control column is separately checked to be flat, so 'it moved' is meaningful. THE FIX-ID TRAP: upstream's examples/bfield names its fix '1' so its line reads 'global field grid 1 0', which copies as though the 1 were a flag; against a fix named 'ff' that line gives 'ERROR: External field fix ID not found (../update.cpp:221)'. VARIABLE RULES: an equal-style variable gives 'ERROR: Variable for fix field/grid is invalid style (../fix_field_grid.cpp:105)' and a 'v_'-prefixed name gives 'ERROR: Variable name for fix field/grid does not exist (../fix_field_grid.cpp:103)', so the argument is a BARE grid-style variable name. No temperature, no field magnitude and no tolerance is pinned anywhere. COVERS: rarefied_flow:15. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the missing 'global field grid ff 0' line is added to the deck whose pathology is its absence; variable, fix, box, grid, seed, timestep and run length are untouched, and the mutated deck still completes at rc = 0. The temperature column stops matching the control. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and this expect_in_output string goes False and disappears: a_field_fix_without_the_global_line_is_a_no_op=True. The fix-ID and variable-style assertions run on decks the hook does not touch and rest on verbatim messages carrying their own (file:line). Re-verify: cd scripts/tier2_fixtures/sparta/external_field_needs_the_global_line && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 15,
+  "covers": [
+    "rarefied_flow:15"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "the_control_deck_runs=True",
+    "a_field_fix_without_the_global_line_is_a_no_op=True",
+    "the_control_deck_is_flat=True",
+    "the_activated_field_heats_the_gas=True",
+    "the_global_field_argument_is_a_fix_id=True",
+    "an_equal_style_variable_is_rejected=True",
+    "a_v_prefixed_name_is_not_found=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

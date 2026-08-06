@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow:12 and :13, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). Twelve decks, all the same 1 mm 2d argon box, differing only in the compute lines. rarefied_flow:12 — 'compute property/grid all vol' with ONE attribute is a per-grid VECTOR: bare c_p reduces cleanly and bracketed c_p[1] aborts with 'ERROR: Compute reduce compute does not calculate a per-grid array (../compute_reduce.cpp:232)'; with TWO attributes it is an ARRAY and the two mistakes swap, the bare form now giving 'ERROR: Compute reduce compute does not calculate a per-grid vector (../compute_reduce.cpp:229)'. That is the reverse of 'compute grid', which is always an array and rejects the bare form even with a single value — run here as the control. property/grid also carries GEOMETRY ONLY: 'nrho' gives 'ERROR: Invalid keyword in compute property/grid command (../compute_property_grid.cpp:84)' and 'zc' in 2d gives 'ERROR: Invalid compute property/grid field for 2d simulation (../compute_property_grid.cpp:54)'. rarefied_flow:13 — 'compute ke/particle' named in stats_style gives 'ERROR: Stats compute does not compute scalar (../stats.cpp:678)' and works through 'compute reduce ave'; 'replace 1 1' gives 'ERROR: Illegal compute reduce command (../compute_reduce.cpp:168)'. NOTHING NUMERIC IS PINNED: the only value read is the summed cell volume, and it is checked against lx*lx computed from the deck's own create_box line, which is the 2d per-metre-depth identity, not a remembered number. COVERS: rarefied_flow:12, rarefied_flow:13. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the ONE-attribute property/grid gains a second attribute — the single edit that removes the pathology under test — so it becomes an array and the bracket rule flips. Box, grid, seed, species, collide and run length are untouched. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: one_attribute_is_a_vector=True, bracketing_a_one_attribute_property_grid_fails=True, the_two_shape_mistakes_have_opposite_messages=True. The geometry-only, compute-grid-control and reduce-bridge assertions run on decks the hook does not touch and stay True; each rests on a verbatim message carrying its own (file:line). Re-verify: cd scripts/tier2_fixtures/sparta/per_grid_shapes_and_the_reduce_bridge && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 12,
+  "covers": [
+    "rarefied_flow:12",
+    "rarefied_flow:13"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "one_attribute_is_a_vector=True",
+    "bracketing_a_one_attribute_property_grid_fails=True",
+    "two_attributes_unbracketed_fails=True",
+    "two_attributes_bracketed_works=True",
+    "the_two_shape_mistakes_have_opposite_messages=True",
+    "compute_grid_is_always_an_array=True",
+    "property_grid_rejects_a_flow_quantity=True",
+    "property_grid_rejects_zc_in_2d=True",
+    "summed_cell_volume_is_the_box_volume_per_metre_depth=True",
+    "a_per_particle_compute_cannot_go_into_stats_style=True",
+    "compute_reduce_bridges_it=True",
+    "replace_needs_two_distinct_columns=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

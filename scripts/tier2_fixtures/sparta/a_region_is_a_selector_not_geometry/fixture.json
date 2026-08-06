@@ -1,0 +1,29 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow:14, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). A driven argon channel is run twice, identical apart from one line: the second declares 'region blk block 4 6 INF INF INF INF' straddling the middle of the flow. The stats tables come back IDENTICAL row for row — same Np, same Nscoll, same Nexit, on every printed step — because the region never enters the mover, and Nscoll is 0 throughout. That identity, not a tolerance, is the assertion; the seed is fixed so the two runs are the same realisation. The second half shows the machinery does work when a command consumes it: create_particles with a region fills a strict subset, 'side out' selects the exact complement (n_in + n_out == n_all), a 2d sphere and a z-cylinder of equal radius select the same cells, union takes a leading sub-region count, 'ERROR: Unrecognized region style (../domain.cpp:471)' names a bad style and 'ERROR: Create_particles region does not exist (../create_particles.cpp:122)' names an undefined one. Every count is compared against another count produced in the same script; none is pinned. COVERS: rarefied_flow:14. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the inert region line is replaced, at the same position in the deck, by what the region-writer actually meant — 'read_surf <examples/circle/data.circle>' plus a surf_collide diffuse model and surf_modify. Box, grid, seed, density, inflow, timestep and run length are untouched, and the mutated deck still completes at rc = 0, so the flip is not a crash. The two runs stop being identical and Nscoll leaves zero. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: the_two_runs_are_identical_row_for_row=True, no_surface_collision_is_ever_tallied=True. The region-selection assertions run on decks the hook does not touch and stay True. Re-verify: cd scripts/tier2_fixtures/sparta/a_region_is_a_selector_not_geometry && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 14,
+  "covers": [
+    "rarefied_flow:14"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "both_decks_complete=True",
+    "the_two_runs_are_identical_row_for_row=True",
+    "no_surface_collision_is_ever_tallied=True",
+    "a_consuming_command_does_see_the_region=True",
+    "side_out_selects_the_complement=True",
+    "in_2d_a_sphere_and_a_z_cylinder_select_the_same_cells=True",
+    "union_takes_a_leading_count=True",
+    "an_unknown_style_is_named=True",
+    "an_undefined_region_name_is_named=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

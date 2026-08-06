@@ -168,6 +168,26 @@ KNOWLEDGE = {
             "Signal: the Ngrid and Maxlevel columns keep climbing between "
             "stats lines while Np is flat — cells are being split without new "
             "particles to fill them.",
+
+            "[Syntax] 'compute <ID> boundary <mixID> <values...>' breaks the "
+            "pattern of every other spatial compute: it takes a MIXTURE ID and "
+            "NO group ID, where compute grid and compute surf both take a "
+            "group first and a mixture second. Copying that pattern here "
+            "consumes 'all' as the mixture and then rejects the second 'all' "
+            "as a value, with a message that names the command rather than the "
+            "argument. It is a GLOBAL ARRAY, not a scalar and not per-surf: "
+            "rows are the box faces in the order xlo, xhi, ylo, yhi and then "
+            "zlo, zhi in 3d — only FOUR rows in 2d — and columns are ngroup * "
+            "nvalue. So it must go through 'fix ave/time ... c_ID[*] mode "
+            "vector'; without 'mode vector' fix ave/time asks it for a scalar "
+            "and aborts. Values are n nwt nflux mflux press shx shy shz ke "
+            "erot evib etot. A periodic face tallies nothing and reads 0. "
+            "Signal: 'ERROR: Illegal compute boundary command "
+            "(../compute_boundary.cpp:64)' when a group ID is passed, and "
+            "'ERROR: Fix ave/time compute does not calculate a scalar "
+            "(../fix_ave_time.cpp:137)' when 'mode vector' is missing — the "
+            "same message a per-grid compute produces there, so it does not by "
+            "itself tell you which mistake you made. (Verified 2026-08-07)",
         ],
     },
 }
