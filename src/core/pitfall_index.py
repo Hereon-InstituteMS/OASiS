@@ -343,6 +343,30 @@ for _canon, _names in {
                "module"),
     "attribute": ("attribute", "attributeerror", "attr"),
     "key": ("key", "keyerror", "missing", "notfound"),
+    # COUPLING VOCABULARY. Added after the coupling entries landed and 3 of 37
+    # realistic symptom queries missed. Each group below is one concept under
+    # the names that actually appear in coupling entries and driver output, and
+    # each fixes a fold the stemmer cannot do on its own: `coupling` stems to
+    # `coupl` while `couple` stays `couple`, `relaxation` strips no suffix at
+    # all, and `mapping` becomes `mapp` while `map` stays `map`.
+    "coupling": ("coupling", "coupled", "couple", "couples", "partitioned",
+                 "staggered", "cosimulation"),
+    "participant": ("participant", "participants", "partner", "partners",
+                    "subdomain", "subdomains"),
+    "relaxation": ("relaxation", "relax", "relaxed", "relaxes",
+                   "underrelaxation", "theta", "omega"),
+    "mapping": ("mapping", "map", "maps", "mapped", "interpolation",
+                "interpolate", "interpolated", "nearestneighbour",
+                "nearestneighbor", "nearestprojection", "rbf"),
+    "precice": ("precice", "pyprecice", "libprecice", "fenicsprecice",
+                "cyprecice"),
+    "accelerator": ("accelerator", "acceleration", "aitken", "iqn",
+                    "anderson", "quasinewton"),
+    "checkpoint": ("checkpoint", "checkpoints", "checkpointing"),
+    "subcycling": ("subcycling", "subcycle", "subcycles", "timewindow"),
+    "monolithic": ("monolithic", "monolith", "unsplit", "unpartitioned"),
+    # The backend's own names. `4c` was unmatchable entirely — see _tokens.
+    "fourc": ("fourc", "4c", "baci"),
 }.items():
     for _n in _names:
         _SYNONYMS[_n] = _canon
@@ -371,8 +395,23 @@ def _tokens(s: str) -> set[str]:
     Numeric-suffixed identifiers are kept whole AND stemmed, so `hex8` matches
     an entry saying `hexahedral` without losing the ability to match `hex8`
     verbatim where an entry uses the code's own element name.
+
+    THE PATTERN MUST ADMIT A LEADING DIGIT. The first version required
+    `[a-z_]` first, so `4c` — the name of the largest backend — was dropped from
+    every query and from every entry, making it impossible to match on. Two
+    characters is also below the old 3-character floor, so both bounds had to
+    move. Bare numbers are still excluded: a digit must be followed by a letter,
+    which admits `4c` and `2d` while rejecting `35` and `1e-6`, where a number
+    from one run is meaningless as a search term.
     """
-    words = re.findall(r"[a-z_][a-z0-9_]{2,}", _normalise(s))
+    # `\d+[a-z]` alone also captures the mantissa of scientific notation:
+    # `1e-6` yielded `1e`. Harmless (it matches nothing) but it is measurement
+    # noise in the index, so require at least two trailing letters OR a letter
+    # followed by a digit — admitting `4c`? no: `4c` is one letter. Handle it by
+    # excluding a lone exponent marker instead, which is the actual case.
+    words = re.findall(r"[a-z_][a-z0-9_]{2,}|\d+[a-z][a-z0-9_]*",
+                       _normalise(s))
+    words = [w for w in words if not re.fullmatch(r"\d+[ed]", w)]
     return {_stem(w) for w in words if _stem(w) not in _STOP}
 
 
@@ -490,7 +529,15 @@ def narrow(all_pitfalls: dict[str, Any], *, physics: str = "",
             if mode:
                 scored.append((score, mode, e))
                 match_report[mode] = match_report.get(mode, 0) + 1
-        scored.sort(key=lambda t: -t[0])
+        # TIES MUST NOT RESOLVE BY CORPUS ORDER. A generic query such as
+        # "converged at iteration 2 with residual 0.0" matched 19 of 32 coupling
+        # entries at the same score, and a stable sort then handed first place
+        # to whichever happened to be earliest in the file — in practice the
+        # longest entry, because a long entry contains more words and so matches
+        # more loosely. Break ties towards the SMALLER vocabulary: the entry
+        # that matched the query using fewer other words is the more specific
+        # one, and specificity is exactly what an agent needs from first place.
+        scored.sort(key=lambda t: (-t[0], len(_tokens(t[2].get("text", "")))))
         kept = [dict(e, match=mode) for _, mode, e in scored]
         applied.append(f"signal={signal!r}")
 

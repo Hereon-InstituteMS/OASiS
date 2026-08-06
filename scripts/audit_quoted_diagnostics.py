@@ -199,13 +199,33 @@ def quoted_fragments(text: str) -> list[str]:
     AFTER that close — so consecutive quoted fragments are read as the author
     wrote them. Short fragments are dropped after pairing, never during it.
     """
+    def _is_apostrophe(s: str, k: int) -> bool:
+        """An apostrophe inside a word is contraction/possessive, not a quote.
+
+        Found by an independent adjudicator: several of this screen's flags were
+        prose. In "don't reach for a skfem.NewtonSolver — it doesn't converge",
+        the apostrophes of `don't` and `doesn't` were read as a matching pair
+        and the sentence between them extracted as a diagnostic — which of
+        course is not in any source, so an author's plain English was reported
+        as a fabricated error message.
+        """
+        if s[k] != "'":
+            return False
+        before = s[k - 1] if k > 0 else ""
+        after = s[k + 1] if k + 1 < len(s) else ""
+        return before.isalpha() and after.isalpha()
+
     out: list[str] = []
     i = 0
     n = len(text)
     while i < n:
         ch = text[i]
-        if ch in _QUOTE_CHARS:
-            j = text.find(ch, i + 1)
+        if ch in _QUOTE_CHARS and not _is_apostrophe(text, i):
+            j = i
+            while True:
+                j = text.find(ch, j + 1)
+                if j == -1 or not _is_apostrophe(text, j):
+                    break
             if j == -1:
                 break  # unbalanced delimiter: stop rather than guess
             frag = text[i + 1:j].strip()
