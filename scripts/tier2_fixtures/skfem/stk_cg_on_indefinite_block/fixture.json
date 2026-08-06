@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem stokes#0, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Claim (marked inherited, not empirically separated): the Stokes block system is indefinite so CG on it diverges, signalled by scipy.sparse.linalg.cg reporting info != 0 with the residual stalling at O(1). Ran: Taylor-Hood ElementVector(P2)/P1 on MeshTri().refined(3), 578 velocity and 81 pressure DOFs, a 659x659 block matrix condensed to 530 unknowns with one pressure DOF pinned so indefiniteness is the only remaining defect; the dense spectrum; then cg on nine right-hand sides across two RHS shapes. Printed: INDEFINITENESS IS CONFIRMED -- exactly 80 negative eigenvalues against 80 free pressure unknowns, and 450 positive. BUT THE STATED SIGNAL NEVER FIRES: cg returns info = 0 on all nine trials with a maximum relative residual of 9.9882e-11, raising nothing and warning nothing. There is no info != 0 to catch and no O(1) stall to detect, so an agent told to guard by checking info would guard nothing and would never have exercised that guard. The theoretical caution stands -- CG has no guarantee on an indefinite matrix -- but the honest check is to measure the relative residual yourself and require np.isfinite, not to trust a flag that reads 'converged' either way. The direct solve gives 1.9613e-14, four orders below CG.",
+  "backend": "skfem", "physics": "stokes", "pitfall_index": 0, "mode": "python",
+  "expect_in_output": [
+    "velocity_dofs=578 pressure_dofs=81",
+    "block_matrix_is_indefinite=True",
+    "negative_count_equals_free_pressure_unknowns=True",
+    "cg_raises=False",
+    "cg_info=0",
+    "cg_info_is_nonzero=False",
+    "cg_info_is_zero_meaning_converged=True",
+    "cg_warnings=[]",
+    "cg_is_silent=True",
+    "cg_residual_stalls_at_order_one=False",
+    "cg_actually_converged=True",
+    "cg_converged_on_every_trial=True",
+    "cg_reported_failure_on_any_trial=False",
+    "spsolve_converges=True",
+    "direct_beats_cg_residual=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
