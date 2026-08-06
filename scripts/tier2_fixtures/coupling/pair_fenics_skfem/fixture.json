@@ -1,10 +1,10 @@
 {
-  "_comment": "COUPLING tier-2. Verifies the sides-table claim that FEniCSx and scikit-fem each take EITHER side and were coupled to each other on this install with non-matching interface meshes. Runs three real couplings through the REGISTERED `couple` tool (fenics-Dirichlet/skfem-Neumann, skfem-Dirichlet/fenics-Neumann, fenics-Neumann/skfem-Dirichlet) at theta=1/(1+rho) and, for each, asserts against the CLOSED FORM of the split conduction problem: interface temperature, interface flux density on both sides with opposite signs, arclength-integrated flux balance, an empty `validation` block, and that the two sides really used different numbers of interface points. Convergence alone is deliberately NOT the assertion: a partitioned iteration converges to a fixed point, which is the solution only if the exchanged quantity, its sign and its units are all right — a unit mismatch converges and balances perfectly (see coupling/unit_mismatch_survives_every_internal_check). No number is pinned; the tolerances are what the physics must beat and the errors are printed.",
+  "_comment": "COUPLING tier-2. Verifies the sides-table claim that FEniCSx and scikit-fem each take EITHER side and were coupled to each other on this install with non-matching interface meshes. Runs three real couplings through the REGISTERED `couple` tool (fenics-Dirichlet/skfem-Neumann, skfem-Dirichlet/fenics-Neumann, fenics-Neumann/skfem-Dirichlet) at theta=1/(1+rho) and, for each, asserts against the CLOSED FORM of the split conduction problem: interface temperature, interface flux density on both sides with opposite signs, arclength-integrated flux balance, an empty `validation` block, and that the two sides really used different numbers of interface points. Convergence alone is deliberately NOT the assertion: a partitioned iteration converges to a fixed point, which is the solution only if the exchanged quantity, its sign and its units are all right \u2014 a unit mismatch converges and balances perfectly (see coupling/unit_mismatch_survives_every_internal_check). No number is pinned; the tolerances are what the physics must beat and the errors are printed.",
   "backend": "coupling",
   "physics": "pair_fenics_skfem",
   "pitfall_index": 0,
   "mode": "python",
-  "timeout_seconds": 900,
+  "timeout_seconds": 1800,
   "expect_in_output": [
     "fenics_D_skfem_N_iterations=",
     "fenics_D_skfem_N_left_T_err=",

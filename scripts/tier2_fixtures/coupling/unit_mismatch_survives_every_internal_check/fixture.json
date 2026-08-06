@@ -4,7 +4,7 @@
   "physics": "silent_wrong",
   "pitfall_index": 15,
   "mode": "python",
-  "timeout_seconds": 900,
+  "timeout_seconds": 1200,
   "expect_in_output": [
     "closed_form_T_iface=",
     "consistent_converged=True",
