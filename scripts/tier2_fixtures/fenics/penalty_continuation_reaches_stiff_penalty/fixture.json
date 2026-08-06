@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics contact#3: if a very stiff penalty is genuinely needed, do not just raise it and hope \u2014 use penalty continuation, re-solving decade by decade and reusing the previous solution as the starting point. Wrong variant: the same obstacle problem started cold (u = 0) at gamma = 1e12. It reports DIVERGED_DTOL after a single Newton iteration and returns a body that has passed straight through the obstacle. Right variant, measured in the same process: gamma is a fem.Constant, so the ladder 1e2 -> 1e4 -> 1e6 -> 1e8 -> 1e10 -> 1e12 is just a new value assigned to it followed by another problem.solve(), with u left where the previous decade put it. Every decade converges (CONVERGED_FNORM_ABS for the first decades, CONVERGED_FNORM_RELATIVE / CONVERGED_SNORM_RELATIVE for the last ones), the last three decades need a single Newton iteration each, and the penetration falls monotonically from 2.19 element edges at gamma = 1e2 to exactly zero. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "slot_reason_is_diverged_dtol=True",
+    "slot_diverged_after_one_iteration=True",
+    "continuation_every_decade_converged=True",
+    "continuation_penetration_shrinks_monotonically=True",
+    "continuation_last_three_decades_take_at_most_two_iterations=True",
+    "continuation_final_penetration_is_negligible=True",
+    "VERDICT=continuation_reaches_what_a_cold_start_cannot"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cold_start_at_stiff_penalty_worked"
+  ],
+  "timeout_seconds": 300
+}
