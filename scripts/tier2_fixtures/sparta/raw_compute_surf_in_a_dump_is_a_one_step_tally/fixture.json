@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for sparta surface_interaction: what a raw 'compute surf' written straight to 'dump surf' actually contains. Three decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial) on a cylinder in a 2d argon flow, and the dump files were parsed element by element (the first SPARTA fixture to read dump output; _spahelp gained run_keep/dump_column for it). FALSIFIED: the entry said the dumped value 'is the tally accumulated since the compute was last invoked, so its magnitude depends on the DUMP FREQUENCY', and told the reader to look for nonzero values scaling with the dump interval. Two decks differing ONLY in 'dump ... all 50' versus 'dump ... all 200', with the dump as the sole consumer so nothing else can reset the compute, produce files that agree element for element at the same timestep: 13 exact zeros of 50, mean 6, max 19 in both. update.cpp:1592 shows why — slist_compute[i]->clear() runs on every step the compute is active, so what lands in the dump is the tally for THAT ONE TIMESTEP, the same per-step semantics as the Ncoll family, never an accumulation across the interval. An agent following the published test would change the interval, see nothing move, and conclude its deck was fine. What IS true and what this fixture asserts is the zero fraction: 26 percent of elements in the raw field are exactly 0 at a snapshot while the fix-averaged field of the SAME run has none, and that discriminator does not depend on the dump interval either. The entry was corrected in the same commit. COVERS: surface_interaction:6.",
+  "backend": "sparta",
+  "physics": "surface_interaction",
+  "pitfall_index": 6,
+  "covers": [
+    "surface_interaction:6"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "every_run_exits_zero_with_no_error=True",
+    "both_dumps_and_both_fields_were_written=True",
+    "a_4x_dump_interval_change_leaves_the_field_IDENTICAL=True",
+    "so_magnitude_does_NOT_scale_with_the_dump_interval=True",
+    "the_raw_field_has_a_large_fraction_of_exact_zeros=True",
+    "routing_through_fix_ave_surf_removes_them=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

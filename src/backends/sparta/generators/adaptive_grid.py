@@ -150,8 +150,19 @@ KNOWLEDGE = {
             "itself. Adapting on the cell Knudsen number from 'compute "
             "lambda/grid ... knall' targets under-resolution directly. "
             "Signal: after adaptation the cell Knudsen minimum from 'compute "
-            "reduce min c_lam[2]' has not improved even though Ngrid has "
-            "grown several-fold — the refinement went to the wrong cells.",
+            "reduce min c_lam[2]' has not improved — that alone is the "
+            "observable, and the refinement went to the wrong cells. Do NOT "
+            "also require Ngrid to have grown several-fold; an earlier wording "
+            "bundled the two and only the first holds. Refining on particle "
+            "count splits a cell's particles among its children, which drops "
+            "them below the threshold immediately, so the criterion is "
+            "SELF-LIMITING: measured on a Mach-5 cylinder case the cell count "
+            "grew by about a quarter while the Knudsen-driven run on the same "
+            "deck grew more than fivefold and lifted the Knudsen minimum by "
+            "about a factor of three. Looking for several-fold growth AND no "
+            "improvement, you would not find the first half and could wrongly "
+            "conclude this does not apply to your case. Compare the Knudsen "
+            "minimum before and after, nothing else.",
 
             "[Setup] 'balance_grid' distributes cells over MPI ranks; on a "
             "serial build it runs and moves nothing, so it is not a remedy for "

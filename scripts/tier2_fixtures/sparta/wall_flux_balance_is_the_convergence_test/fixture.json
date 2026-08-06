@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow: in a driven run the two opposed wall fluxes must balance, and that balance rather than the step count is the convergence test. Two decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial), identical but for the seed: a 2d argon slab between a hot diffuse wall on ylo and a cold one on yhi, started from a uniform gas at the cold temperature. 'compute boundary all etot' is read every step for 3000 steps and block-averaged into ten windows here rather than in SPARTA, so the averaging window is explicit. Both runs exit 0 with no error and no warning throughout — the run looks perfectly healthy during the transient, which is the point. The energy-flux imbalance between the two walls starts at 0.66 and 0.70 in the first window (the hot wall is putting in several times what the cold wall takes out) and decays through the transient into the low thousandths. THRESHOLD SET BY MEASUREMENT, NOT BY GUESS, because this is a Monte-Carlo tally: the noise floor is measured from the late windows of seed A (0.0192) and every assertion is then made against seed B, so nothing is tested against a floor derived from itself. Seed B's late windows all sit inside three times that floor, and BOTH seeds' first window is more than ten times outside it. No imbalance value is pinned, no wall-clock is read, and the run length is fixed so the comparison is between windows of one run rather than between runs of different length. COVERS: rarefied_flow:8.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 8,
+  "covers": [
+    "rarefied_flow:8"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "both_runs_exit_zero_with_no_error_and_no_warning=True",
+    "both_runs_produced_all_windows=True",
+    "the_two_opposed_walls_carry_opposite_signed_flux=True",
+    "late_windows_of_the_other_seed_sit_inside_the_measured_floor=True",
+    "the_FIRST_window_is_more_than_10x_the_floor=True",
+    "the_imbalance_decays_through_the_transient=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

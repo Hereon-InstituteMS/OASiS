@@ -66,7 +66,11 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / "sparta"
 #   2026-08-06  0.81 (61 of 75) after the per-cell and relaxation fixtures
 #   2026-08-06  0.89 (67 of 75) after the setup-trap, emit/chemistry and
 #               thermal/grid fixtures
-MIN_COVERAGE_FRACTION = 0.89
+#   2026-08-06  0.92 (69 of 75) after the axisymmetric-weighting and dump-surf
+#               fixtures
+#   2026-08-06  0.93 (70 of 75) after the wall-flux-balance fixture
+#   2026-08-06  0.96 (72 of 75) after the adaptation-targeting fixture
+MIN_COVERAGE_FRACTION = 0.96
 
 # Counted 2026-08-06 by identity, not by walking the dict. See the module
 # docstring for why those differ by a factor of 2.2 on this backend.
@@ -148,8 +152,17 @@ def _fixture_claims() -> tuple[dict[str, list[str]], list[str]]:
         elif not declared:
             synthetic.append(f"{d.name} (covers: [] — declared as not evidence)")
         for claim in declared:
-            covered.setdefault(translate.get(str(claim), str(claim)),
-                               []).append(d.name)
+            key = translate.get(str(claim), str(claim))
+            owners = covered.setdefault(key, [])
+            # A fixture may name the SAME claim under both conventions — its
+            # identity key `universal:5` and the positional alias
+            # `rarefied_flow:14` that an external counter walking the
+            # rarefied_flow row will look for. Both translate to one claim, and
+            # one fixture naming it twice is one owner, not a collision. Two
+            # DIFFERENT fixtures naming it still collide, which is the rule
+            # this dedupe must not weaken.
+            if d.name not in owners:
+                owners.append(d.name)
     return covered, synthetic
 
 

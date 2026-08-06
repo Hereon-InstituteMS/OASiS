@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for the four cross-cutting SPARTA claims (UNIVERSAL_PITFALLS, appended to all ten physics rows) that had no fixture. Seven decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial), each differing from the next by one line, on a 1 mm 2d argon box. universal:5 — dropping the 'timestep' line makes the run never return: no stats header, ZERO bytes of captured output, killed by the harness; the identical deck with 'timestep 1e-7' completes rc=0 and prints its table. universal:7 — shrinking the create_box z extent by 1000x leaves the setup line 'Created 19999 particles' character-for-character unchanged, because in 2d the cell volume is per one metre of depth. universal:6 — the same seed reproduces the Ncoll and Ncollave columns exactly, a changed seed does not, and the running mean's cross-seed spread is smaller than the per-step count's. universal:8 — 'stats 1' and 'stats 100' report the SAME final Ncoll for the same seed and final step, which is what proves the column is the count on one timestep rather than a sum over the stats interval; an interval sum would have differed by about the interval. The only timing-shaped element is how long the fixture waits for the hang, and it is not asserted: what is asserted is that no stats line appeared and nothing was printed, which a slower host makes more certain, not less. No measured number is pinned. COVERS: universal:5, :6, :7, :8.",
+  "_comment": "Tier-2 for the four cross-cutting SPARTA claims (UNIVERSAL_PITFALLS, appended to all ten physics rows) that had no fixture. Seven decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial), each differing from the next by one line, on a 1 mm 2d argon box. universal:5 — dropping the 'timestep' line makes the run never return: no stats header, ZERO bytes of captured output, killed by the harness; the identical deck with 'timestep 1e-7' completes rc=0 and prints its table. universal:7 — shrinking the create_box z extent by 1000x leaves the setup line 'Created 19999 particles' character-for-character unchanged, because in 2d the cell volume is per one metre of depth. universal:6 — the same seed reproduces the Ncoll and Ncollave columns exactly, a changed seed does not, and the running mean's cross-seed spread is smaller than the per-step count's. universal:8 — 'stats 1' and 'stats 100' report the SAME final Ncoll for the same seed and final step, which is what proves the column is the count on one timestep rather than a sum over the stats interval; an interval sum would have differed by about the interval. The only timing-shaped element is how long the fixture waits for the hang, and it is not asserted: what is asserted is that no stats line appeared and nothing was printed, which a slower host makes more certain, not less. No measured number is pinned. COVERS: universal:5, :6, :7, :8. POSITIONAL ALIASES added 2026-08-06: this fixture's universal claims are also listed at their slots in the rarefied_flow row. The identity key 'universal:<n>' counts each shared claim once, which is correct; but an external counter walking rarefied_flow's 19 positional slots cannot see it and reports the claim as uncovered. Listing both makes the coverage visible under either convention; the gate collapses the alias onto the identity key so it is still counted once.",
   "backend": "sparta",
   "physics": "rarefied_flow",
   "pitfall_index": 14,
@@ -7,7 +7,11 @@
     "universal:5",
     "universal:6",
     "universal:7",
-    "universal:8"
+    "universal:8",
+    "rarefied_flow:14",
+    "rarefied_flow:15",
+    "rarefied_flow:16",
+    "rarefied_flow:17"
   ],
   "mode": "python",
   "timeout_seconds": 600,

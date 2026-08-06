@@ -1,10 +1,11 @@
 {
-  "_comment": "Tier-2 for sparta rarefied_flow: the flagship DSMC 'clean run, meaningless physics' pitfall. Deleting the single line 'collide vss air ar.vss' from a 2d argon Fourier-channel deck leaves rc=0, a healthy stats table and no warning, but Ncoll is identically 0 and the cold-wall energy flux is several times too large with the mid-gas temperature far off. The SIZE of the error scales with the Knudsen number and is not a transferable constant, so the assertion is a direction plus an order of magnitude, not a fixed ratio. Skips cleanly (exit 0, 'SKIP:') when no SPARTA binary is present.",
+  "_comment": "Tier-2 for sparta rarefied_flow: the flagship DSMC 'clean run, meaningless physics' pitfall. Deleting the single line 'collide vss air ar.vss' from a 2d argon Fourier-channel deck leaves rc=0, a healthy stats table and no warning, but Ncoll is identically 0 and the cold-wall energy flux is several times too large with the mid-gas temperature far off. The SIZE of the error scales with the Knudsen number and is not a transferable constant, so the assertion is a direction plus an order of magnitude, not a fixed ratio. Skips cleanly (exit 0, 'SKIP:') when no SPARTA binary is present. POSITIONAL ALIASES added 2026-08-06: this fixture's universal claims are also listed at their slots in the rarefied_flow row. The identity key 'universal:<n>' counts each shared claim once, which is correct; but an external counter walking rarefied_flow's 19 positional slots cannot see it and reports the claim as uncovered. Listing both makes the coverage visible under either convention; the gate collapses the alias onto the identity key so it is still counted once.",
   "backend": "sparta",
   "physics": "rarefied_flow",
   "pitfall_index": 13,
   "covers": [
-    "universal:4"
+    "universal:4",
+    "rarefied_flow:13"
   ],
   "mode": "python",
   "timeout_seconds": 600,

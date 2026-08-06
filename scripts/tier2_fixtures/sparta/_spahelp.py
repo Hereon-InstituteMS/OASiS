@@ -135,6 +135,48 @@ def run(deck: str, data: dict[str, Path] | None = None, timeout: int = 600):
     return rc, txt
 
 
+def run_keep(deck: str, data: dict[str, Path] | None = None,
+             timeout: int = 600):
+    """Like ``run`` but LEAVES the working directory, for decks that write
+    files the fixture has to read back — dump files, restart files, log.sparta.
+
+    The caller owns the directory and must remove it. ``run`` cannot be used
+    for this: it deletes the tree in a finally block, so anything the deck
+    wrote is gone before the fixture can look at it.
+    """
+    work = Path(tempfile.mkdtemp(prefix="spa_keep_"))
+    for name, src in (data or {}).items():
+        shutil.copy(src, work / name)
+    (work / "in.case").write_text(deck)
+    try:
+        proc = subprocess.run([BINARY, "-in", "in.case"], cwd=str(work),
+                              capture_output=True, text=True, timeout=timeout)
+        rc, txt = proc.returncode, proc.stdout + proc.stderr
+    except subprocess.TimeoutExpired as exc:
+        rc = -99
+        txt = (exc.stdout or b"").decode(errors="replace") if exc.stdout else ""
+    return rc, txt, work
+
+
+def dump_column(path: Path, index: int = 1) -> list[float]:
+    """Read one numeric column from a SPARTA per-surf / per-grid dump file.
+
+    The body starts after the 'ITEM: SURFS' (or 'ITEM: GRID CELLS') header
+    line; every following non-blank line is one element.
+    """
+    out: list[float] = []
+    started = False
+    for line in path.read_text().splitlines():
+        if line.startswith("ITEM: "):
+            started = line.startswith(("ITEM: SURFS", "ITEM: GRID CELLS"))
+            continue
+        if started and line.strip():
+            parts = line.split()
+            if len(parts) > index:
+                out.append(float(parts[index]))
+    return out
+
+
 def errors(txt: str) -> list[str]:
     return [l for l in txt.splitlines() if l.startswith("ERROR")]
 

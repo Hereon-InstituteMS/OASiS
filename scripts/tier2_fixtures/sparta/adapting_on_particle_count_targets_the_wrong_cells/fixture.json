@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for sparta hypersonic_flow and adaptive_grid: a uniform grid sized on freestream conditions is far too coarse at the shock, and refining on particle count does not fix it. Three decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial), identical but for the 'fix adapt' line: a physically scaled Mach-5 argon flow past a cylinder. The scaling is deliberate — upstream examples/circle uses nrho 1.0, which makes the flow free molecular with cell Knudsen numbers around 1e18 and leaves nothing to resolve; here the freestream mean free path is a fraction of a cell. hypersonic_flow:3 — the cell Knudsen minimum from 'compute lambda/grid ... knall' with 'compute reduce min' is 0.0163, far below 1, and the run exits 0 with no error and no warning. adaptive_grid:4 — refining on particle count leaves the Knudsen minimum at 0.947 of its pre-adaptation value (i.e. no improvement) while refining on the Knudsen column raises it 3.19x. THRESHOLD BUNDLING CORRECTED: the entry's Signal read 'the cell Knudsen minimum has not improved EVEN THOUGH Ngrid has grown several-fold'. The first half holds and the second does not. Refining on particle count splits a cell's particles among its children, dropping them below the threshold at once, so the criterion is self-limiting: the cell count grows 1.25x, not several-fold, while the Knudsen-driven run on the same deck grows 5.6x. An agent looking for several-fold growth AND no improvement would not find the first half and could wrongly conclude the entry did not apply. The entry was corrected in the same commit. Both ratios were measured on two seeds before any gate here was chosen — particle-driven 0.947 and 0.928, Knudsen-driven 3.19 and 3.08 — and the gates (1.1 and 2.0) sit far from both clusters, which is how a Monte-Carlo quantity has to be bounded. No measured value is pinned. COVERS: hypersonic_flow:3, adaptive_grid:4.",
+  "backend": "sparta",
+  "physics": "adaptive_grid",
+  "pitfall_index": 4,
+  "covers": [
+    "hypersonic_flow:3",
+    "adaptive_grid:4"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "every_run_exits_zero_with_no_error_and_no_warning=True",
+    "the_uniform_grid_is_under_resolved_cell_knudsen_below_one=True",
+    "and_SPARTA_never_warns_about_it=True",
+    "refining_on_particle_count_does_NOT_improve_the_knudsen_minimum=True",
+    "refining_on_the_knudsen_column_does=True",
+    "the_particle_count_criterion_is_self_limiting_not_several_fold=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

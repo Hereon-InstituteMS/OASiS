@@ -115,9 +115,17 @@ KNOWLEDGE = {
             "SPARTA does not warn: the run is clean and the shock is simply "
             "smeared. "
             "Signal: 'compute <ID> lambda/grid ... knall' + 'compute reduce "
-            "min' gives a cell Knudsen number below 1 somewhere in the domain; "
-            "drive 'fix adapt' from that column rather than from particle "
-            "count.",
+            "min' gives a cell Knudsen number below 1 somewhere in the domain, "
+            "with rc = 0 and no warning; drive 'fix adapt' from that column "
+            "rather than from particle count. Measured on a Mach-5 argon "
+            "cylinder case, the uniform freestream-sized grid gives a cell "
+            "Knudsen minimum well below 1; refining from the Knudsen column "
+            "lifts it by about a factor of three while refining on particle "
+            "count leaves it where it was. NOTE that upstream's "
+            "examples/circle cannot show any of this: it uses nrho 1.0, so the "
+            "flow is free molecular and the cell Knudsen numbers come out "
+            "around 1e18. Scale the density physically before drawing a "
+            "resolution conclusion from that deck.",
 
             "[Numerical] 'fix adapt' driven by a per-grid COMPUTE (c_ID[i]) "
             "re-evaluates it each adaptation step, but driven by a FIX (f_ID) "
