@@ -51,16 +51,69 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
-# Prefer the Debug-built deal.II at ~/Schreibtisch/dealii-debug
-# (Assert macros enabled — unlocks the Assert-gated Signal families
-# like ExcDimensionMismatch). Falls back to the conda Release install
-# (~/miniconda3/envs/ofa-dealii) which leaves Assert as a no-op.
-_DEBUG_PREFIX = Path.home() / "Schreibtisch" / "dealii-debug"
-_RELEASE_PREFIX = Path.home() / "miniconda3" / "envs" / "ofa-dealii"
-DEFAULT_DEALII_PREFIX = (
-    _DEBUG_PREFIX if (_DEBUG_PREFIX / "lib" / "libdeal_II.g.so").is_file()
-    else _RELEASE_PREFIX
-)
+
+def fixture_inventory_fingerprint() -> str:
+    """Identity of the fixture set: which fixtures exist and what they contain.
+
+    Deliberately NOT a claim about whether they pass — it records what was
+    summarised, so a summary can be told apart from a stale one. Every file in
+    every fixture directory is hashed, so editing a fixture's expectation or its
+    source counts as a change, not just adding or deleting one.
+    """
+    import hashlib
+
+    h = hashlib.sha256()
+    for d in sorted(p.parent for p in FIXTURES_DIR.glob("*/*/fixture.json")):
+        h.update(f"{d.parent.name}/{d.name}\n".encode())
+        for f in sorted(d.iterdir()):
+            if f.is_file():
+                h.update(f.name.encode())
+                h.update(hashlib.sha256(f.read_bytes()).digest())
+    return h.hexdigest()
+
+# deal.II install roots. A Debug build (Assert macros live) unlocks the
+# whole Assert-gated Signal family — ExcDimensionMismatch,
+# ExcInvalidFEIndex, ExcDivideByZero — every one of which is compiled OUT
+# of a Release build, so a Release-only host cannot test them at all.
+#
+# Both lists were single hard-coded paths that do not exist on this host:
+# `~/Schreibtisch/dealii-debug` and `~/miniconda3/envs/ofa-dealii`. The
+# consequence was not an error but a SKIP — every deal.II fixture reported
+# "install root not present", which reads identically to "no deal.II here"
+# on a machine that has two working deal.II builds. Same class of defect as
+# the interpreter resolution below: a guessed path treated as a fact.
+def _first_existing(cands, marker) -> Path | None:
+    for c in cands:
+        try:
+            if (Path(c) / marker).is_file():
+                return Path(c)
+        except OSError:
+            continue
+    return None
+
+
+_DEBUG_CANDIDATES = [
+    os.environ.get("DEAL_II_DEBUG_DIR", ""),
+    Path.home() / "Schreibtisch" / "dealii-debug",
+    Path("/media/alexander/PortableSSD/dealii-verify-r2/dbgbuild"),
+    Path.home() / "dealii" / "dbgbuild",
+]
+_RELEASE_CANDIDATES = [
+    os.environ.get("DEAL_II_DIR", ""),
+    Path.home() / "dealii" / "build",
+    Path.home() / "dealii" / "install",
+    Path.home() / "miniconda3" / "envs" / "ofa-dealii",
+]
+# A build tree keeps its package config under cmake/config/, an install
+# tree under lib/cmake/deal.II/ — accept either, and key the Debug probe
+# on the debug library itself since that is what Assert needs.
+_DEBUG_PREFIX = (_first_existing(_DEBUG_CANDIDATES, "lib/libdeal_II.g.so")
+                 or Path.home() / "Schreibtisch" / "dealii-debug")
+_RELEASE_PREFIX = (
+    _first_existing(_RELEASE_CANDIDATES, "lib/libdeal_II.so")
+    or _first_existing(_RELEASE_CANDIDATES, "cmake/config/deal.IIConfig.cmake")
+    or Path.home() / "miniconda3" / "envs" / "ofa-dealii")
+DEFAULT_DEALII_PREFIX = _RELEASE_PREFIX
 
 
 @dataclass
@@ -132,11 +185,17 @@ def _eval_fixture(fixture_dir: Path,
     if requires_debug and not has_debug_lib and backend == "dealii":
         result.status = "skipped"
         result.notes.append(
-            "fixture requires Debug-built deal.II at "
-            "~/Schreibtisch/dealii-debug (Assert macros enabled); "
-            "current install is Release-only — skip until rebuilt "
-            "(task #30)")
+            f"fixture requires a Debug-built deal.II (Assert macros live); "
+            f"none of {[str(c) for c in _DEBUG_CANDIDATES if c]} has "
+            f"lib/libdeal_II.g.so — set DEAL_II_DEBUG_DIR to one")
         return result
+    # Point the build at the Debug tree when the fixture asked for it, so
+    # `requires_debug` actually changes which library gets linked instead of
+    # merely gating the run. Without this the flag was a no-op whenever a
+    # Release install happened to be found first.
+    if requires_debug and has_debug_lib and backend == "dealii":
+        env.setdefault("DEAL_II_DIR", str(_DEBUG_PREFIX))
+        env["DEAL_II_DIR"] = str(_DEBUG_PREFIX)
 
     if mode == "compile_only" and backend == "dealii":
         prefix = Path(env.get("DEAL_II_DIR",
@@ -367,53 +426,143 @@ def _eval_fixture(fixture_dir: Path,
         python = sys.executable
         REPO_VENV = REPO_ROOT / ".venv" / "bin" / "python"
 
-        def _route_to_repo_venv(env_var: str, label: str) -> str | None:
-            cand = env.get(env_var) or (
-                str(REPO_VENV) if REPO_VENV.is_file() else None)
-            if cand and Path(cand).is_file():
+        def _route_to_repo_venv(env_var: str, label: str,
+                               probe_module: str = "") -> str | None:
+            """Find an interpreter that can run this backend's fixture.
+
+            The first version looked only at `$ENV_VAR` and `REPO_ROOT/.venv`.
+            That fails in every git worktree and in any clone whose environment
+            lives elsewhere: measured here, 96 of 108 fixtures skipped and the
+            run then OVERWROTE `tier2_results.json` with `passed: 1`. A sibling
+            audit hit the same thing from the other side, rewriting 112 to 6.
+
+            So the search now widens, cheapest first, and — the part that
+            actually matters — it CHECKS the candidate can import the package
+            instead of assuming a path implies a working environment.
+            """
+            def _readable_file(p) -> bool:
+                # `is_file()` RAISES PermissionError on a path whose parent is
+                # unreadable — it does not return False. Scanning sibling
+                # directories walked into one such venv and killed the whole
+                # run before a single fixture reported.
+                try:
+                    return Path(p).is_file()
+                except OSError:
+                    return False
+
+            candidates = [env.get(env_var),
+                          str(REPO_VENV) if _readable_file(REPO_VENV) else None]
+            # A sibling checkout's venv: worktrees share one environment, and
+            # REPO_ROOT is the worktree, not the checkout that owns the venv.
+            try:
+                siblings = sorted(REPO_ROOT.parent.iterdir())
+            except OSError:
+                siblings = []
+            for sibling in siblings:
+                try:
+                    if sibling.is_dir():
+                        candidates.append(
+                            str(sibling / ".venv" / "bin" / "python"))
+                except OSError:
+                    continue
+            # The interpreter running this script, last: if it can import the
+            # package it is as good as any path we could guess.
+            candidates.append(sys.executable)
+
+            for cand in candidates:
+                if not cand or not _readable_file(cand):
+                    continue
+                if probe_module:
+                    try:
+                        probe = subprocess.run(
+                            [cand, "-c", f"import {probe_module}"],
+                            capture_output=True, timeout=120,
+                            stdin=subprocess.DEVNULL)
+                    except (OSError, subprocess.SubprocessError):
+                        continue
+                    if probe.returncode != 0:
+                        continue
                 return cand
+
             result.status = "skipped"
             result.notes.append(
-                f"{label} env python not found; set "
-                f"{env_var} or install repo .venv (task #18)")
+                f"{label}: no interpreter found that can import "
+                f"{probe_module or 'the package'}; set {env_var} to one")
+            return None
+
+        def _conda_python(env_var: str, env_names: list[str], label: str,
+                          probe_module: str) -> str | None:
+            """Find an interpreter for a conda-hosted backend.
+
+            The hard-coded env name (`ofa-fenicsx`, `ofa-dune`) is a GUESS,
+            and on this host it is wrong: the dolfinx env is called `fenics`
+            (plus `fenicsc` for the complex build). A wrong guess made every
+            fenics fixture report `skipped` — which a reader cannot tell apart
+            from "dolfinx is not installed". So: try the override, then each
+            known env name, then the running interpreter, and in every case
+            CHECK the candidate can import the package rather than inferring
+            that from the path.
+            """
+            cands = [env.get(env_var)]
+            for name in env_names:
+                cands.append(str(Path.home() / "miniconda3" / "envs" / name
+                                 / "bin" / "python"))
+                cands.append(str(Path.home() / "anaconda3" / "envs" / name
+                                 / "bin" / "python"))
+                cands.append(str(Path.home() / "mambaforge" / "envs" / name
+                                 / "bin" / "python"))
+            cands.append(sys.executable)
+            tried = []
+            for c in cands:
+                if not c:
+                    continue
+                try:
+                    if not Path(c).is_file():
+                        continue
+                except OSError:
+                    continue
+                tried.append(c)
+                try:
+                    probe = subprocess.run(
+                        [c, "-c", f"import {probe_module}"],
+                        capture_output=True, timeout=180,
+                        stdin=subprocess.DEVNULL)
+                except (OSError, subprocess.SubprocessError):
+                    continue
+                if probe.returncode == 0:
+                    return c
+            result.status = "skipped"
+            result.notes.append(
+                f"{label}: no interpreter found that can import "
+                f"{probe_module}; tried {tried or cands}; set {env_var}")
             return None
 
         if backend == "fenics":
-            cand = (env.get("FENICS_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-fenicsx" / "bin" / "python"))
-            if Path(cand).is_file():
-                python = cand
-            else:
-                result.status = "skipped"
-                result.notes.append(
-                    "FEniCSx env python not found; set "
-                    "FENICS_PYTHON or install ofa-fenicsx conda env")
+            cand = _conda_python("FENICS_PYTHON",
+                                 ["fenics", "ofa-fenicsx", "fenicsx",
+                                  "dolfinx"], "FEniCSx", "dolfinx")
+            if cand is None:
                 return result
+            python = cand
         elif backend == "dune":
-            cand = (env.get("DUNE_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-dune" / "bin" / "python"))
-            if Path(cand).is_file():
-                python = cand
-            else:
-                result.status = "skipped"
-                result.notes.append(
-                    "DUNE-fem env python not found; set "
-                    "DUNE_PYTHON or install ofa-dune conda env")
+            cand = _conda_python("DUNE_PYTHON",
+                                 ["ofa-dune", "dune-fem-env", "dune311"],
+                                 "DUNE-fem", "dune.fem")
+            if cand is None:
                 return result
+            python = cand
         elif backend == "kratos":
-            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos")
+            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos", "KratosMultiphysics")
             if cand is None:
                 return result
             python = cand
         elif backend == "ngsolve":
-            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve")
+            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve", "ngsolve")
             if cand is None:
                 return result
             python = cand
         elif backend == "skfem":
-            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem")
+            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem", "skfem")
             if cand is None:
                 return result
             python = cand
@@ -547,9 +696,29 @@ def main():
     print()
     print(f"Tier-2 summary: {summary}")
 
+    # `--write-results` was PARSED AND NEVER READ, so the write was
+    # unconditional and the flag was decoration. Every exploratory run destroyed
+    # the recorded snapshot: a DUNE audit reported it rewriting 112 passes to 6,
+    # and it overwrote 108 with 1 under me before I noticed. A summary that any
+    # incidental run can clobber is not a record.
+    if not args.write_results:
+        print("\nresults NOT written (pass --write-results to persist). "
+              f"Recorded snapshot at {OUTPUT.relative_to(REPO_ROOT)} is "
+              f"untouched.")
+        return
+
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
         "summary": summary,
+        # Identity of the fixture set these results describe. Without it a
+        # committed snapshot cannot be told from a current one: an audit found
+        # `tier2_results.json` 18 commits stale, recording `passed: 113` on a
+        # host where 7 passed and 10 failed — and the floor test that reads it
+        # was green, including with the backend's binary hidden. The number
+        # travels with the repo, so every user gets our result reported as
+        # theirs. Comparing this fingerprint catches the fixture set having moved
+        # underneath a stale summary.
+        "fixture_fingerprint": fixture_inventory_fingerprint(),
         "results": results,
     }, indent=2))
     print(f"results written to "
