@@ -1,0 +1,21 @@
+{
+  "_comment": "ngsolve plasticity#3 (internal variables sized at the quadrature points). Observed 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.5 (6 trigs): the claim's signal 'L2 ndof == num_elements * num_quad_points' is FALSE at every order 1..5 -- L2(order=3) has 10 dofs/element while IntegrationRule(TRIG,3) has 6 points and the collocated rule has 12. ngsolve.comp.IntegrationRuleSpace satisfies the identity exactly for orders 0..5, and it is reachable neither as ngsolve.IntegrationRuleSpace nor via 'from ngsolve import *'.",
+  "backend": "ngsolve",
+  "physics": "plasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "top_level_IntegrationRuleSpace=False",
+    "star_import_IntegrationRuleSpace=False",
+    "comp_IntegrationRuleSpace_type=IntegrationRuleSpace",
+    "l2_dofs_per_element=10",
+    "integrationrule_trig_order3_npoints=6",
+    "collocated_rule_npoints=12",
+    "l2_ndof_equals_ne_times_quadpoints=False",
+    "orders_where_l2_ndof_mismatches_quadpoints=[1, 2, 3, 4, 5]",
+    "irs_aligned_all_orders_0_to_5=True",
+    "irs_type=IntegrationRuleSpace"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

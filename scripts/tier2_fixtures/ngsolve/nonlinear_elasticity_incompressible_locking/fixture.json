@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#4 (near-incompressible locking / mixed u-p). Observed 2026-08-06 on NGSolve 6.2.2604, Cook's membrane maxh 4 with a Neo-Hookean energy: at nu=0.4999 pure-displacement VectorH1 order 1 gives a tip of 0.884 against the mixed (VectorH1 order 2 + H1 order 1, perturbed Lagrangian) reference 1.614 -- about 55%, i.e. the locking is real but nowhere near the claimed '< 1% of the analytic value'; order-2 pure displacement lands within 0.4% of mixed, and at nu=1/3 order 1 is already within a few percent. Pins both the locking and the falsified magnitude.",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "mixed_space_type=FESpace",
+    "mixed_components=['VectorH1', 'H1']",
+    "mixed_status_zero=True",
+    "locked_ratio_lt_0p6=True",
+    "locked_ratio_below_1pct=False",
+    "locked_ratio_above_10pct=True",
+    "mild_nu_ratio_gt_0p9=True",
+    "order2_pure_within_1pct_of_mixed=True",
+    "order2_pure_beats_order1=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

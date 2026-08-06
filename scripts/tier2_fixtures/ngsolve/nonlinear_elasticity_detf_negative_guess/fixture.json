@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#0 (det(F) must stay > 0). Observed 2026-08-06 on NGSolve 6.2.2604: the u=-2x guess gives Integrate(Det(F))=-1, a.Energy=nan, a.Apply fills the residual with NaN, and solvers.Newton aborts with 'UmfpackInverse: Numeric factorization failed'. No FloatingPointError is raised -- NGSolve returns NaN silently, so the claim's 'FloatingPointError or NaN' is NaN-only here. Load-stepping the same -0.4 compression from u=0 keeps Det(F)>0 over the whole domain and converges each step.",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "crushed_mean_detF_le_zero=True",
+    "crushed_inverted_area_fraction_is_one=True",
+    "crushed_energy_is_nan=True",
+    "crushed_residual_has_nan=True",
+    "crushed_raises_floatingpointerror=False",
+    "UmfpackInverse: Numeric factorization failed",
+    "crushed_newton_factorization_failed=True",
+    "loadstep_all_converged=True",
+    "loadstep_detF_positive_everywhere=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}
