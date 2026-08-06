@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii eigenvalue#2. Tier-2 for dealii eigenvalue#2 \u2014 probe \"dirichlet_spurious_modes\" of the shared eigenvalue translation unit _shared/eigen_family.cc (deflated inverse power iteration on K x = lambda M x, built-in SparseMatrix, because this deal.II has neither PETSc nor SLEPc). Compiled once and cached; six fixtures share the one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "eigenvalue",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "smallest_mode_below_physical_range=true",
+    "assembled_diagonal_puts_modes_at_order_one=false",
+    "VERDICT=mirrored_unit_mass_diagonal_puts_a_mode_below_the_physical_range"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=spectrum_starts_at_the_physical_mode"
+  ],
+  "timeout_seconds": 900
+}

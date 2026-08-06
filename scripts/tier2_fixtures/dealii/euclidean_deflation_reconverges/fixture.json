@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii eigenvalue#1. Tier-2 for dealii eigenvalue#1 \u2014 probe \"deflation_inner_product\" of the shared eigenvalue translation unit _shared/eigen_family.cc (deflated inverse power iteration on K x = lambda M x, built-in SparseMatrix, because this deal.II has neither PETSc nor SLEPc). Compiled once and cached; six fixtures share the one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "eigenvalue",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "second_mode_repeats_the_first=true",
+    "second_mode_is_5pi2=false",
+    "VERDICT=euclidean_deflation_reconverges_to_the_same_mode"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=deflation_found_a_new_mode"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii eigenvalue#8. Tier-2 for dealii eigenvalue#8 \u2014 probe \"template_reference_values\" of the shared eigenvalue translation unit _shared/eigen_family.cc (deflated inverse power iteration on K x = lambda M x, built-in SparseMatrix, because this deal.II has neither PETSc nor SLEPc). Compiled once and cached; six fixtures share the one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "eigenvalue",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "expect_in_output": [
+    "mode0_within_half_a_percent=true",
+    "degenerate_pair_recovered=true",
+    "VERDICT=template_reproduces_the_analytic_spectrum"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=template_does_not_reproduce"
+  ],
+  "timeout_seconds": 900
+}
