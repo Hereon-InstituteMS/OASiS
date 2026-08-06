@@ -24,16 +24,27 @@ Observed on NGSolve 6.2.2604 (2026-08-03):
 Both variants leave the body stress-free, which is why the mistake is silent:
 a uniform eigenstrain on a free body always relaxes to zero total stress, so
 only the STRAIN magnitude reveals it.
+
+Mutation control: T2_MUTATE=1 sets WRONG_RHS_FACTOR to '3*lam+2*mu', putting
+the correct 3K prefactor in the slot where 2*mu was, so
+'wrong_factor_matches_1_minus_2nu_law=True',
+'wrong_factor_misses_exact_expansion=True' and
+'error_factor_matches_closed_form=True' disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
 # WRONG: the thermal-RHS prefactor used by the failing variant
-WRONG_RHS_FACTOR = "2*mu"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# Mutation: T2_MUTATE=1 uses the correct 3K = 3*lam + 2*mu prefactor.
+WRONG_RHS_FACTOR = "3*lam+2*mu" if MUTATE else "2*mu"
 
 E, NU, ALPHA, DT = 210e3, 0.3, 1.2e-5, 100.0
 MU = E / (2.0 * (1.0 + NU))

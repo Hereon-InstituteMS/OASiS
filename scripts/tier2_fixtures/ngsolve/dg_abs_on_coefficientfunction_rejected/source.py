@@ -19,10 +19,17 @@ What this fixture pins, all re-measured on this run:
     with each other and with math.fabs at sample points straddling the sign
     change, and their integral over the unit square matches an independent
     two-piece integration of the positive and negative parts.
+
+Mutation control:  T2_MUTATE=1 hands the bare_cf probe a plain Python float
+instead of the CoefficientFunction z, so abs() is applied to a float and no
+TypeError is raised.  The expectations bare_cf_raises=True,
+bare_cf_message_literal=True and all_three_shapes_give_same_literal=True then
+disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -43,6 +50,10 @@ from ngsolve import GridFunction, H1
 
 LITERAL = "bad operand type for abs(): 'ngsolve.fem.CoefficientFunction'"
 
+# Mutation control: under T2_MUTATE=1 the bare_cf probe receives a float rather
+# than a CoefficientFunction -- the pathology (abs() on a CF) is gone.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.25))
@@ -54,8 +65,9 @@ def main() -> int:
     ip = InnerProduct(grad(gfu), grad(gfu))        # InnerProduct-valued
     tr = Trace(CoefficientFunction((x, y, y, x), dims=(2, 2)))  # Trace-valued
 
+    bare = z if not MUTATE else -0.5          # float under mutation
     msgs = {}
-    for label, expr in (("bare_cf", z), ("innerproduct", ip), ("trace", tr)):
+    for label, expr in (("bare_cf", bare), ("innerproduct", ip), ("trace", tr)):
         try:
             abs(expr)
             msgs[label] = ""

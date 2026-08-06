@@ -21,18 +21,31 @@ q=1 (D=0.0915751, Navier reference 4.436089e-02):
     + compliance factor only    w_c/w_ref = 0.3124   = clamped/simply-supported
     both fixes                  w_c/w_ref = 1.0002
 0.7002 * 0.3124 = 0.2188, so the two defects are independent and multiplicative.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies both documented fixes
+at the pathology site -- SHIPPED_COMPLIANCE_MISSES_1_MINUS_NU and
+SHIPPED_OMITS_MNN_DIRICHLET both become False, so the "shipped template" run
+uses the full 1/(D(1-nu)) compliance and the essential M_nn Dirichlet.  Its
+centre deflection then lands on the Navier value, so
+``shipped_template_low_by_gt_70pct=True`` and ``defects_are_multiplicative=True``
+disappear, ``shipped_template_within_5pct_of_navier`` flips from False to True
+(removing that expectation too), and the fixture goes red.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# WRONG: the two defects of the shipped hdivdiv_2d template
-SHIPPED_COMPLIANCE_MISSES_1_MINUS_NU = True
-SHIPPED_OMITS_MNN_DIRICHLET = True
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: the two defects of the shipped hdivdiv_2d template.
+# Under T2_MUTATE both are repaired at the site the fixture is about.
+SHIPPED_COMPLIANCE_MISSES_1_MINUS_NU = not MUTATE
+SHIPPED_OMITS_MNN_DIRICHLET = not MUTATE
 
 E, NU, T_PLATE, Q = 1.0, 0.3, 1.0, 1.0
 D = E * T_PLATE ** 3 / (12.0 * (1.0 - NU ** 2))

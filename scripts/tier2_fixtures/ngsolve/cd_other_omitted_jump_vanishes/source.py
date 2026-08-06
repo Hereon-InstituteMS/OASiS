@@ -26,6 +26,11 @@ What this fixture pins, all re-measured on this run:
     per-element mass term makes it invertible, and its solution is exactly the
     elementwise L2 projection, which the fixture verifies against an independent
     per-element projection.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at both pathology sites
+-- .Other() is restored, so the broken form's integrand becomes the real jump
+(u - u.Other())*(v - v.Other()) -- and the matrix then couples elements. Re-run
+with `T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
@@ -47,6 +52,8 @@ from ngsolve import (
     x,
     y,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _capture_fds(fn):
@@ -95,7 +102,12 @@ def main() -> int:
 
     def _broken():
         a = BilinearForm(fes)
-        a += (u - u) * (v - v) * dx(skeleton=True)
+        # The pathology: the .Other() is missing on both factors.
+        # T2_MUTATE=1 restores it, turning this into the real jump.
+        if MUTATE:
+            a += (u - u.Other()) * (v - v.Other()) * dx(skeleton=True)
+        else:
+            a += (u - u) * (v - v) * dx(skeleton=True)
         a.Assemble()
         return a
 
@@ -120,7 +132,11 @@ def main() -> int:
     # A DG solve on the broken form is the elementwise L2 projection.
     a_solve = BilinearForm(fes)
     a_solve += u * v * dx
-    a_solve += (u - u) * (v - v) * dx(skeleton=True)
+    # Same pathology, same fix under T2_MUTATE=1.
+    if MUTATE:
+        a_solve += (u - u.Other()) * (v - v.Other()) * dx(skeleton=True)
+    else:
+        a_solve += (u - u) * (v - v) * dx(skeleton=True)
     a_solve.Assemble()
     f = LinearForm(fes)
     f += (x * x - y) * v * dx

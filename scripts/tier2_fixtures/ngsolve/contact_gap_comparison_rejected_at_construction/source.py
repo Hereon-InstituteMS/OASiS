@@ -21,9 +21,17 @@ What this fixture pins, all re-measured on this run:
   * that IfPos(-gap, 1, 0) is a working indicator: its integral over the region
     where gap < 0 equals that region's area computed independently, and the
     complementary indicator sums with it to the full domain area.
+
+Mutation control: T2_MUTATE=1 removes the pathology at its site -- the four
+ordering comparisons are made against a plain Python float instead of against
+the CoefficientFunction.  Rich comparison is then defined, nothing raises, and
+'lt_raises=True', 'lt_message_literal=True' and 'all_four_orderings_raise=True'
+are absent from the output, so the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -33,6 +41,7 @@ from ngsolve import CoefficientFunction, IfPos, Integrate, Mesh, y
 LITERAL = ("'<' not supported between instances of "
            "'ngsolve.fem.CoefficientFunction' and 'int'")
 ABSENT = "CoefficientFunction comparison"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -43,11 +52,15 @@ def main() -> int:
     print(f"gap_is_coefficientfunction="
           f"{isinstance(gap, CoefficientFunction)}")
 
+    # The pathology: the compared object is a CoefficientFunction, which has no
+    # rich comparison.  Under mutation a plain float is compared instead.
+    probe = gap if not MUTATE else float(y0)
+
     msgs = {}
-    for label, fn in (("lt", lambda: gap < 0),
-                      ("le", lambda: gap <= 0),
-                      ("gt", lambda: gap > 0),
-                      ("ge", lambda: gap >= 0)):
+    for label, fn in (("lt", lambda: probe < 0),
+                      ("le", lambda: probe <= 0),
+                      ("gt", lambda: probe > 0),
+                      ("ge", lambda: probe >= 0)):
         try:
             fn()
             msgs[label] = ""

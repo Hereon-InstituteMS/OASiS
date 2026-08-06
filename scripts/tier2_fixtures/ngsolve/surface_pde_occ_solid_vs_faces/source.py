@@ -28,15 +28,25 @@ Observed on NGSolve 6.2.2604 / netgen OCC, maxh=0.4, Curve(4) (2026-08-06):
 CORRECTION to the claim text: selecting the faces does NOT make Mesh.dim
 return 2.  It stays 3; the discriminator is mesh.ne == 0 (no volume
 elements).  Passing dim=2 is what returns 2, and it destroys the geometry.
+
+Mutation control: T2_MUTATE=1 feeds WRONG variant A the glued faces instead
+of the solid -- the documented fix, in the slot where the pathology was.  The
+"solid" mesh then carries no volume elements, so
+solid_geo_has_volume_elements=True, solid_geo_dx_is_ball_volume=True and
+solid_geo_plain_h1_bigger_than_surface=True all disappear and the fixture goes
+red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.occ import Glue, OCCGeometry, Pnt, Sphere
 from ngsolve import (BilinearForm, CoefficientFunction, H1, Integrate, Mesh,
                      ds, dx, grad)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 EXACT_AREA = 4.0 * math.pi
 EXACT_VOL = 4.0 * math.pi / 3.0
@@ -55,7 +65,9 @@ def main() -> int:
     print(f"n_faces={len(sphere.faces)} n_solids={len(sphere.solids)}")
 
     # ---- WRONG A: the solid, exactly as the shipped template does -------
-    m_solid = build(sphere)
+    # Mutation: T2_MUTATE=1 puts the documented fix, Glue(sphere.faces), in
+    # the slot where the solid was, so this mesh carries no volume elements.
+    m_solid = build(Glue(sphere.faces) if MUTATE else sphere)
     fes_solid = H1(m_solid, order=2)
     print(f"solid_geo_mesh_dim={m_solid.dim}")
     print(f"solid_geo_has_volume_elements={m_solid.ne > 0}")

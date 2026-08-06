@@ -15,9 +15,18 @@ both spaces and asserts:
 
 Also confirms MatrixValued(H1, symmetric=True) exists and gfu.
 components on a VectorH1 returns a tuple of ComponentGridFunction.
+
+Mutation control: this is a falsification fixture, so the "fix" it
+controls against is the catalog's own (mistaken) prescription.
+T2_MUTATE=1 applies it at the pathology site — the second space is
+built as VectorH1(mesh, order=2, dirichlet="left") instead of
+H1(mesh, order=2, dim=2, dirichlet="left") — so the H1(dim=2) path
+is no longer exercised at all and the reported class name changes.
+Re-run with `T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -37,6 +46,8 @@ from ngsolve import (
     VectorH1,
     dx,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _solve(fes) -> np.ndarray:
@@ -60,7 +71,10 @@ def main() -> int:
     mesh = Mesh(g2.unit_square.GenerateMesh(maxh=0.5))
 
     fes_vec = VectorH1(mesh, order=2, dirichlet="left")
-    fes_dim = H1(mesh, order=2, dim=2, dirichlet="left")
+    # The space under audit. T2_MUTATE=1 replaces it with the
+    # catalog's prescribed VectorH1, so H1(dim=2) is never used.
+    fes_dim = (VectorH1(mesh, order=2, dirichlet="left") if MUTATE
+               else H1(mesh, order=2, dim=2, dirichlet="left"))
 
     type_vec = type(fes_vec).__name__
     type_dim = type(fes_dim).__name__

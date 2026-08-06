@@ -19,10 +19,19 @@ Observed on NGSolve 6.2.2604:
     converges.
 Caveat recorded for the catalog: on this configuration damping did NOT cost more
 iterations; the counts are printed for the record but not pinned.
+
+Mutation control: T2_MUTATE=1 sets DAMP_WRONG from 1.0 to 0.5, i.e. it applies
+the documented fix (dampfactor < 1) at the pathology site -- the one-token edit
+the prose prescribes.  The one-shot step then converges, so the library wording
+'UmfpackInverse: Numeric factorization failed', 'undamped_one_shot_breaks=True'
+and 'undamped_still_breaks_with_maxit_300=True' go missing and the fixture goes
+red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -52,8 +61,10 @@ MAXH = 0.3
 ORDER = 2
 BIG_DISP = 0.8
 
-# The wrong variant runs undamped.
-DAMP_WRONG = 1.0
+# The wrong variant runs undamped.  Mutation control: T2_MUTATE=1 applies the
+# documented fix here and damps it to 0.5.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+DAMP_WRONG = 0.5 if MUTATE else 1.0
 
 
 def build():

@@ -25,10 +25,19 @@ Observed on NGSolve 6.2.2604:
     convergence -- it converges quadratically in 6 steps to a WRONG displacement
     (max|u| 0.159 vs the correct 0.080).  The linear signature appears only when
     the tangent is inconsistent with the residual.
+
+Mutation control: T2_MUTATE=1 sets P_TANGENT_FAC from 2.0 to 1.0, i.e. it removes
+the factor-of-2 error from the hand-coded P -- the documented fix, at the
+pathology site.  a_wrong then equals a_exact, so both wrong variants collapse onto
+the matched-tangent run and 'mismatched_tangent_iters_ge_4x_exact=True',
+'mismatched_tangent_ratio_constant_linear=True' and 'wrongP_solution_is_wrong=True'
+go missing; the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -63,7 +72,9 @@ TOL = 1e-10
 MAXIT = 60
 
 # Factor multiplying the mu term of the hand-coded P used for the TANGENT only.
-P_TANGENT_FAC = 2.0
+# Mutation control: T2_MUTATE=1 sets it to 1.0, removing the factor-of-2 error.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+P_TANGENT_FAC = 1.0 if MUTATE else 2.0
 
 
 def main() -> int:

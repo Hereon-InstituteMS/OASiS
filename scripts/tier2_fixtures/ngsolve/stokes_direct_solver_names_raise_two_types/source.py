@@ -25,9 +25,17 @@ What this fixture pins, all re-measured on this run:
     solver;
   * the solver it finds actually solves: its result matches the reference to
     roundoff.
+
+Mutation control: the naive `except RuntimeError: continue` loop only escapes
+because the preference order reaches an unavailable solver that raises
+NgException before it reaches an available one.  T2_MUTATE=1 reorders
+PREFERENCE to put sparsecholesky -- which this build has -- first, so the naive
+loop succeeds on its first try and the fixture loses naive_loop_is_broken=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -49,6 +57,7 @@ from ngsolve import (
 from netgen.libngpy._meshing import NgException
 
 NAMES = ["sparsecholesky", "umfpack", "pardiso", "mumps", "nonexistent_solver"]
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -99,7 +108,10 @@ def main() -> int:
 
     # The naive loop, run for real, over a preference order that puts the
     # optional solvers first -- which is the whole point of a fallback loop.
-    PREFERENCE = ["pardiso", "mumps", "umfpack", "sparsecholesky"]
+    # MUTATION SITE: the order decides whether the naive loop ever meets an
+    # NgException.  T2_MUTATE=1 puts an available solver first.
+    PREFERENCE = (["sparsecholesky", "pardiso", "mumps", "umfpack"] if MUTATE
+                  else ["pardiso", "mumps", "umfpack", "sparsecholesky"])
     naive_escaped = None
     try:
         for name in PREFERENCE:

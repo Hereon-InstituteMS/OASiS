@@ -33,10 +33,19 @@ What this fixture pins, all re-measured on this run:
     tells you nothing;
   * on the absolute-cell-size runs the shear is too SMALL, never too large, so
     the error is one-sided and bounded by the exact value.
+
+Mutation control (inverted polarity -- the scaled branch IS the documented fix,
+so the discriminating edit commits the mistake instead of removing it):
+T2_MUTATE=1 relaxes the scaled runs from the claim's h = L/(10*Ha) to
+h = L/Ha, i.e. ten times too coarse for the layer. The scaled wall-shear error
+then leaves the one-percent band and `L_over_10Ha_rule_gives_under_one_percent=
+True` disappears from the output, with the run printing "FAIL:", which the
+fixture forbids. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.geom2d import SplineGeometry
@@ -54,6 +63,10 @@ G = 1.0
 WIDTH = 0.05
 ORDER = 2
 LENGTH = 2.0
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The claim's refinement rule is h_wall = L/(10*Ha); T2_MUTATE=1 removes the
+# factor of ten, i.e. the scaled runs stop obeying the rule under test.
+CELLS_PER_LAYER = 1.0 if MUTATE else 10.0
 
 
 def exact(Ha, yy):
@@ -97,7 +110,7 @@ def main() -> int:
               f"h_over_layer={fixed_h * Ha:.1f} core_relerr={ec:.3e} "
               f"shear_signed_relerr={es:+.4e}")
     for Ha in has:
-        h = LENGTH / (10.0 * Ha)
+        h = LENGTH / (CELLS_PER_LAYER * Ha)
         ne, ec, es, sh, shex = solve(Ha, h)
         scaled_rows.append((Ha, ec, es))
         print(f"scaled_h Ha={Ha:g} elements={ne} h={h:.5f} "

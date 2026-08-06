@@ -22,15 +22,26 @@ statement, before Assemble() is ever reached:
        Trace() operator is missing, type = grad
 The right variant assembles (nnz = 14384); Integrate(1*dx) = 4.188798
 (= 4/3 pi, the ball volume) and Integrate(1*ds) = 12.566386 (= 4 pi).
+
+Mutation control: the pathology in wrong variant A is the measure itself.
+T2_MUTATE=1 swaps the *dx on the a_dx form for *ds -- the documented one-token
+fix -- so the `+=` no longer raises and the fixture loses
+'dx_form_raised=True at_stage=iadd', the exception text 'Trialfunction does not
+support VOL-forms, maybe a Trace() operator is missing, type = gradboundary',
+dx_msg_has_VOL_forms=True and dx_msg_has_gradboundary=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.occ import OCCGeometry, Pnt, Sphere
 from ngsolve import (BilinearForm, CoefficientFunction, H1, Integrate, Mesh,
                      ds, dx, grad)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -50,7 +61,9 @@ def main() -> int:
     nnz_dx = -1
     try:
         a_dx = BilinearForm(fes)
-        a_dx += grad(u_c).Trace() * grad(v_c).Trace() * dx
+        # MUTATION SITE: the measure is the pitfall.  T2_MUTATE=1 applies the
+        # documented one-token fix, dx -> ds.
+        a_dx += grad(u_c).Trace() * grad(v_c).Trace() * (ds if MUTATE else dx)
         stage = "assemble"
         a_dx.Assemble()
         nnz_dx = a_dx.mat.nze

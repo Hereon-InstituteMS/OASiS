@@ -34,6 +34,14 @@ What this fixture pins, all re-measured on this run:
   * the error norm appears only in NGSolve's own warning line, captured at the
     file-descriptor level, and 'Warning: Newton might not converge! Error = ' is
     the wording -- the string 'Newton did not converge after' appears nowhere.
+
+Mutation control: T2_MUTATE=1 raises HARD_MAXIT from 2 to 12, so the "hard" solve
+gets the same adequate iteration budget as the easy one and converges -- the
+mutation this fixture's own _comment records.  The -1 status then never occurs, so
+'hard_first_entry_is_minus_one=True',
+'misreading_reports_iters_minus_1_on_a_failed_solve=True' and
+'real_warning_present_on_the_hard_solve=True' go missing and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -64,6 +72,12 @@ MU = E / (2 * (1 + NU))
 LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
 FABRICATED = "Newton did not converge after"
 REAL = "Warning: Newton might not converge! Error = "
+
+# Mutation control: the iteration budget of the deliberately-starved solve.
+# 2 is not enough (status -1); T2_MUTATE=1 gives it the easy run's 12, which is
+# enough, and the failed-solve half of the demonstration disappears.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+HARD_MAXIT = 12 if MUTATE else 2
 
 
 def _capture_fds(fn):
@@ -108,7 +122,7 @@ def main() -> int:
           f"{'first one is 0 if' in doc.lower()}")
 
     easy, exc_e, out_e = _capture_fds(lambda: solve(2.0))
-    hard, exc_h, out_h = _capture_fds(lambda: solve(2.0, maxit=2))
+    hard, exc_h, out_h = _capture_fds(lambda: solve(2.0, maxit=HARD_MAXIT))
     print(f"easy_return={easy}")
     print(f"hard_return={hard}")
 

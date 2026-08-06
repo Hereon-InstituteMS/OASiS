@@ -32,9 +32,19 @@ What this fixture pins, all re-measured on this run:
     not a fixed constant, it diverges;
   * marched in time at a step the upwind operator is comfortably stable at, the
     central-flux run's amplitude grows while the upwind run's decays.
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- the "central" branch of build() also uses the upwind numerical flux
+IfPos(b*n, u, u.Other()) instead of the average 0.5*(u + u.Other()), so both
+discretisations are upwind and the interior dissipation is back.  The
+expectations upwind_more_damped_on_every_mesh=True,
+upwind_admits_larger_dt_on_every_mesh=True,
+dt_penalty_grows_under_refinement=True and central_grows_at_this_dt=True then
+disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -59,6 +69,10 @@ from ngsolve import (
 ORDER = 1
 BVEC = (1.0, 0.0)
 
+# Mutation control: under T2_MUTATE=1 the "central" branch uses the upwind flux
+# too, so the pathology (the central average) is gone from the run.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def _dense(form, ndof):
     rows, cols, vals = form.mat.COO()
@@ -72,7 +86,7 @@ def build(mesh, flux):
     u, v = fes.TnT()
     b = CoefficientFunction(BVEC)
     n = specialcf.normal(2)
-    uhat = IfPos(b * n, u, u.Other()) if flux == "upwind" \
+    uhat = IfPos(b * n, u, u.Other()) if (flux == "upwind" or MUTATE) \
         else 0.5 * (u + u.Other())
     a = BilinearForm(fes)
     a += -u * (b * grad(v)) * dx

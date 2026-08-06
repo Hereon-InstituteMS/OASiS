@@ -18,16 +18,29 @@ q=1 (D=0.0915751):
     normal-derivative energy fraction is ~1 (dw/dn not enforced at all).
   * multiplier retained: w_centre = 1.386e-02, within 1% of the clamped
     reference, and the boundary normal-derivative energy fraction collapses.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- CLAMPED_KILLS_MULTIPLIER becomes False, so the "wrong"
+study no longer puts a homogeneous Dirichlet on the boundary M_nn dofs and the
+dw/dn Lagrange multiplier survives.  The centre deflection then lands on the
+CLAMPED reference instead of the simply-supported one, so
+``no_dwdn_term_3x_to_4x_clamped=True``, ``no_dwdn_term_is_simply_supported=True``
+and ``no_dwdn_term_bnd_dwdn_unenforced=True`` all disappear and the fixture goes
+red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# WRONG: also constrain M_nn, which deletes the dw/dn multiplier
-CLAMPED_KILLS_MULTIPLIER = True
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: also constrain M_nn, which deletes the dw/dn multiplier.
+# Under T2_MUTATE the Dirichlet on M_nn is dropped -- the documented fix.
+CLAMPED_KILLS_MULTIPLIER = not MUTATE
 
 E, NU, T_PLATE, Q = 1.0, 0.3, 1.0, 1.0
 D = E * T_PLATE ** 3 / (12.0 * (1.0 - NU ** 2))

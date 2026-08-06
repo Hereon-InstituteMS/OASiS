@@ -39,10 +39,19 @@ What this fixture pins, all re-measured on this run:
     normal pressure (stick admissible), and above it the same computation
     exceeds the Coulomb limit (slip) -- the claim's stick/slip transition,
     measured on both sides of arctan(mu).
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- build() adds the tangential penalty GAMMA_T*ux*vx*ds("bot") even in the
+"no tangential term" branch.  The free-DOF stiffness is then nonsingular, so
+'tangential_slide_mode_costs_no_energy=True' and
+'null_mode_is_tangential_translation=True' are absent from the output and the
+fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy
@@ -71,6 +80,7 @@ GRAV = 100.0
 MU_FRICTION = 0.3
 GAMMA_T = 1e5
 MAXH = 0.25
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _mesh():
@@ -96,7 +106,9 @@ def build(mesh, theta, tangential):
     gv = CoefficientFunction((grad(vx), grad(vy)), dims=(2, 2))
     a = BilinearForm(fes, symmetric=True)
     a += InnerProduct(_stress(gu), _sym(gv)) * dx
-    if tangential:
+    # The pathology: no tangential term at all.  Under mutation the documented
+    # fix is applied everywhere -- the tangential penalty is always present.
+    if tangential or MUTATE:
         a += GAMMA_T * ux * vx * ds("bot")
     f = LinearForm(fes)
     f += (GRAV * math.sin(theta) * vx - GRAV * math.cos(theta) * vy) * dx

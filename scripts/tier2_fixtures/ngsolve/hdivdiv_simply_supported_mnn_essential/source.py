@@ -21,16 +21,28 @@ q=1, D=0.0915751, Navier reference 4.436089e-02):
 
 Wrong variant this fixture executes: the omitted M_nn Dirichlet, i.e. the
 "only w = 0 is needed" recipe.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- SS_SETS_MNN_DIRICHLET becomes True, so the "wrong" study
+imposes M_nn = 0 essentially on HDivDiv.  Its centre deflection then lands on
+the Navier value and its boundary M_nn collapses to roundoff, so
+``no_mnn_dirichlet_more_than_2x_too_small=True`` and
+``no_mnn_dirichlet_leaves_bnd_mnn_nonzero=True`` disappear and the fixture goes
+red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# WRONG: trust "M_nn vanishes naturally" and leave the HDivDiv space unconstrained
-SS_SETS_MNN_DIRICHLET = False
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: trust "M_nn vanishes naturally" and leave the HDivDiv space
+# unconstrained.  Under T2_MUTATE the essential M_nn Dirichlet is restored.
+SS_SETS_MNN_DIRICHLET = bool(MUTATE)
 
 E, NU, T_PLATE, Q = 1.0, 0.3, 1.0, 1.0
 D = E * T_PLATE ** 3 / (12.0 * (1.0 - NU ** 2))

@@ -41,9 +41,18 @@ What this fixture pins, all re-measured on this run:
     is not;
   * marched forward at a step both survive, the non-conservative form's kinetic
     energy drifts by more than a hundred times the rotational form's.
+
+Mutation control: T2_MUTATE=1 makes the "rotational" branch of march() use
+Grad(w)*w -- the mutation this fixture's own _comment records.  Both marched runs
+are then the same non-conservative run, their drifts are equal, and
+'rotational_drift_at_least_100x_smaller=True' goes missing, so the fixture goes
+red.  (The spatial energy-production and weak-curl expectations are computed from
+conv/rot/half in main() and are unaffected, by design.)
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -72,6 +81,10 @@ from ngsolve import (
 MAXH = 0.15
 NSTEPS = 400
 DT = 1e-4
+
+# Mutation control: T2_MUTATE=1 makes the "rotational" march use Grad(w)*w, so
+# the two marched runs become identical and the drift contrast disappears.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _mesh():
@@ -122,7 +135,7 @@ def march(mesh, form, nsteps=NSTEPS, dt=DT):
     rhs = gfu.vec.CreateVector()
     ke0 = float(Integrate(InnerProduct(w, w), mesh))
     for _ in range(nsteps):
-        c = (Grad(w) * w if form == "nonconservative"
+        c = (Grad(w) * w if (form == "nonconservative" or MUTATE)
              else Grad(w) * w - Grad(w).trans * w)
         conv = LinearForm(X)
         conv += InnerProduct(c, v) * dx

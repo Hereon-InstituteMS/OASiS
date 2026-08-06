@@ -19,9 +19,16 @@ What this fixture pins, all re-measured on this run:
   * the compound-space spelling gfu.components[i].vec.FV().NumPy() works too,
     and the per-component maxima bound the whole-vector maximum -- checked on a
     real L2 * L2 product space rather than asserted.
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- abs(gfu.vec) becomes abs(gfu.vec.FV().NumPy()), i.e. the operand handed to
+abs() is the numpy view instead of the BaseVector.  abs() then succeeds, no
+TypeError is captured, and the expectations abs_raises_typeerror=True and
+abs_message_literal=True are gone.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -30,6 +37,10 @@ from ngsolve import GridFunction, L2, Mesh, x, y
 
 
 LITERAL = "bad operand type for abs(): 'ngsolve.la.BaseVector'"
+
+# Mutation control: under T2_MUTATE=1 the operand of abs() is the documented
+# numpy view instead of the raw BaseVector -- the pathology itself, removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -43,8 +54,9 @@ def main() -> int:
     print(f"vec_class_is_basevector={cls == 'ngsolve.la.BaseVector'}")
 
     m1 = ""
+    operand = gfu.vec if not MUTATE else gfu.vec.FV().NumPy()
     try:
-        abs(gfu.vec)
+        abs(operand)
     except TypeError as exc:
         m1 = str(exc)
     print(f"abs_raises_typeerror={bool(m1)}")

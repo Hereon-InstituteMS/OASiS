@@ -10,13 +10,23 @@ wrong solver ecosystem.
 Wrong variant: BDM_1 * L2(1). Right variant: BDM_1 * L2(0).
 The fixture asserts both PETSc strings are absent from the text NGSolve produced,
 so the wrong attribution cannot quietly return.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the first (mis-paired) system is built as BDM_1 * L2(0) instead of
+BDM_1 * L2(1). The factorisation then succeeds, so 'UmfpackInverse: Numeric
+factorization failed', 'matrix is singular' and
+`mispaired_inverse_raises_ngexception=True` all disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
 from ngsolve import BilinearForm, HDiv, L2, Mesh, div, dx
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def build(l2order: int):
@@ -33,7 +43,8 @@ def main() -> int:
     ok = True
 
     # --- WRONG variant: BDM_1 with the RT partner ------------------------
-    X, a = build(1)
+    # T2_MUTATE=1 swaps the L2 order to the documented correct partner here.
+    X, a = build(0 if MUTATE else 1)
     msg = ""
     try:
         a.mat.Inverse(X.FreeDofs(), inverse="umfpack")

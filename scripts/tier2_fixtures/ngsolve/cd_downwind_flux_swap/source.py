@@ -28,9 +28,16 @@ What this fixture pins, all re-measured on this run:
     upwind amplitude decays and the swapped one grows without bound;
   * the two forms differ only in the order of the IfPos arguments -- the same
     expression is built by a shared helper, so nothing else can account for it.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the swapped branch of the shared helper is given the UPWIND argument order,
+IfPos(b*n, u, u.Other()) -- so both variants become the same upwind operator,
+its spectrum stays in the left half-plane and nothing grows. Re-run with
+`T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -54,6 +61,7 @@ from ngsolve import (
 
 ORDER = 1
 BVEC = (1.0, 0.0)
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _dense(form, n):
@@ -68,8 +76,12 @@ def build(mesh, swapped):
     u, v = fes.TnT()
     b = CoefficientFunction(BVEC)
     n = specialcf.normal(2)
-    # The ONLY difference between the two variants:
-    uhat = IfPos(b * n, u.Other(), u) if swapped else IfPos(b * n, u, u.Other())
+    # The ONLY difference between the two variants. T2_MUTATE=1 puts the
+    # swapped branch back into upwind order, removing the pathology.
+    if swapped and not MUTATE:
+        uhat = IfPos(b * n, u.Other(), u)
+    else:
+        uhat = IfPos(b * n, u, u.Other())
     a = BilinearForm(fes)
     a += -u * (b * grad(v)) * dx
     a += uhat * (b * n) * (v - v.Other()) * dx(skeleton=True)

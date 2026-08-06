@@ -28,6 +28,13 @@ H1 order 3 restricted to mesh.Boundaries(".*"), f = 6 z^2 - 2 (2026-08-06):
 Neither solver emitted a single character on stdout/stderr.  `KSPSolve:
 DIVERGED_BREAKDOWN` and `DIVERGED_INDEFINITE_PC` are PETSc strings; NGSolve
 never produced them here.
+
+Mutation control: the pathology is the missing regulariser on a_sing.
+T2_MUTATE=1 adds the documented fix -- the shipped 1e-8*u*v*ds term -- to
+a_sing, so the constant mode is no longer in the kernel, both direct solves
+return |u|_inf of order 1e2 instead of 1e9, and the fixture loses
+noreg_umfpack_linf_gt_1e6=True and noreg_sparsecholesky_linf_gt_1e6=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -40,6 +47,8 @@ from netgen.occ import OCCGeometry, Pnt, Sphere
 from ngsolve import (BilinearForm, BitArray, CoefficientFunction, GridFunction,
                      H1, Integrate, LinearForm, Mesh, ds, grad, z)
 import ngsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def capture_fds(fn):
@@ -84,6 +93,10 @@ def main() -> int:
 
     a_sing = BilinearForm(fes)
     a_sing += grad(u).Trace() * grad(v).Trace() * ds
+    # MUTATION SITE: the ABSENT regulariser is the pathology.  T2_MUTATE=1 adds
+    # the documented 1e-8*u*v*ds fix to the "singular" form.
+    if MUTATE:
+        a_sing += 1e-8 * u.Trace() * v.Trace() * ds
     a_sing.Assemble()
 
     a_reg = BilinearForm(fes)

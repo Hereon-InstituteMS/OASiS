@@ -24,6 +24,12 @@ What this fixture pins, all re-measured on this run:
     to pinning -- both routes are exercised and both give the same velocity;
   * the mean-zero route additionally fixes the pressure's constant, which
     pinning a node does not.
+
+Mutation control: the claim's second sentence rests on the open problem leaving
+the right edge traction-free.  T2_MUTATE=1 changes the dirichlet string handed
+to build() for the open problem from "bot|top|left" to ".*", which closes the
+flow, so it acquires the same constant-pressure nullspace and the fixture loses
+open_flow_pressure_is_unique=True.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -50,6 +56,8 @@ from ngsolve import (
     div,
     dx,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _capture_fds(fn):
@@ -118,7 +126,9 @@ def main() -> int:
     print(f"nullmode_pressure_fraction={frac:.8f} spread={spread:.3e}")
     print(f"nullmode_is_the_constant_pressure={frac > 1 - 1e-8 and spread < 1e-8}")
 
-    Xo, ao, fo = build(mesh, "bot|top|left")         # right edge traction-free
+    # MUTATION SITE: the traction-free right edge is the only thing separating
+    # the open problem from the enclosed one.  T2_MUTATE=1 closes it.
+    Xo, ao, fo = build(mesh, ".*" if MUTATE else "bot|top|left")
     svo, _, _ = singulars(Xo, ao, Xo.FreeDofs())
     ko = int((svo < 1e-10 * svo[0]).sum())
     print(f"open_smallest_sv={svo[-1]:.3e}")

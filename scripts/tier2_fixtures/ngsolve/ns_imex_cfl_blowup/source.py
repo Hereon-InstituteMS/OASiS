@@ -33,9 +33,18 @@ What this fixture pins, all re-measured on this run:
   * every unstable run has energy growing geometrically -- checked as a
     monotone increase over the last third of its history, which is the claim's
     "diverges geometrically".
+
+Mutation control.  T2_MUTATE=1 drops the explicit convection term from the
+right-hand side of march() -- `rhs.data = mstar.mat * gfu.vec - dt * conv.vec`
+becomes `rhs.data = mstar.mat * gfu.vec` -- so the scheme is the unconditionally
+stable implicit Stokes step and the CFL limit it is being measured against is
+gone.  Every dt then survives, so `above_0p5_all_leave_double_precision` and
+`between_0p2_and_0p5_energy_grows_10x` print False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -61,6 +70,10 @@ ULID = 1.0
 NU = 1e-3
 NSTEPS = 60
 BLOWUP = 1e20
+
+# Mutation control: drop the explicit convection term -- the pathology whose
+# CFL limit this fixture measures.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _mesh():
@@ -96,7 +109,10 @@ def march(mesh, dt, nsteps=NSTEPS):
         conv = LinearForm(X)
         conv += InnerProduct(Grad(w) * w, v) * dx
         conv.Assemble()
-        rhs.data = mstar.mat * gfu.vec - dt * conv.vec
+        if MUTATE:
+            rhs.data = mstar.mat * gfu.vec
+        else:
+            rhs.data = mstar.mat * gfu.vec - dt * conv.vec
         for i in range(X.ndof):
             if not free[i]:
                 gfu.vec[i] = gbc.vec[i]

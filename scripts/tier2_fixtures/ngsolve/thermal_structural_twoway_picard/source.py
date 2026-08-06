@@ -21,16 +21,26 @@ Observed on NGSolve 6.2.2604 (2026-08-03):
   * the one-way temperature field is 13.89% away from the converged one in
     relative L2 -- inside the documented 5-20% band;
   * the residual history is monotonically decreasing.
+
+Mutation control: T2_MUTATE=1 sets N_PICARD_SWEEPS to 20, running the full
+two-way Picard loop in the slot where the single one-way sweep was, so
+'one_way_sweeps=1' and 'one_way_error_gt_5pct=True' disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
 # WRONG: how many thermal->structural sweeps are taken (1 == one-way)
-N_PICARD_SWEEPS = 1
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# Mutation: T2_MUTATE=1 runs the full two-way Picard loop instead of the
+# single one-way sweep.
+N_PICARD_SWEEPS = 20 if MUTATE else 1
 
 MAX_SWEEPS = 20
 TOL = 1e-4

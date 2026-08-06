@@ -32,6 +32,13 @@ What this fixture pins, all re-measured on this run:
     solve, so the matrix is not the whole story and "never CG" overstates it;
   * the direct solve is available throughout as the reference, so "converged"
     is measured against a known answer rather than against a residual.
+
+Mutation control: the pathology is CG driven with nothing but the Jacobi
+smoother on the indefinite block matrix.  T2_MUTATE=1 hands that same CG run the
+block preconditioner instead (the `prec` argument to CGSolver inside
+_cg_jacobi), which is the documented fix, so the run converges in ~47 iterations
+to a finite vector and the fixture loses cg_exhausted_its_budget=True and
+cg_failure_is_silent=True.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -59,6 +66,7 @@ from ngsolve import (
 from ngsolve.krylovspace import CGSolver
 
 MAXITER = 400
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _capture_fds(fn):
@@ -115,9 +123,20 @@ def main() -> int:
     ref.data = a.mat.Inverse(fr, inverse="umfpack") * f.vec
     exact = ref.FV().NumPy().copy()
 
+    # The block preconditioner (velocity Laplacian + pressure mass).  Built
+    # here rather than further down so the mutation branch can hand it to the
+    # Jacobi run below; the unmutated path is unaffected.
+    pre_a = BilinearForm(X)
+    pre_a += (InnerProduct(Grad(u), Grad(v)) + p * q) * dx
+    pre_a.Assemble()
+    pre = pre_a.mat.Inverse(fr, inverse="umfpack")
+
     def _cg_jacobi():
         g = GridFunction(X)
-        inv = CGSolver(a.mat, a.mat.CreateSmoother(fr), maxiter=MAXITER,
+        # MUTATION SITE: the pathology is CG preconditioned by nothing but the
+        # Jacobi smoother.  T2_MUTATE=1 applies the documented fix here.
+        prec = pre if MUTATE else a.mat.CreateSmoother(fr)
+        inv = CGSolver(a.mat, prec, maxiter=MAXITER,
                        tol=1e-10, printrates=False)
         g.vec.data = inv * f.vec
         return inv.iterations, g.vec.FV().NumPy().copy()
@@ -133,10 +152,6 @@ def main() -> int:
     print(f"cg_failure_is_silent="
           f"{exc is None and out.strip() == '' and not finite_j}")
 
-    pre_a = BilinearForm(X)
-    pre_a += (InnerProduct(Grad(u), Grad(v)) + p * q) * dx
-    pre_a.Assemble()
-    pre = pre_a.mat.Inverse(fr, inverse="umfpack")
     g2 = GridFunction(X)
     inv2 = CGSolver(a.mat, pre, maxiter=MAXITER, tol=1e-10, printrates=False)
     g2.vec.data = inv2 * f.vec

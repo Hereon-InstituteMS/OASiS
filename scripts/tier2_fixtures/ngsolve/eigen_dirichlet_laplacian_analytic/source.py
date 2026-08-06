@@ -31,10 +31,19 @@ What this fixture pins, all re-measured on this run:
     tolerance discriminates rather than passing everything;
   * both spellings of `vecs` that are NOT a plain list raise, with the messages
     recorded here.
+
+Mutation control: T2_MUTATE=1 removes the resolution the claim's bar requires
+-- the resolved run RESOLVED = (maxh, order) drops from (0.05, 2) to the coarse
+(0.4, 1).  The first five eigenvalues then miss the 0.5% bar, so
+'all_five_within_half_a_percent=True', 'degeneracy_resolved_as_two_modes=True'
+and 'tolerance_discriminates=True' are absent from the output and the fixture
+goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -51,6 +60,10 @@ from ngsolve import (
 EXACT = [2 * math.pi ** 2, 5 * math.pi ** 2, 5 * math.pi ** 2,
          8 * math.pi ** 2, 10 * math.pi ** 2]
 NVEC = 12
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The claim's bar only holds on a resolved discretisation.  Under mutation the
+# resolved run is dropped to the coarse P1 settings used as the counter-example.
+RESOLVED = (0.05, 2) if not MUTATE else (0.4, 1)
 
 
 def spectrum(maxh, order):
@@ -70,7 +83,7 @@ def spectrum(maxh, order):
 
 
 def main() -> int:
-    nd, ev, gf = spectrum(0.05, 2)
+    nd, ev, gf = spectrum(*RESOLVED)
     errs = [abs(a - b) / b for a, b in zip(ev, EXACT)]
     print(f"resolved_ndof={nd}")
     for i, (c, e, r) in enumerate(zip(ev, EXACT, errs)):

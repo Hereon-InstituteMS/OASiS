@@ -12,15 +12,25 @@ next "* f.vec" dies on NoneType; measured, it does not -- NGSolve returns a lazy
 DynamicVectorExpression and the error only appears at the ASSIGNMENT, as
 NgException('DynamicBaseScalVec AssignTo not available'). That is one more line
 of distance between the mistake and its symptom than the claim states.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- `shortcut` is built as m.mat.CreateMatrix() + AsVector().data instead of the
+operator sum m.mat + DT*a.mat. The object under test is then a SparseMatrixd
+whose Inverse works, so the C++ line 'BaseMatrix::InverseMatrix not available',
+`sum_type_name=SumMatrix`, `sum_inverse_returns_none=True`, `product_type=
+DynamicVectorExpression` and 'DynamicBaseScalVec AssignTo not available' all
+disappear from the output. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
 from ngsolve import BilinearForm, GridFunction, H1, LinearForm, Mesh, dx, grad
 
 DT = 0.01
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -41,7 +51,13 @@ def main() -> int:
     f.Assemble()
 
     # --- WRONG variant: the operator-sum shortcut ------------------------
-    shortcut = m.mat + DT * a.mat
+    # Under T2_MUTATE=1 the same variable is built the documented way
+    # (CreateMatrix + AsVector().data), i.e. the pathology is removed here.
+    if MUTATE:
+        shortcut = m.mat.CreateMatrix()
+        shortcut.AsVector().data = m.mat.AsVector() + DT * a.mat.AsVector()
+    else:
+        shortcut = m.mat + DT * a.mat
     print(f"sum_type_name={type(shortcut).__name__}")
     print(f"sum_hasattr_inverse={hasattr(shortcut, 'Inverse')}")
     raised = ""

@@ -12,9 +12,18 @@ NgException('SparseMatrixTM::AddElementMatrix: illegal dnums') -- and read the
 energy off the assembled operator. It is machine zero for HDiv and decidedly
 non-zero for a VectorL2 field with arbitrary DOF values, so the measure is shown
 to discriminate rather than merely reporting a small number.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site --
+the probe that is wrapped in the try/except stops being the standalone
+Integrate(... .Other() ...) and becomes the skeleton-BilinearForm route
+(jump_energy(HDiv(dgjumps=True))), which is exactly what the prose tells the user
+to write instead. Nothing then raises, so the expectations 'other mir not set'
+and 'standalone_integrate_raises=True' go missing and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -31,6 +40,10 @@ from ngsolve import (
     x,
     y,
 )
+
+# Mutation control: under T2_MUTATE=1 the wrong variant below is replaced by the
+# documented fix (skeleton BilinearForm instead of a standalone Integrate).
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def jump_energy(space, field=None, randomise=False) -> float:
@@ -67,7 +80,12 @@ def main() -> int:
     n = specialcf.normal(2)
     msg = ""
     try:
-        Integrate((gf * n - gf.Other() * n) ** 2 * dx(skeleton=True), mesh)
+        if MUTATE:
+            # the documented fix, applied at the pathology site: the same
+            # integrand routed through a skeleton BilinearForm
+            jump_energy(HDiv(mesh, order=2, dgjumps=True), field)
+        else:
+            Integrate((gf * n - gf.Other() * n) ** 2 * dx(skeleton=True), mesh)
     except Exception as exc:                      # noqa: BLE001
         msg = f"{type(exc).__name__}: {exc}"
     print(f"standalone_integrate_raises={bool(msg)}")

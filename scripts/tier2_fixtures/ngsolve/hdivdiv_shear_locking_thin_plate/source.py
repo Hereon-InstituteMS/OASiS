@@ -16,15 +16,30 @@ reference w_max = 0.00406235 q L^4 / D:
     deficit is a discretisation artefact and not thick-plate physics.
   * HHJ (HDivDiv moments + H1 deflection) at t = 1e-3: within 1% of the
     reference, thickness-independent.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- THIN_PLATE_SOLVER switches the h/t = 300 solve from the
+un-reduced displacement-only Reissner-Mindlin form to the locking-free HHJ mixed
+form (bending moment as primary unknown), the same thickness and mesh.  The
+locking factor then collapses from 18.2 to ~1, so
+``disp_only_locking_factor_in_10_1000=True`` and
+``locking_grows_with_h_over_t=True`` disappear and the fixture goes red.  The
+moderate-thickness run stays displacement-only: it is a control, not the
+pathology.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# WRONG: a thin plate resolved with h/t = 300 by a displacement-only form
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: a thin plate resolved with h/t = 300 by a displacement-only form.
+# Under T2_MUTATE the same thin plate is solved with the locking-free HHJ form.
+THIN_PLATE_SOLVER = "hhj_mixed" if MUTATE else "displacement_only"
 T_THIN = 1.0e-3
 T_MODERATE = 1.0e-1
 MAXH = 0.3
@@ -106,7 +121,9 @@ def main() -> int:
 
     # --- WRONG variant: displacement-only at h/t = 300 --------------------
     ref_thin = NAVIER_COEFF * Q / bending_rigidity(T_THIN)
-    wc_lock = reissner_mindlin_displacement_only(T_THIN)
+    thin_solver = (hhj_mixed if THIN_PLATE_SOLVER == "hhj_mixed"
+                   else reissner_mindlin_displacement_only)
+    wc_lock = thin_solver(T_THIN)
     factor = ref_thin / wc_lock
     print(f"h_over_t={MAXH / T_THIN:.1f} disp_only_centre={wc_lock:.6e} "
           f"kirchhoff_reference={ref_thin:.6e} locking_factor={factor:.2f}")

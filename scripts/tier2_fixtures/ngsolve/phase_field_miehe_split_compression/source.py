@@ -34,9 +34,18 @@ a volumetric/deviatoric split, and under confined compression it still
 leaves max(d) = 4.4e-02, forty times the quoted 1e-3 bound.  Only the
 spectral split reaches d ~ 0.  It does not disturb pure tension: the
 spectral and no-split tensile answers agree exactly.
+
+Mutation control.  T2_MUTATE=1 drives the "no split" pair of runs with
+psi_spectral instead of psi_full -- the documented fix, applied at the site
+whose spurious compressive damage this fixture measures.  Compression then
+nucleates nothing, so `nosplit_compression_dmax_gt_1em3`,
+`nosplit_compression_equals_tension` and
+`voldev_reduces_compression_vs_nosplit` print False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -49,6 +58,10 @@ MU = E_MOD / (2 * (1 + NU))
 LAM = E_MOD * NU / ((1 + NU) * (1 - 2 * NU))
 GC, L0, KRES = 1e-3, 0.1, 1e-10
 DISP = 0.03
+
+# Mutation control: drive the unsplit runs with the documented fix (the
+# spectral split), removing the spurious compressive damage measured here.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.15))
 Vu = VectorH1(mesh, order=1, dirichletx="left|right",
@@ -144,8 +157,9 @@ def main() -> int:
         ok = False
 
     # ---- WRONG B: homogenised, no split ---------------------------------
-    ns_c = run(psi_full, -DISP, True)
-    ns_t = run(psi_full, DISP, True)
+    psi_nosplit = psi_spectral if MUTATE else psi_full
+    ns_c = run(psi_nosplit, -DISP, True)
+    ns_t = run(psi_nosplit, DISP, True)
     print(f"nosplit_compression_dmax={ns_c:.6e} tension_dmax={ns_t:.6e}")
     print(f"nosplit_compression_dmax_gt_1em3={ns_c > 1e-3}")
     print(f"nosplit_compression_equals_tension={abs(ns_c - ns_t) < 1e-12}")

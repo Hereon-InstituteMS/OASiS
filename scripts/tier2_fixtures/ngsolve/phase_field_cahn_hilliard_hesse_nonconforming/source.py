@@ -31,10 +31,25 @@ Observed on NGSolve 6.2.2604, unit_square (2026-08-06):
     sparsecholesky -> returns WITHOUT raising, solution is NaN
   Mixed H1 x H1, order 2: L2 error 1.741e-03 -> 1.724e-04 -> 2.045e-05
     at maxh 0.2 / 0.1 / 0.05 (EOC 3.34, 3.08).
+
+Mutation control.  T2_MUTATE=1 applies the documented fix where the pathology
+bites: the fourth-order system handed to umfpack and to sparsecholesky is built
+from the mixed Ciarlet-Raviart pair (mixed_form) instead of the rank-deficient
+single-H1 hesse form.  The matrix is then regular, so `hesse_umfpack_raised`
+and the literal message `UmfpackInverse: Numeric factorization failed.`
+disappear from the output and the fixture goes red.
+
+Measured while doing that, and worth knowing: `hesse_sparsecholesky_solution_is_nan`
+SURVIVES the mutation - sparsecholesky returns NaN on the regular mixed system
+too, because that system is indefinite and Cholesky does not apply to it.  So
+that one line is evidence about using the wrong factoriser, not about the hesse
+form's singularity.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -44,6 +59,11 @@ from ngsolve import (BilinearForm, GridFunction, H1, Integrate, InnerProduct,
 PI = math.pi
 U_EX = sin(PI * x) * sin(PI * y)
 F_EX = 4 * PI ** 4 * U_EX
+
+# Mutation control: solve the fourth-order system with the documented fix (the
+# mixed Ciarlet-Raviart pair) instead of the rank-deficient single-H1 hesse
+# form, removing the singularity this fixture measures.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def hesse_form(mesh, dirichlet=None):
@@ -56,8 +76,8 @@ def hesse_form(mesh, dirichlet=None):
     return fes, a
 
 
-def mixed_l2_error(maxh):
-    mesh = Mesh(unit_square.GenerateMesh(maxh=maxh))
+def mixed_form(mesh):
+    """The right variant: the Ciarlet-Raviart pair mu = -Lap c, -Lap mu = f."""
     V = H1(mesh, order=2, dirichlet=".*")
     X = V * V
     (c, mu), (q, p) = X.TnT()
@@ -68,6 +88,12 @@ def mixed_l2_error(maxh):
     f = LinearForm(X)
     f += F_EX * q * dx
     f.Assemble()
+    return X, a, f
+
+
+def mixed_l2_error(maxh):
+    mesh = Mesh(unit_square.GenerateMesh(maxh=maxh))
+    X, a, f = mixed_form(mesh)
     gf = GridFunction(X)
     gf.vec.data = a.mat.Inverse(X.FreeDofs()) * f.vec
     err = math.sqrt(Integrate((gf.components[0] - U_EX) ** 2, mesh))
@@ -140,10 +166,14 @@ def main() -> int:
         ok = False
 
     # ---- and what happens when you try to solve with it -----------------
-    fes_d, a_d = hesse_form(mesh, dirichlet=".*")
-    _, vd = fes_d.TnT()
-    rhs = LinearForm(F_EX * vd * dx)
-    rhs.Assemble()
+    if MUTATE:
+        # the documented fix, applied to the system that is actually solved
+        fes_d, a_d, rhs = mixed_form(mesh)
+    else:
+        fes_d, a_d = hesse_form(mesh, dirichlet=".*")
+        _, vd = fes_d.TnT()
+        rhs = LinearForm(F_EX * vd * dx)
+        rhs.Assemble()
     results = {}
     for solver in ("umfpack", "sparsecholesky"):
         try:

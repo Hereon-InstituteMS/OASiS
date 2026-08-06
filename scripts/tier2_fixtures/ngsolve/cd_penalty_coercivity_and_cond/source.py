@@ -34,9 +34,16 @@ What this fixture pins, all re-measured on this run:
   * the direct solve returns a finite result at every alpha, coercive or not;
   * cond at 1e5*order^2 is far below 1e14, and the log-log slope of cond against
     alpha is about 1.
+
+Mutation control: T2_MUTATE=1 pins the interior-penalty coefficient to a fixed
+16/h at both penalty sites in sip(), so it stops tracking alpha altogether --
+the sweep then assembles the same well-penalised form at every alpha, lambda_min
+is positive throughout and cond stops growing with alpha. Re-run with
+`T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -62,6 +69,7 @@ from ngsolve import (
 
 ORDER = 2
 RULE = 4 * ORDER ** 2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def sip(mesh, alpha):
@@ -72,11 +80,14 @@ def sip(mesh, alpha):
     ju, jv = u - u.Other(), v - v.Other()
     mdu = 0.5 * (grad(u) + grad(u.Other()))
     mdv = 0.5 * (grad(v) + grad(v.Other()))
+    # The swept penalty coefficient. T2_MUTATE=1 pins it to a fixed 16/h so
+    # it stops tracking alpha.
+    pen = (16.0 / h) if MUTATE else (alpha * ORDER ** 2 / h)
     a = BilinearForm(fes)
     a += grad(u) * grad(v) * dx
-    a += alpha * ORDER ** 2 / h * ju * jv * dx(skeleton=True)
+    a += pen * ju * jv * dx(skeleton=True)
     a += (-mdu * n * jv - mdv * n * ju) * dx(skeleton=True)
-    a += alpha * ORDER ** 2 / h * u * v * ds(skeleton=True)
+    a += pen * u * v * ds(skeleton=True)
     a += (-grad(u) * n * v - grad(v) * n * u) * ds(skeleton=True)
     f = LinearForm(fes)
     f += 2 * pi * pi * sin(pi * x) * sin(pi * y) * v * dx

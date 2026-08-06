@@ -35,6 +35,13 @@ What this fixture pins, all re-measured on this run:
     operator genuinely has the null space the claim describes;
   * a shift far from any resonance still completes -- the failure is shift=0
     specifically, not "a bad shift".
+
+Mutation control: T2_MUTATE=1 moves the first solve's shift off zero (0.0 ->
+1.0), which is the fix a user applies to this pitfall -- the shift is what the
+claim is about. UMFPACK then factorises, no NgException is raised, and
+`shift0_names_umfpackinverse=True`, `exception_is_the_usable_signal=True` and
+`only_shift_zero_fails=True` disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -57,6 +64,9 @@ from ngsolve import (
 
 NVEC = 24
 K2_LOWEST = 2 * math.pi ** 2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The pathology is the zero shift itself; T2_MUTATE=1 moves it off zero.
+SHIFT_BAD = 1.0 if MUTATE else 0.0
 
 
 def _capture_fds(fn):
@@ -100,7 +110,7 @@ def main() -> int:
 
         return _capture_fds(_go)
 
-    ev0, exc0, out0 = solve(0.0)
+    ev0, exc0, out0 = solve(SHIFT_BAD)
     print(f"shift0_raised={exc0!r}")
     print(f"shift0_names_umfpackinverse={'UmfpackInverse' in (exc0 or '')}")
     print(f"shift0_captured_output={out0.strip()!r}")

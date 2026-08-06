@@ -14,6 +14,12 @@ Observed on NGSolve 6.2.2604 (2026-08-03):
   * reading the property is fine and returns the constructor-supplied name;
   * VTKOutput(..., names=[...]) accepts the labels and Do() writes the file, so
     the documented workaround is complete.
+
+Mutation control: T2_MUTATE=1 sets NAME_VIA_ATTRIBUTE_ASSIGNMENT to False, so
+nothing assigns to the read-only .name property and the label is carried only
+by the VTKOutput names= argument -- the documented fix.  The two *_rename_raises
+lines and "property of 'GridFunction' object has no setter" then disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -24,7 +30,11 @@ import ngsolve as ngs
 from netgen.geom2d import unit_square
 
 # WRONG: naming a GridFunction by assigning to the read-only property
-NAME_VIA_ATTRIBUTE_ASSIGNMENT = True
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# Mutation: T2_MUTATE=1 stops assigning to the read-only .name property and
+# relies on the VTKOutput names= label instead -- the documented fix.
+NAME_VIA_ATTRIBUTE_ASSIGNMENT = not MUTATE
 
 
 def try_rename(gf, new_name: str) -> str:

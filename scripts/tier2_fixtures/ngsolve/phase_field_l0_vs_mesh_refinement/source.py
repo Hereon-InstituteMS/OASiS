@@ -26,10 +26,21 @@ eps=0.16 (2026-08-06):
   maxh=0.1, l0=0.05                       peak sigma 0.053286, analytic
                                           0.053287, ratio to l0=0.1 is
                                           1.4142 = sqrt(2)
+
+Mutation control.  T2_MUTATE=1 halves l0 in the refined run as well --
+`peak_stress(0.1, L0_BIG)` becomes `peak_stress(0.1, L0_SMALL)`, the documented
+fix of reducing l0 along with h instead of refining at fixed l0.  The h-only
+comparison is then no longer at fixed l0, so
+`refining_h_at_fixed_l0_changes_peak_lt_1pct`,
+`halving_l0_changes_peak_gt_20pct`,
+`peak_ratio_matches_inverse_sqrt_l0_within_2pct` and
+`l0_effect_dominates_h_effect` all print False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -44,6 +55,10 @@ ESTAR = LAM + 2 * MU
 GC, KRES = 1e-3, 1e-10
 NSTEPS, EMAX = 80, 0.16
 L0_BIG, L0_SMALL = 0.10, 0.05
+
+# Mutation control: apply the documented fix (reduce l0 too) to the refined
+# run, so the fixed-l0 refinement this fixture measures is no longer at fixed l0.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def strain(w):
@@ -109,7 +124,7 @@ def main() -> int:
           f"{abs(ESTAR - (LAM + 2 * MU)) < 1e-15}")
 
     sig_a, eps_a, ne_a, nd_a = peak_stress(0.2, L0_BIG)
-    sig_b, eps_b, ne_b, nd_b = peak_stress(0.1, L0_BIG)
+    sig_b, eps_b, ne_b, nd_b = peak_stress(0.1, L0_SMALL if MUTATE else L0_BIG)
     sig_c, eps_c, ne_c, nd_c = peak_stress(0.1, L0_SMALL)
     print(f"coarse_mesh_ne={ne_a} ndof_u={nd_a}")
     print(f"fine_mesh_ne={ne_b} ndof_u={nd_b}")

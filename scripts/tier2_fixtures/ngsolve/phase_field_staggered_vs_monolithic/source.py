@@ -31,6 +31,14 @@ is confirmed (the warm-started monolithic solve reproduces the staggered
 d_max to 8e-06 relative), but from a cold start monolithic Newton does not
 converge at any of these load levels, so it is not a cheaper alternative -
 it needs the staggered answer as its initial guess.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site - the "cold start" monolithic solve is seeded with the staggered
+(u, d) instead of (Dirichlet data, 0), which is exactly the remedy this fixture
+records.  That Newton then converges, so the fixture goes red on
+monolithic_cold_start_converged=False, monolithic_cold_start_dmax_exceeds_1=True,
+monolithic_warning_emitted=True and "Newton might not converge! Error =".
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -49,6 +57,8 @@ MU = E_MOD / (2 * (1 + NU))
 LAM = E_MOD * NU / ((1 + NU) * (1 - 2 * NU))
 GC, L0, KRES = 1e-3, 0.1, 1e-10
 LOADS = (0.01, 0.02, 0.03)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.15))
 Vu = VectorH1(mesh, order=1, dirichlet="bottom|top")
@@ -173,6 +183,10 @@ def main() -> int:
     gf_cold = GridFunction(X)
     gf_cold.components[0].Set(CoefficientFunction((0, disp)),
                               definedon=mesh.Boundaries("top"))
+    if MUTATE:
+        # the documented fix: hand monolithic Newton the staggered answer
+        gf_cold.components[0].vec.data = us.vec
+        gf_cold.components[1].vec.data = ds_.vec
     (flag_cold, nit_cold), chatter = capture_fds(
         lambda: Newton(a_cold, gf_cold, freedofs=X.FreeDofs(),
                        printing=False, maxit=60))

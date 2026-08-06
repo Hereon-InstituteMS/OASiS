@@ -10,9 +10,17 @@ This is the LinearForm dual of the existing
 `hcurl_grad_mismatch` and `h1_curl_operator_unknown` fixtures
 (which target BilinearForm integrands). Together they cover
 the integrand-shape mismatch family from both sides.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+pathology site -- the source becomes the scalar
+CoefficientFunction(1.0) instead of the 2-D
+CoefficientFunction((1.0, 2.0)) -- so Assemble() succeeds and the
+NgException never fires. Re-run with
+`T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
@@ -25,6 +33,8 @@ from ngsolve import (
     dx,
 )
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.5))
@@ -32,7 +42,10 @@ def main() -> int:
     _, v = fes.TnT()
     f = LinearForm(fes)
     # Vector source on scalar form — wrong shape.
-    f += CoefficientFunction((1.0, 2.0)) * v * dx
+    # T2_MUTATE=1 applies the fix: a scalar source.
+    src = (CoefficientFunction(1.0) if MUTATE
+           else CoefficientFunction((1.0, 2.0)))
+    f += src * v * dx
     try:
         f.Assemble()
     except Exception:

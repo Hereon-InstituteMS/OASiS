@@ -20,9 +20,18 @@ What this fixture pins, all re-measured on this run:
     off-block-diagonal entries -- ndof is unchanged, nze is strictly larger
     than the block-diagonal-only count, which is the structural content of
     "coupling entries are not allocated".
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- the "plain" space is built as L2(mesh, order=1, dgjumps=True), so the space
+that is supposed to lack the coupling allocation now has it.  Assemble()
+succeeds and the expectations plain_form_built_without_error=True,
+plain_assemble_raised=True, plain_msg_has_illegal_dnums=True,
+plain_msg_has_assemble_tail=True and coupling_entries_allocated=True all
+disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -30,6 +39,10 @@ from ngsolve import BilinearForm, L2, Mesh, dx
 
 
 ABSENT_WORDING = "Sparse matrix: entry at"
+
+# Mutation control: under T2_MUTATE=1 the "plain" L2 space is given
+# dgjumps=True, i.e. the documented fix -- the pathology is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _jump_form(fes):
@@ -43,7 +56,7 @@ def _jump_form(fes):
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
 
-    fes_plain = L2(mesh, order=1)
+    fes_plain = L2(mesh, order=1, dgjumps=MUTATE)
     fes_dg = L2(mesh, order=1, dgjumps=True)
     print(f"ndof_plain={fes_plain.ndof}")
     print(f"ndof_dgjumps={fes_dg.ndof}")

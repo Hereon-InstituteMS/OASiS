@@ -21,18 +21,31 @@ Observed on NGSolve 6.2.2604 (2026-08-03):
     refinement — so "off by a constant factor (~1.1-1.5)" is falsified too.
   * HDivDiv + M_nn Dirichlet reproduces the Navier simply-supported value
     0.00406235 q L^4 / D to 4 digits.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- both mis-typed moment spaces are replaced by the correct
+HDivDiv one (WRONG_MOMENT_SPACE and VECTORH1_PROBE_SPACE both become
+"hdivdiv").  The VectorH1 compliance form then builds instead of raising and the
+mis-typed solve stays bounded, so ``Trace of non-matrix called``,
+``vectorh1_moment_space_raises=True`` and ``wrong_moment_space_wc_gt_1e6=True``
+disappear and the fixture goes red.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# which space plays the role of the moment tensor in the WRONG solve
-WRONG_MOMENT_SPACE = "matrixh1"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# which space plays the role of the moment tensor in the WRONG solve.
+# Under T2_MUTATE both wrong choices are repaired to the correct HDivDiv space.
+WRONG_MOMENT_SPACE = "hdivdiv" if MUTATE else "matrixh1"
+VECTORH1_PROBE_SPACE = "hdivdiv" if MUTATE else "vectorh1"
 
 E, NU, T_PLATE, Q = 1.0, 0.3, 1.0, 1.0
 D = E * T_PLATE ** 3 / (12.0 * (1.0 - NU ** 2))
@@ -134,7 +147,7 @@ def main() -> int:
     # --- WRONG variant (a): literal VectorH1 moment space -----------------
     msg = ""
     try:
-        hhj_centre_deflection(0.4, 2, "vectorh1")
+        hhj_centre_deflection(0.4, 2, VECTORH1_PROBE_SPACE)
     except Exception as exc:                       # noqa: BLE001
         msg = str(exc)
     print(f"vectorh1_moment_space_raises={bool(msg)}")

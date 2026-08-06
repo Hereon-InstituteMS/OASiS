@@ -35,9 +35,18 @@ What this fixture pins, all re-measured on this run:
     oscillations", confirmed;
   * DG with alpha = 0 goes negative by several times the field's own positive
     peak, which is the correction: not a ripple.
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- dg() ignores the requested penalty_scale=0 and keeps the SIP penalty on
+(scale 1.0), so the alpha=0 run is really a penalised run.  The undershoot is
+gone and the expectations dg_alpha0_goes_negative=True,
+alpha0_undershoot_exceeds_the_whole_field=True and
+alpha0_is_not_small_amplitude_ringing=True disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -62,6 +71,10 @@ EPS = 1.0 / PE
 BVEC = (1.0, 0.0)
 ORDER = 1
 MAXH = 0.15
+
+# Mutation control: under T2_MUTATE=1 the SIP penalty stays on even in the
+# alpha=0 branch, i.e. the documented fix -- the pathology is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def rect(maxh):
@@ -102,7 +115,8 @@ def dg(mesh, penalty_scale):
     ju, jv = u - u.Other(), v - v.Other()
     mdu = 0.5 * (grad(u) + grad(u.Other()))
     mdv = 0.5 * (grad(v) + grad(v.Other()))
-    alpha = penalty_scale * 4 * (ORDER + 1) ** 2
+    scale = penalty_scale if not MUTATE else 1.0
+    alpha = scale * 4 * (ORDER + 1) ** 2
 
     a = BilinearForm(fes)
     a += EPS * grad(u) * grad(v) * dx

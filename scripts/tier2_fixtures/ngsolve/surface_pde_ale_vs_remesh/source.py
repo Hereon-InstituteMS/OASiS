@@ -25,9 +25,21 @@ mesh.Boundaries('.*'), c = x*y + z (2026-08-06):
 
 CORRECTION to the claim text: the loss is not "~1-3% of L^2 norm per step".
 Across a re-mesh the transfer either raises or silently yields zero.
+
+Mutation control: the pathology is rebuilding the geometry every step.
+T2_MUTATE=1 applies the documented fix at exactly that site -- the WRONG loop
+stops calling build(1.0 + s) and instead reuses the single mesh under
+mesh.SetDeformation(gfdef), the ALE route.  ndof then stays at 381 for every
+step, the raw coefficient-vector copy succeeds, and the field survives, so the
+fixture loses remesh_ndof_changed=True, remesh_raw_dof_copy_raised=True, the
+'BaseVector::Set: size of me =' exception text,
+remesh_cross_mesh_set_lost_everything=True and
+remesh_loss_is_total_not_a_few_percent=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.occ import OCCGeometry, Pnt, Sphere
@@ -35,6 +47,7 @@ from ngsolve import (CoefficientFunction, GridFunction, H1, Integrate, Mesh,
                      VectorH1, ds, x, y, z)
 
 STEPS = (0.05, 0.10, 0.20)
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def build(radius):
@@ -85,7 +98,14 @@ def main() -> int:
     set_raised = ""
     worst_kept = 1.0
     for s in STEPS:
-        m_new = build(1.0 + s)
+        # MUTATION SITE: rebuilding the geometry every step IS the pathology.
+        # T2_MUTATE=1 applies the documented fix here -- one mesh, ALE.
+        if MUTATE:
+            gfdef.Set(CoefficientFunction((s * x, s * y, s * z)))
+            mesh.SetDeformation(gfdef)
+            m_new = mesh
+        else:
+            m_new = build(1.0 + s)
         surf_new = m_new.Boundaries(".*")
         fes_new = H1(m_new, order=2, definedon=surf_new)
         ndof_changed = ndof_changed and (fes_new.ndof != ndof0)
@@ -99,6 +119,8 @@ def main() -> int:
         except Exception as exc:                   # noqa: BLE001
             set_raised = f"{type(exc).__name__}: {exc}"
         kept = Integrate(g_new * g_new * ds, m_new) / ((1.0 + s) ** 2 * l2sq0)
+        if MUTATE:
+            mesh.UnsetDeformation()
         worst_kept = min(worst_kept, kept)
         print(f"remesh_step_s={s} new_ndof={fes_new.ndof} "
               f"fraction_of_L2_kept={kept:.6f}")

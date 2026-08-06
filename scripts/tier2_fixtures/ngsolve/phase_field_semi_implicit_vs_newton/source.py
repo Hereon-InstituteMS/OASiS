@@ -24,6 +24,15 @@ radius 0.3, eps=0.06, M=20 (2026-08-06):
 
 Correction to the claim: the Newton count here is ~3 inner iterations per
 step, not the quoted 5-10, and the wall-clock penalty is ~40x, not 5-10x.
+
+Mutation control.  T2_MUTATE=1 lags W' inside the fully implicit form --
+`MOB * w_prime(c) * w` becomes `MOB * w_prime(cold) * w`, the documented fix of
+evaluating W' at the previous state.  The residual is then linear, so Newton no
+longer needs several inner iterations per step and the big-dt run loses its
+stability advantage: `newton_iters_per_step_gt_2`,
+`newton_needs_at_least_3x_the_linear_solves` and `bigdt_newton_stayed_bounded`
+print False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -41,6 +50,10 @@ from ngsolve.solvers import Newton
 EPS, MOB, RAD = 0.06, 20.0, 0.30
 DT_SMALL, N_SMALL = 2e-4, 60
 DT_BIG, N_BIG = 0.2, 5
+
+# Mutation control: lag W' in the fully implicit form -- the documented fix --
+# so the nonlinearity whose cost and stability this fixture measures is gone.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def w_prime(c):
@@ -100,7 +113,7 @@ def main() -> int:
         a = BilinearForm(fes)
         a += ((1 / dt) * (c - cold) * w
               + EPS ** 2 * MOB * grad(c) * grad(w)
-              + MOB * w_prime(c) * w) * dx
+              + MOB * w_prime(cold if MUTATE else c) * w) * dx
         t0 = time.perf_counter()
         total, flags = 0, []
         for _ in range(nsteps):

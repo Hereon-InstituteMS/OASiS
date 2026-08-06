@@ -24,10 +24,18 @@ mesh.Boundaries('.*'), gfu.Set(x*y+z) (2026-08-06):
 Refinement to the claim: .Trace() is required for PROXY (trial/test)
 functions only.  On a GridFunction, Integrate(grad(gfu)*grad(gfu)*ds)
 returns the same 13.405234462975978 as the .Trace() form, no exception.
+
+Mutation control: the pathology is the redundant (I - n n^T) projection.
+T2_MUTATE=1 applies the documented fix at that site -- _redundant_form() drops
+the projection and returns the plain grad(u).Trace()*grad(v).Trace() integrand,
+so the "projected" form becomes the plain form, its expression tree stops being
+larger, and the fixture loses proj_integrand_strictly_larger=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 import time
 
@@ -35,6 +43,19 @@ from netgen.occ import OCCGeometry, Pnt, Sphere
 from ngsolve import (BilinearForm, GridFunction, H1, Id, Integrate,
                      InnerProduct, LinearForm, Mesh, OuterProduct, ds, grad,
                      specialcf, x, y, z)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+
+def _redundant_form(u, v, proj):
+    """The doubly-projected integrand -- the pitfall this fixture is about.
+
+    MUTATION SITE: T2_MUTATE=1 applies the documented fix and returns the plain
+    surface-gradient integrand instead, dropping the redundant projection.
+    """
+    if MUTATE:
+        return grad(u).Trace() * grad(v).Trace()
+    return InnerProduct(proj * grad(u).Trace(), proj * grad(v).Trace())
 
 
 def main() -> int:
@@ -81,8 +102,7 @@ def main() -> int:
         t_plain.append(time.perf_counter() - t0)
 
         a_proj = BilinearForm(fes)
-        a_proj += InnerProduct(proj * grad(u).Trace(),
-                               proj * grad(v).Trace()) * ds
+        a_proj += _redundant_form(u, v, proj) * ds
         t0 = time.perf_counter()
         a_proj.Assemble()
         t_proj.append(time.perf_counter() - t0)
@@ -95,8 +115,7 @@ def main() -> int:
     # costs more, and that holds on any machine.
     print(f"proj_assemble_time_ratio_observed={ratio:.3f}")
     plain_expr = str(grad(u).Trace() * grad(v).Trace())
-    proj_expr = str(InnerProduct(proj * grad(u).Trace(),
-                                 proj * grad(v).Trace()))
+    proj_expr = str(_redundant_form(u, v, proj))
     plain_ops = plain_expr.count("\n")
     proj_ops = proj_expr.count("\n")
     print(f"plain_integrand_nodes={plain_ops} proj_integrand_nodes={proj_ops}")

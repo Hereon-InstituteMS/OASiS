@@ -16,11 +16,22 @@ residual with NaN (Norm(r) is nan), and solvers.Newton then aborts with
     NgException: UmfpackInverse: Numeric factorization failed.
 Starting from u = 0 and load-stepping the same compression to -0.4 keeps
 Det(F) > 0 over the whole domain and converges at every step.
+
+Mutation control: T2_MUTATE=1 sets CRUSH_FACTOR from -2.0 to 0.0, i.e. the
+initial guess becomes u = 0 -- literally the documented fix ("Start from u = 0")
+applied at the pathology site.  det(F) is then 1 everywhere, so
+'crushed_mean_detF_le_zero=True', 'crushed_inverted_area_fraction_is_one=True',
+'crushed_energy_is_nan=True', 'crushed_residual_has_nan=True',
+'crushed_newton_factorization_failed=True' and the library wording
+'UmfpackInverse: Numeric factorization failed' go missing and the fixture goes
+red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
@@ -51,7 +62,10 @@ MU = E / (2 * (1 + NU))
 LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
 
 # u_x = CRUSH_FACTOR * x  as the initial guess.  -2 inverts the cell.
-CRUSH_FACTOR = -2.0
+# Mutation control: T2_MUTATE=1 makes it 0.0, i.e. the documented "start from
+# u = 0" fix applied right here.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+CRUSH_FACTOR = 0.0 if MUTATE else -2.0
 
 
 def make():

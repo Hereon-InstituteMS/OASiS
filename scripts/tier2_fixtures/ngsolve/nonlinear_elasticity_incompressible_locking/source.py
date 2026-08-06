@@ -23,10 +23,18 @@ So the mixed half of the claim holds, but "< 1% of the analytic value" is FALSE
 by nearly two orders of magnitude, and the order-2 pure-displacement space the
 catalog templates actually use barely locks at all on this mesh.  Both facts are
 pinned below.
+
+Mutation control: T2_MUTATE=1 raises LOCK_ORDER from 1 to 2, i.e. it applies this
+fixture's own measured remedy (the order-2 pure-displacement space, which lands
+within 0.4% of mixed) at the site where the locking variant is built.  The
+"locked" solve then no longer locks, so 'locked_ratio_lt_0p6=True' and
+'order2_pure_beats_order1=True' go missing and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import SplineGeometry
@@ -55,7 +63,10 @@ NU_INCOMP = 0.4999
 NU_MILD = 1.0 / 3.0
 
 # Order of the pure-displacement space used for the locking variant.
-LOCK_ORDER = 1
+# Mutation control: T2_MUTATE=1 raises it to 2, the order that this fixture
+# measures to be within 0.4% of the mixed reference.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+LOCK_ORDER = 2 if MUTATE else 1
 
 
 def lame(nu: float) -> tuple[float, float]:

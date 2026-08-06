@@ -20,10 +20,20 @@ Observed on NGSolve 6.2.2604 (unit_square maxh 0.4, VectorH1 order 2):
     converged coefficient vectors are bitwise identical (inf-norm difference
     0.0).  There is no initial stress and Newton does not run off.
 This fixture pins that behaviour so a future change in either direction is seen.
+
+Mutation control: T2_MUTATE=1 sets D_WRONG from 0.0 to DIM, i.e. it puts the
+missing "- d" back into the truncated energy -- the documented fix, at the
+pathology site.  W(F = I) is then exactly 0 for both forms, so
+'wrong_energy_at_identity_nonzero=True' and
+'wrong_energy_equals_half_mu_d_area=True' go missing and the fixture goes red.
+(The residual/Newton expectations are pathology-INDEPENDENT here and survive by
+design: that is precisely this fixture's falsification of the catalog claim.)
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -53,7 +63,9 @@ LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
 DIM = 2
 
 # The wrong variant subtracts this instead of DIM.
-D_WRONG = 0.0
+# Mutation control: T2_MUTATE=1 restores DIM, i.e. puts the "- d" back.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+D_WRONG = float(DIM) if MUTATE else 0.0
 
 
 def energy_form(fes, d_sub: float):

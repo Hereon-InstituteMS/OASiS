@@ -18,9 +18,18 @@ eps=0.06, droplet radius 0.3, M=20, dt=2e-4, 60 steps (2026-08-06):
   Cahn-Hilliard  relative mass drift = -3.516e-16
 Both fields stay in [0, 1] to within a few percent, so the drift is genuine
 curvature-driven shrinkage and not a blow-up.
+
+Mutation control.  T2_MUTATE=1 applies the documented fix at the pathology
+site: the first run -- the one whose mass drift is being measured -- is solved
+with the mass-conserving mixed (c, mu) Cahn-Hilliard form instead of the
+semi-implicit Allen-Cahn scheme, on the same mesh, eps, M and dt.  Its drift
+falls to round-off, so `ac_mass_drift_gt_1pct`, `ac_mass_monotone_decreasing`
+and `ch_conserves_better_than_ac_by_gt_1e10` print False and the fixture goes
+red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -28,6 +37,10 @@ from ngsolve import (BilinearForm, CoefficientFunction, GridFunction, H1,
                      Integrate, LinearForm, Mesh, dx, exp, grad, sqrt, x, y)
 
 EPS, MOB, DT, NSTEPS, RAD, STAB = 0.06, 20.0, 2e-4, 60, 0.30, 2.0
+
+# Mutation control: run the measured-for-drift case with the documented fix
+# (the mixed Cahn-Hilliard form) instead of the non-conservative Allen-Cahn one.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def w_prime(c):
@@ -40,6 +53,33 @@ def droplet():
     return 0.5 + 0.5 * (e2 - 1) / (e2 + 1)
 
 
+def cahn_hilliard(mesh, fes, c0):
+    """The right variant: mixed (c, mu) on H1 x H1.
+
+    Testing the c-equation with q = 1 gives Integrate(c - c_old) = 0
+    identically, so the mass is conserved by construction.
+    """
+    X = fes * fes
+    (cc, mu), (q, p) = X.TnT()
+    a = BilinearForm(X)
+    a += ((1 / DT) * cc * q + MOB * grad(mu) * grad(q)
+          + mu * p - STAB * cc * p) * dx
+    a += -EPS ** 2 * grad(cc) * grad(p) * dx
+    a.Assemble()
+    invX = a.mat.Inverse(X.FreeDofs())
+    gf = GridFunction(X)
+    gf.components[0].Set(c0)
+    masses = [Integrate(gf.components[0], mesh)]
+    for _ in range(NSTEPS):
+        cold = gf.components[0]
+        rhs = LinearForm(((1 / DT) * cold * q
+                          + (w_prime(cold) - STAB * cold) * p) * dx)
+        rhs.Assemble()
+        gf.vec.data = invX * rhs.vec
+        masses.append(Integrate(gf.components[0], mesh))
+    return X, gf, masses
+
+
 def main() -> int:
     ok = True
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.06))
@@ -50,17 +90,23 @@ def main() -> int:
     print(f"mesh_ne={mesh.ne} ac_ndof={fes.ndof}")
 
     # ---- WRONG: semi-implicit Allen-Cahn (the shipped scheme) -----------
-    lhs = BilinearForm(((1 / DT) * c * w
-                        + EPS ** 2 * MOB * grad(c) * grad(w)) * dx).Assemble()
-    inv = lhs.mat.Inverse(fes.FreeDofs())
-    gfc = GridFunction(fes)
-    gfc.Set(c0)
-    m_ac = [Integrate(gfc, mesh)]
-    for _ in range(NSTEPS):
-        rhs = LinearForm(((1 / DT) * gfc - MOB * w_prime(gfc)) * w * dx)
-        rhs.Assemble()
-        gfc.vec.data = inv * rhs.vec
-        m_ac.append(Integrate(gfc, mesh))
+    if MUTATE:
+        # the documented fix, applied to the run whose drift is measured
+        _, gf_mut, m_ac = cahn_hilliard(mesh, fes, c0)
+        gfc = gf_mut.components[0]
+    else:
+        lhs = BilinearForm(((1 / DT) * c * w
+                            + EPS ** 2 * MOB * grad(c) * grad(w))
+                           * dx).Assemble()
+        inv = lhs.mat.Inverse(fes.FreeDofs())
+        gfc = GridFunction(fes)
+        gfc.Set(c0)
+        m_ac = [Integrate(gfc, mesh)]
+        for _ in range(NSTEPS):
+            rhs = LinearForm(((1 / DT) * gfc - MOB * w_prime(gfc)) * w * dx)
+            rhs.Assemble()
+            gfc.vec.data = inv * rhs.vec
+            m_ac.append(Integrate(gfc, mesh))
     ac_drift = (m_ac[-1] - m_ac[0]) / m_ac[0]
     ac_mono = all(m_ac[i + 1] < m_ac[i] for i in range(len(m_ac) - 1))
     ac_lo, ac_hi = min(gfc.vec), max(gfc.vec)
@@ -79,24 +125,7 @@ def main() -> int:
         ok = False
 
     # ---- RIGHT: mixed (c, mu) Cahn-Hilliard -----------------------------
-    X = fes * fes
-    (cc, mu), (q, p) = X.TnT()
-    a = BilinearForm(X)
-    a += ((1 / DT) * cc * q + MOB * grad(mu) * grad(q)
-          + mu * p - STAB * cc * p) * dx
-    a += -EPS ** 2 * grad(cc) * grad(p) * dx
-    a.Assemble()
-    invX = a.mat.Inverse(X.FreeDofs())
-    gf = GridFunction(X)
-    gf.components[0].Set(c0)
-    m_ch = [Integrate(gf.components[0], mesh)]
-    for _ in range(NSTEPS):
-        cold = gf.components[0]
-        rhs = LinearForm(((1 / DT) * cold * q
-                          + (w_prime(cold) - STAB * cold) * p) * dx)
-        rhs.Assemble()
-        gf.vec.data = invX * rhs.vec
-        m_ch.append(Integrate(gf.components[0], mesh))
+    X, gf, m_ch = cahn_hilliard(mesh, fes, c0)
     ch_drift = (m_ch[-1] - m_ch[0]) / m_ch[0]
     ch_lo, ch_hi = min(gf.components[0].vec), max(gf.components[0].vec)
     print(f"ch_space_class={type(X).__name__}")

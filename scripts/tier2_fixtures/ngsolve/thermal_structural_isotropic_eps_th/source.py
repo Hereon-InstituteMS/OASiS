@@ -21,16 +21,27 @@ The heated specimen CONTRACTS transversely under the non-Id tensor, which is the
 unmistakable signature. Note that the total stress relaxes to ~0 in BOTH cases:
 a spatially uniform eigenstrain on a free body is always compatible, so "zero
 Stress" alone does not discriminate — the strain isotropy does.
+
+Mutation control: T2_MUTATE=1 sets EPS_TH_TENSOR to 'identity', restoring
+eps_th = alpha*T*Id(2) in the slot where the x-only tensor was, so
+'wrong_tensor_expansion_anisotropic=True', 'wrong_tensor_contracts_transversely=True'
+and 'wrong_tensor_misses_uniform_strain=True' disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
 # WRONG: the thermal-strain tensor -- "x_only" is alpha*T*diag(1,0)
-EPS_TH_TENSOR = "x_only"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# Mutation: T2_MUTATE=1 restores the isotropic Id(2) thermal-strain tensor,
+# which is the documented fix.
+EPS_TH_TENSOR = "identity" if MUTATE else "x_only"
 
 E, NU, ALPHA, DT = 210e3, 0.3, 1.2e-5, 100.0
 MU = E / (2.0 * (1.0 + NU))

@@ -14,10 +14,19 @@ Observed on NGSolve 6.2.2604: VTKOutput(...) constructs fine -- the failure is
 deferred to .Do(), which raises
     NgException: cannot evaluate ProxyFunction without userdata
 Rebuilding the identical algebra from gfu writes the file without complaint.
+
+Mutation control: T2_MUTATE=1 builds the "wrong" stress from gfu instead of from
+fes.TrialFunction() (STRESS_ARG below) -- the documented fix, a one-token swap at
+the pathology site, with the surrounding algebra and the VTKOutput call untouched.
+.Do() then succeeds, so the library wording
+'cannot evaluate ProxyFunction without userdata' and
+'proxy_stress_raises_userdata_error=True' go missing and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 from ngsolve import (
@@ -43,6 +52,10 @@ from ngsolve import (
 E, NU = 200.0, 0.3
 MU = E / (2 * (1 + NU))
 LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
+
+# Mutation control: under T2_MUTATE=1 the "wrong" VTK stress is built from the
+# resolved GridFunction instead of the symbolic TrialFunction.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def pk2(C, J):
@@ -76,7 +89,10 @@ def main() -> int:
 
     # --- WRONG variant: stress built from the ProxyFunction -----------------
     print(f"trialfunction_type={type(u).__name__}")
-    F_sym = ident + Grad(u)
+    # the pitfall is exactly this argument; T2_MUTATE=1 makes it the resolved
+    # GridFunction, which is the documented fix
+    STRESS_ARG = gfu if MUTATE else u
+    F_sym = ident + Grad(STRESS_ARG)
     C_sym = F_sym.trans * F_sym
     J_sym = Det(F_sym)
     sigma_sym = 1 / J_sym * F_sym * pk2(C_sym, J_sym) * F_sym.trans

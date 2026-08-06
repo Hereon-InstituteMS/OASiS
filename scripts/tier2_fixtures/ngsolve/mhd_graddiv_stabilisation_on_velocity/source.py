@@ -41,9 +41,18 @@ What this fixture pins, all re-measured on this run:
     real -- it is the recommended magnitude that is wrong;
   * the velocity error does not improve as tau grows, so the reduction is not
     free.
+
+Mutation control: T2_MUTATE=1 applies the fix this fixture argues for at the
+pathology site -- the first entry of the tau sweep, the claim's recommended
+tau = nu, is replaced by tau = 1e4, a tau large enough to actually control the
+divergence. `tau_equals_nu_barely_helps=True` then disappears from the output
+(and with the sweep no longer ordered, so does
+`divergence_falls_monotonically_in_tau=True`), and the run prints "FAIL:",
+which the fixture forbids. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import SplineGeometry
@@ -71,6 +80,10 @@ from ngsolve import (
 
 NU = 1e-3
 MAXH = 0.12
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The pathology is the claim's recommended tau = nu; T2_MUTATE=1 puts a tau
+# that genuinely controls the divergence in that slot instead.
+TAU_RECOMMENDED = 1e4 if MUTATE else NU
 
 
 def exact_velocity():
@@ -125,7 +138,7 @@ def main() -> int:
           f"{1e-4 <= d0 <= 1e-3}")
 
     rows = []
-    for tau in (NU, 1.0, 1e2, 1e4):
+    for tau in (TAU_RECOMMENDED, 1.0, 1e2, 1e4):
         _, d, n, uh = solve(mesh, tau)
         err = float(sqrt(Integrate(InnerProduct(uh - u0, uh - u0), mesh)))
         rows.append((tau, d, n, err))

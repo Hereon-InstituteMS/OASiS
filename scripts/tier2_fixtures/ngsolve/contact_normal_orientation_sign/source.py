@@ -30,9 +30,20 @@ What this fixture pins, all re-measured on this run:
     in the claim's phrasing;
   * and the failure is quiet -- ngsolve.solvers.Newton returns status 0 on the
     flipped runs.  Solver status is not a guard against this.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the sign multiplying the penalty energy is forced positive, i.e. the normal
+is taken with the orientation the specialcf.normal(2) check reports, so the
+"flipped" runs become correct ones.  Penetration then drops below the
+no-contact reference and stops growing with gamma, so 'flipped_sign_pushes_in=True',
+'flipped_penetration_grows_with_gamma=True' and
+'flipped_growth_at_least_5x_per_decade=True' are absent from the output and the
+fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -61,6 +72,7 @@ LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
 G0 = 0.01
 FORCE = 150.0
 MAXH = 0.2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _mesh():
@@ -85,7 +97,10 @@ def solve(mesh, gamma, sign):
     a += Variation(FORCE * u[1] * dx)
     if sign != 0:
         p = -(u[1] + G0)
-        a += Variation(sign * 0.5 * gamma * IfPos(p, p * p, 0) * ds("bot"))
+        # The pathology: the penalty entered with the flipped normal's sign.
+        # Under mutation the sign is forced to the correct outward orientation.
+        eff = sign if not MUTATE else abs(sign)
+        a += Variation(eff * 0.5 * gamma * IfPos(p, p * p, 0) * ds("bot"))
     gfu = GridFunction(fes)
     gfu.vec[:] = 0
     ret = solvers.Newton(a, gfu, maxit=40, printing=False)

@@ -34,6 +34,13 @@ What this fixture pins, all re-measured on this run:
     absent;
   * nothing is raised or printed by either run -- captured at the
     file-descriptor level, so C++-side output cannot escape the check.
+
+Mutation control.  T2_MUTATE=1 makes the naive branch of march() re-impose as
+well -- the `else: gfu.vec.data = inv * rhs` path takes the same
+write-the-constrained-DOFs-back-and-solve-the-free-correction route as the good
+run, which is the documented fix.  The second run then keeps the lid velocity,
+so `naive_loses_the_bc` and `boundary_condition_effectively_absent` both print
+False and the fixture goes red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -65,6 +72,10 @@ MAXH = 0.15
 NU = 1e-3
 DT = 0.02
 NSTEPS = 40
+
+# Mutation control: apply the documented fix (re-impose the Dirichlet rows) to
+# the naive branch too, so the pathology this fixture measures is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _capture_fds(fn):
@@ -122,7 +133,7 @@ def march(mesh, reimpose):
         conv += InnerProduct(Grad(w) * w, v) * dx
         conv.Assemble()
         rhs.data = mstar.mat * gfu.vec - DT * conv.vec
-        if reimpose:
+        if reimpose or MUTATE:
             for i in range(X.ndof):
                 if not free[i]:
                     gfu.vec[i] = gbc.vec[i]

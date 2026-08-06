@@ -36,9 +36,17 @@ What this fixture pins, all re-measured on this run:
   * replacing the parabolic inlet with a plug of the same mean velocity moves Cd
     outside the published band, so the benchmark does detect the BC error the
     claim says it detects.
+
+Mutation control.  T2_MUTATE=1 drops the convective term
+`InnerProduct(Grad(u) * u, v)` from the bilinear form in run(), leaving the
+Stokes drag -- the "missing convective term" the claim says the benchmark
+exposes.  The drag then leaves the published band, so
+`finest_cd_inside_published_bounds` (and with it `benchmark_reproduced`) prints
+False and the fixture goes red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import SplineGeometry
@@ -65,6 +73,9 @@ D = 0.1
 CD_BOUNDS = (5.5700, 5.5900)
 CL_BOUNDS = (0.0104, 0.0110)
 
+# Mutation control: drop the convective term, leaving the Stokes drag.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def dfg_mesh(maxh, cylh, order):
     g = SplineGeometry()
@@ -85,9 +96,10 @@ def run(maxh, cylh, order, inlet="parabolic"):
     X = V * Q
     (u, p), (v, q) = X.TnT()
     a = BilinearForm(X)
-    a += (NU * InnerProduct(Grad(u), Grad(v))
-          + InnerProduct(Grad(u) * u, v)
-          - div(u) * q - div(v) * p) * dx
+    form = NU * InnerProduct(Grad(u), Grad(v)) - div(u) * q - div(v) * p
+    if not MUTATE:
+        form = form + InnerProduct(Grad(u) * u, v)
+    a += form * dx
     gfu = GridFunction(X)
     if inlet == "parabolic":
         uin = CoefficientFunction((4 * UMAX * y * (0.41 - y) / 0.41 ** 2, 0))

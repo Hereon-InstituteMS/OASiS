@@ -38,11 +38,19 @@ What this fixture pins, all re-measured on this run:
   * at gamma = 1e22 Newton reports status -1 and consumes its whole budget;
   * none of DivisionByZero / NewtonMinimization / cond appears in the captured
     output of that run -- checked by capturing stdout and stderr, not asserted.
+
+Mutation control: T2_MUTATE=1 caps the gamma sweep GAMMA_SWEEP at 1e3, i.e. it
+removes the usable tight end that the claim's 5% observable needs in order to
+discriminate.  The largest gamma reached then still penetrates more than 5% of
+an element edge, so 'high_gamma_penetration_under_5pct_of_edge=True' is absent
+from the output and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import contextlib
 import io
+import os
 import sys
 
 import numpy
@@ -71,6 +79,11 @@ FORCE = 150.0
 MAXH = 0.2
 MAXIT = 40
 CLAIMED_STRINGS = ("DivisionByZero", "NewtonMinimization", "cond(")
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The observable is the two ends of the sweep.  Under mutation the sweep is
+# capped at 1e3, removing the enforced end the 5% criterion needs.
+GAMMA_SWEEP = ((1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e8) if not MUTATE
+               else (1e1, 1e2, 1e3))
 
 
 def _mesh():
@@ -121,7 +134,7 @@ def main() -> int:
     # --- the small-gamma end -------------------------------------------
     edge = MAXH
     rows = []
-    for gamma in (1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e8):
+    for gamma in GAMMA_SWEEP:
         ret, pen, _ = solve(mesh, gamma)
         rows.append((gamma, ret, pen))
         print(f"gamma={gamma:g} status={ret[0]} numit={ret[1]} "

@@ -33,9 +33,19 @@ What this fixture pins, all re-measured on this run:
   * the claim's own rule of thumb 4*(order+1)^2 lands on the coercive side;
   * cond(K) at alpha = 100*order^2 is nowhere near 1e14, and the log-log slope
     of cond against alpha in the large-alpha regime is ~1, i.e. linear.
+
+Mutation control:  T2_MUTATE=1 pins the SIP penalty coefficient to a fixed
+36/h (the rule-of-thumb value) in sip_matrix(), so it no longer tracks the swept
+alpha -- the pathology, an under-scaled penalty, never occurs.  lambda_min is
+then positive at every swept alpha and cond stops growing with alpha, so the
+expectations mesh0_loses_coercivity_for_small_alpha=True,
+mesh1_loses_coercivity_for_small_alpha=True and
+cond_grows_linearly_in_alpha=True disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -54,6 +64,10 @@ from ngsolve import (
 ORDER = 2
 RULE_OF_THUMB = 4 * (ORDER + 1) ** 2
 
+# Mutation control: under T2_MUTATE=1 the penalty is pinned to RULE_OF_THUMB/h
+# and stops tracking alpha, so the under-scaled penalty never occurs.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def sip_matrix(mesh, alpha):
     fes = L2(mesh, order=ORDER, dgjumps=True)
@@ -63,11 +77,12 @@ def sip_matrix(mesh, alpha):
     ju, jv = u - u.Other(), v - v.Other()
     mdu = 0.5 * (grad(u) + grad(u.Other()))
     mdv = 0.5 * (grad(v) + grad(v.Other()))
+    pen = (alpha * ORDER ** 2 / h) if not MUTATE else (RULE_OF_THUMB / h)
     a = BilinearForm(fes)
     a += grad(u) * grad(v) * dx
-    a += alpha * ORDER ** 2 / h * ju * jv * dx(skeleton=True)
+    a += pen * ju * jv * dx(skeleton=True)
     a += (-mdu * n * jv - mdv * n * ju) * dx(skeleton=True)
-    a += alpha * ORDER ** 2 / h * u * v * ds(skeleton=True)
+    a += pen * u * v * ds(skeleton=True)
     a += (-grad(u) * n * v - grad(v) * n * u) * ds(skeleton=True)
     a.Assemble()
     rows, cols, vals = a.mat.COO()

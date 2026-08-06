@@ -30,10 +30,19 @@ Observed on NGSolve 6.2.2604:
     that makes the shipped hyperelasticity templates print "Newton iters=0".
   * per-step increment 100 % and 40 % of sigma_y diverge; 20 %, 10 % and 5 %
     all converge and land on the same max|u_x| to 6 digits.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- N_STEPS_WRONG goes from 1 to 10, i.e. the traction is applied
+in 20 %-of-sigma_y increments instead of one shot, which is the guidance's own
+remedy ("reduce the load increment, not maxit").  solvers.Newton then returns
+status 0 and the fixture goes red on oneshot_first_element=-1,
+oneshot_diverged_at_every_maxit=True, oneshot_second_element_equals_maxit=True and
+raising_maxit_does_not_help=True.  Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -64,8 +73,11 @@ Q_REG = (1e-8 * SIG_Y) ** 2
 
 TOTAL_TRACTION = 500.0
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # The wrong variant applies the whole traction in one step.
-N_STEPS_WRONG = 1
+# T2_MUTATE=1 applies the documented remedy: smaller load increments.
+N_STEPS_WRONG = 10 if MUTATE else 1
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
 fes = VectorH1(mesh, order=2, dirichlet="left")

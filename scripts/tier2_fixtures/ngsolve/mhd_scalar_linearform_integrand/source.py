@@ -21,9 +21,18 @@ What this fixture pins, all re-measured on this run:
   * InnerProduct(e_y, v) is a second working spelling and gives the SAME vector
     as indexing v[1], so the fix is not unique and both are correct -- checked
     entry by entry rather than asserted.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the vector-valued factor e_y is dropped from the offending integrand, which
+becomes the purely scalar 1.0 * J * v[1] the claim recommends. SymbolicLFI then
+accepts it, so `integrand_is_vector_valued=True`, `vector_integrand_raised=
+True`, `message_literal=True` and `raised_at_iadd=True` all disappear from the
+output and the run prints "FAIL:", which the fixture forbids.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -39,6 +48,7 @@ from ngsolve import (
 
 MESSAGE = "SymbolicLFI needs scalar-valued CoefficientFunction"
 J = 3.0
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -47,7 +57,11 @@ def main() -> int:
     u, v = fes.TnT()
     e_y = CoefficientFunction((0, 1))
 
-    integrand = e_y * J * v[1]
+    # The pathology is the vector-valued e_y factor in front of the already
+    # projected scalar J*v[1]. T2_MUTATE=1 replaces it by the scalar 1.0,
+    # which is the fix the claim recommends.
+    lead = 1.0 if MUTATE else e_y
+    integrand = lead * J * v[1]
     print(f"integrand_dim={integrand.dim}")
     print(f"integrand_is_vector_valued={integrand.dim > 1}")
 

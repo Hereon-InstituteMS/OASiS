@@ -29,9 +29,19 @@ What this fixture pins, all re-measured on this run:
     than the solution itself;
   * GMRES on the SAME matrix and the SAME preconditioner converges in fewer
     iterations than the cap and matches the direct solve.
+
+Mutation control:  T2_MUTATE=1 drops the three advection integrals from build()
+so the "with_advection" system is the pure SIP diffusion operator again -- the
+symmetry-breaking terms, i.e. the pathology, are removed.  CG then converges and
+the expectations advection_breaks_symmetry=True,
+cg_exhausted_its_iteration_cap=True,
+cg_relative_error_exceeds_the_solution=True and
+cg_fails_silently_not_loudly=True all disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -58,6 +68,10 @@ MAXITER = 500
 NOT_PD_PHRASES = ("not positive definite", "positive definite",
                   "indefinite", "breakdown")
 
+# Mutation control: under T2_MUTATE=1 the advection integrals are never added,
+# so the "with_advection" matrix is symmetric -- the pathology is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def build(with_advection):
     mesh = Mesh(unit_square.GenerateMesh(maxh=MAXH))
@@ -76,7 +90,7 @@ def build(with_advection):
     a += (-mdu * n * jv - mdv * n * ju) * dx(skeleton=True)
     a += alpha / h * u * v * ds(skeleton=True)
     a += (-grad(u) * n * v - grad(v) * n * u) * ds(skeleton=True)
-    if with_advection:
+    if with_advection and not MUTATE:
         b = CoefficientFunction((20.0, 0.0))
         a += -u * (b * grad(v)) * dx
         a += IfPos(b * n, u, u.Other()) * (b * n) * jv * dx(skeleton=True)

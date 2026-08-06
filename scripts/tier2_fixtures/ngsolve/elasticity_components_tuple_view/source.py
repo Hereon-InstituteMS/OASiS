@@ -21,14 +21,28 @@ What this fixture pins, all re-measured on this run:
     component evaluates to;
   * the component's vector length is the scalar DOF count, and the two together
     account for the whole VectorH1 vector.
+
+Mutation control (INVERTED direction): this fixture executes no pathology -- it
+only demonstrates the correct behaviour -- so there is nothing to remove.
+``T2_MUTATE=1 python source.py`` instead COMMITS the documented mistake at the
+site the pitfall is about: the component's vector is copied
+(``comps[0].vec.CreateVector()``) before the +7 is written into it, i.e. the
+component is treated as a copy rather than a live view.  The parent
+GridFunction's vector then does not move, so ``component_is_a_view_not_a_copy=
+True`` disappears (and with it ``component_sees_parent_write=True``, because the
+compensating -7 write on the parent is no longer cancelled) and the fixture goes
+red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
 from netgen.geom2d import unit_square
 from ngsolve import CoefficientFunction, GridFunction, H1, Mesh, VectorH1, x, y
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -68,7 +82,12 @@ def main() -> int:
 
     # Views, not copies: write through the component.
     before = gf.vec.FV().NumPy().copy()
-    comps[0].vec[0] += 7.0
+    write_vec = comps[0].vec
+    if MUTATE:
+        # the documented MISTAKE: treat the component as a copy, not a view
+        write_vec = comps[0].vec.CreateVector()
+        write_vec.data = comps[0].vec
+    write_vec[0] += 7.0
     after = gf.vec.FV().NumPy().copy()
     moved = float(numpy.abs(after - before).max())
     print(f"parent_changed_by_component_write={moved:.6f}")

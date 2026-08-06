@@ -17,16 +17,26 @@ Observed on NGSolve 6.2.2604 (2026-08-03):
   * The documented replacement assembles and, with M_nn = 0 imposed on HDivDiv,
     reproduces the Navier simply-supported value 0.00406235 q L^4 / D to 4
     digits.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` removes the pathology at its
+site -- N_DIV_OPERATORS drops from 2 to 1, so ngs.div is applied to the HDivDiv
+proxy only once, which is legal.  The 'cannot form div' exception is then never
+raised, so ``divdiv_expression_raises=True`` and the literal expectation
+``cannot form div`` disappear and the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# WRONG: how many times ngs.div is applied to the HDivDiv proxy
-N_DIV_OPERATORS = 2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: how many times ngs.div is applied to the HDivDiv proxy.
+# Under T2_MUTATE the second div -- the pathology -- is not applied.
+N_DIV_OPERATORS = 1 if MUTATE else 2
 
 E, NU, T_PLATE, Q = 1.0, 0.3, 1.0, 1.0
 D = E * T_PLATE ** 3 / (12.0 * (1.0 - NU ** 2))

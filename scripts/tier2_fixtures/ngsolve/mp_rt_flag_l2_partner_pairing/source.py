@@ -8,9 +8,17 @@ BDM_k * L2(k-1).
 
 Wrong variant: RT_1 * L2(0). Right variants: RT_1 * L2(1) and BDM_1 * L2(0),
 which are checked to agree with each other as well as to converge.
+
+Mutation control: T2_MUTATE=1 sets MISPAIRED_L2ORDER from 0 to 1, i.e. it gives
+the RT_1 velocity space its correct L2(1) partner -- the exact one-token fix the
+prose prescribes -- at the site where the mis-paired system is built. The
+"mis-paired" run then converges, so 'mispaired_does_not_converge=True' and
+'mispaired_error_over_50pct=True' go missing and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -28,6 +36,11 @@ from ngsolve import (
 )
 
 MESHES = (0.2, 0.1, 0.05)
+
+# Mutation control: the L2 order the WRONG variant pairs with RT_1.  0 is the
+# pitfall; T2_MUTATE=1 makes it 1, which is the documented correct partner.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+MISPAIRED_L2ORDER = 1 if MUTATE else 0
 
 
 def mean_u(maxh: float, k: int, l2order: int, rt: bool) -> float:
@@ -70,7 +83,7 @@ def main() -> int:
         print(f"FAIL: ndof pattern changed: {counts!r}", file=sys.stderr)
         ok = False
 
-    mispaired = [mean_u(h, 1, 0, True) for h in MESHES]
+    mispaired = [mean_u(h, 1, MISPAIRED_L2ORDER, True) for h in MESHES]
     rt_correct = [mean_u(h, 1, 1, True) for h in MESHES]
     bdm_correct = [mean_u(h, 1, 0, False) for h in MESHES]
     print(f"mispaired_rt1_l2_0={[f'{v:.7f}' for v in mispaired]}")

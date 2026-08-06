@@ -26,14 +26,24 @@ What this fixture pins, all re-measured on this run:
   * the exact peak of the interpolated field is 1, and the sampled maximum
     moves monotonically towards it as the order rises -- which is what a
     correctly measured peak should do.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- the reported peak is read from the pointwise samples instead
+of from max(gfu.vec), so the two slots hold the same number.  The two numbers
+then coincide at every order and the fixture goes red on
+the_two_numbers_differ_at_every_order, order1_max_of_vec_above_the_true_peak_of_one
+and max_of_vec_errs_in_both_directions.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
 from netgen.geom2d import unit_square
 from ngsolve import GridFunction, H1, Mesh, pi, sin, x, y
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -49,6 +59,9 @@ def main() -> int:
         gf.Set(sin(pi * x) * sin(pi * y))
         vmax = float(gf.vec.FV().NumPy().max())
         fmax = max(float(gf(mesh(a, b))) for a, b in pts)
+        if MUTATE:
+            # the documented fix: read the peak off the function, not the DOFs
+            vmax = fmax
         rows.append((k, fes.ndof, vmax, fmax))
         print(f"order={k} ndof={fes.ndof} max_of_vec={vmax:.8f} "
               f"sampled_max={fmax:.8f} differ={abs(vmax - fmax) > 1e-6}")

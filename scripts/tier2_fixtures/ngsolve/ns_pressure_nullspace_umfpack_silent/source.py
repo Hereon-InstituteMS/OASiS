@@ -33,6 +33,14 @@ What this fixture pins, all re-measured on this run:
   * the two solutions differ by a constant in the pressure and agree in the
     velocity, which is the "uniform drift unrelated to the source" the claim
     describes, and the only thing an agent could have noticed.
+
+Mutation control.  T2_MUTATE=1 pins one pressure DOF in the "unconstrained"
+branch too -- `free_block(X, a, pin=False)` becomes `pin=True`, the documented
+fix -- so the constant-pressure nullspace is gone from the system this fixture
+is supposed to find it in.  `exactly_one_zero_mode`,
+`nullmode_is_the_constant_pressure`, `pinning_removes_exactly_one_dof` and
+`pressures_differ_by_a_constant` then print False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -61,6 +69,10 @@ from ngsolve import (
 )
 
 PETSC_WORDS = ("DIVERGED_BREAKDOWN", "KSPSolve", "zero pivot", "singular")
+
+# Mutation control: apply the documented fix (pin one pressure DOF) to the
+# unconstrained branch too, removing the nullspace this fixture measures.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _capture_fds(fn):
@@ -122,7 +134,7 @@ def main() -> int:
     X, a, f = build(mesh)
     pstart = X.Range(1).start
 
-    fr0, idx0, S0 = free_block(X, a, pin=False)
+    fr0, idx0, S0 = free_block(X, a, pin=MUTATE)
     U, sv0, Vt = numpy.linalg.svd(S0)
     print(f"unconstrained_free_dofs={len(idx0)}")
     print(f"smallest_singular_value={sv0[-1]:.6e}")

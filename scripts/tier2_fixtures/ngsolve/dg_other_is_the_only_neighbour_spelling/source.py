@@ -19,9 +19,17 @@ What this fixture pins, all re-measured on this run:
   * u.Other() does exist, and the symmetric average 0.5*(u + u.Other()) built
     from it assembles into a form with strictly wider sparsity than the same
     space's block-diagonal mass matrix, i.e. it really does reach across facets.
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- the attribute the probe reaches for is 'Other' instead of 'neighbour', so the
+lookup succeeds and no AttributeError is captured.  The expectations
+neighbour_raises_attributeerror=True, msg_names_proxyfunction=True and
+msg_says_no_attribute_neighbour=True then disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -29,6 +37,11 @@ from ngsolve import BilinearForm, L2, Mesh, dx
 
 
 NEVER_EMITTED = "trial function has no attribute neighbour"
+
+# Mutation control: under T2_MUTATE=1 the probe asks for the accessor that
+# exists, u.Other, instead of u.neighbour -- the pathology is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+PROBE = "neighbour" if not MUTATE else "Other"
 
 
 def main() -> int:
@@ -42,7 +55,7 @@ def main() -> int:
 
     msg = ""
     try:
-        u.neighbour
+        getattr(u, PROBE)
     except AttributeError as exc:
         msg = str(exc)
     print(f"neighbour_raises_attributeerror={bool(msg)}")

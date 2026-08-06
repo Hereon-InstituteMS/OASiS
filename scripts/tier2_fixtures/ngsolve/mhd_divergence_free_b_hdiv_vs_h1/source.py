@@ -35,9 +35,18 @@ What this fixture pins, all re-measured on this run:
     field error grows monotonically with it;
   * at tau = 1 specifically, the divergence reduction is under a factor of ten
     while the error has already grown by more than a factor of five.
+
+Mutation control (inverted polarity -- the HDiv branch is the fix, so the
+discriminating edit commits the mistake instead of removing it): T2_MUTATE=1
+drops the constrained HDiv space from order 3 to order 1, which drags the L2
+multiplier down to order 0, so the constraint only pins the elementwise mean
+divergence. `hdiv_divergence_orders_below_vectorh1=True` then disappears from
+the output and the run prints "FAIL:", which the fixture forbids.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -64,6 +73,8 @@ from ngsolve import (
 )
 
 MAXH = 0.15
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+HDIV_ORDER = 1 if MUTATE else 3     # L2 multiplier follows at order-1
 
 
 def bexact():
@@ -123,7 +134,7 @@ def main() -> int:
     print(f"vectorh1_divergence_is_order_0p1={0.01 < d0 < 3.0}")
     print(f"vectorh1_divergence_is_not_1e-14={d0 > 1e-10}")
 
-    ndh, gfh = hdiv_constrained(mesh, Bex)
+    ndh, gfh = hdiv_constrained(mesh, Bex, order=HDIV_ORDER)
     dh, eh = measure(mesh, gfh, Bex)
     print(f"hdiv_ndof={ndh} div_L2={dh:.6e} field_err={eh:.6e}")
     print(f"hdiv_divergence_orders_below_vectorh1={dh < d0 / 1e4}")

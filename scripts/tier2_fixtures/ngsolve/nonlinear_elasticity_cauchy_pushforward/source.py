@@ -14,11 +14,20 @@ precision, the PK1-in-PK2-slot version is visibly non-symmetric and differs from
 the correct stress by an O(1) relative amount, while (1/J) P F^T reproduces
 (1/J) F S F^T to machine precision.  Cof(F) == Det(F) * Inv(F).trans is also
 pinned as an independent check that the tensor algebra itself is intact.
+
+Mutation control: T2_MUTATE=1 rebuilds sigma_bad at the pathology site as the
+documented correct push-forward (1/J) P F^T instead of (1/J) F P F^T -- the same
+one-token deletion of the spurious leading F that the prose prescribes.  The
+"wrong" stress then equals the correct one, so 'wrong_form_reldiff_gt_0p1=True',
+'wrong_is_symmetric=False' and 'wrong_symmetry_defect_gt_1e-3=True' go missing
+and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from ngsolve import (
@@ -42,6 +51,10 @@ from ngsolve import (
 E, NU = 200.0, 0.3
 MU = E / (2 * (1 + NU))
 LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
+
+# Mutation control: under T2_MUTATE=1 sigma_bad is built with the documented
+# correct push-forward instead of the PK1-in-the-PK2-slot one.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def l2(mesh, mat) -> float:
@@ -72,7 +85,9 @@ def main() -> int:
 
     sigma_ok = 1 / J * F * S * F.trans          # documented, correct
     sigma_alt = 1 / J * P * F.trans             # documented alternative
-    sigma_bad = 1 / J * F * P * F.trans         # the pitfall
+    # the pitfall -- under T2_MUTATE=1 the leading F is dropped, i.e. the
+    # documented correct form (1/J) P F^T is used instead
+    sigma_bad = (1 / J * P * F.trans) if MUTATE else (1 / J * F * P * F.trans)
 
     n_ok = l2(mesh, sigma_ok)
     n_bad = l2(mesh, sigma_bad)

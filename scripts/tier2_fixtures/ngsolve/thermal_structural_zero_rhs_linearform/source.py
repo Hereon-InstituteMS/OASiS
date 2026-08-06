@@ -17,16 +17,27 @@ H1(order=2, dirichlet='left|right'):
   * LinearForm(V); f.Assemble() succeeds and yields an all-zero vector, which is
     then usable in the template's heat solve: the lifted Dirichlet solution
     still reaches T_max = 100.
+
+Mutation control: T2_MUTATE=1 sets ZERO_COEFFICIENT to 1.0 instead of the
+literal 0, so the integrand no longer collapses symbolically and the form
+keeps its TestFunction.  'zero_integrand_raises=True', 'exc_type=NgException'
+and 'Linearform must have TestFunction' then disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
 # WRONG: the literal 0 that makes the integrand collapse symbolically
-ZERO_COEFFICIENT = 0
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# Mutation: T2_MUTATE=1 makes the coefficient nonzero, so the integrand no
+# longer collapses symbolically and the LinearForm keeps its TestFunction.
+ZERO_COEFFICIENT = 1.0 if MUTATE else 0
 
 T_HOT, T_COLD = 100.0, 0.0
 

@@ -31,9 +31,19 @@ What this fixture pins, all re-measured on this run:
   * raising gamma pushes the gap under the tolerance without changing the
     displacement verdict at all, so the gap check is carrying information the
     displacement check never had.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the first solve's penalty parameter GAMMA_LOOSE is raised from 1e4 to 1e7,
+which is what actually enforces the constraint.  The residual gap then drops
+under TOL_GAP, so 'gap_violation_in_claimed_1_to_5_pct_band=True',
+'gap_criterion_fires=True', 'displacement_ok_but_gap_violated=True' and
+'gap_verdict_changed_between_runs=True' are absent from the output and the
+fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -62,6 +72,11 @@ FORCE = 150.0
 MAXH = 0.2
 TOL_DISP = 1e-6
 TOL_GAP = 1e-3 * MAXH          # 0.1% of an element edge
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The pathology: a penalty too loose to enforce the constraint, accepted because
+# the displacement criterion is met.  Under mutation gamma is raised to the
+# value the fixture itself shows clears the gap check.
+GAMMA_LOOSE = 1e4 if not MUTATE else 1e7
 
 
 def _mesh():
@@ -114,7 +129,7 @@ def main() -> int:
     mesh = _mesh()
     edge = MAXH
 
-    gamma = 1e4
+    gamma = GAMMA_LOOSE
     ret, rel_du, gap = solve(mesh, gamma)
     pct = 100 * gap / edge
     print(f"gamma={gamma:g}")

@@ -28,9 +28,15 @@ What this fixture pins, all re-measured on this run:
     it assembles -- so the message's advice is actionable, checked rather than
     assumed;
   * dx(skeleton=True) assembles too and produces cross-element entries.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the bad form is written with dx(skeleton=True) instead of plain dx -- so
+__iadd__ accepts it, the form assembles and the NgException never fires.
+Re-run with `T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -39,6 +45,7 @@ from ngsolve import BilinearForm, L2, Mesh, dx
 
 MESSAGE = "DG-facet terms need either skeleton=True or element_boundary=True"
 PRIOR = "SymbolicBFI: u.Other() outside skeleton context"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def written(form, fes, mesh):
@@ -61,7 +68,9 @@ def main() -> int:
     stage = "form_constructed"
     msg = ""
     try:
-        a_bad += jump * dx
+        # The pathology: no skeleton flag on the facet integrand.
+        # T2_MUTATE=1 adds skeleton=True at this __iadd__.
+        a_bad += jump * (dx(skeleton=True) if MUTATE else dx)
         stage = "iadd_accepted"
         a_bad.Assemble()
         stage = "assembled"

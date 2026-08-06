@@ -21,16 +21,26 @@ Observed on NGSolve 6.2.2604 (unit_square maxh 0.5, 6 triangles):
   * IntegrationRuleSpace is NOT reachable as ngsolve.IntegrationRuleSpace and
     NOT exported by `from ngsolve import *`; it must be imported from
     ngsolve.comp.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- the internal-variable space under test is built as
+IntegrationRuleSpace(mesh, order=IVAR_ORDER) instead of L2(mesh, order=IVAR_ORDER).
+It then has 12 dofs per element and ndof == ne*nip holds, so the fixture goes red
+on l2_dofs_per_element=10 and l2_ndof_equals_ne_times_quadpoints=False.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve
 import ngsolve.fem as ngfem
 from ngsolve import TRIG, H1, L2, Mesh, VectorH1, unit_square
 from ngsolve.comp import IntegrationRuleSpace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DISP_ORDER = 2
 # The claim's recommended internal-variable space order.
@@ -55,7 +65,9 @@ def main() -> int:
     print(f"comp_IntegrationRuleSpace_type={IntegrationRuleSpace.__name__}")
 
     # --- WRONG variant: the L2 sizing the claim recommends ------------------
-    l2 = L2(mesh, order=IVAR_ORDER)
+    # T2_MUTATE=1 swaps in the fix (IntegrationRuleSpace) at this site.
+    l2 = (IntegrationRuleSpace(mesh, order=IVAR_ORDER) if MUTATE
+          else L2(mesh, order=IVAR_ORDER))
     ir_claim = ngfem.IntegrationRule(TRIG, IVAR_ORDER)
     irs = IntegrationRuleSpace(mesh, order=IVAR_ORDER)
     ir_real = irs.GetIntegrationRules()[TRIG]

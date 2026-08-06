@@ -29,9 +29,18 @@ Second defect of the shipped template recorded here: GridFunction.Set with
 definedon= zeroes every other DOF, so its two consecutive Set calls (top,
 then bottom) leave ONLY the bottom displacement applied - the top boundary
 integral of u_y drops from 0.03 to exactly 0.0.
+
+Mutation control.  T2_MUTATE=1 turns the history projection ON in the run that
+is supposed to heal: `run(True, False)` becomes `run(True, True)`, so the
+pointwise gnew = max(gnew, gprev) -- the documented fix -- is applied there too.
+The damage then stays at its peak through the unloading, so
+`no_projection_damage_decreased_on_unload` and
+`no_projection_final_dmax_below_half_peak` print False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -44,6 +53,10 @@ MU = E_MOD / (2 * (1 + NU))
 LAM = E_MOD * NU / ((1 + NU) * (1 - 2 * NU))
 GC, L0, KRES = 1e-3, 0.1, 1e-10
 SCHEDULE = (0.01, 0.02, 0.03, 0.02, 0.01, 0.0)
+
+# Mutation control: enforce the documented irreversibility projection in the
+# run whose healing this fixture measures.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.15))
 Vu = VectorH1(mesh, order=1, dirichlet="bottom|top")
@@ -128,7 +141,7 @@ def main() -> int:
         ok = False
 
     # ---- WRONG B: homogenised, but no history projection ----------------
-    healing = run(True, False)
+    healing = run(True, MUTATE)
     peak = max(d for d, _ in healing)
     final = healing[-1][0]
     print(f"healing_dmax_sequence={[f'{d:.6g}' for d, _ in healing]}")

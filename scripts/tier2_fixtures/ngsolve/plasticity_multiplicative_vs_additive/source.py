@@ -23,11 +23,20 @@ so the disagreement really is of order Det(F)^-1, and it crosses 5 % between 5 %
 and 10 % engineering strain.  Det(F_e)*Det(F_p) - Det(F) is 0 to machine
 precision and Cof(F) == Det(F)*Inv(F).trans to ~1e-16, so the kinematics behind
 the comparison are exact.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- USE_ADDITIVE goes False, so small_strain_stress() returns the
+multiplicative Neo-Hookean push-forward and the large-strain comparison is
+like-for-like.  The relative difference collapses to 0 at every strain level and
+the fixture goes red on reldiff_at_20pct_strain_gt_10pct=True,
+reldiff_monotonically_increasing=True and gap_is_order_inverse_detF=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from ngsolve import (
@@ -58,8 +67,11 @@ A_PLASTIC = 0.004          # deviatoric plastic strain magnitude
 STRAINS = (0.01, 0.02, 0.05, 0.10, 0.20, 0.30)
 INT_ORDER = 6
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # The wrong variant keeps the small-strain additive split.
-USE_ADDITIVE = True
+# T2_MUTATE=1 switches it to the multiplicative split (the documented fix).
+USE_ADDITIVE = not MUTATE
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.4))
 AREA = Integrate(CoefficientFunction(1.0), mesh, order=INT_ORDER)

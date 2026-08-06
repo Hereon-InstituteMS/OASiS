@@ -32,10 +32,20 @@ Observed on NGSolve 6.2.2604:
 So the qualitative claim holds exactly, but its stated rate is wrong in the
 pessimistic direction: the residual does NOT drop "by a factor of ~2-3 per
 iteration", it drops by about 4 % per iteration.  Both are pinned below.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- TANGENT_WRONG flips from "continuum" to "consistent", so the
+second Newton run is driven by AssembleLinearization instead of the hand-built
+C_ep.  It then converges in a handful of residuals and the fixture goes red on
+continuum_hits_iteration_cap=True, continuum_still_above_tol=True,
+continuum_ratio_constant_linear=True, continuum_drop_per_iter_faster_than_factor_2=False,
+continuum_drop_per_iter_slower_than_4pct=True and consistent_needs_far_fewer_residuals=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -71,8 +81,11 @@ TOL = 1e-9
 MAXIT_CONSISTENT = 30
 MAXIT_CONTINUUM = 120
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # The wrong variant drives Newton with the continuum tangent.
-TANGENT_WRONG = "continuum"
+# T2_MUTATE=1 drives it with the consistent tangent instead.
+TANGENT_WRONG = "consistent" if MUTATE else "continuum"
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
 fes = VectorH1(mesh, order=2, dirichlet="left")

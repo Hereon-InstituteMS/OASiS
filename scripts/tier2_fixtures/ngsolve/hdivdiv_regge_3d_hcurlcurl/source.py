@@ -20,17 +20,28 @@ Observed on NGSolve 6.2.2604 (2026-08-03) on unit_cube maxh=0.5
   * HCurlCurl(3D, order=1) (= Regge): relative tt jump 1.9e-17, relative nn jump
     1.40 -> the complementary space, and HCurlCurl(order=0).ndof == mesh.nedge
     exactly (one dof per edge, the defining property of lowest-order Regge).
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- PORTED_FORM_DIM becomes 3, so specialcf.normal(3) and
+Id(3) are used and the form is dimensionally consistent with the 3D mesh.  It
+then assembles without raising, so ``ported_2d_form_on_3d_raises=True`` and the
+literal expectation ``Dimensions don't match`` disappear and the fixture goes
+red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 import ngsolve as ngs
 from netgen.csg import unit_cube
 
-# WRONG: the spatial dimension baked into the ported 2D plate form
-PORTED_FORM_DIM = 2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: the spatial dimension baked into the ported 2D plate form.
+# Under T2_MUTATE the form is ported properly and uses the mesh dimension.
+PORTED_FORM_DIM = 3 if MUTATE else 2
 
 
 def rel_jumps(V: ngs.FESpace, dim: int, seed: int = 11) -> dict[str, float]:

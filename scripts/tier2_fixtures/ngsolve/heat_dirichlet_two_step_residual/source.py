@@ -9,9 +9,18 @@ correct answer is exact to round-off and any O(1) error is unambiguous.
 
 Wrong variant: gfu.vec.data = Inverse * f.vec.
 Right variant: gfu.vec.data += Inverse * (f.vec - a.mat * gfu.vec).
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- the "one_step" pass also uses the two-step residual update
+``gfu.vec.data += Inverse * (f.vec - a.mat * gfu.vec)`` instead of the plain
+assignment.  Its L2 error then drops to machine zero and its boundary values
+survive, so ``one_step_error_order_one=True``,
+``one_step_boundary_values_lost=True`` and ``error_ratio_over_1e10=True``
+disappear and the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -27,6 +36,8 @@ from ngsolve import (
     x,
     y,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -51,7 +62,9 @@ def main() -> int:
         gfu.Set(exact, definedon=mesh.Boundaries(".*"))
         set_max = max(abs(val) for val in gfu.vec)
         try:
-            if label == "two_step":
+            # Under T2_MUTATE the "one_step" pass also gets the residual update,
+            # i.e. the pathology is removed at its site.
+            if label == "two_step" or MUTATE:
                 gfu.vec.data += a.mat.Inverse(fes.FreeDofs()) * (
                     f.vec - a.mat * gfu.vec)
             else:

@@ -37,9 +37,17 @@ What this fixture pins, all re-measured on this run:
   * the catalog's own NGSolve Stokes generator emits the +p*div(v) spelling, so
     the convention the claim describes is the one shipped -- read out of the
     generated source rather than assumed.
+
+Mutation control: the pathology is the +p*div(v) run.  T2_MUTATE=1 applies the
+documented fix to it -- the sign fed to solve() for the "plus_p_divv" case flips
+from +1 to -1, so both runs use the -p*div(v) convention, the contrast vanishes
+and the fixture loses plus_convention_has_the_wrong_sign=True,
+pressures_are_exact_negatives=True and both_valid_is_true_of_velocity_only=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -64,6 +72,7 @@ LEN = 4.0
 HGT = 1.0
 UMAX = 1.0
 DPDX_EXACT = -8.0 * NU * UMAX / HGT ** 2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def solve(mesh, sign):
@@ -95,7 +104,10 @@ def main() -> int:
     print(f"analytic_dpdx={DPDX_EXACT:+.4f}")
 
     results = {}
-    for sign, label in ((+1, "plus_p_divv"), (-1, "minus_p_divv")):
+    # MUTATION SITE: the sign in front of the two coupling terms is the whole
+    # pitfall.  T2_MUTATE=1 applies the documented fix to the "+" run.
+    for sign, label in (((-1 if MUTATE else +1), "plus_p_divv"),
+                        (-1, "minus_p_divv")):
         gfu = solve(mesh, sign)
         ph = gfu.components[1]
         p0 = float(ph(mesh(0.05, HGT / 2)))

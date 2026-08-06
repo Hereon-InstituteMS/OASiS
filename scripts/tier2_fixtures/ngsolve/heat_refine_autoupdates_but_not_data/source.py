@@ -18,13 +18,24 @@ attributed to the ndof access itself.
 
 Wrong variant: keep using the GridFunction after Refine as if it still held the
 solution. Right variant: Set it again.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- gfu.Set(curved) is called immediately after mesh.Refine(), so the stale
+prolongated coarse function that the whole fixture is about is never carried
+forward. The post-refine error then drops instead of staying bit-for-bit equal,
+so `refine_alone_buys_no_accuracy=True` disappears (and the re-Set overwrites
+the coarse DOF values, so `old_dof_values_preserved=True` goes with it).
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
 from ngsolve import GridFunction, H1, Integrate, Mesh, x, y
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -49,6 +60,11 @@ def main() -> int:
 
     # --- the refine, with NO Update call of any kind ---------------------
     mesh.Refine()
+    if MUTATE:
+        # The documented fix, applied where a user would apply it: re-Set the
+        # GridFunction on the fine mesh instead of relying on whatever the
+        # Refine left in it.
+        gfu.Set(curved)
     after_len = len(gfu.vec)          # read FIRST, before touching fes.ndof
     after_ndof = fes.ndof
     print(f"after_len_vec_read_first={after_len}")

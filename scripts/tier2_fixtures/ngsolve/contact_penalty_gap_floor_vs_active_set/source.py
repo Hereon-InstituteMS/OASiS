@@ -41,9 +41,18 @@ What this fixture pins, all re-measured on this run:
     constraint is imposed as an equality on the active DOFs;
   * it is the same problem: the active set found matches the set of bottom DOFs
     the tightest penalty solve drives into contact.
+
+Mutation control: T2_MUTATE=1 breaks the active-set constraint at its site --
+the active bottom DOFs are held at ACTIVE_LEVEL = -1.5*G0 instead of the
+obstacle's -G0, so the equality that makes the violation exactly zero no longer
+holds.  A nonzero violation remains, so 'active_set_violation_is_exactly_zero=True'
+and 'active_set_beats_every_penalty_gamma=True' are absent from the output and
+the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -77,6 +86,10 @@ G0 = 0.01
 FORCE = 150.0
 MAXH = 0.2
 GAMMAS = [1e4, 1e5, 1e6, 1e7, 1e8, 1e9]
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The active set is exact because the active DOFs are pinned at exactly the
+# obstacle level.  Under mutation they are pinned 1.5x too deep instead.
+ACTIVE_LEVEL = -G0 if not MUTATE else -1.5 * G0
 
 
 def _mesh():
@@ -137,7 +150,7 @@ def active_set(mesh):
             free[i] = False
         gfu.vec[:] = 0
         for i in active:
-            gfu.vec[i] = -G0
+            gfu.vec[i] = ACTIVE_LEVEL
         r = f.vec.CreateVector()
         r.data = f.vec - a.mat * gfu.vec
         gfu.vec.data += a.mat.Inverse(free, inverse="umfpack") * r

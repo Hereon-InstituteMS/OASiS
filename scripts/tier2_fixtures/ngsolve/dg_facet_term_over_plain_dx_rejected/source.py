@@ -23,9 +23,17 @@ What this fixture pins, all re-measured on this run:
   * that dx(skeleton=True) and ds(skeleton=True) are different measures --
     the interior-facet form couples DOFs across elements (wider sparsity),
     the boundary-facet form does not.
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- the wrong-variant block writes the jump over dx(skeleton=True) instead of
+plain dx, so no NgException is raised.  The expectations plain_dx_raised=True,
+plain_dx_message_literal=True, raised_at_iadd_not_assemble=True and
+assemble_never_reached=True then disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -41,6 +49,10 @@ from ngsolve import (
 
 MESSAGE = "DG-facet terms need either skeleton=True or element_boundary=True"
 
+# Mutation control: under T2_MUTATE=1 the wrong-variant measure carries the
+# skeleton flag, i.e. the documented fix -- the pathology is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
@@ -50,10 +62,11 @@ def main() -> int:
 
     # --- wrong variant: plain dx ---------------------------------------
     a_bad = BilinearForm(fes)
+    bad_measure = dx if not MUTATE else dx(skeleton=True)
     stage = "form_constructed"
     msg = ""
     try:
-        a_bad += jump * dx
+        a_bad += jump * bad_measure
         stage = "iadd_accepted"
         a_bad.Assemble()
         stage = "assembled"

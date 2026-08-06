@@ -23,15 +23,28 @@ What this fixture pins, all re-measured on this run:
   * sinh and cosh are present and evaluate too -- the claim's negative is false;
   * the recommended exp-based identity and the sinh/cosh quotient both reproduce
     tanh to machine precision at several sample points, so both fixes are real.
+
+Mutation control:  T2_MUTATE=1 points the presence probe at 'tan' instead of
+'tanh' -- the name that IS in the namespace, so getattr(ngsolve, PROBE) and the
+eval of PROBE(x) both succeed and no NameError is captured.  The expectations
+tanh_call_raises_nameerror=True, tanh_nameerror_literal=True and
+nameerror_names_tanh=True then disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import ngsolve
 from netgen.geom2d import unit_square
 from ngsolve import Mesh, cosh, exp, sinh, x
+
+# Mutation control: under T2_MUTATE=1 the missing name the probe reaches for is
+# replaced by 'tan', which exists -- the pathology is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+PROBE = "tanh" if not MUTATE else "tan"
 
 
 def main() -> int:
@@ -41,12 +54,13 @@ def main() -> int:
     msg = ""
     suggestion = False
     try:
-        eval("tanh(x)", {"tanh": getattr(ngsolve, "tanh"), "x": x})  # noqa: S307
+        eval(f"{PROBE}(x)",
+             {PROBE: getattr(ngsolve, PROBE), "x": x})                # noqa: S307
     except AttributeError:
         # getattr fails first when the name is absent -- reproduce the real
         # call-site shape instead: an expression that mentions tanh unqualified.
         try:
-            eval("tanh(x)", {"x": x})                                # noqa: S307
+            eval(f"{PROBE}(x)", {"x": x})                             # noqa: S307
         except NameError as exc:
             msg = str(exc)
             suggestion = getattr(exc, "name", None) == "tanh"

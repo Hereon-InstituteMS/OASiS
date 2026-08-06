@@ -23,6 +23,13 @@ FALSIFIED half of the claim: the Newton escape hatch does not exist.
 and on this deliberately unresolved problem the fully implicit Newton
 CONVERGES - flag 0 in 3 iterations - while c overshoots by 28%.  Newton is
 silent about under-resolution; only the range of c reveals it.
+
+Mutation control.  T2_MUTATE=1 runs the "underresolved" case at EPS_FINE
+instead of EPS_COARSE, i.e. the documented fix of resolving the interface on
+the mesh you have (the fixture's own right variant, eps=0.05 at maxh=0.1).  c
+then stays inside [0, 1], so `underresolved_overshoot_gt_10pct`,
+`underresolved_undershoot_gt_10pct` and `overshoot_grows_with_h_over_eps` print
+False and the fixture goes red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -37,6 +44,10 @@ from ngsolve.solvers import Newton
 
 MAXH, MOB, DT, NSTEPS = 0.1, 1.0, 1e-3, 20
 EPS_COARSE, EPS_MID, EPS_FINE = 0.002, 0.010, 0.050
+
+# Mutation control: resolve the interface (the documented fix) in the run whose
+# over/undershoot is measured.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def w_prime(c):
@@ -88,7 +99,7 @@ def main() -> int:
     fes = H1(mesh, order=1)
     print(f"mesh_ne={mesh.ne} ndof={fes.ndof}")
 
-    lo_c, hi_c = semi_implicit(mesh, fes, EPS_COARSE)
+    lo_c, hi_c = semi_implicit(mesh, fes, EPS_FINE if MUTATE else EPS_COARSE)
     lo_m, hi_m = semi_implicit(mesh, fes, EPS_MID)
     lo_f, hi_f = semi_implicit(mesh, fes, EPS_FINE)
     print(f"h_over_eps_coarse={MAXH / EPS_COARSE:.0f} "

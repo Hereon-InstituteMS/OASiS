@@ -23,6 +23,14 @@ What this fixture pins, all re-measured on this run:
     count grow with it, and the exported value list gains values that were not
     in the subdivision-0 file -- which is the P2 enrichment reaching the file;
   * no XDMF or .h5 companion file is produced.
+
+Mutation control (re-runnable): T2_MUTATE=1 commits the wrong variant named
+above -- the second export is written with subdivision=0 instead of 2, i.e. the
+P2 field is exported without subdivision.  The two files then carry identical
+point and cell counts and the fixture goes red on subdivision_adds_sample_points,
+subdivision2_also_emits_quads, claim_all_triangles_holds_only_at_subdivision0 and
+p2_enrichment_reaches_the_file_only_via_subdivision.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -35,6 +43,10 @@ import tempfile
 import numpy
 from netgen.geom2d import unit_square
 from ngsolve import GridFunction, H1, Mesh, VTKOutput, pi, sin, x, y
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# the wrong variant exports the P2 field without subdivision
+SUBDIVISION_HIGH = 0 if MUTATE else 2
 
 
 def export(mesh, gf, subdivision, tag, tmpdir):
@@ -77,7 +89,7 @@ def main() -> int:
 
     tmpdir = tempfile.mkdtemp()
     files0 = export(mesh, gf, 0, "sub0", tmpdir)
-    files2 = export(mesh, gf, 2, "sub2", tmpdir)
+    files2 = export(mesh, gf, SUBDIVISION_HIGH, "sub2", tmpdir)
     print(f"subdivision0_files={[os.path.basename(f) for f in files0]}")
     print(f"subdivision2_files={[os.path.basename(f) for f in files2]}")
     all_files = files0 + files2

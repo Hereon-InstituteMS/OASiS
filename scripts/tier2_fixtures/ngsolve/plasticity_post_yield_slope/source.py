@@ -25,10 +25,19 @@ Observed on NGSolve 6.2.2604 with E = 2e5, nu = 0.3, sigma_y = 250, H = 2000:
 So the formula in the claim is the deviatoric / shear tangent, not the uniaxial
 one; (1 + 3*mu/H)^-1 only coincides with the uniaxial ratio when 3*mu = E, i.e.
 nu = 0.5.  Both are pinned below.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- RETURN_MAP_WRONG flips to True, so the "no radial return" path
+runs WITH the radial return.  Its post-yield slope drops off E and the stress
+stays on the yield surface, so the fixture goes red on
+elastic_only_post_yield_slope_equals_E=True and
+elastic_only_overshoots_yield_by_gt_3x=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 from ngsolve import (
@@ -58,8 +67,11 @@ N_STEPS = 20
 EPS_MAX = 5.0e-3          # 4x the uniaxial yield strain
 GAM_MAX = 7.5e-3          # 4x the shear yield strain
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # The wrong variant runs without the radial return.
-RETURN_MAP_WRONG = False
+# T2_MUTATE=1 puts the radial return back in (the documented fix).
+RETURN_MAP_WRONG = True if MUTATE else False
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.5))
 AREA = Integrate(CoefficientFunction(1.0), mesh)

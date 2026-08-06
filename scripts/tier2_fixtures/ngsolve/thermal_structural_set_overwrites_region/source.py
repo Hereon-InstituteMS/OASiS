@@ -25,16 +25,27 @@ H1(order=2, dirichlet='left|right'):
   * downstream, the two-call template prints Temperature: [0.00, 0.00] and a
     displacement of 0.0 at (1, 0.5) with return code 0, while the one-call
     version transports heat and displaces the tip.
+
+Mutation control: T2_MUTATE=1 sets SET_CALLS_PER_REGION to 'one', so the
+template makes the single combined Set() call; the two two_call_template_*
+expectations then disappear.  The standalone first_set/second_set probes are
+deliberately independent of the constant and survive.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
 # WRONG: one Set() call per boundary region
-SET_CALLS_PER_REGION = "two"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# Mutation: T2_MUTATE=1 uses the single combined Set() call, the documented
+# fix for the second call wiping the first region.
+SET_CALLS_PER_REGION = "one" if MUTATE else "two"
 
 T_HOT, T_COLD = 100.0, 0.0
 E, NU, ALPHA = 200e3, 0.3, 12e-6

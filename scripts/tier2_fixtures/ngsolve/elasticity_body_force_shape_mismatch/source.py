@@ -36,9 +36,18 @@ What this fixture pins, all re-measured on this run:
   * the 3D analogue works: a 3-tuple on a 3D VectorH1 assembles, and the 2-tuple
     that was correct in 2D is the mismatch there -- so the rule really is
     "match the space", checked in both dimensions.
+
+Mutation control:  T2_MUTATE=1 applies the documented fix at the pathology site
+-- the scalar branch is handed the correctly shaped 2-tuple
+CoefficientFunction((1.0, 2.0)) instead of the scalar CoefficientFunction(1.0),
+so the mis-shaped source is gone.  That form assembles and the expectations
+scalar_gives_the_symboliclfi_message=True, scalar_raised_at_iadd=True and
+neither_reached_assemble=True disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -49,6 +58,10 @@ from ngsolve import CoefficientFunction, LinearForm, Mesh, VectorH1, dx
 SCALAR_MSG = "SymbolicLFI needs scalar-valued CoefficientFunction"
 DIM_MSG = "Dimensions don't match"
 CLAIMED = "dimensions do not match"
+
+# Mutation control: under T2_MUTATE=1 the scalar branch gets the correctly
+# shaped 2-tuple instead, i.e. the documented fix -- the mismatch is removed.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def attempt(fes, cf):
@@ -77,7 +90,9 @@ def main() -> int:
     print(f"correct_2tuple_assembles={st_ok == 'assembled'}")
     print(f"correct_2tuple_load_is_nonzero={peak_ok > 1e-12}")
 
-    st_s, msg_s, _ = attempt(fes, CoefficientFunction(1.0))
+    scalar_src = (CoefficientFunction(1.0) if not MUTATE
+                  else CoefficientFunction((1.0, 2.0)))
+    st_s, msg_s, _ = attempt(fes, scalar_src)
     print(f"scalar_stage={st_s}")
     print(f"scalar_raised={bool(msg_s)}")
     print(f"scalar_message={msg_s!r}")

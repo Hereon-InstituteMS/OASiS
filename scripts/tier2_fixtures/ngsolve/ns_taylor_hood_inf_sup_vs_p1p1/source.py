@@ -33,9 +33,17 @@ What this fixture pins, all re-measured on this run:
     i.e. bounded away from zero;
   * P1/P1's is smaller than Taylor-Hood's by more than a factor of five on
     every mesh, and unlike Taylor-Hood's it does not settle.
+
+Mutation control.  T2_MUTATE=1 gives the "P1P1" row velocity order 2 --
+`analyse(mesh, 1)` becomes `analyse(mesh, 2)`, i.e. the documented fix of
+switching the unstable equal-order pair to Taylor-Hood.  The unstable pair is
+then no longer in the comparison, so `p1p1_has_spurious_pressure_modes`,
+`taylor_hood_beta_beats_p1p1_by_5x_everywhere` and `p1p1_beta_does_not_settle`
+print False and the fixture goes red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -53,6 +61,10 @@ from ngsolve import (
 )
 
 MESHES = (0.3, 0.2, 0.15)
+
+# Mutation control: apply the documented fix (order-2 velocity) to the
+# equal-order pair, removing the inf-sup violation this fixture measures.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _dense(form, n):
@@ -99,7 +111,7 @@ def main() -> int:
     for hh in MESHES:
         mesh = Mesh(SplineGeometry_rect(hh))
         nv2, npq2, k2, b2 = analyse(mesh, 2)
-        nv1, npq1, k1, b1 = analyse(mesh, 1)
+        nv1, npq1, k1, b1 = analyse(mesh, 2 if MUTATE else 1)
         th.append((hh, nv2, npq2, k2, b2))
         p1.append((hh, nv1, npq1, k1, b1))
         print(f"maxh={hh} TH   vel_dofs={nv2} p_dofs={npq2} "

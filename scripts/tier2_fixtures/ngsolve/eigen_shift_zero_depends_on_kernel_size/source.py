@@ -36,6 +36,15 @@ What this fixture pins, all re-measured on this run:
   * the kernel dimensions are counted, showing why the two differ: the Neumann
     kernel is one-dimensional, the curl-curl kernel is a large fraction of the
     space.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the curl-curl run's shift HCURL_SHIFT moves off 0 to 1.0, which is the fix
+the claim itself prescribes for an operator with a gradient kernel.  The
+shift-and-invert factorisation then succeeds, so
+'hcurl_shift0_names_umfpackinverse=True', 'failure_is_the_shift_not_the_operator=True'
+and 'kernel_alone_does_not_predict_the_failure=True' are absent from the output
+and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -61,6 +70,11 @@ from ngsolve import (
 )
 
 NVEC = 8
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The pathology: shift=0 on the curl-curl operator, whose gradient kernel makes
+# the shifted matrix numerically singular.  Under mutation the claim's own fix
+# is applied -- a nonzero shift.
+HCURL_SHIFT = 0.0 if not MUTATE else 1.0
 
 
 def _capture_fds(fn):
@@ -150,7 +164,7 @@ def main() -> int:
     print(f"hcurl_kernel_fraction={kc / nc:.4f}")
     print(f"hcurl_kernel_is_large={kc > 0.2 * nc}")
 
-    ev_c, exc_c, out_c = run(ac, mc, fc, 0.0)
+    ev_c, exc_c, out_c = run(ac, mc, fc, HCURL_SHIFT)
     print(f"hcurl_shift0_raised={exc_c!r}")
     print(f"hcurl_shift0_names_umfpackinverse="
           f"{'UmfpackInverse' in (exc_c or '')}")

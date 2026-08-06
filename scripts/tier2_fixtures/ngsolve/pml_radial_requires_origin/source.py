@@ -15,19 +15,31 @@ This fixture asserts:
   * pml.Radial WITH origin=(0, 0) succeeds.
   * The fixed helmholtz template's exact call signature
     (origin=(0, 0), rad=0.7, alpha=2j) is constructable.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+pathology site -- probe (1) calls pml.Radial WITH origin=(0, 0)
+instead of omitting it -- so no TypeError is raised. Re-run with
+`T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from ngsolve import pml
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     # (1) Wrong call raises TypeError.
+    # T2_MUTATE=1 supplies the missing origin at this call site.
     typeerror_observed = False
     try:
-        pml.Radial(rad=0.7, alpha=2j)
+        if MUTATE:
+            pml.Radial(origin=(0, 0), rad=0.7, alpha=2j)
+        else:
+            pml.Radial(rad=0.7, alpha=2j)
     except TypeError as e:
         typeerror_observed = (
             "incompatible function arguments" in str(e)

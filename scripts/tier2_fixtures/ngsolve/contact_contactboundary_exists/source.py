@@ -30,6 +30,13 @@ What this fixture pins, all re-measured on this run:
   * AddIntegrator(cf) is accepted and AddIntegrator(cf * ds) raises TypeError
     with the literal message;
   * the keep-alive warning is in the class docstring.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the second AddIntegrator call drops the '* ds' and passes the bare
+CoefficientFunction.  Nothing raises, so 'addintegrator_with_measure_raises=True'
+and 'addintegrator_message_literal=True' are absent from the output and the
+fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -43,6 +50,7 @@ from netgen.geom2d import SplineGeometry
 from ngsolve import CoefficientFunction, Mesh, VectorH1, ds
 
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 TYPEERROR_TEXT = "AddIntegrator(): incompatible function arguments"
 DEPRECATION = ("WARNING: ContactBoundary constructor with FESpace is "
                "deprecated, fes will be set correctly in Update!")
@@ -130,7 +138,10 @@ def main() -> int:
 
     msg = ""
     try:
-        cb_new.AddIntegrator(cb_new.gap * v[1] * ds)
+        # The pathology: an integrand multiplied by a measure.  Under mutation
+        # the documented fix is applied -- the bare CoefficientFunction.
+        arg = cb_new.gap * v[1] * ds if not MUTATE else cb_new.gap * v[1]
+        cb_new.AddIntegrator(arg)
     except TypeError as exc:
         msg = str(exc)
     print(f"addintegrator_with_measure_raises={bool(msg)}")

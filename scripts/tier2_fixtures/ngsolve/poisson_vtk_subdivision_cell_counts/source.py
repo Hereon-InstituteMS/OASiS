@@ -17,6 +17,14 @@ What this fixture pins, all re-measured on this run:
   * the file size grows with N as well, so the cost the formula predicts is
     real and not just a header count;
   * the point count grows too, which is what makes the extra cells useful.
+
+Mutation control: the cells-per-element sequence is the measured quantity the
+claim is about, so the control corrupts exactly it.  T2_MUTATE=1 divides the
+NumberOfCells read out of the .vtu by 2*mesh.ne instead of mesh.ne, which shifts
+the sequence to 0, 1, 5, 18 and makes the two formula comparisons read false --
+the fixture then loses cells_per_element=[1, 3, 10, 36],
+matches_triangular_formula=True and is_1_3_10_36=True and goes red.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -27,6 +35,8 @@ import tempfile
 
 from netgen.geom2d import unit_square
 from ngsolve import GridFunction, H1, Mesh, VTKOutput, pi, sin, x, y
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -46,7 +56,8 @@ def main() -> int:
         header = blob[:blob.find(b"<AppendedData")].decode("ascii", "replace")
         ncell = int(re.search(r'NumberOfCells="(\d+)"', header).group(1))
         npt = int(re.search(r'NumberOfPoints="(\d+)"', header).group(1))
-        per = ncell // mesh.ne
+        # MUTATION SITE: cells-per-element is the quantity the claim names.
+        per = ncell // (2 * mesh.ne if MUTATE else mesh.ne)
         rows.append((N, ncell, npt, per, len(blob)))
         print(f"subdivision={N} cells={ncell} points={npt} "
               f"cells_per_element={per} bytes={len(blob)}")

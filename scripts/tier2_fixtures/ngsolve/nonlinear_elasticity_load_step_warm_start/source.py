@@ -26,10 +26,20 @@ Also pinned here: `solvers.Newton` returns (status, numit), NOT (iters, err).
 The templates unpack it as `(iters, conv)`, which is why they print
 "Newton iters=0" at every step -- 0 is the CONVERGED STATUS FLAG, not an
 iteration count.
+
+Mutation control: T2_MUTATE=1 flips WARM_WRONG from False to True, so the run
+labelled "cold" takes the warm-start branch -- the documented fix (overwrite only
+the constrained dofs via Projector(fes.FreeDofs(), False)) applied at the
+pathology site.  All 10 steps then converge, so the library wording
+'UmfpackInverse: Numeric factorization failed',
+'cold_restart_broke_before_full_load=True' and 'cold_iteration_count_grows=True'
+go missing and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -61,8 +71,9 @@ TOTAL_DISP = 0.5
 N_STEPS = 10
 
 # The wrong variant is selected by this flag; flip it to True and the pathology
-# disappears (that is the mutation check).
-WARM_WRONG = False
+# disappears (that is the mutation check).  T2_MUTATE=1 flips it.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+WARM_WRONG = MUTATE
 
 
 def build():

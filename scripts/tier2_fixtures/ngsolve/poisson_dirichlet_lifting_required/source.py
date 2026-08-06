@@ -23,6 +23,12 @@ What this fixture pins, all re-measured on this run:
     not a small perturbation;
   * neither route raises or prints anything, checked at the file-descriptor
     level so C++ output cannot escape.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix inside
+the unlifted branch -- r.data subtracts a.mat * gf.vec there too, so both routes
+solve the consistent system.  The unlifted residual then drops to roundoff and
+the fixture goes red on unlifted_residual_is_order_one and
+interior_solutions_differ.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -46,6 +52,8 @@ from ngsolve import (
     x,
     y,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _capture_fds(fn):
@@ -79,7 +87,8 @@ def solve(mesh, lift):
     gf = GridFunction(fes)
     gf.Set(gD, definedon=mesh.Boundaries(".*"))
     r = f.vec.CreateVector()
-    r.data = f.vec - a.mat * gf.vec if lift else f.vec
+    # T2_MUTATE=1 subtracts the lifting in the unlifted branch as well
+    r.data = f.vec - a.mat * gf.vec if (lift or MUTATE) else f.vec
     gf.vec.data += a.mat.Inverse(fes.FreeDofs(), inverse="umfpack") * r
 
     berr = float(sqrt(Integrate((gf - gD) ** 2 * ds, mesh)))

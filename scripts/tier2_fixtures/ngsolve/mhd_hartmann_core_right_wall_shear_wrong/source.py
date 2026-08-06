@@ -35,10 +35,21 @@ What this fixture pins, all re-measured on this run:
     the core is not evidence about the layer;
   * the shear error falls monotonically as the cell size approaches the layer
     thickness, so it is a resolution effect and not a formulation bug.
+
+Mutation control: T2_MUTATE=1 moves the core probe from y = 0 to y = -0.99 --
+one hundredth of the channel from the wall, i.e. INSIDE the 1/Ha layer -- and
+compares it against the closed form at that same point. The whole claim is
+that the core probe is blind to the unresolved layer, so a probe that sits in
+the layer must stop being exact: `core_exact_on_every_mesh=True`,
+`core_exact_on_the_coarsest_mesh=True` and
+`core_is_no_evidence_about_the_layer=True` disappear from the output and the
+run prints "FAIL:", which the fixture forbids.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.geom2d import SplineGeometry
@@ -56,6 +67,9 @@ HA = 100.0
 G = 1.0
 WIDTH = 0.05
 ORDER = 2
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# y at which the "core" is sampled. T2_MUTATE=1 drags it into the wall layer.
+Y_CORE = -0.99 if MUTATE else 0.0
 
 
 def exact(yy):
@@ -78,12 +92,12 @@ def solve(ny):
     gf.vec.data = a.mat.Inverse(fes.FreeDofs(), inverse="umfpack") * f.vec
 
     xm = WIDTH / 2
-    u_core = float(gf(mesh(xm, 0.0)))
+    u_core = float(gf(mesh(xm, Y_CORE)))
     hw = 1e-6
     shear = float((gf(mesh(xm, -1.0 + hw)) - gf(mesh(xm, -1.0))) / hw)
     shear_ex = (exact(-1.0 + hw) - exact(-1.0)) / hw
     return (mesh.ne, 2.0 / ny,
-            abs(u_core - exact(0.0)) / abs(exact(0.0)),
+            abs(u_core - exact(Y_CORE)) / abs(exact(Y_CORE)),
             abs(shear - shear_ex) / abs(shear_ex),
             shear, shear_ex)
 

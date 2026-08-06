@@ -24,11 +24,17 @@ Observed on NGSolve 6.2.2604, meshes of 14 / 54 / 224 elements:
     r_{k+1}/r_k^2 pinned near 2e-5: quadratic;
   * after convergence the area fraction where |r| > 1e-10 is exactly 0.0, on
     every mesh -- the claim's stated criterion, met.
+
+Mutation control (re-runnable): T2_MUTATE=1 applies the documented fix at the
+pathology site -- MAXITER_WRONG goes from 4 to 20, i.e. the local NewtonCF solve
+is given enough iterations to converge.  It no longer returns NaN and the fixture
+goes red on returns_nan=True.  Re-run: T2_MUTATE=1 python source.py
 """
 
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from ngsolve import (
@@ -59,8 +65,11 @@ K_HARD, N_HARD = 3000.0, 0.4      # power-law hardening -> nonlinear local probl
 
 MESHES = (0.4, 0.2, 0.1)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # The wrong variant under-iterates the local Newton.
-MAXITER_WRONG = 4
+# T2_MUTATE=1 gives it enough iterations instead.
+MAXITER_WRONG = 20 if MUTATE else 4
 
 
 def hardening(a):

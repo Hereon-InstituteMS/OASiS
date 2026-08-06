@@ -25,9 +25,18 @@ What this fixture pins, all re-measured on this run:
   * the correct call with the true mass matrix returns the generalised
     eigenvalues, which differ from A's own spectrum, so the mass matrix is not
     cosmetic.
+
+Mutation control: T2_MUTATE=1 removes the pathology arithmetically -- SHIFT
+becomes 2.0, so the pencil A - shift*A = (1 - shift)*A is -A rather than the
+zero matrix and the same-matrix-twice call factorises without complaint.
+'same_matrix_twice_raises=NgException', 'same_matrix_message_mentions_factorization=True',
+'no_identity_fallback_happened=True' and 'pencil_is_exactly_zero_at_shift_one=True'
+are then absent from the output and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy
@@ -44,7 +53,10 @@ from ngsolve import (
 )
 
 NVEC = 8
-SHIFT = 1.0
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The pathology is arithmetic: at shift = 1 the pencil A - shift*A is exactly
+# zero.  Under mutation the shift moves off 1 and the pencil is nonsingular.
+SHIFT = 1.0 if not MUTATE else 2.0
 
 
 def main() -> int:

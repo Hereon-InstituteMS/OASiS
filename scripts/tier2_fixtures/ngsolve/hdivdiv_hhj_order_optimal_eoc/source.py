@@ -19,17 +19,29 @@ Observed on NGSolve 6.2.2604 (2026-08-03):
   * MatrixValued(H1): L2 err 1.24e+14 -> 9.70e+15 -> 1.29e+26; the error GROWS
     under refinement. So the mis-typed space does not merely "lose an order",
     it loses inf-sup stability outright.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- MISTYPED_MOMENT_SPACE becomes "hdivdiv", so the failing
+study is repeated with the correct inf-sup stable moment space.  Its L2 error
+then drops to O(1e-3) and falls under refinement, so
+``mistyped_moment_space_l2_gt_1e6=True`` and
+``mistyped_moment_space_error_grows_under_refinement=True`` disappear and the
+fixture goes red.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
 
-# WRONG: the mis-typed moment space used for the failing study
-MISTYPED_MOMENT_SPACE = "matrixh1"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# WRONG: the mis-typed moment space used for the failing study.
+# Under T2_MUTATE it is repaired to the correct HDivDiv moment space.
+MISTYPED_MOMENT_SPACE = "hdivdiv" if MUTATE else "matrixh1"
 
 PI = math.pi
 E, NU, T_PLATE = 1.0, 0.3, 1.0

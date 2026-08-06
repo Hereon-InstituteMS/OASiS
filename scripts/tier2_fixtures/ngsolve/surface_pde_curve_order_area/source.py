@@ -21,16 +21,26 @@ Observed on NGSolve 6.2.2604, OCCGeometry(Sphere(r=1)), maxh=0.3, ne=422
 The mechanism behind the Curve(1) surprise: mesh.GetCurveOrder() returns 1
 on a freshly generated mesh, so Curve(1) asks for what is already there.
 (mesh.Curve(0) segfaults NGSolve 6.2.2604 and is not exercised here.)
+
+Mutation control: the pathology is the run that skips mesh.Curve entirely.
+T2_MUTATE=1 applies the documented fix at that site -- area_for(geo, ...) is
+called with order 3 instead of None for the "no curve" baseline -- so the
+baseline area becomes accurate and stops being bitwise equal to the Curve(1)
+area.  The fixture then loses fresh_mesh_curve_order=1,
+nocurve_rel_err_gt_1pct=True, curve1_area_bitwise_identical_to_nocurve=True and
+curve2_beats_nocurve_by_gt_10x=True.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from netgen.occ import OCCGeometry, Pnt, Sphere
 from ngsolve import CoefficientFunction, Integrate, Mesh, ds
 
 EXACT = 4.0 * math.pi
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def area_for(geo, order):
@@ -45,7 +55,9 @@ def main() -> int:
     ok = True
     geo = OCCGeometry(Sphere(Pnt(0, 0, 0), r=1.0))
 
-    a_none, co_none, ne = area_for(geo, None)
+    # MUTATION SITE: omitting mesh.Curve IS the pathology.  T2_MUTATE=1 applies
+    # the documented fix (curve it) to this baseline run.
+    a_none, co_none, ne = area_for(geo, 3 if MUTATE else None)
     print(f"sphere_mesh_ne={ne}")
     print(f"fresh_mesh_curve_order={co_none}")
 
