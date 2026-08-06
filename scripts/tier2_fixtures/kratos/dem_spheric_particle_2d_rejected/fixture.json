@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for Kratos dem#3: DEM is always 3D internally \u2014 MDPA must use SphericParticle3D even for 2D problems. There is no SphericParticle2D registered. ModelPart.CreateNewElement('SphericParticle2D', ...) raises RuntimeError 'Element \"SphericParticle2D\" is not registered!'. Verified empirically 2026-06-01. INDEX RENUMBERED 3 -> 1: guidance entries were moved out of kratos.dem's pitfalls list, which shifted the indices of the entries after them. The claim this fixture verifies is unchanged.",
+  "_comment": "Tier-2 for Kratos dem#3: DEM is always 3D internally \u2014 MDPA must use SphericParticle3D even for 2D problems. There is no SphericParticle2D registered. ModelPart.CreateNewElement('SphericParticle2D', ...) raises RuntimeError 'Element \"SphericParticle2D\" is not registered!'. Verified empirically 2026-06-01. INDEX SHIFTED by the guidance reclassification; the claim this fixture verifies is unchanged and every #index quoted above is the current one.",
   "backend": "kratos",
   "physics": "dem",
   "pitfall_index": 1,
