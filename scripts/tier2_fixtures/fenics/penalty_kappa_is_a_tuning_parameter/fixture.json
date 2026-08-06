@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nearly_incompressible_elasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "volume_error_exceeds_1_percent_somewhere=True",
+    "condition_number_exceeds_1e12_somewhere=True",
+    "newton_failed_at_some_setting=True",
+    "newton_failed_at_the_largest_penalty=True",
+    "parameter_sensitivity_observed=True",
+    "VERDICT=penalty_kappa_trades_constraint_error_for_conditioning"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=penalty_is_insensitive_to_kappa"
+  ],
+  "timeout_seconds": 300
+}

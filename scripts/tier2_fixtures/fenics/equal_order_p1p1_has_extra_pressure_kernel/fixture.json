@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nearly_incompressible_elasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "taylor_hood_null_dimension_is_one=True",
+    "tested_nullity_exceeds_taylor_hood=True",
+    "nullity_is_tolerance_robust=True",
+    "kernel_lives_on_the_pressure_block=True",
+    "kernel_contains_non_constant_pressure_modes=True",
+    "VERDICT=equal_order_pressure_space_adds_kernel_modes"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=tested_pair_has_only_the_constant_pressure_kernel"
+  ]
+}

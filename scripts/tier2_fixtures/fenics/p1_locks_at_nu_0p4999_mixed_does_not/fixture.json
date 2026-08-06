@@ -1,0 +1,17 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nearly_incompressible_elasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "locking_ratio_exceeds_5=True",
+    "p2_is_within_10_percent_of_mixed=True",
+    "one_over_one_minus_two_nu_overpredicts_by_more_than_10x=True",
+    "VERDICT=p1_locks_while_p2_and_mixed_agree"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_locking_measured"
+  ]
+}

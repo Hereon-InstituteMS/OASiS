@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nearly_incompressible_elasticity",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "p1p0_direct_solve_reason_is_negative=True",
+    "p1p0_velocity_error_is_not_finite=True",
+    "p1p0_null_dimension_grows_with_refinement=True",
+    "taylor_hood_solves_and_beats_second_order=True",
+    "first_order_stagnation_observed=False",
+    "VERDICT=p1p0_system_is_singular_taylor_hood_converges"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=tested_pair_solved_like_taylor_hood"
+  ],
+  "timeout_seconds": 300
+}
