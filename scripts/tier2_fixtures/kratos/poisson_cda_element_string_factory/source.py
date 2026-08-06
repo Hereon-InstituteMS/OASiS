@@ -20,13 +20,20 @@ This fixture asserts:
   * Those names are NOT Python attributes on CDA
   * Wrong-named element (e.g. ConvDiff2D3N, no Eulerian prefix)
     is rejected with 'is not registered!' from Kratos.
+
+Mutation control: T2_MUTATE=1 hands the wrong-name probe the registered name LaplacianElement2D3N instead of the unregistered ConvDiff2D3N, removing the bad name that is the pathology; CreateNewElement then succeeds and wrong_name_rejected goes False.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ConvectionDiffusionApplication as CDA  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=wrong_element_name_replaced_by_a_registered_one")
 
 
 def main() -> int:
@@ -66,7 +73,9 @@ def main() -> int:
     wrong_caught = False
     err_msg = ""
     try:
-        mp.CreateNewElement("ConvDiff2D3N", next_id, [1, 2, 3], props)
+        mp.CreateNewElement(
+            "LaplacianElement2D3N" if MUTATE else "ConvDiff2D3N",
+            next_id, [1, 2, 3], props)
     except Exception as exc:  # noqa: BLE001
         err_msg = str(exc)
         wrong_caught = ("is not registered" in err_msg

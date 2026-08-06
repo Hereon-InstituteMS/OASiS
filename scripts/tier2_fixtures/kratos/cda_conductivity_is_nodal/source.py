@@ -13,13 +13,20 @@ Swap test on a unit right triangle, reading LHS[0][0] of the element system:
   nodal k=1   , Properties k=1     -> 1.0
   nodal k=1   , Properties k=999   -> 1.0     (Properties IGNORED)
   nodal k=999 , Properties k=1     -> 999.0   (nodal value drives it)
+
+Mutation control: T2_MUTATE=1 sets the NODAL conductivity to 1.0 in the probe that is supposed to raise it to 999, so the nodal and property values no longer disagree. The stiffness entry that reads 999.0 collapses to the base value and the nodal-drives-diffusion contrast disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ConvectionDiffusionApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=nodal_conductivity_left_at_the_property_value")
 
 _VARS = (KM.TEMPERATURE, KM.HEAT_FLUX, KM.CONDUCTIVITY, KM.REACTION_FLUX,
          KM.DENSITY, KM.SPECIFIC_HEAT, KM.VELOCITY, KM.MESH_VELOCITY)
@@ -68,7 +75,7 @@ def lhs00(prop_k: float, nodal_k: float) -> float:
 
 base = lhs00(1.0, 1.0)
 prop_only = lhs00(999.0, 1.0)
-nodal_only = lhs00(1.0, 999.0)
+nodal_only = lhs00(1.0, 1.0 if MUTATE else 999.0)
 
 print(f"lhs00_prop1_nodal1={base:.6f}")
 print(f"lhs00_prop999_nodal1={prop_only:.6f}")

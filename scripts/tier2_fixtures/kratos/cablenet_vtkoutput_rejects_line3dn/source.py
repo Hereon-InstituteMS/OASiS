@@ -3,6 +3,8 @@
 Pitfall (kratos.cable_net #1). Both halves are observed: the
 rejection, and the documented workaround (a visualisation
 SubModelPart of plain Element3D2N lines) succeeding.
+
+Mutation control: T2_MUTATE=1 hands VtkOutput the supported Element3D2N geometry in the slot where the fixture expects the unsupported Line3DN, removing the geometry that VTK output cannot write; the call then succeeds instead of raising.
 """
 from __future__ import annotations
 
@@ -14,6 +16,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.CableNetApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=line3dn_case_replaced_by_the_supported_element3d2n")
 
 _VTK = KM.Parameters("""{
     "file_format": "ascii",
@@ -45,7 +51,8 @@ def make(element_name: str, n: int):
 
 def main() -> int:
     bad = 0
-    cable = make("SlidingCableElement3D3N", 3)
+    cable = (make("Element3D2N", 2) if MUTATE
+             else make("SlidingCableElement3D3N", 3))
     try:
         KM.VtkOutput(cable, _VTK).PrintOutput()
         print("vtk_on_line3dn_raised=False")

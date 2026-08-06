@@ -4,6 +4,8 @@ Pitfall (kratos.cable_net #0). The element's Check dereferences
 the constitutive-law pointer, which is only cloned in
 Initialize(). A segfault is observable: the child process dies
 with SIGSEGV and prints no Kratos exception.
+
+Mutation control: T2_MUTATE=1 calls strat.Initialize() before strat.Check() in the run that is supposed to crash, i.e. it uses the documented order and removes the ordering pathology. That subprocess then exits 0 and survives instead of dying on SIGSEGV.
 """
 from __future__ import annotations
 
@@ -17,6 +19,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 # Imported here too, so this fixture cannot report anything at all on a
 # machine without Kratos.
 import KratosMultiphysics as KM
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=check_called_after_initialize_the_documented_order")
 
 print(f"kratos_version_present={bool(KM.__file__)}")
 
@@ -69,7 +75,8 @@ def run(order: str):
 def main() -> int:
     bad = 0
 
-    rc, out = run("strat.Check()")
+    rc, out = run("strat.Initialize()\nstrat.Check()" if MUTATE
+                  else "strat.Check()")
     reached = "REACHED_STRATEGY" in out
     survived = "SURVIVED" in out
     print(f"check_first_reached_strategy={reached}")

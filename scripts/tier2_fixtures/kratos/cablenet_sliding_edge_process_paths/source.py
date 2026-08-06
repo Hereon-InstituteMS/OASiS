@@ -32,6 +32,8 @@ pins what actually happens rather than what was predicted.
 So the honest reading is narrower than the claim: the PYTHON path is
 unusable, and the C++ path is usable only if the caller supplies keys
 the defaults block never mentions.
+
+Mutation control: T2_MUTATE=1 routes the two python-wrapper probes through the working C++ SlidingEdgeProcess binding instead of the wrapper, removing the broken wrapper that is the pathology; neither probe then raises the wrapper's inverted-defaults RuntimeError or its unbound-name NameError.
 """
 from __future__ import annotations
 
@@ -45,6 +47,10 @@ import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA    # noqa: F401
 import KratosMultiphysics.CableNetApplication as CN
 import KratosMultiphysics.CableNetApplication.sliding_edge_process as SEP
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=cpp_binding_used_in_place_of_the_broken_python_wrapper")
 
 # The eight keys the wrapper's own defaults block declares.
 DECLARED = """{
@@ -123,7 +129,11 @@ def main() -> int:
 
     # ── the python wrapper, partial input ──────────────────────────
     def wrapper_partial():
-        model, _mp = structure()
+        model, mp_ = structure()
+        if MUTATE:
+            # Pathology removed: use the working C++ binding.
+            CN.SlidingEdgeProcess(mp_, KM.Parameters(DECLARED))
+            return
         SEP.Factory(KM.Parameters('{"Parameters": {}}'), model)
 
     kind, msg = attempt(wrapper_partial)

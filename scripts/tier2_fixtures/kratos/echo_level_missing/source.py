@@ -10,20 +10,28 @@ a Parameters object without that field raises:
   entry string : echo_level
   ... in kratos/sources/kratos_parameters.cpp:426
   Parameters Parameters::GetValue(const string&)
+
+Mutation control: T2_MUTATE=1 puts an echo_level field into the problem_data block, so the lookup finds it and GetInt succeeds; the RuntimeError about getting a value that does not exist disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=the_absent_field_is_now_present_in_problem_data")
 
 
 def main() -> int:
     params = KM.Parameters('''
     {
         "problem_data": {
-            "problem_name": "test",
+            "problem_name": "test",''' + ('''
+            "echo_level": 0,''' if MUTATE else '') + '''
             "parallel_type": "OpenMP",
             "start_time": 0.0,
             "end_time": 1.0

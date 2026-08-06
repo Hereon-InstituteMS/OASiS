@@ -22,15 +22,22 @@ Two levels of evidence:
       u = 0 on the boundary, ResidualBasedLinearStrategy
       * Laplacian  -> max T = 0.9755  (exact 1.0)
       * Eulerian   -> max T = 0.0
+
+Mutation control: T2_MUTATE=1 assembles the 'Eulerian' local system with LaplacianElement2D3N as well, so both slots hold the same diffusion element. The mass-versus-stiffness contrast the fixture rests on disappears and the catalog equivalence claim stops being falsified.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ConvectionDiffusionApplication  # noqa: F401
 import KratosMultiphysics.LinearSolversApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=eulerian_element_replaced_by_the_laplacian_one")
 
 
 def _settings():
@@ -134,7 +141,8 @@ def solve(elem_name, n=12):
 
 
 lap_lhs, lap_rhs = local_system("LaplacianElement2D3N")
-eul_lhs, eul_rhs = local_system("EulerianConvDiff2D3N")
+eul_lhs, eul_rhs = local_system(
+    "LaplacianElement2D3N" if MUTATE else "EulerianConvDiff2D3N")
 
 print(f"laplacian_lhs00={lap_lhs[0][0]:.6f}")
 print(f"eulerian_lhs00={eul_lhs[0][0]:.6f}")

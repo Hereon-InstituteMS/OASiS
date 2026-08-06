@@ -5,6 +5,8 @@ WHEN the failure fires: creating the beam element and calling
 Initialize does NOT raise. The error appears at the first
 GetSolutionStepValue(ROTATION_X), as the generic
 variables-list container error.
+
+Mutation control: T2_MUTATE=1 builds the model part WITH ROTATION added, doing the documented correct thing, so the first ROTATION_X read succeeds instead of raising and the variables-list diagnostic never appears.
 """
 from __future__ import annotations
 
@@ -15,6 +17,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=rotation_variable_added_to_the_beam_model_part")
 
 
 def build(with_rotation: bool):
@@ -40,7 +46,7 @@ def main() -> int:
     bad = 0
 
     # Without ROTATION: creation succeeds, Initialize succeeds.
-    mp, elem = build(with_rotation=False)
+    mp, elem = build(with_rotation=bool(MUTATE))
     print("created_without_rotation=True")
     try:
         elem.Initialize(mp.ProcessInfo)

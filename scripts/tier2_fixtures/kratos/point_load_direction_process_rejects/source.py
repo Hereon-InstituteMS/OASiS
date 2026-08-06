@@ -19,16 +19,23 @@ Both are half right. Measured on Kratos 10.4.0:
   * assign_vector_variable_process sets POINT_LOAD = [0, -100, 0] cleanly.
   * assign_vector_by_direction_to_condition_process is the right directional
     process for loads carried by Conditions.
+
+Mutation control: T2_MUTATE=1 drives the by-direction probe through assign_vector_variable_process, the process that works, instead of assign_vector_by_direction_process. The fix/free-dof crash the fixture exists to record then does not happen.
 """
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 from KratosMultiphysics import assign_vector_by_direction_process as avbd
 from KratosMultiphysics import assign_vector_variable_process as avv
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=by_direction_process_replaced_by_the_working_variable_process")
 
 
 def apply(mod, extra):
@@ -52,7 +59,12 @@ def apply(mod, extra):
         return "ERR " + str(exc).splitlines()[0]
 
 
-by_dir = apply(avbd, {"modulus": 100.0, "direction": [0.0, -1.0, 0.0]})
+if MUTATE:
+    # Pathology removed: use the process that actually works for POINT_LOAD.
+    by_dir = apply(avv, {"value": [0.0, -100.0, 0.0],
+                         "constrained": [False, False, False]})
+else:
+    by_dir = apply(avbd, {"modulus": 100.0, "direction": [0.0, -1.0, 0.0]})
 by_val = apply(avv, {"value": [0.0, -100.0, 0.0], "constrained": [False, False, False]})
 
 print(f"sma_has_AssignVectorByDirectionProcess={hasattr(SMA, 'AssignVectorByDirectionProcess')}")

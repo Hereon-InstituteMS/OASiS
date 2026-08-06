@@ -5,6 +5,8 @@ current length and the node count — not CROSS_AREA or
 YOUNG_MODULUS, which it later reads. So an empty Properties
 object gets through and the stiffness comes out zero with no
 error, which is what makes the Newton failure unactionable.
+
+Mutation control: T2_MUTATE=1 gives the supposedly empty Properties the full CROSS_AREA / YOUNG_MODULUS / DENSITY set, removing the missing-properties condition that produces the silent zero stiffness. The stiffness is then nonzero in both runs.
 """
 from __future__ import annotations
 
@@ -17,6 +19,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.CableNetApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=empty_properties_case_given_the_full_property_set")
 
 
 ELEMENT = "RingElement3D3N"
@@ -55,7 +61,7 @@ def main() -> int:
 
     # Empty Properties: no CROSS_AREA, no YOUNG_MODULUS, no DENSITY.
     try:
-        empty_k = _stiffness({})
+        empty_k = _stiffness(FULL if MUTATE else {})
         print("initialize_with_empty_properties_raised=False")
         print(f"empty_properties_max_abs_K={empty_k:.6e}")
     except Exception as exc:

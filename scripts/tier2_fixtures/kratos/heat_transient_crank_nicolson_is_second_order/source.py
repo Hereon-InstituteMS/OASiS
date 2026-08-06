@@ -34,15 +34,22 @@ exactly 100.
 
 No measured number from this run is written into any knowledge
 text; the assertions below are this fixture's own output.
+
+Mutation control: T2_MUTATE=1 runs the Crank-Nicolson leg with theta=1.0, i.e. backward Euler, so the scheme claimed to be second order is actually first order. cn_observed_order drops to ~1 and the CN leg no longer beats the BE leg at the same step.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import factorized
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=crank_nicolson_run_switched_to_backward_euler")
 
 
 NX = 16
@@ -176,7 +183,8 @@ def main() -> int:
         return float(np.max(np.abs(sol - ref)))
 
     # Crank-Nicolson: halving dt should cut the error by ~4 (order 2).
-    e_cn = [err(crank_nicolson(t_end / n, n, 0.5)) for n in (16, 32, 64)]
+    theta_cn = 1.0 if MUTATE else 0.5
+    e_cn = [err(crank_nicolson(t_end / n, n, theta_cn)) for n in (16, 32, 64)]
     # Backward Euler: halving dt cuts it by ~2 (order 1).
     e_be = [err(crank_nicolson(t_end / n, n, 1.0)) for n in (16, 32, 64)]
     for n, e in zip((16, 32, 64), e_cn):

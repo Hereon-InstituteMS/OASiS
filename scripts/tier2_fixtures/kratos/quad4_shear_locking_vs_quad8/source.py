@@ -20,6 +20,8 @@ Measured 2026-08-03 on Kratos 10.4.0:
 This fixture also doubles as the CORRECTNESS gate for the Kratos structural
 path: it does not merely check that the run exits 0, it checks the converged
 answer against the analytic beam solution.
+
+Mutation control: T2_MUTATE=1 solves the coarse 10x1 bending case with quad8 elements while still recording it under the quad4 key, removing the shear locking that is the whole claim. Its tip deflection recovers to the Timoshenko reference, so quad4_locks_20_to_40_percent goes False; the refined quad4 80x8 case and the quad8 control are untouched.
 """
 from __future__ import annotations
 
@@ -29,13 +31,22 @@ import subprocess
 import sys
 from pathlib import Path
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=coarse_locking_case_solved_with_quad8_instead_of_quad4")
+
 HERE = Path(__file__).resolve().parent
 BEAM = HERE / "_beam.py"
 
 CASES = [("quad4", 10, 1), ("quad8", 10, 1), ("quad4", 80, 8)]
 results = {}
 for etype, nx, ny in CASES:
-    proc = subprocess.run([sys.executable, str(BEAM), etype, str(nx), str(ny)],
+    # Under mutation the coarse bending case is solved with quad8, which does
+    # not lock; it is still stored under its quad4 key so the assertions below
+    # read the same slots and the only thing removed is the locking itself.
+    run_type = ("quad8" if (MUTATE and (etype, nx, ny) == ("quad4", 10, 1))
+                else etype)
+    proc = subprocess.run([sys.executable, str(BEAM), run_type, str(nx), str(ny)],
                           cwd=str(HERE), capture_output=True, text=True, timeout=600)
     line = [ln for ln in proc.stdout.splitlines() if "JSONRESULT" in ln]
     if not line:

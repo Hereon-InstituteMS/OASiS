@@ -4,6 +4,14 @@ The pitfall prescribes two variable names. Neither is
 registered anywhere in Kratos 10.4.3. The real names are
 FREE_STREAM_VELOCITY and FREE_STREAM_MACH, on the
 CompressiblePotentialFlow module.
+
+Mutation control: T2_MUTATE=1 INVERTS the expected outcome of every probe -- it asserts
+the opposite of what this build actually does, while leaving each probe's callable
+untouched, so every probe still really runs. Each probe[<label>]=<ok>_expected=<must>
+line then disagrees with itself and probe_mismatches rises from 0 to the number of
+probes. This is the control the fixture needs: it proves the printed booleans come
+from actually calling into Kratos on this build, and that a wrong claim is caught,
+rather than the fixture echoing a hard-coded table.
 """
 from __future__ import annotations
 
@@ -14,12 +22,20 @@ import traceback
 os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 import KratosMultiphysics as KM
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=every_probe_expectation_inverted")
 import KratosMultiphysics.FluidDynamicsApplication  # noqa: F401
 import KratosMultiphysics.CompressiblePotentialFlowApplication as CPF
 
 
 # (label, callable-returning-value, must_succeed)
 def _probe(label, fn, must_succeed):
+    if MUTATE:
+        # Pathology injected: assert the opposite outcome,
+        # leaving the probe callable itself untouched.
+        must_succeed = not must_succeed
     try:
         fn()
         ok = True

@@ -25,13 +25,20 @@ registered' from kratos/python/add_model_part_to_python.cpp.
 
 Verified empirically 2026-06-01 (Kratos 10.4.2 +
 KratosMPMApplication 10.4.2).
+
+Mutation control: T2_MUTATE=1 replaces the four catalog-listed base MPM names with registered MPM-prefixed names, so none of them is rejected and all_base_names_rejected goes False.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.MPMApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=base_names_replaced_by_the_registered_mpm_names")
 
 
 def main() -> int:
@@ -54,6 +61,10 @@ def main() -> int:
         "UpdatedLagrangianPQ3D8N",
         "UpdatedLagrangianAxisym",
     ]
+    if MUTATE:
+        # Pathology removed: use names this build actually registers.
+        base = ["MPMUpdatedLagrangian2D4N", "MPMUpdatedLagrangian2D4N",
+                "MPMUpdatedLagrangian3D8N", "MPMUpdatedLagrangian2D4N"]
     all_base_rejected = True
     for name in base:
         ok_reject = False

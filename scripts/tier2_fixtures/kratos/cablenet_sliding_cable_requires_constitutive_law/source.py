@@ -4,6 +4,8 @@ The element's Init() errors by name when the law is missing.
 A 1D law such as TrussConstitutiveLaw satisfies it. This is
 unique to SlidingCable among the cable_net elements — Ring and
 EmpiricalSpring read properties directly.
+
+Mutation control: T2_MUTATE=1 builds the SlidingCable WITH its CONSTITUTIVE_LAW, the documented requirement the fixture omits, so Initialize succeeds instead of raising.
 """
 from __future__ import annotations
 
@@ -16,6 +18,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.CableNetApplication as CN
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=element_built_with_its_constitutive_law")
 
 
 
@@ -42,7 +48,7 @@ def _build(with_law: bool):
 def main() -> int:
     bad = 0
 
-    mp, el = _build(with_law=False)
+    mp, el = _build(with_law=bool(MUTATE))
     print("created_without_constitutive_law=True")
     try:
         el.Initialize(mp.ProcessInfo)

@@ -18,6 +18,8 @@ element's plastic state back through CalculateOnIntegrationPoints at
 the end of the path. The cell is deep in the plastic range and still
 reports one iteration — that is what makes the pass vacuous rather
 than merely easy.
+
+Mutation control: T2_MUTATE=1 runs the supposedly all-Dirichlet cell with the Neumann-loaded face and free lateral DOFs, i.e. it removes the fully displacement-controlled setup that makes the one-iteration convergence vacuous. Real iterations are then needed and the one-iteration-every-step claim collapses.
 """
 from __future__ import annotations
 
@@ -31,6 +33,10 @@ import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA
 from KratosMultiphysics import python_linear_solver_factory as LSF
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=all_dirichlet_cell_given_a_neumann_loaded_face")
 
 E, NU, SY = 2.0e11, 0.3, 2.5e8
 UNIT_CUBE = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0),
@@ -123,7 +129,7 @@ def run(with_neumann):
 def main() -> int:
     fail: list[str] = []
 
-    fixed_counts, fixed_plastic = run(False)
+    fixed_counts, fixed_plastic = run(bool(MUTATE))
     free_counts, free_plastic = run(True)
     print(f"all_dirichlet_iteration_counts="
           f"{','.join(str(c) for c in fixed_counts)}")

@@ -8,9 +8,12 @@ MPMApplication. A Materials.json built from them dies with "not registered".
 
 Also asserts the CORRECTED names this change wrote into the catalog, and the
 Dam split where the Python class name and the registry string differ.
+
+Mutation control: T2_MUTATE=1 feeds the CORRECTED (registered) names into the stale-name probe, removing the stale vocabulary that is the pathology. Every name then resolves, so all_stale_names_unresolvable goes False. This also proves the probe really queries the Kratos registry rather than restating a list.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
@@ -18,6 +21,10 @@ import KratosMultiphysics.StructuralMechanicsApplication as SMA  # noqa: F401
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA  # noqa: F401
 import KratosMultiphysics.MPMApplication as MPM  # noqa: F401
 import KratosMultiphysics.DamApplication as DAM  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=stale_name_list_replaced_by_the_corrected_names")
 
 H = KM.KratosGlobals.HasConstitutiveLaw
 MODULES = {"KM": KM, "SMA": SMA, "CLA": CLA, "MPM": MPM, "DAM": DAM}
@@ -59,7 +66,7 @@ FIXED = [
     "ThermalLinearPlaneStrain",
 ]
 
-stale_hits = [n for n in STALE if resolvable(n)]
+stale_hits = [n for n in (FIXED if MUTATE else STALE) if resolvable(n)]
 fixed_miss = [n for n in FIXED if not resolvable(n)]
 print(f"n_stale_names_checked={len(STALE)}")
 print(f"stale_names_still_resolvable={stale_hits}")

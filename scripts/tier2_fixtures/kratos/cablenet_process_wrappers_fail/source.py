@@ -4,6 +4,8 @@ empirical_spring_element_process is claimed to fail in numpy
 before its C++ check can report a misleading message.
 sliding_edge_process is claimed to be unusable through every
 path. Both are instantiated here and the real failure recorded.
+
+Mutation control: T2_MUTATE=1 gives the empirical-spring process displacement_data and force_data of EQUAL length, removing the mismatch that is the pathology, so numpy.polyfit no longer raises and the Factory call succeeds.
 """
 from __future__ import annotations
 
@@ -16,6 +18,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.CableNetApplication as CN
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=displacement_and_force_arrays_given_equal_lengths")
 
 
 
@@ -37,7 +43,7 @@ def main() -> int:
             "element_id": 1,
             "property_id": 1,
             "displacement_data": [0.0, 1.0, 2.0],
-            "force_data": [0.0, 1.0],
+            "force_data": [0.0, 1.0""" + (", 2.0" if MUTATE else "") + """],
             "polynomial_order": 1
         }
     }""")

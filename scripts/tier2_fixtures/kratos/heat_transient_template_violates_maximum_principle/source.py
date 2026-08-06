@@ -34,17 +34,24 @@ exactly 100.
 
 No measured number from this run is written into any knowledge
 text; the assertions below are this fixture's own output.
+
+Mutation control: T2_MUTATE=1 flips SHIPPED_LOOP to False, so the corrected backward-Euler loop is exercised instead of the shipped one. The maximum-principle violation is exactly what the shipped loop causes, so it disappears: loop_under_test reads corrected, no refinement level exceeds the 100 K boundary maximum (which also trips the forbidden string steps_above_boundary_max=0) and max(T) stops growing under dt refinement.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import factorized
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=shipped_loop_replaced_by_the_corrected_backward_euler_loop")
+
 # Set False by the mutation gate to run the corrected loop instead.
-SHIPPED_LOOP = True
+SHIPPED_LOOP = not MUTATE
 
 NX = 16
 T_LEFT, T_RIGHT = 100.0, 0.0

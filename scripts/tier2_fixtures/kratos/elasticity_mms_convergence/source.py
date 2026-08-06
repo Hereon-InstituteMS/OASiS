@@ -28,15 +28,22 @@ Expected at nx=32 (uniform Cartesian):
   P1 L2 ≲ 1.3e-2  (similar to skfem 8.96e-3 + margin
                    for centroid-quadrature error)
   P1 EOC nx=16 → nx=32 ∈ [1.7, 2.3]
+
+Mutation control: T2_MUTATE=1 injects the defect this gate exists to catch: the body force is sampled at the triangle's FIRST VERTEX instead of its centroid. That is an O(h) consistency error in the load, so the L2 error stops falling like h^2 and the observed EOC collapses away from 2 -- a plausible real assembly mistake that leaves the code running and the output well formed. The gate then emits FAIL: lines (a forbidden string) for the error floor and the EOC window.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=source_term_sampled_at_a_vertex_instead_of_the_centroid")
 
 
 def run_elasticity_mms(nx: int) -> float:
@@ -120,8 +127,12 @@ def run_elasticity_mms(nx: int) -> float:
         Ke = area * B.T @ D_mat @ B
         # Element body-force vector: f at the centroid
         # times area / 3 distributed to each vertex.
-        xc = float(np.mean(x))
-        yc = float(np.mean(y))
+        if MUTATE:
+            # Defect injected: sample f at a vertex, not the centroid.
+            xc, yc = float(x[0]), float(y[0])
+        else:
+            xc = float(np.mean(x))
+            yc = float(np.mean(y))
         f1, f2 = f_at(xc, yc)
         Fe = np.zeros(6)
         for a in range(3):

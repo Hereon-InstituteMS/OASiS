@@ -21,6 +21,8 @@ KRATOS_ERROR out of ShapeFunctionValue — cannot be provoked from
 Python at all. The identical message IS reachable through DomainSize,
 which is what this fixture asserts on; the fixture also records the
 absence so the unreachable half is not mistaken for a passing one.
+
+Mutation control: T2_MUTATE=1 builds the geometry from StructuralMechanics' CableElement3D2N, which carries a real Line3D2N geometry, instead of CableNet's SlidingCableElement3D3N stub. DomainSize() then answers instead of raising the misspelled KRATOS_ERROR and ShapeFunctionsValues() returns a populated table, so the stub-specific assertions collapse.
 """
 from __future__ import annotations
 
@@ -33,6 +35,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.CableNetApplication as CN                # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=stub_geometry_replaced_by_a_real_line_geometry")
 
 # The source's own typo. Written split so this file's text cannot be
 # mistaken for a spelling mistake of its own.
@@ -56,8 +62,13 @@ def cable_geometry(node_ids):
     props.SetValue(SMA.CROSS_AREA, 0.01)
     props.SetValue(KM.DENSITY, 7850.0)
     props.SetValue(KM.CONSTITUTIVE_LAW, SMA.TrussConstitutiveLaw())
-    el = mp.CreateNewElement("SlidingCableElement3D3N", 1, list(node_ids),
-                             props)
+    if MUTATE:
+        # Pathology removed: a real Line3D2N-backed element, not the stub.
+        el = mp.CreateNewElement("CableElement3D2N", 1,
+                                 list(node_ids)[:2], props)
+    else:
+        el = mp.CreateNewElement("SlidingCableElement3D3N", 1,
+                                 list(node_ids), props)
     # Keep the model part alive: the geometry holds references into it.
     return el.GetGeometry(), mp
 

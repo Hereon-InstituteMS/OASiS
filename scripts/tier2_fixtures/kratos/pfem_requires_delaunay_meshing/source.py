@@ -3,6 +3,14 @@
 A dependency claim whose dependency is itself unavailable.
 Positive controls rule out a fixture that goes green because
 nothing is installed.
+
+Mutation control: T2_MUTATE=1 INVERTS every claimed availability flag in CASES, i.e. it
+asserts the opposite of what this install actually provides, without touching the
+probe itself. Each importable[<app>]=<got>_expected=<must> line then disagrees
+with itself and app_import_mismatches rises from 0 to len(CASES). That is the
+control this fixture needs: it proves the printed booleans come from a real
+importlib.import_module call on this build and that a wrong availability claim is
+actually caught, rather than the fixture echoing a hard-coded table.
 """
 from __future__ import annotations
 
@@ -17,10 +25,18 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 # testing nothing.
 import KratosMultiphysics as KM
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=every_claimed_application_availability_flag_inverted")
+
 print(f"kratos_version_present={bool(KM.__file__)}")
 
 # (application_module_suffix, must_import)
 CASES = [('DelaunayMeshingApplication', False), ('PfemFluidDynamicsApplication', False), ('StructuralMechanicsApplication', True), ('FluidDynamicsApplication', True)]
+if MUTATE:
+    # Pathology injected: claim the opposite availability for every
+    # application, leaving the import probe itself untouched.
+    CASES = [(app, not must) for app, must in CASES]
 
 
 def main() -> int:

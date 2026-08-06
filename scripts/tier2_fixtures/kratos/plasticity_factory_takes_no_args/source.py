@@ -11,19 +11,30 @@ Passing KM.Parameters to it raises:
 To configure a plastic law, use the specific pre-combined
 class (e.g. SmallStrainIsotropicPlasticityMisesMises3D), not
 the factory with Parameters.
+
+Mutation control: T2_MUTATE=1 calls SmallStrainIsotropicPlasticityFactory() with NO arguments, which is the documented correct signature. The constructor then succeeds and the TypeError about incompatible constructor arguments disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=factory_called_with_no_constructor_arguments")
+
 
 def main() -> int:
     try:
-        CLA.SmallStrainIsotropicPlasticityFactory(KM.Parameters("{}"))
+        if MUTATE:
+            # Pathology removed: the factory is called the documented way.
+            CLA.SmallStrainIsotropicPlasticityFactory()
+        else:
+            CLA.SmallStrainIsotropicPlasticityFactory(KM.Parameters("{}"))
     except Exception:
         traceback.print_exc()
         return 1

@@ -6,6 +6,8 @@ CableElement3D2N / MembraneElement3D[34]N come from
 StructuralMechanicsApplication, which CableNet imports
 transitively. Two subprocesses, one per import set, are the
 only way to see the split from inside one process.
+
+Mutation control: T2_MUTATE=1 runs the 'StructuralMechanics alone' probe with CableNetApplication imported as well, removing the isolation that the whole registry-split claim rests on. The Sliding/Ring/EmpiricalSpring names then register in the supposedly SMA-only probe.
 """
 from __future__ import annotations
 
@@ -19,6 +21,10 @@ import KratosMultiphysics as KM
 import json
 import subprocess
 import textwrap
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=sma_only_probe_also_loads_cablenet")
 
 
 _PROBE = textwrap.dedent("""
@@ -57,7 +63,8 @@ def probe(importline: str) -> dict:
 
 def main() -> int:
     bad = 0
-    sma = probe("import KratosMultiphysics.StructuralMechanicsApplication")
+    sma = probe("import KratosMultiphysics.CableNetApplication" if MUTATE
+                else "import KratosMultiphysics.StructuralMechanicsApplication")
     cn = probe("import KratosMultiphysics.CableNetApplication")
     for name in sorted(sma):
         print(f"sma_only[{name}]={sma[name]}")

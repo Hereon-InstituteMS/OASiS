@@ -3,6 +3,8 @@
 The Application class is named ShallowWater but the element
 registration uses the Boussinesq stem (the depth-averaged
 Boussinesq equations). The obvious name is not registered.
+
+Mutation control: T2_MUTATE=1 puts the CORRECT registered name BoussinesqElement2D3N in the slot where the fixture expects the wrong ShallowWaterElement name, so nothing is rejected and the rejected_name line disappears.
 """
 from __future__ import annotations
 
@@ -14,6 +16,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ShallowWaterApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=wrong_shallowwater_name_replaced_by_boussinesq")
 
 
 def main() -> int:
@@ -38,7 +44,9 @@ def main() -> int:
 
     # The WRONG name from the pitfall must be rejected.
     try:
-        mp.CreateNewElement("ShallowWaterElement2D3N", 2, ids, prop)
+        probe_name = ("BoussinesqElement2D3N" if MUTATE
+                      else "ShallowWaterElement2D3N")
+        mp.CreateNewElement(probe_name, 2, ids, prop)
     except Exception as exc:
         print("rejected_name=ShallowWaterElement2D3N")
         print(str(exc).splitlines()[0])

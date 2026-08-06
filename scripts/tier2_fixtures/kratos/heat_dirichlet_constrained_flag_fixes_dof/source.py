@@ -3,6 +3,8 @@
 Pitfall (kratos.heat #1). With constrained=False the process
 assigns the value but does NOT fix the DOF, so a solver is free
 to overwrite it. The discriminator is Node.IsFixed().
+
+Mutation control: T2_MUTATE=1 runs the constrained=false case with constrained=true, removing the un-constrained variant that is the pathology; the DOF is then fixed in both runs and constrained_false_isfixed reads True.
 """
 from __future__ import annotations
 
@@ -14,6 +16,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.ConvectionDiffusionApplication  # noqa: F401
 from KratosMultiphysics import assign_scalar_variable_process as asvp
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=constrained_false_case_switched_to_constrained_true")
 
 
 def run(constrained: bool):
@@ -47,7 +53,7 @@ def run(constrained: bool):
 
 def main() -> int:
     bad = 0
-    fixed_f, val_f = run(constrained=False)
+    fixed_f, val_f = run(constrained=bool(MUTATE))
     fixed_t, val_t = run(constrained=True)
     print(f"constrained_false_isfixed={fixed_f}")
     print(f"constrained_false_value={val_f}")

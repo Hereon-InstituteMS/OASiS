@@ -4,6 +4,8 @@ Pitfall (kratos.constitutive_laws #4). The law's Check() names
 missing properties one at a time. Measured ordering matters:
 HARDENING_CURVE is demanded FIRST, before the yield stresses and
 the fracture energy, which is not the order the claim lists.
+
+Mutation control: T2_MUTATE=1 gives every Check() step the FULL property set instead of withholding one property at a time, removing the missing-property condition. Check then passes at every step and reports nothing, so the ordered step[i]_reported=<PROPERTY> lines disappear.
 """
 from __future__ import annotations
 
@@ -15,6 +17,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication  # noqa: F401
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=every_check_step_given_the_full_property_set")
 
 _PTS = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0),
         (0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
@@ -56,8 +62,9 @@ def main() -> int:
         ({HC: 0, FE: 1e10}, "YIELD_STRESS_TENSION"),
         ({HC: 0, FE: 1e10, YT: 2.5e8}, "YIELD_STRESS_COMPRESSION"),
     ]
+    full_props = {HC: 0, FE: 1e10, YT: 2.5e8, YC: 2.5e8}
     for i, (props, expected) in enumerate(steps):
-        msg = check_with(props)
+        msg = check_with(full_props if MUTATE else props)
         if msg is None:
             print(f"step[{i}]_reported=NONE")
             print(f"FAIL: step {i} passed Check; expected it to demand "

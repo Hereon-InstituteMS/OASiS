@@ -34,14 +34,21 @@ exactly 100.
 
 No measured number from this run is written into any knowledge
 text; the assertions below are this fixture's own output.
+
+Mutation control: T2_MUTATE=1 uses the row-sum LUMPED mass matrix everywhere the consistent one is used, removing the consistent-vs-lumped contrast the fixture rests on. The matrix under test then has no off-diagonal entries and is exactly as accurate as the lumped one, so consistent_has_offdiagonal and consistent_more_accurate both go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import factorized
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=consistent_mass_matrix_replaced_by_the_lumped_one")
 
 
 NX = 16
@@ -172,6 +179,10 @@ def main() -> int:
     bad = 0
     print("exercises=numpy_scipy_template_path_not_kratos")
     ML = build_lumped(NX)
+    if MUTATE:
+        # Pathology removed: the "consistent" matrix IS the lumped one, so
+        # there is no difference left for the comparison to find.
+        globals()["M"] = ML
 
     # The two mass matrices must actually differ, or the comparison is empty.
     offc = abs(M - M.multiply(np.eye(N))).max()

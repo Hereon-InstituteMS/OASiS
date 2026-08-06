@@ -3,6 +3,13 @@
 Without a load condition the nodal pressure is set and never
 assembled: rc=0, zero displacement, zero reactions. The
 condition that does the work belongs to StructuralMechanics.
+
+Mutation control: T2_MUTATE=1 INVERTS the expected registration status of every entity --
+it claims the opposite of what this build registers, while still really calling
+CreateNewElement/CreateNewCondition for each name. Each registered[<name>]=<got>_expected=<must>
+line then disagrees with itself and registry_mismatches rises from 0 to the number of
+entities. This proves the booleans come from a real registry lookup on this build and
+that a wrong claim is caught.
 """
 from __future__ import annotations
 
@@ -13,6 +20,10 @@ import traceback
 os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 import KratosMultiphysics as KM
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=every_entity_registration_expectation_inverted")
 import KratosMultiphysics.StructuralMechanicsApplication as SMA
 import KratosMultiphysics.PoromechanicsApplication as PORO
 import KratosMultiphysics.DamApplication as DAM
@@ -42,6 +53,10 @@ def main() -> int:
     wrong = 0
     eid = 1
     for name, nnodes, must_exist in CASES:
+        if MUTATE:
+            # Pathology injected: claim the opposite
+            # registration status; the lookup still runs.
+            must_exist = not must_exist
         eid += 1
         ids = list(range(1, nnodes + 1))
         try:

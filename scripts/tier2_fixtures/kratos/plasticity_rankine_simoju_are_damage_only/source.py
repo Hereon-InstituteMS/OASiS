@@ -33,12 +33,19 @@ SmallStrainIsotropicPlasticity:
   hasattr(CLA, 'SmallStrainIsotropicPlasticity3DMohrCoulombMohrCoulomb')     True
   hasattr(CLA, 'SmallStrainIsotropicPlasticity3DModifiedMohrCoulombModifiedMohrCoulomb') True
   hasattr(CLA, 'SmallStrainIsotropicPlasticity3DTrescaTresca')              True
+
+Mutation control: T2_MUTATE=1 probes the five REGISTERED plasticity class names in place of the five nonexistent Rankine/SimoJu ones, removing the missing-name condition. Every probed name then resolves on CLA and all_plasticity_rankine_simoju_missing goes False, which also proves the probe really consults the module surface.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=nonexistent_plasticity_names_replaced_by_registered_ones")
 
 
 def main() -> int:
@@ -50,6 +57,16 @@ def main() -> int:
         "SmallStrainKinematicPlasticity3DSimoJuSimoJu",
         "FiniteStrainIsotropicPlasticity3DRankineRankine",
     ]
+    if MUTATE:
+        # Pathology removed: probe names that DO exist on CLA.
+        nonexistent = [
+            "SmallStrainIsotropicPlasticity3DVonMisesVonMises",
+            "SmallStrainIsotropicPlasticity3DTrescaTresca",
+            "SmallStrainIsotropicPlasticity3DDruckerPragerDruckerPrager",
+            "SmallStrainIsotropicPlasticity3DMohrCoulombMohrCoulomb",
+            "SmallStrainIsotropicPlasticity3DModified"
+            "MohrCoulombModifiedMohrCoulomb",
+        ]
     all_missing = True
     for name in nonexistent:
         present = hasattr(CLA, name)

@@ -16,6 +16,8 @@ angle phi the uniaxial intercepts are
 so the two laws can be told apart by asking each one where it actually
 yields under an identical strain path, and comparing that with the
 number its own parameterisation predicts.
+
+Mutation control: T2_MUTATE=1 hands the MODIFIED-style property set to both Mohr-Coulomb laws, removing the crossed parameterisation that is the pathology, so the classical law is no longer asked for a property set it does not accept and stops naming COHESION.
 """
 from __future__ import annotations
 
@@ -29,6 +31,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA    # noqa: F401
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=both_laws_probed_with_the_modified_style_property_set")
 
 MODIFIED = "SmallStrainIsotropicPlasticity3DModifiedMohrCoulombModifiedMohrCoulomb"
 CLASSICAL = "SmallStrainIsotropicPlasticity3DMohrCoulombMohrCoulomb"
@@ -142,8 +148,10 @@ def main() -> int:
     pairs = {
         ("modified_style", "modified"): (MODIFIED, MODIFIED_STYLE),
         ("modified_style", "classical"): (CLASSICAL, MODIFIED_STYLE),
-        ("classical_style", "modified"): (MODIFIED, CLASSICAL_STYLE),
-        ("classical_style", "classical"): (CLASSICAL, CLASSICAL_STYLE),
+        ("classical_style", "modified"): (
+            MODIFIED, MODIFIED_STYLE if MUTATE else CLASSICAL_STYLE),
+        ("classical_style", "classical"): (
+            CLASSICAL, MODIFIED_STYLE if MUTATE else CLASSICAL_STYLE),
     }
     reported = {}
     for (style, law_label), (law_name, props) in pairs.items():

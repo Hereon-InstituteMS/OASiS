@@ -16,6 +16,8 @@ the axial stress keeps climbing at the elastic BULK slope after yield
 because plastic flow is incompressible and the imposed lateral strain
 is not, so sigma_xx rises with pressure while the deviator is capped.
 Measuring sigma_xx therefore hides the softening completely.
+
+Mutation control: T2_MUTATE=1 runs the curve-0 leg with HARDENING_CURVE=3 as well, so both legs are perfectly plastic and the softening contrast the claim rests on disappears: the curve-0 slope stops being negative and stops scaling as one over the fracture energy.
 """
 from __future__ import annotations
 
@@ -29,6 +31,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA    # noqa: F401
 import KratosMultiphysics.ConstitutiveLawsApplication as CLA
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=curve_zero_probe_replaced_by_curve_three")
 
 LAW = "SmallStrainIsotropicPlasticity3DVonMisesVonMises"
 E, NU, SY = 2.0e11, 0.3, 2.5e8
@@ -118,7 +124,9 @@ def main() -> int:
     peaks = {}
     for curve_id in (0, 3):
         for gf in GF_DECADES:
-            data = sweep(curve_id, gf)
+            # Under mutation the curve-0 leg is run with curve 3, so both
+            # legs are perfectly plastic and there is no softening left.
+            data = sweep(3 if MUTATE else curve_id, gf)
             slope = post_yield_slope(data)
             peak = max(v for _, v in data)
             slopes[(curve_id, gf)] = slope

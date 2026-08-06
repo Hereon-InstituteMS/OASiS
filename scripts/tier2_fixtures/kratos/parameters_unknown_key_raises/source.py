@@ -12,6 +12,8 @@ StructuralMechanicsAnalysis with scheme_type 'bossak' and the key renamed to
 This matters operationally: an agent told "the wrong key is silently ignored"
 will look for a PHYSICS explanation of a missing-damping symptom that never
 occurs, instead of reading the exception.
+
+Mutation control: T2_MUTATE=1 uses the documented key damp_factor_m in place of the unknown alpha_m, both in the ValidateAndAssignDefaults probe and in the full dynamic analysis, removing the unknown key that is the pathology. Validation then accepts the block and the analysis runs.
 """
 from __future__ import annotations
 
@@ -25,9 +27,15 @@ import KratosMultiphysics as KM
 from KratosMultiphysics.StructuralMechanicsApplication.structural_mechanics_analysis import (
     StructuralMechanicsAnalysis)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=unknown_key_replaced_by_the_documented_damp_factor_m")
+
 # ---- level 1: the validation primitive itself -----------------------------
 defaults = KM.Parameters('{"scheme_type":"bossak","damp_factor_m":-0.3}')
-wrong = KM.Parameters('{"scheme_type":"bossak","alpha_m":-0.3}')
+wrong = KM.Parameters(
+    '{"scheme_type":"bossak","damp_factor_m":-0.3}' if MUTATE
+    else '{"scheme_type":"bossak","alpha_m":-0.3}')
 try:
     wrong.ValidateAndAssignDefaults(defaults)
     validate_msg = "SILENTLY ACCEPTED"
@@ -128,7 +136,7 @@ def run(damping_key: str) -> str:
         return "EXC: " + str(exc).splitlines()[0]
 
 
-wrong_run = run("alpha_m")
+wrong_run = run("damp_factor_m" if MUTATE else "alpha_m")
 right_run = run("damp_factor_m")
 os.chdir(CWD)
 shutil.rmtree(WORK, ignore_errors=True)

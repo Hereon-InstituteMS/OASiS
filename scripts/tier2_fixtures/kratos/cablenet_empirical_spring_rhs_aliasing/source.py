@@ -27,6 +27,8 @@ The direction is checked with a SIGNED alignment (the cosine between
 the returned force and the element's own unit axis), not with a norm:
 a magnitude test alone cannot tell a rotated force from a correct one,
 and the skew cases are exactly where the magnitude is least wrong.
+
+Mutation control: T2_MUTATE=1 replaces the element's own CalculateRightHandSide force with a CORRECT reference force, F = K_SPRING * STRETCH directed along the spring's unit axis, leaving the model, the stretch and the stiffness probe untouched. That removes the aliasing defect the fixture exists to detect: the y- and z-aligned springs then carry a real force instead of exactly zero, and the skew springs point along their own axis. It also shows the assertions respond to what Kratos actually returns rather than to the fixture's own arithmetic.
 """
 from __future__ import annotations
 
@@ -40,6 +42,10 @@ os.environ.setdefault("OMP_NUM_THREADS", "2")
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA   # noqa: F401
 import KratosMultiphysics.CableNetApplication as CN
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=internal_force_taken_from_a_correct_reference_instead_of_the_element_rhs")
 
 K_SPRING = 1000.0        # F(dl) = K_SPRING * dl  (poly1d, highest first)
 STRETCH = 0.01           # pure axial elongation applied to node 2
@@ -78,7 +84,11 @@ def probe(axis):
     lhs = KM.Matrix(6, 6)
     el.CalculateLeftHandSide(lhs, mp.ProcessInfo)
 
-    force = [rhs[i] for i in range(3)]
+    if MUTATE:
+        # Defect removed: a correct internal force, k*dl along the axis.
+        force = [EXACT_F * e for e in unit]
+    else:
+        force = [rhs[i] for i in range(3)]
     magnitude = math.sqrt(sum(f * f for f in force))
     dotted = sum(f * e for f, e in zip(force, unit))
     alignment = dotted / magnitude if magnitude > 0.0 else float("nan")
