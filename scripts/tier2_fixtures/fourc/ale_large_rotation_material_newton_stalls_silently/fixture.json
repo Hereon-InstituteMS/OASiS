@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::ale#2 and the execution that FALSIFIED its Signal. The entry claimed a linear StVenantKirchhoff ALE material under >30 degrees of rotation gives inverted elements and an abort on 'negative Jacobian'. There is no such string in 4C and no abort. On upstream ale2d_solid_nln_large_rot (inner boundary through 60 degrees) ELAST_CoupLogNeoHooke converges on every step; MAT_Struct_StVenantKirchhoff at the same YOUNG/NUE stalls on 3 steps, where 4C prints 'ALE newton not converged in 10 iterations. Continue' and carries on to the end of the schedule. The tracked node is then wrong by 2.24e-1 against 4.14e-1, and only the deck's own result test notices. So the corrected claim is a SILENT STALL, not an abort. Runtime ~100 s for both arms. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ale",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_HYPER=0",
+    "EXIT_SVK=1",
+    "HYPER_NONCONVERGED_STEPS=0",
+    "SVK_NONCONVERGED_STEPS=3",
+    "processor 0 finished normally",
+    "ALE newton not converged in 10 iterations. Continue",
+    "Result check failed with 3 errors out of 4 tests",
+    "is WRONG --> actresult=",
+    "CLAIMED_NEGATIVE_JACOBIAN_TEXT=0",
+    "SVK_REACHED_RESULT_TEST=1",
+    "SVK_RAN_PAST_STEP_100=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_HYPER=1",
+    "EXIT_SVK=0",
+    "HYPER_NONCONVERGED_STEPS=3",
+    "SVK_NONCONVERGED_STEPS=0",
+    "SVK_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: run the hyperelastic deck in the arm that is supposed to carry the linear material. Every step then converges, the stall warnings and the wrong answer both vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "probe SVK   \"$TMP/svk.yaml\"",
+    "to": "probe SVK   \"$TMP/hyper.yaml\""
+  }
+}
