@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: SmallDisplacementThermoMechanicElement2D4N needs nodal TEMPERATURE and DAM.NODAL_REFERENCE_TEMPERATURE, and Properties needs DAM.THERMAL_EXPANSION \u2014 the Dam variable, not the StructuralMechanics one. Pitfall (kratos.dam #3). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both NODAL_REFERENCE_TEMPERATURE and THERMAL_EXPANSION resolve on DamApplication and on NEITHER StructuralMechanicsApplication nor core, so the module the reader would reach for is the wrong one; the element itself constructs. TEMPERATURE is a core variable, so the pair straddles two modules. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "dam",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DAM.NODAL_REFERENCE_TEMPERATURE]=True_expected=True",
+    "probe[SMA.NODAL_REFERENCE_TEMPERATURE]=False_expected=False",
+    "probe[DAM.THERMAL_EXPANSION]=True_expected=True",
+    "probe[SMA.THERMAL_EXPANSION]=False_expected=False",
+    "probe[KM.THERMAL_EXPANSION]=False_expected=False",
+    "probe[KM.TEMPERATURE]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: EQUIVALENT_PLASTIC_STRAIN / PLASTIC_DISSIPATION / UNIAXIAL_STRESS cannot be read off the law object \u2014 read them with element.CalculateOnIntegrationPoints(...). Pitfall (kratos.constitutive_laws #8). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The module split the claim states is confirmed exactly: EQUIVALENT_PLASTIC_STRAIN and UNIAXIAL_STRESS are ConstitutiveLawsApplication attributes and not core ones, while PLASTIC_DISSIPATION is a core KratosMultiphysics attribute and not a CLA one. Getting that backwards raises AttributeError before any read is attempted. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[CLA.EQUIVALENT_PLASTIC_STRAIN]=True_expected=True",
+    "probe[KM.EQUIVALENT_PLASTIC_STRAIN]=False_expected=False",
+    "probe[CLA.UNIAXIAL_STRESS]=True_expected=True",
+    "probe[KM.UNIAXIAL_STRESS]=False_expected=False",
+    "probe[KM.PLASTIC_DISSIPATION]=True_expected=True",
+    "probe[CLA.PLASTIC_DISSIPATION]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

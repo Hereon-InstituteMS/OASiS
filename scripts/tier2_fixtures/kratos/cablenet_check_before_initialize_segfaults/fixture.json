@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: strategy.Check() called before strategy.Initialize() SEGFAULTS on a SlidingCableElement3D3N model \u2014 the element Check dereferences the constitutive-law pointer, which is only cloned in Initialize(). Pitfall (kratos.cable_net #0). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). REPRODUCED: a child process builds the strategy, prints REACHED_STRATEGY, then dies on strat.Check() with returncode -11 (SIGSEGV) and no Kratos exception and no Python traceback. The documented fix is asserted too \u2014 calling strat.Initialize() first and THEN Check() exits 0 and prints SURVIVED \u2014 so the fixture pins a crash that has a remedy rather than a crash alone. Run in a subprocess because a SIGSEGV cannot be caught in-process; the returncode is the observation. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "check_first_reached_strategy=True",
+    "check_first_returncode=-11",
+    "check_first_survived=False",
+    "initialize_first_returncode=0",
+    "initialize_first_survived=True",
+    "cable_check_order_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 600
+}

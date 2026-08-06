@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 FALSIFICATION: pitfall (kratos.curved_mms #0) records that 'Kratos 10.4 on this host works ONLY under the system /usr/bin/python3 (Python 3.8)' and that 'the pip Kratos wheel inside the repo .venv is BROKEN: its shared libraries require GLIBC 2.32 which the OS libc does not provide'. THAT IS A PROPERTY OF THE 10.4.2 WHEEL, NOT OF THE HOST. Measured: on the same glibc-2.31 machine, KratosMultiphysics 10.4.3 in a Python 3.12 venv imports and runs \u2014 nothing in the 10.4.3 wheel needs a symbol above GLIBC_2.17, and its manylinux_2_28 tag is satisfied by glibc 2.31. This fixture asserts that it is itself running under a non-system, non-3.8 interpreter inside a venv, and that a real Kratos call works there, so it cannot pass by accident on the interpreter the claim prescribes. The operational advice in that entry \u2014 run generated scripts with /usr/bin/python3 \u2014 is therefore stale and costs a user the newer wheel. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "curved_mms",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_imports=True",
+    "interpreter_is_system_python3=False",
+    "python_major_minor=3.12",
+    "running_in_venv=True",
+    "kratos_call_works=True",
+    "env_claim_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 180
+}

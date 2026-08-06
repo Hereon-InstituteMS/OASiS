@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2: PoroNewmarkQuasistaticUPlScheme takes (theta_u, theta_p, beta, gamma) \u2014 thetas FIRST \u2014 and the scheme additionally requires several ProcessInfo entries, with RAYLEIGH_ALPHA/BETA only existing once StructuralMechanicsApplication is imported. Pitfall (kratos.poromechanics #5). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The four-argument constructor accepts the documented defaults (0.5, 0.5, 0.25, 0.5) and rejects a three-argument call, so the arity is pinned; every ProcessInfo variable the claim names resolves through KratosGlobals.GetVariable once SMA is loaded. The claim's warning that a WRONG ARGUMENT ORDER still runs is why arity is the only thing a fixture can check here \u2014 swapping thetas and beta/gamma is silently accepted. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "poromechanics",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[ctor_four_args]=True_expected=True",
+    "probe[ctor_three_args]=False_expected=False",
+    "probe[wrong_order_still_accepted]=True_expected=True",
+    "probe[GetVariable_VELOCITY_COEFFICIENT]=True_expected=True",
+    "probe[GetVariable_DT_LIQUID_PRESSURE_COEFFICIENT]=True_expected=True",
+    "probe[GetVariable_TIME_UNIT_CONVERTER]=True_expected=True",
+    "probe[GetVariable_NODAL_SMOOTHING]=True_expected=True",
+    "probe[GetVariable_G_COEFFICIENT]=True_expected=True",
+    "probe[GetVariable_RAYLEIGH_ALPHA]=True_expected=True",
+    "probe[GetVariable_RAYLEIGH_BETA]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
