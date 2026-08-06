@@ -307,26 +307,108 @@ def search_roots(backend: str) -> tuple[list[Path], list[Path], list[str]]:
             return own, shared, missing
         own.extend(found_primary)
         own.extend(_py_package_paths(mods[1:]))
+        # The vendored *.libs siblings hold the actual compiled library; the
+        # package directory holds only a wrapper.
+        own.extend(vendored_lib_dirs(own))
         shared = _py_package_paths(SHARED_DEPS)
+        shared.extend(vendored_lib_dirs(shared))
     return own, shared, missing
 
 
-def grep_literal(needle: str, roots: list[Path]) -> bool:
-    """Is this exact text anywhere under these roots?
+def longest_found_prefix(fragment: str, roots: list[Path],
+                         floor: int = MIN_STATIC_FRAGMENT) -> str:
+    """The longest leading sub-phrase of this fragment present in the source.
 
-    Uses grep -F (fixed string) so regex metacharacters in a diagnostic — and
-    they are everywhere: brackets, parentheses, dots — are taken literally.
+    WHY THIS IS NEEDED, and it is the single biggest limitation of the whole
+    approach. Compiled backends assemble diagnostics at runtime, so the message
+    a user sees never exists as one literal. Two strings that agents captured
+    from REAL NGSolve runs are not greppable at all:
+
+        "Trace of non-matrix called"                  0 hits
+        "does not exist for H1HighOrderFESpace"       0 hits
+                (from: Operator "biharmonic" does not exist for
+                       H1HighOrderFESpace!)
+
+    The second is plainly `"... does not exist for " + type_name + "!"` with the
+    type name supplied by RTTI. Reporting either as fabricated would be a false
+    accusation against a message the agent watched the software print.
+
+    So when a full fragment is absent, look for the longest leading piece that
+    IS present. A substantial hit means "assembled at runtime, consistent with
+    the source" — evidence for the entry, not against it. Only a fragment with
+    no substantial piece anywhere is reported as absent, and even that stays
+    evidence rather than proof.
+    """
+    words = fragment.split()
+    for n in range(len(words), 0, -1):
+        cand = " ".join(words[:n])
+        if len(cand) < floor:
+            break
+        if grep_literal(cand, roots):
+            return cand
+    return ""
+
+
+def grep_literal(needle: str, roots: list[Path]) -> bool:
+    """Is this exact text anywhere under these roots, text OR binary?
+
+    Uses -F (fixed string) so the metacharacters that fill real diagnostics —
+    brackets, parentheses, dots — are taken literally, and -a so COMPILED
+    libraries are searched as text.
+
+    THE -a IS NOT OPTIONAL, and leaving it out invalidated a whole backend's
+    result. grep skips binary content by default, silently: on ngslib.so it
+    reported 0 matches for `FESpace` and `ngcore`, strings that must be in any
+    NGSolve build. Every C++-level NGSolve diagnostic was therefore recorded as
+    fabricated, which produced a measured "89% fabricated" that was itself
+    fabricated. Two strings agents had captured from real runs —
+    `Trace of non-matrix called` and `does not exist for H1HighOrderFESpace` —
+    were among the accused, and both are real:
+
+        libngfem.so   "Trace of non-matrix called"   1
+        libngcomp.so  "does not exist for "          2
+
+    See vendored_lib_dirs() for the other half of that bug.
     """
     if not roots:
         return False
     try:
         proc = subprocess.run(
-            ["grep", "-rlFq", "--", needle, *[str(r) for r in roots]],
+            ["grep", "-rlaFq", "--", needle, *[str(r) for r in roots]],
             capture_output=True, text=True, timeout=300,
             stdin=subprocess.DEVNULL)
         return proc.returncode == 0
     except (subprocess.TimeoutExpired, OSError):
         return False
+
+
+def vendored_lib_dirs(package_dirs: list[Path]) -> list[Path]:
+    """The `*.libs` siblings where wheels vendor their real shared libraries.
+
+    A manylinux wheel ships a thin pybind11 wrapper in the package directory
+    and the actual compiled library next door. For NGSolve, `ngsolve/ngslib.so`
+    is 194 KB of wrapper while the code lives in
+    `netgen_mesher.libs/libngfem.so`, `libngcomp.so`, `libngsolve.so`.
+
+    Searching only the package directory therefore searches the wrapper and
+    misses everything the backend actually says. Combined with grep's silent
+    binary skip, that is what produced an entirely false NGSolve verdict.
+    """
+    out: list[Path] = []
+    seen: set[Path] = set()
+    for d in package_dirs:
+        parent = d.parent
+        if not parent.is_dir():
+            continue
+        try:
+            for sib in parent.iterdir():
+                if (sib.is_dir() and sib.name.endswith(".libs")
+                        and sib not in seen):
+                    seen.add(sib)
+                    out.append(sib)
+        except PermissionError:
+            continue
+    return out
 
 
 def collect_entries(backend: str) -> list[tuple[Path, str]]:
@@ -353,6 +435,7 @@ def audit_backend(backend: str) -> dict:
     all_roots = own + shared
 
     absent, present, unjudgeable = [], 0, 0
+    assembled: list[dict] = []
     for path, entry in entries:
         sig = signal_of(entry)
         if not sig:
@@ -376,12 +459,28 @@ def audit_backend(backend: str) -> dict:
             # literals, which is common.
             if any(grep_literal(p, all_roots) for p in parts):
                 present += 1
-            else:
-                absent.append({
+                continue
+            # Not present whole. Before accusing, look for the longest leading
+            # piece — compiled backends assemble messages at runtime, and a
+            # substantial hit means the entry matches the source's format
+            # string rather than inventing it.
+            prefix = ""
+            for p in parts:
+                prefix = longest_found_prefix(p, all_roots)
+                if prefix:
+                    break
+            if prefix:
+                assembled.append({
                     "file": str(path.relative_to(REPO)),
                     "fragment": frag[:160],
-                    "searched_for": parts[:3],
+                    "matched_prefix": prefix,
                 })
+                continue
+            absent.append({
+                "file": str(path.relative_to(REPO)),
+                "fragment": frag[:160],
+                "searched_for": parts[:3],
+            })
     return {
         "backend": backend,
         "roots_searched": [str(r) for r in own],
@@ -390,6 +489,7 @@ def audit_backend(backend: str) -> dict:
         "entries": len(entries),
         "fragments_present": present,
         "fragments_absent": absent,
+        "fragments_assembled": assembled,
         "fragments_unjudgeable": unjudgeable,
         "verdict": ("UNKNOWN — the backend's own source is not available here"
                     if not own
