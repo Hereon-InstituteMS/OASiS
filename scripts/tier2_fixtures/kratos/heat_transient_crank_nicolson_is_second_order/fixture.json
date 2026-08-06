@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 NUMERICAL GATE. EXERCISES THE NUMPY/SCIPY PATH, NOT KRATOS \u2014 the heat_transient catalog template declares 'Kratos (manual assembly)' and assembles K and M with scipy. Pitfall (kratos.heat_transient #1) states the Crank-Nicolson update as (M + 0.5*dt*K) T_new = (M - 0.5*dt*K) T_old. NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. The claim is a formula, so the fixture checks the property that makes the formula worth using: implemented exactly as written on the template's own K and M, it converges at order 2 in time, while the same code at theta=1 (backward Euler) converges at order 1, and Crank-Nicolson is the more accurate of the two at equal step size. The reference is the same scheme at 4096 steps, so no external solution is assumed. All numbers asserted are this fixture's own output; none is written into any knowledge text. This is also the correct scheme that the SHIPPED template fails to implement \u2014 see heat_transient_template_violates_maximum_principle for what the template does instead. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). ",
+  "backend": "kratos",
+  "physics": "heat_transient",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "exercises=numpy_scipy_template_path_not_kratos",
+    "cn_observed_order=",
+    "be_observed_order=",
+    "cn_order_near_2=True",
+    "be_order_near_1=True",
+    "cn_beats_be_at_same_dt=True",
+    "crank_nicolson_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 600
+}
