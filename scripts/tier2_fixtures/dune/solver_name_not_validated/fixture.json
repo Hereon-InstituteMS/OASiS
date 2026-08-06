@@ -3,6 +3,9 @@
   "backend": "dune",
   "physics": "poisson",
   "pitfall_index": 9,
+  "covers": [
+    "poisson:9"
+  ],
   "mode": "python",
   "timeout_seconds": 1200,
   "expect_in_output": [

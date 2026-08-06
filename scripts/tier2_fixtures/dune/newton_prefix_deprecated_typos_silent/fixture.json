@@ -1,0 +1,27 @@
+{
+  "_comment": "Tier-2 for dune::poisson#10, dune::nonlinear#3 and dune::poisson_mms#1 — one fixture because all three are assertions about the parameter dictionary of the SAME compiled scheme, so the C++ module is built once (wall time 2 s on a warm cache, 2026-08-06, dune-fem 2.12.0.2). Measured: parameters={'newton.tolerance': 1e-10} emits a UserWarning whose text is \"Warning: the parameter key 'newton' is deprecated. Replace with 'nonlinear' to avoid this warning!\" and scheme.parameters comes back [('linear.method', 'cg'), ('nonlinear.tolerance', 1e-10)] — rewritten, and the scheme still solves, so the old keys work. 'newton.linear.tolerance' gets its own text, \"the parameter key 'newton.linear' is deprecated. Simply remove 'newton.'\". Passing 'newton.tolerance' AND 'nonlinear.tolerance' is accepted with no error and the nonlinear.* value (1e-12) is the one kept; only the nested 'newton.linear.*' + 'nonlinear.linear.*' pair raises KeyError. parameters={'nonlinear.maxiter': 3, 'totally.bogus.key': 42} produced an EMPTY warning list and ran to the normal answer, while 'nonlinear.maxiterations' does survive into scheme.parameters — so the cap typo is silent. NOTE for whoever edits expect_in_output: dune-fem wraps the key names in the warning in ANSI colour escapes, so the quoted phrase \"key 'newton' is\" does NOT appear as contiguous text; match the uncoloured fragments instead.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 10,
+  "covers": ["poisson:10", "nonlinear:3", "poisson_mms:1"],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "newton_prefix_warned=True",
+    "is deprecated. Replace with",
+    "Simply remove",
+    "('nonlinear.tolerance', 1e-10)",
+    "deprecated_key_still_solves=True",
+    "both_spellings_accepted=True kept=1e-12",
+    "nested_collision_raises=KeyError",
+    "bogus_keys_warnings=[]",
+    "bogus_keys_accepted_silently=True",
+    "bogus_keys_run_to_normal_answer=True",
+    "correct_cap_key_is_maxiterations=True",
+    "dune_parameter_key_handling_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

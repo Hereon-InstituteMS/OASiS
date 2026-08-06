@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for dune::maxwell#0. Measured 2026-08-06 on dune-fem 2.12.0.2, wall time 2 s (no form is built): none of nedelec / Nedelec / hcurl / hCurl / HCurl / curl / edge / whitney is an attribute of dune.fem.space, and importing dune.fem.space.nedelec or dune.fem.space.hcurl raises ModuleNotFoundError. The space factories that DO exist were enumerated so that adding a Nedelec family upstream makes this fixture fail instead of quietly staying true: bdfm, bdm, combined, composite, dganisotropic, dglagrange, dglegendre, dgonb, finiteVolume, lagrange, lagrangehp, p1Bubble, product, rannacherTurek, raviartThomas. The proxy the shipped maxwell template uses is scalar (lagrange(order=2).dimRange == 1) and the only vector alternative is still a Lagrange element — str(lagrange(order=2, dimRange=2).ufl_element()) is '<Lagrange1 on a triangle>' — so it cannot carry the tangential-only continuity H(curl) needs.",
+  "backend": "dune",
+  "physics": "maxwell",
+  "pitfall_index": 0,
+  "covers": ["maxwell:0"],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "space_has_nedelec=False",
+    "space_has_hcurl=False",
+    "space_has_HCurl=False",
+    "import_nedelec_raises=ModuleNotFoundError",
+    "import_hcurl_raises=ModuleNotFoundError",
+    "'raviartThomas'",
+    "maxwell_proxy_is_scalar=True",
+    "vector_space_is_lagrange_not_edge=True",
+    "dune_no_hcurl_nedelec_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

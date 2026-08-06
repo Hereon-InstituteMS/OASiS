@@ -3,6 +3,10 @@
   "backend": "dune",
   "physics": "poisson",
   "pitfall_index": 16,
+  "covers": [
+    "poisson:16",
+    "_general:natural_bc_measured.Signal_ds_with_a_tag"
+  ],
   "mode": "python",
   "timeout_seconds": 1500,
   "expect_in_output": [
@@ -17,5 +21,8 @@
     "ds0_rejected=True",
     "dune_boundary_ids_are_geometric_and_one_based=True"
   ],
-  "forbid_in_output": ["Traceback", "FAIL:"]
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
 }

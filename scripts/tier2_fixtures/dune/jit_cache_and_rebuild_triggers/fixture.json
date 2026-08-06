@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for dune::poisson#1, #2, #6, #15, dune::poisson_mms#4, dune::heat#2 and dune::time_dependent_heat#1 — grouped because they are all statements about ONE thing, the JIT cache, and splitting them would multiply C++ builds for no extra evidence. Measured 2026-08-06 on dune-fem 2.12.0.2, wall time 27 s of which ~22 s is the one deliberate cold build: getDunePyDir() -> <sys.prefix>/.cache/dune-py with the modules under python/dune/generated, and ~/.dune does not exist. A form carrying a never-before-seen float literal printed 'DUNE-INFO: Compiling Integrands (new)', took 21.97 s at nx=4 and then 0.046 s and 0.044 s at nx=8 and nx=16 — the same module serves every resolution, which is the poisson_mms#4 / heat#2 'only the first level pays' claim in one measurement. In-process: changing dune.ufl.Constant.value re-solved in 0.0002 s and added no .so; re-building the identical form took 0.0055 s and added no .so; ufl.Constant(1.0) with no domain raises AttributeError. Re-creating the scheme every step cost 46x reusing it over 20 steps (0.072 s vs 0.0016 s) WITHOUT any re-JIT, so that ratio is the floor of the time_dependent_heat#1 penalty, not the ceiling. COST WARNING for whoever maintains this: the cold observation mints a fresh literal from the wall clock on every run, so each run pays one build and leaves one .so behind. A SECOND trap was found while writing this fixture and is why nothing here re-creates spaces in a loop: re-creating grid+space+scheme repeatedly inside one process eventually recompiles a UFLLocalFunction for a form already built in that same process (measured: three identical passes over nx=4,8,16 were free on passes 1 and 2, then compiled 47.5 s and 50.9 s modules on pass 3). Build each grid, space and scheme once and reuse it.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 1,
+  "covers": ["poisson:1", "poisson:2", "poisson:6", "poisson:15",
+             "poisson_mms:4", "heat:2", "time_dependent_heat:1"],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "cache_dir_ends_with=.cache/dune-py",
+    "cache_is_under_sys_prefix=True",
+    "generated_so_dir_exists=True",
+    "home_dot_dune_exists=False",
+    "cold_run_finished=True",
+    "cold_run_announced_a_compile=True",
+    "first_level_pays_the_compile=True",
+    "later_levels_are_free=True",
+    "constant_value_change_is_free=True",
+    "identical_form_is_free=True",
+    "float_literal_is_part_of_the_code=True",
+    "plain_ufl_constant_rejected=AttributeError",
+    "dune_constant_takes_a_bare_value=True",
+    "rebuilding_the_scheme_costs_more=True",
+    "dune_jit_cache_and_rebuild_triggers_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
