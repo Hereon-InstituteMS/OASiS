@@ -1,5 +1,5 @@
 {
-  "_comment": "PLACEHOLDER",
+  "_comment": "Tier-2 for fenics poisson#0: which boundary idiom still needs create_connectivity on dolfinx 0.10.0. The claim has two halves that pull in opposite directions, which is the point of the entry: * locate_entities_boundary / locate_dofs_topological build the connectivity lazily, so omitting mesh.topology.create_connectivity(fdim, tdim) does NOT raise any more (it did pre-0.7); * dolfinx.mesh.exterior_facet_indices(mesh.topology) is still EAGER and raises on a fresh mesh. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
   "backend": "fenics",
   "physics": "poisson",
   "pitfall_index": 0,
@@ -10,5 +10,7 @@
     "Facet to cell connectivity has not been computed",
     "VERDICT=eager_needs_connectivity_lazy_does_not"
   ],
-  "forbid_in_output": ["Traceback"]
+  "forbid_in_output": [
+    "Traceback"
+  ]
 }

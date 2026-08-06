@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics linear_elasticity#2: (and the same physics behind #5): the 2D Lame lambda decides plane strain vs plane stress, silently, and the two differ by the factor (1 - nu^2) in tip deflection. Wrong variant: the 3D lambda = E*nu/((1+nu)(1-2nu)) inside a 2D form. That is PLANE STRAIN. Nothing warns. Plane stress needs lambda* = 2*lambda*mu/(lambda + 2*mu). The fixture solves the same end-loaded cantilever twice, once with each lambda, and checks the ratio of tip deflections against (1 - nu^2) at two Poisson ratios. The claim's own correction is part of the check: the ratio must NOT be (1 - nu), and the stiffening must NOT be ~30% at nu = 0.3. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "linear_elasticity",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "nu=0.3_matches_one_minus_nu_squared=True",
+    "nu=0.3_matches_one_minus_nu=False",
+    "nu=0.45_matches_one_minus_nu_squared=True",
+    "VERDICT=plane_strain_is_one_minus_nu_squared_of_plane_stress"
+  ],
+  "forbid_in_output": [
+    "Traceback"
+  ],
+  "timeout_seconds": 300
+}

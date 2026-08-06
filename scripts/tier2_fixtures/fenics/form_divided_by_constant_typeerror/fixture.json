@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics heat#5: a UFL Form cannot be divided by a fem.Constant. `u * v * ufl.dx / dt` divides the FORM, not the argument. The fixture triggers it and prints the TypeError verbatim, then shows the two documented spellings that work. Mutation control: T2_MUTATE=1 divides the argument instead of the form. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "division_raised=True",
+    "unsupported operand type(s) for /: 'Form' and 'Constant'",
+    "both_documented_spellings_build=True",
+    "VERDICT=form_divided_by_constant_is_a_typeerror"
+  ],
+  "forbid_in_output": [
+    "Traceback"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics linear_elasticity#6: 'P1' is not an element family name; 'CG' still is, with a deprecation warning. The claim carries its own correction \u2014 the earlier wording said ('CG', 1) raises \u2014 so the fixture checks BOTH branches on one mesh: the degree-suffixed DOLFIN name must raise, and 'CG' must build a space while emitting a deprecation warning. Mutation control: T2_MUTATE=1 asks for 'Lagrange' instead of 'P1'; nothing raises. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "linear_elasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "family_P1_raised=True",
+    "Unknown element family: P1 with cell type triangle",
+    "CG_built_space=True",
+    "element name is deprecated",
+    "VERDICT=p1_rejected_cg_deprecated_but_working"
+  ],
+  "forbid_in_output": [
+    "Traceback"
+  ]
+}

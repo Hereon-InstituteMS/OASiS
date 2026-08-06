@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics heat#2: forget `T_n.x.array[:] = T_h.x.array` and the time loop recomputes step 1 for ever, silently. 32x32 unit square, backward Euler, 30 steps of dt = 0.01, unit source. With the copy, int(T dx) grows monotonically. Without it, every step returns the SAME vector \u2014 bit-identical \u2014 and the KSP reports converged each time. Mutation control: T2_MUTATE=1 restores the copy; the per-step values start changing. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "every_step_bit_identical=True",
+    "with_copy_integral_grows=True",
+    "VERDICT=missing_copy_freezes_the_solution_silently"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=solution_advanced"
+  ],
+  "timeout_seconds": 300
+}
