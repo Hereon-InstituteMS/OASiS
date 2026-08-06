@@ -17,14 +17,23 @@ The control run — the identical deck with the global line moved BEFORE
 create_particles — is what makes the zero meaningful. No number here is pinned:
 the assertions are "the same deck gives a nonzero count one way and exactly zero
 the other", and 'exactly zero' is the pathology, not a measurement.
+
+Mutation control: T2_MUTATE=1 moves the `global nrho ... fnum ...` line BEFORE
+create_particles in the two runs that are supposed to come out empty, i.e. it
+removes the ordering pathology while changing nothing else. The domain is then
+populated in all three runs and `created_line_reads_exactly_zero_both_ways` and
+`np_is_zero_on_every_stats_line` both go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species")
 
@@ -63,8 +72,14 @@ def probe(pre: str, post: str) -> dict:
 
 
 before = probe(GLOBAL, "")
-after = probe("", GLOBAL)
-absent = probe("", "")
+# Under mutation the ordering pathology is REMOVED from the two runs that are
+# supposed to come out empty: the global line moves back in front of
+# create_particles, so every run is populated and the "exactly zero" assertions
+# have nothing left to assert.
+after = probe(GLOBAL, "") if MUTATE else probe("", GLOBAL)
+absent = probe(GLOBAL, "") if MUTATE else probe("", "")
+if MUTATE:
+    print("mutation=global_line_moved_before_create_particles_in_both_failing_runs")
 
 for tag, r in (("global_before_create_particles", before),
                ("global_after_create_particles", after),

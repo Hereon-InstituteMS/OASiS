@@ -16,11 +16,20 @@ temperature here. Both runs exit 0 and neither warns.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+# Mutation control: T2_MUTATE=1 measures the offset with the STREAMING-SUBTRACTED
+# estimator (compute thermal/grid) instead of the biased global `compute temp`,
+# at the same 1000 m/s flow. That removes the pathology -- the estimator that
+# counts bulk motion as heat -- without touching the physics under test, so the
+# measured offset collapses from ~1600 K to a few K and
+# `offset_matches_m_v2_over_3kB` goes False.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -55,9 +64,20 @@ def measure(v: float):
     return rc, col(hdr, rows, "c_tk")[0], col(hdr, rows, "c_rtg")[-1], warn
 
 
-rc0, tk0, tg0, w0 = measure(0.0)
-rc1, tk1, tg1, w1 = measure(1000.0)
-rc2, tk2, tg2, w2 = measure(10.0)
+rc0, tk0_raw, tg0, w0 = measure(0.0)
+rc1, tk1_raw, tg1, w1 = measure(1000.0)
+rc2, tk2_raw, tg2, w2 = measure(10.0)
+
+# Which estimator the offset is read from. Unmutated: the global `compute temp`,
+# which counts the streaming velocity as thermal motion -- the pathology. Under
+# mutation: `compute thermal/grid`, which subtracts the per-cell mean velocity
+# first, so the same 1000 m/s flow produces no offset at all.
+if MUTATE:
+    print("mutation=offset_read_from_streaming_subtracted_thermal_grid_"
+          "instead_of_compute_temp")
+    tk0, tk1, tk2 = tg0, tg1, tg2
+else:
+    tk0, tk1, tk2 = tk0_raw, tk1_raw, tk2_raw
 
 pred = M_AR * 1000.0 ** 2 / (3.0 * KB)      # SPARTA divides by dim=3 always
 

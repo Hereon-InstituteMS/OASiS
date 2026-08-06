@@ -10,14 +10,23 @@ whole grid. After a run the fix has data and the behaviour reverses.
 Also checks the bracket rule that is easy to confuse with this trap: a fix
 ave/grid with one input value is a per-grid VECTOR, so `value f_ID[1]` aborts
 both before AND after a run.
+
+Mutation control: T2_MUTATE=1 prefixes the two probes that read the UNFED fix
+with a `run 50`, so the fix has produced output before adapt_grid looks at it.
+That removes the unfed-fix pathology and nothing else — same grid, same fix,
+same adapt_grid line, same thresholds. `unfed_fix_prints_no_adaptation_line`
+and `coarsen_on_unfed_fix_is_not_a_noop` go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -52,15 +61,21 @@ def probe(body: str):
     return rc, banner, noop, refined, coarsened, errors(txt)
 
 
+# Under mutation the pathology is REMOVED: the two "unfed" probes get a run
+# first, so the fix HAS produced output when adapt_grid reads it.
+FEED = "run 50\n" if MUTATE else ""
+if MUTATE:
+    print("mutation=unfed_probes_get_a_run_50_so_the_fix_has_output")
+
 # 1. refine on an unfed fix, BEFORE any run
 rc_b, ban_b, noop_b, ref_b, _, _ = probe(
-    "adapt_grid all refine value f_fnp 1.0 0.1\nrun 50\n")
+    FEED + "adapt_grid all refine value f_fnp 1.0 0.1\nrun 50\n")
 # 2. same command AFTER a run that fed the fix
 rc_a, ban_a, noop_a, ref_a, _, _ = probe(
     "run 50\nadapt_grid all refine value f_fnp 1.0 0.1\nrun 50\n")
 # 3. COARSEN on the same unfed fix -- the zeros now match the criterion
 rc_c, ban_c, noop_c, _, coa_c, _ = probe(
-    "adapt_grid all coarsen value f_fnp 1.0 0.1\nrun 50\n")
+    FEED + "adapt_grid all coarsen value f_fnp 1.0 0.1\nrun 50\n")
 # 4. bracket rule: a single-value fix ave/grid is a VECTOR, f_ID[1] aborts
 rc_x, _, _, _, _, err_x = probe(
     "adapt_grid all refine value f_fnp[1] 1.0 0.1\nrun 50\n")

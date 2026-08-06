@@ -6,9 +6,14 @@ convert the shipped ar.species / ar.vss data, which are SI. Both runs exit 0
 and print no warning, the particle count and the compute-temp column are
 identical, and only the collision statistics and the Cell-touches diagnostic
 betray that the physics has changed.
+
+Mutation control: T2_MUTATE=1 removes the `units cgs` line from the run that is
+supposed to carry it, so both decks are SI and the two runs are byte-identical.
+`cgs_collision_rate_is_far_higher` and `cell_touches_tell_present` both go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     col, errors, run, skip_if_unavailable, stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -51,7 +58,11 @@ def measure(units_line: str):
 
 
 rc_si, nc_si, t_si, tc_si, w_si, _ = measure("")
-rc_cgs, nc_cgs, t_cgs, tc_cgs, w_cgs, _ = measure("units cgs\n")
+# Under mutation the unit-system mismatch is REMOVED: the second deck is SI too,
+# so the collision rate and Cell-touches tells have nothing to separate.
+rc_cgs, nc_cgs, t_cgs, tc_cgs, w_cgs, _ = measure("" if MUTATE else "units cgs\n")
+if MUTATE:
+    print("mutation=units_cgs_line_removed_so_both_decks_are_SI")
 
 print(f"rc_si={rc_si}")
 print(f"rc_cgs={rc_cgs}")

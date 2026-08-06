@@ -9,6 +9,14 @@ This fixture (a) feeds each form to the installed binary and checks the error,
 (b) checks the correct 'compute <ID> <style> ...' form is accepted, and
 (c) checks the backend's own validate_input now rejects the underscore form —
 before 2026-08-03 it validated against the doc index and waved them through.
+
+Mutation control: T2_MUTATE=1 rewrites the ONE deck line handed to
+validate_input as the 'bad' deck from the doc-page form 'compute_grid all all n'
+to the real command form 'compute cg grid all all n', leaving the preamble and
+the good deck untouched. The pathology — a doc-page filename typed as a command
+— is then absent from both decks and `validate_rejects_docpage_form` goes False.
+This is also what proves the rejection is caused by the underscore form and not
+by something else validate_input dislikes in the surrounding deck.
 """
 from __future__ import annotations
 
@@ -24,6 +32,8 @@ from pathlib import Path
 # package elsewhere on the machine cannot shadow it.
 REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO / "src"))
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 CANDIDATES = [
     os.environ.get("SPARTA_BINARY"),
@@ -96,7 +106,13 @@ ref = backend.get_command_reference("compute_grid")
 print(f"command_reference_resolves={'syntax' in ref or 'description' in ref}")
 
 good = PREAMBLE + "run 10\n"
-bad = PREAMBLE + "compute_grid all all n\nrun 10\n"
+# Under mutation the 'bad' deck's doc-page form is replaced by the real command
+# form, i.e. the pathology is removed; nothing else about either deck changes.
+if MUTATE:
+    print("mutation=bad_deck_uses_the_real_compute_command_form")
+    bad = PREAMBLE + "compute cg grid all all n\nrun 10\n"
+else:
+    bad = PREAMBLE + "compute_grid all all n\nrun 10\n"
 good_errs = backend.validate_input(good)
 bad_errs = backend.validate_input(bad)
 print(f"validate_accepts_good_deck={good_errs == []}")

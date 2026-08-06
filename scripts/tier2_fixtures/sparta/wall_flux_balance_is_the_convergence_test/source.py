@@ -24,14 +24,30 @@ seed, so nothing is tested against a floor derived from itself:
 No imbalance value is pinned, and no wall-clock is read. The run length is fixed
 so the comparison is between windows of the same run, not between runs of
 different length.
+
+Mutation control: T2_MUTATE=1 prepends a DISCARDED warm-up run of the same length
+and measures the windows from the second run only. Physics, seeds, grid, walls
+and window count are untouched; the only thing removed is the transient, which is
+the pathology the fixture claims to detect. The measured window then starts in
+steady state, so the first window's imbalance falls onto the measured noise floor
+instead of sitting ten times outside it, and both
+`the_FIRST_window_is_more_than_10x_the_floor` and
+`the_imbalance_decays_through_the_transient` go False. The opposed-sign assertion
+stays True under mutation, which is the point: the drive is intact, only the
+transient is gone. This is deliberately not a reseed — perturbing a stochastic run
+proves nothing; landing the signal on the measured floor proves the fixture
+responds to the transient itself.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -54,14 +70,19 @@ compute b boundary all etot
 timestep 1e-8
 stats 1
 stats_style step np c_b[3][1] c_b[4][1]
-run 3000
+{warmup}run 3000
 """
 
 NWINDOWS = 10
+# stats_rows() keeps the LAST stats table, so an extra `run` in front is a
+# genuinely discarded warm-up: the windows are formed from the second run only.
+WARMUP = "run 3000\n" if MUTATE else ""
+if MUTATE:
+    print("mutation=a_discarded_warm_up_run_precedes_the_measured_windows")
 
 
 def probe(seed: int) -> dict:
-    rc, txt = run(DECK.format(seed=seed), DATA, timeout=900)
+    rc, txt = run(DECK.format(seed=seed, warmup=WARMUP), DATA, timeout=900)
     header, rows = stats_rows(txt)
     hot = (col(header, rows, "c_b[3][1]")
            if header and rows and "c_b[3][1]" in header else [])

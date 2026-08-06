@@ -22,14 +22,24 @@ what makes it cheap to depend on.
 
 Every expected string below was captured from this deck on the installed build;
 none is composed.
+
+Mutation control: T2_MUTATE=1 repairs the partial-binding deck so BOTH surface
+groups are bound to the collision model — it removes the incomplete binding,
+which is the pathology, and touches nothing else. That deck then exits 0 instead
+of aborting with "25 surface elements not assigned to a collision model", so
+`every_wrong_ordering_aborts_nonzero`, `every_quoted_message_is_verbatim` and
+`partial_binding_reports_the_unbound_count_not_the_total` all go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "data.circle")
 
@@ -63,9 +73,15 @@ CASES = {
     # ---- surface_interaction:2 — binding is mandatory, partial counts -----
     "no_binding_at_all":
         HEAD.format(bnd="o o p") + GRID + GAS + "read_surf data.circle\n" + TAIL,
+    # Under mutation the partial binding is COMPLETED -- the second group is
+    # bound too -- so the deck is legal and the abort it is asserted to produce
+    # cannot happen.
     "partial_group_binding":
         HEAD.format(bnd="o o p") + GRID + GAS + "read_surf data.circle\n" + WALL
-        + "group left surf id <= 25\nsurf_modify left collide cw\n" + TAIL,
+        + ("group left surf id <= 25\ngroup right surf id > 25\n"
+           "surf_modify left collide cw\nsurf_modify right collide cw\n"
+           if MUTATE else
+           "group left surf id <= 25\nsurf_modify left collide cw\n") + TAIL,
     # ---- surface_interaction:9 — a box face is not a surface unless 's' ---
     "s_face_declared_but_unbound":
         HEAD.format(bnd="o s p") + GRID + GAS + TAIL,
@@ -121,6 +137,9 @@ EXPECT = {
         "ERROR: Bound_modify surf requires boundary be a surface "
         "(../domain.cpp:253)",
 }
+
+if MUTATE:
+    print("mutation=partial_group_binding_completed_so_both_groups_are_bound")
 
 wrong, right = {}, {}
 for name, deck in CASES.items():

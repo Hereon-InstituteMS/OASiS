@@ -18,11 +18,22 @@ one at every resolution.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+# Mutation control: T2_MUTATE=1 reads the per-cell temperature from the
+# TIME-AVERAGED `fix ave/grid` column instead of the instantaneous
+# `compute thermal/grid` one, at the identical resolutions. That removes the
+# pathology -- a single-snapshot per-cell estimator at a handful of particles per
+# cell -- and nothing else, so the low-occupancy collapse disappears:
+# `the_instantaneous_cell_average_falls_with_occupancy`,
+# `at_a_couple_per_cell_it_reads_under_half_the_true_temperature` and
+# `under_one_per_cell_it_collapses_further` all go False.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -58,10 +69,18 @@ def probe(n: int) -> dict:
     def column(name):
         return (col(header, rows, name)
                 if (header and rows and name in header) else [])
+    # Under mutation the instantaneous per-cell estimator is REPLACED by the
+    # time-averaged one; every other column, and the deck itself, is untouched.
+    cell_ave = column("c_mtf") if MUTATE else column("c_mt")
     return {"rc": rc, "errors": errors(txt),
             "warnings": [l for l in txt.splitlines() if l.startswith("WARNING")],
-            "global_temp": column("c_gt"), "cell_ave": column("c_mt"),
+            "global_temp": column("c_gt"), "cell_ave": cell_ave,
             "fix_ave": column("c_mtf"), "per_cell": column("c_na")}
+
+
+if MUTATE:
+    print("mutation=per_cell_temperature_read_from_time_averaged_fix_ave_grid_"
+          "instead_of_the_instantaneous_compute")
 
 
 many = probe(20)         # tens of particles per cell

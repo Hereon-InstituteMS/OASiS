@@ -33,9 +33,19 @@ Both ratios were measured on two seeds before any threshold here was chosen:
 particle-count gave 0.947 and 0.928 (no improvement), Knudsen-driven gave 3.19
 and 3.08. The gates below sit far from both clusters, which is how a Monte-Carlo
 quantity has to be bounded.
+
+Mutation control: T2_MUTATE=1 gives the "particle count" deck the SAME Knudsen
+refinement criterion the control deck uses, and changes nothing else — same
+seed, same 200-step adapt interval, same maxlevel 3. The wrong-criterion deck
+then IS the right-criterion deck, so its Knudsen gain equals the control's
+exactly rather than merely drifting: the stochastic noise floor is removed from
+the comparison by construction. `refining_on_particle_count_does_NOT_improve_
+the_knudsen_minimum` and `the_particle_count_criterion_is_self_limiting_not_
+several_fold` go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -79,9 +89,16 @@ run 800
 {adapt}run 800
 """
 
-PARTICLE = "fix ad adapt 200 all refine particle 500 0 maxlevel 3\n"
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 KNUDSEN = ("fix ad adapt 200 all refine value c_lam[2] 0.5 1e20 "
            "thresh less more maxlevel 3\n")
+# Under mutation the pathology is REMOVED: the deck that adapted on particle
+# count adapts on the cell Knudsen column instead. Nothing else changes.
+PARTICLE = (KNUDSEN if MUTATE
+            else "fix ad adapt 200 all refine particle 500 0 maxlevel 3\n")
+if MUTATE:
+    print("mutation=particle_count_deck_given_the_cell_knudsen_criterion")
 
 
 def probe(adapt: str) -> dict:

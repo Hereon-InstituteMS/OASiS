@@ -14,14 +14,25 @@ think:
      flux" is silently wrong.
 
 A fix ave/* fed one value is the opposite: a VECTOR, read bare as f_ID.
+
+Mutation control: T2_MUTATE=1 gives the two mixtures that read c_g[2] the
+`group SELF` keyword — the one defined without any `group` and the one defined
+with the named `group lite` — so both acquire one group per species and the
+second column they ask for exists. That removes the pathology (asking for a
+per-species column from a mixture that has one group) and nothing else: same
+two species, same compute, same reduce, same run. Both decks then exit 0, so
+`default_mixture_has_one_group` and `named_group_is_still_one_group` go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("air.species", "air.vss")
 
@@ -53,10 +64,16 @@ def probe(mix="m2", grp="", extra="", cols="c_r1"):
 rc_bare, _, _, e_bare = probe(extra="compute r1 reduce ave c_g\n")
 # 2. indexed column 1 -> fine
 rc_c1, h1, r1, _ = probe(extra="compute r1 reduce ave c_g[1]\n")
+# Under mutation the pathology is REMOVED: the two mixtures whose second column
+# is asked for are given per-species groups, so that column exists.
+SELF = " group SELF"
+if MUTATE:
+    print("mutation=both_c_g2_mixtures_given_group_SELF")
 # 3. default mixture, column 2 -> out of range (only ONE group)
-rc_c2, _, _, e_c2 = probe(extra="compute r1 reduce ave c_g[2]\n")
+rc_c2, _, _, e_c2 = probe(grp=SELF if MUTATE else "",
+                          extra="compute r1 reduce ave c_g[2]\n")
 # 4. mixture with a NAMED group -> still one group
-rc_named, _, _, e_named = probe(grp=" group lite",
+rc_named, _, _, e_named = probe(grp=SELF if MUTATE else " group lite",
                                 extra="compute r1 reduce ave c_g[2]\n")
 # 5. group SELF -> two columns
 rc_self, h_self, r_self, _ = probe(

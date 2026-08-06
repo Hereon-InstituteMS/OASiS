@@ -25,14 +25,26 @@ by side and the entry now states the dependency.
 Every assertion is a comparison between decks in this script or a within-run
 shape (a column that is exactly zero, a column that moves). No temperature is
 pinned.
+
+Mutation control: T2_MUTATE=1 gives the deck that had 'collide' but no
+'collide_modify' the line 'collide_modify vibrate smooth' ahead of
+create_particles — the ordering the same script already shows to be the working
+one — so vibration is no longer silently off and nothing else changes. Tvib is
+then nonzero on every stats line and
+`with_collide_but_no_collide_modify_only_rotation_relaxes` goes False. The
+no-collide deck, the two ordering decks and the estimator-ratio comparison are
+untouched.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("air.species", "air.vss")
 
@@ -75,8 +87,13 @@ def probe(body: str) -> dict:
             "tvib": column("c_mtv"), "tvib_grid": column("c_mtv2")}
 
 
+if MUTATE:
+    print("mutation=default_deck_given_collide_modify_vibrate_smooth")
+
+# Under mutation the pathology is REMOVED: the deck without a collide_modify
+# gets one, in the ordering this script shows to work. Nothing else changes.
 no_collide = probe(CREATE)
-default = probe(COLLIDE + CREATE)
+default = probe(COLLIDE + SMOOTH + CREATE if MUTATE else COLLIDE + CREATE)
 smooth_first = probe(COLLIDE + SMOOTH + CREATE)
 create_first = probe(COLLIDE + CREATE + SMOOTH)
 

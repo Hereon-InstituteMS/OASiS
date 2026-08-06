@@ -25,14 +25,26 @@ Both cases are executed here so the entry can state the rule that actually holds
 Fractions are asserted as PROPORTIONS with a tolerance, not as counts: which
 particle gets which species is drawn from the RNG, so the count moves with the
 seed while the proportion does not.
+
+Mutation control: T2_MUTATE=1 gives every deck fractions that sum to exactly
+1.0, with the DECLARED tuple travelling with the deck as it must — the 0.1/0.1
+deck becomes 0.8/0.2, the deck with an unset NO declares 'NO frac 0.8', and the
+over-one 0.9/0.6 deck becomes 0.9/0.1. There is then no deficit for anything to
+absorb and nothing exceeds 1.0, so
+`with_every_fraction_set_the_last_species_absorbs_the_deficit`,
+`with_an_unset_species_present_the_unset_one_absorbs_it` and
+`quoted_exceed_one_message_is_verbatim` all go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("air.species")
 
@@ -78,11 +90,25 @@ def probe(mix: str) -> dict:
 # also above 0.8, so the fixture could not tell a silently absorbed deficit from
 # a composition the user actually asked for. That is the whole claim, so the
 # assertion has to be about the DISCREPANCY.
-BOTH_SET = ("mixture gas N2 frac 0.1\nmixture gas O2 frac 0.1\n", (0.1, 0.1, None))
-ONE_UNSET = ("mixture gas N2 frac 0.1\nmixture gas O2 frac 0.1\nmixture gas NO\n",
-             (0.1, 0.1, None))
+# Under mutation every deck declares fractions that sum to exactly 1.0 — the
+# deficit, which is the pathology, is gone — and the declared tuple travels with
+# the deck, so nothing is compared against a number the deck did not ask for.
+if MUTATE:
+    print("mutation=every_deck_declares_fractions_summing_to_exactly_one")
+    BOTH_SET = ("mixture gas N2 frac 0.8\nmixture gas O2 frac 0.2\n",
+                (0.8, 0.2, None))
+    ONE_UNSET = ("mixture gas N2 frac 0.1\nmixture gas O2 frac 0.1\n"
+                 "mixture gas NO frac 0.8\n", (0.1, 0.1, 0.8))
+    OVER_ONE = ("mixture gas N2 frac 0.9\nmixture gas O2 frac 0.1\n",
+                (0.9, 0.1, None))
+else:
+    BOTH_SET = ("mixture gas N2 frac 0.1\nmixture gas O2 frac 0.1\n",
+                (0.1, 0.1, None))
+    ONE_UNSET = ("mixture gas N2 frac 0.1\nmixture gas O2 frac 0.1\n"
+                 "mixture gas NO\n", (0.1, 0.1, None))
+    OVER_ONE = ("mixture gas N2 frac 0.9\nmixture gas O2 frac 0.6\n",
+                (0.9, 0.6, None))
 INTENDED = ("mixture gas N2 frac 0.8\nmixture gas O2 frac 0.2\n", (0.8, 0.2, None))
-OVER_ONE = ("mixture gas N2 frac 0.9\nmixture gas O2 frac 0.6\n", (0.9, 0.6, None))
 
 both = probe(BOTH_SET[0])
 unset = probe(ONE_UNSET[0])

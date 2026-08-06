@@ -16,14 +16,29 @@
 Also executes the three hard-error forms the universal 'no collide command'
 entry lists, which is where an agent's guard would be built: collide_modify,
 fix vibmode and react tce each abort when no collide style is defined.
+
+Mutation control: T2_MUTATE=1 puts the FULL mixture on the collide line of the
+two subset decks — `collide vss both air.vss` instead of `collide vss sub
+air.vss`, where `both` holds every declared species and `sub` holds one of two —
+and changes nothing else, so the two decks stay byte-identical apart from the
+`run` line. The subset pathology is gone: the with-run deck completes instead of
+aborting, so `subset_mixture_is_rejected_at_the_first_run` goes False and
+`every_quoted_collide_message_is_verbatim` goes False with it (collide.cpp:159
+is never printed, and the UNEXPECTED: line that reports its absence trips
+forbid_in_output). The other seven quoted messages are not covered by this hook:
+each is a verbatim string with its own (file:line) that no edit of these decks
+can counterfeit.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss", "air.species", "air.vss",
                            "air.tce")
@@ -42,15 +57,21 @@ AR = "species ar.species Ar\nmixture gas Ar temp 273.15\ncreate_particles gas n 
 AIR2 = ("species air.species N2 O2\nmixture sub N2 temp 273.15\n"
         "mixture both N2 O2 temp 273.15\ncreate_particles both n 0\n")
 
+# Under mutation the pathology is REMOVED: the collide line names the mixture
+# that holds EVERY declared species instead of the one-species subset.
+COLLIDE_MIX = "both" if MUTATE else "sub"
+if MUTATE:
+    print("mutation=collide_line_given_the_full_mixture_instead_of_the_subset")
+
 CASES = {
     "collide_vss_without_a_filename":
         BOX + AR + "collide vss gas\n" + RUN,
     "vss_file_missing_one_of_your_species":
         BOX + AR + "collide vss gas air.vss\n" + RUN,
     "collide_mixture_is_a_subset_with_a_run":
-        BOX + AIR2 + "collide vss sub air.vss\n" + RUN,
+        BOX + AIR2 + f"collide vss {COLLIDE_MIX} air.vss\n" + RUN,
     "collide_mixture_is_a_subset_without_a_run":
-        BOX + AIR2 + "collide vss sub air.vss\n" + NO_RUN,
+        BOX + AIR2 + f"collide vss {COLLIDE_MIX} air.vss\n" + NO_RUN,
     "collide_mixture_id_mistyped":
         BOX + AR + "collide vss nosuch ar.vss\n" + RUN,
     "collide_modify_keyword_typo":

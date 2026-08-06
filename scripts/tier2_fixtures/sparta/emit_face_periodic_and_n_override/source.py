@@ -18,14 +18,26 @@ they accept silently.
 The n-override ratio is the only quantitative assertion and it is a ratio of two
 runs in this script. A DSMC steady state is a fluctuating quantity; 4x the n
 argument gives 4x the plateau to within the noise, and that is what is asserted.
+
+Mutation control: T2_MUTATE=1 repairs the three decks that are supposed to
+abort, one token each and nothing else — the periodic 'boundary p o p' becomes
+'boundary o o p', the bare 'n 50' gains 'perspecies no', and the emit/surf fix
+is pointed at the real 'group c surf id <= 50' instead of 'nosuchgroup'. None of
+the three then aborts, so all three quoted-message lines vanish along with
+`every_quoted_emit_message_is_verbatim` and
+`periodic_face_is_rejected_before_any_stats_line`. The two decks carrying the
+n-override ratio are untouched.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss", "data.circle")
 
@@ -75,13 +87,22 @@ def probe(deck: str) -> dict:
             "np": np_col}
 
 
+if MUTATE:
+    print("mutation=the_three_rejected_emit_decks_repaired_one_token_each")
+
 CASES = {
+    # Under mutation each rejected deck loses the one token that makes SPARTA
+    # abort: the periodic face, the missing 'perspecies no', the bogus group.
     "emit_face_on_a_periodic_face":
-        probe(FACE.format(bnd="p o p", emit="fix in emit/face gas xlo\n")),
+        probe(FACE.format(bnd="o o p" if MUTATE else "p o p",
+                          emit="fix in emit/face gas xlo\n")),
     "emit_face_on_an_outflow_face":
         probe(FACE.format(bnd="o o p", emit="fix in emit/face gas xlo\n")),
     "emit_face_n_with_default_perspecies":
-        probe(FACE.format(bnd="o o p", emit="fix in emit/face gas xlo n 50\n")),
+        probe(FACE.format(bnd="o o p",
+                          emit=("fix in emit/face gas xlo n 50 perspecies no\n"
+                                if MUTATE
+                                else "fix in emit/face gas xlo n 50\n"))),
     "emit_face_n_50_perspecies_no":
         probe(FACE.format(bnd="o o p",
                           emit="fix in emit/face gas xlo n 50 perspecies no\n")),
@@ -89,7 +110,9 @@ CASES = {
         probe(FACE.format(bnd="o o p",
                           emit="fix in emit/face gas xlo n 200 perspecies no\n")),
     "emit_surf_group_name_does_not_exist":
-        probe(SURF.format(body="fix in emit/surf gas nosuchgroup\n")),
+        probe(SURF.format(body=("group c surf id <= 50\n"
+                                "fix in emit/surf gas c\n") if MUTATE
+                          else "fix in emit/surf gas nosuchgroup\n")),
     "emit_surf_group_exists":
         probe(SURF.format(body="group c surf id <= 50\n"
                                "fix in emit/surf gas c\n")),

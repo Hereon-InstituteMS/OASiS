@@ -21,14 +21,24 @@ The discriminating comparison, which this fixture makes and the entries now
 carry, is against a run that emits on every inflow face: that one holds within a
 couple of percent of the seeded count. One number, three runs, no stored values —
 every assertion is a ratio between decks that differ in exactly one line.
+
+Mutation control: T2_MUTATE=1 changes the one 'fix emit/face' line that carried
+the pathology — 'gas xlo' becomes 'gas xlo ylo yhi' — so the starved deck emits
+on every inflow face like the control does, and nothing else changes. The
+one-face plateau then rises to the control's, so
+`one_face_plateau_is_far_below_the_seeded_density` goes False along with the
+shape assertions that describe the starved column's collapse.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -61,10 +71,17 @@ def probe(vs: int, emit: str) -> dict:
             "np": column("Np"), "nexit": column("Nexit")}
 
 
-one_face = probe(300, "fix in emit/face gas xlo\n")
+# Under mutation the pathology is REMOVED: the emit fix that named ONE face now
+# names every inflow face, in the two decks that carried it. Nothing else moves.
+STARVED_EMIT = ("fix in emit/face gas xlo ylo yhi\n" if MUTATE
+                else "fix in emit/face gas xlo\n")
+if MUTATE:
+    print("mutation=starved_emit_fix_given_every_inflow_face")
+
+one_face = probe(300, STARVED_EMIT)
 all_faces = probe(300, "fix in emit/face gas xlo ylo yhi\n")
 no_emit = probe(300, "")
-vstream_zero = probe(0, "fix in emit/face gas xlo\n")
+vstream_zero = probe(0, STARVED_EMIT)
 
 for tag, r in (("emit_on_one_face", one_face),
                ("emit_on_every_inflow_face", all_faces),

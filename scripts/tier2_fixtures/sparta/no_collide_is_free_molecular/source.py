@@ -14,6 +14,12 @@ not a number to carry to another problem.
 Case: 2d argon Fourier channel. boundary p ss p, 4x60 grid, ylo wall diffuse
 300 K, yhi wall diffuse 1000 K. Wall energy flux via compute boundary + fix
 ave/time (mode vector, which compute boundary requires).
+
+Mutation control: T2_MUTATE=1 gives the "without collide" deck the very line
+whose absence is the pathology — `collide vss air ar.vss` — so both runs are
+collisional. Ncoll is then nonzero in both and the flux ratio collapses to ~1,
+sending `ncoll_identically_zero_without_collide` and
+`flux_overestimated_by_more_than_5x` to False.
 """
 from __future__ import annotations
 
@@ -32,6 +38,7 @@ CANDIDATES = [
     "/home/alexander/Schreibtisch/sparta/src/spa_serial",
     str(Path.home() / "sparta" / "src" / "spa_serial"),
 ]
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 BINARY = next((c for c in CANDIDATES if c and Path(c).is_file()), None)
 if BINARY is None:
     print("SKIP: no SPARTA binary found (set SPARTA_BINARY)")
@@ -66,8 +73,11 @@ def run(with_collide: bool):
     work = Path(tempfile.mkdtemp(prefix="sparta_collide_"))
     for f in ("ar.species", "ar.vss"):
         shutil.copy(HERE / f, work / f)
+    # Under mutation the pathology is REMOVED: the deck that is supposed to be
+    # missing its collide line gets one, so both runs are collisional.
+    collisional = with_collide or MUTATE
     (work / "in.case").write_text(
-        DECK.format(collide="collide vss air ar.vss\n" if with_collide else ""))
+        DECK.format(collide="collide vss air ar.vss\n" if collisional else ""))
     proc = subprocess.run([BINARY, "-in", "in.case"], cwd=str(work),
                           capture_output=True, text=True, timeout=600)
     log = (work / "log.sparta").read_text() if (work / "log.sparta").is_file() else ""
@@ -90,6 +100,8 @@ def run(with_collide: bool):
     return proc.returncode, rows, log.splitlines()[0] if log else ""
 
 
+if MUTATE:
+    print("mutation=collide_vss_line_restored_to_the_no_collide_deck")
 rc_on, rows_on, ver = run(True)
 rc_off, rows_off, _ = run(False)
 

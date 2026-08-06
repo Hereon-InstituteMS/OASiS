@@ -15,14 +15,30 @@ diffuse control run in the same script, not against a stored number. A DSMC wall
 tally is a Monte-Carlo sum: its value moves with the seed, and its sign moves
 too. What does not move is that round-off is many orders of magnitude below a
 physical flux, so that is what is asserted.
+
+Mutation control: T2_MUTATE=1 replaces the specular wall model with the diffuse
+one used by the control run, leaving geometry, seed, gas and tally untouched. That
+removes the no-energy-transfer pathology, so the diffuse/specular peak-etot ratio
+collapses from >1e6 to order one and
+`specular_wall_energy_is_round_off_vs_diffuse` goes False.
+
+LIMIT OF THE CONTROL, stated because it is real: the OTHER claim this fixture
+carries — that an in-range argument swap is accepted in silence — cannot be
+falsified by any mutation, because it asserts the ABSENCE of a diagnostic. No edit
+to the deck can make SPARTA complain about `diffuse 0.9 0.3`, so
+`in_range_argument_swap_is_completely_silent` is unfalsifiable by construction and
+carries no mutation evidence.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss", "data.circle")
 
@@ -71,9 +87,14 @@ CASES = {
     "diffuse_swapped_both_in_range": "diffuse 0.9 0.3",
     "diffuse_tsurf_zero": "diffuse 0.0 1.0",
     "diffuse_accommodation_negative": "diffuse 300 -0.1",
-    "specular_no_argument": "specular",
+    # Under mutation the specular wall -- the model that transfers no energy --
+    # is replaced by the diffuse one used as the control, so the energy-ratio
+    # assertion has nothing left to separate.
+    "specular_no_argument": "diffuse 300 1.0" if MUTATE else "specular",
     "specular_given_a_temperature": "specular 300",
 }
+if MUTATE:
+    print("mutation=specular_wall_replaced_by_the_diffuse_control_wall")
 r = {name: probe(args) for name, args in CASES.items()}
 
 for name, res in r.items():

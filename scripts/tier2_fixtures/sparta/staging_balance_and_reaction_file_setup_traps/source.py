@@ -17,9 +17,18 @@ with one above 1.0. That is what makes the message evidence for the claim rather
 than evidence that some deck somewhere fails. The third is the silent one, and
 its honest Signal is a line that is printed on every call whether or not
 anything happened.
+
+Mutation control: T2_MUTATE=1 STAGES the species files into the working directory
+of the run that is supposed to be missing them, so the two halves of the staging
+pair become the identical deck with the identical inputs. The missing-file abort
+then cannot happen: its verbatim message disappears,
+`every_quoted_setup_message_is_verbatim` goes False and
+`the_same_deck_runs_when_the_species_file_is_staged` goes False because the
+unstaged run now also exits 0.
 """
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -28,6 +37,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     errors, find_example, require, run, skip_if_unavailable, stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=species_files_staged_into_the_run_that_is_supposed_to_lack_them")
 
 DATA = skip_if_unavailable("ar.species", "ar.vss", "air.species", "air.vss")
 
@@ -63,9 +76,11 @@ stats_style step np
 run 10
 """
 
-staged = run(STAGING, {"ar.species": DATA["ar.species"],
-                       "ar.vss": DATA["ar.vss"]})
-unstaged = run(STAGING, {})
+SPECIES_FILES = {"ar.species": DATA["ar.species"], "ar.vss": DATA["ar.vss"]}
+staged = run(STAGING, SPECIES_FILES)
+# Under mutation the staging failure is REMOVED: the "unstaged" run gets the very
+# files whose absence is the pathology, so both halves of the pair are identical.
+unstaged = run(STAGING, SPECIES_FILES if MUTATE else {})
 
 # ------------------------------------------------- ambipolar_plasma:4, prob file
 REACT = """seed 12345

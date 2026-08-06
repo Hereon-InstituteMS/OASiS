@@ -23,10 +23,19 @@ being on the face that matters, and an agent that reads the entry as "add clip
 and it will be fine" will keep failing. Both entries now say so.
 
 Every message below came out of a run. No count from any run is pinned.
+
+Mutation control: T2_MUTATE=1 moves the open curve that sat in the INTERIOR so
+its two endpoints lie exactly on the ylo face — the geometry the accepted case
+already uses — which removes the failing-watertight pathology and nothing else.
+Both interior decks then load, so `an_open_curve_in_the_interior_fails_watertight`,
+`adding_clip_does_NOT_rescue_an_interior_open_curve` and
+`clip_is_not_what_makes_the_open_curve_legal` go False. The per-surf shape cases
+and the data.circle collision run on decks this control does not touch.
 """
 from __future__ import annotations
 
 import atexit
+import os
 import shutil
 import sys
 import tempfile
@@ -36,6 +45,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     errors, find_example, require, run, skip_if_unavailable, stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -64,8 +75,15 @@ def surf_file(name: str, pts: list[tuple[float, float]]) -> Path:
     return p
 
 
+if MUTATE:
+    print("mutation=interior_open_curve_endpoints_moved_onto_the_ylo_face")
+
+# Under mutation the pathology is REMOVED: the interior curve's two endpoints
+# are moved onto the ylo face, the geometry ON_FACE already uses. The curve is
+# still open and still two segments; only where its ends sit changes.
 INTERIOR = surf_file("data.openinterior",
-                     [(4.0, 4.0), (5.0, 6.0), (6.0, 4.0)])
+                     [(4.0, 0.0), (5.0, 3.0), (6.0, 0.0)] if MUTATE
+                     else [(4.0, 4.0), (5.0, 6.0), (6.0, 4.0)])
 ON_FACE = surf_file("data.openface",
                     [(4.0, 0.0), (5.0, 3.0), (6.0, 0.0)])
 

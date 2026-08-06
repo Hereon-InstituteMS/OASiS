@@ -9,14 +9,25 @@ and an existing grid.
 
 The 2d-only restriction is checked at RUN SETUP, not at parse time: a 3d deck
 carrying `boundary o ar p` that never reaches a `run` exits 0.
+
+Mutation control: T2_MUTATE=1 REPAIRS all eight wrong decks — one line each,
+the line that IS the defect: the invented `global axisymmetric yes` becomes
+`boundary o ar p`, the single-letter and yhi placements of `a` move to ylo,
+the box gets ylo=0.0, the periodic yhi becomes reflecting, the 3d deck becomes
+2d, and `global weight cell radius` gets an axisymmetric model and a grid
+before it. Nothing else changes and the accepted decks are untouched. All eight
+then exit 0, so `all_expected_errors_matched` goes False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 skip_if_unavailable()
 
@@ -64,6 +75,41 @@ ACCEPTED = {
     "two_letter_ao": "seed 1\ndimension 2\nboundary p ao p\n"
                      "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
 }
+
+# Under mutation the pathology in each wrong deck is REMOVED: exactly the line
+# carrying the defect is written the correct way, everything else is verbatim.
+REPAIRED = {
+    "global_axisymmetric_keyword":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
+    "single_letter_a_sets_both_faces":
+        "seed 1\ndimension 2\nboundary p ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
+    "a_on_yhi":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
+    "ylo_not_zero":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
+    "yhi_periodic":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
+    "three_d_with_run":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\nrun 1\n",
+    "weight_radius_without_axisymmetry":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\n"
+        "global weight cell radius\nrun 1\n",
+    "weight_radius_before_grid":
+        "seed 1\ndimension 2\nboundary o ar p\n"
+        "create_box 0 1 0 1 -0.5 0.5\ncreate_grid 4 4 1\n"
+        "global weight cell radius\nrun 1\n",
+}
+if MUTATE:
+    CASES = {name: (REPAIRED[name], expect)
+             for name, (_, expect) in CASES.items()}
+    print("mutation=every_wrong_deck_rewritten_in_the_correct_axisymmetric_form")
 
 matched = []
 for name, (deck, expect) in CASES.items():

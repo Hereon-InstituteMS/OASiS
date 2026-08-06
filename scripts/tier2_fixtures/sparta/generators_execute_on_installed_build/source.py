@@ -8,10 +8,21 @@ resolve, or that exits non-zero is a catalog claim the project cannot defend.
 Also checks that the payload served by get_knowledge() carries no absolute host
 path — knowledge handed to a model must not describe the machine it was
 recorded on.
+
+Mutation control. This fixture is a GATE: its two expectations assert the
+ABSENCE of a defect, so the control is the mirror of the usual one — instead of
+removing a pathology it INJECTS the two defects the gate exists to catch, and
+the gate must fire. T2_MUTATE=1 appends one absolute host path of exactly the
+kind the old 'installed_build' block hard-coded to the _general blob the leak
+scan reads, and masks the 'Signal:' marker on the first pitfall the scan sees.
+`knowledge_has_no_host_paths` and `all_pitfalls_carry_a_signal` both go False.
+Neither the served payload nor any file on disk is modified: the injection is
+local to the two strings this script scans.
 """
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -27,6 +38,11 @@ sys.path.insert(0, str(REPO / "src"))
 
 from core.registry import get_backend, load_all_backends  # noqa: E402
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=host_path_and_missing_signal_injected_into_the_scanned_"
+          "payload_strings")
+
 load_all_backends()
 backend = get_backend("sparta")
 
@@ -39,6 +55,9 @@ for p in backend.supported_physics():
     for m in HOST_PATH.findall(blob):
         leaks.append((p.name, m))
 blob_general = json.dumps(backend.get_knowledge("_general"), default=str)
+if MUTATE:
+    # Inject the defect the scan exists to catch, into the scanned STRING only.
+    blob_general += ' {"binary": "/home/someuser/sparta/src/spa_serial"}'
 for m in HOST_PATH.findall(blob_general):
     leaks.append(("_general", m))
 print(f"absolute_host_paths_in_knowledge={sorted(set(leaks))}")
@@ -52,9 +71,16 @@ print(f"knowledge_payload_mean_bytes={sum(sizes.values()) // len(sizes)}")
 
 # every pitfall must carry a Signal: clause
 missing_signal = []
+_masked = False
 for p in backend.supported_physics():
     for i, pit in enumerate(backend.get_knowledge(p.name).get("pitfalls", [])):
-        if "Signal:" not in str(pit):
+        text = str(pit)
+        if MUTATE and not _masked:
+            # Mask the marker on the FIRST pitfall scanned, again in the
+            # scanned string only, so the scan has exactly one defect to find.
+            text = text.replace("Signal:", "S1gnal:")
+            _masked = True
+        if "Signal:" not in text:
             missing_signal.append((p.name, i))
 print(f"pitfalls_without_signal={missing_signal}")
 print(f"all_pitfalls_carry_a_signal={not missing_signal}")

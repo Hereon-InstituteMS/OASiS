@@ -11,15 +11,29 @@ The only place SPARTA states how many reactions it parsed is the line
 '  style <style> #-of-reactions <N>' under 'Gas reaction tallies:', printed
 after a run. It counts entries PARSED, not entries ACTIVE: reactions naming
 undeclared species are silently deactivated without changing it.
+
+Mutation control: T2_MUTATE=1 hands the odd-line case the REAL reaction file
+(air.tce) instead of ar.vss, i.e. it removes the wrong-file-type mistake and
+nothing else. That run then parses 45 reactions instead of zero, so
+`odd_line_file_loads_silently_with_zero_reactions` goes False. It is the only
+check here that any such mutation can move. `qk_style_on_a_tce_file_is_accepted`
+and `undeclared_species_do_not_change_the_parsed_count` assert that SPARTA fails
+to NOTICE something, so removing the mistake leaves them true by construction;
+`real_reaction_file_parses` and `tally_block_only_appears_with_a_react_command`
+are healthy-case controls; and `even_line_junk_file_aborts_loudly` would need
+its own mutation, on a different deck.
 """
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("air.species", "air.vss", "air.tce", "ar.vss")
 
@@ -60,7 +74,13 @@ odd.write_text("# comment\n\nthis is not a reaction\n")
 even = tmp / "even.txt"
 even.write_text("# comment\n\nthis is not a reaction\nnor is this\n")
 
-rc_ar, n_ar, blk_ar, e_ar = probe("react tce ar.vss\n")
+if MUTATE:
+    print("mutation=odd_line_case_given_the_real_air_tce_reaction_file")
+
+# Under mutation the pathology is REMOVED: 'react' is pointed at the real tce
+# reaction file instead of a vss file that happens to have an odd line count.
+rc_ar, n_ar, blk_ar, e_ar = probe("react tce air.tce\n" if MUTATE
+                                  else "react tce ar.vss\n")
 rc_air, n_air, blk_air, e_air = probe("react tce air.vss\n")
 rc_odd, n_odd, blk_odd, e_odd = probe("react tce odd.txt\n",
                                       extra={"odd.txt": odd})

@@ -33,14 +33,29 @@ the signal, and on a single seed pair it is only a few times the spread. The
 magnitude follows from the mechanism: the sub-cell velocity spread is
 (dU/dy)*dy, so its variance enters as the square of the cell size and only in
 one of three velocity components. The entry now states that.
+
+Mutation control: T2_MUTATE=1 zeroes BOTH wall translation velocities, leaving
+everything else — grids, seeds, occupancy, wall temperature, run length —
+identical. That removes the velocity gradient, which is the whole mechanism: with
+no shear there is no sub-cell velocity spread for thermal/grid to count as heat,
+so refining cannot lower the reading. The measured drop collapses from ~4.5% onto
+the independently measured seed spread and the two clusters stop separating, so
+`refining_lowers_the_reading_on_every_seed_pairing` and
+`the_effect_is_resolvable_above_the_seed_spread` both go False. Note this is
+deliberately NOT a reseed or a shortened run: perturbing a stochastic run proves
+nothing, whereas landing the signal on the measured floor proves the fixture
+responds to the shear and not to noise.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -55,8 +70,8 @@ species ar.species Ar
 mixture gas Ar temp 273.15
 create_particles gas n 0
 collide vss gas ar.vss
-surf_collide lo diffuse 273.15 1.0 translate -1000.0 0 0
-surf_collide hi diffuse 273.15 1.0 translate 1000.0 0 0
+surf_collide lo diffuse 273.15 1.0 translate -{uwall} 0 0
+surf_collide hi diffuse 273.15 1.0 translate {uwall} 0 0
 bound_modify ylo collide lo
 bound_modify yhi collide hi
 compute tg thermal/grid all all temp
@@ -73,10 +88,16 @@ run 1600
 
 SEEDS = (12345, 54321, 99999)
 COARSE, FINE = 4, 40
+# The shear is the mechanism under test. Zeroing it is the mutation control: no
+# velocity gradient means no sub-cell velocity spread, so refining the grid has
+# nothing to remove and the coarse/fine clusters must collapse onto each other.
+UWALL = 0.0 if MUTATE else 1000.0
+if MUTATE:
+    print("mutation=both_wall_translation_velocities_zeroed_so_there_is_no_shear")
 
 
 def probe(n: int, seed: int) -> dict:
-    rc, txt = run(DECK.format(n=n, seed=seed), DATA, timeout=900)
+    rc, txt = run(DECK.format(n=n, seed=seed, uwall=UWALL), DATA, timeout=900)
     header, rows = stats_rows(txt)
 
     def column(name):

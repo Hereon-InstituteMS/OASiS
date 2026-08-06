@@ -21,9 +21,19 @@ while the clock only bounds how long the fixture waits. That asymmetry is what
 makes it safe on a loaded host: a slower machine makes the no-timestep deck
 MORE certain to be still running, never less. The control deck, identical but
 for one 'timestep' line, completes and prints its table.
+
+Mutation control: T2_MUTATE=1 gives the deck that OMITTED 'timestep' the same
+'timestep 1e-7' line the control deck carries, i.e. it removes the
+no-default-timestep pathology and nothing else. That deck then returns rc=0
+within the wait, prints its stats table, so `omitting_timestep_never_returns`
+and `omitting_timestep_prints_nothing_at_all` go False and
+`no_timestep_reached_a_stats_line` goes True. The universal:6/:7/:8 decks are
+untouched, so those expectations are unaffected — this control covers
+universal:5 only.
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -32,6 +42,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     col, errors, run, skip_if_unavailable, stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -75,7 +87,11 @@ def probe(text: str, timeout: int = 600) -> dict:
 # ------------------------------------------------------------- universal:5
 # 25 s is not the claim; it is only how long this fixture is willing to wait.
 HANG_WAIT = 25
-no_dt = probe(deck(dt=""), timeout=HANG_WAIT)
+if MUTATE:
+    print("mutation=no_timestep_deck_given_the_same_timestep_1e-7_line")
+# Under mutation the pathology is REMOVED: the deck that omitted 'timestep' is
+# handed the control deck's 'timestep 1e-7' line, and nothing else changes.
+no_dt = probe(deck(dt="timestep 1e-7\n" if MUTATE else ""), timeout=HANG_WAIT)
 with_dt = probe(deck())
 
 print(f"no_timestep_returncode={no_dt['rc']}")

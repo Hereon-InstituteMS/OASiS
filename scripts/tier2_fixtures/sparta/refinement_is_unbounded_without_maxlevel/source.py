@@ -12,14 +12,24 @@ is flat, a column that climbs, a column that saturates — or a comparison betwe
 the two decks. No count from either run is pinned, which matters because the
 cell counts a refinement produces depend on the seed and on the particle
 distribution.
+
+Mutation control: T2_MUTATE=1 gives the "uncapped" deck the same `maxlevel 2`
+cap as the control, i.e. it removes the unbounded-refinement pathology and
+nothing else. `uncapped_maxlevel_exceeds_the_cap`,
+`uncapped_ngrid_climbs_every_stats_line`, `per_cell_minimum_falls_below_one`,
+`per_cell_average_more_than_halves` and
+`uncapped_ends_with_more_cells_than_capped` all go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -58,8 +68,12 @@ def probe(cap: str) -> dict:
             "cell_ave": column("c_av")}
 
 
-uncapped = probe("")
+# Under mutation the pathology is REMOVED: the "uncapped" deck is given the same
+# maxlevel cap as the control, so the refinement is bounded in both runs.
+uncapped = probe("maxlevel 2" if MUTATE else "")
 capped = probe("maxlevel 2")
+if MUTATE:
+    print("mutation=uncapped_deck_given_the_same_maxlevel_2_cap")
 
 for tag, r in (("uncapped", uncapped), ("capped_at_level_2", capped)):
     print(f"{tag}_rc={r['rc']} n_errors={len(r['errors'])} "

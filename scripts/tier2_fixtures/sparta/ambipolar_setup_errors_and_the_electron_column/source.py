@@ -43,9 +43,20 @@ rewritten in the same commit.
 
 No number from these runs is pinned. Every assertion is a comparison between two
 decks that differ in one line, or a verbatim error string.
+
+Mutation control: T2_MUTATE=1 puts the deleted `collide_modify ambipolar yes`
+line BACK into the second copy of the upstream deck, so the broken variant
+becomes the reference variant and the pathology — a `fix ambipolar` whose
+collisions are not ambipolar-aware, which turns the electron into a real
+particle — is gone. The electron column is then zero in both copies:
+`deleting_collide_modify_MAKES_the_electron_column_nonzero` and
+`the_published_diagnostic_is_inverted` go False. The eight setup probes are
+deliberately left alone; each of them asserts a verbatim SPARTA error string
+with its own (file:line), which no mutation of this deck can counterfeit.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -54,6 +65,10 @@ from _spahelp import (  # noqa: E402
     col, errors, find_data, require, run, skip_if_example_unavailable,
     stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=second_upstream_copy_keeps_its_collide_modify_ambipolar_line")
 
 # The upstream deck is reproduced from the directory it belongs to: air.surf
 # and data.circle both exist elsewhere in the distribution meaning different
@@ -204,7 +219,11 @@ if "collide_modify      ambipolar yes" not in DECK:          # pragma: no cover
     print("UNEXPECTED: examples/ambi/in.ambi no longer carries the "
           "'collide_modify ambipolar yes' line this fixture removes")
     sys.exit(1)
-NO_AMBI = DECK.replace("collide_modify      ambipolar yes\n", "")
+# Under mutation the pathology is REMOVED: the "without collide_modify" copy
+# keeps its 'collide_modify ambipolar yes' line, so both copies are the
+# reference configuration and nothing else differs.
+NO_AMBI = DECK if MUTATE else DECK.replace("collide_modify      ambipolar yes\n",
+                                           "")
 
 AMBI_DATA = {k: v for k, v in AMBI.items() if k != "in.ambi"}
 

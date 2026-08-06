@@ -25,9 +25,19 @@ fixture asserts instead, is the zero fraction: about a quarter of the elements
 in the raw field are exactly 0 at any snapshot, and the fix-averaged field of
 the same run has none. That is the discriminator, and it does not depend on the
 dump interval either.
+
+Mutation control: T2_MUTATE=1 removes the pathology — dumping the RAW per-step
+compute — by giving every deck the 'fix ave/surf' the paired run already has and
+reading the field under test from the AVERAGED dump instead of the raw one. The
+decks are otherwise identical. The zero fraction then goes to nothing, so
+`the_raw_field_has_a_large_fraction_of_exact_zeros` and
+`routing_through_fix_ave_surf_removes_them` go False; the interval-invariance
+pair goes False too, because a time-averaged field legitimately depends on the
+window it was averaged over, which is exactly what the raw one does not.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -36,6 +46,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     dump_column, errors, find_example, require, run_keep, skip_if_unavailable,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 CIRCLE = find_example("circle", "data.circle")
@@ -76,20 +88,27 @@ AVG = ("fix fs ave/surf all 1 {n} {n} c_cs[1]\n"
 
 
 def probe(n: int, averaged: bool) -> dict:
-    extra = AVG.format(n=n) if averaged else ""
+    # Under mutation the pathology is REMOVED: every deck gets the same
+    # 'fix ave/surf' the paired run has, and the field under test is read from
+    # the AVERAGED dump rather than the raw per-step one.
+    extra = AVG.format(n=n) if (averaged or MUTATE) else ""
     rc, txt, work = run_keep(DECK.format(n=n, extra=extra), FILES, timeout=600)
     result = {"rc": rc, "errors": errors(txt), "raw": [], "avg": []}
     try:
         raw = work / f"raw.{600:06d}"
-        if raw.is_file():
-            result["raw"] = dump_column(raw, 1)
         avg = work / f"avg.{600:06d}"
+        under_test = avg if MUTATE else raw
+        if under_test.is_file():
+            result["raw"] = dump_column(under_test, 1)
         if avg.is_file():
             result["avg"] = dump_column(avg, 1)
     finally:
         shutil.rmtree(work, ignore_errors=True)
     return result
 
+
+if MUTATE:
+    print("mutation=field_under_test_routed_through_fix_ave_surf_in_every_deck")
 
 # Sole consumer of the compute, two dump intervals.
 solo_fast = probe(50, averaged=False)

@@ -7,9 +7,19 @@
     suppresses SPARTA's own 'Created unexpected # of particles' warning.
 
 All four exit 0 with no warning.
+
+Mutation control: T2_MUTATE=1 writes each of the four wrong decks the way the
+documentation prescribes, one token per deck and nothing else — 'n 500' becomes
+'n 0', the 'nrho 1e21' keyword comes off the mixture line, the global
+nrho/fnum line moves back in front of create_particles, and the 'region half'
+restriction comes off. Every deck then lands on the density 'global nrho' asks
+for, so `n_nonzero_overrides_nrho`, `mixture_nrho_overrides_global`,
+`global_after_create_particles_gives_zero` and `region_scales_the_requested_count`
+all go False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -17,6 +27,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     col, errors, run, skip_if_unavailable, stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species")
 
@@ -51,13 +63,21 @@ def build(n="0", mixnrho="", globals_=GLOB, late="", region="", regarg=""):
                        region=region, regarg=regarg)
 
 
+# Under mutation each wrong deck loses the ONE token that is the pathology and
+# nothing else: the explicit count, the mixture nrho keyword, the late globals,
+# the region restriction.
 rc0, n0, _ = created(build(n="0"))
-rc1, n1, _ = created(build(n="500"))
-rc2, n2, _ = created(build(n="0", mixnrho=" nrho 1e21"))
-rc3, n3, _ = created(build(n="0", globals_="", late=GLOB))
-rc4, n4, _ = created(build(n="500",
-                           region="region half block 0 5e-5 INF INF INF INF\n",
-                           regarg=" region half"))
+rc1, n1, _ = created(build(n="0" if MUTATE else "500"))
+rc2, n2, _ = created(build(n="0", mixnrho="" if MUTATE else " nrho 1e21"))
+rc3, n3, _ = created(build(n="0",
+                           globals_=GLOB if MUTATE else "",
+                           late="" if MUTATE else GLOB))
+rc4, n4, _ = created(build(
+    n="500",
+    region="" if MUTATE else "region half block 0 5e-5 INF INF INF INF\n",
+    regarg="" if MUTATE else " region half"))
+if MUTATE:
+    print("mutation=every_wrong_density_deck_written_the_prescribed_way")
 
 print(f"created_n0={n0}")
 print(f"created_n500={n1}")

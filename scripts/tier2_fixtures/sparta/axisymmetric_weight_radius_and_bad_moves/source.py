@@ -13,14 +13,32 @@ fixture.
 axisymmetric:5 is the more useful half. An agent told to look for a line will
 find it in every log and conclude the mode is active; the honest reading is the
 value.
+
+Mutation control: T2_MUTATE=1 fixes the ORDERING in both wrong decks — the
+non-axisymmetric one gets `boundary o ar p`, and the one that weighted before
+create_grid weights after it — so both become the deck the fixture already runs
+as the correct order, and nothing else changes. Both then exit 0 instead of
+aborting, so the two verbatim messages are absent:
+`both_quoted_weight_radius_messages_are_verbatim` goes False (and the two
+`UNEXPECTED:` lines it prints trip forbid_in_output).
+
+The axisymmetric:5 half CANNOT be mutation-controlled from a deck. Its claim is
+about SPARTA's own output — that `Axisymm bad moves` is printed in every
+completed run, axisymmetric or not — so there is no deck edit that removes the
+pathology; only a change to SPARTA would. `it_appears_even_in_a_non_axisymmetric
+_run` and `so_only_a_nonzero_value_carries_information` are therefore not
+covered by this hook.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species")
 
@@ -49,11 +67,17 @@ def probe(bnd: str, before_grid: str = "", after_grid: str = "") -> dict:
                           if l.startswith("Axisymm bad moves")]}
 
 
+# Under mutation the pathology is REMOVED from both wrong decks: the model is
+# made axisymmetric, and the weight command is moved after create_grid.
+if MUTATE:
+    print("mutation=both_weight_radius_decks_written_in_the_correct_order")
+
 CASES = {
     "weight_radius_on_a_non_axisymmetric_model":
-        probe("o o p", after_grid=WEIGHT),
+        probe("o ar p" if MUTATE else "o o p", after_grid=WEIGHT),
     "weight_radius_before_create_grid":
-        probe("o ar p", before_grid=WEIGHT),
+        probe("o ar p", before_grid="" if MUTATE else WEIGHT,
+              after_grid=WEIGHT if MUTATE else ""),
     "weight_radius_in_the_correct_order":
         probe("o ar p", after_grid=WEIGHT),
     "axisymmetric_without_radial_weighting":

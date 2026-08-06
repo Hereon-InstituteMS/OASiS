@@ -21,14 +21,31 @@
 The load-bearing check is on cht:1: an entry that tells an agent the DOC PAGE is
 wrong has to be able to show it, so both the doc form and the working form run
 here side by side.
+
+Mutation control: T2_MUTATE=1 repairs every deck that is supposed to abort, one
+token each — the wrong-order deck puts the fix before the surf_collide, the
+'missing fix' deck gets the fix, the bare 'c_q' and the wildcard 'c_q[*]' become
+'c_q[1]', the over-indexed 'f_aq[1]' becomes 'f_aq', and the 0.0 and 1.5
+emissivities become 0.9. Nothing then aborts, so
+`every_quoted_fix_surf_temp_message_is_verbatim`,
+`doc_page_bare_compute_form_does_not_work` and
+`emissivity_zero_is_rejected_not_read_as_no_radiation` go False.
+`wrong_order_and_missing_fix_give_the_same_message` and
+`wildcard_index_fails_exactly_like_the_bare_form` do NOT: both compare the first
+error line of two decks, and two empty error lists compare equal, so they stay
+True vacuously once nothing aborts. That is a real weakness of those two
+assertions and the mutation is what exposes it.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss", "data.circle")
 
@@ -54,27 +71,40 @@ COMPUTE = "compute q surf all all etot\n"
 AVE = "fix aq ave/surf all 10 10 100 c_q[1]\n"
 WALL = "surf_collide cw diffuse s_tw 1.0\nsurf_modify all collide cw\n"
 
+FIX = "fix ft surf/temp all 100 f_aq 300 0.9 tw\n"
+
+if MUTATE:
+    print("mutation=every_aborting_fix_surf_temp_variant_repaired_one_token_each")
+
+# Under mutation each aborting variant loses the single token that makes it
+# abort: the order, the missing fix, the bracket form, the emissivity value.
 CASES = {
     # cht:0 — ordering, and the ambiguity of the message
     "correct_order_fix_then_surf_collide":
-        COMPUTE + AVE + "fix ft surf/temp all 100 f_aq 300 0.9 tw\n" + WALL,
+        COMPUTE + AVE + FIX + WALL,
     "intuitive_wrong_order_surf_collide_first":
-        COMPUTE + AVE + WALL + "fix ft surf/temp all 100 f_aq 300 0.9 tw\n",
-    "fix_surf_temp_missing_entirely": WALL,
+        COMPUTE + AVE + (FIX + WALL if MUTATE else WALL + FIX),
+    "fix_surf_temp_missing_entirely":
+        (COMPUTE + AVE + FIX + WALL) if MUTATE else WALL,
     # cht:1 — brackets
     "bare_compute_source_the_doc_page_example":
-        COMPUTE + "fix ft surf/temp all 100 c_q 300 0.9 tw\n" + WALL,
+        COMPUTE + ("fix ft surf/temp all 100 c_q%s 300 0.9 tw\n"
+                   % ("[1]" if MUTATE else "")) + WALL,
     "compute_wildcard_index":
-        COMPUTE + "fix ft surf/temp all 100 c_q[*] 300 0.9 tw\n" + WALL,
+        COMPUTE + ("fix ft surf/temp all 100 c_q%s 300 0.9 tw\n"
+                   % ("[1]" if MUTATE else "[*]")) + WALL,
     "indexed_compute_source":
         COMPUTE + "fix ft surf/temp all 100 c_q[1] 300 0.9 tw\n" + WALL,
     "single_value_fix_over_indexed":
-        COMPUTE + AVE + "fix ft surf/temp all 100 f_aq[1] 300 0.9 tw\n" + WALL,
+        COMPUTE + AVE + ("fix ft surf/temp all 100 f_aq%s 300 0.9 tw\n"
+                         % ("" if MUTATE else "[1]")) + WALL,
     # cht:2 — emissivity range
     "emissivity_zero":
-        COMPUTE + AVE + "fix ft surf/temp all 100 f_aq 300 0.0 tw\n" + WALL,
+        COMPUTE + AVE + ("fix ft surf/temp all 100 f_aq 300 %s tw\n"
+                         % ("0.9" if MUTATE else "0.0")) + WALL,
     "emissivity_above_one":
-        COMPUTE + AVE + "fix ft surf/temp all 100 f_aq 300 1.5 tw\n" + WALL,
+        COMPUTE + AVE + ("fix ft surf/temp all 100 f_aq 300 %s tw\n"
+                         % ("0.9" if MUTATE else "1.5")) + WALL,
     "emissivity_one_exactly":
         COMPUTE + AVE + "fix ft surf/temp all 100 f_aq 300 1.0 tw\n" + WALL,
 }

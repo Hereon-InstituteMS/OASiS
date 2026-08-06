@@ -23,14 +23,27 @@ scalar, e.g. 'fix ave/time'. An agent that grep'd for :203 after making the
 per-grid mistake would not find it and would conclude the entry was wrong. Both
 entries now name the condition; this fixture produces all four messages so the
 distinction cannot silently revert.
+
+Mutation control: T2_MUTATE=1 repairs each of the four aborting decks by the one
+line that makes it abort, and nothing else — the adapt Nevery goes 30 -> 50, the
+two stats intervals go 30 -> 50 so they are multiples of the fix's Nfreq 50, and
+the per-grid fix is routed through a 'compute reduce' instead of being printed
+raw by stats_style. All four then run, so all four quoted-message lines vanish
+together with `every_quoted_compatible_time_message_is_verbatim`,
+`the_compute_reduce_abort_is_MID_RUN_after_a_stats_line`,
+`the_adapt_abort_is_at_setup_before_any_stats_line` and
+`a_per_grid_fix_in_stats_style_gives_a_DIFFERENT_message`.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -58,26 +71,37 @@ def probe(body: str) -> dict:
             "output": txt}
 
 
+if MUTATE:
+    print("mutation=each_incompatible_reader_repaired_to_a_multiple_of_nfreq_50")
+
+# Under mutation every aborting deck is repaired by the one line that is the
+# pathology: the offending interval becomes a multiple of the fix's Nfreq 50,
+# and the per-grid fix is reduced to a scalar before stats_style sees it.
+NEVERY = "50" if MUTATE else "30"
+INTERVAL = "50" if MUTATE else "30"
+
 CASES = {
     # the adapt's OWN complaint: Nevery 30 is not a multiple of Nfreq 50
     "adapt_nevery_not_a_multiple_of_the_fix_nfreq": probe(
         "stats 50\nstats_style step np ngrid\n"
-        "fix ad adapt 30 all refine value f_fnp 1.0 0.1\nrun 100\n"),
+        f"fix ad adapt {NEVERY} all refine value f_fnp 1.0 0.1\nrun 100\n"),
     # the same deck with Nevery 50 — one number changed
     "adapt_nevery_is_a_multiple": probe(
         "stats 50\nstats_style step np ngrid\n"
         "fix ad adapt 50 all refine value f_fnp 1.0 0.1\nrun 100\n"),
     # a compute reduce reading the fix at an incompatible stats interval
     "compute_reduce_reads_the_fix_at_an_incompatible_time": probe(
-        "compute r reduce min f_fnp\nstats 30\nstats_style step np c_r\n"
-        "run 100\n"),
+        f"compute r reduce min f_fnp\nstats {INTERVAL}\n"
+        "stats_style step np c_r\nrun 100\n"),
     # stats printing a GLOBAL-SCALAR fix at an incompatible interval
     "stats_prints_a_global_fix_at_an_incompatible_time": probe(
-        "fix ft ave/time 1 50 50 c_tt\nstats 30\nstats_style step np f_ft\n"
-        "run 100\n"),
+        f"fix ft ave/time 1 50 50 c_tt\nstats {INTERVAL}\n"
+        "stats_style step np f_ft\nrun 100\n"),
     # the message that is NOT one of the three: a per-grid fix in stats_style
     "stats_prints_a_per_grid_fix": probe(
-        "stats 30\nstats_style step np f_fnp\nrun 100\n"),
+        "stats 50\ncompute rr reduce ave f_fnp\n"
+        "stats_style step np c_rr\nrun 100\n" if MUTATE
+        else "stats 30\nstats_style step np f_fnp\nrun 100\n"),
     # hypersonic_flow:4's actual point: a per-grid COMPUTE has no such
     # restriction, so the identical adapt Nevery is accepted
     "adapt_driven_by_a_compute_has_no_frequency_restriction": probe(

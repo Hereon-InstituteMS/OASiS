@@ -25,9 +25,19 @@ decide the transient had passed, and sample it anyway. The magnitude is stated a
 a percentage now, and the emphasis moved to where it belongs: the discriminator
 is that the first window sits outside the seed spread while the late ones agree
 inside it.
+
+Mutation control: T2_MUTATE=1 prepends a DISCARDED warm-up run of the same length
+and measures the windows from the second run only. Seeds, geometry, inflow,
+window width and window count are untouched; the only thing removed is the
+transient, which is the pathology. The first measured window then already sits in
+the converged plateau, its excess over that plateau falls onto the measured noise
+floor, and `the_FIRST_window_is_more_than_10x_the_floor` goes False. This is
+deliberately not a reseed — perturbing a stochastic run proves nothing; landing
+the signal on the measured floor proves the fixture responds to the transient.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -35,6 +45,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import (  # noqa: E402
     col, errors, find_example, run, skip_if_unavailable, stats_rows,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 CIRCLE = find_example("circle", "data.circle")
@@ -64,12 +76,18 @@ compute r reduce sum f_fs
 timestep 1e-4
 stats 200
 stats_style step np c_r
-run 2400
+{warmup}run 2400
 """
+
+# stats_rows() keeps the LAST stats table, so an extra `run` in front is a
+# genuinely discarded warm-up: the windows are read from the second run only.
+WARMUP = "run 2400\n" if MUTATE else ""
+if MUTATE:
+    print("mutation=a_discarded_warm_up_run_precedes_the_measured_windows")
 
 
 def probe(seed: int) -> dict:
-    rc, txt = run(DECK.format(seed=seed), FILES, timeout=1500)
+    rc, txt = run(DECK.format(seed=seed, warmup=WARMUP), FILES, timeout=1500)
     header, rows = stats_rows(txt)
     flux = (col(header, rows, "c_r")
             if header and rows and "c_r" in header else [])

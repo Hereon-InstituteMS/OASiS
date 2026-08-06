@@ -26,15 +26,28 @@ to the per-cell minimum, which is dimensionless and independent of fnum. The two
 decks deliberately use different fnum values — that is the only way to get
 comparable total counts once the weighting has changed the effective volume —
 and the assertion is chosen so that difference cannot affect it.
+
+Mutation control: T2_MUTATE=1 adds `weight cell radius` to the UNIFORM deck and
+changes nothing else — same box, same nrho, same fnum, same grid, same seed. The
+graded occupancy that `global weight cell radius` exists to remove is then gone
+from the deck that is supposed to show it, and the max/min spread lands on the
+value the radially weighted deck measures independently (about 1.0, against 49.5
+unmutated), not merely somewhere else.
+`uniform_weighting_grades_occupancy_by_more_than_10x` and
+`radial_weighting_removes_the_gradient` go False. The scale-trap probe is left
+alone: its pathology is a request that cannot be met, not the weighting.
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -79,7 +92,11 @@ def probe(L: str, fnum: str, weight: str, timeout: int = 120) -> dict:
 
 # --------------------------------------------------------- axisymmetric:4
 # Metre-scale box, where the radial weight is order 1 and both decks complete.
-uniform = probe("1.0", "1.57e12", "")
+# Under mutation the pathology is REMOVED: the "uniform" deck is radially
+# weighted too, at its own unchanged fnum.
+if MUTATE:
+    print("mutation=uniform_deck_given_global_weight_cell_radius")
+uniform = probe("1.0", "1.57e12", WEIGHT if MUTATE else "")
 radial = probe("1.0", "6.3e13", WEIGHT)
 
 # --------------------------------------------- the scale trap, same command

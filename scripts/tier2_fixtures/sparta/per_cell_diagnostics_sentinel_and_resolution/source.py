@@ -28,14 +28,25 @@ asserted against a stored value: the sentinel is identified by being fifteen
 orders of magnitude away from the healthy value IN THE SAME RUN, the resolution
 claims are comparisons between two grids, and the dt/grid claim is the ratio of
 two recommendations against the ratio of the two timesteps that produced them.
+
+Mutation control: T2_MUTATE=1 runs the two UNDER-RESOLVED decks (200x200 and
+100x100, both single-sample) on the resolved 20x20 grid instead, i.e. it removes
+the refined-past-one-particle-per-cell pathology and changes nothing else — same
+fix ave/grid sample count, same timestep, same everything. No cell is then empty,
+so `the_refined_grid_has_empty_cells` and `the_sentinel_persists_on_a_refined_grid`
+go False. The coarse-grid, dt/grid and equilibrium-box claims run on decks this
+control does not touch, so it does not speak for them.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss")
 
@@ -82,10 +93,15 @@ def probe(n=20, nrepeat=50, dt="1e-7") -> dict:
             "knmax": column("c_knmax"), "dtmin": column("c_dtmin")}
 
 
+if MUTATE:
+    print("mutation=under_resolved_decks_run_on_the_resolved_20x20_grid")
+
+# Under mutation the pathology is REMOVED: the two decks refined past one
+# particle per cell are run at the resolved 20x20 grid. Nothing else changes.
 coarse = probe(n=5)                      # cells LARGER than a mean free path
 resolved = probe(n=20)                   # the reference resolution
-refined = probe(n=200, nrepeat=1)        # far past one particle per cell
-one_sample = probe(n=100, nrepeat=1)     # empty cells survive the averaging
+refined = probe(n=20 if MUTATE else 200, nrepeat=1)     # past one particle/cell
+one_sample = probe(n=20 if MUTATE else 100, nrepeat=1)  # empty cells survive
 big_dt = probe(n=20, dt="1e-5")          # 100x the timestep
 small_dt = probe(n=20, dt="1e-9")        # 1/100 the timestep
 

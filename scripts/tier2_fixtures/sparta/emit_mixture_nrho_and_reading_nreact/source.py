@@ -16,14 +16,27 @@ chemistry pair differs by the mixture temperature and nothing else. The emission
 claim is asserted as the RATIO between the two steady counts against the ratio
 of the two densities, and the chemistry claim as the presence or absence of
 product particles — never as a stored count.
+
+Mutation control: T2_MUTATE=1 removes both pathologies and nothing else. The
+'nrho 4e20' keyword comes off the second emit deck's mixture line, so both emit
+decks run at the one density 'global nrho 1e20' declares and the steady-count
+ratio drops to about 1 — `an_nrho_on_the_mixture_sets_the_steady_count` goes
+False. And the reaction diagnostic is read from the CUMULATIVE product-species
+columns (c_c[3..5]) instead of the per-step Nreact column, at the identical
+temperatures, so the estimator that cannot see the reactions is replaced by one
+that can and `but_its_Nreact_column_stays_orders_of_magnitude_smaller` goes
+False.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _spahelp import col, errors, run, skip_if_unavailable, stats_rows  # noqa: E402
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DATA = skip_if_unavailable("ar.species", "ar.vss", "air.species", "air.vss",
                            "air.tce")
@@ -78,16 +91,25 @@ def probe(deck: str, files: dict) -> dict:
     def column(name):
         return (col(header, rows, name)
                 if (header and rows and name in header) else [])
+    products = [sum(v) for v in zip(column("c_c[3]"), column("c_c[4]"),
+                                    column("c_c[5]"))]
+    # Under mutation the reaction diagnostic is read from the CUMULATIVE product
+    # counts instead of the per-step Nreact column. The decks are untouched.
     return {"rc": rc, "errors": errors(txt),
             "warnings": [l for l in txt.splitlines() if l.startswith("WARNING")],
             "np": column("Np"), "ncoll": column("Ncoll"),
-            "nreact": column("Nreact"),
-            "products": [sum(v) for v in zip(column("c_c[3]"), column("c_c[4]"),
-                                             column("c_c[5]"))]}
+            "nreact": products if MUTATE else column("Nreact"),
+            "products": products}
 
+
+if MUTATE:
+    print("mutation=mixture_nrho_keyword_dropped_and_reactions_read_from_"
+          "cumulative_species_counts")
 
 global_only = probe(EMIT.format(extra=""), ARGON)
-mixture_nrho = probe(EMIT.format(extra="nrho 4e20"), ARGON)
+# Under mutation the second emit deck loses the mixture nrho keyword that is the
+# pathology, so it is the same density as the first.
+mixture_nrho = probe(EMIT.format(extra="" if MUTATE else "nrho 4e20"), ARGON)
 cold = probe(CHEM.format(temp="273.15"), AIR)
 hot = probe(CHEM.format(temp="20000.0"), AIR)
 
