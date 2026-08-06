@@ -1275,6 +1275,95 @@ def _list_alternative_solvers(current_solver: str, physics: str) -> str:
     return "Other solvers that support this physics:\n" + "\n".join(alternatives)
 
 
+def _narrow_coupling_by_signal(groups: dict, signal: str) -> dict:
+    """Keep the coupling entries whose recorded symptom matches an observed one.
+
+    DELEGATES to `core.pitfall_index` whenever that module is importable. That
+    is the canonical matcher for the whole corpus — it folds quoting,
+    whitespace and case, stems inflections, and carries a domain synonym table
+    — and a second implementation of the same thing that drifted would be worse
+    than none, because a symptom query that quietly matches differently for
+    coupling than for every backend is a trap rather than a feature.
+
+    The local fallback below exists only for trees where that module is not
+    present yet. It does the two things a symptom lookup cannot be useful
+    without — the same normalisation, and a distinctive-token overlap — and
+    deliberately nothing more: no synonyms, so it can never claim a match the
+    canonical matcher would not.
+
+    Never returns an empty result silently: a query that matches nothing comes
+    back with a note saying so, because an empty answer reads as "nothing is
+    known about that", which is a different and much more dangerous claim.
+    """
+    try:                                       # canonical path
+        from core import pitfall_index
+    except ImportError:
+        pitfall_index = None
+
+    if pitfall_index is not None:
+        result = pitfall_index.narrow(groups, signal=signal)
+        kept = {}
+        for e in result["entries"]:
+            kept.setdefault(e["physics"], []).append(
+                f"{e['text']}  <- match: {e.get('match', '?')}")
+        if not kept:
+            return {"no_match": [
+                f"No recorded coupling failure mode matches {signal!r}. That is "
+                "informative but not conclusive: it means this symptom is not "
+                "catalogued, NOT that your coupling is right. "
+                "knowledge(topic='pitfalls', solver='coupling') returns all "
+                f"{result['total_available']} entries."]}
+        kept["_filter"] = [f"signal={signal!r}: {result['shown']} of "
+                           f"{result['total_available']} entries"]
+        return kept
+
+    import re as _re
+
+    def _norm(s: str) -> str:
+        s = s.lower().replace("’", "'").replace("‘", "'")
+        s = s.replace("“", '"').replace("”", '"')
+        s = _re.sub(r"[\\'\"`]+", "", s)
+        return _re.sub(r"\s+", " ", s).strip()
+
+    _STOP = set("a an the and or but if of in on at to for from with by is are "
+                "was were be it its this that these those as not no so than "
+                "then there when where which what how why all any both each "
+                "more most other some such only same too very can will just "
+                "should now use used using you your we our error warning "
+                "message output file files line lines code".split())
+    q = _norm(signal)
+    qt = {w for w in _re.findall(r"[a-z_][a-z0-9_]{2,}", q) if w not in _STOP}
+    kept: dict[str, list[str]] = {}
+    for group, entries in groups.items():
+        for text in entries:
+            whole = _norm(text)
+            sig = whole.split("signal:", 1)[1] if "signal:" in whole else ""
+            if sig and q in sig:
+                mode = "matches recorded symptom"
+            elif q in whole:
+                mode = "matches entry text"
+            elif qt and qt <= {w for w in
+                               _re.findall(r"[a-z_][a-z0-9_]{2,}", whole)
+                               if w not in _STOP}:
+                mode = "all query terms present"
+            else:
+                continue
+            kept.setdefault(group, []).append(f"{text}  <- match: {mode}")
+    total = sum(len(v) for v in groups.values())
+    if not kept:
+        return {"no_match": [
+            f"No recorded coupling failure mode matches {signal!r}. That is "
+            "informative but not conclusive: it means this symptom is not "
+            "catalogued, NOT that your coupling is right. "
+            f"knowledge(topic='pitfalls', solver='coupling') returns all "
+            f"{total} entries."]}
+    shown = sum(len(v) for v in kept.values())
+    kept["_filter"] = [f"signal={signal!r}: {shown} of {total} entries. For "
+                       f"the complete set: knowledge(topic='pitfalls', "
+                       f"solver='coupling')"]
+    return kept
+
+
 def _load_matching_postmortems(solver: str = "", physics: str = "",
                                signal: str = "") -> list[dict]:
     """Load post-mortem JSONs from data/postmortems/, filtered.
@@ -1387,7 +1476,16 @@ def register_consolidated_tools(mcp: FastMCP):
             topic: What you want to know. Options:
                 - "physics" — physics-specific knowledge + matching
                   post-mortems (needs solver + physics)
-                - "pitfalls" — all known pitfalls for a solver
+                - "pitfalls" — all known pitfalls for a solver.
+                  `solver='coupling'` is accepted here and is not the
+                  name of a backend. It returns the cross-code
+                  coupling failure modes — the ten that converge to a
+                  confidently wrong answer, the participant-contract
+                  errors, the limits of each verification check, and
+                  the capability claims that are NEGATIVE. Pass
+                  `signal=` with the message you actually saw, which
+                  is what the entries are indexed on, or `physics=`
+                  as a topic filter.
                 - "postmortems" — formal post-mortem records under
                   data/postmortems/*.json, filtered by solver +
                   physics + optional signal pattern. These are the
@@ -1420,10 +1518,14 @@ def register_consolidated_tools(mcp: FastMCP):
                   the delta between two.
             solver: Backend name (e.g. 'fenics', 'fourc', 'dealii', 'ngsolve')
             physics: Physics type (e.g. 'poisson', 'linear_elasticity', 'navier_stokes')
-            signal: Optional substring to filter post-mortem
-                pitfall_db_entries Signal: clauses against — useful
-                when the post-execution critic sees a specific error
-                text and wants to find the matching post-mortem.
+            signal: The error text you actually observed. Paste it raw
+                — quoting, case and whitespace differences are folded.
+                Filters post-mortem records, and filters the coupling
+                failure modes under solver='coupling'. Every result
+                says which match mode produced it, so a partial
+                word-overlap is labelled rather than presented as an
+                identification. No match means the symptom is not
+                catalogued; it does NOT mean the setup is right.
         """
         _get_journal().record("knowledge_lookup", "knowledge",
                               solver=solver, physics=physics,
@@ -1498,6 +1600,22 @@ def register_consolidated_tools(mcp: FastMCP):
             # pitfalls so the agent has no shortcut to known-bug knowledge.
             if _ABLATE_PITFALLS:
                 return f"No pitfalls available for {solver}"
+            # COUPLING IS NOT A BACKEND, and that is exactly why it had no
+            # pitfalls surface: `get_backend('coupling')` returns None, so this
+            # branch fell straight through to "No pitfalls found for coupling"
+            # while ~145 kB of coupling knowledge sat behind topic='coupling'
+            # with no [Category] tag and no Signal: clause anywhere in it. An
+            # agent whose coupling had just failed could not look its symptom
+            # up — at the exact moment it most needed the knowledge, symptom
+            # lookup returned nothing. Served here in the same shape every
+            # backend uses ({group: [entry, ...]}), so the narrowing layer
+            # applies to it unchanged when it lands.
+            if solver.strip().lower() in ("coupling", "couple", "coupled"):
+                from backends.coupling import get_coupling_pitfalls
+                entries = get_coupling_pitfalls(physics or None)
+                if signal:
+                    entries = _narrow_coupling_by_signal(entries, signal)
+                return json.dumps(entries, indent=2)
             # Backend is the source of truth for pitfalls (Table-1
             # promoted, post-execution-critic-actionable). The
             # deep_knowledge fallback was inverted historically —
