@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for NGSolve phase_field#2: lagging W'(c) keeps each Allen-Cahn step linear, the fully implicit form needs a Newton solve per step, and the trade-off is stability at large dt. Verified on NGSolve 6.2.2604, unit_square maxh=0.06 (ne=634), P1, droplet radius 0.3, eps=0.06, M=20 (2026-08-06): at dt=2e-4 over 60 steps the semi-implicit path does 60 linear solves in 0.02 s while the fully implicit path does 180 Newton iterations (3.0/step, flag 0 every step) in 0.81 s, the two final fields agreeing to 3.18e-05 in L2; at dt=0.2 over 5 steps the semi-implicit field blows up to (29.204, 130.371) while Newton keeps c inside [0,1]. Corrections recorded: ~3 Newton iterations per step here, not the quoted 5-10, and the wall-clock penalty is ~40x, not 5-10x.",
+  "_comment": "Tier-2 for NGSolve phase_field#2: lagging W'(c) keeps each Allen-Cahn step linear, the fully implicit form needs a Newton solve per step, and the trade-off is stability at large dt. Verified on NGSolve 6.2.2604, unit_square maxh=0.06 (ne=634), P1, droplet radius 0.3, eps=0.06, M=20 (2026-08-06): at dt=2e-4 over 60 steps the semi-implicit path does 60 linear solves in 0.02 s while the fully implicit path does 180 Newton iterations (3.0/step, flag 0 every step) in 0.81 s, the two final fields agreeing to 3.18e-05 in L2; at dt=0.2 over 5 steps the semi-implicit field blows up to (29.204, 130.371) while Newton keeps c inside [0,1]. Corrections recorded: ~3 Newton iterations per step here, not the quoted 5-10, and the wall-clock penalty is ~40x, not 5-10x. 2026-08-06: the pass/fail no longer depends on wall-clock. The elapsed-time ratio is still measured and printed, but the cost difference is now asserted as a count of linear solves -- one per step for the semi-implicit scheme against one per Newton iteration -- which is what the timing stood in for and holds on any host.",
   "backend": "ngsolve",
   "physics": "phase_field",
   "pitfall_index": 2,
@@ -12,7 +12,7 @@
     "newton_printed_iteration_banner=True",
     "Newton iteration",
     "semi_and_newton_agree_within_1pct=True",
-    "semi_implicit_at_least_3x_faster=True",
+    "newton_needs_at_least_3x_the_linear_solves=True",
     "bigdt_semi_implicit_blew_up=True",
     "bigdt_newton_stayed_bounded=True"
   ],

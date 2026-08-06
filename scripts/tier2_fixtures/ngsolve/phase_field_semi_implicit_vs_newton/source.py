@@ -144,10 +144,20 @@ def main() -> int:
               f"relative", file=sys.stderr)
         ok = False
 
-    print(f"semi_implicit_at_least_3x_faster={t_imp / t_semi > 3.0}")
-    if not t_imp / t_semi > 3.0:
-        print(f"FAIL: the Newton path was only {t_imp / t_semi:.1f}x the "
-              f"cost of the linear path", file=sys.stderr)
+    # Timing is measured and reported, never asserted: a busy host would
+    # otherwise turn this fixture red for reasons unrelated to the claim.  The
+    # cost difference is asserted as a count of linear solves instead -- the
+    # semi-implicit scheme does exactly one per step, Newton does one per
+    # Newton iteration -- which is what the wall-clock was standing in for and
+    # holds on any machine.
+    print(f"newton_over_semi_time_observed={t_imp / t_semi:.2f}")
+    print(f"semi_implicit_solves_per_step={n_lin / N_SMALL:.2f}")
+    print(f"newton_solves_per_step={n_newton / N_SMALL:.2f}")
+    print(f"newton_needs_at_least_3x_the_linear_solves="
+          f"{n_newton >= 3 * n_lin}")
+    if not n_newton >= 3 * n_lin:
+        print(f"FAIL: the Newton path needed only {n_newton} linear solves "
+              f"against {n_lin} for the semi-implicit path", file=sys.stderr)
         ok = False
 
     # ---- large dt: the stability price of lagging -----------------------
