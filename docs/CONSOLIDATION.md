@@ -681,3 +681,38 @@ This is not a claim that 401 fixtures are unsound. It is a claim that their
 soundness is currently unauditable, which for this project is the same class of
 problem as an unverified knowledge claim: the assertion may well be true and
 nothing in the tree lets a reader check it.
+
+---
+
+# Would the merged corpus pass the contamination gate? Measured.
+
+Both audits flagged that "0 contamination hits" is branch-local: the gate lives
+on two branches and reports green there, while the campaign branches — where the
+knowledge actually lives — serve the exact class the gate was written against.
+Neither audit could say what the MERGED corpus would do, because it exists
+nowhere. Measured now, in a throwaway worktree off the base:
+
+    all campaign branches, scanned individually        226 hits
+    merged, taking knowledge/purge-eval-contamination
+    FIRST and then seven campaign branches              20 hits
+
+**Purge fixes 206 of 226.** Its work is done and simply has not propagated —
+which is the argument for merging it first, before anything else.
+
+The residual 20 were entirely on `knowledge/ngsolve-skfem-verify`, and the
+reason is exact: that is the one branch which merged CLEANLY, so purge's
+corrections never had occasion to touch it. Clean merges hide unfixed
+contamination; conflicted ones surface it. That is the opposite of the intuition
+and worth remembering during consolidation.
+
+Those 20 are now fixed at source (commit `c1340c79`): four served MMS
+convergence tables plus one served manufactured solution. Six remain on that
+branch, four of them in `kratos/curved_mms.py` and
+`dealii/poisson_mixed_bc.py` — both already fixed on `feature/anti-fabrication`
+earlier the same day. The same correction now exists on three branches and has
+landed on one.
+
+Merge order confirmed by this probe: purge first, then the campaign branches;
+conflicts are 1-4 files each and are purge's decontamination against the same
+file's contaminated version, which resolves by taking the purged side and
+re-applying any genuinely new content on top.
