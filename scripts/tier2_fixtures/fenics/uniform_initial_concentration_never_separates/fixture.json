@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 1,
   "mode": "python",
+  "covers": ["cahn_hilliard::1"],
   "expect_in_output": [
     "uniform_0p5_never_separates=True",
     "uniform_0p63_never_separates=True",

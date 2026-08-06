@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 0,
   "mode": "python",
+  "covers": ["cahn_hilliard::0"],
   "expect_in_output": [
     "too_large_dt_converged_without_error=True",
     "too_large_dt_field_is_the_initial_mean_to_4_digits=True",

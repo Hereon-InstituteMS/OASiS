@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 3,
   "mode": "python",
+  "covers": ["cahn_hilliard::3"],
   "expect_in_output": [
     "petsc_library_has_no_step_rejected_message=True",
     "petsc_library_does_contain_DIVERGED_STEP_REJECTED=True",

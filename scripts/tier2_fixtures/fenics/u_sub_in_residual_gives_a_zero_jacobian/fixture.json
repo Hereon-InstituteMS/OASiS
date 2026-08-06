@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 4,
   "mode": "python",
+  "covers": ["cahn_hilliard::4"],
   "expect_in_output": [
     "fem_form_accepted_the_u_sub_residual=True",
     "u_sub_jacobian_is_exactly_zero=True",

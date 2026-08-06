@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 6,
   "mode": "python",
+  "covers": ["cahn_hilliard::6"],
   "expect_in_output": [
     "stale_u0_iteration_count_collapses=True",
     "every_stale_step_reported_convergence=True",

@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 5,
   "mode": "python",
+  "covers": ["cahn_hilliard::5"],
   "expect_in_output": [
     "no_bc_mass_drift_at_roundoff=True",
     "no_bc_free_energy_monotonically_decreasing=True",

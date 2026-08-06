@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 7,
   "mode": "python",
+  "covers": ["cahn_hilliard::7"],
   "expect_in_output": [
     "converged_solution_overshoots_below_zero=True",
     "converged_solution_overshoots_above_one=True",

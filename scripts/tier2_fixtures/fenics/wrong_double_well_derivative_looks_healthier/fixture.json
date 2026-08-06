@@ -4,6 +4,7 @@
   "physics": "cahn_hilliard",
   "pitfall_index": 2,
   "mode": "python",
+  "covers": ["cahn_hilliard::2"],
   "expect_in_output": [
     "ufl_diff_matches_the_hand_coded_derivative=True",
     "the_quoted_12c_expression_is_0p06_times_the_correct_one=True",

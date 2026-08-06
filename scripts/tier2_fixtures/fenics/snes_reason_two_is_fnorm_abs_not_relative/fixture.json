@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 5,
+  "mode": "python",
+  "covers": ["nonlinear_pde::5"],
+  "expect_in_output": [
+    "petsc_reason_2_name=CONVERGED_FNORM_ABS",
+    "reason_2_is_converged_fnorm_abs=True",
+    "reason_3_is_converged_fnorm_relative=True",
+    "claimed_reason_table_matches_this_install=True",
+    "naive_wrapper_mislabelled_a_real_solve=True",
+    "sign_test_agreed_with_petsc_in_every_case=True",
+    "VERDICT=test_only_the_sign_the_names_are_easy_to_shift"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_name_table_was_trustworthy"
+  ]
+}
