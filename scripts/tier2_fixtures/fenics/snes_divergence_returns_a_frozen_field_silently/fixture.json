@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics multiphase#0. Tier-2 for fenics multiphase#0: `problem.solve()` on a dolfinx 0.10 NonlinearProblem returns the Function whether or not SNES converged - it does not raise. In a time loop a solver failure becomes a frozen field that the script keeps reporting as progress. Allen-Cahn on a 32x32 unit square, eps = 2.56h, circular droplet, 5 backward Euler steps. The wrong variant uses an oversized dt = 1.0: SNES returns DIVERGED_LINE_SEARCH at every step, the iteration count collapses to 0 after the first step, phi is bit-identical from step 2 onwards, and the loop still runs to completion and would exit 0. The remedy the claim names is checked in the same run: with \"snes_error_if_not_converged\": True the same solve raises petsc4py.PETSc.Error carrying \"SNESSolve has not converged due to DIVERGED_LINE_SEARCH\". Mutation control: T2_MUTATE=1 selects dt = 1e-2; SNES converges every step, the field advances, and the remedy raises nothing. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "solve_raised_an_exception=False",
+    "loop_completed_all_5_steps=True",
+    "every_step_reason_negative=True",
+    "reason_name=DIVERGED_LINE_SEARCH",
+    "field_frozen_from_step_2=True",
+    "reference_run_keeps_moving=True",
+    "SNESSolve has not converged due to DIVERGED_LINE_SEARCH",
+    "VERDICT=snes_divergence_is_silent_and_freezes_the_field"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=solver_failure_was_reported"
+  ],
+  "timeout_seconds": 300
+}
