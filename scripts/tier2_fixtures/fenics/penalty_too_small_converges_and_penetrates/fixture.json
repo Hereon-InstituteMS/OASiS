@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics contact#1: a penalty stiffness that is too small gives a WRONG answer with no error message at all \u2014 the most dangerous failure mode of penalty contact. Wrong variant: the scalar obstacle problem -laplacian(u) = f with f = -10 on the unit square, u = 0 on the boundary, a flat obstacle at phi = -0.2 enforced by the penalty residual -gamma*max(phi - u, 0)*v*dx, solved with gamma = 1 on a 24x24 triangle mesh (h = 1/24). gamma is a fem.Constant, so the stiff reference run that follows differs in nothing else. Observed: PETSc prints \"Nonlinear t2_contact_ solve converged due to CONVERGED_FNORM_ABS iterations 3\", getConvergedReason() returns 2, problem.solve() raises nothing \u2014 and the body has gone straight through the obstacle: min(u) sits more than twelve element edges below phi. There is no warning of any kind. The discrete equations are solved to machine precision; it is the model that is wrong, which is why no solver diagnostic can catch it. The same problem with gamma = 1e5 converges just as quietly with a penetration of less than a hundredth of an element edge. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "solve converged due to CONVERGED_FNORM_ABS",
+    "slot_snes_reported_success=True",
+    "slot_solve_raised_nothing=True",
+    "slot_penetration_exceeds_ten_element_edges=True",
+    "stiff_reference_penetration_is_negligible=True",
+    "VERDICT=converged_reason_is_not_evidence_the_constraint_holds"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=undersized_penalty_was_reported"
+  ],
+  "timeout_seconds": 300
+}
