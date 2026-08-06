@@ -65,7 +65,14 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 113  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 121  # cross-cutting (incl. synthetic indices).
+    # 2026-08-06 (113 -> 121): eight new FEBio fixtures, every one of
+    # them run here against febio4 4.12.0.86045466d, plus two re-keys
+    # that fixed mis-attributed evidence. Only the febio rows of the
+    # snapshot were rewritten; the other backends' rows are as
+    # recorded, because with the interpreter-resolution fix in place
+    # this host reproduces 52 of the 113 and that reconciliation is
+    # open work elsewhere, not a number to quietly lower here.
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)

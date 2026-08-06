@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::linear_elasticity#1. A deck with <Mesh> followed directly by <Boundary> is rejected with 'tag \"bc\" (line N) : invalid value for attribute \"node_set\"' \u2014 NOT with a missing-domain error. The fixture pins both halves: the quoted message, and the absence of the words MeshDomains / SolidDomain / MeshDomain anywhere in the output, which is what makes the diagnosis misleading. The positive control \u2014 the same deck with only the one wrong thing put right \u2014 is what makes the observed message attributable to the trigger rather than to anything else in the deck. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "meshdomains_missing=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

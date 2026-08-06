@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::linear_elasticity#6, and the fixture that FALSIFIED its Signal. A 0-based hex8 connectivity list on structured unit cubes at n = 1, 2, 3, 4 does NOT reach normal termination as the pitfall claimed: it reads SUCCESS, prints the WARNING '1 isolated vertex removed.', then the ERROR 'Negative jacobian detected during mesh initialization.' and 'Model initialization failed', and exits 1. The shift translates every element by one node in the lattice ordering, so the elements that wrap a row are twisted. The warning half of the Signal was correct; the silent-wrong-stresses half was not, and the pitfall text was corrected in the same pass. All four meshes required, each with its own positive control. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "zero_based_connectivity=rejected_at_init"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

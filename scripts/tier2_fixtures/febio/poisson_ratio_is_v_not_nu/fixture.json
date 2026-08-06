@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::linear_elasticity#5. <nu> inside 'isotropic elastic' gives 'tag \"nu\" (line N) : unrecognized tag' with 'Reading file ...FAILED!' and exit 1; the same deck with <v> runs to normal termination and prints neither string. NOTE ON RE-KEYING: the fixture missing_control_silent_zero_result carried pitfall_index 5 while its subject is the dropped-<Control> pitfall, which is index 3 \u2014 the index had drifted as pitfalls were inserted, so the runner key attributed the Control evidence to the Poisson-ratio claim. Both were re-keyed in the same pass. The positive control \u2014 the same deck with only the one wrong thing put right \u2014 is what makes the observed message attributable to the trigger rather than to anything else in the deck. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "nu_instead_of_v=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

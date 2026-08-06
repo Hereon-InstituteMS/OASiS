@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::linear_elasticity#4. A <value lc=\"1\"> with no matching <load_controller id=\"1\"> in <LoadData> reads SUCCESS and then fails at initialisation with 'Invalid load curve ID' + 'Model initialization failed', exit 1. init_error() asserts the reader said SUCCESS on the wrong deck \u2014 the misleading half of the pitfall \u2014 and that the positive control (identical deck plus the <LoadData> block) runs to normal termination without either message. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "missing_load_controller=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}
