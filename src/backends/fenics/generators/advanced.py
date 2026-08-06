@@ -835,8 +835,13 @@ _MULTIPHASE_KNOWLEDGE = {
      'Reduce over owned DOFs only: slice to `phi.x.array[:V.dofmap.index_map.size_local]` '
      'and wrap in `comm.allreduce(..., MPI.MIN / MPI.MAX)`. Guard every print with `if '
      'comm.rank == 0:`. Signal: measured, the unguarded generator template prints one full '
-     'copy of every step line per rank under mpirun, with different numbers on each - and '
-     'none of them is the global range.',
+     'copy of every step line per rank under mpirun, and the ranks DISAGREE about the '
+     'range. The disagreement is the tell, not a wrong number on every rank: a rank that '
+     'happens to own both extremes prints the correct global range, so one of the lines '
+     'can be accidentally right and which one it is depends on the partition. (An earlier '
+     'version of this entry said none of the per-rank ranges is the global one; that is '
+     'too strong and a check written against it will not fire.) Both arrays also carry '
+     'ghost entries, so even the owning rank is reading values it does not own. (Verified by execution on dolfinx 0.10.0, 2026-08-06.)',
      '[Numerical] A time step that is too large for Newton does not manifest as an '
      'instability. Backward Euler is unconditionally stable, so the failure lands entirely '
      'in the nonlinear solve. Signal: measured on the resolved 64x64 problem with eps/h = '
@@ -1895,15 +1900,28 @@ _NONLINEAR_PDE_KNOWLEDGE = {
      'u|^2 + eps^2)^((p-2)/2) with eps around 1e-6. Signal: measured with p = 1.5 and u0 = '
      '0, SNES returns converged reason -4 (DIVERGED_FNORM_NAN) at iteration 0 and leaves u '
      'exactly at zero - and `np.isnan(u.x.array).any()` is FALSE, so a NaN check on the '
-     "solution does not catch it. The previously quoted signals ('dolfinx_assemble_matrix "
-     "raised ZeroDivisionError', 'nan entries in J') do NOT reproduce. With eps = 1e-6 the "
-     'same problem converges in 7 iterations with reason 2.',
+     'SOLUTION does not catch it. Look at the assembled objects instead, because that is '
+     'where the NaN actually is: assembled at the singular starting iterate, both the '
+     'residual vector and the JACOBIAN carry NaN entries, and the Jacobian\'s PETSc norm '
+     'comes back nan. IMPORTANT CORRECTION: an earlier version of this entry listed \'nan '
+     "entries in J' among the signals that do NOT reproduce - they DO. What does not "
+     'reproduce is an EXCEPTION: neither the residual assembly nor the Jacobian assembly '
+     "raises anything, in particular no ZeroDivisionError, so 'assembly raised' is the "
+     'wrong thing to guard on and `PETSc.Mat.norm()` / `np.isnan` on the assembled '
+     'Jacobian is the right one. With eps = 1e-6 the same problem converges in a handful '
+     'of iterations with a positive reason. (Verified by execution on dolfinx 0.10.0, 2026-08-06.)',
      '[Numerical] A non-integer power of the solution, D = 1 + u**q with q not an integer, '
      'is only defined while u >= 0. If the load drives u negative the power becomes '
      'complex and Newton dies. Signal: measured, q = 2.0 with a NEGATIVE source converges '
      'normally (reason 2, u in [-0.0733, 0]), but q = 1.5 with the same negative source '
-     'returns converged reason -6 (DIVERGED_LINE_SEARCH) at iteration 0 with u left at '
-     'zero. Use abs(u)**q, max(u,0)**q, or an even integer exponent if u can change sign.',
+     'dies at iteration 0 with u left exactly at zero. WHICH negative reason you get is '
+     "decided by the LINE SEARCH, not by the exponent: on the default 'bt' line search and "
+     "on 'basic' it is -4 (DIVERGED_FNORM_NAN), and only 'l2' reports -6 "
+     '(DIVERGED_LINE_SEARCH). An earlier version of this entry quoted -6 alone, which is '
+     'the l2 answer - a check that matches on DIVERGED_LINE_SEARCH will miss this failure '
+     'entirely under the default settings, so test `getConvergedReason() < 0` and read the '
+     'code rather than matching one value. Use abs(u)**q, max(u,0)**q, or an even integer '
+     'exponent if u can change sign. (Verified by execution on dolfinx 0.10.0, 2026-08-06.)',
      '[Numerical] Semilinear source terms that grow super-linearly (R(u) = exp(u)) have a '
      'load beyond which no steady solution exists; past it Newton cannot converge no '
      'matter what you do to the solver. Signal: measured, lambda = 1 converges in 3 '
@@ -2275,20 +2293,25 @@ _MAGNETOSTATICS_KNOWLEDGE = {
      '[Numerical] In 3D you MUST use H(curl) Nedelec elements for curl-curl. Vector '
      'Lagrange does not fail loudly - it assembles a perfectly ordinary matrix, solves '
      'without complaint and returns finite numbers - but the entire discrete spectrum is '
-     'wrong. Signal: measured on the 2D Maxwell cavity on a unit square (exact eigenvalues '
-     'lambda/pi^2 = 1, 1, 2, 4, 4, 5, 5, ...), N1curl degree 1 on a 32x32 mesh returns '
-     '0.99952, 0.99995, 2.00053, 3.99572, 3.99572, 4.99564, 5.00382 - correct to 3-4 '
-     'digits - while vector Lagrange degree 1 on the SAME mesh returns 0.44377, 0.45044, '
-     '0.45124, 0.47074, 0.47549, ... , none of which is near any true eigenvalue, and '
-     'which DRIFT UPWARD under refinement (0.108 at 8x8, 0.240 at 16x16, 0.444 at 32x32) '
-     'instead of converging. Vector Lagrange degree 2 is not a fix: it returns 0.56, '
-     '0.946, 0.971, 1.024, 1.135, 1.925, 1.988, 2.20, ... - real modes interleaved with '
-     'spurious ones, which is worse because it looks plausible. IMPORTANT CORRECTION: the '
-     "previously quoted signals ('near-zero off-diagonal entries', 'B = curl(A) uniformly "
-     "~0') do NOT reproduce; the assembled matrix looks entirely normal (measured on a "
-     '4x4x4 cube: vector Lagrange degree 1 gives 375 DOFs, 11997 nonzeros and max |entry| '
-     '= 1.0; N1curl degree 1 gives 604 DOFs, 8092 nonzeros and max |entry| = 26.667 - '
-     'nothing about either matrix looks degenerate).',
+     'wrong. Signal: solve the 2D Maxwell cavity eigenproblem on a unit square, where the '
+     'exact eigenvalues are lambda/pi^2 = 1, 1, 2, 4, 4, 5, 5, ... , on two or three '
+     'refinements of the same mesh. N1curl reproduces that spectrum to several digits and '
+     'each mode SETTLES as the mesh is refined. Vector Lagrange degree 1 returns values '
+     'none of which is near any true eigenvalue, and - this is the tell - its spurious '
+     'modes COLLAPSE TOWARD ZERO under refinement rather than converging on anything: the '
+     'lowest computed mode sits near zero and every refinement drives it LOWER. So the '
+     'thing to watch for is a near-zero mode that refinement pushes further down, NOT a '
+     'mode that drifts to some wrong but settled value, and NOT a rising sequence. '
+     'IMPORTANT CORRECTION: an earlier version of this entry quoted the spurious modes as '
+     'drifting UPWARD under refinement; that direction is wrong and was falsified by two '
+     'independent runs. Vector Lagrange degree 2 is not a fix either: it interleaves a '
+     'couple of nearly-right modes with spurious ones, which is worse because it looks '
+     'plausible. Also do not look for the trouble in the matrix: the previously quoted '
+     "signals ('near-zero off-diagonal entries', 'B = curl(A) uniformly ~0') do NOT "
+     'reproduce. Assembled on a small 3D cube, the vector Lagrange and N1curl operators '
+     'both have ordinary sparsity, no all-zero rows and an ordinary largest entry - '
+     'nothing about either matrix looks degenerate, so the spectrum is the only place the '
+     'defect shows. (Verified by execution on dolfinx 0.10.0, 2026-08-06.)',
      '[Numerical] The 3D curl-curl operator without a gauge is singular - every gradient '
      'is in its kernel - and this does NOT show up as a solver failure. Every solver '
      'reports success and returns a different A. Signal: measured on a 6x6x6 unit cube '
@@ -2349,9 +2372,16 @@ _MAGNETOSTATICS_KNOWLEDGE = {
      'RANK-LOCAL and includes ghost entries; reduce over owned entries with '
      '`comm.allreduce(..., MPI.MAX)`, wrap every `fem.assemble_scalar` in '
      '`comm.allreduce(..., MPI.SUM)`, and guard printing with `if comm.rank == 0:`. '
-     'Signal: without the reduction an MPI run prints one line per rank with a different '
-     'maximum on each, and none of them is the true global maximum - no error, just '
-     'quietly different numbers depending on how many ranks you happened to use.'],
+     'Signal: without the reduction a run under mpirun prints one line per rank and the '
+     'ranks DISAGREE - no error, just quietly different numbers depending on how many '
+     'ranks you happened to use, and none of them need agree with the serial run. Watch '
+     'for the disagreement, not for every printed number being '
+     'wrong: the rank that happens to own the peak prints the true global maximum, so one '
+     'of the lines can be accidentally right and which one it is depends on the partition. '
+     '(An earlier version of this entry said none of the printed maxima is the global one; '
+     'that is too strong and a check written against it will not fire.) The same applies '
+     'to `fem.assemble_scalar`, which returns a rank-local partial sum that only becomes '
+     'the true integral after MPI.SUM. (Verified by execution on dolfinx 0.10.0, 2026-08-06.)'],
 }
 
 
