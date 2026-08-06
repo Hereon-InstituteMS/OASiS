@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#0: the boundary advection term must be restricted to the OUTFLOW part of the boundary, (b.n + |b.n|)/2. Writing dot(b, n)*u*v*ds over the whole boundary subtracts on the inflow facets, destroys coercivity and makes the assembled operator numerically singular. Scope, exactly as the claim states it: the outflow restriction is the STRUCTURAL fix, so the fixture uses the case where nothing else can hide it \u2014 pure advection (eps = 0, no diffusion, no ds Nitsche block) on the unit square with b = (1, 0.5). The two variants differ only in two fem.Constant coefficients in front of b.n and |b.n| on ds, so the compiled form, the mesh and the right-hand side are bit-for-bit the same and the boundary term is the only difference. Observed with the raw dot(b, n): the smallest singular value of the assembled matrix is ~3e-19 against a largest of ~1e-1, PETSc's LU aborts on a zero pivot (\"Zero pivot in LU factorization\"), KSPConvergedReason is -11 (KSP_DIVERGED_PC_FAILED), ksp.solve() raises nothing, and the unchecked print of the solution reads \"u: min=inf, max=inf\". The same matrix with the outflow restriction has a condition number of order 1e1-1e2 and solves cleanly. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "bad_slot_matrix_numerically_singular=True",
+    "is_diverged_pc_failed=True",
+    "bad_slot_solve_raised_nothing=True",
+    "bad_slot_solution_all_nonfinite=True",
+    "u: min=inf, max=inf",
+    "Zero pivot in LU factorization: https://petsc.org/release/faq/#zeropivot",
+    "outflow_reference_cond_below_1e4=True",
+    "outflow_reference_reason_is_converged=True",
+    "VERDICT=raw_dot_b_n_on_ds_destroys_coercivity"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=raw_dot_b_n_on_ds_is_harmless"
+  ],
+  "timeout_seconds": 300
+}
