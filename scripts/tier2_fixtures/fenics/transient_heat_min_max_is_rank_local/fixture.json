@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "every_step_line_printed_once_per_rank=True",
+    "the_two_ranks_disagree_about_the_range=True",
+    "at_least_one_rank_misreported_the_global_range=True",
+    "serial_run_sees_the_prescribed_maximum=True",
+    "VERDICT=unguarded_local_min_max_is_not_the_global_range"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=unguarded_local_range_was_fine",
+    "VERDICT=mpirun_unavailable"
+  ],
+  "timeout_seconds": 300
+}

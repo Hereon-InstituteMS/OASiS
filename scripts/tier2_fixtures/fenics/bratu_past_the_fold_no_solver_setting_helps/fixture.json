@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 4,
+  "mode": "python",
+  "covers": ["nonlinear_pde::4"],
+  "expect_in_output": [
+    "small_load_converges=True",
+    "big_load_fails_in_every_arm=True",
+    "raising_snes_max_it_does_not_help=True",
+    "changing_the_line_search_does_not_help=True",
+    "continuation_stalls_below_the_target=True",
+    "VERDICT=past_the_fold_no_solver_setting_converges"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_load_was_reachable"
+  ]
+}

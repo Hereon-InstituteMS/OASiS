@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": ["nonlinear_pde::2"],
+  "expect_in_output": [
+    "assembly_raised_an_exception=False",
+    "jacobian_at_the_start_has_nan_entries=True",
+    "unregularised_reason_is_fnorm_nan=True",
+    "solution_left_exactly_at_zero=True",
+    "nan_check_on_the_solution_misses_it=True",
+    "eps_regularisation_converges=True",
+    "VERDICT=singular_diffusivity_dies_at_iteration_zero_with_no_nan_in_u"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "ZeroDivisionError",
+    "VERDICT=singular_diffusivity_was_harmless"
+  ]
+}

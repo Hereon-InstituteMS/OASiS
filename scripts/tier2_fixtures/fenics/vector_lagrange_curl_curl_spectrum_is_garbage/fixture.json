@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": ["magnetostatics::2", "maxwell::0"],
+  "expect_in_output": [
+    "curl_curl_form_compiles_on_every_family=True",
+    "reference_n1curl_matches_exact_within_1_percent=True",
+    "under_test_has_no_mode_within_5_percent_of_the_exact_spectrum=True",
+    "under_test_spurious_modes_collapse_toward_zero=True",
+    "vector_lagrange_degree_2_interleaves_real_and_spurious=True",
+    "both_3d_matrices_look_ordinary=True",
+    "VERDICT=vector_lagrange_spectrum_is_wrong_while_n1curl_is_right"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=space_under_test_reproduced_the_exact_spectrum"
+  ],
+  "timeout_seconds": 300
+}

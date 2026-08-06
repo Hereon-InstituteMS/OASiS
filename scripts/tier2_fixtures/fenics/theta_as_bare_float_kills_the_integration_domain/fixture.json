@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 6,
+  "covers": ["time_dependent_heat::6"],
+  "mode": "python",
+  "expect_in_output": [
+    "theta_1p0_bare_float_error=ValueError: This integral is missing an integration domain.",
+    "theta_0p5_bare_float_error=none",
+    "constant_weight_builds_and_matches_backward_euler=True",
+    "bare_float_theta_0p5_builds_fine=True",
+    "bare_float_theta_1p0_raised_value_error=True",
+    "VERDICT=bare_float_theta_1p0_has_no_integration_domain"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=bare_float_weight_was_accepted"
+  ],
+  "timeout_seconds": 300
+}

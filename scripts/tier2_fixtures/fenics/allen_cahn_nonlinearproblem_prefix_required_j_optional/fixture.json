@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 9,
+  "covers": ["multiphase::9"],
+  "mode": "python",
+  "expect_in_output": [
+    "prefix_omitted_error=TypeError: NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'",
+    "j_omitted_construction_succeeded=True",
+    "newtonsolver_wrap_error=AttributeError: 'NonlinearProblem' object has no attribute 'a'",
+    "problem_solver_route_works=True",
+    "VERDICT=prefix_is_required_j_is_optional_newtonsolver_cannot_wrap"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=api_accepted_the_wrong_calls"
+  ],
+  "timeout_seconds": 300
+}

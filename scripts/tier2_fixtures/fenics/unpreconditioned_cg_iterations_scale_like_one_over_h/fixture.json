@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 7,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::7"],
+  "expect_in_output": [
+    "cg_iterations cell=triangle degree=1",
+    "cg_iterations cell=quadrilateral degree=2",
+    "per_halving_ratio cell=triangle degree=1",
+    "iteration_count_doubles_when_h_halves=True",
+    "raising_the_degree_multiplies_the_count=True",
+    "fine_mesh_hit_the_coarse_max_iter=True",
+    "nothing_raised_it_just_ran_out_of_iterations=True",
+    "VERDICT=unpreconditioned_cg_count_scales_like_one_over_h"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cg_count_was_mesh_independent"
+  ],
+  "timeout_seconds": 300
+}

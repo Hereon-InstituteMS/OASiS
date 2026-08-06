@@ -1,0 +1,26 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 5,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::5"],
+  "expect_in_output": [
+    "two_rank_residual_ratio_climbs_above_one_and_keeps_growing=True",
+    "two_rank_field_magnitude_exceeds_1e3=True",
+    "two_rank_run_never_converged=True",
+    "one_rank_has_no_ghost_dofs_two_ranks_do=True",
+    "serial_run_converges_normally=True",
+    "owned_only_inner_product_fixes_the_two_rank_run=True",
+    "\"ranks\": 2, \"owned\": false, \"converged\": false",
+    "VERDICT=ghost_padded_inner_products_double_count_and_cg_diverges"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "mpirun_not_found=True",
+    "child_produced_no_result",
+    "VERDICT=children_did_not_run",
+    "VERDICT=ghost_padded_inner_products_were_harmless"
+  ],
+  "timeout_seconds": 300
+}

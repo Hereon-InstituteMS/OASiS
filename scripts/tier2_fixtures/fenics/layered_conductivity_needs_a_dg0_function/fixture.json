@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 7,
+  "covers": ["time_dependent_heat::7"],
+  "mode": "python",
+  "expect_in_output": [
+    "python_float_rebinding_has_no_effect=True",
+    "fem_constant_value_update_is_seen_immediately=True",
+    "neither_coefficient_route_raised=True",
+    "dg0_layered_matches_the_two_layer_analytic_value=True",
+    "every_single_constant_puts_the_interface_at_one_half=True",
+    "selected_time_change_had_no_effect=True",
+    "selected_space_route_misses_the_layered_answer=True",
+    "VERDICT=space_varying_needs_dg0_time_varying_needs_a_constant"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=a_bare_float_and_a_single_constant_were_enough"
+  ],
+  "timeout_seconds": 300
+}

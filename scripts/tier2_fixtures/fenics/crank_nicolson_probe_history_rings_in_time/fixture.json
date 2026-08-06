@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 5,
+  "covers": ["time_dependent_heat::5"],
+  "mode": "python",
+  "expect_in_output": [
+    "cn_probe_history_is_non_monotone=True",
+    "be_probe_history_is_monotone=True",
+    "cn_never_leaves_the_zero_one_range=True",
+    "cn_rings_on_both_meshes=True",
+    "be_monotone_on_both_meshes=True",
+    "selected_probe_history_is_non_monotone=True",
+    "VERDICT=crank_nicolson_rings_in_time_inside_the_physical_range"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_ringing_seen"
+  ],
+  "timeout_seconds": 300
+}

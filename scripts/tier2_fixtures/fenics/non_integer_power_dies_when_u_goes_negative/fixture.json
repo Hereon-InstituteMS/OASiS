@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 3,
+  "mode": "python",
+  "covers": ["nonlinear_pde::3"],
+  "expect_in_output": [
+    "non_integer_power_dies_at_iteration_zero=True",
+    "solution_left_exactly_at_zero=True",
+    "default_line_search_reason_is_fnorm_nan=True",
+    "l2_line_search_reason_is_line_search=True",
+    "even_integer_power_converges_negative=True",
+    "abs_of_u_converges_negative=True",
+    "VERDICT=non_integer_power_dies_when_the_load_pushes_u_negative"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=non_integer_power_was_fine"
+  ]
+}

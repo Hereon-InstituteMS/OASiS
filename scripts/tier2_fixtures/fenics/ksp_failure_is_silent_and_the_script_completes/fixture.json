@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "The user is responsible for asserting convergence of the KSP solver",
+    "reason_name=DIVERGED_MAX_IT",
+    "solve_returned_a_function=True",
+    "solve_raised_nothing=True",
+    "selected_reason_is_negative=True",
+    "output_file_written_after_the_failed_solve=True",
+    "preonly_reason_name=CONVERGED_ITS cg_reason_name=CONVERGED_RTOL",
+    "KSPSolve() has not converged, reason DIVERGED_ITS",
+    "VERDICT=ksp_failure_is_silent_and_the_script_completes"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=solver_failure_was_reported"
+  ],
+  "timeout_seconds": 300
+}

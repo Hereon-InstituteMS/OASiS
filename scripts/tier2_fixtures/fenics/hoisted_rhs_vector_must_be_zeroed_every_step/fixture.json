@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 1,
+  "covers": ["time_dependent_heat::1"],
+  "mode": "python",
+  "expect_in_output": [
+    "zeroed_reason_is_4_every_step=True",
+    "checked_ksp_reason_is_4_every_step=True",
+    "checked_field_is_finite=True",
+    "zeroed_stays_inside_the_data_range=True",
+    "checked_grew_past_1e10=True",
+    "fresh_vector_per_step_does_not_leak=True",
+    "VERDICT=unzeroed_hoisted_rhs_blows_up_while_every_ksp_reports_converged"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=zeroing_the_rhs_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

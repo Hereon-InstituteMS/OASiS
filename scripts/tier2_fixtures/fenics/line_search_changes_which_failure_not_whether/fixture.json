@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 7,
+  "mode": "python",
+  "covers": ["nonlinear_pde::7"],
+  "expect_in_output": [
+    "name=DIVERGED_MAX_IT",
+    "name=DIVERGED_LINE_SEARCH",
+    "name=DIVERGED_DTOL",
+    "at_least_three_distinct_reasons=True",
+    "no_line_search_converged=True",
+    "every_field_is_finite_and_nan_free=True",
+    "fields_disagree_by_orders_of_magnitude=True",
+    "VERDICT=line_search_changes_which_failure_not_whether"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_line_search_decided_convergence"
+  ]
+}

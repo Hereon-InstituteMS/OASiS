@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 4,
+  "covers": ["time_dependent_heat::4"],
+  "mode": "python",
+  "expect_in_output": [
+    "with_set_bc_range_line=T in [0.0000, 1.0000]",
+    "with_set_bc_range_is_exactly_the_data_range=True",
+    "checked_ksp_reason_is_4_every_step=True",
+    "checked_min_is_negative=True",
+    "checked_hot_wall_never_reaches_its_prescribed_value=True",
+    "checked_violates_the_discrete_maximum_principle=True",
+    "VERDICT=missing_set_bc_leaves_the_prescribed_rows_wrong"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=set_bc_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

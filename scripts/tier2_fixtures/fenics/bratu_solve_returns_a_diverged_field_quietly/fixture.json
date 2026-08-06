@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 1,
+  "mode": "python",
+  "covers": ["nonlinear_pde::1"],
+  "expect_in_output": [
+    "solve_raised_without_the_option=False",
+    "reason_is_negative=True",
+    "a_function_came_back=True",
+    "returned_field_is_finite_and_tidy=True",
+    "Error: error code 91",
+    "SNESSolve has not converged",
+    "snes_error_if_not_converged_raises=True",
+    "VERDICT=solve_returns_a_diverged_field_check_the_reason"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_failure_announced_itself"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 6,
+  "mode": "python",
+  "covers": ["nonlinear_pde::6"],
+  "expect_in_output": [
+    "SNES Function norm",
+    "none_and_empty_string_produce_identical_lines=True",
+    "monitor_line_count_matches_iterations=True",
+    "no_monitor_arm_has_zero_monitor_lines=True",
+    "healthy_run_residual_falls_by_orders_of_magnitude=True",
+    "failing_run_residual_stalls=True",
+    "VERDICT=monitor_none_equals_empty_and_the_history_is_the_diagnosis"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=monitor_output_did_not_differ"
+  ],
+  "timeout_seconds": 300
+}

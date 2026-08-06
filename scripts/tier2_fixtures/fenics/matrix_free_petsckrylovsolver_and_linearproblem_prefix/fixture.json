@@ -1,0 +1,25 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 9,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::9"],
+  "expect_in_output": [
+    "AttributeError: module 'dolfinx' has no attribute 'PETScKrylovSolver'",
+    "missing 1 required keyword-only argument: 'petsc_options_prefix'",
+    "names_containing_krylov_in_dolfinx_tree=[]",
+    "petsckrylovsolver_raises_attributeerror=True",
+    "no_krylov_name_anywhere_in_dolfinx=True",
+    "linearproblem_without_prefix_raises_typeerror=True",
+    "petsc4py_ksp_converged=True",
+    "prefixed_linearproblem_agrees_with_petsc4py_ksp=True",
+    "VERDICT=no_petsckrylovsolver_and_linearproblem_needs_the_prefix"
+  ],
+  "forbid_in_output": [
+    "dolfinx_petsckrylovsolver_exists=True",
+    "linearproblem_without_prefix_constructed=True",
+    "VERDICT=petsckrylovsolver_or_prefixless_linearproblem_worked"
+  ],
+  "timeout_seconds": 300
+}

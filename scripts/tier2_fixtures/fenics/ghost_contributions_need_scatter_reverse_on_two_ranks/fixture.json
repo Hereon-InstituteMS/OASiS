@@ -1,0 +1,25 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::4"],
+  "expect_in_output": [
+    "two_rank_run_missed_rtol_within_the_iteration_cap=True",
+    "two_rank_field_max_differs_from_serial_by_over_ten_percent=True",
+    "serial_run_is_unaffected=True",
+    "two_rank_run_with_scatter_reverse_matches_serial=True",
+    "ranks=2 scatter=False child_RESULT=",
+    "\"ranks\": 2, \"scatter\": false, \"converged\": false",
+    "VERDICT=missing_scatter_reverse_breaks_only_the_parallel_run"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "mpirun_not_found=True",
+    "child_produced_no_result",
+    "VERDICT=children_did_not_run",
+    "VERDICT=missing_scatter_reverse_was_harmless_on_two_ranks"
+  ],
+  "timeout_seconds": 300
+}

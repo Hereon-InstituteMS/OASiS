@@ -52,9 +52,10 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / BACKEND
 # commit. The project owner's target is 80 %; the constant tracks what is
 # actually MEASURED so every commit is green and the number here is never an
 # aspiration.
-#   2026-08-06  0.06 -> 0.58  (session's fixtures, minus five mis-keyed ones
+#   2026-08-06  0.06 -> 0.69  (session fixtures, minus five mis-keyed ones
 #                              whose claims went back to uncovered)
-MIN_COVERAGE_FRACTION = 0.69
+#   2026-08-06  0.69 -> 0.86  (31 more fixtures; 169 of 196 — past the target)
+MIN_COVERAGE_FRACTION = 0.86
 
 # Counted on 2026-08-06. Coverage is a fraction, so shrinking the denominator
 # is a way to "improve" it without writing anything.

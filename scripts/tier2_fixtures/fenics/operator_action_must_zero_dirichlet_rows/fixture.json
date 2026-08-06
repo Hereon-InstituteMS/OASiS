@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::2"],
+  "expect_in_output": [
+    "no_zeroing_rnorm_over_rnorm0_at_iter_100=",
+    "no_zeroing_converged=False",
+    "residual_ratio_grows_monotonically=True",
+    "diverging_run_reached_max_iter_without_rtol=True",
+    "max_u_exceeds_1e10=True",
+    "min_u_still_equals_the_prescribed_boundary_minimum=True",
+    "same_run_with_zeroing_converges=True",
+    "VERDICT=unzeroed_action_makes_cg_diverge_while_min_u_looks_innocent"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=unzeroed_action_converged_anyway"
+  ],
+  "timeout_seconds": 300
+}

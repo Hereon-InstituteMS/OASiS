@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 5,
+  "mode": "python",
+  "covers": ["magnetostatics::5"],
+  "expect_in_output": [
+    "curl_2d_scalar=[1.0, 0.0]",
+    "hand_written_as_vector=[1.0, 0.0]",
+    "curl_3d_of_0_0_Az=[1.0, 0.0, 0.0]",
+    "all_three_spellings_agree=True",
+    "curl_of_2d_scalar_shape=(2,)",
+    "curl_of_2d_vector_shape=()",
+    "both_forms_compile=True",
+    "curl_curl_energy_equals_grad_grad_energy=True",
+    "VERDICT=curl_of_a_2d_scalar_is_the_plane_curl_and_the_scalar_vector_mixup_is_silent"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=mixup_was_not_silent"
+  ]
+}

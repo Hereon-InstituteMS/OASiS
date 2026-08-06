@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 8,
+  "mode": "python",
+  "covers": ["magnetostatics::8"],
+  "expect_in_output": [
+    "prefix_omitted_construction_raised=True",
+    "missing 1 required keyword-only argument: 'petsc_options_prefix'",
+    "error_names_the_missing_kwarg=True",
+    "petsc_index_type=int32",
+    "petsc_int_is_32_bit=True",
+    "mumps_solve_converged=True",
+    "superlu_dist_also_available=True",
+    "VERDICT=prefix_is_required_and_mumps_works_on_32bit_indices"
+  ],
+  "forbid_in_output": [
+    "VERDICT=prefix_was_optional"
+  ]
+}

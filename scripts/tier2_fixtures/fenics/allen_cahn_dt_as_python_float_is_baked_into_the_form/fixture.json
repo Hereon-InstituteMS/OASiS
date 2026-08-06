@@ -1,0 +1,21 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 8,
+  "covers": ["multiphase::8"],
+  "mode": "python",
+  "expect_in_output": [
+    "float_rebind_changed_nothing=True",
+    "constant_update_changed_the_solution=True",
+    "nothing_was_raised_by_either_route=True",
+    "selected_dt_change_had_no_effect=True",
+    "selected_all_steps_converged=True",
+    "VERDICT=python_float_is_baked_in_only_a_constant_can_be_updated"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=rebinding_the_float_did_change_the_solve"
+  ],
+  "timeout_seconds": 300
+}

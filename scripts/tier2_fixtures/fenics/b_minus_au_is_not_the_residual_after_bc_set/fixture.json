@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 3,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::3"],
+  "expect_in_output": [
+    "cg_converged=True",
+    "b_minus_Au_over_b_AFTER_bc_set=",
+    "reduced_residual_before_bc_set_is_at_the_krylov_tolerance=True",
+    "galerkin_residual_of_full_solution_is_small=True",
+    "b_minus_Au_after_bc_set_is_order_one=True",
+    "b_minus_Au_after_bc_set_is_at_least_1e7_times_the_galerkin_residual=True",
+    "VERDICT=b_minus_Au_is_order_one_after_bc_set_while_the_solve_is_good"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=b_minus_Au_stayed_a_valid_residual"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "selected_min_max_print_looks_healthy_every_step=True",
+    "every_ksp_reason_positive=True",
+    "stale_matrix_profile_differs_from_the_reassembled_one=True",
+    "reassembled_profile_follows_the_ramp=True",
+    "VERDICT=stale_matrix_is_a_converged_wrong_answer"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=stale_matrix_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

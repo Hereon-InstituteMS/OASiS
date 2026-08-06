@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 10,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::10"],
+  "expect_in_output": [
+    "matrix_free_difference_is_at_the_krylov_tolerance_1em6=True",
+    "matrix_free_difference_did_not_fall_under_refinement=True",
+    "lu_minus_interpolant_is_machine_precision=True",
+    "cg_rtol=1e-06",
+    "lu_minus_interpolant=",
+    "matrix_free_minus_interpolant=",
+    "reference_free_relative_galerkin_residual=",
+    "VERDICT=interpolant_difference_measures_the_krylov_tolerance"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "all_converged=False",
+    "VERDICT=interpolant_difference_behaved_like_a_discretisation_error"
+  ],
+  "timeout_seconds": 300
+}

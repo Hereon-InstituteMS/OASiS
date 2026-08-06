@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 9,
+  "mode": "python",
+  "covers": ["nonlinear_pde::9"],
+  "expect_in_output": [
+    "converged_run_passes_all_four_checks=True",
+    "truncated_solve_fails_the_residual_check=True",
+    "truncated_solve_fails_the_energy_identity=True",
+    "maximum_principle_and_d_spread_do_not_catch_it=True",
+    "as_written_reason_is_negative=True",
+    "VERDICT=residual_and_energy_identity_catch_the_truncated_solve"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_checks_saw_nothing_wrong"
+  ]
+}

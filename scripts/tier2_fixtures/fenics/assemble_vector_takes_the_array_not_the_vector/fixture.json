@@ -1,0 +1,25 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::1"],
+  "expect_in_output": [
+    "AttributeError: 'Vector' object has no attribute 'function_spaces'",
+    "one_argument_call_return_type=dolfinx.la.Vector",
+    "one_argument_call_returns_la_vector=True",
+    "la_vector_as_first_argument_raises_attributeerror=True",
+    "previously_quoted_typeerror_text_absent=True",
+    "previously_quoted_ndarray_text_absent=True",
+    "array_form_matches_matvec=True",
+    "VERDICT=assemble_vector_needs_the_array_not_the_la_vector"
+  ],
+  "forbid_in_output": [
+    "assemble_vector() takes positional argument",
+    "expected ndarray, got Vector",
+    "Traceback",
+    "VERDICT=assemble_vector_accepted_the_la_vector"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 0,
+  "mode": "python",
+  "covers": ["matrix_free_poisson::0"],
+  "expect_in_output": [
+    "AttributeError: 'Form' object has no attribute 'action'",
+    "AttributeError: 'Form' object has no attribute '_cpp_object'",
+    "AttributeError: 'Form' object has no attribute 'function_spaces'",
+    "form_dot_action_raises_attributeerror=True",
+    "uncompiled_inplace_assembly_raises_attributeerror=True",
+    "previously_quoted_runtime_error_text_absent=True",
+    "ufl_action_compiled_once_equals_matvec=True",
+    "VERDICT=form_has_no_action_method_and_uncompiled_forms_do_not_assemble"
+  ],
+  "forbid_in_output": [
+    "cannot assemble: form has not been compiled",
+    "Traceback",
+    "VERDICT=form_action_and_uncompiled_assembly_worked"
+  ],
+  "timeout_seconds": 300
+}
