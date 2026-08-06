@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for fenics helmholtz#: regression armor for the 3 phantom-physics closures (helmholtz + maxwell + nearly_incompressible_elasticity). The fenics catalog declared these in supported_physics() with rich deep_knowledge but had no generator dispatch — generate_input() raised ValueError. Generators landed in commit c5d184a (helmholtz + maxwell) and the same commit family for nearly_incomp. This fixture pins: (a) all 3 produce >=800 char templates, (b) helmholtz uses basix.ufl + dirichletbc + a direct/lu solver, (c) maxwell uses basix.ElementFamily.N1E (Nédélec H(curl), NOT Lagrange) + ufl.curl, (d) nearly_incomp uses basix.ufl.mixed_element + the (1/lambda) saddle-point stabilization + Taylor-Hood P2-vector P1-scalar pair (shape=(gdim,)), (e) NONE of the templates re-introduce the removed ufl.{FiniteElement, VectorElement, MixedElement, TensorElement} classes. Verified empirically against dolfinx 0.10.0 / basix 0.10.0 / ufl 2025.2.1 on 2026-06-01.",
+  "_comment": "Tier-2 SYNTHETIC (helmholtz::99, an index no pitfall occupies): a shape check over the helmholtz / maxwell / nearly_incompressible / fracture / stokes_darcy templates \u2014 do they use basix.ufl, N1curl, mixed_element, and none of the removed ufl element classes. RE-KEYED 2026-08-06 off helmholtz::0, which is a claim about k*h and mesh resolution that this fixture does not measure at all. A generator-shape check is worth having; it is not evidence for a numerical claim, and it must not occupy that claim's slot.",
   "backend": "fenics",
   "physics": "helmholtz",
-  "pitfall_index": 0,
+  "pitfall_index": 99,
   "mode": "python",
   "expect_in_output": [
     "helmholtz_chars=",
@@ -35,5 +35,6 @@
     "Traceback",
     "FAIL:",
     "GEN_ERR"
-  ]
+  ],
+  "covers": []
 }
