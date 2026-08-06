@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii stokes#6. Tier-2 for dealii stokes#6 -- probe \"benchmark_geometry\" of the shared translation unit _shared/stokes_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. GridGenerator::channel_with_cylinder against GridGenerator::uniform_channel_with_cylinder, which fixes the cylinder diameter at one and requires the channel extents to be INTEGER multiples of it, so 2.2 x 0.41 with the cylinder at (0.2, 0.2) cannot be expressed and the closest it reaches is a symmetric 2.2 x 0.40 channel. Both grids come out with the same cell count at both levels, so the drag comparison is not a resolution artefact. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "stokes",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "expect_in_output": [
+    "official_geometry_matches_schaefer_turek=true",
+    "offbyone_geometry_matches_schaefer_turek=false",
+    "difference_exceeds_10_percent=false",
+    "difference_survives_refinement=true",
+    "VERDICT=wrong_channel_geometry_shifts_the_drag"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=geometries_agree"
+  ],
+  "timeout_seconds": 900
+}

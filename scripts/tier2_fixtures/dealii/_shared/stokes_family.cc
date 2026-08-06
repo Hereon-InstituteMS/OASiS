@@ -383,6 +383,9 @@ static int jacobi_vs_vanka()
             << " n_pressure_dofs_with_zero_diagonal=" << n_zero_p_diag
             << std::endl;
   std::cout << "max_abs_velocity_diagonal=" << max_u_diag << std::endl;
+  std::cout << "pressure_diagonal_is_zero="
+            << ((min_p_diag == 0.0 && n_zero_p_diag > 0) ? "true" : "false")
+            << std::endl;
 
   std::vector<bool> selected(c.dof.n_dofs(), false);
   for (types::global_dof_index i = c.n_u; i < c.dof.n_dofs(); ++i)
@@ -615,15 +618,14 @@ public:
   }
 };
 
-static int hdiv_divergence()
+// The mixed (Darcy-shaped) saddle point that carries exactly the discrete
+// incompressibility constraint: (u,v) + (p, div v) = (g,v); (div u, q) = 0.
+// Returns ||div u_h||/||u_h|| and reports the L2 error against u_exact.
+static double mixed_relative_divergence(bool use_rt, unsigned int refine)
 {
-  const bool use_rt = !mutate();
-  std::cout << "velocity_space=" << (use_rt ? "FE_RaviartThomas_1"
-                                            : "FE_Q_2_vector")
-            << std::endl;
   Triangulation<dim> tria;
   GridGenerator::hyper_cube(tria, 0.0, 1.0, false);
-  tria.refine_global(4);
+  tria.refine_global(refine);
 
   std::unique_ptr<FESystem<dim>> fe;
   if (use_rt)
@@ -634,7 +636,6 @@ static int hdiv_divergence()
 
   DoFHandler<dim> dof(tria);
   dof.distribute_dofs(*fe);
-  std::cout << "n_dofs=" << dof.n_dofs() << std::endl;
   AffineConstraints<double> constraints;
   constraints.close();
 
@@ -689,12 +690,11 @@ static int hdiv_divergence()
   direct.initialize(A);
   direct.vmult(sol, rhs);
 
-  // ||div u_h||_L2 and ||u_h||_L2
-  double div2 = 0.0, u2 = 0.0, divmax = 0.0, err2 = 0.0;
+  double        div2 = 0.0, u2 = 0.0, divmax = 0.0, err2 = 0.0;
   FEValues<dim> fev2(*fe, quad,
                      update_values | update_gradients |
                        update_quadrature_points | update_JxW_values);
-  std::vector<double>       divs(quad.size());
+  std::vector<double>         divs(quad.size());
   std::vector<Tensor<1, dim>> vals(quad.size());
   for (const auto &cell : dof.active_cell_iterators())
     {
@@ -706,19 +706,162 @@ static int hdiv_divergence()
           div2 += divs[q] * divs[q] * fev2.JxW(q);
           u2 += (vals[q] * vals[q]) * fev2.JxW(q);
           divmax = std::max(divmax, std::abs(divs[q]));
-          const Tensor<1, dim> d =
-            vals[q] - u_exact(fev2.quadrature_point(q));
+          const Tensor<1, dim> d = vals[q] - u_exact(fev2.quadrature_point(q));
           err2 += (d * d) * fev2.JxW(q);
         }
     }
   const double divn = std::sqrt(div2), un = std::sqrt(u2);
-  std::cout << "l2_error_of_velocity_vs_exact=" << std::sqrt(err2)
+  const std::string tag = use_rt ? "raviart_thomas_1_dgq_1" : "mixed_Q2_Q1";
+  std::cout << tag << "_n_dofs=" << dof.n_dofs()
+            << " l2_velocity_error=" << std::sqrt(err2)
+            << " l2_norm_of_divergence=" << divn
+            << " max_pointwise_divergence=" << divmax
+            << " relative_divergence=" << (divn / un) << std::endl;
+  return divn / un;
+}
+
+// A genuine Taylor-Hood STOKES solve with the same manufactured
+// divergence-free velocity, so the FE_Q number the claim quotes is measured in
+// the setting the claim quotes it for (H1 viscous term, Dirichlet velocity).
+static double stokes_relative_divergence(unsigned int refine)
+{
+  Triangulation<dim> tria;
+  GridGenerator::hyper_cube(tria, 0.0, 1.0, false);
+  tria.refine_global(refine);
+  FESystem<dim>   fe(FE_Q<dim>(2), dim, FE_Q<dim>(1), 1);
+  DoFHandler<dim> dof(tria);
+  dof.distribute_dofs(fe);
+  DoFRenumbering::component_wise(dof, block_component());
+  const auto counts = DoFTools::count_dofs_per_fe_block(dof, block_component());
+
+  class ExactVel : public Function<dim>
+  {
+  public:
+    ExactVel()
+      : Function<dim>(dim + 1)
+    {}
+    void vector_value(const Point<dim> &p, Vector<double> &v) const override
+    {
+      const Tensor<1, dim> ue = u_exact(p);
+      v                       = 0.0;
+      v[0]                    = ue[0];
+      v[1]                    = ue[1];
+    }
+  };
+
+  AffineConstraints<double>        constraints;
+  const FEValuesExtractors::Vector velocities(0);
+  VectorTools::interpolate_boundary_values(dof, 0, ExactVel(), constraints,
+                                           fe.component_mask(velocities));
+  constraints.add_line(counts[0]);   // pin the pressure level
+  constraints.close();
+
+  DynamicSparsityPattern dsp(dof.n_dofs());
+  DoFTools::make_sparsity_pattern(dof, dsp, constraints, false);
+  SparsityPattern sp;
+  sp.copy_from(dsp);
+  SparseMatrix<double> A(sp);
+  Vector<double>       rhs(dof.n_dofs()), sol(dof.n_dofs());
+
+  QGauss<dim>   quad(5);
+  FEValues<dim> fev(fe, quad,
+                    update_values | update_gradients |
+                      update_quadrature_points | update_JxW_values);
+  const unsigned int                   n = fe.dofs_per_cell;
+  FullMatrix<double>                   cm(n, n);
+  Vector<double>                       cv(n);
+  std::vector<types::global_dof_index> local(n);
+  const FEValuesExtractors::Vector     u(0);
+  const FEValuesExtractors::Scalar     pr(dim);
+  const double                         pi = numbers::PI;
+  for (const auto &cell : dof.active_cell_iterators())
+    {
+      fev.reinit(cell);
+      cm = 0.0;
+      cv = 0.0;
+      for (unsigned int q = 0; q < quad.size(); ++q)
+        {
+          const Point<dim>    &x  = fev.quadrature_point(q);
+          const Tensor<1, dim> ue = u_exact(x);
+          // f = -laplace(u) + grad(p) with p = sin(pi x) sin(pi y)
+          Tensor<1, dim> f;
+          f[0] = 2.0 * pi * pi * ue[0] +
+                 pi * std::cos(pi * x[0]) * std::sin(pi * x[1]);
+          f[1] = 2.0 * pi * pi * ue[1] +
+                 pi * std::sin(pi * x[0]) * std::cos(pi * x[1]);
+          for (unsigned int i = 0; i < n; ++i)
+            {
+              const auto gu_i  = fev[u].gradient(i, q);
+              const auto div_i = fev[u].divergence(i, q);
+              const auto p_i   = fev[pr].value(i, q);
+              const auto v_i   = fev[u].value(i, q);
+              for (unsigned int j = 0; j < n; ++j)
+                {
+                  const auto gu_j  = fev[u].gradient(j, q);
+                  const auto div_j = fev[u].divergence(j, q);
+                  const auto p_j   = fev[pr].value(j, q);
+                  cm(i, j) += (scalar_product(gu_i, gu_j) - p_j * div_i -
+                               p_i * div_j) *
+                              fev.JxW(q);
+                }
+              cv(i) += (v_i * f) * fev.JxW(q);
+            }
+        }
+      cell->get_dof_indices(local);
+      constraints.distribute_local_to_global(cm, cv, local, A, rhs);
+    }
+  SparseDirectUMFPACK direct;
+  direct.initialize(A);
+  direct.vmult(sol, rhs);
+  constraints.distribute(sol);
+
+  double        div2 = 0.0, u2 = 0.0, divmax = 0.0, err2 = 0.0;
+  FEValues<dim> fev2(fe, quad,
+                     update_values | update_gradients |
+                       update_quadrature_points | update_JxW_values);
+  std::vector<double>         divs(quad.size());
+  std::vector<Tensor<1, dim>> vals(quad.size());
+  for (const auto &cell : dof.active_cell_iterators())
+    {
+      fev2.reinit(cell);
+      fev2[u].get_function_divergences(sol, divs);
+      fev2[u].get_function_values(sol, vals);
+      for (unsigned int q = 0; q < quad.size(); ++q)
+        {
+          div2 += divs[q] * divs[q] * fev2.JxW(q);
+          u2 += (vals[q] * vals[q]) * fev2.JxW(q);
+          divmax = std::max(divmax, std::abs(divs[q]));
+          const Tensor<1, dim> d = vals[q] - u_exact(fev2.quadrature_point(q));
+          err2 += (d * d) * fev2.JxW(q);
+        }
+    }
+  const double divn = std::sqrt(div2), un = std::sqrt(u2);
+  std::cout << "taylor_hood_stokes_Q2_Q1_n_dofs=" << dof.n_dofs()
+            << " l2_velocity_error=" << std::sqrt(err2)
+            << " l2_norm_of_divergence=" << divn
+            << " max_pointwise_divergence=" << divmax
+            << " relative_divergence=" << (divn / un) << std::endl;
+  return divn / un;
+}
+
+static int hdiv_divergence()
+{
+  const unsigned int refine = 4;
+  std::cout << "refinement=" << refine << " cell_size=" << 1.0 / (1u << refine)
             << std::endl;
-  std::cout << "l2_norm_of_velocity=" << un << std::endl;
-  std::cout << "l2_norm_of_divergence=" << divn << std::endl;
-  std::cout << "max_pointwise_divergence=" << divmax << std::endl;
-  const double rel = divn / un;
+  const double rt = mixed_relative_divergence(true, refine);
+  mixed_relative_divergence(false, refine);
+  const double th = stokes_relative_divergence(refine);
+
+  const bool   use_rt = !mutate();
+  const double rel    = use_rt ? rt : th;
+  std::cout << "space_under_test="
+            << (use_rt ? "FE_RaviartThomas_1_FE_DGQ_1"
+                       : "FE_Q_2_vector_FE_Q_1_taylor_hood")
+            << std::endl;
   std::cout << "relative_divergence=" << rel << std::endl;
+  std::cout << "ratio_taylor_hood_over_raviart_thomas=" << (th / rt)
+            << std::endl;
   const bool machine_eps = rel < 1e-12;
   std::cout << "divergence_at_machine_epsilon="
             << (machine_eps ? "true" : "false") << std::endl;
@@ -926,6 +1069,16 @@ static int benchmark_geometry()
               std::cout << (official ? "official" : "offbyone")
                         << "_cylinder_offset_from_centreline="
                         << std::abs(cy - 0.5 * (ymin + ymax)) << std::endl;
+              // the published Schaefer-Turek dimensions, checked with a
+              // tolerance here rather than quoted as a bare number outside
+              const bool matches =
+                std::abs(xmin - 0.0) < 1e-9 && std::abs(xmax - 2.2) < 1e-9 &&
+                std::abs(ymin - 0.0) < 1e-9 && std::abs(ymax - 0.41) < 1e-9 &&
+                std::abs(cx - 0.2) < 1e-6 && std::abs(cy - 0.2) < 1e-6 &&
+                std::abs(2 * rad - 0.1) < 1e-6;
+              std::cout << (official ? "official" : "offbyone")
+                        << "_geometry_matches_schaefer_turek="
+                        << (matches ? "true" : "false") << std::endl;
             }
         }
     }
