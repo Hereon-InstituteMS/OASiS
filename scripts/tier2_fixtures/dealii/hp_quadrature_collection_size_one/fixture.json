@@ -1,0 +1,23 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "run_under_test_threw_noconvergence=true",
+    "run_under_test_residual_grew_above_the_initial_residual=true",
+    "run_under_test_rule=single_qgauss2",
+    "run_under_test_q_collection_matches_fe_collection=false",
+    "coarse_rule_broke_matrix_symmetry=false",
+    "moderate_rule_converged=true",
+    "moderate_rule_shifts_the_functional=true",
+    "VERDICT=a_single_coarse_rule_leaves_the_hp_operator_unsolvable"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=solver_converged"
+  ],
+  "timeout_seconds": 900
+}

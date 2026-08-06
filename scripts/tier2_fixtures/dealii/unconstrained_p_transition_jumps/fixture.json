@@ -1,0 +1,20 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "solution_jumps_across_p_transitions=true",
+    "interface_constraints_applied=false",
+    "found_p_transition_faces=true",
+    "equal_degree_faces_stayed_continuous=true",
+    "VERDICT=unconstrained_p_transition_leaves_a_solution_jump"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=solution_is_continuous_across_p_transitions"
+  ],
+  "timeout_seconds": 900
+}

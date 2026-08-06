@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "expect_in_output": [
+    "transferred_field_lost_the_original_content=true",
+    "used_solution_transfer=false",
+    "linfty_drop_in_the_claimed_10_to_50_percent_band=false",
+    "VERDICT=writing_dof_values_across_a_p_change_destroys_them"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=field_survived_the_p_change"
+  ],
+  "timeout_seconds": 900
+}

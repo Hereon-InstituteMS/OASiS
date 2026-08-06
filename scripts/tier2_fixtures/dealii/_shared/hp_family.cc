@@ -49,6 +49,7 @@
 #include <deal.II/numerics/solution_transfer.h>
 #include <deal.II/numerics/vector_tools.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -489,7 +490,7 @@ static CycleHistory run_cycles(bool use_smoothness, unsigned int n_cycles)
 
 static int no_smoothness_estimator()
 {
-  const unsigned int n_cycles = 5;
+  const unsigned int n_cycles = 8;
   const bool         under_test_uses_smoothness = mutate();
   CycleHistory u = run_cycles(under_test_uses_smoothness, n_cycles);
   CycleHistory o = run_cycles(!under_test_uses_smoothness, n_cycles);
@@ -628,8 +629,19 @@ static int p_interface_without_constraints()
 // is a POSITIVE claim, so the mutation is a negative control: it removes the
 // mixed-p property (the entry's own Signal — indices that never reached the
 // DoFHandler) and the read-back drops to one.
-static int matrixfree_hp_support()
+struct MFInfo
 {
+  bool         reinit_returned     = false;
+  unsigned int n_active_fe_indices = 0;
+  unsigned int n_cell_batches      = 0;
+  unsigned int distinct_batch_fe_indices = 0;
+  unsigned int cells_at_degree_two = 0;
+  unsigned int n_dofs              = 0;
+};
+
+static MFInfo run_matrixfree(const std::string &label, bool set_indices)
+{
+  MFInfo             info;
   Triangulation<dim> tria;
   GridGenerator::hyper_cube(tria, 0.0, 1.0);
   tria.refine_global(2);
@@ -637,24 +649,17 @@ static int matrixfree_hp_support()
   fes.push_back(FE_Q<dim>(1));
   fes.push_back(FE_Q<dim>(2));
   DoFHandler<dim> dof(tria);
-
-  const bool set_indices_before_distribute = !mutate();
-  if (set_indices_before_distribute)
+  if (set_indices)
     {
       unsigned int i = 0;
       for (const auto &cell : dof.active_cell_iterators())
         cell->set_active_fe_index((i++) % 2);
     }
   dof.distribute_dofs(fes);
-  std::cout << "set_active_fe_index_called_before_distribute_dofs="
-            << (set_indices_before_distribute ? "true" : "false") << std::endl;
-  unsigned int cells_at_p2 = 0;
   for (const auto &cell : dof.active_cell_iterators())
     if (cell->active_fe_index() == 1)
-      ++cells_at_p2;
-  std::cout << "n_active_cells=" << tria.n_active_cells()
-            << " cells_at_degree_two=" << cells_at_p2
-            << " n_dofs=" << dof.n_dofs() << std::endl;
+      ++info.cells_at_degree_two;
+  info.n_dofs = dof.n_dofs();
 
   AffineConstraints<double> constraints;
   DoFTools::make_hanging_node_constraints(dof, constraints);
@@ -670,25 +675,71 @@ static int matrixfree_hp_support()
   typename MatrixFree<dim, double>::AdditionalData ad;
   ad.tasks_parallel_scheme = MatrixFree<dim, double>::AdditionalData::none;
   ad.mapping_update_flags  = update_gradients | update_JxW_values;
-  std::cout << "before_matrixfree_reinit" << std::endl;
+  std::cout << label << "_before_matrixfree_reinit" << std::endl;
   std::cout.flush();
   mf.reinit(MappingQ1<dim>(), dof, constraints, q1, ad);
-  std::cout << "after_matrixfree_reinit" << std::endl;
-  std::cout << "matrixfree_reinit_returned=true" << std::endl;
-  std::cout << "matrixfree_n_active_fe_indices=" << mf.n_active_fe_indices()
+  info.reinit_returned = true;
+  std::cout << label << "_after_matrixfree_reinit" << std::endl;
+  info.n_active_fe_indices = mf.n_active_fe_indices();
+  info.n_cell_batches      = mf.n_cell_batches();
+  std::vector<unsigned int> seen;
+  for (unsigned int b = 0; b < mf.n_cell_batches(); ++b)
+    {
+      const unsigned int idx = mf.get_cell_active_fe_index({b, b + 1});
+      if (std::find(seen.begin(), seen.end(), idx) == seen.end())
+        seen.push_back(idx);
+    }
+  info.distinct_batch_fe_indices = seen.size();
+  std::cout << label << "_cells_at_degree_two=" << info.cells_at_degree_two
+            << " n_dofs=" << info.n_dofs << std::endl;
+  std::cout << label
+            << "_matrixfree_n_active_fe_indices=" << info.n_active_fe_indices
+            << " n_cell_batches=" << info.n_cell_batches
+            << " distinct_batch_fe_indices=" << info.distinct_batch_fe_indices
             << std::endl;
-  std::cout << "matrixfree_n_cell_batches=" << mf.n_cell_batches()
+  return info;
+}
+
+static int matrixfree_hp_support()
+{
+  // Both configurations always run: a DoFHandler whose cells alternate between
+  // FE_Q(1) and FE_Q(2), and one where set_active_fe_index was never called.
+  const MFInfo mixed   = run_matrixfree("mixed_p", true);
+  const MFInfo uniform = run_matrixfree("uniform_p", false);
+  const MFInfo &t      = mutate() ? uniform : mixed;
+
+  std::cout << "run_under_test=" << (mutate() ? "uniform_p" : "mixed_p")
             << std::endl;
-  const bool mixed    = mf.n_active_fe_indices() == 2;
-  const bool batches  = mf.n_cell_batches() > 0;
-  std::cout << "matrixfree_saw_two_active_fe_indices=" << (mixed ? "true"
-                                                                 : "false")
+  std::cout << "under_test_mesh_is_mixed_p="
+            << ((t.cells_at_degree_two > 0) ? "true" : "false") << std::endl;
+  std::cout << "under_test_matrixfree_reinit_returned="
+            << (t.reinit_returned ? "true" : "false") << std::endl;
+  std::cout << "under_test_cell_batch_list_is_populated="
+            << ((t.n_cell_batches > 0) ? "true" : "false") << std::endl;
+  std::cout << "under_test_cell_batches_carry_two_fe_indices="
+            << ((t.distinct_batch_fe_indices == 2) ? "true" : "false")
             << std::endl;
-  std::cout << "matrixfree_cell_batch_list_is_populated="
-            << (batches ? "true" : "false") << std::endl;
+  // The entry's Signal — "read back n_active_fe_indices(); if it is 1 on a
+  // mesh you believe is mixed-p, the indices never reached the DoFHandler" —
+  // is checked against both configurations rather than assumed.
+  std::cout << "n_active_fe_indices_mixed_p=" << mixed.n_active_fe_indices
+            << " n_active_fe_indices_uniform_p=" << uniform.n_active_fe_indices
+            << std::endl;
+  std::cout << "n_active_fe_indices_cannot_tell_mixed_p_from_uniform_p="
+            << ((mixed.n_active_fe_indices == uniform.n_active_fe_indices)
+                  ? "true"
+                  : "false")
+            << std::endl;
+  std::cout << "get_cell_active_fe_index_can_tell_them_apart="
+            << ((mixed.distinct_batch_fe_indices !=
+                 uniform.distinct_batch_fe_indices)
+                  ? "true"
+                  : "false")
+            << std::endl;
   std::cout << "VERDICT="
-            << (mixed ? "matrixfree_accepted_a_mixed_p_dofhandler"
-                      : "matrixfree_saw_a_single_fe_index")
+            << ((t.reinit_returned && t.distinct_batch_fe_indices == 2)
+                  ? "matrixfree_accepted_a_mixed_p_dofhandler"
+                  : "matrixfree_saw_a_single_fe_index")
             << std::endl;
   return 0;
 }

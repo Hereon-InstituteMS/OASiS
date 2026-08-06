@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "summary_release_rc=139",
+    "summary_debug_rc=134",
+    "summary_release_data_out_completed=false",
+    "summary_debug_data_out_completed=false",
+    "refined_after_the_last_solve=true",
+    "is not in the half-open range",
+    "before_data_out"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "summary_release_rc=0",
+    "summary_debug_rc=0"
+  ],
+  "timeout_seconds": 900
+}

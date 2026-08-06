@@ -1,0 +1,24 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "expect_in_output": [
+    "under_test_cell_batches_carry_two_fe_indices=true",
+    "under_test_mesh_is_mixed_p=true",
+    "under_test_matrixfree_reinit_returned=true",
+    "under_test_cell_batch_list_is_populated=true",
+    "n_active_fe_indices_cannot_tell_mixed_p_from_uniform_p=true",
+    "get_cell_active_fe_index_can_tell_them_apart=true",
+    "files_with_all_cells_must_have_same_active_fe_index=0",
+    "files_with_hp_fevalues_requires_hp_mappingcollection=0",
+    "VERDICT=matrixfree_accepted_a_mixed_p_dofhandler"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=matrixfree_saw_a_single_fe_index"
+  ],
+  "timeout_seconds": 900
+}

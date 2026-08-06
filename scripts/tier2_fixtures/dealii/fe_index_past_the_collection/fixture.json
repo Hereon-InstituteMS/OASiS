@@ -1,0 +1,26 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "summary_release_rc=139",
+    "summary_debug_rc=134",
+    "summary_release_distribute_dofs_returned=false",
+    "summary_debug_distribute_dofs_returned=false",
+    "index_is_inside_the_collection=false",
+    "The mesh contains a cell with an active FE index of 5, but the finite",
+    "element collection only has 2 elements",
+    "cell->active_fe_index() < ff.size()",
+    "phantom_exception_string_files=0"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "summary_release_rc=0",
+    "summary_debug_rc=0"
+  ],
+  "timeout_seconds": 900
+}
