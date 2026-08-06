@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for sparta collision_relaxation:6 and :7, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). collision_relaxation:6 — 'fix temp/rescale 20 300 600' on a reflecting argon box drives 'compute temp' along a STRAIGHT LINE from Tstart to Tstop across the run, and the run ends on the Tstop the deck set. Both are judged against a NOISE FLOOR, and the floor is derived carefully because the obvious choice is wrong here: with no thermostat, VSS collisions conserve total kinetic energy exactly, so the within-run spread of compute temp is identically zero and only the REALISATION varies — the floor is therefore the spread of that constant across three other seeds, and the ramped run uses a seed that is not among them. The ramp's own rise is separately required to be more than twenty times that floor before anything else is read; residuals about the straight line must be under two floors and the landing under three. No temperature is pinned; Tstart and Tstop are deck inputs. 'fix temp/global/rescale' has a DIFFERENT signature — six arguments with a trailing fraction ('ERROR: Illegal fix temp/global/rescale command (../fix_temp_global_rescale.cpp:29)' for the temp/rescale form) — and temp/rescale itself needs three numbers ('ERROR: Illegal fix temp/rescale command (../fix_temp_rescale.cpp:31)'). collision_relaxation:7 — 'fix ave/histo' refuses per-particle input in scalar mode ('ERROR: Fix ave/histo cannot input per-particle values in scalar mode (../fix_ave_histo.cpp:228)'), requires lo/hi/Nbin ('ERROR: Illegal fix ave/histo command (../fix_ave_histo.cpp:53)'), holds exactly Nrepeat samples when fed a GLOBAL compute in scalar mode, and in vector mode its f_ID[1] + f_ID[2] equals Nrepeat times the particle count exactly — so f_ID[2] is the count DROPPED for falling outside [lo,hi], with no warning. Narrowing the range moves counts from the first column into the second. All histogram assertions are count identities, nothing stored. COVERS: collision_relaxation:6, collision_relaxation:7. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the narrow histogram's upper bound is widened to the wide deck's, so nothing falls outside — the single edit that removes the truncation — with the sample schedule, box, seeds, timestep and run length untouched. The dropped column goes to zero. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: values_outside_the_range_are_dropped_silently=True, narrowing_the_range_moves_counts_into_the_dropped_column=True. The thermostat assertions run on decks the hook does not touch; they rest on the noise-floor comparison and on verbatim messages carrying their own (file:line). Re-verify: cd scripts/tier2_fixtures/sparta/thermostat_ramps_and_histogram_range && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "collision_relaxation",
+  "pitfall_index": 6,
+  "covers": [
+    "collision_relaxation:6",
+    "collision_relaxation:7"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "the_noise_floor_deck_runs=True",
+    "the_thermostat_deck_runs=True",
+    "the_rise_is_far_above_the_noise_floor=True",
+    "the_target_is_ramped_linearly_across_the_run=True",
+    "it_lands_on_tstop_at_the_last_step=True",
+    "temp_global_rescale_has_a_different_signature=True",
+    "its_fourth_argument_is_a_fraction=True",
+    "temp_rescale_needs_three_numbers=True",
+    "per_particle_input_needs_mode_vector=True",
+    "lo_hi_and_nbin_are_required=True",
+    "a_global_compute_gives_nrepeat_samples=True",
+    "the_histogram_decks_run=True",
+    "in_range_plus_out_of_range_is_the_whole_sample=True",
+    "values_outside_the_range_are_dropped_silently=True",
+    "narrowing_the_range_moves_counts_into_the_dropped_column=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

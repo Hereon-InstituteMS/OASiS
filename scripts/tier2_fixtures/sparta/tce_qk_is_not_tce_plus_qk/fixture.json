@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for sparta chemistry:4 and :5, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). chemistry:4 — one hot five-species air box at 20000 K, one seed, one reaction file (the distribution's air.tce, whose 45 entries are all style 'A'), run three times with 'react tce', 'react qk' and 'react tce/qk'. All three complete at rc = 0 and all three print '#-of-reactions' under 'Gas reaction tallies:', so the parse count cannot tell them apart. tce and qk each produce per-reaction tally lines and a particle count that moves; tce/qk produces NO per-reaction line at all and a particle count that does not move. Only presence/absence is asserted — never how many — which is the discipline this backend needs: a stochastic run can move a count, it cannot turn a hundred tallies into zero. The mechanism is in the source and is what makes the finding transferable: react_tce.cpp's Arrhenius probability carries the TCE gamma-function prefactor and the exponents coeff[3]-1+coeff[5] / z+1.5-coeff[5], while react_tce_qk.cpp's uses a bare coeff[2]*(ecc-coeff[1])^coeff[3]*(1-coeff[1]/ecc)^coeff[5], so Bird coefficients calibrated for react tce do not transfer. chemistry:5 — the distribution's mars.tce (which contains recombination) gives 'ERROR: React tce/qk does not currently support recombination reactions (../react_tce_qk.cpp:48)', 'react_modify recomb no' lets the same deck through at rc = 0, and 'react_modify compute_chem_rates yes' gives 'ERROR: React tce/qk does not currently support the 'react_modify compute_chem_rates' option (../react_tce_qk.cpp:52)'. Both checks fire at the start of the first run, not at parse time. COVERS: chemistry:4, chemistry:5. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the tce/qk deck's STYLE WORD is swapped to 'tce' — the one token that carries the pathology — with the reaction file, species list, mixture, fractions, temperature, density, seed, timestep and run length identical. It then tallies reactions and moves Np like the tce deck. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: tce_qk_fires_no_reaction_at_all=True, tce_qk_leaves_the_particle_count_untouched=True, the_three_styles_do_not_agree=True. The chemistry:5 refusals run on separate decks the hook does not touch and rest on verbatim messages carrying their own (file:line). Re-verify: cd scripts/tier2_fixtures/sparta/tce_qk_is_not_tce_plus_qk && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary and the distribution's data/ tree: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "chemistry",
+  "pitfall_index": 4,
+  "covers": [
+    "chemistry:4",
+    "chemistry:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "all_three_styles_run_cleanly=True",
+    "all_three_report_the_reactions_as_parsed=True",
+    "react_tce_fires_reactions=True",
+    "react_qk_fires_reactions=True",
+    "tce_qk_fires_no_reaction_at_all=True",
+    "tce_and_qk_change_the_particle_count=True",
+    "tce_qk_leaves_the_particle_count_untouched=True",
+    "the_three_styles_do_not_agree=True",
+    "tce_qk_refuses_a_file_with_recombination=True",
+    "react_modify_recomb_no_is_the_escape=True",
+    "tce_qk_refuses_compute_chem_rates=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}
