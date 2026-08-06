@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#8. Tier-2 for fenics navier_stokes#8: an IPCS splitting that treats convection EXPLICITLY obeys a convective CFL limit, it blows up with no solver complaint whatsoever, and a short test run hides the blow-up because a large dt reaches the chosen end time in only a handful of steps. Channel on the unit square meshed 8x8 (h = 0.125), P2/P1, nu = 0.005, parabolic inflow with peak speed 1, p = 0 at the outflow. Three linear steps per time step (tentative velocity with dot(u_n, nabla_grad(u_n)) taken at the old level, pressure Poisson, velocity correction), each solved with a direct LU LinearProblem. Observed: judged by a FIXED NUMBER OF STEPS (60), dt = 0.05 drives max|u| from 1.0 past 1e2 at step 24 and on to 1e12 within a few more steps, while all three LinearProblem.solver objects report CONVERGED_ITS (reason 4) on every single step. The identical dt looks perfectly healthy when the loop is stopped at a fixed end time of 0.6, because that is only 12 steps and max|u| is then 1.14. dt = 0.02 survives all 60 steps with max|u| at 1.0, so the threshold lies between 0.02 and 0.05 -- well below h itself. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "fixed_step_count_run_blows_up=True",
+    "every_ksp_reported_converged_its=True",
+    "fixed_end_time_run_looks_healthy=True",
+    "smaller_dt_survives_the_same_step_count=True",
+    "VERDICT=explicit_convection_cfl_shows_up_only_at_fixed_step_count"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_cfl_limit_seen"
+  ]
+}
