@@ -439,25 +439,32 @@ the boundary condition; (2) is about the conservation diagnostic.
 - Use `interpolate_to_points()` for non-matching mesh interpolation
 - Sort interface nodes by tangential coordinate for consistent ordering
 
-## Verified Results (All Solver Combinations)
+## What Has Been Exercised
 
-### Heat DD (T=100 left, T=0 right, no source)
-- Exact solution: T(x) = 100*(1-x), linear
+This block used to carry a worked example WITH ITS ANSWER — an exact solution
+written out in closed form, plus per-pair tables of iteration counts, final
+residuals and errors from our own runs. All of it was readable by an agent
+being asked to solve that very problem, so the agent could report the answer
+instead of computing it, and the pair tables told it how many iterations to
+expect. Removed 2026-08-06 by the contamination merge gate.
 
-| Solver A | Solver B | Iterations | Final Residual | T(0.5) Error |
-|----------|----------|------------|----------------|--------------|
-| FEniCS   | 4C       | 1          | 3.4e-16        | 0.0          |
-| FEniCS   | FEniCS   | 1          | 4.3e-15        | 4.3e-15      |
+What is worth knowing here is structural, and survives without any of it:
 
-### Poisson DD (-Δu=1, u=0 on boundary, θ=0.5)
-- Reference: single-domain FEniCS solve
-
-| Solver A | Solver B | Iterations | Final Residual |
-|----------|----------|------------|----------------|
-| FEniCS   | 4C       | 2          | 1.2e-16        |
-| FEniCS   | FEniCS   | 7          | 9.7e-05        |
-
-- Without relaxation (θ=1.0): oscillates indefinitely!
+- **Domain decomposition with no source converges in very few iterations.**
+  The interface value is determined by flux continuity alone, so a
+  Dirichlet-Neumann sweep essentially lands on it immediately. Do not read a
+  fast convergence as evidence the coupling is correct — a no-op participant
+  converges just as fast. Check the physics, not the iteration count.
+- **With a source term, the same scheme needs relaxation.** At theta = 1 the
+  iteration oscillates and does not settle. This is the single most common
+  reason a coupled run "never converges", and it is a property of the scheme,
+  not of the codes involved.
+- **Judge a coupled result against a monolithic solve of the same problem**,
+  not against the partitioned scheme's own residual. The residual measures
+  agreement between the two participants; it says nothing about whether they
+  agree on the right thing. A unit mismatch converges cleanly and balances
+  perfectly while being badly wrong, and only the monolithic comparison
+  catches it.
 
 ### Supported Backend Combinations
 - FEniCS (Dirichlet) ↔ 4C (Neumann): fully tested, production ready

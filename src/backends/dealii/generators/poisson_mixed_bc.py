@@ -430,12 +430,20 @@ KNOWLEDGE = {
     "tutorial_steps": ["step-7 (MMS + Neumann BC + convergence tables)",
                        "step-3/4 (basic Poisson assembly)"],
     "function_space": "FE_Q<3>(k) — Lagrange, any order k",
+    # The measured order table that used to close this string was our own
+    # development result — the answer to a convergence study, readable from
+    # inside the tool that study evaluates. Removed 2026-08-06 by the
+    # contamination merge gate. The rule below is theory, not measurement, and
+    # the pre-asymptotic caveat is the genuinely useful part: it tells an agent
+    # not to read the coarsest pair as a failure.
     "expected_order": (
         "L2 error = O(h^(k+1)) for FE_Q(k) under global refinement. "
-        "Verified live on deal.II 9.8.0-pre (2026-08-01, 5 cycles, "
-        "mixed faces {0,3,4} Neumann): degree=1 observed orders "
-        "2.06, 1.96, 1.99, 2.00; degree=2 observed orders 1.55 "
-        "(pre-asymptotic on the 2^1 mesh), 2.92, 2.98, 3.00."),
+        "Exercised live on deal.II 9.8.0-pre with mixed Neumann faces. "
+        "Expect the first refinement pair of a higher-degree element to "
+        "come in BELOW the asymptotic rate — the coarsest mesh is "
+        "pre-asymptotic, and reading that pair alone as a failed "
+        "convergence study is a common mistake. Measure your own "
+        "sequence and judge the trend, not one pair."),
     "mixed_bc_assembly": (
         "Neumann data enters the WEAK FORM ONLY, as the surface "
         "integral + int_{Gamma_N} g v ds added to the right-hand "
@@ -467,10 +475,11 @@ KNOWLEDGE = {
         "those faces and converges to the WRONG solution. Signal: the "
         "per-cycle L2 error stalls at an O(1) mesh-independent level "
         "instead of decreasing at order k+1. Verified live "
-        "(2026-08-01, deal.II 9.8.0-pre): with the surface term "
-        "deleted from this template, degree=1 errors froze near "
-        "7.5e-01 (8.17e-01, 7.47e-01, 7.51e-01, 7.53e-01) with "
-        "observed orders 0.13, -0.01, 0.00 instead of ~2.0.",
+        "(2026-08-01, deal.II 9.8.0-pre) by deleting the surface term "
+        "from this template: the error stops responding to refinement "
+        "and the observed order collapses towards zero while the run "
+        "reports success at every cycle. Watch the ORDER, not the "
+        "residual — the linear solve converges perfectly either way.",
         "[Numerical] A wrong SIGN on the Neumann datum (g = -grad(u*) "
         ". n, or an inward normal) is the same silent failure mode: "
         "the run completes and the L2 error plateaus at a "

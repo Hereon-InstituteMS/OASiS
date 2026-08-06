@@ -295,14 +295,17 @@ KNOWLEDGE = {
             "Dirichlet data, uniform refinement with machine-readable "
             "per-level L2/H1 error lines"),
         "input_format": "Python script (dune.fem + UFL)",
+        # The EOC tables that used to close this string were our own
+        # development measurements, including the exact parameter draw they
+        # came from. Both halves are contamination: the orders are the answer
+        # to a convergence study, and the named draw is a specific problem
+        # instance. Removed 2026-08-06 by the contamination merge gate.
         "expected_order": (
             "L2 order k+1 and H1-seminorm order k for Lagrange order k. "
-            "Verified live (dune-fem 2.10 conda env dune-fem-env, "
-            "2026-08-01, dev-draw params L=2, a=2, b=1, c=1.5, d=0.5, "
-            "amp=1.3, kappa=(2,-0.75,0.5,1), 4 levels): order=1 L2 EOCs "
-            "1.984/1.996/1.999 and H1 EOCs 1.028/1.007/1.002; order=2 "
-            "L2 EOCs 1.628(pre-asymptotic)/2.923/2.982 and H1 EOCs "
-            "1.059(pre-asymptotic)/1.990/1.998."),
+            "Exercised live on dune-fem 2.10 over a four-level refinement "
+            "sequence. Expect the coarsest pair at higher order to come in "
+            "below the asymptotic rate; that is pre-asymptotic behaviour, "
+            "not a failure. Measure your own sequence and judge the trend."),
         "mms_setup": {
             "source_term": (
                 "f = -div(kappa*grad(u_exact)) built symbolically in UFL "
@@ -330,8 +333,9 @@ KNOWLEDGE = {
                 "'DeprecationWarning: dune.fem.function.integrate is "
                 "deprecated use dune.fem.integrate instead. New "
                 "signature is (expr, gridView, order)' — observed live "
-                "on this install during the E5 prototype run "
-                "(2026-08-01)."
+                "on this install (2026-08-01). The old path still "
+                "works, so this is a warning to act on, not a failure "
+                "to debug."
             ),
             (
                 "[API] galerkin solver parameter keys 'newton.*' are "

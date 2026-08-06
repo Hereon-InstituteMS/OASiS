@@ -307,11 +307,23 @@ KNOWLEDGE = {
             "reaction": "REACTION_FLUX",
         },
         "theoretical_l2_order": 2.0,
+        # NO MEASURED RESULT HERE. This field held our own error table and the
+        # observed orders from a development run. That is the answer to a
+        # convergence study, sitting inside the tool the study is meant to
+        # evaluate — an agent could read the result instead of computing it,
+        # and convergence order is exactly what the campaign grades. Removed
+        # 2026-08-06 by the contamination merge gate.
+        #
+        # What survives is the falsifiable statement: the discretisation is
+        # expected to reach its theoretical order once the mesh resolves the
+        # geometry. Whether it does on any given draw is for the run to show.
         "verified_convergence": (
-            "Live smoke on this install (Kratos 10.4, /usr/bin/python3, gmsh OCC annulus, "
-            "dev draw r_i=0.6 r_o=1.7 A=0.7 B=-1.3 C=0.8 D=0.35 m=3 p=3 kappa=2.5), "
-            "h=0.2/0.1/0.05/0.025: L2 = 6.363e-2 / 1.674e-2 / 4.226e-3 / 1.063e-3, "
-            "observed orders 1.93 / 1.99 / 1.99 (2026-08-01)."),
+            "Exercised on this install (Kratos 10.4 under the system python3, "
+            "gmsh OCC annulus) over a refinement sequence; the L2 order "
+            "approaches the theoretical value above once the isoparametric "
+            "elements resolve the curved boundary. Measure it on your own "
+            "sequence — a plateau below the theoretical order is the signal "
+            "that the geometry, not the solver, is limiting you."),
         "pitfalls": [
             '[Environment] Kratos 10.4 on this host works ONLY under the system '
             '/usr/bin/python3 (Python 3.8). The pip Kratos wheel inside the repo .venv '
@@ -327,9 +339,9 @@ KNOWLEDGE = {
             '[Numerical] LaplacianElement2D3N reads the diffusivity NODALLY via '
             'ConvectionDiffusionSettings.GetDiffusionVariable() — the CONDUCTIVITY value '
             'on the Properties object is IGNORED by this element. Verified 2026-08-01 by '
-            'swap test: Properties CONDUCTIVITY=999 with correct nodal values leaves the '
-            'MMS L2 error unchanged (1.674e-2 at h=0.1); nodal CONDUCTIVITY=999 with '
-            'correct Properties value destroys it (L2 jumps to 1.18). Signal: solution '
+            'swap test: corrupting the Properties value while the nodal values stay '
+            'correct leaves the error unchanged; corrupting the nodal value while the '
+            'Properties value stays correct destroys the solution. Signal: solution '
             'scales with the nodal value, not the property; forgetting '
             'SetSolutionStepValue(CONDUCTIVITY, ...) on nodes gives a singular or '
             'zero-diffusivity system.',
@@ -338,9 +350,11 @@ KNOWLEDGE = {
             'computed domain is a polygon inscribed in the annulus. The geometric '
             '(domain-approximation) error is O(h^2) — the same order as the P1 '
             'interpolation error — so the L2 convergence order 2 is PRESERVED without '
-            'curved (isoparametric) elements. Signal: observed orders 1.93-1.99 in the '
-            'live smoke above; a plateau near order 1.5 would instead indicate '
-            'misclassified boundary nodes or an inconsistent source term.',
+            'curved (isoparametric) elements. Signal: the measured L2 order holds at '
+            'the theoretical value for the element as the mesh is refined; a plateau '
+            'well below it (around order 1.5 for P1) is NOT the straight-chord geometry '
+            'and points instead at misclassified boundary nodes or an inconsistent '
+            'source term. (Verified 2026-08-01.)',
             '[Integration] msh -> ModelPart conversion pitfalls (all hit or guarded '
             '2026-08-01): (1) Gmsh node tags are NOT contiguous after OCC boolean cuts — '
             'renumber to 1..N before CreateNewNode or Kratos raises on missing node ids; '
