@@ -1,0 +1,114 @@
+# Consolidating the branches
+
+Measured 2026-08-06 against base `8cb1d79`, by actually merging into a scratch
+worktree rather than reasoning about it.
+
+## The scale
+
+| branch | commits | files changed |
+|---|---|---|
+| knowledge/fenics-verify | 60 | 390 |
+| feature/anti-fabrication | 52 | 79 |
+| knowledge/setup-and-portability | 37 | 44 |
+| knowledge/4c-extraction | 35 | 571 |
+| knowledge/dealii-verify | 35 | 205 |
+| knowledge/coupling-revision | 35 | 92 |
+| knowledge/ngsolve-skfem-verify | 34 | 247 |
+| feature/coupling-robustness | 30 | 39 |
+| knowledge/febio-extraction | 30 | 181 |
+| knowledge/kratos-sparta | 26 | 284 |
+| knowledge/dune-extraction | 14 | 98 |
+| knowledge/purge-eval-contamination | 6 | 21 |
+
+394 commits, roughly 2250 changed files. **290 distinct non-fixture files**; the
+rest are per-backend fixture directories, which cannot collide with each other
+by construction.
+
+## The conflict surface is small
+
+Merging all twelve in sequence into a scratch worktree:
+
+    clean: 2      feature/anti-fabrication, knowledge/ngsolve-skfem-verify
+    conflicting: 10, between 1 and 11 files each — about 40 files in total
+
+Forty files out of 2250. The work is overwhelmingly additive.
+
+Files touched by three or more branches, which is where the conflicts live:
+
+    10  scripts/run_tier2_fixtures.py
+     9  tests/test_fixtures_cannot_pass_vacuously.py
+     6  src/tools/consolidated.py
+     5  src/tools/knowledge.py
+     5  scripts/verify_signal_clauses.py
+     4  validation/* (transcripts and ledgers)
+
+`run_tier2_fixtures.py` looks alarming at ten branches, but there are only
+**six distinct versions** of it and the three largest branches already share an
+identical blob — the two real fixes (`--write-results` was parsed and never
+read; interpreter resolution assumed a `.venv` inside the repo) propagated by
+hand as each branch hit them.
+
+## What the conflicts actually are
+
+Nearly all of them are **the same correction made twice, independently**. Two
+branches purged the same contaminated payload and wrote equivalent replacement
+text:
+
+    HEAD  "Exercised live on dune-fem 2.10 over a four-level refinement
+           sequence. Expect the coarsest pair at higher order to come in
+           below the asymptotic rate..."
+
+    THEM  "Theory for a conforming Lagrange space of order k...
+           These are the ASYMPTOTIC rates — the coarsest levels of a sweep
+           are commonly pre-asymptotic..."
+
+Both are right, and both say the same thing. That is the easiest class of
+conflict there is: pick either side on the merits, do not re-derive.
+
+## Order to merge in
+
+Infrastructure first, so the gates exist before the content they judge arrives:
+
+1. `feature/anti-fabrication` — merges clean. Brings the gates: contamination,
+   format contract, discoverability, fixture keys, wall-clock, quoted
+   diagnostics, plus the retrieval layer and the claim-attributed coverage
+   metric. Merging it first means every later branch is judged on arrival.
+2. `knowledge/purge-eval-contamination` — the other contamination purge. Take it
+   next while its conflicts are only against the base, and prefer whichever
+   wording is more specific about the MECHANISM.
+3. `knowledge/setup-and-portability` — touches `server.py` and `consolidated.py`;
+   land it before the per-backend branches pile onto the same files.
+4. The per-backend knowledge branches, smallest first: dune, febio, kratos-sparta,
+   ngsolve-skfem-verify, dealii-verify, fenics-verify, 4c-extraction. Each one's
+   fixtures live in its own directory and cannot collide; only its knowledge
+   edits can.
+5. `feature/coupling-robustness` and `knowledge/coupling-revision` last. They
+   both touch `src/tools/knowledge.py` and hold the flagship, so they deserve
+   the most careful eyes and the least merge pressure.
+
+## Rules for resolving
+
+- **Never re-derive a measurement to settle a conflict.** Both sides were
+  executed; pick the clearer text.
+- **Prefer the side that states the mechanism** over the side that states a
+  number, and never resurrect a measured number that a purge removed — the
+  contamination gate will fail the merge, which is the point.
+- **Re-run the gates after every single merge**, not at the end. A merge that
+  reintroduces a leaked payload is silent, and finding it after twelve merges
+  means bisecting twelve merges.
+- **Check fixture keys after merging any two backends.** A collision marks BOTH
+  fixtures FAILED in the runner, and seven working FEniCSx fixtures were sitting
+  red before anyone noticed.
+
+## A trap worth recording
+
+The first attempt at this ran the scratch worktree on the PortableSSD, which is
+exFAT and cannot store git's permission bits. Every file therefore appeared
+modified, and every merge refused with "local changes would be overwritten" —
+which reads exactly like twelve genuine conflicts. Merge testing must happen on
+a real filesystem.
+
+The attempt before that used `git merge-tree --write-tree`, which does not exist
+in git 2.25 (it arrived in 2.38). It reported CONFLICT for all twelve with an
+empty file list. An empty conflict list is the tell that the tool failed, not
+that the merge did.
