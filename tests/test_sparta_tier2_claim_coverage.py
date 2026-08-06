@@ -64,7 +64,9 @@ _FIXTURES = _REPO / "scripts" / "tier2_fixtures" / "sparta"
 #   2026-08-06  0.53 (40 of 75) after the three zero-coverage-area fixtures
 #   2026-08-06  0.70 (53 of 75) after the four cross-cutting fixtures
 #   2026-08-06  0.81 (61 of 75) after the per-cell and relaxation fixtures
-MIN_COVERAGE_FRACTION = 0.81
+#   2026-08-06  0.89 (67 of 75) after the setup-trap, emit/chemistry and
+#               thermal/grid fixtures
+MIN_COVERAGE_FRACTION = 0.89
 
 # Counted 2026-08-06 by identity, not by walking the dict. See the module
 # docstring for why those differ by a factor of 2.2 on this backend.

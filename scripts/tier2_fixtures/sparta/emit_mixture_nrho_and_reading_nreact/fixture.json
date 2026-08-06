@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for sparta particle_emission and chemistry: two numbers a deck will quietly get wrong. Four decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial). particle_emission:1 — two argon decks emitting on xlo differ only by an 'nrho 4e20' keyword appended to the mixture line while 'global nrho 1e20' stays put; the steady particle count comes out 4.03 times higher, so the MIXTURE value is what sets the emitted flux, and both runs exit 0 with no error and no warning. chemistry:3 — two air TCE decks differ only in the mixture temperature. At 273 K Ncoll is in the thousands per step while Nreact is 0 on every stats line AND the N, O and NO counts are strictly 0, which is a cold deck, not a broken one. At 20000 K the product counts reach five figures and keep climbing while Nreact still reads single digits on every line, because Nreact is a PER-STEP count. So Nreact cannot distinguish the two cases and the species counts can. Every assertion is a ratio between the two decks or the presence/absence of product particles; no count is pinned. COVERS: particle_emission:1, chemistry:3.",
+  "backend": "sparta",
+  "physics": "chemistry",
+  "pitfall_index": 3,
+  "covers": [
+    "particle_emission:1",
+    "chemistry:3"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "both_emit_runs_exit_zero_with_no_warning=True",
+    "an_nrho_on_the_mixture_sets_the_steady_count=True",
+    "both_chemistry_runs_exit_zero_with_no_warning=True",
+    "the_cold_deck_still_collides_plenty=True",
+    "the_cold_deck_reports_zero_reactions_and_zero_products=True",
+    "the_hot_deck_accumulates_product_particles=True",
+    "but_its_Nreact_column_stays_orders_of_magnitude_smaller=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

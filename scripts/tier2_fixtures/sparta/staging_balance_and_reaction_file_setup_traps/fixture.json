@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for sparta conjugate_heat_transfer, ambipolar_plasma and adaptive_grid: three setup-time traps, two loud and one silent. Five decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial). conjugate_heat_transfer:5 — the SAME deck was run twice, once with ar.species and ar.vss copied into the working directory and once with nothing copied; staged it exits 0, unstaged it prints 'ERROR on proc 0: Cannot open species file ar.species (../particle.cpp:711)'. Running the pair is what makes that message evidence for the cwd claim rather than evidence that some deck somewhere fails. ambipolar_plasma:4 — the same deck was run with two surf_react prob files differing only in one probability value; 1.5 gives 'ERROR: Surface reaction probability for a species > 1.0 (../surf_react_prob.cpp:287)' with no stats row at all, so the validation is at READ time, and 0.5 runs. adaptive_grid:5 — 'balance_grid rcb cell' and 'balance_grid rcb part' on a serial build both print exactly 'Balance grid migrated 0 cells' and the run continues to completion, so a zero there is not an error report and balance_grid is not a remedy for a load imbalance inside one rank. No measured number is pinned. COVERS: conjugate_heat_transfer:5, ambipolar_plasma:4, adaptive_grid:5.",
+  "backend": "sparta",
+  "physics": "conjugate_heat_transfer",
+  "pitfall_index": 5,
+  "covers": [
+    "conjugate_heat_transfer:5",
+    "ambipolar_plasma:4",
+    "adaptive_grid:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "species_file_not_staged_message=ERROR on proc 0: Cannot open species file ar.species (../particle.cpp:711)",
+    "surf_react_probability_above_one_message=ERROR: Surface reaction probability for a species > 1.0 (../surf_react_prob.cpp:287)",
+    "balance_grid_line_0=Balance grid migrated 0 cells",
+    "every_quoted_setup_message_is_verbatim=True",
+    "the_same_deck_runs_when_the_species_file_is_staged=True",
+    "the_same_deck_runs_when_the_probability_is_in_range=True",
+    "the_probability_is_rejected_at_READ_time_before_any_stats_line=True",
+    "balance_grid_on_a_serial_build_migrates_nothing_and_still_runs=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}
