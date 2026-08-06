@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::cardiac_monodomain#4, and the execution that showed the Signal understates it. The upstream Cardiac_Monodomain decks are single elements where the diffusion tensor does nothing, so the fixture builds a propagating wave: a HEX8 strip with the same MAT_myocard FHN material as scatra_myocard_FHN_material. Front positions come from 4C's own result-test 'actresult=' lines. With DIFF 1.171e-4 the phi=0.5 front travels +0.16543 past the excited region by t=80. Writing the same diffusivity in m^2 instead of mm^2 (1.171e-10) gives -0.01228: the patch decays in place and nothing propagates, so the conduction velocity is not 10x or 100x wrong, it is gone. The run still converges and reaches the result test with UNIT_WARNINGS=0. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiac_monodomain",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CONSISTENT=1",
+    "EXIT_SIUNITS=1",
+    "PROBE_LINES=41",
+    "SIUNITS_REACHED_RESULT_TEST=1",
+    "is WRONG --> actresult= 5.12752136533348502e-01",
+    "FRONT_CONSISTENT=0.19743",
+    "FRONT_SIUNITS=0.01972",
+    "CONSISTENT_FRONT_TRAVEL=0.16543",
+    "SI_UNITS_FRONT_TRAVEL=-0.01228",
+    "SI_UNITS_WAVE_PROPAGATED=no",
+    "UNIT_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "FRONT_CONSISTENT=none",
+    "FRONT_SIUNITS=none",
+    "SI_UNITS_WAVE_PROPAGATED=yes",
+    "SIUNITS_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": {
+    "note": "remove the unit error: give the second arm the mm^2 diffusivity. The wave propagates, the fronts coincide, SI_UNITS_WAVE_PROPAGATED becomes yes and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "SI_DIFF=1.171e-10",
+    "to": "SI_DIFF=0.0001171"
+  }
+}

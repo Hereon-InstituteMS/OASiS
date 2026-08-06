@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::cardiac_monodomain#2. The upstream Cardiac_Monodomain decks are single elements, so the fixture builds a propagating wave: a HEX8 strip with the same MAT_myocard FHN material as scatra_myocard_FHN_material, run with the FIBER1 vector along the direction of propagation and across it. Front positions are interpolated from 4C's own result-test 'actresult=' lines. With DIFF1 = DIFF2 = DIFF3 the two fronts are bit-for-bit identical at 0.19743 -- FIBER1 is completely inert, the wave is spherical. With DIFF1 = 4*DIFF2 the along-fiber front is still 0.19743 but the across-fiber front is 0.12024, a 64% advantage, which is the elliptical wavefront. FIBER_WARNINGS=0. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiac_monodomain",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ISO_ALONG=1",
+    "EXIT_ANI_ACROSS=1",
+    "PROBE_LINES=41",
+    "is WRONG --> actresult= 6.91721192981101018e-01",
+    "FRONT_ISO_ALONG=0.19743",
+    "FRONT_ISO_ACROSS=0.19743",
+    "FRONT_ANI_ALONG=0.19743",
+    "FRONT_ANI_ACROSS=0.12024",
+    "VERDICT: ISOTROPIC_DIFF_SEES_THE_FIBER=no",
+    "ANISOTROPIC_FIBER_FRONT_ADVANTAGE_PERCENT=64",
+    "FIBER_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "FRONT_ISO_ALONG=none",
+    "FRONT_ANI_ACROSS=none",
+    "VERDICT: ISOTROPIC_DIFF_SEES_THE_FIBER=yes",
+    "ANISOTROPIC_FIBER_FRONT_ADVANTAGE_PERCENT=0"
+  ],
+  "_mutation": {
+    "note": "remove the anisotropy: make the 'anisotropic' arms isotropic too. The across-fiber front returns to 0.19743, the 64% advantage collapses to 0, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "ACROSS_DIFF=\"$D4\"",
+    "to": "ACROSS_DIFF=\"$D\""
+  }
+}

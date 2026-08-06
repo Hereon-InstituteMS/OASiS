@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::cardiac_monodomain#5. On upstream scatra_myocard_FHN_material the DESIGN VOL NEUMANN stimulus VAL 0.3 gives phi = 0.778036 and the deck's result test CORRECT. Dividing it by 100 (0.003) leaves the run converging normally through all 9000 steps and ending at phi EXACTLY 0.0, the FitzHugh-Nagumo resting state, with SUB_THRESHOLD_WARNINGS=0: no threshold check exists. Halving instead (0.15) still fires, phi = 0.816542, so the failure is a cliff and not a gradient. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiac_monodomain",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_SUB=1",
+    "BASE_TESTS_CORRECT=1",
+    "SUB_REACHED_RESULT_TEST=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 0.00000000000000000e+00",
+    "actresult=8.16542387022076599e-01",
+    "VERDICT: SUBTHRESHOLD_STIMULUS_FIRES_AN_AP=no",
+    "HALF_STIMULUS_STILL_FIRES=yes",
+    "SUB_THRESHOLD_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_SUB=0",
+    "SUB_REACHED_RESULT_TEST=0",
+    "VERDICT: SUBTHRESHOLD_STIMULUS_FIRES_AN_AP=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the SUB arm the calibrated suprathreshold stimulus. An action potential appears, the exactly-zero result disappears, EXIT_SUB becomes 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "SUBTHRESHOLD_VAL=0.003",
+    "to": "SUBTHRESHOLD_VAL=0.3"
+  }
+}

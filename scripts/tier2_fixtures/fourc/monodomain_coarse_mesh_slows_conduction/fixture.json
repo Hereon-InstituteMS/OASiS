@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::cardiac_monodomain#1. The upstream Cardiac_Monodomain decks are single elements, so the fixture builds a propagating wave: a HEX8 strip of length 0.4 with the same MAT_myocard FHN material and DIFF 1.171e-4 as scatra_myocard_FHN_material, excited over the first 8% and integrated to t=80 at dt=0.1. Front position is interpolated from 4C's own result-test 'actresult=' lines, one probe per node. h=0.005 puts the front at 0.19586; h=0.04, eight times coarser, at 0.14005 -- net of the 0.032 excited region a conduction velocity 34% too low, inside the claimed 10-30% band and slightly past it. MESH_RESOLUTION_WARNINGS=0. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiac_monodomain",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_FINE=1",
+    "EXIT_COARSE=1",
+    "FINE_PROBE_LINES=81",
+    "COARSE_PROBE_LINES=11",
+    "is WRONG --> actresult= 7.26060170308268082e-01",
+    "FRONT_FINE=0.19586",
+    "FRONT_COARSE=0.14005",
+    "CONDUCTION_VELOCITY_ERROR_PERCENT=-34",
+    "MESH_RESOLUTION_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "FRONT_FINE=none",
+    "FRONT_COARSE=none",
+    "CONDUCTION_VELOCITY_ERROR_PERCENT=0",
+    "CONDUCTION_VELOCITY_ERROR_PERCENT=-0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the coarse arm the fine mesh. Both fronts land on the same place, the velocity error goes to 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "COARSE_NX=10",
+    "to": "COARSE_NX=80"
+  }
+}

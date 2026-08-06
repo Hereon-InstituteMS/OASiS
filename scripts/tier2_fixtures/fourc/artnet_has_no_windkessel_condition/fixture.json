@@ -26,8 +26,8 @@
     {
       "note": "remove the invented-section probe: do not add the Windkessel block. The 'not a valid section name' diagnostic disappears and the fixture must go red.",
       "file": "cmd.sh",
-      "from": "open('windkessel.yaml', 'w').write(t.replace(",
-      "to": "open('windkessel.yaml', 'w').write(t) or (lambda *a: None)("
+      "from": "WK_SECTION = 'DESIGN NODE 1D ARTERY WINDKESSEL CONDITIONS:\\n  - E: 4\\n    R_p: 1.0\\n    C: 1.0\\n    R_d: 1.0\\n'",
+      "to": "WK_SECTION = ''"
     },
     {
       "note": "remove the reflection change: leave the coefficient at the upstream 0. The distal flow does not move and the fixture must go red.",
