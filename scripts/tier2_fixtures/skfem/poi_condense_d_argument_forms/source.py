@@ -11,14 +11,25 @@ booleans index as the integers 0 and 1, so condense constrains DOFs 0 and 1
 instead of the boundary, returns without warning, and the answer is an order of
 magnitude too large. An empty D leaves the pure Neumann system singular and
 scipy hands back ~1e14 garbage.
+
+Mutation control: T2_MUTATE=1 converts the boolean mask to the flat int array
+of DOF indices that D actually wants (np.flatnonzero(mask)) before handing it
+to condense -- the documented fix, applied at the argument the pitfall is
+about. The boundary is then really constrained, the answer is correct, and
+"boolean_mask_answer_is_wrong=True" plus
+"boolean_mask_max_over_correct_max_gt_5=True" disappear from the output, so the
+fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, unit_load
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -44,9 +55,12 @@ def main() -> int:
     # --- WRONG variant (a): boolean mask --------------------------------
     mask = np.zeros(basis.N, dtype=bool)
     mask[flat] = True
+    # THE PATHOLOGY: handing condense the boolean mask itself.  The documented
+    # fix is to pass a flat int array of DOF indices instead.
+    d_arg = mask if not MUTATE else np.flatnonzero(mask)
     raised = ""
     try:
-        u_mask = solve(*condense(K, f, D=mask))
+        u_mask = solve(*condense(K, f, D=d_arg))
     except Exception as exc:
         raised = f"{type(exc).__name__}: {exc}"
         u_mask = np.array([np.nan])

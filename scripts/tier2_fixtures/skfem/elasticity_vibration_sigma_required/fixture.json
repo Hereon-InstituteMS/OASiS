@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem linear_elasticity#3 on a REAL vector elasticity pencil (cantilever, ElementVector(ElementQuad1), consistent vector mass matrix): eigsh(K, M=M, sigma=0) returns the low vibration modes; omitting sigma returns the top of the spectrum, hundreds of times larger, with nothing raised or warned. Measured on skfem 12.0.1 / scipy 1.15.3.",
+  "_comment": "Tier-2 for skfem linear_elasticity#3 on a REAL vector elasticity pencil (cantilever, ElementVector(ElementQuad1), consistent vector mass matrix): eigsh(K, M=M, sigma=0) returns the low vibration modes; omitting sigma returns the top of the spectrum, hundreds of times larger, with nothing raised or warned. Measured on skfem 12.0.1 / scipy 1.15.3. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the no-sigma eigsh call gets sigma=0 and which='LM' back, so both calls return the same low vibration modes. Re-verified by execution 2026-08-06 on skfem 12.0.1 / NGSolve 6.2.2604: the unmutated run matches all 4 expect_in_output strings; T2_MUTATE=1 removes 'no_sigma_returns_top_of_spectrum=True' and 'no_sigma_min_over_sigma0_max_gt_100=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "linear_elasticity",
   "pitfall_index": 3,

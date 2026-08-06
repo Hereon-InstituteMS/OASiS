@@ -19,15 +19,35 @@ the triangulated mesh."  On skfem 12.0.1 ``.to_meshtri()`` PRESERVES the four
 tags and ``get_dofs('left')`` keeps working, so no reattachment is needed.
 
 Observed on skfem 12.0.1 (2026-08-06).
+
+Mutation control: with T2_MUTATE=1 the documented fix is applied at both
+pathology sites — the wrong variant's mesh is built with
+``.with_boundaries({...})`` and the lookup is the positional
+``get_dofs('left')`` instead of the legacy ``get_dofs()['left']`` subscript.
+Neither call raises any more, so 'init_tensor_boundaries_is_none=True',
+'named_lookup_exc=ValueError', "Boundary 'left' not found.",
+'subscript_exc=TypeError', "'DofsView' object is not subscriptable" and
+'two_distinct_errors=True' all disappear and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementQuad1, ElementTriP1, MeshQuad
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 NX = 8  # 9x9 tensor grid -> 9 nodes on the left edge
+
+TAGS = {
+    "left": lambda x: x[0] < 1e-10,
+    "right": lambda x: x[0] > 1.0 - 1e-10,
+    "bottom": lambda x: x[1] < 1e-10,
+    "top": lambda x: x[1] > 1.0 - 1e-10,
+}
 
 
 def main() -> int:
@@ -36,6 +56,8 @@ def main() -> int:
 
     # --- WRONG variant: no with_boundaries() ---------------------------------
     m_raw = MeshQuad.init_tensor(xs, xs)
+    if MUTATE:                      # documented fix: tag the boundaries
+        m_raw = m_raw.with_boundaries(TAGS)
     ib_raw = Basis(m_raw, ElementQuad1())
     print(f"mesh_class={type(m_raw).__name__}")
     print(f"init_tensor_boundaries_is_none={m_raw.boundaries is None}")
@@ -49,7 +71,9 @@ def main() -> int:
     print(f"named_lookup_msg={name_msg}")
 
     try:
-        ib_raw.get_dofs()["left"]
+        # documented fix under mutation: pass the name positionally
+        (ib_raw.get_dofs()["left"] if not MUTATE
+         else ib_raw.get_dofs("left"))
         sub_exc, sub_msg = "", ""
     except Exception as exc:                     # noqa: BLE001 - want the type
         sub_exc, sub_msg = type(exc).__name__, str(exc)

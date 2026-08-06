@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem eigenvalue#3, previously flagged 'claim inherited -- not yet empirically separated'. Now measured on skfem 12.0.1: eigsh(K, M=M, sigma=0) solves K x = lam M x and its sqrt matches the analytic angular frequency bracket; dropping M=M solves K x = lam x instead and returns values orders of magnitude off, silently, with no warning.",
+  "_comment": "Tier-2 for skfem eigenvalue#3, previously flagged 'claim inherited -- not yet empirically separated'. Now measured on skfem 12.0.1: eigsh(K, M=M, sigma=0) solves K x = lam M x and its sqrt matches the analytic angular frequency bracket; dropping M=M solves K x = lam x instead and returns values orders of magnitude off, silently, with no warning. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the wrong-variant eigsh call gets its M=MI argument back, so it solves the generalised pencil too. Re-verified by execution 2026-08-06 on skfem 12.0.1 / NGSolve 6.2.2604: the unmutated run matches all 4 expect_in_output strings; T2_MUTATE=1 removes 'standard_pencil_differs_by_over_10x=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "eigenvalue",
   "pitfall_index": 3,

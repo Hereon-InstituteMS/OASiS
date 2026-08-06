@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem poisson#2: m.boundaries is None on a fresh mesh, get_dofs('left') then raises ValueError(\"Boundary 'left' not found.\"), with_boundaries returns a NEW mesh (the original stays untagged), and on a 5x5 ElementQuad1 tensor mesh the left-edge DofsView flattens to exactly 5 indices. Measured on skfem 12.0.1.",
+  "_comment": "Tier-2 for skfem poisson#2: m.boundaries is None on a fresh mesh, get_dofs('left') then raises ValueError(\"Boundary 'left' not found.\"), with_boundaries returns a NEW mesh (the original stays untagged), and on a 5x5 ElementQuad1 tensor mesh the left-edge DofsView flattens to exactly 5 indices. Measured on skfem 12.0.1. MUTATION CONTROL (re-runnable): T2_MUTATE=1 rebinds m to the mesh with_boundaries returns (m = tagged, i.e. m = m.with_boundaries({...})) -- the documented fix, applied at the call site the pitfall is about. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 5 expect_in_output strings; T2_MUTATE=1 removes 'with_boundaries_returns_new_mesh=True' and 'original_still_untagged=True' and raises the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "poisson",
   "pitfall_index": 2,

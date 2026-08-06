@@ -26,9 +26,16 @@ Measured on skfem 12.0.1, MeshTri().refined(2) (32 elements, 56 facets,
 
 Wrong variant: assemble the FEniCSx-style jump(u)*jump(v) penalty on a single
 InteriorFacetBasis and compare against the 2x2 block spelling.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- ``P_wrong`` is built with the 2x2 block spelling
+``asm(penalty, [i0, i1], [i0, i1])`` instead of the single-basis
+``penalty.assemble(i0)``.  The verbatim-port operator then IS the correct jump
+penalty, so the pathological expectations vanish and the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -42,6 +49,8 @@ from skfem import (
     asm,
 )
 from skfem.helpers import jump
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 IDX_SEEN: list = []
 
@@ -122,7 +131,10 @@ def main() -> int:
               file=sys.stderr)
         ok = False
 
-    P_wrong = penalty.assemble(i0)               # verbatim FEniCSx port
+    # verbatim FEniCSx port; under T2_MUTATE the documented fix (the 2x2 block
+    # spelling) is applied at this very site instead.
+    P_wrong = (penalty.assemble(i0) if not MUTATE
+               else asm(penalty, [i0, i1], [i0, i1]))
     P_right = asm(penalty, [i0, i1], [i0, i1])   # the skfem spelling
 
     # A CONTINUOUS field: a true jump penalty must annihilate it.

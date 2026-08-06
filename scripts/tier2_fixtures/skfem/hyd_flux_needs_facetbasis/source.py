@@ -29,6 +29,15 @@ channel length:
   * the dimensional check that always works: ib_u.dx integrates over area and
     ib_fac_out.dx over a line, so their sums are the domain area and the
     outlet length respectively -- compare those before trusting a flux.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the "volume" flux is computed on the outlet FacetBasis instead of the
+volumetric Basis (bq = fo rather than bu), so the wrong integral is no longer
+an area integral and the wrong/right ratio collapses to 1 at every length.
+The unmutated run matches all 11 expect_in_output strings; under mutation
+"ratio_tracks_channel_length_everywhere=True", "ratio_grows_with_length=True"
+and "R_from_volume_is_exact_over_length=True" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -56,6 +65,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, div, sym_grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 MU, H, P_IN = 1.0, 0.1, 1.0
 
@@ -98,7 +109,10 @@ def run(length):
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         q_facet = float(np.sum(fo.interpolate(u).value[0] * fo.dx))
-        q_volume = float(np.sum(bu.interpolate(u).value[0] * bu.dx))
+        # the mistake: the volumetric Basis on what is a boundary integral.
+        # MUTATION: the documented fix, the outlet FacetBasis.
+        bq = bu if not MUTATE else fo
+        q_volume = float(np.sum(bq.interpolate(u).value[0] * bq.dx))
         msgs = sorted({str(c.message) for c in caught})
     return q_facet, q_volume, msgs, float(np.sum(bu.dx)), float(np.sum(fo.dx))
 

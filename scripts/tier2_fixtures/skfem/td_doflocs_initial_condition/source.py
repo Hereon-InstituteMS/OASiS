@@ -24,11 +24,20 @@ Measured on skfem 12.0.1 on a 4x4 MeshTri.init_tensor:
     ValueError about the shape mismatch.  Only the zero-padded form is
     silent, so the guard has to be a length check against ib.N, not a
     try/except.
+
+Mutation control: T2_MUTATE=1 applies the entry's own fix at the pathology
+site -- the zero-padded initial condition is built by evaluating the callable
+on ib.doflocs over all ib.N slots instead of writing field(mesh.p) into the
+first n_vertices slots.  No DOF is then left at zero by accident and the field
+agrees with ib.project.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import (
@@ -97,7 +106,10 @@ def main() -> int:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         u_padded = ib2.zeros()
-        u_padded[:nverts] = field(m.p)
+        if MUTATE:                       # the fix: evaluate on ib.doflocs
+            u_padded[:] = field(ib2.doflocs)
+        else:                            # the pathology: mesh.p, zero-padded
+            u_padded[:nverts] = field(m.p)
         u_project = ib2.project(field)
         msgs = sorted({str(c.message) for c in caught})
     zeros = int((u_padded == 0.0).sum())

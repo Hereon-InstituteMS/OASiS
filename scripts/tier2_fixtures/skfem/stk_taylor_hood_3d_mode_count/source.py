@@ -29,10 +29,19 @@ Measured on skfem 12.0.1:
     O(1) instead of O(eps)".  Under a regularised solve the relative
     divergence of the two pairs is comparable and does not separate them, so
     that observable is not usable as written.
+
+Mutation control: T2_MUTATE=1 applies the entry's own recommendation at the
+pathology site -- the velocity element of the "eq" pair, EQ_VEL, becomes
+ElementTetP2 instead of ElementTetP1, turning the inf-sup-unstable equal-order
+pair into a second Taylor-Hood pair.  Its spurious-mode count and its
+regularised pressure range then stop separating from Taylor-Hood's.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import os
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
@@ -56,6 +65,11 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, div, grad
+
+
+# the pathology: the equal-order pair uses P1 velocity against P1 pressure.
+# Under mutation the entry's recommendation (P2 velocity) is applied instead.
+EQ_VEL = ElementTetP1 if not MUTATE else ElementTetP2
 
 
 @BilinearForm
@@ -161,7 +175,7 @@ def main() -> int:
     counts = {}
     for tag, vel, pres in (("th", ElementVector(ElementTetP2()),
                             ElementTetP1()),
-                           ("eq", ElementVector(ElementTetP1()),
+                           ("eq", ElementVector(EQ_VEL()),
                             ElementTetP1())):
         series = []
         for r in (1, 2, 3):
@@ -191,7 +205,7 @@ def main() -> int:
     ranges = {}
     for tag, vel, pres in (("th", ElementVector(ElementTetP2()),
                             ElementTetP1()),
-                           ("eq", ElementVector(ElementTetP1()),
+                           ("eq", ElementVector(EQ_VEL()),
                             ElementTetP1())):
         vals = []
         for r in (2, 3):

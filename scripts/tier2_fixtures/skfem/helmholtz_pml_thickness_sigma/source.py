@@ -27,22 +27,38 @@ wording "reflects more than it absorbs" (R > 0.5) is reached in the
 too-SMALL-sigma direction (sigma_max = 0.05k -> R = 0.72), not in the
 too-large-sigma direction within any sane range; what too-large sigma does is
 degrade R monotonically by orders of magnitude.
+
+Mutation control: with T2_MUTATE=1 both mistakes are replaced by the claim's
+own standard choices at their pathology sites — the lambda/8 layer thickness
+THIN_THICK_LAM becomes the 1.5 lambda TUNED_THICK_LAM, and the impedance-jump
+HUGE_SIGMA becomes the tuned TUNED_SIGMA = 2k.  Both wrong variants then
+reproduce the tuned |R| < 1e-3, so 'thin_thickness_lam=0.125 ...',
+'thin_n_dofs=166', 'thin_R_gt_1e-2=True',
+'thin_R_worse_than_tuned_by_gt_100x=True', 'huge_sigma_R_gt_1e-2=True',
+'huge_sigma_worse_than_tuned_by_gt_1000x=True' and
+'sigma_too_large_is_worse_than_optimum=True' disappear and the fixture goes
+red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import (Basis, BilinearForm, ElementQuad1, MeshQuad, asm, condense,
                    solve)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 K_WAVE = 8.0
 NPPW = 20
 N_WAVE_INTERIOR = 4
-THIN_THICK_LAM = 0.125     # the mistake: lambda/8, well under lambda/2
 TUNED_THICK_LAM = 1.5      # the claim's 1-2 lambda band
 TUNED_SIGMA = 2.0          # sigma_max / k
-HUGE_SIGMA = 2.0e4         # the mistake: impedance jump
+# the two mistakes; under mutation each is replaced by the tuned value the
+# claim documents as the fix
+THIN_THICK_LAM = 0.125 if not MUTATE else TUNED_THICK_LAM
+HUGE_SIGMA = 2.0e4 if not MUTATE else TUNED_SIGMA
 
 
 def reflection(thick_lam: float, sigma_over_k: float):

@@ -24,14 +24,27 @@ Measured on skfem 12.0.1, MeshTri().refined(4), ElementTriP1, 289 DOFs:
     at the source point equals the integral of the point-source solution, to
     several digits, because the Green's function is symmetric.  That is a far
     sharper check than counting peaks.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the right-hand side the entry builds with unit_load.assemble(ib) is
+replaced by the correct one-hot point load (ib.zeros() with a 1.0 at the
+source DOF).  The spread of basis-function integrals is then gone, the two
+loads coincide and reciprocity between them no longer holds, so
+'unit_load_entries_are_basis_integrals=True',
+'point_peak_exceeds_unit_load_peak=True' and
+'greens_function_reciprocity_holds=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass, unit_load
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -39,6 +52,10 @@ def main() -> int:
     m = MeshTri().refined(4)
     ib = Basis(m, ElementTriP1())
     print(f"dofs_N={ib.N} elements={m.t.shape[1]}")
+    src = int(np.argmin((ib.doflocs[0] - 0.5) ** 2
+                        + (ib.doflocs[1] - 0.5) ** 2))
+    f_point = ib.zeros()
+    f_point[src] = 1.0
 
     # --- ib.zeros() ------------------------------------------------------
     z = ib.zeros()
@@ -54,7 +71,10 @@ def main() -> int:
         ok = False
 
     # --- what unit_load actually contains --------------------------------
-    ul = unit_load.assemble(ib)
+    # THE PATHOLOGY: unit_load.assemble is used where a point source was
+    # meant.  Under T2_MUTATE the documented fix is applied here -- the
+    # one-hot ib.zeros() load takes its place.
+    ul = unit_load.assemble(ib) if not MUTATE else f_point.copy()
     print(f"unit_load_min={ul.min():.6e} unit_load_max={ul.max():.6e}")
     print(f"unit_load_sum={ul.sum():.6f}")
     print(f"unit_load_is_one_at_every_dof={bool(np.allclose(ul, 1.0))}")
@@ -73,10 +93,6 @@ def main() -> int:
     K = laplace.assemble(ib)
     M = mass.assemble(ib)
     D = ib.get_dofs().all()
-    src = int(np.argmin((ib.doflocs[0] - 0.5) ** 2
-                        + (ib.doflocs[1] - 0.5) ** 2))
-    f_point = ib.zeros()
-    f_point[src] = 1.0
     u_point = solve(*condense(K, f_point, D=D))
     u_load = solve(*condense(K, ul, D=D))
     print(f"point_peak={u_point.max():.6f}")

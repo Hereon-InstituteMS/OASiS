@@ -20,9 +20,18 @@ Observed on skfem 12.0.1 (MeshTri().refined(3), 176 interior facets):
   * FacetBasis (right)          -> max|u - 1| = 2.2e-15, u in [1, 1]
   * InteriorFacetBasis (wrong)  -> u in [-0.67, +16.9], max|u - 1| = 15.9,
     and the streamwise band means are non-monotone.
+
+Mutation control: T2_MUTATE=1 moves the wrong-variant inflow load back onto
+FacetBasis (load_on = fb) -- the documented fix, at the one line where the basis
+is chosen. The "wrong" leg then reproduces u == 1, so n_interior_facets=176,
+wrong_max_abs_dev_from_one_gt_1=True, wrong_violates_max_principle=True,
+wrong_streamwise_decreases_gt_0=True, wrong_band_growth_gt_5=True and
+wrong_over_right_dev_ratio_gt_1e10=True all vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -38,6 +47,8 @@ from skfem import (
     asm,
 )
 from scipy.sparse.linalg import spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 B = np.array([1.0, 0.5])
 G_INFLOW = 1.0
@@ -102,7 +113,9 @@ def run(load_basis: str):
     A = (asm(advection_volume, ib)
          + asm(upwind_flux, [i0, i1], [i0, i1])
          + asm(inflow_bilinear, fb))
-    load_on = fb if load_basis == "facet" else i0
+    # Pathology: the inflow load is assembled on an InteriorFacetBasis.
+    # Mutation: the documented fix -- put the inflow load back on FacetBasis.
+    load_on = fb if (load_basis == "facet" or MUTATE) else i0
     f = asm(inflow_load, load_on)
     u = spsolve(A.tocsr(), f)
     return u, ib, m, int(load_on.nelems)

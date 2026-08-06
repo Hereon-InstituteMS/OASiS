@@ -20,10 +20,23 @@ on MeshTri.init_tensor n x n, ElementTriP1, homogeneous Dirichlet, ten steps:
     undershoot is a few percent at dt/h^2 = 0.5 and rises past 60 % at
     dt/h^2 = 50, so it spans an order of magnitude across ordinary choices.
     Test for a NEGATIVE minimum, not for a percentage band.
+
+Mutation control: T2_MUTATE=1 applies the entry's own remedy at the pathology
+site -- CN_THETA, the theta used by the nine runs tagged "cn", becomes 1.0
+(backward Euler) instead of 0.5.  Those runs then stop ringing, so the
+undershoot the fixture measures disappears.  Re-run: T2_MUTATE=1 python
+source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# theta = 0.5 is Crank-Nicolson, the scheme under test; the entry's remedy is
+# to switch to theta = 1, which is what the mutation does.
+CN_THETA = 0.5 if not MUTATE else 1.0
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
@@ -61,7 +74,7 @@ def main() -> int:
     for n in (16, 32, 64):
         h2 = (1.0 / n) ** 2
         for ratio in (0.5, 5.0, 50.0):
-            for theta, tag in ((0.5, "cn"), (1.0, "be")):
+            for theta, tag in ((CN_THETA, "cn"), (1.0, "be")):
                 under, ib = run(theta, n, ratio * h2)
                 table[(tag, n, ratio)] = under
                 print(f"{tag}_n{n}_dtoverh2_{ratio:g}_undershoot={under:.4f}")

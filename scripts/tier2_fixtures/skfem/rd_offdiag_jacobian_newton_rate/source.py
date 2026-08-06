@@ -39,9 +39,18 @@ NOT derivative-consistent, so the shipped four-block Newton is itself only
 linear. See the authoring report.
 
 Cost: one time step on a 16x16 grid, well under a second.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the off_diagonal flag inside newton() is forced True, so the two
+dropped asm(jac_uv) / asm(jac_vu) calls are made again and bmat gets all four
+blocks. The wrong variant recovers the quadratic rate and
+'diag_updates_ge_8=True', 'diag_min_ratio_gt_1e_2=True' and
+'diag_ratio_decades_lt_1=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -51,6 +60,8 @@ from scipy.sparse.linalg import spsolve
 from skfem import (Basis, BilinearForm, ElementQuad1, LinearForm, MeshQuad,
                    asm)
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 A_P, B_P = 0.1, 0.9
 D_U, D_V = 1.0, 40.0
@@ -95,6 +106,10 @@ def jac_vv(u, v, w):          # df_v/dv = -u^2
 
 def newton(off_diagonal: bool):
     """One backward-Euler step; returns the residual history."""
+    # THE PATHOLOGY: the two off-diagonal asm calls are not made.  Under
+    # T2_MUTATE the documented fix is applied here -- all four blocks are
+    # assembled, which is the edit the entry tells a user to make.
+    off_diagonal = off_diagonal or MUTATE
     mesh = MeshQuad.init_tensor(np.linspace(0.0, 1.0, NX + 1),
                                 np.linspace(0.0, 1.0, NX + 1))
     basis = Basis(mesh, ElementQuad1())

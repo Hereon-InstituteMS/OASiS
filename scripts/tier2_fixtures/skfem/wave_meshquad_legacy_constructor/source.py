@@ -25,15 +25,40 @@ behaviour is worse than either.
   * MeshQuad(10, 10) (two positional ints rather than a tuple) raises
     IndexError, not the quoted TypeError either.
   * init_tensor is the working call and produces the expected element count.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- legacy_meshquad(), the single wrapper through which every legacy
+MeshQuad((10, 10)) / MeshQuad(10, 10) call in this fixture goes, builds the
+mesh with MeshQuad.init_tensor instead.  No degenerate mesh is then produced,
+so 'Unable to calculate global DOF locations.',
+'legacy_p_is_one_dimensional=True', 'legacy_has_a_single_bogus_element=True',
+'basis_on_legacy_mesh_raises=True', 'basis_exception_type=IndexError' and
+'two_positional_ints_exception=IndexError' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 import skfem
 from skfem import Basis, ElementQuad1, MeshQuad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+
+def legacy_meshquad(*args):
+    """THE PATHOLOGY: the removed MeshQuad((nx, ny)) / MeshQuad(nx, ny) call.
+
+    Under T2_MUTATE=1 this is the documented replacement instead --
+    MeshQuad.init_tensor on the same 10x10 grid -- at every call site.
+    """
+    if MUTATE:
+        return MeshQuad.init_tensor(np.linspace(0.0, 1.0, 11),
+                                    np.linspace(0.0, 1.0, 11))
+    return MeshQuad(*args)
 
 
 def main() -> int:
@@ -46,7 +71,7 @@ def main() -> int:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            obj = MeshQuad((10, 10))
+            obj = legacy_meshquad((10, 10))
         except Exception as e:                       # noqa: BLE001
             err = e
         msgs = sorted({str(c.message) for c in caught})
@@ -89,12 +114,12 @@ def main() -> int:
     texts = []
     for call, label in (((10, 10), "tuple"), ):
         try:
-            MeshQuad(call)
+            legacy_meshquad(call)
         except Exception as e:                       # noqa: BLE001
             texts.append(str(e))
     two_arg = None
     try:
-        MeshQuad(10, 10)
+        legacy_meshquad(10, 10)
     except Exception as e:                           # noqa: BLE001
         two_arg = e
     texts.append(str(two_arg))

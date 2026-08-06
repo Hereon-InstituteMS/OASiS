@@ -8,10 +8,20 @@ values are zero for a constant function.
 Wrong variant: reading .grad[:, 0, :] as "the gradient of element 0", the axis
 confusion this claim exists to prevent. The fixture shows the two slices have
 different shapes, so the mistake is detectable.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the transposed read .grad[:, 0, :] becomes the component slice .grad[0] --
+so the two reads have the same shape and 'transposed_read_has_wrong_shape=True'
+disappears from the output. The shape and axis lines above it are
+pathology-independent and are supposed to survive. Re-run: T2_MUTATE=1 python
+source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri
@@ -49,7 +59,9 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant: transposed read -------------------------------
-    per_element = g[:, 0, :]
+    # THE PATHOLOGY: .grad[:, 0, :] read as "the gradient of element 0".
+    # T2_MUTATE replaces it with the documented right variant, .grad[0].
+    per_element = g[0] if MUTATE else g[:, 0, :]
     differs = per_element.shape != comp.shape
     print(f"transposed_read_shape={per_element.shape}")
     print(f"transposed_read_has_wrong_shape={differs}")

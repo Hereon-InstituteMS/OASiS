@@ -14,9 +14,16 @@ Wrong variant: eigsh(K_free, M=M_free, k=4) with no sigma and no which.
 
 Note: skfem.models.poisson.mass does NOT work on a vector basis (it broadcasts
 to the wrong shape), so the vector mass form is written out explicitly here.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- the no-sigma call gets ``sigma=0, which="LM"`` back, which
+is exactly the edit the pitfall prescribes.  Both calls then return the same low
+vibration modes, the top-of-spectrum contrast disappears and the fixture goes
+red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -31,6 +38,8 @@ from skfem import (
 )
 from skfem.helpers import dot
 from skfem.models.elasticity import lame_parameters, linear_elasticity
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -57,9 +66,12 @@ def main() -> int:
                         return_eigenvectors=False))
 
     # --- WRONG variant: no sigma ----------------------------------------
+    # Under T2_MUTATE the documented fix is applied right here: sigma=0 and
+    # which='LM' are supplied, so this call shift-and-inverts too.
+    kw = {} if not MUTATE else {"sigma": 0, "which": "LM"}
     raised = ""
     try:
-        high = np.sort(eigsh(KI, M=MI, k=4, return_eigenvectors=False))
+        high = np.sort(eigsh(KI, M=MI, k=4, return_eigenvectors=False, **kw))
     except Exception as exc:              # pragma: no cover
         raised = f"{type(exc).__name__}: {exc}"
         high = np.array([np.nan] * 4)

@@ -25,9 +25,19 @@ driven by the exact PK1 tangent):
 The honest signal is therefore: not an exception and not a divergence, but a
 degraded convergence ORDER plus a solution that moves when you fix the
 pre-multiplication.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- inside residual_form() the bare `pk2(F)` fed to int T:grad(v) dx gains its
+missing left multiplication by F, i.e. it becomes F @ S, which this fixture
+shows equals P to 3.6e-16.  The "wrong" residual is then the correct one, so it
+converges quadratically to the same displacement field and
+s05_pk2_ratio_is_constant_linear_rate=True, s05_answers_differ=True,
+s20_pk2_ratio_is_constant_linear_rate=True and s20_answers_differ=True all
+disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -46,6 +56,8 @@ from skfem.helpers import ddot, det, grad, inv, transpose
 
 MU = 1.0
 LAM = 1.0
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def deformation_gradient(w):
@@ -75,7 +87,14 @@ def residual_form(use_pk2):
     @LinearForm
     def form(v, w):
         F = deformation_gradient(w)
-        T = pk2(F) if use_pk2 else pk1(F)
+        # PATHOLOGY: S dropped into the PK1 slot without the F
+        # pre-multiplication.  T2_MUTATE=1 restores the documented missing
+        # factor -- T becomes F @ S, which equals P.
+        if use_pk2:
+            T = (np.einsum("ik...,kj...->ij...", F, pk2(F)) if MUTATE
+                 else pk2(F))
+        else:
+            T = pk1(F)
         return ddot(T, grad(v))
     return form
 

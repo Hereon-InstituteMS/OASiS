@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem eigenvalue#0+#2: basis.complement_dofs partitions DOFs cleanly (D + I == N); a Dirichlet-Laplace eigenproblem on MeshTri.refined(4) P1 returns eigenvalues matching pi^2*(m^2+n^2) within ~5% relative error. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for skfem eigenvalue#0+#2: basis.complement_dofs partitions DOFs cleanly (D + I == N); a Dirichlet-Laplace eigenproblem on MeshTri.refined(4) P1 returns eigenvalues matching pi^2*(m^2+n^2) within ~5% relative error. Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): this fixture asserts correct usage and runs no wrong variant, so the control introduces the documented mistake instead of removing it: T2_MUTATE=1 drops the M=M_I argument from scipy.sparse.linalg.eigsh, solving the standard pencil K_I x = lambda x instead of the generalised K_I x = lambda M_I x. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches both expect_in_output strings (eig0 = 19.9298, rel_err = 0.0097); T2_MUTATE=1 gives the h^2-scaled eig0 = 0.0769, rel_err = 0.9961 and removes 'eig0_rel_err_lt_0.05=True' so the fixture goes red. 'D_plus_I_equals_N=True' is pathology-independent and correctly survives. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "eigenvalue",
   "pitfall_index": 0,

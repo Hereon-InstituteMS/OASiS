@@ -17,9 +17,18 @@ solution that grows exponentially') matches against the
 numerical observation, not against an exception string —
 this is the first Tier-2 fixture that verifies a
 *numerical-comparison* Signal rather than an exception class.
+
+Mutation control: with T2_MUTATE=1 the second run's time step
+factor DT_FACTOR is lowered from 5.0 to 0.4, i.e. the documented
+fix (keep dt below the CFL bound h**2/(2*alpha)) applied at the
+pathology site.  The run then stays bounded, the blow-up guard
+fires first, and the strings 'linfty_norm grows' and
+'CFL violated' are never printed, so the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -31,6 +40,11 @@ from skfem import (
     MeshLine,
 )
 from skfem.helpers import dot, grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# the mistake: a time step 5x the CFL bound.  Under mutation the
+# documented fix (dt below the bound) is applied instead.
+DT_FACTOR = 5.0 if not MUTATE else 0.4
 
 
 @BilinearForm
@@ -74,11 +88,11 @@ def main() -> int:
     u_stable = _evolve(K, M_lump, u0.copy(),
                        0.4 * dt_cfl, alpha, 20, interior)
     u_unstable = _evolve(K, M_lump, u0.copy(),
-                         5.0 * dt_cfl, alpha, 20, interior)
+                         DT_FACTOR * dt_cfl, alpha, 20, interior)
 
     print(f"forward-Euler heat eq, 20 steps, h = {h:.4f}")
     print(f"  dt = 0.4 * CFL  → |u|_max = {u_stable:.3e}")
-    print(f"  dt = 5.0 * CFL  → |u|_max = {u_unstable:.3e}")
+    print(f"  dt = {DT_FACTOR:.1f} * CFL  → |u|_max = {u_unstable:.3e}")
 
     if u_unstable < 10.0:
         print("FIXTURE WARNING: unstable run did not blow up — "
@@ -90,7 +104,7 @@ def main() -> int:
     print(f"  unstable / stable ratio = {ratio:.1e}",
           file=sys.stderr)
     print(
-        f"CFL violated: dt={5.0*dt_cfl:.4e} exceeds bound "
+        f"CFL violated: dt={DT_FACTOR*dt_cfl:.4e} exceeds bound "
         f"{dt_cfl:.4e}; forward-Euler is unstable here, "
         f"linfty_norm grows by factor {ratio:.1e}.",
         file=sys.stderr,

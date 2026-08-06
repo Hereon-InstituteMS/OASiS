@@ -26,6 +26,18 @@ homogeneous velocity Dirichlet data and one pressure DOF pinned.
   * so the two failure modes must not be guarded the same way.  Here
     np.isfinite is the right partner for the warning; for a pressure null
     space both are blind.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the equal-order sweep's velocity element becomes ElementTriP2, i.e.
+the inf-sup-violating P1/P1 pair is replaced by the Taylor-Hood pair the
+entry prescribes -- so the block matrix is no longer rank deficient.  The
+unmutated run matches all 11 expect_in_output strings; under mutation
+"eq_refine2_emits_matrixrankwarning=True" (and refine3, refine4),
+"eq_refine4_finite=False", "equal_order_warns_at_every_level=True",
+"equal_order_nonfinite_at_every_level=True",
+"equal_order_is_exactly_singular_on_structured_mesh=True" and
+"isfinite_is_the_right_partner_for_this_fault=True" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -53,6 +65,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, div, grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def u_exact(x):
@@ -151,8 +165,11 @@ def main() -> int:
 
     # --- equal order on the structured mesh -------------------------------
     warned, nonfinite = [], []
+    # the inf-sup-violating velocity space.  MUTATION: the documented fix,
+    # the Taylor-Hood P2 velocity.
+    eq_vel = ElementTriP1 if not MUTATE else ElementTriP2
     for r in (2, 3, 4):
-        e, msgs, fin = run(r, ElementVector(ElementTriP1()))
+        e, msgs, fin = run(r, ElementVector(eq_vel()))
         hit = any("Matrix is exactly singular" in x for x in msgs)
         warned.append(hit)
         nonfinite.append(not fin)

@@ -27,9 +27,19 @@ plane strain nu = 0.3, left edge clamped, dead traction on the right facets):
   * THE PRESCRIBED DEFENCE WORKS: at E = 1000 with the same traction the
     first-iteration strain is small, min det(F) stays at 1 to four decimals
     and the run converges.
+
+Mutation control: T2_MUTATE=1 applies the entry's own prescribed defence at the
+pathology site -- AGGRESSIVE_E, the Young's modulus of the diverging run (and of
+the child process launched from it), goes from 1.0 to the stiffer 1000.0.  No
+element inverts, so aggressive_min_detF_went_negative=True,
+aggressive_solution_has_nan=True, aggressive_run_is_completely_silent=False, the
+scipy "Matrix is exactly singular" line, child_printed_nan=True and
+rc_only_gate_would_pass_on_nan=True all disappear.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import textwrap
@@ -50,6 +60,13 @@ from skfem import (
 from skfem.helpers import ddot, det, grad, inv, transpose
 
 NU = 0.3
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# PATHOLOGY: the soft material that lets the first Newton step invert an
+# element.  T2_MUTATE=1 applies the prescribed defence (a stiffer material,
+# E = 1000) at this one site; the child process reads the same constant.
+AGGRESSIVE_E = 1000.0 if MUTATE else 1.0
 
 
 def lame(E):
@@ -130,7 +147,7 @@ CHILD = textwrap.dedent('''
     import runpy, sys, warnings, numpy as np
     warnings.simplefilter("ignore")
     mod = runpy.run_path(sys.argv[1])
-    u, jmin, msgs = mod["run"](1.0, 0.5, 1)
+    u, jmin, msgs = mod["run"](mod["AGGRESSIVE_E"], 0.5, 1)
     print("Max displacement:", np.abs(u).max())
 ''')
 
@@ -151,7 +168,7 @@ def main() -> int:
         ok = False
 
     # --- a load large enough to invert an element ----------------------
-    u_b, j_b, m_b = run(1.0, 0.5, 1)
+    u_b, j_b, m_b = run(AGGRESSIVE_E, 0.5, 1)
     print(f"aggressive_first_iter_min_detF={j_b[0]:.4f}")
     print(f"aggressive_min_detF_went_negative={bool(j_b[0] < 0.0)}")
     print(f"aggressive_solution_has_nan={bool(np.isnan(u_b).any())}")

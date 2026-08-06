@@ -24,15 +24,36 @@ against a 1024-step same-mesh reference:
     smaller constant -- effectively backward Euler taking a shorter step.
     Reporting it as "Crank-Nicolson, slightly less accurate" is the reading
     to avoid; it has lost an order.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the "dropped_factor" variant's right-hand side operator B goes from the bare
+M back to the symmetric (M - (1 - theta) dt K).  Second order is restored, so
+'dropped_factor_only_halves_the_error=True', 'dropped_factor_still_quarters=False',
+'both_are_first_order=True' disappear from the output.
+
+Caveat found while building that control, recorded and NOT worked around:
+'dropped_factor_tracks_backward_euler_at_a_fixed_ratio' does NOT discriminate.
+It tests an ABSOLUTE spread, max(ratios) - min(ratios) < 0.02, on a
+dimensionless ratio.  Under mutation the variant is second order and its ratios
+against backward Euler fall 0.0180 -> 0.0011, i.e. by a factor of 16.4 -- the
+unmistakable signature of a DIFFERENT order -- yet the spread is 0.0169 < 0.02
+so the line still prints True.  What the test actually selects is "the ratios
+are all small", which is automatic once the compared scheme is much more
+accurate.  A relative spread (max/min: 1.023 unmutated, 16.4 mutated) would
+measure the claim directly.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 T_END = 0.02
 NX = 20
@@ -53,7 +74,9 @@ def integrate(nsteps, variant):
     if variant == "symmetric":
         B = (M - (1.0 - theta) * dt * K).tocsr()
     elif variant == "dropped_factor":
-        B = M.tocsr()                       # the (1-theta) term forgotten
+        # the (1-theta) term forgotten; under mutation it is put back
+        B = (M.tocsr() if not MUTATE
+             else (M - (1.0 - theta) * dt * K).tocsr())
     elif variant == "backward_euler":
         A = (M + dt * K).tocsr()
         B = M.tocsr()

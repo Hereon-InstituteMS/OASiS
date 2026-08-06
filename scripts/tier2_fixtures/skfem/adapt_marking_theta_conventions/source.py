@@ -24,9 +24,16 @@ gradient jump:
     sentence gets near-uniform refinement exactly where they were told to
     expect one element at a time.
   * the DOF-growth rule of thumb is checked directly on a real Dorfler loop.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the max-strategy threshold is complemented, eta_K > (1 - theta) * max
+eta, so its theta finally runs the same way round as Dorfler's -- and the
+opposite-direction finding disappears.  Re-run with
+T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -40,6 +47,8 @@ from skfem import (
     solve,
 )
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def exact(x):
@@ -84,7 +93,12 @@ def dorfler(eta, theta):
 
 
 def max_strategy(eta, theta):
-    return np.nonzero(eta > theta * eta.max())[0]
+    # The pathology: this theta is the bulk-threshold fraction, so it runs
+    # the OPPOSITE way round to Dorfler's theta.  T2_MUTATE=1 applies the
+    # documented fix -- read the max-strategy parameter as the complement,
+    # eta_K > (1 - theta) * max eta -- so both conventions agree in direction.
+    thr = theta if not MUTATE else 1.0 - theta
+    return np.nonzero(eta > thr * eta.max())[0]
 
 
 def main() -> int:

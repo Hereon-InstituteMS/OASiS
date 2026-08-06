@@ -8,9 +8,17 @@ hasattr(skfem.io.meshio, 'to_meshio') is True.
 Wrong variant: the legacy top-level spelling skfem.to_meshio(...), which raises
 AttributeError. This fixture also checks the cell-type translation and a real
 .vtu round-trip, so it catches a silent regression in either.
+
+Mutation control: T2_MUTATE=1 points the to_meshio lookup at skfem.io.meshio
+instead of the top-level skfem module -- the documented fix, applied at the
+attribute access the pitfall is about. The lookup then succeeds, no
+AttributeError text is produced, and the expectation "no attribute
+'to_meshio'" disappears from the output, so the fixture goes red. Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -20,6 +28,12 @@ import skfem
 import skfem.io.meshio as skfem_meshio
 from skfem import Basis, ElementQuad1, MeshQuad, MeshTri
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# THE PATHOLOGY: the legacy top-level spelling skfem.to_meshio.  The documented
+# fix is to look the function up on skfem.io.meshio instead.
+TO_MESHIO_HOME = skfem if not MUTATE else skfem_meshio
+
 
 def main() -> int:
     ok = True
@@ -28,7 +42,7 @@ def main() -> int:
     print(f"toplevel_has_to_meshio={hasattr(skfem, 'to_meshio')}")
     raised = ""
     try:
-        skfem.to_meshio                # noqa: B018 - deliberate probe
+        TO_MESHIO_HOME.to_meshio       # noqa: B018 - deliberate probe
     except AttributeError as exc:
         raised = str(exc)
     print(f"toplevel_attributeerror={raised!r}")

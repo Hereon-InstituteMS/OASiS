@@ -9,13 +9,23 @@ Wrong variant: calling m.with_boundaries(...) without rebinding m. The method
 returns a new mesh and leaves the original untagged, so the very next
 get_dofs('left') still fails -- this fixture proves the non-mutation directly
 rather than only quoting the error.
+
+Mutation control: T2_MUTATE=1 rebinds m to the mesh with_boundaries returns
+(m = m.with_boundaries({...})), which is the documented fix, applied at the
+call site the pitfall is about. The original name then IS tagged, so
+"with_boundaries_returns_new_mesh=True" and "original_still_untagged=True"
+disappear from the output and the fixture goes red. Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementQuad1, MeshQuad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -42,6 +52,9 @@ def main() -> int:
 
     # --- WRONG variant (b): call with_boundaries without rebinding ------
     tagged = m.with_boundaries({"left": lambda x: x[0] < 1e-10})
+    if MUTATE:
+        # THE DOCUMENTED FIX: rebind, i.e. m = m.with_boundaries({...}).
+        m = tagged
     print(f"with_boundaries_returns_new_mesh={tagged is not m}")
     print(f"original_still_untagged={m.boundaries is None}")
     if tagged is m or m.boundaries is not None:

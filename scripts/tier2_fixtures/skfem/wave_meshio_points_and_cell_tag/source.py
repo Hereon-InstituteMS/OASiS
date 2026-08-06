@@ -27,6 +27,13 @@ wrong way round:
     writes without a murmur, and reads back as tetrahedra -- a
     three-dimensional cell type on a flat mesh.  That is the mis-tag worth
     guarding against, and no exception will tell you about it.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the points handed to meshio.Mesh are padded with a zero z-column,
+np.column_stack([m.p.T, np.zeros(m.p.shape[1])]), instead of the raw (N, 2)
+m.p.T.  meshio then has nothing to complain about and its stdout notice
+'VTU requires 3D points, but 2D points given' -- itself an expect_in_output
+string -- disappears from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -40,6 +47,8 @@ import warnings
 import meshio
 import numpy as np
 from skfem import MeshQuad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -58,7 +67,12 @@ def main() -> int:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            mio = meshio.Mesh(m.p.T, [("quad", m.t.T)])
+            # THE PATHOLOGY: the raw (N, 2) point array.  Under T2_MUTATE=1
+            # the documented fix is applied here and the points are padded
+            # with a zero z-column before meshio ever sees them.
+            pts = (np.column_stack([m.p.T, np.zeros(m.p.shape[1])])
+                   if MUTATE else m.p.T)
+            mio = meshio.Mesh(pts, [("quad", m.t.T)])
             # meshio prints its notice straight to the process stdout, past
             # contextlib.redirect_stdout, so it lands in this run's own
             # output rather than in `buf` -- which is itself the point: it is

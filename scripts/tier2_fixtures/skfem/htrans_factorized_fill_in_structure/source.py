@@ -25,9 +25,20 @@ MeshTri.init_tensor grids from 16x16 to 64x64, ElementTriP1:
     run, verified by wrapping scipy's splu.
   * reuse is exact: 40 steps through the reused factorisation agree with 40
     spsolve calls to machine precision.
+
+Mutation control: this fixture has no wrong variant to remove -- it demonstrates
+the fix -- so the control runs in the opposite direction and un-applies it.
+T2_MUTATE=1 moves the factorisation INSIDE the time loop, i.e. calls
+scipy.sparse.linalg.factorized() once per step instead of once for all steps,
+which is exactly the "refactoring every step" the entry warns about.  The
+answers are unchanged (so 'reuse_is_exact=True' survives, correctly) and only
+the counted quantity moves: 'factorisations_performed=1' and
+'exactly_one_factorisation_for_all_steps=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -35,6 +46,8 @@ import scipy.sparse.linalg as spl
 import scipy.sparse.linalg._dsolve.linsolve as linsolve
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 DT = 1e-3
 NSTEPS = 40
@@ -106,8 +119,12 @@ def main() -> int:
         u0 = ib.project(lambda x: np.sin(np.pi * x[0]) * np.sin(np.pi * x[1]))
         u0[D] = 0.0
         v = u0.copy()
-        lu = spl.factorized(Ac.tocsc())
+        # Factor once outside the loop.  Under mutation the factorisation is
+        # taken inside it -- the per-step refactorisation the entry warns about.
+        lu = spl.factorized(Ac.tocsc()) if not MUTATE else None
         for _ in range(NSTEPS):
+            if MUTATE:
+                lu = spl.factorized(Ac.tocsc())
             nxt = ib.zeros()
             nxt[I] = lu((M @ v)[I])
             v = nxt

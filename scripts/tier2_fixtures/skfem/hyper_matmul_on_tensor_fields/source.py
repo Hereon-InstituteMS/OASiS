@@ -23,14 +23,25 @@ second is the dangerous one:
 
 skfem.helpers.mul / ddot and an explicit einsum both give the correct
 contraction and agree with each other to machine precision.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at both pathology
+sites -- the two `A @ B` / `As @ Bs` matmul calls become skfem.helpers.mul(...),
+which is the contraction a hyperelastic kernel actually wants.  With the @
+operator gone nothing raises and nothing is silently mis-contracted, so
+matmul_raises=True, matmul_exception_type=ValueError, quoted_prefix_matches=True
+and matmul_silently_wrong=True all disappear.  Re-run: T2_MUTATE=1 python
+source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 import skfem
 from skfem.helpers import ddot, mul, transpose
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def tensor_field(d, nelem, nqp, seed):
@@ -57,7 +68,9 @@ def main() -> int:
     print(f"tensor_shape={A.shape}")
     err = None
     try:
-        A @ B
+        # PATHOLOGY: numpy's @ on a (d, d, n_elem, n_quad) field.
+        # T2_MUTATE=1 applies the documented fix: skfem.helpers.mul.
+        mul(A, B) if MUTATE else A @ B
     except ValueError as e:
         err = e
     print(f"matmul_raises={err is not None}")
@@ -76,7 +89,9 @@ def main() -> int:
     Bs = tensor_field(2, 3, 3, 3)
     silent_err = None
     try:
-        got = As @ Bs
+        # PATHOLOGY (silent branch): same @ operator, conformable shapes.
+        # T2_MUTATE=1 applies the documented fix: skfem.helpers.mul.
+        got = mul(As, Bs) if MUTATE else As @ Bs
     except ValueError as e:
         silent_err = e
         got = None

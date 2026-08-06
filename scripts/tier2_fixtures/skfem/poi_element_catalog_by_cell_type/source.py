@@ -8,14 +8,24 @@ type(ElementTriP1()).__bases__ shows the Element hierarchy.
 Wrong variant: pairing an element with a mesh of a different cell type
 (ElementTriP1 on a MeshQuad, ElementQuad1 on a MeshTri). skfem 12.0.1 raises
 ValueError('Incompatible Mesh and Element.') at Basis construction.
+
+Mutation control: T2_MUTATE=1 pairs each element with the mesh of its OWN cell
+type (ElementTriP1 on MeshTri, ElementQuad1 on MeshQuad) -- the documented fix,
+applied at the mismatched Basis construction. Nothing raises any more, so
+"Incompatible Mesh and Element", "trip1_on_meshquad_raises=True" and
+"quad1_on_meshtri_raises=True" all disappear from the output and the fixture
+goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import skfem
 from skfem import Basis, ElementQuad1, ElementTriP1, MeshQuad, MeshTri
 from skfem.element import Element
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 NAMES = (
     "ElementTriP1", "ElementTriP2", "ElementTriP3",
@@ -45,9 +55,13 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant: element / cell-type mismatch --------------------
-    for label, mesh, el in (("trip1_on_meshquad", MeshQuad().refined(1),
+    # THE PATHOLOGY: the mesh handed to Basis has the other cell type.  The
+    # documented fix is to use the mesh matching the element's cell type.
+    mesh_for_trip1 = MeshQuad().refined(1) if not MUTATE else MeshTri().refined(1)
+    mesh_for_quad1 = MeshTri().refined(1) if not MUTATE else MeshQuad().refined(1)
+    for label, mesh, el in (("trip1_on_meshquad", mesh_for_trip1,
                              ElementTriP1()),
-                            ("quad1_on_meshtri", MeshTri().refined(1),
+                            ("quad1_on_meshtri", mesh_for_quad1,
                              ElementQuad1())):
         raised = ""
         try:

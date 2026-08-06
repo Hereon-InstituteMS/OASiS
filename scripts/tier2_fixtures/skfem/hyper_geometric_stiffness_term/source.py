@@ -23,9 +23,21 @@ clamped, right edge pulled, residual int S : dE(v) dx):
     "around 1e-6 absolute"; the plateau sits orders of magnitude higher and
     is set by the strain level, not by a universal number.  Watch the shape
     of the history (drop, then flat), not an absolute threshold.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- tangent() adds the geometric term S : grad(du)^T grad(v) even on the
+with_geometric=False path, so the material-only tangent becomes the exact
+one.  The unmutated run matches all 10 expect_in_output strings; under
+mutation "small_material_only_is_linear_not_quadratic=True",
+"small_material_only_costs_more_iterations=True",
+"large_material_only_drops_about_10x=True",
+"large_material_only_reached_nan=True" and
+"large_material_only_converged=False" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -41,6 +53,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, det, grad, inv, transpose
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 MU = 1.0
 LAM = 1.0
@@ -85,7 +99,9 @@ def tangent(with_geometric):
         material = LAM * ddot(Cinv, dEu) * Cinv \
             + 2.0 * (MU - LAM * lnJ) * sandwich
         out = ddot(material, dEv)
-        if with_geometric:
+        # MUTATION: under T2_MUTATE the geometric term is restored on the
+        # material-only path too, which is the fix the entry documents.
+        if with_geometric or MUTATE:
             out = out + ddot(S, np.einsum("ki...,kj...->ij...",
                                           grad(u), grad(v)))
         return out

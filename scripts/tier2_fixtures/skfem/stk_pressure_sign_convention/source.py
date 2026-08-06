@@ -31,10 +31,18 @@ Measured on skfem 12.0.1 and NGSolve 6.2.2604:
     so there is no DoF correspondence to compare.  What is checkable, and is
     checked here, is the sign of the pressure at named boundaries in each
     code, plus the exact-negation property within each code.
+
+Mutation control: T2_MUTATE=1 removes the sign flip at both pathology sites --
+skfem's ``b_plus`` form is written with the catalog's ``-div(u)*q`` instead of
+``+div(u)*q``, and the NGSolve "minus" variant is assembled with sign = +1.0
+like its "plus" twin.  Both codes then run the same convention twice, so there
+is no pressure sign to flip.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import os
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
@@ -77,6 +85,8 @@ def skfem_pair():
 
     @BilinearForm
     def b_plus(u, q, w):
+        if MUTATE:                  # sign flip removed: the catalog convention
+            return -div(u) * q
         return +div(u) * q
 
     fi = FacetBasis(m, ev, intorder=4, facets=m.boundaries["inlet"])
@@ -112,7 +122,8 @@ def ngsolve_pair():
     X = V * Q
     (u, p), (v, q) = X.TnT()
     res = {}
-    for tag, sign in (("plus", +1.0), ("minus", -1.0)):
+    for tag, sign in (("plus", +1.0),
+                      ("minus", -1.0 if not MUTATE else +1.0)):
         a = ng.BilinearForm(X)
         a += (MU * ng.InnerProduct(ng.Grad(u), ng.Grad(v))
               + sign * ng.div(u) * q + sign * ng.div(v) * p) * ng.dx

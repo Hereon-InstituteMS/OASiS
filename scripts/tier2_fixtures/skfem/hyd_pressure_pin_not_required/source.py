@@ -38,6 +38,16 @@ pressure traction as a natural BC, traction-free outlet):
     the cause is not isolated here and no claim is made about it.  What the
     fixture does establish is one-directional: the warning is a SUFFICIENT
     signal of a rank-deficient matrix and never a necessary one.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the one site where
+the pathology is real -- the outlet pressure DOF is added to D_enc, so the
+enclosed system that genuinely carries the constant-pressure null space is
+pinned.  The unmutated run matches all 17 expect_in_output strings; under
+mutation the enclosed nullity drops to 0 and
+"enclosed_has_one_dimensional_nullspace=True" disappears.  Pinning the OPEN
+channel is deliberately not the control here: that is the fixture's own
+finding, that the pin changes nothing there.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -67,6 +77,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, div, grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 L_CHAN, H_CHAN, MU, P_IN = 2.0, 0.1, 1.0, 1.0
 
@@ -166,9 +178,14 @@ def main() -> int:
         ok = False
 
     # --- enclosed flow: the null space is real ----------------------------
-    D_enc = np.concatenate([bu.get_dofs("wall").all(),
-                            bu.get_dofs("inlet").all(),
-                            bu.get_dofs("outlet").all()])
+    enc_parts = [bu.get_dofs("wall").all(),
+                 bu.get_dofs("inlet").all(),
+                 bu.get_dofs("outlet").all()]
+    if MUTATE:
+        # the documented fix, at the one place the null space is real:
+        # pin a pressure DOF on the enclosed problem.
+        enc_parts.append(np.array([pin]))
+    D_enc = np.concatenate(enc_parts)
     full_e, msgs_e, _, Kc_e = run(K, F, D_enc, bu, bp, m, ev)
     print(f"enclosed_nullity={nullity(Kc_e)}")
     print(f"enclosed_has_one_dimensional_nullspace={nullity(Kc_e) == 1}")

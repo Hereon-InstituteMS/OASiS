@@ -18,9 +18,19 @@ MeshTri.init_tensor grid, plus a MeshQuad grid:
   * the consequence of splitting at the wrong index is silent: both slices
     come back with plausible lengths and the pressure slice is filled with
     velocity entries.  Nothing raises.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- split_index() returns basis.N instead of the hand-derived vertices-times-dim
+count, both in the per-space comparison and in the [u; p] split itself.  Every
+space then matches, nothing is contaminated, and
+'formula_is_wrong_for_at_least_one_space=True',
+'discrepancy_exceeds_a_factor_of_three=True' and
+'naive_split_contaminates_pressure=True' disappear from the output.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -37,6 +47,16 @@ from skfem import (
 )
 
 NX = 8
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+
+def split_index(bu, naive):
+    """Where the [u; p] vector gets cut, and what the DOF count is compared to.
+
+    THE PATHOLOGY is the hand-derived `naive` count; the documented fix is
+    `ib_u.N`, which T2_MUTATE substitutes here and nowhere else.
+    """
+    return bu.N if MUTATE else naive
 
 
 def main() -> int:
@@ -55,22 +75,23 @@ def main() -> int:
                             ("quad_Q1", quad, ElementQuad1()),
                             ("quad_Q2", quad, ElementQuad2())):
         bu = Basis(mesh, ElementVector(elem))
-        rows.append((tag, bu.N))
-        print(f"{tag}_basis_N={bu.N} naive={guess} "
-              f"ratio={bu.N / guess:.4f}")
-        print(f"{tag}_naive_matches_basis_N={bu.N == guess}")
+        used = split_index(bu, guess)
+        rows.append((tag, bu.N, used))
+        print(f"{tag}_basis_N={bu.N} naive={used} "
+              f"ratio={bu.N / used:.4f}")
+        print(f"{tag}_naive_matches_basis_N={bu.N == used}")
 
-    matches = [t for t, n in rows if n == guess]
-    misses = [(t, n) for t, n in rows if n != guess]
+    matches = [t for t, n, u in rows if n == u]
+    misses = [(t, n, u) for t, n, u in rows if n != u]
     print(f"spaces_where_the_formula_is_right={matches}")
-    print(f"spaces_where_the_formula_is_wrong={[t for t, _ in misses]}")
+    print(f"spaces_where_the_formula_is_wrong={[t for t, _, _ in misses]}")
     print(f"formula_is_right_for_at_least_one_space={bool(matches)}")
     print(f"formula_is_wrong_for_at_least_one_space={bool(misses)}")
-    worst = max((abs(n - guess) for _, n in misses), default=0)
+    worst = max((abs(n - u) for _, n, u in misses), default=0)
     print(f"largest_absolute_discrepancy={worst}")
     print(f"discrepancy_is_off_by_one={worst == 1}")
     print(f"discrepancy_exceeds_a_factor_of_three="
-          f"{any(n > 3 * guess or guess > 3 * n for _, n in misses)}")
+          f"{any(n > 3 * u or u > 3 * n for _, n, u in misses)}")
     if not matches:
         print("FAIL: the naive formula was never right, so it would not "
               "survive a first test", file=sys.stderr)
@@ -87,10 +108,11 @@ def main() -> int:
     bp = Basis(tri, ElementTriP1())
     total = bu.N + bp.N
     x = np.arange(total, dtype=float)
+    cut = split_index(bu, guess)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         good_u, good_p = x[:bu.N], x[bu.N:]
-        bad_u, bad_p = x[:guess], x[guess:]
+        bad_u, bad_p = x[:cut], x[cut:]
         msgs = sorted({str(c.message) for c in caught})
     print(f"total_length={total} basis_N={bu.N} pressure_N={bp.N}")
     print(f"correct_split_pressure_length={len(good_p)}")

@@ -23,6 +23,14 @@ present is the time-integration error:
     All three starts oscillate; the difference is amplitude and phase error,
     not a monotone drift, and np.abs(u).max() does not grow monotonically in
     any of them.  The reliable diagnostic is the ORDER of the error in dt.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the "entry_sign" start in march() flips from the entry's
+um = u0 - 0.5*dt*dt*acc(u0) to the correct um = u0 + 0.5*dt*dt*acc(u0).
+That start is then second order and no worse than doing nothing, so
+'entry_minus_sign_gives_first_order=True' and
+'entry_sign_worse_than_no_correction=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -31,6 +39,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import sys
 
@@ -76,7 +86,11 @@ def march(ib, K, ML, D, u0, dt, T, start):
     if start == "correct":
         um = u0 + 0.5 * dt * dt * acc(u0)
     elif start == "entry_sign":
-        um = u0 - 0.5 * dt * dt * acc(u0)
+        # THE PATHOLOGY: the minus sign quoted by the entry.  Under
+        # T2_MUTATE=1 the documented fix is applied here and this start uses
+        # the correct plus sign.
+        um = (u0 + 0.5 * dt * dt * acc(u0) if MUTATE
+              else u0 - 0.5 * dt * dt * acc(u0))
     else:
         um = u0.copy()
     u = u0.copy()

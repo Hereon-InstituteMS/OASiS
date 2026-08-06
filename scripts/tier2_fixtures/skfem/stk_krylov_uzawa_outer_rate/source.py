@@ -28,10 +28,19 @@ constant pressure mode is projected out; the outer solver is CG on S.
     iterations, but each outer step carries a velocity solve, so the counts
     are not comparable units and the entry's framing invites reading them as
     if they were.
+
+Mutation control: the cause this fixture names for the bad and refinement-
+dependent outer rate is that the Schur solve is UNPRECONDITIONED.  T2_MUTATE=1
+removes exactly that at the pathology site: the outer CG on S is handed the
+standard pressure-mass preconditioner M_p^-1 (projected onto the mean-zero
+subspace), which is spectrally equivalent to S.  The outer rate then stops
+degrading with refinement.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import os
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
@@ -64,6 +73,11 @@ def neg_div(u, q, w):
     return -div(u) * q
 
 
+@BilinearForm
+def p_mass(p, q, w):
+    return p * q
+
+
 def setup(refine):
     m = MeshTri().refined(refine)
     bu = Basis(m, ElementVector(ElementTriP2()), intorder=4)
@@ -91,8 +105,14 @@ def uzawa(refine):
 
     S = spl.LinearOperator((n, n), matvec=lambda p: Bf @ lu.solve(Bf.T @ p))
     rhs = proj(Bf @ lu.solve(f) - (B @ xb))
+    prec = None
+    if MUTATE:
+        # the missing pressure-mass preconditioner, put back
+        lum = spl.splu(p_mass.assemble(bp).tocsc())
+        prec = spl.LinearOperator((n, n),
+                                  matvec=lambda r: proj(lum.solve(proj(r))))
     res = []
-    p, info = spl.cg(S, rhs, rtol=1e-10, maxiter=500,
+    p, info = spl.cg(S, rhs, rtol=1e-10, maxiter=500, M=prec,
                      callback=lambda pk: res.append(
                          float(np.linalg.norm(proj(rhs - S @ pk)))))
     return info, res, n

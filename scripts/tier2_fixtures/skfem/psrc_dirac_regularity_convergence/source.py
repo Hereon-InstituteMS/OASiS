@@ -16,14 +16,30 @@ The fixture adds the structural fingerprint the entry does not mention: the
 pointwise PEAK of the discrete solution GROWS without bound under refinement
 (the Green's function has a logarithmic singularity), so a check on max(u) is
 not a convergence check -- it is a divergence check.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the Dirac right-hand side f[src] = 1.0 is replaced by the smooth
+distributed load unit_load.assemble(ib) (the integral of f = 1 against the
+test functions), in the reference run and in every refinement alike.  The
+regularity is then restored (L2 rate 1.94/2.00/2.07, H1 rate 1.85/1.89/1.97,
+peak growth factor 1.012) and 'l2_rate_is_below_two=True',
+'h1_rate_is_below_one=True', 'h1_barely_moves_while_l2_falls=True' and
+'peak_is_not_converging=True' disappear from the output.  Note that
+'peak_grows_monotonically_under_refinement=True' SURVIVES the mutation: the
+smooth-source peak also rises monotonically, it just converges, so monotone
+growth on its own is not evidence of a divergent peak.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
-from skfem.models.poisson import laplace, mass
+from skfem.models.poisson import laplace, mass, unit_load
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def solve_point(refine):
@@ -31,10 +47,14 @@ def solve_point(refine):
     ib = Basis(m, ElementTriP1())
     K = laplace.assemble(ib)
     D = ib.get_dofs().all()
-    f = ib.zeros()
-    src = int(np.argmin((ib.doflocs[0] - 0.5) ** 2
-                        + (ib.doflocs[1] - 0.5) ** 2))
-    f[src] = 1.0
+    if MUTATE:
+        # the documented fix: a smooth source instead of a point mass
+        f = unit_load.assemble(ib)
+    else:
+        f = ib.zeros()
+        src = int(np.argmin((ib.doflocs[0] - 0.5) ** 2
+                            + (ib.doflocs[1] - 0.5) ** 2))
+        f[src] = 1.0
     return m, ib, solve(*condense(K, f, D=D))
 
 

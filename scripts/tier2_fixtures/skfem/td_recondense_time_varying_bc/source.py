@@ -20,15 +20,25 @@ ramping g(t) = t/T from 0 to 1:
   * the interior is wrong too, not just the boundary: the whole solution is
     off, because the frozen lifting feeds the wrong data into the interior
     equations at every step.
+
+Mutation control: T2_MUTATE=1 applies the documented fix to the pathological
+second run -- integrate(refresh_bc=True), i.e. re-condense with the current
+wall value every step instead of freezing the condensation from step 0.  The
+frozen-BC pathology is then gone and 'frozen_boundary_tracks_bc=False',
+'frozen_boundary_stuck_at_initial_value=True' and 'interior_is_wrong_too=True'
+disappear from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 NX = 16
 DT = 2e-3
@@ -76,7 +86,10 @@ def integrate(refresh_bc):
 def main() -> int:
     ok = True
     u_ok, ib, D, w_ok = integrate(True)
-    u_bad, _, _, w_bad = integrate(False)
+    # THE PATHOLOGY: refresh_bc=False condenses once at step 0 and reuses it.
+    # Under T2_MUTATE=1 the documented fix is applied here -- re-condense with
+    # the current wall value every step -- so this run is no longer frozen.
+    u_bad, _, _, w_bad = integrate(True if MUTATE else False)
     target = wall_value(NSTEPS)
     print(f"dofs_N={ib.N} boundary_dofs={len(D)} nsteps={NSTEPS}")
     print(f"prescribed_final_wall_value={target}")

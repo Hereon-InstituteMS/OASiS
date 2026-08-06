@@ -9,9 +9,19 @@ integral gives an O(1) scale error on diagonal facets.
 Wrong variant: assuming all reference normals are unit and using them as-is.
 Right variant: FacetBasis's own normals, which ARE unit -- and the claim gets
 that attribute's NAME wrong: it is `normals`, not `normal`.
+
+Mutation control: the pathology here IS the non-unit scaling of the reference
+normal tables, so T2_MUTATE=1 removes it at source: RefTri/RefTet/RefWedge's
+`normals` arrays are rescaled to unit length -- the fix a user applies when
+indexing them for a flux integral, and exactly the upstream change the
+fixture's own "the claim is stale" branch anticipates.  The slanted-facet
+signatures then vanish and reftri_hypotenuse_norm_is_sqrt2=True,
+reftet_slanted_norm_is_sqrt3=True and refwedge_diagonal_norm_is_sqrt2=True all
+disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -20,6 +30,13 @@ from skfem.refdom import RefHex, RefLine, RefQuad, RefTet, RefTri, RefWedge
 
 SQRT2 = float(np.sqrt(2.0))
 SQRT3 = float(np.sqrt(3.0))
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    # PATHOLOGY REMOVED: unit-scale the slanted reference normals.
+    for _ref in (RefTri, RefTet, RefWedge):
+        _n = np.array(_ref.normals, dtype=float)
+        _ref.normals = _n / np.linalg.norm(_n, axis=1, keepdims=True)
 
 
 def norms(refdom) -> np.ndarray:

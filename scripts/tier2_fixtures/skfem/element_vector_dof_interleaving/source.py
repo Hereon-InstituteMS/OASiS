@@ -16,12 +16,23 @@ component-split via reshape, (b) computing the CORRECT split via
 nodal_dofs, and (c) verifying they do not match — printing the
 key strings 'ElementVector', 'interleaved', and 'do not match'
 that the Tier-2 runner matches against the Signal.
+
+Mutation control: with T2_MUTATE=1 the component split that the
+pitfall is about is taken with the documented fix — the second
+extraction switches from `u.reshape(2, -1)` to
+`u[ib.nodal_dofs[0]] / u[ib.nodal_dofs[1]]`.  Both paths then
+agree, so the line containing 'do not match' is replaced by the
+FIXTURE WARNING branch and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import numpy as np
 from skfem import Basis, ElementQuad1, ElementVector, MeshQuad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -41,14 +52,21 @@ def main() -> int:
     ux_correct = u[ib.nodal_dofs[0]]
     uy_correct = u[ib.nodal_dofs[1]]
     # WRONG extraction — naive reshape assumes blocked layout
-    ux_wrong, uy_wrong = u.reshape(2, -1)
+    if not MUTATE:
+        ux_wrong, uy_wrong = u.reshape(2, -1)
+        how = "u.reshape(2,-1)"
+    else:
+        # documented fix applied at the pathology site
+        ux_wrong = u[ib.nodal_dofs[0]]
+        uy_wrong = u[ib.nodal_dofs[1]]
+        how = "u[ib.nodal_dofs]"
 
     print("ElementVector(ElementQuad1()) stores DoFs interleaved.")
     print(f"  n_dofs = {ib.N}, n_nodes = {n_nodes}")
     print(f"  ux_correct (via nodal_dofs[0])[:4] = {ux_correct[:4]}")
     print(f"  uy_correct (via nodal_dofs[1])[:4] = {uy_correct[:4]}")
-    print(f"  ux_wrong   (u.reshape(2,-1)[0])[:4] = {ux_wrong[:4]}")
-    print(f"  uy_wrong   (u.reshape(2,-1)[1])[:4] = {uy_wrong[:4]}")
+    print(f"  ux_wrong   ({how}[0])[:4] = {ux_wrong[:4]}")
+    print(f"  uy_wrong   ({how}[1])[:4] = {uy_wrong[:4]}")
 
     if np.allclose(ux_correct, ux_wrong) \
             and np.allclose(uy_correct, uy_wrong):

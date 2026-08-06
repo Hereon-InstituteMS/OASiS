@@ -10,10 +10,20 @@ step overshoot badly.
 
 Wrong variant: alpha = 1 throughout. Right variant: halve alpha until the
 residual at the trial point is below the current one.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the alpha = 1 branch inside run() also backtracks -- so the undamped run
+becomes a damped one. The residual then no longer grows and does reach machine
+precision, which removes 'full_step_residual_grows=True' and
+'full_step_never_reaches_1e_9=True' from the output. Re-run: T2_MUTATE=1
+python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import (
@@ -53,7 +63,10 @@ def run(basis, backtrack: bool, n_steps: int = 8):
         if not np.isfinite(rn):
             break
         du = solve(*condense(jacobian.assemble(basis, u=w), -r, D=D))
-        if not backtrack:
+        # THE PATHOLOGY: the undamped full step, alpha = 1.  Under T2_MUTATE
+        # this branch is skipped, i.e. the documented fix (backtracking) is
+        # applied to the "full step" run as well.
+        if not backtrack and not MUTATE:
             u = u + du
             continue
         alpha = 1.0

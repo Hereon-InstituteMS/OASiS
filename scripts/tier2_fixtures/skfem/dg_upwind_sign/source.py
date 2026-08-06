@@ -23,9 +23,18 @@ Observed on skfem 12.0.1 (MeshTri().refined(3)):
     the solution blows up to O(1e12) instead of staying in [0, 1].
   * on the front-advection test the centered flux overshoots ~2x more than
     upwind and its wiggles persist ~1e3 further downstream.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented
+one-token fix at the pathology site -- inside ``flux_coefficient`` the
+"centered" (``0.5*sv*bn``) and "downwind" (``np.maximum(sv*bn, 0.0)``) branches
+are replaced by the correct upwind coefficient ``np.minimum(sv*bn, 0.0)``.  All
+three variants are then the same dissipative operator, so the anti-dissipation,
+the singular matrix and the overshoot contrast all disappear and the fixture
+goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -43,10 +52,15 @@ from skfem import (
 )
 from scipy.sparse.linalg import spsolve
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 B = np.array([1.0, 0.5])
 
 
 def flux_coefficient(kind, sv, bn):
+    if MUTATE and kind in ("centered", "downwind"):
+        # The documented fix: consult the sign of b.n and take the upwind side.
+        kind = "upwind"
     if kind == "upwind":
         return np.minimum(sv * bn, 0.0)
     if kind == "centered":

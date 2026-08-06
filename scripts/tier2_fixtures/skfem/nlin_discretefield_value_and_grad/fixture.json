@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem nonlinear#2: basis.interpolate(u) returns a skfem.element.discrete_field.DiscreteField carrying .value and .grad; for a constant u the .grad array is uniformly zero. Measured on skfem 12.0.1. Also pins the failure an agent hits instead: naming a field that was never passed to assemble raises from the FormExtraParams dict.",
+  "_comment": "Tier-2 for skfem nonlinear#2: basis.interpolate(u) returns a skfem.element.discrete_field.DiscreteField carrying .value and .grad; for a constant u the .grad array is uniformly zero. Measured on skfem 12.0.1. Also pins the failure an agent hits instead: naming a field that was never passed to assemble raises from the FormExtraParams dict. MUTATION CONTROL (re-runnable): T2_MUTATE=1 passes the field the form body reads, needs_field.assemble(basis, u=field) in place of needs_field.assemble(basis). Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 6 expect_in_output strings; T2_MUTATE=1 removes 'missing_field_raises=True' so the fixture goes red. The five DiscreteField API lines are pathology-independent and survive by design. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "nonlinear",
   "pitfall_index": 2,

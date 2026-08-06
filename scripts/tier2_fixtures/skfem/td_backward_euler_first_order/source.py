@@ -19,10 +19,20 @@ condition sin(pi x) sin(pi y), integrated to T = 0.02:
   * against that reference theta = 1 gives a measured slope of ~1 and
     theta = 0.5 gives ~2, across four successive halvings each, so the
     entry's diagnostic is sound once the reference is right.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the "analytic" error column is measured against the SEMI-DISCRETE reference
+(the same mesh, same theta, 1024 steps) instead of ib.project(exact(., T)).
+The spatial error then cancels, so Crank-Nicolson's measured slope no longer
+collapses and the misdiagnosis the fixture demonstrates cannot arise.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
@@ -84,8 +94,13 @@ def main() -> int:
         for n in counts:
             u, ibn, Mn = integrate(theta, n)
             errs_semi.append(l2(M, u, uref))
-            errs_analytic.append(l2(Mn, u, ibn.project(
-                lambda x: exact(x, T_END))))
+            if MUTATE:
+                # the documented fix: the reference is the semi-discrete
+                # solution, not the analytic one
+                errs_analytic.append(l2(M, u, uref))
+            else:
+                errs_analytic.append(l2(Mn, u, ibn.project(
+                    lambda x: exact(x, T_END))))
         s_semi = slopes(errs_semi)
         s_ana = slopes(errs_analytic)
         results[tag] = (s_semi, s_ana)

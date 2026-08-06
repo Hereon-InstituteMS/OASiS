@@ -8,14 +8,26 @@ This fixture pins the arithmetic behind that confusing message: the reported
 INDEX is a global DOF number drawn from D, and the reported SIZE is len(x). It
 also records the asymmetry the claim omits -- a too-LONG x raises nothing and is
 silently accepted, so only one of the two length mistakes is loud.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the short-x site --
+the probe array is built with basis.zeros() (length basis.N) instead of
+length len(D), carrying the same prescribed values.  condense then accepts it,
+so the IndexError never happens and
+'out of bounds for axis 0 with size 10', 'short_x_raises_indexerror=True',
+'reported_index_is_a_global_dof_number=True' and
+'reported_size_equals_len_short_x=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementQuad1, MeshQuad, condense, solve
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -36,7 +48,15 @@ def main() -> int:
     print(f"len_D={len(D)}")
 
     # --- WRONG variant (a): short x -------------------------------------
-    x_short = np.concatenate([np.full(len(left), 100.0), np.zeros(len(right))])
+    # Length len(D), the mistake.  Under mutation the documented fix is applied
+    # here: the same prescribed values in an array of length basis.N.
+    if not MUTATE:
+        x_short = np.concatenate([np.full(len(left), 100.0),
+                                  np.zeros(len(right))])
+    else:
+        x_short = basis.zeros()
+        x_short[left] = 100.0
+        x_short[right] = 0.0
     msg = ""
     try:
         solve(*condense(K, f, x=x_short, D=D))

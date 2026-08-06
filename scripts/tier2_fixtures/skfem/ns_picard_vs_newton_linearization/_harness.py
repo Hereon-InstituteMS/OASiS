@@ -1,4 +1,8 @@
-"""Shared Navier-Stokes Newton harness for this fixture."""
+"""Shared Navier-Stokes Newton harness for this fixture.
+
+Mutation control lives here because the pathology does: see the 'picard'
+branch of iterate(), where T2_MUTATE=1 restores the dropped reaction term.
+"""
 from __future__ import annotations
 
 import os
@@ -6,6 +10,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
            "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 import scipy.sparse as sp
@@ -77,7 +83,10 @@ def iterate(re, variant, nit=14, refine=3, u0=None, picard_first=0,
         if variant == "newton":
             J = A + C1 + C2
         elif variant == "picard":
-            J = A + C1
+            # THE PATHOLOGY: the reaction term C2 = (du.grad)u_prev is
+            # dropped.  T2_MUTATE puts it back -- the documented fix, i.e.
+            # the full Newton linearisation -- at this one site.
+            J = A + C1 + C2 if MUTATE else A + C1
         elif variant == "stokes":
             J = A
         else:

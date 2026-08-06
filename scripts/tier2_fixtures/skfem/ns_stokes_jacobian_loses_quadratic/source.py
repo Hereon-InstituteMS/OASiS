@@ -24,14 +24,25 @@ the two runs are compared on the same measure and only the Jacobian differs.
     round-off, silently, in more iterations.  The defect costs iterations,
     not correctness, so the only reliable signal is the ORDER -- and a
     single-tolerance run cannot see it.
+
+Mutation control: T2_MUTATE=1 puts C(u) back into the second run's Jacobian by
+switching its variant from "stokes" (J = A) to "newton" (J = A + C1 + C2) --
+the documented fix, applied at the Jacobian-assembly site. Both runs then use
+the exact Jacobian, both converge in the same 4 iterations, and
+"stokes_needs_more_iterations=True" is no longer printed (it prints False) --
+so that expectation disappears, "FAIL: omitting C(u) cost no iterations" is
+printed, and the fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 
 from _harness import converged, iterate
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 RE = 100.0
 
@@ -44,7 +55,11 @@ def ratios(hist, lo, hi):
 def main() -> int:
     ok = True
     x_full, h_full = iterate(RE, "newton")
-    x_stokes, h_stokes = iterate(RE, "stokes", nit=16)
+    # THE PATHOLOGY: "stokes" assembles J = A only, i.e. the convection block
+    # C(u) = C1 + C2 is omitted from the Jacobian.  The documented fix is to
+    # put it back, which is exactly what the "newton" variant assembles.
+    defective = "stokes" if not MUTATE else "newton"
+    x_stokes, h_stokes = iterate(RE, defective, nit=16)
     print(f"reynolds={RE:g}")
     print(f"full_jacobian_iters={len(h_full)}")
     print(f"stokes_jacobian_iters={len(h_stokes)}")

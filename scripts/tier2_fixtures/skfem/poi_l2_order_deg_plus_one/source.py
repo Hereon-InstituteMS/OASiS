@@ -13,9 +13,17 @@ stiffness matrix and the solution is off by fourteen orders of magnitude, with
 the error GROWING under refinement.
 
 Rates are measured and bracketed; no rate or error value is pinned.
+
+Mutation control: T2_MUTATE=1 raises the broken run's ASSEMBLY intorder from 2
+to 2*deg+3 = 9, i.e. it applies the documented fix (integrate P3 with a rule
+that can actually integrate it) at the intorder argument the pitfall is about.
+P3 then converges normally, so "P3_intorder2_error_exceeds_1e6=True" and
+"P3_intorder2_rate_is_negative=True" disappear from the output and the fixture
+goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -31,6 +39,12 @@ from skfem import (
     solve,
 )
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# THE PATHOLOGY: assembling ElementTriP3 at intorder=2.  The documented fix is
+# an intorder that can integrate the P3 stiffness integrand, e.g. 2*deg+3.
+BROKEN_INTORDER = 2 if not MUTATE else 2 * 3 + 3
 
 
 @LinearForm
@@ -98,7 +112,7 @@ def main() -> int:
     print("default_intorder_costs_no_order=True")
 
     # --- WRONG variant: an explicitly too-low ASSEMBLY intorder ---------
-    broken = errors(ElementTriP3(), 3, refines, 2)
+    broken = errors(ElementTriP3(), 3, refines, BROKEN_INTORDER)
     r_broken = rates(broken)
     big = bool((broken > 1e6).all())
     negative = bool((r_broken < 0.0).all())

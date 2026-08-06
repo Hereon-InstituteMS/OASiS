@@ -27,9 +27,19 @@ pulled to 5 % stretch, hand-coded PK1 residual + exact tangent):
     iteration 1 onward.  There is no ~10x-per-iteration ramp to watch.
 
 This fixture asserts the mechanism, not the magnitudes.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the two pathology
+sites -- the sign of the lnJ term.  pk1()'s `+Fit` branch becomes `-Fit` and
+tangent_form()'s flipped `coef` becomes the correct `(MU - LAM*lnJ)`, so the
+"flipped" law IS the correct law under mutation.  The flipped run then becomes
+stress-free at F = I and converges, which removes
+flipped_stress_free_at_reference=False, F_eq_I_check_discriminates=True,
+flipped_first_step_overshoots_bc_by_gt_10x=True and flipped_reaches_nan=True.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -49,6 +59,8 @@ from skfem.helpers import ddot, det, grad, inv, transpose
 MU = 1.0
 LAM = 1.0
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def deformation_gradient(w):
     du = w["disp"].grad
@@ -65,7 +77,10 @@ def pk1(F, flipped):
     with np.errstate(invalid="ignore", divide="ignore"):
         lnJ = np.log(J)
     # correct: mu*(F - F^-T);  flipped +mu*lnJ in W gives mu*(F + F^-T)
-    return MU * (F + (Fit if flipped else -Fit)) + LAM * lnJ * Fit
+    # PATHOLOGY: the +Fit branch.  T2_MUTATE=1 applies the documented fix
+    # (W uses -mu*lnJ, hence P = mu*(F - F^-T)) so the flipped law is correct.
+    bad = flipped and not MUTATE
+    return MU * (F + (Fit if bad else -Fit)) + LAM * lnJ * Fit
 
 
 def residual_form(flipped):
@@ -85,7 +100,10 @@ def tangent_form(flipped):
             lnJ = np.log(J)
         dF = grad(u)
         FitdFtFit = np.einsum("ij...,kj...,kl...->il...", Fit, dF, Fit)
-        coef = -(MU + LAM * lnJ) if flipped else (MU - LAM * lnJ)
+        # PATHOLOGY (tangent, consistent with pk1): the flipped coefficient.
+        # T2_MUTATE=1 restores the documented (MU - LAM*lnJ).
+        coef = (-(MU + LAM * lnJ) if (flipped and not MUTATE)
+                else (MU - LAM * lnJ))
         term = MU * dF + coef * FitdFtFit + LAM * ddot(Fit, dF) * Fit
         return ddot(term, grad(v))
     return form

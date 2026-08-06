@@ -8,9 +8,17 @@ change.
 Wrong variant: reaching for the object-oriented solver API that other FEM
 libraries have. `skfem.LinearProblem` raises AttributeError -- there is nothing
 to configure, which is the point of the claim.
+
+Mutation control: T2_MUTATE=1 changes the probed attribute name from
+"LinearProblem" to "solve", i.e. it applies the documented fix (call
+skfem.solve yourself instead of reaching for a solver object). The lookup then
+succeeds, no AttributeError is raised, and the expectation
+"no attribute 'LinearProblem'" is no longer in the output, so the fixture goes
+red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -19,6 +27,12 @@ import scipy.sparse.linalg as sla
 import skfem
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, unit_load
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# THE PATHOLOGY: there is no solver-object API to reach for.  The documented
+# fix is to call skfem.solve (+ condense) yourself instead.
+PROBE = "LinearProblem" if not MUTATE else "solve"
 
 
 def main() -> int:
@@ -33,7 +47,7 @@ def main() -> int:
             ok = False
     raised = ""
     try:
-        skfem.LinearProblem            # noqa: B018 - deliberate probe
+        getattr(skfem, PROBE)          # deliberate probe
     except AttributeError as exc:
         raised = str(exc)
     print(f"attributeerror_text={raised!r}")

@@ -24,14 +24,35 @@ Measured on skfem 12.0.1, MeshTri().refined(3):
     be relied on.
   * the guard that always works is a length comparison, basis.N against
     mesh.p.shape[1], done BEFORE slicing.
+
+Mutation control: T2_MUTATE=1 removes the pathology at its site -- the
+truncating idiom p[:m.p.shape[1]] (here vertex_slice) keeps the whole field
+instead, which is what the length guard tells you to do once basis.N exceeds
+the vertex count -- so no data is dropped.  The unmutated run matches all 14
+expect_in_output strings; under mutation
+"truncation_is_invisible_by_length=True",
+"edge_peaked_range_check_detects_truncation=True" and
+"range_check_is_field_dependent=True" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementTriP1, ElementTriP2, MeshTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+
+def vertex_slice(arr, nverts):
+    """The idiom under study: p[:m.p.shape[1]].
+
+    MUTATION: keep the whole field instead of truncating it.
+    """
+    return arr if MUTATE else arr[:nverts]
 
 
 def field(x):
@@ -50,7 +71,7 @@ def main() -> int:
         p = field(bp.doflocs)
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            sliced = p[:nverts]
+            sliced = vertex_slice(p, nverts)
             msgs = sorted({str(c.message) for c in caught})
         dropped = bp.N - nverts
         prefix_ok = bool(np.allclose(bp.doflocs[:, :nverts], m.p))
@@ -100,7 +121,7 @@ def main() -> int:
     # slice throws away.  Now, and only now, the range does move.
     edge_only = np.zeros(bp2.N)
     edge_only[nverts:] = 1.0
-    sliced_edge = edge_only[:nverts]
+    sliced_edge = vertex_slice(edge_only, nverts)
     print(f"edge_peaked_full_max={edge_only.max():.6f}")
     print(f"edge_peaked_slice_max={sliced_edge.max():.6f}")
     print(f"edge_peaked_range_check_detects_truncation="

@@ -24,9 +24,21 @@ mu = lam = 1, left edge clamped, right edge pulled to 5 % stretch):
     exit code 0.
   * the damage is present at the very first assembly, before any solve, so
     the cheapest guard is asserting det(F) > 0 at u = 0.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- deformation_gradient adds the identity even on the add_identity=False
+path, so F = I + grad(u) in both kernels and the degenerate F = 0 is gone.
+The unmutated run matches all 13 expect_in_output strings; under mutation
+"without_identity_detF_all_zero=True",
+"no_identity_first_residual_all_nan=True",
+"no_identity_first_residual_finite=False",
+"without_identity_solution_free_dofs_all_nan=True" and
+"without_identity_solution_finite=False" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -43,13 +55,17 @@ from skfem import (
 )
 from skfem.helpers import ddot, det, grad, inv, transpose
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 MU = 1.0
 LAM = 1.0
 
 
 def deformation_gradient(w, add_identity):
     du = w["disp"].grad
-    if not add_identity:
+    if not add_identity and not MUTATE:
+        # MUTATION: under T2_MUTATE the identity is restored here, which is
+        # the fix the entry documents -- F = I + grad(u).
         return du
     ident = np.zeros_like(du)
     ident[0, 0] = 1.0

@@ -10,14 +10,23 @@ Wrong variant (b): a genuinely undefined free function -- raises a plain
 NameError, which is the shape the retired claim mistook for the helper failing.
 Right variants: skfem.helpers.grad and the .grad attribute, both checked against
 the library's own laplace form.
+
+Mutation control: T2_MUTATE=1 rewrites via_matmul's body from grad(u) @ grad(v)
+to dot(grad(u), grad(v)) -- the documented fix for the @ pitfall. The form then
+assembles cleanly, so the gufunc message
+"matmul: Input operand 1 has a mismatch in its core dimension" disappears and
+the fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from skfem import Basis, BilinearForm, ElementTriP1, MeshTri
 from skfem.helpers import dot, grad
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -32,6 +41,10 @@ def via_attribute(u, v, w):
 
 @BilinearForm
 def via_matmul(u, v, w):
+    # Pathology: numpy's @ on the (dim, n_elem, n_qp) DiscreteField arrays.
+    # Mutation: the documented fix -- spell the contraction with helpers.dot.
+    if MUTATE:
+        return dot(grad(u), grad(v))
     return grad(u) @ grad(v)
 
 

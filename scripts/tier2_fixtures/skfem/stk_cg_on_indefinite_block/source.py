@@ -29,10 +29,20 @@ indefiniteness:
     "converged" either way.
   * the direct solve is what the entry recommends and it does return a
     residual at machine level, four orders below CG's.
+
+Mutation control: the load-bearing measurement here is the spectrum, because
+the entry's own signal (info != 0) never fires either way.  T2_MUTATE=1
+therefore removes the INDEFINITENESS at its source: the saddle-point operator
+K = [[A, B^T], [B, 0]] handed to CG is replaced by the SPD block-diagonal
+Stokes operator diag(A, M_p) -- same size, same pinning, same right-hand
+sides, no zero pressure block and so no negative eigenvalues.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import os
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
@@ -68,6 +78,11 @@ def b_form(u, q, w):
     return -div(u) * q
 
 
+@BilinearForm
+def p_mass(p, q, w):
+    return p * q
+
+
 def main() -> int:
     ok = True
     m = MeshTri().refined(3)
@@ -75,7 +90,12 @@ def main() -> int:
     bp = Basis(m, ElementTriP1(), intorder=4)
     A = a_form.assemble(bu)
     B = b_form.assemble(bu, bp)
-    K = sp.bmat([[A, B.T], [B, None]], format="csr")
+    if MUTATE:
+        # the indefiniteness removed at source: the SPD block-diagonal Stokes
+        # operator instead of the saddle-point one.
+        K = sp.bmat([[A, None], [None, p_mass.assemble(bp)]], format="csr")
+    else:
+        K = sp.bmat([[A, B.T], [B, None]], format="csr")
     print(f"velocity_dofs={bu.N} pressure_dofs={bp.N}")
     print(f"block_shape={K.shape} block_nnz={K.nnz}")
 

@@ -25,6 +25,16 @@ outlet pressure pinned):
     |R_fe - R_exact| / R_exact comes out near 2 rather than "order 1" and a
     tolerance-style gate keyed on a small number would flag it for the wrong
     reason.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the "flipped" run's traction sign is forced back to +1.0, so the
+inlet traction enters positively in both runs and the wrong-sign pathology is
+gone.  The unmutated run matches all 13 expect_in_output strings; under
+mutation "flipped_Q_is_negative=True", "flipped_R_is_negative=True",
+"flipped_pressure_rises=True", "flip_is_an_exact_negation=True",
+"flipped_relative_error_is_near_two=True" and
+"sign_check_is_sharper_than_magnitude_check=True" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -52,6 +62,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, div, sym_grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 MU, H, L, P_IN = 1.0, 0.1, 2.0, 1.0
 
@@ -106,6 +118,8 @@ def main() -> int:
 
     res = {}
     for tag, sign in (("correct", +1.0), ("flipped", -1.0)):
+        if MUTATE:
+            sign = +1.0      # the documented fix: the traction enters as +p_in
         u, q, r, pin, pout, msgs, fin = run(sign)
         res[tag] = (u, q, r, pin, pout)
         print(f"{tag}_Q={q:+.6e}")

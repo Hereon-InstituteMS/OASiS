@@ -23,14 +23,23 @@ of them on the boundary:
     side of the mesh.
   * the guard that works is the mask f2t[1] >= 0, which selects exactly the
     interior facets.
+
+Mutation control: T2_MUTATE=1 applies that documented guard at the
+dereference site -- the facet list fed to m.t[:, f2t[1]] becomes the masked
+interior set instead of every facet -- so no -1 is ever dereferenced and the
+neighbour array no longer spans all 56 facets.  Re-run with
+T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import MeshTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -57,11 +66,15 @@ def main() -> int:
         ok = False
 
     # --- the quoted IndexError -------------------------------------------
+    # The pathology: every facet is dereferenced through f2t[1], including the
+    # boundary ones carrying -1.  T2_MUTATE=1 applies the documented guard
+    # (the mask f2t[1] >= 0) here, so only interior facets are dereferenced.
+    fsel = np.arange(nf) if not MUTATE else np.nonzero(f2t[1] >= 0)[0]
     err = None
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            neigh = m.t[:, f2t[1]]
+            neigh = m.t[:, f2t[1][fsel]]
         except IndexError as e:
             err = e
             neigh = None
@@ -77,17 +90,20 @@ def main() -> int:
         print(f"neighbour_array_shape={neigh.shape}")
         print(f"neighbour_array_has_the_expected_shape="
               f"{neigh.shape == (3, nf)}")
-        bnd = np.nonzero(f2t[1] < 0)[0]
+        bnd = np.nonzero(f2t[1][fsel] < 0)[0]
         wrapped = m.t[:, [ne - 1]]
         print(f"boundary_columns_equal_the_last_element="
-              f"{bool(np.array_equal(neigh[:, bnd],
-                                     np.repeat(wrapped, len(bnd), axis=1)))}")
-        real = m.t[:, f2t[0][bnd]]
+              f"{bool(len(bnd) > 0
+                      and np.array_equal(neigh[:, bnd],
+                                         np.repeat(wrapped, len(bnd),
+                                                   axis=1)))}")
+        real = m.t[:, f2t[0][fsel][bnd]]
         print(f"substituted_columns_differ_from_the_real_neighbour="
               f"{int(np.sum(np.any(neigh[:, bnd] != real, axis=0)))}"
               f"_of_{len(bnd)}")
         print(f"every_boundary_facet_is_corrupted="
-              f"{int(np.sum(np.any(neigh[:, bnd] != real, axis=0)))
+              f"{len(bnd) > 0
+                 and int(np.sum(np.any(neigh[:, bnd] != real, axis=0)))
                  == len(bnd)}")
         if neigh.shape != (3, nf):
             print("FAIL: the wrapped indexing did not even change the shape, "

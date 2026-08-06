@@ -8,10 +8,20 @@ exact linearisation's successive ratios collapse by more than two orders of
 magnitude, the inexact one's stay within a few percent of each other.
 
 Wrong variant: jacobian_frozen (the exact linearisation minus one term).
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the dropped 2 u du term is restored inside jacobian_frozen, so the
+"inexact" operator becomes the exact one. Its ratios then collapse instead of
+staying flat, which removes 'inexact_ratio_stays_within_2p5x=True' and
+'diagnostic_separates_the_two=True' from the output. Re-run: T2_MUTATE=1
+python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import (
@@ -48,7 +58,12 @@ def jacobian_frozen(du, v, w):
     """The exact linearisation MINUS the 2 u du term -- a Picard/quasi-Newton
     operator that is still a descent direction but not the derivative."""
     u = w["u"]
-    return (1.0 + u.value ** 2) * dot(grad(du), grad(v))
+    form = (1.0 + u.value ** 2) * dot(grad(du), grad(v))
+    if MUTATE:
+        # THE PATHOLOGY REMOVED: restore the dropped 2 u du term, i.e. make
+        # this operator the exact linearisation the claim prescribes.
+        form = form + 2.0 * u.value * du * dot(u.grad, grad(v))
+    return form
 
 
 def newton(basis, jac, n_steps: int = 6, alpha: float = 1.0):

@@ -21,9 +21,19 @@ bit-identical to having no ABC at all.
 Observed on skfem 12.0.1 (2026-08-06): no ABC -> SWR ~1.6e2 with maxima spaced
 at exactly lambda/2; correct dtype=complex ABC -> SWR ~1.004 and |u| ~ 1
 everywhere.
+
+Mutation control: with T2_MUTATE=1 the wrong variant's ABC selector flips from
+"none" to "complex", i.e. the documented fix (add the @BilinearForm(dtype=complex)
+1j*k*u*v term on FacetBasis('right')) is applied at the pathology site.  The
+reflection then disappears, so 'no_abc_swr_gt_10=True', 'n_peaks_ge_6=True',
+'peak_spacing_matches_half_wavelength=True',
+'default_dtype_abc_identical_to_no_abc=True' and
+'abc_improves_swr_by_gt_50x=True' are all printed =False and the fixture goes
+red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -31,10 +41,14 @@ import numpy as np
 from skfem import (Basis, BilinearForm, ElementQuad1, FacetBasis, MeshQuad,
                    asm, condense, solve)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 K_WAVE = 8.0
 NPPW = 20         # elements per wavelength
 N_WAVE = 4        # domain length in wavelengths
-ABC = "none"      # the mistake: no FacetBasis ABC term at all
+# the mistake: no FacetBasis ABC term at all (the documented fix under
+# mutation is the dtype=complex +i*k*u term)
+ABC = "none" if not MUTATE else "complex"
 
 
 def strip_solution(abc: str):

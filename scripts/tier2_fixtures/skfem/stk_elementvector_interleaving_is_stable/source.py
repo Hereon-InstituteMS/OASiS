@@ -24,11 +24,20 @@ Measured on skfem 12.0.1:
     returns two arrays of the right length that are NOT the components.  The
     fixture shows the mix-up produces a field that differs from the true
     component while raising nothing.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the blocked-convention slice ``u[:bs.N]`` becomes the interleaved stride
+``u[0::2]`` that skfem's layout actually calls for.  The extracted field is
+then the true component, so the silent mix-up is gone.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import (
@@ -115,7 +124,7 @@ def main() -> int:
     u[1::2] = np.cos(np.pi * bs.doflocs[1])          # component 2
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        blocked_guess = u[:bs.N]
+        blocked_guess = u[0::2] if MUTATE else u[:bs.N]
         true_comp = u[0::2]
         msgs = sorted({str(c.message) for c in caught})
     print(f"blocked_slice_length={len(blocked_guess)} "

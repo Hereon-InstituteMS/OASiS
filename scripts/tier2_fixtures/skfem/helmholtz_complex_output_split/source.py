@@ -21,6 +21,18 @@ pathology is real but the claim's quoted texts are BOTH wrong:
   * ``tofile`` is the silent half: it writes double the bytes, and a
     real-valued reader gets a doubled array with real and imaginary parts
     INTERLEAVED, not the real part.
+
+Mutation control: with T2_MUTATE=1 the payload handed to ``tofile`` and to the
+meshio / ``Mesh.save`` writers becomes the real-valued magnitude ``np.abs(u)``
+instead of the raw complex vector — the documented ``.real`` / ``np.abs`` split
+applied at the pathology site.  Nothing is doubled and nothing is rejected any
+more, so 'payload_dtype=complex128', 'tofile_bytes_is_double=True',
+'float64_readback_len_is_double=True', 'float64_readback_is_interleaved=True',
+'vtu_writer_error_type=KeyError', "dtype('complex128')",
+'skfem_save_error_type=KeyError', 'writers_reject_complex128=True',
+'vtu_file_written_anyway=False' and 'silently_truncated_to_real_part=False' all
+disappear and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -33,9 +45,11 @@ import meshio
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # The mistake: hand the raw complex array to the writers instead of splitting
 # it into a real part and a magnitude.
-WRITE_PAYLOAD = "complex"
+WRITE_PAYLOAD = "complex" if not MUTATE else "abs"
 
 
 def payload(u: np.ndarray) -> np.ndarray:

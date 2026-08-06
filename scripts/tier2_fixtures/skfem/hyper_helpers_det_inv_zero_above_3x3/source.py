@@ -13,10 +13,23 @@ warning coming from numpy's own log, not from skfem.
 
 The fixture checks the source text as well as the behaviour, so it stays
 honest if a future release adds the missing else-branch.
+
+Mutation control: T2_MUTATE=1 supplies the missing else-branch at the
+pathology site -- det_used/inv_used compute a general determinant and inverse
+(np.linalg on the trailing two axes) instead of calling skfem.helpers.det/inv
+-- which is exactly the upstream fix the fixture is written to survive.  The
+unmutated run matches all 16 expect_in_output strings; under mutation
+"d4_det_any_nonzero=False" (and d5, d6), "d4_inv_any_nonzero=False",
+"det_zero_for_4x4_and_above=True", "augmented_J_is_zero=True" and
+"augmented_lnJ_is_neg_inf=True" disappear.  The two source-text expectations
+(det_source_has_else=False, det_source_seeds_zeros=True) are about skfem's own
+source and are supposed to survive.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 import warnings
 
@@ -24,6 +37,23 @@ import numpy as np
 import skfem
 import skfem.helpers as helpers
 from skfem.helpers import det, inv
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+
+def det_used(A):
+    """skfem.helpers.det, or the missing general branch under mutation."""
+    if not MUTATE:
+        return det(A)
+    return np.linalg.det(np.moveaxis(np.asarray(A), (0, 1), (-2, -1)))
+
+
+def inv_used(A):
+    """skfem.helpers.inv, or the missing general branch under mutation."""
+    if not MUTATE:
+        return inv(A)
+    B = np.linalg.inv(np.moveaxis(np.asarray(A), (0, 1), (-2, -1)))
+    return np.moveaxis(B, (-2, -1), (0, 1))
 
 
 def diag_field(d, value=2.0, nelem=4, nqp=3):
@@ -42,8 +72,8 @@ def main() -> int:
         A = diag_field(d)
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            dA = np.asarray(det(A))
-            iA = np.asarray(inv(A))
+            dA = np.asarray(det_used(A))
+            iA = np.asarray(inv_used(A))
             msgs = [str(c.message) for c in caught]
         analytic = 2.0 ** d
         nonzero = bool(dA.any())
@@ -68,8 +98,8 @@ def main() -> int:
     # --- nothing is raised, which is the whole point ------------------
     raised = None
     try:
-        det(diag_field(4))
-        inv(diag_field(4))
+        det_used(diag_field(4))
+        inv_used(diag_field(4))
     except Exception as e:            # noqa: BLE001 -- we want ANY exception
         raised = e
     print(f"det_inv_raise_on_4x4={raised is not None}")
@@ -94,7 +124,7 @@ def main() -> int:
     F4 = diag_field(4, value=1.1)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        J4 = np.asarray(det(F4))
+        J4 = np.asarray(det_used(F4))
         lnJ4 = np.log(J4)
         log_msgs = [str(c.message) for c in caught]
     print(f"augmented_J_is_zero={bool((J4 == 0).all())}")

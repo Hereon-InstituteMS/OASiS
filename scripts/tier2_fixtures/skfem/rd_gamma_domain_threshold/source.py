@@ -34,9 +34,19 @@ is 4.41, so lambda*dt = 0.44. The fixture asserts that for every gamma it runs.
 
 Cost: four 80-step runs on a 16x16 grid, about 6 s. 80 steps (T=8) is what the
 gamma = 12 run needs to fall six orders below its seed.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- GAMMA_WRONG, the sub-threshold gamma = 12, is raised to GAMMA_RIGHT =
+20, above the real domain threshold 13.31. The sub-threshold run then
+patterns and 'gamma_12_spread_lt_1e_5=True',
+'gamma_12_spread_monotonically_decaying=True',
+'empirical_threshold_between_12_and_20=True' and
+'quoted_inequality_falsified=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -47,6 +57,8 @@ from skfem import (Basis, BilinearForm, ElementQuad1, LinearForm, MeshQuad,
                    asm)
 from skfem.models.poisson import laplace, mass
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 A_P, B_P = 0.1, 0.9
 D_U, D_V = 1.0, 40.0
 L_DOMAIN = 1.0
@@ -56,8 +68,11 @@ N_STEPS = 80
 SEED = 42
 PERT = 1e-2
 
-GAMMA_WRONG = 12.0      # above the claim's pi^2*(a+b)^2 = 9.87, still no pattern
 GAMMA_RIGHT = 20.0      # above the real threshold 13.31
+# THE PATHOLOGY: gamma = 12 sits below the real domain threshold (though above
+# the claim's formula).  Under T2_MUTATE the documented fix is applied here --
+# gamma is raised past the real threshold.
+GAMMA_WRONG = 12.0 if not MUTATE else GAMMA_RIGHT
 
 
 def forms(gamma: float):

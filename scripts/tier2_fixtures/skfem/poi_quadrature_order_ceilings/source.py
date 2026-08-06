@@ -9,13 +9,29 @@ mistake for the ceiling error.
 
 Wrong variant: asking for an order above the ceiling (what a very-high-order tet
 element needs, since it wants 2k > 9), and passing 'triangle' as a string.
+
+Mutation control: T2_MUTATE=1 applies the three documented fixes at the three
+offending call sites -- the over-ceiling requests drop to the ceiling
+(RefTri 20 -> 19, RefTet 10 -> 9) and the string 'triangle' becomes the RefTri
+class. All three calls then succeed, so "quadratureis not implemented",
+"of quadrature is not available" and "is not supported" disappear from the
+output and the fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from skfem.quadrature import get_quadrature
 from skfem.refdom import RefTet, RefTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# THE PATHOLOGY: an order above the per-refdom ceiling, and a string where a
+# Refdom class belongs.  The documented fixes are the ceiling itself and RefTri.
+TRI_ORDER = 20 if not MUTATE else 19
+TET_ORDER = 10 if not MUTATE else 9
+STRING_DOMAIN = "triangle" if not MUTATE else RefTri
 
 
 def main() -> int:
@@ -44,7 +60,7 @@ def main() -> int:
     # --- WRONG variant (a): one order above each ceiling ----------------
     tri_msg = ""
     try:
-        get_quadrature(RefTri, 20)
+        get_quadrature(RefTri, TRI_ORDER)
     except NotImplementedError as exc:
         tri_msg = str(exc)
     print(f"tri_order_20_msg={tri_msg!r}")
@@ -55,7 +71,7 @@ def main() -> int:
 
     tet_msg = ""
     try:
-        get_quadrature(RefTet, 10)
+        get_quadrature(RefTet, TET_ORDER)
     except NotImplementedError as exc:
         tet_msg = str(exc)
     print(f"tet_order_10_msg={tet_msg!r}")
@@ -74,7 +90,7 @@ def main() -> int:
     # --- WRONG variant (b): a string instead of a Refdom class ----------
     str_msg = ""
     try:
-        get_quadrature("triangle", 2)
+        get_quadrature(STRING_DOMAIN, 2)
     except NotImplementedError as exc:
         str_msg = str(exc)
     print(f"string_domain_msg={str_msg!r}")

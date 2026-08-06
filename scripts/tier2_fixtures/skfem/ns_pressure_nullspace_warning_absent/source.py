@@ -27,6 +27,15 @@ at three refinement levels:
   * for contrast the same guard is exercised on a genuinely rank-deficient
     matrix, where the warning does fire AND the result is non-finite --
     which is the case isfinite was the right partner for.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the enclosed-flow solve at each refinement is given one pinned pressure DOF
+in addition to the velocity Dirichlet set, which is the remedy this whole entry
+exists to motivate.  The null space is then empty and
+'r2_nullspace_is_one_dimensional=True', 'r3_nullspace_is_one_dimensional=True'
+and 'r4_nullspace_is_one_dimensional=True' disappear from the output.  The two
+blind-guard lines are supposed to survive: their point is that they do NOT move
+when the pathology does.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -53,6 +62,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, div, grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -95,7 +106,12 @@ def main() -> int:
     empties, finites = [], []
     for r in (2, 3, 4):
         bu, bp, K, xb, vd = cavity(r)
-        full, msgs, Kc = guarded_solve(K, xb, vd)
+        # THE PATHOLOGY: an enclosed flow constrained on velocity only, with
+        # no pressure pin, so the block carries a constant-pressure null
+        # space.  T2_MUTATE applies the documented fix at this site by adding
+        # one pinned pressure DOF to the Dirichlet set.
+        dset = np.concatenate([vd, [bu.N]]) if MUTATE else vd
+        full, msgs, Kc = guarded_solve(K, xb, dset)
         nul = int((np.abs(np.linalg.eigvalsh(Kc.toarray())) < 1e-10).sum())
         empties.append(not msgs)
         finites.append(bool(np.isfinite(full).all()))

@@ -34,9 +34,21 @@ another library.
 
 Cost: two 20-step Schnakenberg runs plus two 50-step linear diffusion runs on a
 16x16 grid, about 3 s.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the dirichlet flag inside schnakenberg() and
+diffusion_mass_balance() is forced False, so the boundary DOFs are no longer
+condensed to zero and the zero-flux condition is left natural in the weak
+form. The wrong variant becomes the right one and
+'dirichlet_mass_rel_change_gt_0p5=True',
+'dirichlet_boundary_u_exactly_zero=True',
+'dirichlet_pattern_spread_lt_0p3=True' and 'amplitude_suppressed_gt_10x=True'
+disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -47,6 +59,8 @@ import skfem
 from skfem import (Basis, BilinearForm, ElementQuad1, LinearForm, MeshQuad,
                    asm, condense, solve)
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 A_P, B_P = 0.1, 0.9
 D_U, D_V = 1.0, 40.0
@@ -95,6 +109,10 @@ def grid():
 
 
 def schnakenberg(dirichlet: bool):
+    # THE PATHOLOGY: u = v = 0 condensed onto the boundary.  Under T2_MUTATE
+    # the documented fix is applied here -- nothing is done on the boundary,
+    # which is what makes zero flux natural in the weak form.
+    dirichlet = dirichlet and not MUTATE
     basis = grid()
     K = laplace.assemble(basis)
     M = mass.assemble(basis)
@@ -137,6 +155,7 @@ def schnakenberg(dirichlet: bool):
 
 def diffusion_mass_balance(dirichlet: bool, n_steps: int = 50):
     """Pure diffusion: does the discretisation conserve total mass?"""
+    dirichlet = dirichlet and not MUTATE      # same removal as above
     basis = grid()
     K = laplace.assemble(basis)
     M = mass.assemble(basis)

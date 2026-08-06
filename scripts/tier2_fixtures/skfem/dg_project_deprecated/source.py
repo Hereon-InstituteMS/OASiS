@@ -23,16 +23,29 @@ Observed on skfem 12.0.1:
   * skfem/__init__.py lines 27-28 carry the literal
         'project',      # TODO remove due to deprecation
         'projection',   # TODO remove due to deprecation
+
+Mutation control: T2_MUTATE=1 replaces the two deprecated module-level calls
+with the recommended ib_p1.project(ib_dg.interpolator(u_dg)) -- the documented
+fix. Nothing warns any more, so the quoted texts
+"project is deprecated in favor of Basis.project (will be removed in the next
+release)." and "projection is deprecated in favor of Basis.project.", together
+with project_emits_deprecationwarning=True, project_warning_mentions_removal=True,
+project_warning_names_basis_project=True and
+projection_emits_deprecationwarning=True, all vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 import warnings
 
 import numpy as np
 import skfem
 from skfem import Basis, ElementDG, ElementTriP1, MeshTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 REMOVAL_PHRASE = "will be removed in the next release"
 TODO_FLAG = "# TODO remove due to deprecation"
@@ -59,8 +72,11 @@ def main() -> int:
     print(f"projection_in_dunder_all={'projection' in skfem.__all__}")
 
     # --- WRONG variant: the deprecated module-level spellings --------------
+    # Pathology: the module-level skfem.project / skfem.projection helpers.
+    # Mutation: the documented replacement -- the Basis.project instance method.
     u_legacy, recs_project = catch(
-        lambda: skfem.project(u_dg, basis_from=ib_dg, basis_to=ib_p1))
+        (lambda: ib_p1.project(ib_dg.interpolator(u_dg))) if MUTATE else
+        (lambda: skfem.project(u_dg, basis_from=ib_dg, basis_to=ib_p1)))
     kinds = {k for k, _ in recs_project}
     texts = [t for _, t in recs_project]
     print(f"project_emits_deprecationwarning={'DeprecationWarning' in kinds}")
@@ -78,7 +94,9 @@ def main() -> int:
               file=sys.stderr)
         ok = False
 
-    _, recs_projection = catch(lambda: skfem.projection(u_dg, ib_p1, ib_dg))
+    _, recs_projection = catch(
+        (lambda: ib_p1.project(ib_dg.interpolator(u_dg))) if MUTATE else
+        (lambda: skfem.projection(u_dg, ib_p1, ib_dg)))
     ptexts = [t for _, t in recs_projection]
     print(f"projection_emits_deprecationwarning="
           f"{'DeprecationWarning' in {k for k, _ in recs_projection}}")

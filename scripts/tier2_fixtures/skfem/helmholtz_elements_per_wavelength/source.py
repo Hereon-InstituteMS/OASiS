@@ -23,9 +23,20 @@ Observed on skfem 12.0.1 (2026-08-06): 3 elements/wavelength -> k_h/k = 0.879,
 i.e. the wave arrives 12% early; 20 elements/wavelength -> 0.41% error; the
 error decays at rate ~2 in h; and above k*h = 2*sqrt(3) ~ 3.46 the discrete
 operator admits no propagating mode at all.
+
+Mutation control: with T2_MUTATE=1 the wrong variant's resolution NPPW_COARSE
+is raised from 3 to the claim's own rule of thumb of 10 elements per
+wavelength — the documented fix applied at the pathology site.  k*h drops below
+1 and the phase error falls under 1%, so
+'coarse_elements_per_wavelength=3 coarse_n_dofs=26', 'coarse_kh_gt_1=True',
+'coarse_phase_velocity_error_gt_10pct=True',
+'coarse_arrival_time_error_in_10_to_30pct=True' and
+'refinement_improves_by_gt_10x=True' disappear and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -33,9 +44,13 @@ from scipy.optimize import brentq
 from skfem import (Basis, BilinearForm, ElementQuad1, FacetBasis, MeshQuad,
                    asm, condense, solve)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 K_WAVE = 8.0
 N_WAVE = 4
-NPPW_COARSE = 3.0     # the mistake: below the rule of thumb of 10 (and of 5)
+# the mistake: below the rule of thumb of 10 (and of 5); the documented fix
+# under mutation is the claim's own 10 elements per wavelength
+NPPW_COARSE = 3.0 if not MUTATE else 10.0
 NPPW_FINE = 20.0
 NPPW_RATE = (5.0, 10.0, 20.0, 40.0)
 NPPW_NO_MODE = 1.5    # k*h = 4.19 > 2*sqrt(3): no propagating discrete mode

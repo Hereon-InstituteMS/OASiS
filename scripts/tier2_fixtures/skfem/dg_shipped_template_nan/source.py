@@ -21,9 +21,17 @@ Observed on skfem 12.0.1 / scipy 1.15.3:
     because it is assembled on ONE InteriorFacetBasis instead of the
     side=0 / side=1 pair -- so adding the inflow term removes the singularity
     but does NOT make the answer right; the interior flux must be fixed too.
+
+Mutation control: T2_MUTATE=1 turns every fix="none" build into fix="inflow",
+i.e. the catalog's own remedy (add the inflow FacetBasis term) applied inside
+build() where the shipped operator is assembled. The shipped leg then solves,
+so "Matrix is exactly singular", shipped_all_nan=True, shipped_any_finite=False
+and rank_deficiency=3 all vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -40,6 +48,8 @@ from skfem import (
     asm,
 )
 from scipy.sparse.linalg import spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 B = np.array([1.0, 0.5])
 BB = float(B @ B)
@@ -99,6 +109,10 @@ def upwind_interior_2x2(u, v, w):
 
 
 def build(nx: int, fix: str = "none"):
+    # Pathology: the shipped operator carries no inflow boundary term, so it is
+    # rank-deficient.  Mutation: apply the catalog's remedy at that site.
+    if fix == "none" and MUTATE:
+        fix = "inflow"
     m = make_mesh(nx)
     e = ElementDG(ElementTriP1())
     ib = Basis(m, e)

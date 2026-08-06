@@ -22,14 +22,26 @@ as max|u_h - u_ref| over the interior DOFs:
     told apart by the ratio.
   * unconditional stability is checked separately: a dt far beyond any
     explicit limit still yields a bounded, decaying, finite solution.
+
+Mutation control: T2_MUTATE=1 applies the fix this entry points at -- the theta
+of the "be" sweep is raised from 1.0 (backward Euler) to 0.5 (Crank-Nicolson),
+so the first-order behaviour is gone.  'be_factor_is_about_two=True',
+'be_slope_is_one=True', 'be_factor_is_about_four=False' and
+'the_two_schemes_are_distinguishable=True' all disappear from the output.  The
+unconditional-stability probe is left at theta = 1.0: it is a property of
+backward Euler, not the pathology.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 T_END = 0.02
 NX = 20
@@ -56,7 +68,10 @@ def main() -> int:
     ok = True
     counts = [4, 8, 16, 32, 64]
     results = {}
-    for theta, tag in ((1.0, "be"), (0.5, "cn")):
+    # Under mutation the first-order scheme is replaced by the second-order one
+    # at the same mesh and the same dt sequence.
+    be_theta = 1.0 if not MUTATE else 0.5
+    for theta, tag in ((be_theta, "be"), (0.5, "cn")):
         uref, ib, D = integrate(theta, 1024)
         free = np.setdiff1d(np.arange(ib.N), D)
         errs = []

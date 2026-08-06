@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem biharmonic#1: ElementTriArgyris carries 21 DOFs per triangle (18 vertex + 3 edge-normal), and it is one of only two shipped elements whose .hess survives ddot in a biharmonic form. The C^0 alternatives raise ValueError from numpy.einsum. Measured on skfem 12.0.1.",
+  "_comment": "Tier-2 for skfem biharmonic#1: ElementTriArgyris carries 21 DOFs per triangle (18 vertex + 3 edge-normal), and it is one of only two shipped elements whose .hess survives ddot in a biharmonic form. The C^0 alternatives raise ValueError from numpy.einsum. Measured on skfem 12.0.1. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the elements fed to the biharmonic ddot(u.hess, v.hess) form under the labels p1/p2 become the C^1 pair ElementTriArgyris/ElementTriMorley instead of ElementTriP1/ElementTriP2. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 6 expect_in_output strings; the assembly succeeds, which removes 'p1_bilaplace_raises_valueerror=True' and the einsum evidence string 'too many subscripts', and fires the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "biharmonic",
   "pitfall_index": 1,

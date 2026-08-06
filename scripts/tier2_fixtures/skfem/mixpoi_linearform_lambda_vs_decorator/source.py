@@ -11,13 +11,23 @@ enforce is the signature: a lambda taking only v raises an ordinary Python
 TypeError at the call site.
 
 Wrong variant: the 1-argument lambda. Right variants: both 2-argument spellings.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the arity of the wrong-variant lambda.  `LinearForm(lambda v: 1.0 * v)`
+becomes `LinearForm(lambda v, w: 1.0 * v)`, the signature skfem actually calls,
+so nothing raises and both the verbatim message "takes 1 positional argument but
+2 were given" and one_arg_lambda_raises_typeerror=True disappear.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, LinearForm, MeshTri, asm
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @LinearForm
@@ -37,7 +47,10 @@ def main() -> int:
     # --- WRONG variant: wrong arity -------------------------------------
     msg = ""
     try:
-        asm(LinearForm(lambda v: 1.0 * v), basis)
+        # PATHOLOGY: the 1-argument lambda.  T2_MUTATE=1 applies the
+        # documented fix -- the (v, w) signature skfem actually calls.
+        asm(LinearForm((lambda v, w: 1.0 * v) if MUTATE
+                       else (lambda v: 1.0 * v)), basis)
     except TypeError as exc:
         msg = str(exc)
     print(f"one_arg_lambda_raises_typeerror={bool(msg)}")

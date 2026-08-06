@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem mixed_poisson#1: ElementTriRT0 is registered and Basis(MeshTri(), ElementTriRT0()).Nbfun == 3 (one normal-flux DOF per edge of a triangle). The full spelling 'ElementTriRaviartThomas' is NOT in skfem; the RT0/RT1/RT2 abbreviated names are the actual classes. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for skfem mixed_poisson#1: ElementTriRT0 is registered and Basis(MeshTri(), ElementTriRT0()).Nbfun == 3 (one normal-flux DOF per edge of a triangle). The full spelling 'ElementTriRaviartThomas' is NOT in skfem; the RT0/RT1/RT2 abbreviated names are the actual classes. Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): T2_MUTATE=1 changes the name looked up by the second probe, FULL_NAME, from the long spelling 'ElementTriRaviartThomas' to the abbreviated 'ElementTriRT0' -- the documented fix, applied at the class-name lookup the pitfall is about. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 3 expect_in_output strings; T2_MUTATE=1 makes that name resolve so the line prints True, removing 'RaviartThomas_full_name_present=False', so the fixture goes red (note forbid_in_output is empty here, so the missing expectation is the only evidence). Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "mixed_poisson",
   "pitfall_index": 1,

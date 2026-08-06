@@ -22,9 +22,16 @@ PARTIAL FALSIFICATION (measured here, skfem 12.0.1):
 Wrong variant: assemble a facet form that reads ``w.n`` over a plain
 ``Basis``, and assemble a jump-style form over a plain Basis, then count
 inter-element coupling.
+
+Mutation control: T2_MUTATE=1 assembles the normal-reading flux form over the
+InteriorFacetBasis side=0/side=1 pair instead of the plain Basis -- the
+documented fix. Nothing then raises, so "Attribute 'n' not found in 'w'." and
+plain_basis_raises_attributeerror=True vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -37,6 +44,8 @@ from skfem import (
     MeshTri,
     asm,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 B = np.array([1.0, 0.5])
 
@@ -87,8 +96,13 @@ def main() -> int:
         dof2el[ib.element_dofs[:, k]] = k
 
     # --- WRONG variant 1: facet form (needs w.n) on a plain Basis ----------
+    # Pathology: the w.n-reading flux form is assembled on the plain CellBasis.
+    # Mutation: the documented fix -- assemble it on the InteriorFacetBasis pair.
     try:
-        asm(facet_form_using_normals, ib)
+        if MUTATE:
+            asm(facet_form_using_normals, [i0, i1], [i0, i1])
+        else:
+            asm(facet_form_using_normals, ib)
     except AttributeError as exc:
         msg = str(exc)
         kind = type(exc).__name__

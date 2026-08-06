@@ -11,9 +11,17 @@ the outflow facet DOFs. Right variant: constrain them.
 integral. In this dual mixed form it is the essential one -- the RT0 facet DOF
 IS the flux through the facet, so prescribing it is a Dirichlet constraint on
 sigma. Either way the observable the Signal names is what is checked here.)
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the wrong-variant solve, which leaves the outflow RT0 facet DOFs free, is
+replaced by the same condense(K, rhs, x=x, D=outflow) the right variant uses.
+The two boundary fluxes then coincide, the O(1) gap collapses to zero and
+unconstrained_flux_deviates_by_order_one=True disappears.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -32,6 +40,8 @@ from skfem import (
 from skfem.helpers import div, dot
 
 G_PRESCRIBED = 0.7
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -99,7 +109,10 @@ def main() -> int:
     # The two runs are compared to each other, not to the DOF value: the RT0
     # facet DOF is the flux THROUGH the facet, so it is not numerically the
     # mean normal component and comparing them would not test anything.
-    free = np.linalg.lstsq(K.toarray(), rhs, rcond=None)[0]
+    # PATHOLOGY: solving with the outflow facet DOFs left free.  T2_MUTATE=1
+    # applies the documented fix here -- impose the flux BC on those DOFs.
+    free = (solve(*condense(K, rhs, x=x, D=outflow)) if MUTATE
+            else np.linalg.lstsq(K.toarray(), rhs, rcond=None)[0])
     flux_free = facet_flux(fb, free[:bs.N])
     print(f"unconstrained_mean_flux={flux_free:.6f}")
     gap = abs(flux_free - flux_held)

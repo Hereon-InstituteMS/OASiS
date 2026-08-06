@@ -24,6 +24,14 @@ ElementTriP1, homogeneous Dirichlet:
     dominates, the peak multiplies by |1 - dt*lambda_max| every step, which
     the fixture confirms against the analytic value to better than 1e-4 over
     fifteen consecutive steps.  Watch the ratio, not the step count.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the unstable run's step size UNSTABLE_FACTOR * dt_crit drops from
+1.5 * dt_crit to the 0.5 * dt_crit this fixture already calls safe (the
+analytic amplification uses the same factor, so the reference tracks the step
+actually taken).  With dt back under the bound the run no longer diverges, so
+'non_finite_value_is_nan=True' and 'growth_factor_matches_analytic=True'
+disappear from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -35,6 +43,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import sys
 import warnings
@@ -126,13 +136,19 @@ def main() -> int:
         print("FAIL: a dt below the bound did not decay", file=sys.stderr)
         ok = False
 
-    u_bad, peaks_bad, msgs_bad = explicit(1.5 * dt_crit, 1200)
+    # THE PATHOLOGY: stepping at 1.5 * dt_crit, i.e. past 2/lambda_max.
+    # Under T2_MUTATE=1 the documented fix is applied here and the step drops
+    # back below the bound, to the same 0.5 * dt_crit used for the safe run
+    # above.  The analytic amplification below reads the same factor, so it
+    # stays the reference for the step actually taken.
+    unstable_factor = 0.5 if MUTATE else 1.5
+    u_bad, peaks_bad, msgs_bad = explicit(unstable_factor * dt_crit, 1200)
     finite = [p for p in peaks_bad if np.isfinite(p)]
     # the unstable eigenmode needs time to dominate, so the asymptotic growth
     # factor has to be read off a LATE window
     ratios = [finite[i + 1] / finite[i] for i in range(200, 215)
               if i + 1 < len(finite) and finite[i] > 0]
-    analytic = abs(1.0 - 1.5 * dt_crit * float(ev.max()))
+    analytic = abs(1.0 - unstable_factor * dt_crit * float(ev.max()))
     print(f"unstable_steps_taken={len(peaks_bad) - 1}")
     print(f"unstable_initial_peak={peaks_bad[0]:.4e}")
     print(f"unstable_peak_after_5_steps={peaks_bad[5]:.4e}")

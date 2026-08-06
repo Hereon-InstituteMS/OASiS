@@ -21,15 +21,26 @@ Measured on skfem 12.0.1, MeshTri().refined(4) (h = 1/16), ElementTriP1:
     the unit load over the containing triangle's three vertices moves the
     solution by an amount comparable to the rounding displacement, and it
     preserves the total load exactly (the three weights sum to one).
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the load vector for the requested point is built by barycentric
+distribution over the containing triangle instead of being dropped whole on
+the argmin vertex.  The snapped and the distributed placements are then the
+same right-hand side, so 'the_two_placements_differ=True' disappears from the
+output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def barycentric_load(m, ib, x0):
@@ -91,10 +102,16 @@ def main() -> int:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         node = int(np.argmin((m.p[0] - x0[0]) ** 2 + (m.p[1] - x0[1]) ** 2))
-        f_round = ib.zeros()
-        f_round[node] = 1.0
-        u_round = solve(*condense(K, f_round, D=D))
         f_bary, verts, lam = barycentric_load(m, ib, x0)
+        # THE PATHOLOGY: the whole unit load is dropped on the argmin vertex.
+        # Under T2_MUTATE the documented fix is applied here -- the load is
+        # distributed barycentrically over the containing triangle instead.
+        if MUTATE:
+            f_round = f_bary.copy()
+        else:
+            f_round = ib.zeros()
+            f_round[node] = 1.0
+        u_round = solve(*condense(K, f_round, D=D))
         u_bary = solve(*condense(K, f_bary, D=D))
         msgs = sorted({str(c.message) for c in caught})
     print(f"requested_point={x0.tolist()}")

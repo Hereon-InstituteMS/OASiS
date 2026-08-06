@@ -24,9 +24,16 @@ Observed on skfem 12.0.1 / scipy 1.15.3 (MeshTri().refined(3), 384 DOFs):
   * cg   -> info != 0, relative residual > 1
   * gmres-> info = 0, relative residual 9.3e-11
   * splu -> relative residual 8.0e-16 and max|u - 1| = 1.8e-15
+
+Mutation control: T2_MUTATE=1 sends the wrong-variant solve through ``gmres``
+instead of ``cg`` -- the documented fix -- with the identical arguments. The
+solve then converges, so cg_info_nonzero=True, cg_relative_residual_gt_1=True
+and gmres_beats_cg_by_gt_1e8=True vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -43,6 +50,8 @@ from skfem import (
     asm,
 )
 from scipy.sparse.linalg import cg, gmres, splu
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 B = np.array([1.0, 0.5])
 CLAIMED_MSG = "matrix not positive definite"
@@ -112,9 +121,12 @@ def main() -> int:
     raised = ""
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
+        # Pathology: the non-symmetric DG operator is handed to cg.
+        # Mutation: the documented fix -- run the same solve through gmres.
+        solver = gmres if MUTATE else cg
         try:
-            x_cg, info = cg(A, f, rtol=1e-10, maxiter=1000,
-                            callback=lambda xk: iters.__setitem__(0, iters[0] + 1))
+            x_cg, info = solver(A, f, rtol=1e-10, maxiter=1000,
+                                callback=lambda xk: iters.__setitem__(0, iters[0] + 1))
         except Exception as exc:           # noqa: BLE001 -- we are probing
             raised = f"{type(exc).__name__}: {exc}"
             x_cg, info = np.zeros_like(f), -1

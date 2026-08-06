@@ -23,15 +23,27 @@ steps:
     scaled lifting is wrong by an O(1) amount while re-condensing stays
     exact.  "Pre-compute the lifting once" is safe for separable data only.
   * every wrong variant is silent: finite, smooth, no warning, no exception.
+
+Mutation control: T2_MUTATE=1 applies the documented fix -- "re-condense at each
+step" -- at both wrong-variant sites: the frozen x and the scaled lifting are
+each replaced by the current datum g in the condense call.  Both shortcuts then
+honour the boundary data exactly, so
+'sep_frozen_boundary_error_is_order_one=True',
+'nonsep_scaled_lifting_is_order_one=True' and
+'lifting_shortcut_is_only_safe_for_separable_data=True' disappear from the
+output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 NX = 16
 DT = 2e-3
@@ -72,13 +84,17 @@ def run(mode, datum):
                 if frozen is None:
                     frozen = ib.zeros()
                     frozen[D] = datum(ib.doflocs[:, D], DT)
-                u = solve(*condense(A, M @ u, x=frozen, D=D))
+                # Under mutation the documented fix -- re-condense at each step
+                # against the current datum -- is applied here.
+                u = solve(*condense(A, M @ u,
+                                    x=(frozen if not MUTATE else g), D=D))
             elif mode == "scaled_lifting":
                 if lifting is None:
                     lifting = ib.zeros()
                     lifting[D] = datum(ib.doflocs[:, D], DT)
                 scaled = (t / DT) * lifting
-                u = solve(*condense(A, M @ u, x=scaled, D=D))
+                u = solve(*condense(A, M @ u,
+                                    x=(scaled if not MUTATE else g), D=D))
             else:
                 raise AssertionError(mode)
             msgs += [str(c.message) for c in caught]

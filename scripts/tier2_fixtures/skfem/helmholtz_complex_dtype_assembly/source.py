@@ -23,9 +23,22 @@ against the exact facet-mass value 2*k*h/3 (two facets share each interior
 boundary node) rather than a pinned measurement.
 
 Observed on skfem 12.0.1 / scipy 1.15.3 / numpy 1.26.4 (2026-08-06).
+
+Mutation control: with T2_MUTATE=1 the wrong variant's decorator becomes
+``@BilinearForm(dtype=complex)`` instead of the bare ``@BilinearForm`` — the
+documented one-token fix applied at the pathology site, on the identical
+kernel.  The imaginary part is then no longer discarded, so
+'abc_default_dtype=float64', 'abc_default_nnz=0',
+'abc_default_max_abs_is_exactly_zero=True', 'complexwarning_raised=True',
+'Casting complex values to real discards the imaginary part',
+'complexwarning_origin=bilinear_form.py', 'astype_after_recovers_nothing=True',
+'system_default_abc_is_real_symmetric=True' and
+'system_default_abc_equals_no_abc=True' all disappear and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -33,6 +46,11 @@ import numpy as np
 from skfem import (Basis, BilinearForm, ElementQuad1, FacetBasis, MeshQuad,
                    asm)
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# the mistake: the shipped template's bare @BilinearForm (dtype defaults to
+# float64) on a complex kernel; the documented fix is @BilinearForm(dtype=complex)
+SHIPPED_FORM_DECORATOR = BilinearForm if not MUTATE else BilinearForm(dtype=complex)
 
 K_WAVE = 5.0
 NX = 8  # 9x9 tensor grid -> h = 1/8
@@ -59,7 +77,7 @@ def main() -> int:
     print(f"n_dofs={ib.N} n_elements={m.nelements}")
 
     # --- WRONG variant: the shipped template's absorbing-BC block ------------
-    @BilinearForm  # default dtype is np.float64 -> imaginary part discarded
+    @SHIPPED_FORM_DECORATOR  # default dtype is np.float64 -> imaginary part discarded
     def absorbing_bc_default(u, v, w):
         return 1j * k * u * v
 

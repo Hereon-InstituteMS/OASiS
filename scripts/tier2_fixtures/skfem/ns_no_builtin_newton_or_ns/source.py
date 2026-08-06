@@ -19,13 +19,25 @@ assembly and a time integrator is probed against both `skfem` and
   * the pieces a hand-rolled Newton needs ARE all present (BilinearForm,
     LinearForm, asm, condense, solve), which is why the catalog ships
     snippets rather than a call.
+
+Mutation control: this fixture asserts an ABSENCE, so there is no pathology to
+remove -- the control instead injects the thing the claim says is missing.
+T2_MUTATE=1 binds `NewtonSolver` onto skfem.utils before the probe runs, which
+is exactly what a release shipping one would look like here.  That removes
+'nonlinear_names_found=[]', 'no_nonlinear_solver_anywhere=True' and
+'utils_offers_only_linear_and_eigen_solvers=True' from the output, proving the
+three lines are read off the namespace and not hard-coded.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import skfem
 import skfem.utils
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 NONLINEAR_NAMES = [
     "NewtonSolver", "Newton", "newton", "newton_solve", "solve_newton",
@@ -41,6 +53,10 @@ BUILDING_BLOCKS = ["BilinearForm", "LinearForm", "Basis", "asm", "condense",
 
 def main() -> int:
     ok = True
+    if MUTATE:
+        # The absence under test, removed: skfem.utils now carries the very
+        # name the claim says returns no match.
+        skfem.utils.NewtonSolver = type("NewtonSolver", (), {})
     print(f"skfem_version={skfem.__version__}")
 
     found = [n for n in NONLINEAR_NAMES

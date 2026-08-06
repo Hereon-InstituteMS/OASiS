@@ -8,10 +8,16 @@ Wrong variant: MeshTri.periodic(...), which raises AttributeError.
 Right variant: MeshTri1DG.periodic(m, ix, ix0), which is constructed here and
 checked to actually collapse the paired DOFs -- the periodic basis has fewer
 DOFs than the plain one on the same mesh, which is the whole point.
+
+Mutation control: T2_MUTATE=1 spells the probe MeshTri1DG.periodic instead of
+MeshTri.periodic -- the documented fix. The attribute then resolves, so the
+AttributeError text "no attribute 'periodic'" is never produced and the fixture
+goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 
 import numpy as np
@@ -25,6 +31,8 @@ from skfem import (
     MeshTri,
     MeshTri1DG,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -64,8 +72,11 @@ def main() -> int:
 
     # --- WRONG variant: the plain-class spelling -------------------------
     msg = ""
+    # Pathology: reaching for periodic on the plain mesh class.
+    # Mutation: the documented fix -- reach for it on the DG mesh class.
+    probed_class = MeshTri1DG if MUTATE else MeshTri
     try:
-        MeshTri.periodic                 # noqa: B018 - deliberate probe
+        probed_class.periodic            # noqa: B018 - deliberate probe
     except AttributeError as exc:
         msg = str(exc)
     print(f"meshtri_periodic_attributeerror={msg!r}")

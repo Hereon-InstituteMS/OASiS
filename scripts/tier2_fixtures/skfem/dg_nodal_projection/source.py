@@ -21,14 +21,25 @@ Observed on skfem 12.0.1, MeshTri().refined(2) (32 elements, 25 vertices):
   * ib_p1.project(ib_dg.interpolator(u_dg)) gives max|err| = 1.3e-15
   * the DG DOF locations repeat: 25 vertices carry 96 DOFs, so 71 of them are
     duplicate coordinates -- that is why a nodal reading collapses.
+
+Mutation control: T2_MUTATE=1 feeds the two wrong variants the projected vector
+ib_p1.project(ib_dg.interpolator(u_dg)) instead of the raw DG coefficients --
+the documented fix, applied at the post-processing site. meshio then accepts the
+array and the truncation is exact, so 'len(point_data["u"]) = 96',
+vtk_point_data_rejected=True, naive_truncation_err_gt_half_of_range=True and
+projection_beats_truncation_by_gt_1e10=True all vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementDG, ElementTriP1, MeshTri
 import meshio
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def field(x):
@@ -61,10 +72,14 @@ def main() -> int:
               file=sys.stderr)
         ok = False
 
+    # Pathology: the raw DG coefficient vector is used for post-processing.
+    # Mutation: the documented fix -- project it onto P1 before writing/slicing.
+    u_post = ib_p1.project(ib_dg.interpolator(u_dg)) if MUTATE else u_dg
+
     # --- WRONG variant 1: hand the DG vector to the VTK writer -------------
     points = np.column_stack([m.p.T, np.zeros(nvert)])
     try:
-        meshio.Mesh(points, [("triangle", m.t.T)], point_data={"u": u_dg})
+        meshio.Mesh(points, [("triangle", m.t.T)], point_data={"u": u_post})
     except ValueError as exc:
         vtk_msg = str(exc)
     else:
@@ -76,7 +91,7 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant 2: silently truncate to the first n_vertices --------
-    naive = np.asarray(u_dg)[:nvert]
+    naive = np.asarray(u_post)[:nvert]
     err_naive = float(np.abs(naive - exact).max())
     span = float(exact.max() - exact.min())
     print(f"naive_truncation_runs_without_error=True")

@@ -22,6 +22,13 @@ front to smear:
     the coarse-dt profile is visibly smeared -- at T = 0.01 the front has
     barely left the wall, yet the coarse run already shows more than an
     order of magnitude too much heat at the domain CENTRE.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- COARSE_STEPS, the step count used for the smeared transient run, goes
+from 2 to 512, i.e. dt is chosen by accuracy rather than by stability.  With
+the transient resolved the centre value no longer exceeds ten times the
+reference, so 'coarse_dt_smears_the_front=True' disappears from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -33,6 +40,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import sys
 import warnings
@@ -124,7 +133,11 @@ def main() -> int:
         ok = False
 
     # --- and the coarse-dt front really is smeared ------------------------
-    u_coarse = integrate(2, T_TRANSIENT)[0]
+    # THE PATHOLOGY: two steps across the whole transient, a dt chosen for
+    # stability alone.  Under T2_MUTATE=1 the documented fix is applied here
+    # and dt is chosen by accuracy instead, resolving the same transient.
+    coarse_steps = 512 if MUTATE else 2
+    u_coarse = integrate(coarse_steps, T_TRANSIENT)[0]
     # the front has barely left the wall at T_TRANSIENT, so the value at the
     # DOMAIN CENTRE is the sharpest measure of how far the scheme has
     # artificially smeared it inward

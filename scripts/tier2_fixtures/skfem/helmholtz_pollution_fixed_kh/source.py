@@ -23,17 +23,39 @@ P1 phase drift is 0.33% of a wavelength (0.042 rad out of 50), not 5-10%.  The
 claim's 5-10% is roughly the relative L2 error after ~32 wavelengths of
 propagation (measured 4.8%).  The claim's "GridFunction" is NGSolve vocabulary,
 not skfem.
+
+Mutation control: T2_MUTATE=1 applies the fix this entry documents -- it sets
+WRONG_ELEMENT from "P1" to "P2", i.e. p-refines the k-sweep from ElementQuad1
+to ElementQuad2 at the same mesh.  The pollution then does not occur, so
+'low_k=5 low_k_element=ElementQuad1 low_k_n_dofs=102',
+'high_k=50 high_k_element=ElementQuad1 high_k_n_dofs=1002',
+'pollution_l2_growth_gt_4x=True', 'long_run_l2_rel_in_2_to_10pct=True' and
+'p_refinement_gain_gt_100x=True' disappear from the output.
+
+Caveat found while building that control, recorded and NOT worked around: the
+two DRIFT-ratio lines do not discriminate.  Under mutation both k-runs have a
+phase drift at round-off (0.00000 rad each), and the ratio of those two noise
+values came out 10.52, so 'pollution_drift_growth_gt_4x=True' and
+'growth_tracks_k_ratio=True' still print True.  Nothing checks that the drift is
+above round-off before the ratio is taken; only the L2 twin
+(pollution_l2_growth_gt_4x, 1.02 under mutation) actually detects pollution.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import (Basis, BilinearForm, ElementQuad1, ElementQuad2, FacetBasis,
                    MeshQuad, asm, condense, solve)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 KH = 0.1              # the "nominally well-resolved" fixed product k*h
-WRONG_ELEMENT = "P1"  # the mistake: keep P1 and trust k*h alone
+# The mistake: keep P1 and trust k*h alone.  Under mutation the documented fix
+# -- p-refinement to ElementQuad2 at the same h -- is applied to the k-sweep.
+WRONG_ELEMENT = "P1" if not MUTATE else "P2"
 K_LOW = 5.0
 K_HIGH = 50.0
 L_UNIT = 1.0

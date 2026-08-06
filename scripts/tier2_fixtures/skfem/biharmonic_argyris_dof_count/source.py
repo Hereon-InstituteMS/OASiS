@@ -13,9 +13,16 @@ inside skfem.helpers.ddot raises
 
 Right variant: ElementTriArgyris (21 DOFs) and ElementTriMorley (6 DOFs) both
 assemble a non-trivial bilaplacian.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the C^0 elements fed to the biharmonic ddot(u.hess, v.hess) form are
+replaced by the C^1 ones (Argyris, Morley) -- so the form assembles and the
+einsum ValueError evidence disappears.  Re-run with
+T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from skfem import (
@@ -28,6 +35,8 @@ from skfem import (
     MeshTri,
 )
 from skfem.helpers import ddot
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -54,7 +63,12 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant: C^0 element in a biharmonic form ----------------
-    for label, element in (("p1", ElementTriP1()), ("p2", ElementTriP2())):
+    # The pathology: a C^0 Lagrange basis is handed to ddot(u.hess, v.hess).
+    # T2_MUTATE=1 applies the documented fix at this site -- the C^1 plate
+    # elements go in instead -- keeping the printed keys unchanged.
+    c0_elements = ((ElementTriP1(), ElementTriP2()) if not MUTATE
+                   else (ElementTriArgyris(), ElementTriMorley()))
+    for label, element in zip(("p1", "p2"), c0_elements):
         basis = Basis(m, element)
         raised = ""
         try:

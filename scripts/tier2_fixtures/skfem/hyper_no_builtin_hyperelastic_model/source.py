@@ -17,15 +17,29 @@ raises ImportError ("cannot import name 'neohookean' from
 saint_venant_kirchhoff / hyperelasticity / st_venant / yeoh / gent exist
 anywhere in skfem; `linear_elasticity` exists and assembles.  A hyperelastic
 problem therefore has to be hand-coded as a @BilinearForm.
+
+Mutation control: this is an ABSENCE claim, so the pathology is the missing
+symbol itself and the mutation supplies it.  T2_MUTATE=1 binds a real
+neohookean @BilinearForm onto skfem.models.elasticity before any probe runs --
+the exact upstream change that would make this entry stale, and the case the
+fixture's own "FAIL: skfem does ship a hyperelastic model" branch anticipates.
+`from skfem.models.elasticity import neohookean` then succeeds and the
+inventory sweep finds the name, removing
+neohookean_import_raises_ImportError=True,
+hyperelastic_names_in_models_elasticity=[] and
+no_hyperelastic_model_anywhere=True.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 import skfem
 import skfem.models.elasticity as EL
 from skfem import Basis, ElementTriP1, ElementVector, MeshTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 HYPERELASTIC_NAMES = [
     "neohookean", "neo_hookean", "NeoHookean",
@@ -37,9 +51,36 @@ HYPERELASTIC_NAMES = [
 ]
 
 
+def _install_neohookean() -> None:
+    """Give skfem.models.elasticity the model the claim says it lacks."""
+    from skfem.helpers import ddot, det, grad, inv, transpose
+
+    def neohookean(mu=1.0, lam=1.0):
+        @skfem.BilinearForm
+        def form(u, v, w):
+            du = w["disp"].grad
+            F = np.zeros_like(du)
+            F[0, 0] = 1.0
+            F[1, 1] = 1.0
+            F = F + du
+            Fit = transpose(inv(F))
+            lnJ = np.log(det(F))
+            dF = grad(u)
+            T = np.einsum("ij...,kj...,kl...->il...", Fit, dF, Fit)
+            return ddot(mu * dF + (mu - lam * lnJ) * T
+                        + lam * ddot(Fit, dF) * Fit, grad(v))
+        return form
+
+    EL.neohookean = neohookean
+
+
 def main() -> int:
     ok = True
     print(f"skfem_version={skfem.__version__}")
+    if MUTATE:
+        # PATHOLOGY REMOVED: the absent symbol is supplied, so every probe
+        # below now finds a genuine hyperelastic model in the namespace.
+        _install_neohookean()
 
     # --- the named probe from the claim -------------------------------
     err = None

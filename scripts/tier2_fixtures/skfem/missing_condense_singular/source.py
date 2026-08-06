@@ -10,9 +10,22 @@ This fixture builds the canonical Poisson problem on a quad
 mesh, solves it BOTH with and without condense, and verifies
 the no-condense version's solution magnitude is at least 10^8
 larger than the condensed version's.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+wrong-solve site -- solve(K, f) becomes
+solve(*condense(K, f, D=D)) -- so K is no longer singular and
+the blow-up does not happen.  The magnitude ratio drops to 1,
+the fixture takes its own failure branch, and the expectation
+string 'singular' disappears from the output.  Note that the
+other two expectations, 'condense' and 'magnitude', still match
+under mutation: they are matched by the failure message
+("no-condense", "magnitude ratio < 1e6"), not by any measured
+quantity.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import numpy as np
 from skfem import (
@@ -23,6 +36,8 @@ from skfem import (
     solve,
 )
 from skfem.models.poisson import laplace, unit_load
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -38,8 +53,9 @@ def main() -> int:
     u_correct = solve(*condense(K, f, D=D))
     correct_mag = np.max(np.abs(u_correct))
 
-    # WRONG solve: K is singular without condense.
-    u_wrong = solve(K, f)
+    # WRONG solve: K is singular without condense.  Under mutation the
+    # documented fix is applied here and the Dirichlet DoFs are condensed out.
+    u_wrong = solve(K, f) if not MUTATE else solve(*condense(K, f, D=D))
     wrong_mag = np.max(np.abs(u_wrong))
 
     print(f"|u_correct|_max = {correct_mag:.3e}")

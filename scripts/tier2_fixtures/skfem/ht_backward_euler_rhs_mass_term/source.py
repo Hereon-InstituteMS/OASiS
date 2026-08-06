@@ -9,14 +9,23 @@ Wrong variant (a): K @ u_old on the RHS.
 Wrong variant (b): the bare u_old vector with no matrix at all.
 Right variant: M @ u_old, whose per-step decay tracks the analytic factor
 exp(-2 pi^2 dt) for the first eigenmode initial condition.
+
+Mutation control: T2_MUTATE=1 applies the documented fix to both wrong
+variants -- the RHS callables become M @ u instead of K @ u and instead of the
+bare u.  The blow-up then does not happen, so 'K_u_old_blows_up=True',
+'bare_u_old_blows_up=True' and 'neither_wrong_variant_decays_to_zero=True'
+disappear from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def march(A, rhs, u0, D, n_steps: int) -> list[float]:
@@ -40,9 +49,14 @@ def main() -> int:
     A = (M + dt * K).tocsr()
     n = 6
 
+    # Under mutation both wrong RHS builders are replaced by the documented
+    # correct one, M @ u_old.
+    rhs_k = (lambda u: K @ u) if not MUTATE else (lambda u: M @ u)
+    rhs_bare = (lambda u: u) if not MUTATE else (lambda u: M @ u)
+
     correct = march(A, lambda u: M @ u, u0, D, n)
-    wrong_k = march(A, lambda u: K @ u, u0, D, n)
-    wrong_bare = march(A, lambda u: u, u0, D, n)
+    wrong_k = march(A, rhs_k, u0, D, n)
+    wrong_bare = march(A, rhs_bare, u0, D, n)
     print(f"correct_history={[f'{v:.3e}' for v in correct]}")
     print(f"K_u_old_history={[f'{v:.3e}' for v in wrong_k]}")
     print(f"bare_u_old_history={[f'{v:.3e}' for v in wrong_bare]}")

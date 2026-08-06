@@ -12,14 +12,25 @@ at its own Dirichlet value and the interface jump is the full 100 K.
 Right variant: one assembly over both subdomains. The interface DOFs are shared,
 so continuity holds by construction and the interface temperature lands between
 the two Dirichlet values, pulled towards the high-conductivity side.
+
+Mutation control: T2_MUTATE=1 applies the documented fix inside the isolated
+loop -- each pass assembles over BOTH subdomains (the monolithic K) and imposes
+both Dirichlet values instead of one region's stiffness with the interface left
+insulated.  Both passes then return the same coupled solution, the interface
+jump collapses to 0, and 'isolated_interface_jump_is_full_delta_t=True' and
+'isolated_jump_over_monolithic_spread_gt_1e12=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementQuad1, MeshQuad, condense, solve
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 K_FLUID, K_SOLID = 1.0, 100.0
 T_HOT, T_COLD = 100.0, 0.0
@@ -73,6 +84,13 @@ def main() -> int:
     for tag, k, bc_dofs, bc_val in (("fluid", K_FLUID, left, T_HOT),
                                     ("solid", K_SOLID, right, T_COLD)):
         Ki = sub_stiffness(tag, k)
+        if MUTATE:
+            # The documented fix: ONE assembly over both subdomains, with both
+            # Dirichlet values imposed -- i.e. the interface is no longer left
+            # insulated in either pass.
+            Ki = K
+            bc_dofs = np.concatenate([left, right])
+            bc_val = np.where(np.isin(bc_dofs, left), T_HOT, T_COLD)
         touched = np.unique(Ki.nonzero()[0])
         untouched = np.setdiff1d(np.arange(basis.N), touched)
         xi = basis.zeros()

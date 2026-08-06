@@ -25,6 +25,14 @@ from scipy.linalg.eigh(K_free, M_free):
     moves the bound; Da has to reach the same order as lambda_max(M^-1 K)
     before it dominates.  Da > 100 is not by itself a stiffness threshold.
   * BACKWARD EULER AT THE SAME dt IS FINE, which is the recommendation.
+
+Mutation control: T2_MUTATE=1 applies the claim's own recommendation at the
+pathology site -- the update inside explicit_run becomes the backward-Euler
+step solve(*condense(M + dt*op, M @ u, D=D)) instead of the explicit
+solve(*condense(M, M @ u - dt*(op @ u), D=D)), at the same dt.  With the
+explicit update gone the run above the bound no longer diverges, so
+'explicit_above_bound_blew_up=True' disappears from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -36,6 +44,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import sys
 import warnings
@@ -75,11 +85,18 @@ def explicit_run(da, dt, nsteps=400):
     u = ib.project(lambda x: np.sin(np.pi * x[0]) * np.sin(np.pi * x[1]))
     u[D] = 0.0
     peak = [float(np.abs(u).max())]
+    # THE PATHOLOGY: the explicit update, which is what needs dt < 2/lambda_max.
+    # Under T2_MUTATE=1 the claim's own recommendation is applied here and the
+    # same dt is taken with backward Euler instead.
+    A_implicit = (M + dt * op).tocsr() if MUTATE else None
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         for _ in range(nsteps):
-            rhs = M @ u - dt * (op @ u)
-            u = solve(*condense(M, rhs, D=D))
+            if MUTATE:
+                u = solve(*condense(A_implicit, M @ u, D=D))
+            else:
+                rhs = M @ u - dt * (op @ u)
+                u = solve(*condense(M, rhs, D=D))
             peak.append(float(np.abs(u).max()))
             if not np.isfinite(peak[-1]) or peak[-1] > 1e30:
                 break

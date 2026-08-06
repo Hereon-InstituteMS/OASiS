@@ -23,9 +23,19 @@ plane strain nu = 0.3, E = 1, left edge clamped, dead transverse traction
     substep, keep min det(F) comfortably positive, and land on the SAME final
     displacement to machine precision, which is what makes the ramp a
     legitimate continuation rather than a different problem.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- ONE_SHOT_STEPS goes from 1 to 10, so the load the "n1" run applies in
+a single shot is ramped over ten substeps instead.  The unmutated run matches
+all 14 expect_in_output strings; under mutation
+"n1_first_residual_is_nan=True", "n1_element_inverted=True",
+"n1_detF_guard_would_fire=True" and "n1_shows_10x_per_iteration_ramp=False"
+disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -42,6 +52,12 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, det, grad, inv, transpose
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# the pathology: the whole load in one step.  MUTATION: the documented fix,
+# the same load ramped over ten substeps.
+ONE_SHOT_STEPS = 1 if not MUTATE else 10
 
 NU = 0.3
 E_MOD = 1.0
@@ -136,7 +152,7 @@ def main() -> int:
     print(f"traction={TRACTION} E={E_MOD} nu={NU}")
 
     # --- one shot ------------------------------------------------------
-    u1, hist1, j1 = ramp(1)
+    u1, hist1, j1 = ramp(ONE_SHOT_STEPS)
     print(f"n1_first_step_history={[f'{x:.2e}' for x in hist1[0][:4]]}")
     print(f"n1_first_residual_is_nan={bool(np.isnan(hist1[0][0]))}")
     print(f"n1_min_detF={j1[0]:.4f}")

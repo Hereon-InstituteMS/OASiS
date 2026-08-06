@@ -23,10 +23,21 @@ Measured on skfem 12.0.1, MeshTri().refined(2):
     stacked against the velocity block, and scipy.sparse.bmat is what
     finally objects, with a message about dimension mismatch that names
     neither the element nor the basis.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the convection block that goes into the system is assembled on
+ElementVector(ElementTriP2()) instead of the scalar ElementTriP2.  It is then
+the right size, so 'scalar_block_is_dim_times_too_small=True' and
+'stacking_scalar_block_raises=True' disappear from the output.  The split /
+TypeError lines above are pathology-independent and are supposed to survive.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 import scipy.sparse as sp
@@ -116,10 +127,16 @@ def main() -> int:
 
     # --- the silent, dimensional failure -----------------------------------
     wind_s = bs.zeros() + 1.0
-    C_scalar = scalar_convection.assemble(
-        bs, wind=np.stack([bs.interpolate(wind_s)] * dim))
-    C_vector = vector_convection.assemble(
-        bv, wind=np.stack([bv.interpolate(bv.zeros() + 1.0).value[0]] * dim))
+    wind_v = np.stack([bv.interpolate(bv.zeros() + 1.0).value[0]] * dim)
+    # THE PATHOLOGY: the convection block built on the SCALAR basis.  Under
+    # T2_MUTATE the documented fix is applied at this one site -- the same
+    # block is built on ElementVector(ElementTriP2()) instead.
+    if MUTATE:
+        C_scalar = vector_convection.assemble(bv, wind=wind_v)
+    else:
+        C_scalar = scalar_convection.assemble(
+            bs, wind=np.stack([bs.interpolate(wind_s)] * dim))
+    C_vector = vector_convection.assemble(bv, wind=wind_v)
     A = viscous.assemble(bv)
     print(f"scalar_convection_shape={C_scalar.shape}")
     print(f"vector_convection_shape={C_vector.shape}")

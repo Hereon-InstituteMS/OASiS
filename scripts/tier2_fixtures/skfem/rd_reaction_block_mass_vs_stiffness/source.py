@@ -39,10 +39,21 @@ evidence of a bug.
 
 Cost: assembly-only checks plus one 25-iteration Newton step on a 16x16 grid,
 about 2 s.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the two stiffness-pattern forms ``jac_uv_stiffness`` and ``coeff_stiffness``
+return ``... * u * v`` instead of ``... * dot(grad(u), grad(v))``, i.e. exactly
+the wrong-variant-to-right-variant edit named above. The reaction block is then
+a mass form, so it no longer annihilates constants, no longer scales like 1/h^2,
+is derivative-consistent, and Newton converges. Re-run: T2_MUTATE=1 python
+source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from scipy.sparse import bmat, diags
@@ -96,6 +107,8 @@ def jac_uv_mass(u, v, w):
 @BilinearForm
 def jac_uv_stiffness(u, v, w):
     """WRONG: the same coefficient dropped into the stiffness pattern."""
+    if MUTATE:                      # documented fix: back to the mass pattern
+        return (w["uu"] ** 2) * u * v
     return (w["uu"] ** 2) * dot(grad(u), grad(v))
 
 
@@ -106,6 +119,8 @@ def coeff_mass(u, v, w):
 
 @BilinearForm
 def coeff_stiffness(u, v, w):
+    if MUTATE:                      # documented fix: back to the mass pattern
+        return w["c"] * u * v
     return w["c"] * dot(grad(u), grad(v))
 
 

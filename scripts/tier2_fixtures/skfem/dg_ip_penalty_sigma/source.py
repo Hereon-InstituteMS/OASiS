@@ -26,9 +26,18 @@ PARTIAL FALSIFICATION: the "solution norm diverges under refinement" half does
 NOT reproduce.  At sigma = 1 the L2 norm of the discrete solution stays at
 0.50 for every refinement level; what actually degrades is the CONVERGENCE
 RATE (the L2 error rate collapses from ~1.8 at sigma = 4 to ~0.6 at sigma = 1).
+
+Mutation control: T2_MUTATE=1 pins sigma to the rule of thumb 4*order^2 inside
+sipg(), i.e. the documented fix applied where the penalty enters the forms, so
+every "wrong" sigma in the sweep becomes the recommended one. Then
+sigma_1_coercive=False, sigma_2_coercive=False, sigma_3_coercive=False,
+order2_sigma4_coercive=False, sigma_1_l2_rate_ge_1p5=False,
+cond_at_huge_sigma_gt_1e14=True and cg_iterations_grow_gt_10x=True all vanish
+and the fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -46,6 +55,8 @@ from skfem import (
 )
 from skfem.helpers import dot, grad, jump
 from scipy.sparse.linalg import cg, spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def make_forms(sigma):
@@ -81,6 +92,10 @@ def mass(u, v, w):
 
 
 def sipg(nref, sigma, order=1):
+    # Pathology: the caller's sigma, swept below and far above the rule of thumb.
+    # Mutation: the documented fix -- use sigma = 4 * order^2 for symmetric IP.
+    if MUTATE:
+        sigma = 4.0 * order ** 2
     m = MeshTri().refined(nref)
     e = ElementDG(ElementTriP1() if order == 1 else ElementTriP2())
     ib = Basis(m, e)

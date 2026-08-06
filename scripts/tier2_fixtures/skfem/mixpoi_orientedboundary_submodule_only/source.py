@@ -9,14 +9,23 @@ so passing a plain ndarray silently disables it.
 Wrong variant: the top-level spelling. The silent-disable half of the claim is
 checked by reading the FacetBasis source for the isinstance branch, since a
 silent behaviour cannot be observed from its output by construction.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the `skfem.OrientedBoundary` probe becomes the prescribed
+`from skfem.generic_utils import OrientedBoundary`.  No AttributeError is then
+raised, so the verbatim message "no attribute 'OrientedBoundary'" disappears
+from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 
 import numpy as np
 import skfem
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -26,7 +35,13 @@ def main() -> int:
     print(f"toplevel_has_orientedboundary={hasattr(skfem, 'OrientedBoundary')}")
     msg = ""
     try:
-        skfem.OrientedBoundary            # noqa: B018 - deliberate probe
+        # PATHOLOGY: the top-level spelling.  T2_MUTATE=1 applies the
+        # documented fix -- import it from skfem.generic_utils instead.
+        if MUTATE:
+            from skfem.generic_utils import OrientedBoundary as _OB
+            _OB                           # noqa: B018 - deliberate probe
+        else:
+            skfem.OrientedBoundary        # noqa: B018 - deliberate probe
     except AttributeError as exc:
         msg = str(exc)
     print(f"toplevel_attributeerror={msg!r}")

@@ -6,10 +6,19 @@ uniformly zero.
 
 Wrong variant: referring to a field name inside a form that was never passed to
 assemble. Right variant: pass it and read .value / .grad.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the assemble call that reads w["u"] is given u=field -- so nothing raises
+and 'missing_field_raises=True' disappears from the output. The DiscreteField
+API lines above it are pathology-independent and are supposed to survive.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from skfem import Basis, ElementTriP1, LinearForm, MeshTri
@@ -60,7 +69,12 @@ def main() -> int:
     # --- WRONG variant: never pass the field ----------------------------
     msg = ""
     try:
-        needs_field.assemble(basis)
+        # THE PATHOLOGY: the form body reads w["u"] but u is never passed.
+        # T2_MUTATE applies the documented fix -- pass it -- at this site.
+        if MUTATE:
+            needs_field.assemble(basis, u=field)
+        else:
+            needs_field.assemble(basis)
     except Exception as exc:
         msg = f"{type(exc).__name__}: {exc}"
     print(f"missing_field_raises={bool(msg)}")

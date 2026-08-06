@@ -29,9 +29,19 @@ figures are reproduced literally. The right variant needs only 20 steps of
 dt=0.002 (T=0.04, ~6 s): gamma=1000 makes the reaction time scale 1e-3, the seed
 saturates by step 8, and the pattern is stationary afterwards (checked out to
 T=0.2 during authoring: spread 4.27 -> 4.33 -> 4.31).
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- (DT_SHIPPED, N_STEPS_SHIPPED) is set to the reduced pair
+(DT_FIXED, N_STEPS_FIXED) = (0.002, 20), so the wrong branch integrates with a
+time step small enough for backward Euler to let the unstable mode grow. It
+then patterns too and 'be_amp_at_shipped_dt_lt_1=True',
+'shipped_spread_lt_1e_10=True', 'shipped_min_max_identical_to_4dp=True' and
+'spread_ratio_gt_1e10=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -40,6 +50,8 @@ from scipy.sparse.linalg import spsolve
 
 from skfem import Basis, BilinearForm, ElementQuad1, MeshQuad, asm
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 A_P, B_P = 0.1, 0.9
 D_U, D_V = 1.0, 40.0
@@ -51,8 +63,11 @@ NEWTON_TOL = 1e-8
 
 # The shipped template's time discretisation.  Mutating this pair is what the
 # mutation check does: with (0.002, 20) the "wrong" branch also patterns.
-DT_SHIPPED, N_STEPS_SHIPPED = 0.5, 100
 DT_FIXED, N_STEPS_FIXED = 0.002, 20
+# THE PATHOLOGY: dt = 0.5, at which backward Euler damps the mode the physics
+# requires to grow.  Under T2_MUTATE the documented fix is applied here.
+DT_SHIPPED, N_STEPS_SHIPPED = ((0.5, 100) if not MUTATE
+                               else (DT_FIXED, N_STEPS_FIXED))
 
 
 @BilinearForm

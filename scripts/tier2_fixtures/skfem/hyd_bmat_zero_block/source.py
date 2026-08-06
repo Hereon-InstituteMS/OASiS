@@ -21,13 +21,25 @@ Measured on skfem 12.0.1 / scipy 1.15.3:
     count, so the two are interchangeable.
   * a scalar 0.0 (float) fails the same way as the int, so the dtype in the
     old quoted message was incidental too.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the scalar zero handed to sp.bmat becomes None, exactly the form the
+entry prescribes -- so the block assembly succeeds and the exception under
+study never happens.  The unmutated run matches all 10 expect_in_output
+strings; under mutation "scalar_int_raises=True", "scalar_float_raises=True",
+"is_a_ValueError=True" and
+"actual_message_mentions_instantiation_from_a_scalar=True" all disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 import scipy.sparse as sp
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -39,6 +51,8 @@ def main() -> int:
 
     errors = {}
     for tag, zero in (("int", 0), ("float", 0.0)):
+        if MUTATE:
+            zero = None          # the documented fix: None, not a scalar zero
         err = None
         try:
             sp.bmat([[A, B.T], [B, zero]], format="csr")

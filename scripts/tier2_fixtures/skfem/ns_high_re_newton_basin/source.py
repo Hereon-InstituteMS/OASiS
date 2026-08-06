@@ -29,14 +29,27 @@ wrong.
     mesh, ramping through Re = 100, 200, 400, 600, 800 and starting each
     solve from the previous solution converges at every step, including the
     Re = 800 that fails from rest.
+
+Mutation control: T2_MUTATE=1 applies this fixture's own documented fix at the
+pathology site -- the failing Re = 800 run is given refine=4 instead of the
+under-resolved refine=3, the one-token edit the middle bullet above says makes
+the same Re from the same at-rest guess converge.  Nothing about Newton
+changes.  That removes 're800_refine3_converged=False',
+'same_Re_converges_on_a_finer_mesh=True', 're800_stagnates_before_blowing_up=True',
+'re800_explodes_within_three_iterations=False' and
+'continuation_reaches_re800_where_from_rest_failed=True' from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 
 from _harness import converged, iterate
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -58,7 +71,9 @@ def main() -> int:
         ok = False
 
     # --- where it fails, and why -------------------------------------------
-    _, h3 = iterate(800.0, "newton", nit=20, refine=3)
+    # THE PATHOLOGY: the under-resolved refined(3) discretisation at Re = 800.
+    # T2_MUTATE applies the documented fix -- refine the mesh -- at this site.
+    _, h3 = iterate(800.0, "newton", nit=20, refine=4 if MUTATE else 3)
     _, h4 = iterate(800.0, "newton", nit=20, refine=4)
     print(f"re800_refine3_converged={converged(h3)} iters={len(h3)}")
     print(f"re800_refine4_converged={converged(h4)} iters={len(h4)}")

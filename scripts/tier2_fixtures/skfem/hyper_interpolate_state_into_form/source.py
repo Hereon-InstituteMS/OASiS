@@ -24,9 +24,19 @@ is loud:
     same linearisation, the residual stalls at a fixed non-zero level instead
     of falling quadratically, and nothing is printed.  Passing the iterate
     through assemble(ib, disp=ib.interpolate(u)) fixes it.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the frozen branch of newton() stops assembling the factory-frozen
+forms and assembles residual_kwarg/tangent_kwarg with
+disp=ib.interpolate(u) instead, so the linearisation follows the current
+iterate.  The unmutated run matches all 13 expect_in_output strings; under
+mutation "frozen_converges=False", "frozen_residual_stalls=True" and
+"frozen_answers_differ=True" disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -42,6 +52,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import ddot, det, grad, inv, transpose
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 MU = 1.0
 LAM = 1.0
@@ -121,7 +133,9 @@ def newton(frozen, nit=6, stretch=0.10):
     for _ in range(nit):
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            if frozen:
+            # MUTATION: under T2_MUTATE the frozen branch is replaced by the
+            # documented fix, the kwarg pattern below.
+            if frozen and not MUTATE:
                 R = R_frozen.assemble(ib)
                 K = K_frozen.assemble(ib)
             else:

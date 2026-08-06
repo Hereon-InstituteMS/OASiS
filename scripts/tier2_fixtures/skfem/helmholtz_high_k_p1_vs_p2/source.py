@@ -20,19 +20,33 @@ wavelengths of propagation (on a unit square, 6.4 wavelengths, it is ~1/10).
 
 Observed on skfem 12.0.1 (2026-08-06): P1 drift 0.252 wavelengths and 84%
 relative L2 error; P2 on the same mesh 0.0017 wavelengths and 0.6%.
+
+Mutation control: with T2_MUTATE=1 the wrong variant's element switches from
+ElementQuad1 to ElementQuad2 on the identical mesh — the documented fix (use
+higher-order elements at high k) applied at the pathology site.  The drift then
+vanishes, so 'p1_element=ElementQuad1 p1_n_dofs=322',
+'p1_drift_gt_0p2_wavelengths=True',
+'p1_drift_is_about_a_quarter_wavelength=True', 'p1_l2_rel_gt_0p2=True' and
+'p2_recovers_phase_by_gt_20x=True' disappear and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import (Basis, BilinearForm, ElementQuad1, ElementQuad2, FacetBasis,
                    MeshQuad, asm, condense, solve)
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 K_WAVE = 40.0        # the claim's high-k regime
 NPPW = 10            # the claim's 10 elements per wavelength
 N_WAVE = 16          # wavelengths of propagation
-WRONG_ELEMENT = "P1"  # the mistake: standard P1 at high k
+# the mistake: standard P1 at high k (the documented fix under mutation is
+# p-refinement to P2 on the same mesh)
+WRONG_ELEMENT = "P1" if not MUTATE else "P2"
 
 ELEMENTS = {"P1": ElementQuad1, "P2": ElementQuad2}
 

@@ -9,9 +9,15 @@ Wrong variant (a): treating the return value as an INTEGRAND and calling it with
 (u, v, w) as if it were the decorated kernel.
 Wrong variant (b): assembling it against a SCALAR basis. Elasticity needs a
 vector space; skfem does not silently produce a scalar operator.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+wrong-variant (b) -- the basis handed to ``asm`` is wrapped in
+``ElementVector(...)``, exactly the one-token edit the pitfall prescribes.  The
+call then assembles cleanly instead of raising, so the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import scipy.sparse as sp
@@ -24,6 +30,8 @@ from skfem import (
 )
 from skfem.assembly.form import BilinearForm
 from skfem.models.elasticity import lame_parameters, linear_elasticity
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -66,9 +74,12 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant (b): scalar basis ---------------------------------
+    # Under T2_MUTATE the documented fix is applied at this site: the scalar
+    # element is wrapped in ElementVector, giving elasticity its vector space.
+    elem_b = ElementQuad1() if not MUTATE else ElementVector(ElementQuad1())
     raised_scalar = ""
     try:
-        asm(form, Basis(m, ElementQuad1()))
+        asm(form, Basis(m, elem_b))
     except Exception as exc:
         raised_scalar = f"{type(exc).__name__}: {exc}"
     print(f"scalar_basis_raises={bool(raised_scalar)}")

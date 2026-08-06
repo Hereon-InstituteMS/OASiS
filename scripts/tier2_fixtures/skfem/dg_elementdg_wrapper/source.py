@@ -17,9 +17,18 @@ Observed on skfem 12.0.1 (MeshTri().refined(3), 128 elements, 81 vertices):
     it is 6.2e-02.  Same for the interior-penalty matrix (1.7e-16 vs 2.0e-01).
   * the bare-element solution has max|u+ - u-| = 0 across every interior
     facet, while the DG solution jumps by O(0.1) at the advected front.
+
+Mutation control: T2_MUTATE=1 hands the wrong-variant probe
+ElementDG(ElementTriP1()) instead of the bare ElementTriP1() -- the documented
+fix, applied at the element site. The "bare" leg then has 384 DOFs and live
+facet matrices, so bare_p1_n_dofs=81, bare_p1_equals_n_vertices=True,
+bare_p1_upwind_flux_matrix_is_zero=True, bare_p1_penalty_matrix_is_zero=True and
+bare_p1_solution_has_no_jumps=True all vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -36,6 +45,8 @@ from skfem import (
 )
 from skfem.helpers import jump
 from scipy.sparse.linalg import spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 B = np.array([1.0, 0.5])
 
@@ -113,7 +124,9 @@ def main() -> int:
     print(f"n_vertices={m.p.shape[1]}")
 
     # --- WRONG variant: no ElementDG wrapper ------------------------------
-    bare = probe(m, ElementTriP1())
+    # Pathology: the DG forms are built on a bare (continuous) ElementTriP1.
+    # Mutation: the documented fix -- wrap the element in ElementDG.
+    bare = probe(m, ElementDG(ElementTriP1()) if MUTATE else ElementTriP1())
     print(f"bare_p1_n_dofs={bare['n_dofs']}")
     print(f"bare_p1_equals_n_vertices={bare['n_dofs'] == m.p.shape[1]}")
     print(f"bare_p1_upwind_flux_matrix_is_zero={bare['flux_max'] < 1e-14}")

@@ -35,9 +35,16 @@ H^1 error against the analytic gradient is not computable to that accuracy
 here because the exact gradient is unbounded at the corner and its quadrature
 diverges as the mesh approaches the singularity, so any "measured rate" from
 that route would be an artefact of the quadrature rather than of the method.
+
+Mutation control: T2_MUTATE=1 applies the entry's own advice at the pathology
+site -- the mesh whose indicator field is inspected for discriminating power
+gets the one uniform pre-refinement (base.refined()) the entry tells you to
+run before the adaptive loop -- so the indicators are no longer nearly equal.
+Re-run with T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -51,6 +58,8 @@ from skfem import (
     solve,
 )
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 ALPHA = 2.0 / 3.0
 
@@ -127,9 +136,13 @@ def main() -> int:
         ok = False
 
     # --- the coarsest mesh cannot discriminate ---------------------------
-    ib0, u0 = solve_l(base)
-    eta0 = indicator(base, ib0, u0)
-    print(f"unrefined_elements={base.t.shape[1]}")
+    # The pathology: the adaptive loop is started on the raw 6-element
+    # L-shape, where the indicators are nearly equal.  T2_MUTATE=1 applies the
+    # entry's documented fix here -- one uniform refinement first.
+    start = base if not MUTATE else base.refined()
+    ib0, u0 = solve_l(start)
+    eta0 = indicator(start, ib0, u0)
+    print(f"unrefined_elements={start.t.shape[1]}")
     print(f"unrefined_nonzero_indicators={int((eta0 > 0).sum())}")
     spread0 = float(eta0.max() / eta0.min())
     print(f"unrefined_indicator_spread={spread0:.4f}")

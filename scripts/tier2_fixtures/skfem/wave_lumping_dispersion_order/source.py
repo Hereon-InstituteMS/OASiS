@@ -24,6 +24,14 @@ result carries no time-stepping error at all:
     therefore mesh-dependent: at the coarsest grid the lumped relative
     frequency error is several percent and at the finest it is well under a
     tenth of a percent, so the 1% figure is not a scheme property.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the lumped branch of frequency() stops row-sum lumping and uses the
+consistent mass block M[free][:, free] instead of np.diag(M.sum(axis=1)).
+The lumping penalty then vanishes, so 'lumped_underestimates_frequency=True',
+'lumping_flips_the_sign_of_the_error=True' and
+'lumping_costs_a_constant_factor_near_3=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -35,6 +43,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import sys
 
@@ -56,7 +66,10 @@ def frequency(nx, lumped):
     D = ib.get_dofs().all()
     free = np.setdiff1d(np.arange(ib.N), D)
     Kf = K[free][:, free].toarray()
-    if lumped:
+    # THE PATHOLOGY: row-sum lumping of the mass matrix.  Under T2_MUTATE=1
+    # the documented fix is applied here and the lumped branch keeps the
+    # consistent mass block instead.
+    if lumped and not MUTATE:
         Mf = np.diag(np.asarray(M.sum(axis=1)).ravel()[free])
     else:
         Mf = M[free][:, free].toarray()

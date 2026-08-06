@@ -26,9 +26,19 @@ int dE(v) : C4 : dE(du) dx + int S : grad(du)^T grad(v) dx):
     produces NaN; it only costs iterations.  Nothing is printed.  The failure
     mode is a slow solve, not a wrong answer -- both tangents land on the
     same displacement field to machine precision.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the `sandwich = dEu` branch inside tangent(), i.e. the scalar-multiplied
+identity I4, is replaced by the exact symmetrised C^-1 dEu C^-1 sandwich.  The
+"dropped" tangent is then the exact one, so it converges in the same handful of
+iterations at a collapsing rate: s02_dropped_needs_more_iterations=True,
+s02_dropped_rate_is_constant_linear=True, s30_dropped_needs_more_iterations=True,
+s30_dropped_rate_is_constant_linear=True and linear_factor_grows_with_stretch=True
+all disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -47,6 +57,8 @@ from skfem.helpers import ddot, det, grad, inv, transpose
 
 MU = 1.0
 LAM = 1.0
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def ident_like(A):
@@ -84,7 +96,9 @@ def tangent(exact_i4sym):
         F, Cinv, lnJ, S = kinematics(w)
         dEu = green_lagrange_variation(F, grad(u))
         dEv = green_lagrange_variation(F, grad(v))
-        if exact_i4sym:
+        # PATHOLOGY: the else-branch drops the C^-1 sandwich for a plain I4.
+        # T2_MUTATE=1 restores the documented I4_sym_C^-1 term there.
+        if exact_i4sym or MUTATE:
             sandwich = np.einsum("ik...,kl...,lj...->ij...", Cinv, dEu, Cinv)
             sandwich = 0.5 * (sandwich + transpose(sandwich))
         else:

@@ -10,15 +10,23 @@ that is the mesh-resolution end of the spectrum, unrelated to any physical
 low-frequency mode, and nothing warns.
 
 Assertions are orderings and agreements, never pinned measured floats.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- the wrong-variant call gets ``sigma=0, which="LM"`` back,
+so it too targets the bottom of the spectrum.  The "default returns the top"
+contrast then does not exist and the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from skfem import Basis, ElementTriP1, MeshTri
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -39,7 +47,10 @@ def main() -> int:
     smallest = np.sort(eigsh(KI, M=MI, k=5, which="SM",
                              return_eigenvectors=False))
     # --- WRONG variant: no sigma, no which ------------------------------
-    default = np.sort(eigsh(KI, M=MI, k=5, return_eigenvectors=False))
+    # Under T2_MUTATE the documented fix is applied right here: sigma=0 and
+    # which='LM' are supplied, so this call also shift-and-inverts.
+    kw = {} if not MUTATE else {"sigma": 0, "which": "LM"}
+    default = np.sort(eigsh(KI, M=MI, k=5, return_eigenvectors=False, **kw))
 
     agree = bool(np.allclose(shifted, smallest, rtol=1e-8))
     print(f"sigma0_and_SM_agree={agree}")

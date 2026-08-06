@@ -20,9 +20,19 @@ Measured on skfem 12.0.1 / scipy 1.15.3, MeshTri().refined(4), ElementTriP1,
   * skfem.solve(*condense(...)) consumes all four and returns a full-length
     ib.N vector whose Dirichlet entries carry the prescribed values -- which
     is the whole reason the extra two are there.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the 4-tuple is handed to skfem.solve instead of
+scipy.sparse.linalg.spsolve.  No exception is then raised, so
+'spsolve_exception_type=ValueError', the quoted 'The truth value of an array
+with more than one element is ambiguous' text,
+'quoted_valueerror_text_matches=True' and
+'traceback_comes_from_linsolve=True' all disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
@@ -30,6 +40,8 @@ import numpy as np
 import scipy.sparse.linalg as spl
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -58,8 +70,11 @@ def main() -> int:
 
     err = None
     tb = ""
+    # THE PATHOLOGY: the 4-tuple goes to a scipy solver.  Under T2_MUTATE the
+    # documented fix is applied here -- skfem.solve consumes the same tuple.
+    consumer = spl.spsolve if not MUTATE else solve
     try:
-        spl.spsolve(*packed)
+        consumer(*packed)
     except Exception as e:                           # noqa: BLE001
         err = e
         tb = "".join(traceback.format_tb(e.__traceback__))

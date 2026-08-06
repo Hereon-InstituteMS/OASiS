@@ -28,20 +28,38 @@ What IS worth knowing, and is structural rather than temporal, is that
 assembling the mass matrix twice costs twice as much work whichever form you
 use -- so the saving in a time loop comes from assembling ONCE, not from
 picking the shipped helper.
+
+Mutation control: this fixture REFUTES its claim, so there is no pathology to
+remove; the control runs the other way and makes the claim true.  T2_MUTATE=1
+changes the user form's integrand from u * v to 2 * u * v -- the one thing the
+comparison is about -- so the user's re-implementation really is a different
+operator from the shipped helper.  Class, shape, nnz and sparsity pattern are
+untouched and their assertions correctly survive, as does total_mass (it is read
+off the SHIPPED matrix); only the identity assertions move, and
+'difference_stored_entries=0' and 'matrices_are_bit_identical=True' disappear
+from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 
 import numpy as np
 import skfem.models.poisson as poisson
 from skfem import Basis, BilinearForm, ElementTriP1, MeshTri
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# The user's "re-implementation of u*v as a BilinearForm".  Under mutation it
+# is no longer the same integrand, which is what the comparison must detect.
+SCALE = 1.0 if not MUTATE else 2.0
+
 
 @BilinearForm
 def my_mass(u, v, w):
-    return u * v
+    return SCALE * u * v
 
 
 def main() -> int:

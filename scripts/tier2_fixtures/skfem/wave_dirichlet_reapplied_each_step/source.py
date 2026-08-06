@@ -22,15 +22,25 @@ row-sum-lumped mass, standing-wave IC, dt = 0.5 * h/c, 800 steps:
     amount over the run.
   * with the re-application the boundary DOFs stay EXACTLY zero -- not
     small, zero -- which makes the check trivial to write.
+
+Mutation control: T2_MUTATE=1 applies the documented fix to the pathological
+second run -- run(reapply=True), i.e. un[D] = 0.0 after every update instead
+of leaving the boundary DOFs free.  The boundary then never leaves zero, so
+'free_boundary_exceeds_1e_minus_6=True', 'free_boundary_reaches_order_one=True',
+'free_boundary_order_one_within_100_steps=True' and 'interior_is_wrong_too=True'
+disappear from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementQuad1, MeshQuad
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 C = 1.0
 NX = 21
@@ -73,7 +83,10 @@ def run(reapply):
 def main() -> int:
     ok = True
     u_ok, ib, D, b_ok, m_ok = run(True)
-    u_bad, _, _, b_bad, m_bad = run(False)
+    # THE PATHOLOGY: reapply=False leaves the Dirichlet DOFs free after each
+    # explicit update.  Under T2_MUTATE=1 the documented fix is applied here
+    # and this run re-zeroes un[D] every step as well.
+    u_bad, _, _, b_bad, m_bad = run(True if MUTATE else False)
     print(f"dofs_N={ib.N} boundary_dofs={len(D)} steps={NSTEPS}")
 
     print(f"reapplied_boundary_max_over_run={b_ok.max():.6e}")

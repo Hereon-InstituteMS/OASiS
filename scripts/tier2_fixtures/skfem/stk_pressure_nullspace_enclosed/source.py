@@ -29,10 +29,18 @@ prescribed on the whole boundary = enclosed flow):
     and the velocity is independent of WHICH DOF is pinned and of the value
     pinned -- the pressure differs between the two runs by a constant, which
     is the additive-constant statement made precise and checkable.
+
+Mutation control: T2_MUTATE=1 applies the entry's own remedy at the pathology
+site -- the Dirichlet set used for the spectrum probe and for the "unpinned"
+solve gains the single pinned pressure DOF bu.N, so nothing is left
+undetermined.  The constant-pressure nullspace is then gone and the condensed
+block has no eigenvalue at machine zero.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import os
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
@@ -92,8 +100,12 @@ def main() -> int:
     m, bu, bp, K, f, xbc, vel_d = assemble()
     print(f"velocity_dofs={bu.N} pressure_dofs={bp.N} block={K.shape}")
 
+    # the pathology: nothing pins the pressure level.  Under mutation the
+    # entry's remedy -- one pinned pressure DOF -- is applied here.
+    unpinned_D = (np.concatenate([vel_d, [bu.N]]) if MUTATE else vel_d)
+
     # --- the nullspace ----------------------------------------------------
-    Kc, fc, xc, I = condense(K, f, x=xbc, D=vel_d)
+    Kc, fc, xc, I = condense(K, f, x=xbc, D=unpinned_D)
     ev, evec = np.linalg.eigh(Kc.toarray())
     tiny = np.abs(ev) < 1e-10
     print(f"near_zero_eigenvalues={int(tiny.sum())}")
@@ -123,7 +135,7 @@ def main() -> int:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            u_free = solve(*condense(K, f, x=xbc, D=vel_d))
+            u_free = solve(*condense(K, f, x=xbc, D=unpinned_D))
         except Exception as e:                        # noqa: BLE001
             err = e
             u_free = None

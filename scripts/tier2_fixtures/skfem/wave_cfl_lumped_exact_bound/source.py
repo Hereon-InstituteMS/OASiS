@@ -20,6 +20,13 @@ c = 1, standing-wave IC sin(pi x) sin(pi y), integrated to T = 20:
     initial mode is not exactly 1.  Test boundedness, not a unit ceiling.
   * the short-run warning is confirmed: at T = 0.5 an unstable ratio is still
     finite and unremarkable.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the step actually used inside march() is clamped to the exact CFL
+bound, dt = min(dt, 0.990 * h/c), so no run steps past dt_crit.  The ratios at
+and above 1.061 then stay bounded and the long run stays bounded too, so
+'all_ratios_from_1p061_blow_up=True' and 'long_run_reveals_instability=True'
+disappear from the output.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -31,6 +38,8 @@ import os
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import sys
 import warnings
@@ -61,6 +70,11 @@ def lambda_max_lumped(nx):
 
 
 def march(nx, dt, T):
+    # THE PATHOLOGY: dt is taken as given, including values past the exact CFL
+    # bound dt_crit = h/c.  Under T2_MUTATE=1 the documented fix is applied
+    # here and every step is clamped to the bound before marching.
+    if MUTATE:
+        dt = min(dt, 0.990 * (1.0 / (nx - 1)) / C)
     _, ib, K, ML, D = build(nx)
     u0 = ib.project(lambda x: np.sin(np.pi * x[0]) * np.sin(np.pi * x[1]))
     u0[D] = 0.0

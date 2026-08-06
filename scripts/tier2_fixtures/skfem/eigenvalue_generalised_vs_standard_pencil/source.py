@@ -9,15 +9,23 @@ gives wrong frequencies.
 Wrong variant: eigsh(K_I, k=5, sigma=0) with no M= argument. It returns without
 raising or warning, and the numbers are not frequencies of anything -- they are
 the eigenvalues of the stiffness matrix in the (mesh-dependent) nodal basis.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- the wrong-variant call gets its ``M=MI`` argument back, so
+it solves the generalised pencil too.  The two answers then coincide and the
+"dropping M= changes the answer" contrast disappears, so the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from skfem import Basis, ElementTriP1, MeshTri
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -33,10 +41,13 @@ def main() -> int:
                                 return_eigenvectors=False))
 
     # --- WRONG variant: no M= -> standard pencil against the identity ---
+    # Under T2_MUTATE the documented fix is applied right here: M=MI is
+    # supplied, so this call solves the generalised pencil as well.
+    kw = {} if not MUTATE else {"M": MI}
     raised = ""
     try:
         standard = np.sort(eigsh(KI, k=5, sigma=0, which="LM",
-                                 return_eigenvectors=False))
+                                 return_eigenvectors=False, **kw))
     except Exception as exc:              # pragma: no cover - must not happen
         raised = f"{type(exc).__name__}: {exc}"
         standard = np.array([np.nan] * 5)

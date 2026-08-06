@@ -7,19 +7,36 @@ Pitfalls (skfem linear_elasticity#0 + #1):
      basis is 2× that of the scalar basis in 2D (4 → 8).
   #1 skfem.models.elasticity.lame_parameters(E, nu) returns
      (lam, mu) matching the analytic Lame formulas exactly.
+
+Mutation control (INVERTED direction): this fixture executes
+no pathology -- it only checks the correct spellings -- so
+there is nothing to remove.  ``T2_MUTATE=1 python source.py``
+instead ACTIVATES the documented mistake of pitfall #0 at the
+site it is about: the "vector" basis is built from the bare
+scalar ``ElementQuad1()`` without the ``ElementVector(...)``
+wrapper.  ``vector_Nbfun`` then prints 4 instead of 8, so the
+expectation ``vector_Nbfun=8`` disappears and the fixture goes
+red.  (``scalar_Nbfun=4`` and ``lame_match=True`` are
+pathology-independent and survive by design.)
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import skfem
 from skfem.models.elasticity import lame_parameters
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = skfem.MeshQuad().refined(2)
-    vec = skfem.Basis(mesh, skfem.ElementVector(skfem.ElementQuad1()))
+    # Under T2_MUTATE the ElementVector wrapper is dropped.
+    vec_elem = (skfem.ElementVector(skfem.ElementQuad1()) if not MUTATE
+                else skfem.ElementQuad1())
+    vec = skfem.Basis(mesh, vec_elem)
     sca = skfem.Basis(mesh, skfem.ElementQuad1())
     print(f"vector_Nbfun={vec.Nbfun}")
     print(f"scalar_Nbfun={sca.Nbfun}")

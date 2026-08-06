@@ -9,9 +9,15 @@ ddot(u.hess, v.hess) form over it raises inside numpy.einsum.
 
 Wrong variant (b): putting ElementQuadBFS on a triangular mesh. The element is
 defined on quads only and skfem rejects the pairing.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at pathology (b) --
+the mesh ElementQuadBFS is paired with becomes a MeshQuad instead of a
+MeshTri -- so the pairing is accepted and the rejection evidence disappears.
+Re-run with T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from skfem import (
@@ -23,6 +29,8 @@ from skfem import (
     MeshTri,
 )
 from skfem.helpers import ddot
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -57,9 +65,13 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant (b): BFS on a triangular mesh --------------------
+    # The pathology: the quad-only element is paired with a MeshTri.
+    # T2_MUTATE=1 applies the documented fix -- give it a quad mesh -- here.
+    tri_mesh = (MeshTri().refined(1) if not MUTATE
+                else MeshQuad().refined(1))
     raised_tri = ""
     try:
-        Basis(MeshTri().refined(1), ElementQuadBFS())
+        Basis(tri_mesh, ElementQuadBFS())
     except Exception as exc:
         raised_tri = f"{type(exc).__name__}: {exc}"
     print(f"bfs_on_meshtri_raises={bool(raised_tri)}")

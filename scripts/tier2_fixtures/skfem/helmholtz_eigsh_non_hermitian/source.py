@@ -20,9 +20,20 @@ direction is caught.  Measured floats are not pinned; only orderings,
 thresholds, dtypes and exact combinatorial counts are asserted.
 
 Observed on skfem 12.0.1 / scipy 1.15.3 (2026-08-06).
+
+Mutation control: with T2_MUTATE=1 the wrong variant's solver call switches
+from ``sla.eigsh`` to ``sla.eigs`` on the identical non-Hermitian pencil — the
+documented fix (use the general non-Hermitian ARPACK driver) applied at the
+pathology site.  The returned spectrum is then complex and correct, so
+'eigsh_evals_dtype=float64', 'eigsh_returns_real_dtype=True',
+'eigsh_lowest_error_gt_1=True' and 'eigsh_lowest_is_bare_real_part=True'
+disappear and the fixture goes red.  The RIGHT variant further down (eigsh on
+the untouched Hermitian matrix) is not the pathology and is left alone.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -31,6 +42,11 @@ import scipy.linalg as dla
 import scipy.sparse.linalg as sla
 from skfem import Basis, ElementTriP1, MeshTri
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# the mistake: the Hermitian driver on a non-Hermitian pencil; the documented
+# fix is the general driver sla.eigs
+HERMITIAN_DRIVER = sla.eigsh if not MUTATE else sla.eigs
 
 PERTURB = 5j  # breaks Hermitian symmetry of entry (0, 1)
 
@@ -60,7 +76,7 @@ def main() -> int:
     with warnings.catch_warnings(record=True) as rec:
         warnings.simplefilter("always")
         try:
-            ev_sh = np.sort(sla.eigsh(A, k=3, M=M, sigma=0.0)[0])
+            ev_sh = np.sort(HERMITIAN_DRIVER(A, k=3, M=M, sigma=0.0)[0])
             sh_exc = ""
         except Exception as exc:                 # noqa: BLE001 - want the type
             ev_sh, sh_exc = np.zeros(3), f"{type(exc).__name__}: {exc}"

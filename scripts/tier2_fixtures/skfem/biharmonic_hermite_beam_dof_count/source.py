@@ -10,9 +10,16 @@ derivative, and skfem raises rather than quietly returning something.
 Right variant: ElementLineHermite. The cantilever with a tip load P is solved and
 checked against the analytic tip deflection P L^3 / (3 E I) -- an exact
 closed-form value, not a measured one.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the element handed to the bending form u.hess * v.hess becomes
+ElementLineHermite instead of the C^0 ElementLineP1 -- so the assembly
+succeeds and the "it raises" evidence disappears.  Re-run with
+T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -26,6 +33,8 @@ from skfem import (
     condense,
     solve,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -46,9 +55,13 @@ def main() -> int:
         ok = False
 
     # --- WRONG variant: C^0 line element in a bending form --------------
+    # The pathology: the C^0 ElementLineP1 is used in a form that reads
+    # u.hess.  T2_MUTATE=1 applies the documented fix -- the C^1
+    # ElementLineHermite -- at exactly this assembly.
+    beam_element = ElementLineP1() if not MUTATE else ElementLineHermite()
     raised = ""
     try:
-        bending.assemble(Basis(MeshLine().refined(3), ElementLineP1()))
+        bending.assemble(Basis(MeshLine().refined(3), beam_element))
     except Exception as exc:
         raised = f"{type(exc).__name__}: {exc}"
     print(f"linep1_beam_raises={bool(raised)}")

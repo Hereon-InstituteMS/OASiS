@@ -34,6 +34,17 @@ with it.
     refinement the stress-form gap MOVES, and not in one direction: at
     L/H = 20 it shrinks by nearly an order of magnitude, while at L/H = 10 it
     grows.  A fixed physical offset would do neither.
+
+Mutation control: T2_MUTATE=1 applies the fix this fixture documents at the
+pathology site -- TEMPLATE_FORM becomes laplacian_form, i.e. the template's
+viscous term 2*mu*(sym_grad u : sym_grad v) is replaced by the vector
+Laplacian mu*(grad u : grad v) everywhere the template's own form is used --
+so the gap under study is gone.  The unmutated run matches all 14
+expect_in_output strings; under mutation "template_Q=4.100936e-05",
+"template_R_fe=2.438468e+04", "reproduces_entry_relative_error=True",
+"stress_deviates=True" and
+"gap_is_a_formulation_artifact_not_geometry=True" all disappear.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -61,6 +72,8 @@ from skfem import (
 )
 from skfem.helpers import ddot, div, grad, sym_grad
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 MU = 1.0
 H = 0.1
 P_IN = 1.0
@@ -74,6 +87,11 @@ def laplacian_form(u, v, w):
 @BilinearForm
 def stress_form(u, v, w):
     return 2.0 * MU * ddot(sym_grad(u), sym_grad(v))
+
+
+# The viscous term the shipped template uses.  Under mutation it becomes the
+# vector Laplacian -- the fix this fixture documents.
+TEMPLATE_FORM = stress_form if not MUTATE else laplacian_form
 
 
 @BilinearForm
@@ -115,7 +133,7 @@ def main() -> int:
     grids = ((41, 7), (81, 13), (161, 25))
 
     # --- reproduce the entry's own measurement ----------------------------
-    nu, npv, q, r, rex = run(20.0 * H, 41, 7, stress_form)
+    nu, npv, q, r, rex = run(20.0 * H, 41, 7, TEMPLATE_FORM)
     print(f"template_velocity_dofs={nu} pressure_dofs={npv}")
     print(f"template_Q={q:.6e}")
     print(f"template_R_fe={r:.6e}")
@@ -135,7 +153,7 @@ def main() -> int:
 
     # --- the same geometry with the vector-Laplacian form ----------------
     table = {}
-    for tag, form in (("lap", laplacian_form), ("str", stress_form)):
+    for tag, form in (("lap", laplacian_form), ("str", TEMPLATE_FORM)):
         for loh in (20.0, 10.0, 2.0):
             errs = []
             for nx, ny in grids:

@@ -12,15 +12,25 @@ reproduced verbatim including the concrete class name MeshQuad1 (not
 preserved unchanged, and the returned object is a MeshTri1.  A Poisson
 stiffness matrix assembles on the converted mesh, so the conversion is not
 merely structural.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the legacy `mq.to_simplex()` call becomes `mq.to_meshtri()`, the exact edit
+this entry tells a user to make.  The call then succeeds, so no AttributeError
+is captured and to_simplex_raises_AttributeError=True, the verbatim message
+"object has no attribute 'to_simplex'" and message_names_MeshQuad1=True all
+disappear.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 import skfem
 from skfem import Basis, ElementQuad1, ElementTriP1, MeshQuad, MeshTri
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -45,7 +55,9 @@ def main() -> int:
     # --- the legacy call really raises --------------------------------
     err = None
     try:
-        mq.to_simplex()
+        # PATHOLOGY: the legacy spelling.  T2_MUTATE=1 applies the documented
+        # rename fix (.to_simplex -> .to_meshtri) at this call site.
+        mq.to_meshtri() if MUTATE else mq.to_simplex()
     except AttributeError as e:
         err = e
     print(f"to_simplex_raises_AttributeError={isinstance(err, AttributeError)}")

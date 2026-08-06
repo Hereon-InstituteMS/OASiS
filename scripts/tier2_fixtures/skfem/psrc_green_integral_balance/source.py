@@ -26,15 +26,27 @@ Measured on skfem 12.0.1, ElementTriP1 on MeshTri().refined(r), r = 3..7:
     the entry's "differs by orders of magnitude" overstates the boundary
     case, which shifts by tens of percent, not decades; the integral is
     still the quantity that notices, but the tolerance has to be tight.
+
+Mutation control: T2_MUTATE=1 applies the documented fixes at the pathology
+site inside run() -- the deliberately wrong source magnitude, the flipped
+sign of K and the dropped Dirichlet side are all restored to their correct
+values (magnitude=1.0, sign=+1.0, full boundary), so all three fault runs
+become the healthy run.  The integral then reports nothing to catch and
+'magnitude_error_is_caught=True', 'sign_error_is_caught=True' and
+'bc_error_is_caught=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 SERIES_TERMS = 2001
 
@@ -49,6 +61,11 @@ def analytic_integral():
 
 
 def run(refine, magnitude=1.0, sign=1.0, drop_one_side=False):
+    if MUTATE:
+        # THE PATHOLOGY, removed: the three faults the entry names are undone
+        # here -- unit source magnitude, correct sign of K, full Dirichlet
+        # boundary.  This is exactly the edit the entry tells a user to make.
+        magnitude, sign, drop_one_side = 1.0, 1.0, False
     m = MeshTri().refined(refine)
     ib = Basis(m, ElementTriP1())
     K = sign * laplace.assemble(ib)

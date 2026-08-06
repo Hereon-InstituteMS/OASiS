@@ -39,9 +39,19 @@ develops spurious cross-diffusion. GridFunction is NGSolve vocabulary;
 ``hasattr(skfem, "GridFunction")`` is False on 12.0.1.
 
 Cost: three 40-step runs on a 16x16 grid, about 3 s.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- block_run() drops the second field entirely and performs the scalar
+Newton solve on M/dt + D*K - r*M_r that the claim prescribes. The matrix is
+then the scalar one, so 'block_matrix_shape=578x578 block_nnz=9604',
+'block_ndofs_is_double=True', 'block_nnz_ratio_eq_4=True',
+'block_spsolve_slower_gt_1p3x=True' and
+'contaminated_block_u_maxdev_gt_0p1=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 
@@ -53,6 +63,8 @@ import skfem
 from skfem import (Basis, BilinearForm, ElementQuad1, LinearForm, MeshQuad,
                    asm)
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 D_DIFF = 1e-2
 R_RATE = 2.0
@@ -140,6 +152,12 @@ def scalar_run():
 
 def block_run(d2: float):
     """WRONG: the scalar problem set up as a coupled two-field system."""
+    if MUTATE:
+        # THE PATHOLOGY, removed: Fisher-KPP is scalar, so the second field
+        # and its three extra Jacobian blocks are dropped and the claim's
+        # single Newton solve on M/dt + D*K - r*M_r is used instead.
+        _basis, u, shape, nnz, t_mean = scalar_run()
+        return u, shape, nnz, t_mean
     basis, K, M, u = setup()
     v = u.copy()
     N = basis.N

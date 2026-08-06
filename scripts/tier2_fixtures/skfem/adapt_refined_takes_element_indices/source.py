@@ -21,14 +21,23 @@ Measured on skfem 12.0.1, MeshTri().refined(2): 32 elements, 56 facets.
     uniform-refinement overload, so refined(3) uniformly refines three times
     and multiplies the element count by 64.  That is the shape a mask/index
     mix-up is most likely to take, and it is completely silent.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the argument handed to refined() becomes the ELEMENT index array
+np.arange(n_elements) instead of the facet index array np.arange(n_facets) --
+so the call no longer raises and the IndexError evidence disappears.  Re-run
+with T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import MeshTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -56,9 +65,13 @@ def main() -> int:
         ok = False
 
     # --- facet indices ---------------------------------------------------
+    # The pathology: FACET indices are handed to refined(), which reads its
+    # argument as ELEMENT indices.  T2_MUTATE=1 applies the documented fix --
+    # pass element indices -- at this one call.
+    marked = np.arange(nf) if not MUTATE else np.arange(ne)
     err = None
     try:
-        m.refined(np.arange(nf))
+        m.refined(marked)
     except IndexError as e:
         err = e
     print(f"facet_indices_raise_IndexError={isinstance(err, IndexError)}")

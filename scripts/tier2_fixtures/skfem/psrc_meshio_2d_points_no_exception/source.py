@@ -23,6 +23,13 @@ and this fixture adds the two things that make the failure hard to catch:
 
 The padded call produces a byte-identical point array, which is the check
 worth writing: compare what came back against what you meant to send.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the first meshio.Mesh is built from z-padded (N, 3) points instead of
+the raw (N, 2) m.p.T array.  meshio then has nothing to append, so the notice
+'VTU requires 3D points, but 2D points given' is never printed and
+'meshio_added_a_column_you_never_supplied=True' disappears from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
@@ -37,6 +44,8 @@ import meshio
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -58,10 +67,15 @@ def main() -> int:
     ctor_err = None
     buf = io.StringIO()
     path = os.path.join(d, "unpadded.vtu")
+    # THE PATHOLOGY: the raw (N, 2) point array goes straight to meshio.
+    # Under T2_MUTATE the documented fix is applied here -- the z column is
+    # appended before the mesh is built.
+    supplied = (m.p.T if not MUTATE
+                else np.column_stack([m.p.T, np.zeros(m.p.shape[1])]))
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            mio = meshio.Mesh(m.p.T, [("triangle", m.t.T)],
+            mio = meshio.Mesh(supplied, [("triangle", m.t.T)],
                               point_data={"u": u})
         except Exception as e:                       # noqa: BLE001
             ctor_err = e
@@ -91,12 +105,12 @@ def main() -> int:
 
     back = meshio.read(path)
     print(f"unpadded_read_back_points_shape={back.points.shape}")
-    print(f"supplied_columns={m.p.T.shape[1]}")
+    print(f"supplied_columns={supplied.shape[1]}")
     print(f"read_back_has_three_columns={back.points.shape[1] == 3}")
     print(f"third_column_is_all_zero="
           f"{bool(np.allclose(back.points[:, 2], 0.0))}")
     print(f"meshio_added_a_column_you_never_supplied="
-          f"{back.points.shape[1] > m.p.T.shape[1]}")
+          f"{back.points.shape[1] > supplied.shape[1]}")
     if back.points.shape[1] != 3:
         print("FAIL: meshio did not append the third component",
               file=sys.stderr)

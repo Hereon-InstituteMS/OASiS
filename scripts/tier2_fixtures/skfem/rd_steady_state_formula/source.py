@@ -32,10 +32,19 @@ rd_diffusion_ratio.
    the expected u_ss = 1.0, which is the claim's diagnostic.
 
 Cost: three uniform-state runs on a 4x4 grid plus assembly-only checks, ~6 s.
+
+Mutation control: T2_MUTATE=1 types the formula and the parameter correctly at
+all three pathology sites -- the exponent POW in v = b/(a+b)^POW goes back to 2
+so the dropped-square probe is no longer dropping the square, V0_WRONG stops
+swapping a for b in v_ss, and B_TYPO goes back to B_P. Every mis-typing the
+fixture measures is then absent. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from scipy.sparse import bmat
@@ -54,9 +63,13 @@ N_STEPS = 200
 
 U0_BELIEVED = A_P + B_P                     # 1.0
 V0_RIGHT = B_P / (A_P + B_P) ** 2           # 0.9
-V0_WRONG = A_P / (A_P + B_P) ** 2           # 0.1 — a and b swapped
+# a and b swapped in v_ss -> 0.1; under mutation the numerator is b again
+V0_WRONG = (A_P if not MUTATE else B_P) / (A_P + B_P) ** 2
 
-B_TYPO = 0.99                               # b mistyped by +10%
+B_TYPO = 0.99 if not MUTATE else B_P        # b mistyped by +10%
+
+# the exponent used by the "dropped square" probe: 1 is the typo, 2 is correct
+POW = 1 if not MUTATE else 2
 
 
 def forms(a: float, b: float):
@@ -157,10 +170,11 @@ def main() -> int:
               "assembled reaction term", file=sys.stderr)
         ok = False
 
-    load_nosq_shipped = reaction_load(A_P, B_P, U0_BELIEVED, B_P / (A_P + B_P))
+    load_nosq_shipped = reaction_load(A_P, B_P, U0_BELIEVED,
+                                      B_P / (A_P + B_P) ** POW)
     a2, b2 = 0.05, 1.0
     load_ok_2 = reaction_load(a2, b2, a2 + b2, b2 / (a2 + b2) ** 2)
-    load_nosq_2 = reaction_load(a2, b2, a2 + b2, b2 / (a2 + b2))
+    load_nosq_2 = reaction_load(a2, b2, a2 + b2, b2 / (a2 + b2) ** POW)
     print(f"dropped_square_load_shipped_params={load_nosq_shipped:.4e}")
     print(f"dropped_square_load_at_a_plus_b_ne_1={load_nosq_2:.4e}")
     print(f"second_param_set_analytic_load={load_ok_2:.4e}")

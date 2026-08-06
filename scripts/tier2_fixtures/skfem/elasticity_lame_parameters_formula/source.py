@@ -9,19 +9,36 @@ positive floats of a similar magnitude -- so the mistake shows up only as a
 wrong stiffness. This fixture measures the ratio at nu=0.3 to show the swap is
 detectable, and checks the nu -> 0.5 incompressible limit where lam diverges
 while mu stays finite (which is what identifies which slot is which).
+
+Mutation control (INVERTED direction): this fixture never executes the wrong
+unpacking -- it only argues the swap would be detectable -- so there is no
+pathology to remove.  ``T2_MUTATE=1 python source.py`` instead ACTIVATES the
+documented mistake at the site the "WRONG variant" header names: the return
+value is unpacked as ``mu, lam = lame_parameters(E, nu)``.  Both formula checks
+and the ordering check then read the swapped slots and report False, so the
+fixture goes red.  This proves the three assertions really are reading the
+library's return values in the claimed order.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 from skfem.models.elasticity import lame_parameters
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
     ok = True
     E, nu = 210e9, 0.3
-    lam, mu = lame_parameters(E, nu)
+    # Under T2_MUTATE the documented mistake is made here instead: the pair is
+    # unpacked in the (mu, lam) order.
+    if MUTATE:
+        mu, lam = lame_parameters(E, nu)
+    else:
+        lam, mu = lame_parameters(E, nu)
     lam_formula = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))
     mu_formula = E / (2.0 * (1.0 + nu))
     print(f"lam_matches_formula={math.isclose(lam, lam_formula, rel_tol=1e-15)}")

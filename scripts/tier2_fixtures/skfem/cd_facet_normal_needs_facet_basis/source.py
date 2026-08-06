@@ -9,9 +9,16 @@ FormExtraParams dict w, not the Basis, so the retired signal
 Wrong variant: assemble the normal-reading form on a cell Basis.
 Right variants: FacetBasis (boundary facets) and InteriorFacetBasis (the rest),
 whose facet counts are checked to partition the mesh's facets exactly.
+
+Mutation control: T2_MUTATE=1 assembles the same normal-reading form on
+FacetBasis instead of the plain cell Basis -- the documented fix. Nothing then
+raises, so "Attribute 'n' not found in 'w'." and
+cellbasis_normal_raises_attributeerror=True vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from skfem import (
@@ -23,6 +30,8 @@ from skfem import (
     MeshTri,
 )
 from skfem.helpers import dot
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 @BilinearForm
@@ -36,8 +45,12 @@ def main() -> int:
 
     # --- WRONG variant: the normal on a cell basis -----------------------
     msg = ""
+    # Pathology: the normal-reading form is assembled on a plain cell Basis.
+    # Mutation: the documented fix -- assemble it on a FacetBasis instead.
+    wrong_basis = (FacetBasis(m, ElementTriP1()) if MUTATE
+                   else Basis(m, ElementTriP1()))
     try:
-        uses_normal.assemble(Basis(m, ElementTriP1()))
+        uses_normal.assemble(wrong_basis)
     except AttributeError as exc:
         msg = str(exc)
     print(f"cellbasis_normal_raises_attributeerror={bool(msg)}")

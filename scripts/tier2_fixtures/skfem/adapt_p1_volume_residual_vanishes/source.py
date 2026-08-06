@@ -24,9 +24,15 @@ error computed against the analytic gradient:
     error, and their effectivity indices are both stable under refinement.
     What changes is the CONSTANT -- the effectivity drops by about a tenth --
     so an order-based gate cannot see this at all.
+
+Mutation control: T2_MUTATE=1 reinstates the documented fix at the pathology
+site -- the "jump-only" estimator is assembled with the h^2 int f^2 volume
+term switched back on -- so the two estimators coincide and the effectivity
+shortfall vanishes.  Re-run with T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -42,6 +48,11 @@ from skfem import (
     solve,
 )
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# The pathology: the second estimator drops the h^2 int f^2 volume term.
+# T2_MUTATE=1 puts it back -- the documented fix -- at the call site below.
+JUMPONLY_WITH_VOLUME = False if not MUTATE else True
 
 
 def f_smooth(x):
@@ -127,7 +138,7 @@ def main() -> int:
         e = float(np.sqrt(h1_sq.assemble(ib, gu=ib.interpolate(u).grad)))
         errs.append(e)
         full.append(estimator(m, ib, u, True))
-        jumponly.append(estimator(m, ib, u, False))
+        jumponly.append(estimator(m, ib, u, JUMPONLY_WITH_VOLUME))
         print(f"nx{nx}_h1_error={e:.4e} eta_full={full[-1]:.4e} "
               f"eta_jumponly={jumponly[-1]:.4e}")
 

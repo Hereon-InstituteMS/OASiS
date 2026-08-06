@@ -27,13 +27,22 @@ points per element), ElementTriP1:
     against an array whose length is neither 2 nor a trailing-axis length,
     so a try/except around the dot is not a guard.  The guard is a SHAPE
     assertion: the result must be n_elements long.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the "wrong" slice g[:, 0, :] becomes the correct per-element slice
+g[:, :, 0] -- so the contraction that stood in for the mix-up now returns one
+value per element and is no longer silently wrong.  Re-run with
+T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementTriP1, MeshTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -56,7 +65,10 @@ def main() -> int:
         ok = False
 
     per_elem = g[:, :, 0]
-    per_qp_of_elem0 = g[:, 0, :]
+    # The pathology: the axis mix-up g[:, 0, :] read as "gradient of element
+    # 0".  T2_MUTATE=1 applies the documented fix -- the correct per-element
+    # slice g[:, :, 0] -- at exactly this site.
+    per_qp_of_elem0 = g[:, 0, :] if not MUTATE else g[:, :, 0]
     print(f"slice_colon_colon_zero_shape={per_elem.shape}")
     print(f"slice_colon_zero_colon_shape={per_qp_of_elem0.shape}")
     spread = float(np.abs(g - g[:, :, [0]]).max())

@@ -24,9 +24,18 @@ content is structural and is checked structurally:
 
 Measured on skfem 12.0.1 / scipy 1.15.3, heat equation on a 32x32
 MeshTri.init_tensor with ElementTriP1, backward Euler, 20 steps.
+
+Mutation control: T2_MUTATE=1 applies the documented fix to the FIRST loop --
+the naive one -- so that it too factors Ac once with
+scipy.sparse.linalg.factorized() and calls the resulting callable per step
+instead of solve(*condense(...)).  The per-step spsolve pathology is then gone
+and 'spsolve_loop_spsolve_calls=20', 'spsolve_called_once_per_step=True' and
+'splu_counter_alone_is_blind_to_spsolve=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -34,6 +43,8 @@ import scipy.sparse.linalg as spl
 import scipy.sparse.linalg._dsolve.linsolve as linsolve
 from skfem import Basis, ElementTriP1, MeshTri, condense, solve
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 NX = 32
 NSTEPS = 20
@@ -88,8 +99,18 @@ def main() -> int:
     spl.spsolve, linsolve.splu = counted_spsolve, counted_splu
     try:
         u = u0.copy()
-        for _ in range(NSTEPS):
-            u = solve(*condense(A, M @ u, D=D))
+        if MUTATE:
+            # the documented fix applied to the naive loop: one factorisation
+            # reused for every step, instead of a fresh solve per step
+            lu_fixed = spl.factorized(Ac.tocsc())
+            for _ in range(NSTEPS):
+                nxt = ib.zeros()
+                nxt[I] = lu_fixed((M @ u)[I])
+                u = nxt
+        else:
+            # THE PATHOLOGY: a full solve -- hence a full LU -- every step
+            for _ in range(NSTEPS):
+                u = solve(*condense(A, M @ u, D=D))
         loop_counts = dict(calls)
 
         calls.update(spsolve=0, splu=0)

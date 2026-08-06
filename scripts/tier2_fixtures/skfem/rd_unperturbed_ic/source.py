@@ -33,10 +33,20 @@ not that it prevents it.
 Cost: two 10-step runs on a 16x16 grid, under 2 s. Ten steps is the smallest
 count that has the seeded run saturated (it saturates at step 8) while the
 round-off seed is still 8 orders below it.
+
+Mutation control: T2_MUTATE=1 applies the claim's own remedy at the pathology
+site -- PERT_WRONG, the amplitude of the perturbation added to the "wrong"
+run's initial condition, becomes PERT_RIGHT (1e-3) instead of 0.0. That run is
+then no longer started exactly at (u_ss, v_ss), so it is not an equilibrium and
+it forms the same pattern as the seeded run. Re-run: T2_MUTATE=1 python
+source.py
 """
 from __future__ import annotations
 
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np
 from scipy.sparse import bmat
@@ -54,8 +64,9 @@ DT = 2e-3
 N_STEPS = 10
 SEED = 42
 
-PERT_WRONG = 0.0        # exactly (u_ss, v_ss) — the claim's mistake
 PERT_RIGHT = 1e-3       # the claim's recommended ~1e-3 * u_ss
+# exactly (u_ss, v_ss) — the claim's mistake; under mutation it is perturbed
+PERT_WRONG = 0.0 if not MUTATE else PERT_RIGHT
 
 
 @LinearForm

@@ -25,6 +25,14 @@ MeshTri().refined(3), residual always that of the full Navier-Stokes system:
     term and dropping the reaction term converges at a larger ratio than
     dropping both.  So "closer to the true Jacobian" does not imply "faster
     here", and the two inexact variants cannot be ranked by inspection.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
+-- the dropped reaction term (du.grad)u_prev is added back to the 'picard'
+Jacobian in _harness.iterate(), making it the full Newton linearisation.  The
+Picard column then converges quadratically like Newton, which removes
+'picard_needs_more_iterations_than_newton=True' and
+'picard_is_slower_than_stokes_jacobian=True' from the output.  Re-run:
+T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 

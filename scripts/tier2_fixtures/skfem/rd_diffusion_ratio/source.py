@@ -32,9 +32,18 @@ i.e. every mode decays. At d_v = 40 it is +31 and +411 respectively.
 Cost: four 40-step runs on a 16x16 grid, about 5 s. 40 steps is what the d_v = 8
 and d_v = 10 runs need to separate; the d_v = 40 pattern has been saturated since
 step 8.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- D_V_WRONG, the equal diffusivity d_v = d_u = 1, is set to the shipped
+D_V_RIGHT = 40, so the wrong variant becomes the healthy one. The Turing
+mechanism switches back on and 'equal_diffusivity_fails_turing_condition=True',
+'lambda_max_at_equal_diffusivity_lt_0=True' and
+'equal_diffusivity_spread_lt_1e_8=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -45,6 +54,8 @@ from skfem import (Basis, BilinearForm, ElementQuad1, LinearForm, MeshQuad,
                    asm)
 from skfem.models.poisson import laplace, mass
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 A_P, B_P = 0.1, 0.9
 D_U = 1.0
 GAMMA = 1000.0
@@ -54,8 +65,10 @@ N_STEPS = 40
 SEED = 42
 PERT = 1e-2
 
-D_V_WRONG = 1.0         # the claim's mistake: equal diffusivities
 D_V_RIGHT = 40.0        # the shipped value
+# THE PATHOLOGY: equal diffusivities.  Under T2_MUTATE the documented fix is
+# applied here -- the inhibitor gets the shipped fast diffusivity back.
+D_V_WRONG = 1.0 if not MUTATE else D_V_RIGHT
 
 
 @LinearForm

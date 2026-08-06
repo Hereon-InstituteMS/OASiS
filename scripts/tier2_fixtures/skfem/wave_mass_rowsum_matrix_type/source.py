@@ -23,15 +23,27 @@ Measured on skfem 12.0.1 / numpy 1.26.4:
     warning at all.
   * np.asarray(...).ravel() gives the (N,) array, and the lumped diagonal it
     produces sums to the domain area.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the pathology
+site -- the row sum `s` is taken as np.asarray(M.sum(axis=1)).ravel() instead
+of the raw M.sum(axis=1).  `s` is then a 1-D ndarray, the division stops
+broadcasting to (N, N), and 'rowsum_is_np_matrix=True', 'rowsum_shape=(25, 1)',
+'division_result_is_N_by_N=True',
+'division_silently_broadcasts_to_a_matrix=True' and
+'wrong_acceleration_still_length_N=True' disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 from skfem import Basis, ElementQuad1, MeshQuad
 from skfem.models.poisson import mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -47,7 +59,9 @@ def main() -> int:
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        s = M.sum(axis=1)
+        # THE PATHOLOGY: the raw row sum, which is an (N, 1) numpy.matrix on
+        # numpy < 2.  Under T2_MUTATE=1 the documented fix is applied here.
+        s = np.asarray(M.sum(axis=1)).ravel() if MUTATE else M.sum(axis=1)
         msgs = sorted({str(c.message) for c in caught})
     print(f"rowsum_type={type(s).__name__}")
     print(f"rowsum_is_np_matrix={isinstance(s, np.matrix)}")

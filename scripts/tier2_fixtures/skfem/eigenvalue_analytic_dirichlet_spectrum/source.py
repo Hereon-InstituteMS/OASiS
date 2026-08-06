@@ -11,15 +11,24 @@ per-mode relative error on refined(2) and refined(4) and asserts the qualitative
 structure -- one-sided (discrete above analytic), monotone growth up the
 spectrum, degenerate second/third pair, coarse worse than fine. No measured float
 is pinned; only orderings and a 5% bar.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- the coarse comparison spectrum is computed on
+``spectrum(4)`` instead of ``spectrum(2)``, i.e. the under-resolved mesh is
+refined away.  The coarse/fine error gap then no longer exists and the fixture
+goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from skfem import Basis, ElementTriP1, MeshTri
 from skfem.models.poisson import laplace, mass
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def spectrum(refine: int, k: int = 5) -> np.ndarray:
@@ -38,7 +47,9 @@ def main() -> int:
          for mm in range(1, 5) for nn in range(1, 5)]))[:5]
 
     fine = spectrum(4)
-    coarse = spectrum(2)
+    # The under-resolved mesh.  Under T2_MUTATE the documented fix is applied
+    # at this site: refine it to the same level as `fine`.
+    coarse = spectrum(2) if not MUTATE else spectrum(4)
     rel_fine = np.abs(fine - analytic) / analytic
     rel_coarse = np.abs(coarse - analytic) / analytic
     for i, r in enumerate(rel_fine):

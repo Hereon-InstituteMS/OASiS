@@ -13,9 +13,17 @@ Right variant: the same form plus the standard SUPG term with
 tau = (h/2|b|)(coth(Pe_h) - 1/Pe_h).
 
 Only booleans and signs are asserted; no undershoot magnitude is pinned.
+
+Mutation control: T2_MUTATE=1 runs the "wrong" sweep with supg=True, i.e. the
+documented fix (the SUPG term with the coth-tau) applied to the plain-Galerkin
+leg. The undershoot then disappears at every level, so
+cg_undershoots_at_every_level=True, cg_undershoot_survives_to_finest=True and
+supg_fixes_coarsest_mesh=True vanish and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -28,6 +36,8 @@ from skfem import (
     solve,
 )
 from skfem.helpers import dot, grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 EPS = 1e-3
 BX, BY = 1.0, 0.0
@@ -70,7 +80,9 @@ def main() -> int:
     ok = True
     cg, supg, peclets = [], [], []
     for nx in LEVELS:
-        pe, umin_cg = solve_layer(nx, supg=False)
+        # Pathology: the unstabilised Galerkin form at high cell Peclet.
+        # Mutation: the documented fix -- add the SUPG term to this leg too.
+        pe, umin_cg = solve_layer(nx, supg=MUTATE)
         _, umin_supg = solve_layer(nx, supg=True)
         peclets.append(pe)
         cg.append(umin_cg)

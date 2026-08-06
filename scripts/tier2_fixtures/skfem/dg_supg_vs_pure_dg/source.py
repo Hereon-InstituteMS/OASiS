@@ -29,9 +29,16 @@ nominal value, just under the catalog's "~10-30%" band, and it does NOT clear
 after ~3 levels of refinement -- the exact solution carries a genuine
 discontinuity, so the DG overshoot is h-independent.  The claim's ORDERING
 (SUPG-CG damps monotonically, pure DG does not) reproduces exactly.
+
+Mutation control: ``T2_MUTATE=1 python source.py`` applies the documented fix at
+the pathology site -- the pure-upwind-DG solve that fills the ``dg`` excursion
+list is replaced by the SUPG-CG solve ``cg_run(n, True)``, i.e. the very
+substitution the claim tells the user to make.  The ringing then is not there to
+be measured and the DG-vs-SUPG contrast collapses, so the fixture goes red.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -50,6 +57,8 @@ from skfem import (
 )
 from skfem.helpers import dot, grad, jump
 from scipy.sparse.linalg import spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 THETA = np.deg2rad(30.0)
 B = np.array([np.cos(THETA), np.sin(THETA)])
@@ -148,7 +157,13 @@ def main() -> int:
     levels = (8, 16, 32)
     dg, supg, plain, pes, ndof = [], [], [], [], []
     for n in levels:
-        u_dg, ib_dg = dg_run(n)
+        # The pathological run.  Under T2_MUTATE the documented fix is applied
+        # here: the pure-upwind-DG discretisation is swapped for SUPG-CG.
+        if MUTATE:
+            _u, _ib, _ = cg_run(n, True)
+            u_dg, ib_dg = _u, _ib
+        else:
+            u_dg, ib_dg = dg_run(n)
         u_su, ib_su, pe = cg_run(n, True)
         u_pl, _, _ = cg_run(n, False)
         dg.append(excursion(u_dg))

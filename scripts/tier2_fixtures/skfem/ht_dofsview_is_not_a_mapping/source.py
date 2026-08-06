@@ -8,13 +8,24 @@ positionally.
 This fixture goes past the single subscript probe and maps every dict-like
 operation an agent might reach for, because len() succeeding is exactly what
 makes the object look like a mapping and sends people down this path.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at every probe site --
+the mapping-style accesses on the DofsView are replaced by the supported form
+(the tag passed positionally to basis.get_dofs, the tag dict on the mesh, the
+DofsView flattened).  Nothing raises any more, so the recorded error text is
+gone and "'DofsView' object is not subscriptable", "no attribute 'keys'" and
+"not iterable" disappear from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 from skfem import Basis, ElementQuad1, MeshQuad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -34,13 +45,25 @@ def main() -> int:
         ok = False
 
     # --- WRONG variants: every mapping-style access ---------------------
-    probes = {
-        "subscript": lambda: dv["left"],
-        "keys": lambda: dv.keys(),
-        "get": lambda: dv.get("left"),
-        "contains": lambda: "left" in dv,
-        "iter": lambda: list(iter(dv)),
-    }
+    # Under mutation each probe is rewritten in the documented correct form:
+    # the tag goes to get_dofs positionally, the tag dict lives on the mesh,
+    # and the DOF numbers come out of flatten().
+    if not MUTATE:
+        probes = {
+            "subscript": lambda: dv["left"],
+            "keys": lambda: dv.keys(),
+            "get": lambda: dv.get("left"),
+            "contains": lambda: "left" in dv,
+            "iter": lambda: list(iter(dv)),
+        }
+    else:
+        probes = {
+            "subscript": lambda: basis.get_dofs("left"),
+            "keys": lambda: basis.get_dofs("left").nodal.keys(),
+            "get": lambda: basis.get_dofs("left"),
+            "contains": lambda: "left" in m.boundaries,
+            "iter": lambda: list(dv.flatten()),
+        }
     messages = {}
     for label, fn in probes.items():
         msg = ""
