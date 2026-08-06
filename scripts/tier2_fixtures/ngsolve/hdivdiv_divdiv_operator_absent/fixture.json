@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve hdivdiv#7 (HDivDiv has no pointwise div(div(tau))). Verified 2026-08-03 on NGSolve 6.2.2604. ngs.div(tau) on an HDivDiv proxy is fine and has dims [2]; applying div a second time raises a plain Python Exception whose str() is exactly 'cannot form div', and it raises while BUILDING the expression -- before SymbolicBFI sees it -- so 'a += div(div(tau))*ww*dx' fails on the same message. The documented replacement (InnerProduct(tau, ww.Operator('hesse')) plus the normal-normal moment integral over dx(element_boundary=True)) assembles and, with M_nn=0 on HDivDiv, reproduces the Navier simply-supported value to 0.023%.",
+  "backend": "ngsolve",
+  "physics": "hdivdiv",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "moment_space_type=hdivdiv deflection_space_type=h1ho",
+    "single_div_available=True",
+    "divdiv_expression_raises=True",
+    "cannot form div",
+    "divdiv_bilinearform_raises=True",
+    "hesse_plus_skeleton_assembles=True",
+    "documented_fix_matches_navier_within_1pct=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "ngsolve plasticity#1 (J2 post-yield slope as the observable). Observed 2026-08-06 on NGSolve 6.2.2604 (E=2e5, nu=0.3, sigma_y=250, H=2000; homogeneous strain on a VectorH1 GridFunction, radial return written in CF algebra, components read out with Integrate): the uniaxial post-yield secant / E equals H/(H+E) to ~1e-13 relative and misses the claim's (1+3mu/H)^-1 by 15%; the SHEAR post-yield secant / mu is the one that equals H/(H+3mu). So the claim's formula is the deviatoric tangent, not the uniaxial one. Skipping the radial return keeps the slope at E and overshoots the yield surface by more than 3x.",
+  "backend": "ngsolve",
+  "physics": "plasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "disp_space_type=VectorH1",
+    "strain_cf_type=CoefficientFunction",
+    "deviator_is_traceless=True",
+    "uniaxial_sigma_yy_is_zero=True",
+    "elastic_secant_equals_E=True",
+    "post_yield_slope_far_below_elastic=True",
+    "uniaxial_ratio_matches_H_over_H_plus_E=True",
+    "uniaxial_ratio_matches_H_over_H_plus_3mu=False",
+    "claim_formula_relative_error_gt_10pct=True",
+    "shear_ratio_matches_H_over_H_plus_3mu=True",
+    "elastic_only_post_yield_slope_equals_E=True",
+    "elastic_only_overshoots_yield_by_gt_3x=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

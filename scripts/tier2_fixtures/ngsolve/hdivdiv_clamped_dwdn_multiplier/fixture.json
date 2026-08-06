@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve hdivdiv#1 (a CLAMPED HHJ plate needs a dw/dn=0 term). Verified 2026-08-03 on NGSolve 6.2.2604, maxh=0.15 order=2, E=1 nu=0.3 t=1 q=1 (D=0.0915751). The boundary M_nn dofs of the HDivDiv space ARE the Lagrange multiplier for dw/dn=0; putting a homogeneous Dirichlet on M_nn deletes them, and the solve then returns the SIMPLY-SUPPORTED Navier value 4.437e-02 = 3.22x the Timoshenko clamped reference 0.00126 q L^4/D = 1.3759e-02 (inside the documented 3-4x band), with a boundary |dw/dn| that is 2.4x w_c/L. Retaining the multiplier gives 1.386e-02 (0.7% from the clamped reference) and cuts the boundary |dw/dn| by 7.4x. Boundary dw/dn is measured through BoundaryFromVolumeCF because Grad() inside a ds integral is the SURFACE gradient, whose normal component is identically zero.",
+  "backend": "ngsolve",
+  "physics": "hdivdiv",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "no_dwdn_term_3x_to_4x_clamped=True",
+    "no_dwdn_term_is_simply_supported=True",
+    "no_dwdn_term_bnd_dwdn_unenforced=True",
+    "with_dwdn_term_matches_clamped_within_3pct=True",
+    "with_dwdn_term_reduces_bnd_dwdn=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

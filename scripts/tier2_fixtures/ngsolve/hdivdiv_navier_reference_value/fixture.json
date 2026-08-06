@@ -1,0 +1,25 @@
+{
+  "_comment": "ngsolve hdivdiv#6 (Navier reference for the SS square plate, and the shipped hdivdiv_2d template being ~78% low). Verified 2026-08-03 on NGSolve 6.2.2604, maxh=0.15 order=2, E=1 nu=0.3 t=1 q=1 (D=0.0915751). Navier series coefficient 0.00406235 (textbook 0.00406), w_max=0.04436089; q L^4/(64 D)=0.17062500 is 3.846x too large. Running the shipped template's own bilinear form reproduces its deficit exactly -- w_c/w_ref=0.2187, 78.1% low -- and this fixture ATTRIBUTES it to two independent multiplicative defects: the Compliance() missing the 1/(1-nu) factor of the inverse plate stiffness (0.7002 = 1-nu) and HDivDiv built with no dirichlet so the free boundary M_nn dofs silently clamp the plate (0.3124 = clamped/simply-supported). 0.7002*0.3124=0.2188. Repairing both gives 0.04437129, 0.023% from Navier.",
+  "backend": "ngsolve",
+  "physics": "hdivdiv",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "moment_space_type=hdivdiv deflection_space_type=h1ho",
+    "navier_matches_textbook_0p00406=True",
+    "old_formula_over_navier_gt_3p8=True",
+    "old_formula_coefficient_is_0p015625=True",
+    "shipped_template_low_by_gt_70pct=True",
+    "shipped_template_low_by_lt_85pct=True",
+    "shipped_template_within_5pct_of_navier=False",
+    "mnn_fix_alone_gives_1_minus_nu=True",
+    "defects_are_multiplicative=True",
+    "corrected_matches_navier_within_1pct=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

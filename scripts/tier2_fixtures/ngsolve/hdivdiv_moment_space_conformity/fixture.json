@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve hdivdiv#0 (HDivDiv is nn-conforming, weaker than H2). Verified 2026-08-03 on NGSolve 6.2.2604. Pins the continuity STRUCTURE of the space with exact facet-jump quadratic forms on a fixed pseudo-random member: HDivDiv rel nn jump ~1e-17 and rel tt jump ~2.3; MatrixValued(H1,symmetric) has BOTH jumps exactly 0. Triggers both wrong variants: literal VectorH1 moments raise NgException 'Trace of non-matrix called', and the fully continuous MatrixValued(H1) moment space assembles but the HHJ deflection blows past 1e6 (~1.8e14) instead of being 'off by a factor 1.1-1.5'. Correct HDivDiv + M_nn Dirichlet reproduces the Navier SS value 0.00406235 q L^4/D to <2%.",
+  "backend": "ngsolve",
+  "physics": "hdivdiv",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "Trace of non-matrix called",
+    "vectorh1_moment_space_raises=True",
+    "hdivdiv_rel_nn_jump_lt_1e-10=True",
+    "hdivdiv_rel_tt_jump_gt_0p1=True",
+    "matrixh1_moment_space_fully_continuous=True",
+    "wrong_moment_space_wc_gt_1e6=True",
+    "hdivdiv_hhj_matches_navier_within_2pct=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

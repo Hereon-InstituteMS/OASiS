@@ -1,0 +1,21 @@
+{
+  "_comment": "ngsolve hdivdiv#5 (mixed HHJ avoids locking, displacement-only forms do not). Verified 2026-08-03 on NGSolve 6.2.2604, unit_square maxh=0.3 order=2, E=1 nu=0.3 q=1, kappa=5/6, reference 0.00406235 q L^4/D. Un-reduced displacement-only Reissner-Mindlin (H1 deflection + VectorH1 rotations) at t=1e-3, h/t=300: w_c=2.4415e+06 against reference 4.4361e+07, locking factor 18.2 (inside the documented 10-1000x band). The same code at t=1e-1, h/t=3 gives factor 0.951, so the thin-plate deficit is a discretisation artefact, not thick-plate physics. HHJ with the moment tensor in HDivDiv at the SAME t=1e-3 is within 0.093% of the reference.",
+  "backend": "ngsolve",
+  "physics": "hdivdiv",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "h_over_t_gt_100=True",
+    "disp_only_locking_factor_in_10_1000=True",
+    "disp_only_unlocked_at_low_h_over_t=True",
+    "locking_grows_with_h_over_t=True",
+    "hhj_locking_free_within_2pct=True",
+    "hhj_beats_disp_only=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
