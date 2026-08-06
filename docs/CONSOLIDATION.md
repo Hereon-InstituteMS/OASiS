@@ -639,3 +639,45 @@ That last step is the one usually skipped. A mutation that removes the pathology
 shows the fixture responds to something; a mutation that removes the pathology
 AND lands on the independently measured noise floor shows it responds to the
 right thing.
+
+---
+
+# Mutation evidence is not uniformly persisted
+
+1256 fixtures exist, all parse, all carry a runnable artefact. But the evidence
+that each DETECTS its pathology — the mutation verdict, which is the only thing
+separating a fixture from a script that happens to pass — is recorded in three
+different ways and, for five backends, not at all.
+
+Measured across all worktrees, taking the best version of each fixture:
+
+    surface     fixtures   re-runnable control
+    fourc            373       354   95%   `_mutation` field in fixture.json
+    fenics           200       183   92%   T2_MUTATE env hook in the source
+    dealii           119       104   87%   T2_MUTATE env hook
+    coupling          18        18  100%   `_mutation` field
+    skfem            144         0    0%
+    kratos           131         0    0%
+    ngsolve          115         0    0%   (48 describe it in _comment prose)
+    febio             76         0    0%
+    dune              41         0    0%
+    sparta            35         0    0%
+
+Every one of those agents reported its fixtures mutation-proven, and their
+reports contain the specific mutation and the expectation it removed. There is
+no reason to doubt the runs happened. The problem is that for 401 fixtures the
+evidence lives only in a session transcript: nobody can re-run it, and a
+reviewer asking "show me this fixture detects what it claims" gets prose.
+
+THE T2_MUTATE HOOK IS THE BETTER CONVENTION and it was not mine — FEniCSx and
+deal.II arrived at it independently. The control lives inside the fixture and is
+switched by an environment variable, so re-running the proof is one command and
+needs no harness that stages files, no parent-directory copying, and none of the
+three staging defects that silently voided mutation verdicts earlier today.
+A `_mutation` JSON field describes an edit somebody must reapply; a T2_MUTATE
+hook IS the edit, already written and already tested.
+
+This is not a claim that 401 fixtures are unsound. It is a claim that their
+soundness is currently unauditable, which for this project is the same class of
+problem as an unverified knowledge claim: the assertion may well be true and
+nothing in the tree lets a reader check it.
