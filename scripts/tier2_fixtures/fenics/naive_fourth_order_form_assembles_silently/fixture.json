@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics biharmonic#3: writing the naive single fourth-order form inner(div(grad(u)), div(grad(v)))*dx on a C0 Lagrange space raises NOTHING. dolfinx does not raise a \"H2 conformity required\" error (no such error exists) and it does not silently substitute the interior-penalty form. It compiles, assembles, and hands back a singular or inconsistent operator, so the failure is numerical rather than diagnostic and you must write the dS interior-penalty terms yourself. Wrong variant: the naive form on plain C0 Lagrange. Right variant: the same volume term plus the three C0-IP interior-facet terms. Observed on an 8x8 unit square, dolfinx 0.10.0: on P2 the naive form compiles and assembles 3073 stored nonzeros with a largest entry of 6144.0; on P1 it assembles 497 stored nonzeros whose largest absolute entry is exactly 0.0, because div(grad(.)) of a P1 function vanishes cell-wise \u2014 an identically zero matrix, produced without a single warning. The C0-IP form on the same P1 space is not zero: 849 stored nonzeros, largest entry 6992.31. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "biharmonic",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "naive_fourth_order_form_raised_nothing=True",
+    "P1_matrix_is_identically_zero=True",
+    "P2_matrix_has_nonzero_entries=True",
+    "interior_penalty_form_on_P1_is_not_zero=True",
+    "VERDICT=naive_h2_form_compiles_and_yields_a_silently_wrong_operator"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "NotImplementedError",
+    "VERDICT=naive_h2_form_was_rejected_or_corrected"
+  ],
+  "timeout_seconds": 600
+}
