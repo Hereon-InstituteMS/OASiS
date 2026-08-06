@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for skfem stokes#3, verified 2026-08-06 on skfem 12.0.1. The entry was marked inherited/unverified and said the equal-order tet pair 'produces a pressure GridFunction whose mode pattern alternates by element (checkerboard); the Functional integral of div(u) over the mesh is O(1) instead of O(eps)'. Ran: a namespace probe; the tet element inventory; a real 3D block solve; the nullity of the condensed block for Taylor-Hood ElementVector(TetP2)/TetP1 and equal-order ElementVector(TetP1)/TetP1 on MeshTet().refined(1,2,3); and a lightly regularised solve at refined(2) and (3). Printed: GridFunction IS NGSOLVE VOCABULARY -- hasattr(skfem,'GridFunction') is False and no name in the skfem namespace contains it; a skfem Stokes solution is a plain 1-D numpy.ndarray of the stacked [u; p] vector whose pressure is a slice at offset basis_u.N (345 here, 26 pressure DOFs). ElementTetP2 and ElementTetP1 both exist, so the recommendation itself is sound. THE INF-SUP FAILURE IS COUNTABLE WITHOUT SOLVING: the spurious-mode count is CONSTANT at 4/4/4 for Taylor-Hood across three refinements while equal-order grows 25/63/71 -- a sharper, mesh-independent statement of 'checkerboard'. A regularised solve agrees: the Taylor-Hood pressure range is 7.6249e-01 then 7.9203e-01 (bounded, converging) while equal order goes 1.2543e+00 to 2.8429e+01. NOT REPRODUCED and therefore not asserted: the entry's 'integral of div(u) is O(1) instead of O(eps)' -- under a regularised solve the relative divergence of the two pairs is comparable and does not separate them.",
+  "backend": "skfem", "physics": "stokes", "pitfall_index": 3, "mode": "python",
+  "expect_in_output": [
+    "skfem_version=",
+    "hasattr_skfem_GridFunction=False",
+    "names_containing_gridfunction=[]",
+    "gridfunction_is_foreign_vocabulary=True",
+    "ElementTetP2_present=True",
+    "ElementTetP1_present=True",
+    "solution_is_plain_ndarray=True",
+    "solution_ndim=1",
+    "pressure_is_a_slice_at_offset=True",
+    "th_mode_counts=[4, 4, 4]",
+    "taylor_hood_mode_count_is_constant=True",
+    "equal_order_mode_count_grows=True",
+    "equal_order_exceeds_taylor_hood=True",
+    "mode_count_separates_the_pairs=True",
+    "taylor_hood_pressure_range_bounded=True",
+    "equal_order_pressure_range_grows_10x=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 400
+}
