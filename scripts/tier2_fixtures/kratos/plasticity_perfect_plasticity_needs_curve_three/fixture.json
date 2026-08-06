@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for kratos::plasticity#4 — perfect plasticity needs HARDENING_CURVE=3, and HARDENING_CURVE=0 never gets there. EXECUTED 2026-08-06 with /usr/bin/python3 (Kratos 10.4 Release, GCC-14.2, ConstitutiveLawsApplication present; the repo .venv wheel wants GLIBC_2.32 and cannot load on this host, so the runner needs KRATOS_PYTHON=/usr/bin/python3). SmallStrainIsotropicPlasticity3DVonMisesVonMises was driven directly through a monotonic strain path (E=2e11, nu=0.3, YIELD_STRESS_TENSION=YIELD_STRESS_COMPRESSION=2.5e8) at HARDENING_CURVE 0 and 3 for four decades of FRACTURE_ENERGY. Printed: curve 3 plateaued at von Mises 2.500000e+08 — the yield stress to seven figures — with post-yield slope 1.192093e-05 at EVERY fracture energy, i.e. flat to machine precision. Curve 0 peaked at 2.498818e+08 / 2.499883e+08 / 2.499988e+08 / 2.499999e+08 and then drooped with slopes -2.269939e+09, -2.248053e+08, -2.245873e+07, -2.245656e+06 for Gf = 1e7 / 1e8 / 1e9 / 1e10 — strictly negative at all four, with slope ratios per decade 10.097 / 10.010 / 10.001. So the softening decays as 1/FRACTURE_ENERGY and there is no finite 'very large' value that switches it off: the claim's threshold reading is weaker than the mechanism, and the mechanism is what this fixture gates. MEASUREMENT NOTE recorded because it silently voids the naive version of this test: the observable must be the von Mises equivalent stress, not sigma_xx. Under a prescribed lateral strain the axial stress keeps climbing at the elastic bulk slope after yield (plastic flow is incompressible, the imposed lateral strain is not), so a sigma_xx-based test reports a POSITIVE post-yield slope of E/3 for both curves and sees no softening at all. Also recorded: the claim's phrase 'despite HARDENING_MODULUS=0' names a variable that resolves on neither KratosMultiphysics nor ConstitutiveLawsApplication (printed hardening_modulus_variable_exists=False), so that half cannot be set up as written. Two settings below the admissible range were also observed but are not gated: at Gf=1e5 the law raises 'Error: The Fracture Energy is to low: 120605', and at Gf=2e5 curve 0 warns and then responds elastically to the end of the path. MUTATION EVIDENCE: patching the sweep so HARDENING_CURVE=0 behaves like curve 3 made the fixture print curve0_droops_at_every_fracture_energy=False, curve0_softening_decays_as_one_over_fracture_energy=False and only_curve_three_gives_perfect_plasticity=False, emit three FAIL: lines, drop the _verified sentinel and return 2. KratosMultiphysics and ConstitutiveLawsApplication are imported at module scope, so with Kratos absent the process dies on import and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "plasticity",
+  "pitfall_index": 4,
+  "covers": [
+    "plasticity:4"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "curve3_is_flat_at_every_fracture_energy=True",
+    "curve3_plateau_equals_yield_stress=True",
+    "curve0_gf1e+10_slope_is_negative=True",
+    "curve0_droops_at_every_fracture_energy=True",
+    "curve0_softening_decays_as_one_over_fracture_energy=True",
+    "only_curve_three_gives_perfect_plasticity=True",
+    "plasticity_perfect_plasticity_gate_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

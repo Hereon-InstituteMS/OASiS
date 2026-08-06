@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for kratos::plasticity#3 — Modified MC and Classical MC take different parameterisations and put the yield surface in different places. EXECUTED 2026-08-06 with /usr/bin/python3 (Kratos 10.4 Release, GCC-14.2, ConstitutiveLawsApplication present; the repo .venv wheel wants GLIBC_2.32 and cannot load on this host, so the runner needs KRATOS_PYTHON=/usr/bin/python3). Printed: SmallStrainIsotropicPlasticity3DModifiedMohrCoulombModifiedMohrCoulomb accepts {FRACTURE_ENERGY, HARDENING_CURVE, YIELD_STRESS_TENSION, YIELD_STRESS_COMPRESSION, FRICTION_ANGLE, DILATANCY_ANGLE} and SmallStrainIsotropicPlasticity3DMohrCoulombMohrCoulomb rejects that same set with 'COHESION is not a defined value'; the classical law accepts {FRACTURE_ENERGY, HARDENING_CURVE, COHESION, FRICTION_ANGLE, YIELD_STRESS} and the modified law rejects that one with 'DILATANCY_ANGLE is not a defined value'. Neither set works for both. Driven through an identical strain path at E=2e10, nu=0.25, phi=30 deg: Modified MC left the elastic line at 2.994977e+06 in tension and 3.093443e+07 in compression, i.e. at the YIELD_STRESS_TENSION=3.0e6 and YIELD_STRESS_COMPRESSION=3.0e7 it was handed. Classical MC, handed YIELD_STRESS=3.0e6 and COHESION=1.0e6, left the elastic line at 1.160770e+06 and 3.485727e+06 — it ignores the YIELD_STRESS entirely and lands on the Coulomb hand-calc 2 c cos(phi)/(1 +- sin(phi)) = 1.154701e+06 / 3.464102e+06, matching to better than 1%. Its compression/tension ratio came out 3.002945 against the closed-form (1+sin phi)/(1-sin phi) = 3.000000, so the claim's 'disagrees with hand-calc by a tan(phi)-related factor' is the mechanism and the fixture computes that reference from c and phi rather than pinning a remembered number. MUTATION EVIDENCE: collapsing the two into one parameterisation — Check accepting everything and both laws yielding at the YIELD_STRESS_* values — made the fixture print classical_rejects_modified_style_on_cohesion=False, modified_rejects_classical_style_on_dilatancy=False, classical_intercepts_follow_cohesion_and_friction=False, classical_ignores_the_yield_stress_property=False, classical_ratio_is_a_function_of_friction_angle=False and two_parameterisations_are_not_interchangeable=False, emit five FAIL: lines, drop the _verified sentinel and return 2. KratosMultiphysics and ConstitutiveLawsApplication are imported at module scope, so with Kratos absent the process dies on import and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "plasticity",
+  "pitfall_index": 3,
+  "covers": [
+    "plasticity:3"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "each_law_accepts_its_own_parameterisation=True",
+    "classical_rejects_modified_style_on_cohesion=True",
+    "modified_rejects_classical_style_on_dilatancy=True",
+    "modified_intercepts_match_yield_stress_properties=True",
+    "classical_intercepts_follow_cohesion_and_friction=True",
+    "classical_ignores_the_yield_stress_property=True",
+    "classical_ratio_is_a_function_of_friction_angle=True",
+    "two_parameterisations_are_not_interchangeable=True",
+    "plasticity_mohr_coulomb_parameterisations_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

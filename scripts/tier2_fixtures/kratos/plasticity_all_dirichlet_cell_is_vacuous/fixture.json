@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for kratos::plasticity#8 — a fully displacement-controlled single-element test passes without exercising the material tangent. EXECUTED 2026-08-06 with /usr/bin/python3 (Kratos 10.4 Release, GCC-14.2, StructuralMechanicsApplication + ConstitutiveLawsApplication + LinearSolversApplication present; the repo .venv wheel wants GLIBC_2.32 and cannot load on this host, so the runner needs KRATOS_PYTHON=/usr/bin/python3). One SmallDisplacementElement3D8N unit cube, SmallStrainIsotropicPlasticity3DVonMisesVonMises (E=2e11, nu=0.3, yield 2.5e8, HARDENING_CURVE=3, FRACTURE_ENERGY=1e10), driven to an axial displacement of -0.004 over six steps by ResidualBasedNewtonRaphsonStrategy with a ResidualCriteria(1e-8, 1e-10) and a skyline_lu_factorization solver; ProcessInfo[NL_ITERATION_NUMBER] read after each step. Printed: with ALL 24 DOFs fixed the counts were 1,1,1,1,1,1 while the element's own CalculateOnIntegrationPoints reported a maximum EQUIVALENT_PLASTIC_STRAIN of 1.583333e-03 — the cell is well past yield and Newton still reports one iteration per step, which is exactly what makes the pass vacuous rather than merely easy. The same cell with the lateral DOFs of the loaded face freed and nodal POINT_LOADs applied to it gave 1,3,3,3,3,3 (the leading 1 is the still-elastic first increment) at a maximum plastic strain of 2.996137e-03. So the iteration count only carries information once at least one face is Neumann-loaded, which is the claim. The plastic-strain readback is in the fixture specifically so 'converged in one iteration' cannot be dismissed as 'was still linear'. MUTATION EVIDENCE: patching run() so the all-Dirichlet case behaves like the mixed one made the fixture print all_dirichlet_is_one_iteration_every_step=False and displacement_only_cell_passes_without_testing_the_tangent=False, emit two FAIL: lines, drop the _verified sentinel and return 2. KratosMultiphysics, StructuralMechanicsApplication and ConstitutiveLawsApplication are imported at module scope, so with Kratos absent the process dies on import and the runner records a failure, never a pass. No wall-clock is asserted anywhere: the observables are iteration counts and a plastic-strain readback.",
+  "backend": "kratos",
+  "physics": "plasticity",
+  "pitfall_index": 8,
+  "covers": [
+    "plasticity:8"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "all_dirichlet_iteration_counts=1,1,1,1,1,1",
+    "all_dirichlet_is_one_iteration_every_step=True",
+    "all_dirichlet_cell_actually_yielded=True",
+    "with_neumann_takes_more_than_one_iteration=True",
+    "displacement_only_cell_passes_without_testing_the_tangent=True",
+    "plasticity_all_dirichlet_cell_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
