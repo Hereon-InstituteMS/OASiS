@@ -366,3 +366,48 @@ And the evidence for the blockage is itself in the tree: the sentinel fixture
 here" is an executed observation rather than an assertion in a report. That is
 the right pattern for every environment limit — the claim that something is
 impossible on this host should be as verifiable as the claims that are.
+
+---
+
+# The flagship argument, in its strongest form
+
+Two coupling mutations, both verified by running the harness, both converging
+cleanly. They are the reason the verification gate compares against a reference
+instead of trusting the coupling's own checks.
+
+**Unit mismatch** — one participant in Celsius, one in Kelvin:
+
+    converged             34 iterations
+    residual              7.782e-09
+    flux balance          6.463e-09
+    validation entries    0
+    balance warnings      0
+    interface T           61.8% from the closed form
+    interface q          1365.8% from the closed form
+    monolithic check      fires
+
+Every internal check green, the answer badly wrong.
+
+**Consistent-conductivity mutation** — both participants 25% away from the
+conductivity the closed form is computed from. This one is strictly harder:
+
+    converges                             yes
+    the two sides agree at the interface  yes
+    flux balance                          untouched
+    interface TEMPERATURE                 DOES NOT CHANGE AT ALL
+    interface flux                        off by the same 25%
+
+The temperature is unmoved because the conductance RATIO is preserved — both
+subdomains moved together. So a reviewer checking the primary output sees the
+right number. Only the flux moves, and only the closed form catches it.
+
+That is the argument. A partitioned coupling can be internally perfect and
+solving a different problem, and every quantity a practitioner would naturally
+check can agree. Convergence, residual, interface agreement, flux balance and
+even the interface temperature are all consistent with a wrong answer at once.
+
+The same conclusion arrives from three independent directions today: 440 entries
+whose only observable is a solver failure that mostly does not occur; a wrong
+Newton residual converging FASTER onto a wrong answer; and these two couplings.
+Watching the solver never suffices. Comparing the answer against a reference
+does.
