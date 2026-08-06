@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::ssi#2 and the execution that FALSIFIED its Signal. On upstream ssi_mono_3D_2hex8_scatra_s2i_constperm.4C.yaml, which carries DESIGN S2I KINETICS SURF CONDITIONS, deleting the SCALAR TRANSPORT DYNAMIC/S2I COUPLING section (the home of COUPLINGTYPE) aborts with 'Type of mortar meshtying for scatra-scatra interface coupling not recognized!' from src/scatra/4C_scatra_timint_meshtying_strategy_s2i.cpp inside MeshtyingStrategyS2I::setup_meshtying(), exit 1 — not a quietly zero interface current (STRIPPED_RESULT_TESTS_PERFORMED=0). The third arm shows the converse: on ssi_mono_3D_1hex8_elch_funct_growthlaw.4C.yaml, which has no S2I conditions, the identical deletion is inert and the deck still passes all its result tests. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssi",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_KEPT=0",
+    "EXIT_STRIPPED=1",
+    "EXIT_NOINTERFACE=0",
+    "processor 0 finished normally",
+    "Type of mortar meshtying for scatra-scatra interface coupling not recognized!",
+    "4C_scatra_timint_meshtying_strategy_s2i.cpp",
+    "FAILS_IN_SETUP_MESHTYING=1",
+    "STRIPPED_RESULT_TESTS_PERFORMED=0",
+    "NOINTERFACE_RESULT_TEST_FAILURES=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_KEPT=1",
+    "EXIT_STRIPPED=0",
+    "EXIT_NOINTERFACE=1",
+    "FAILS_IN_SETUP_MESHTYING=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the S2I COUPLING section in every arm. The stripped deck becomes the baseline, the abort vanishes and EXIT_STRIPPED becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(blk, \"\", 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}
