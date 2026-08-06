@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve linear_elasticity#3 (MatrixValued(..., symmetric=True) stores only the upper triangle). Run 2026-08-06 on NGSolve 6.2.2604 in both 2D (unit_square maxh 0.3) and 3D (unit_cube maxh 0.5) on H1 order 1: full is exactly d^2 times the scalar DOF count (76 = 4*19, 234 = 9*26) and symmetric is exactly d(d+1)/2 times it (57 = 3*19, 156 = 6*26), so the packing claim is arithmetic. The consequence is then exercised: a deliberately non-symmetric tensor with skew-part norm 1.22 comes back from the symmetric space with a skew part of exactly 0.0 -- the space cannot hold it -- while the full space reproduces the same tensor to 2.3e-16. On a genuinely symmetric field the two spaces agree exactly, so the saving costs nothing when the field really is symmetric. Mutation: setting symmetric=False for the sym space makes the DOF counts equal and the fixture fails on 2d_sym_is_half_d_dplus1_times_scalar.",
+  "backend": "ngsolve",
+  "physics": "linear_elasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "2d_full_is_d2_times_scalar=True",
+    "2d_sym_is_half_d_dplus1_times_scalar=True",
+    "3d_full_is_d2_times_scalar=True",
+    "3d_sym_is_half_d_dplus1_times_scalar=True",
+    "input_tensor_is_not_symmetric=True",
+    "symmetric_space_cannot_hold_the_skew_part=True",
+    "full_space_can_hold_it=True",
+    "no_loss_when_the_field_really_is_symmetric=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

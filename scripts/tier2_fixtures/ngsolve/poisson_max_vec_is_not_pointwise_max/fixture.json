@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve poisson#1 (max(gfu.vec) is the largest DOF coefficient, not the field's largest value). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3, u = sin(pi x) sin(pi y) interpolated at H1 order 1/2/3, pointwise maximum taken by evaluating the GridFunction on a 41x41 interior grid. The two numbers differ at every order, and they err in OPPOSITE directions -- max(vec) is 1.0838 at order 1, above the interpolated field's true peak of 1, and 0.9970 at order 3, below it -- so no fixed correction recovers one from the other. The sampled maximum's distance to 1 falls monotonically (0.0689, 0.0044, 0.00047) as a correctly measured peak should. Mutation: reading the maximum of the pointwise samples into both slots makes them identical and the fixture fails on the_two_numbers_differ_at_every_order.",
+  "backend": "ngsolve",
+  "physics": "poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "the_two_numbers_differ_at_every_order=True",
+    "order1_max_of_vec_above_the_true_peak_of_one=True",
+    "order3_max_of_vec_below_the_true_peak_of_one=True",
+    "max_of_vec_errs_in_both_directions=True",
+    "sampled_max_approaches_one_with_order=True",
+    "sampled_max_within_1pct_of_one_at_order3=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

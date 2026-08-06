@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve stokes#4 (do not hardcode a direct solver name; 'except RuntimeError: continue' is broken). Run 2026-08-06 on NGSolve 6.2.2604, Stokes block matrix on unit_square maxh 0.25 with .Inverse() asked for five names. NgException is confirmed not to be a RuntimeError subclass, on the class itself. On this build sparsecholesky and umfpack succeed; pardiso raises a plain builtins.RuntimeError ('MKL Pardiso is not available'), mumps raises NgException ('MumpsInverse not available'), and a nonexistent name raises NgException naming the input and listing the allowed names. So the same call with only the name changed produces two different exception types. The naive loop is then RUN, over a preference order that puts the optional solvers first as a fallback loop would: it catches pardiso's RuntimeError, continues, and escapes on mumps's NgException. A loop catching Exception picks umfpack, whose answer matches the reference exactly. Mutation: putting sparsecholesky first in the preference order lets the naive loop succeed and the fixture fails on naive_loop_is_broken.",
+  "backend": "ngsolve",
+  "physics": "stokes",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngexception_is_runtimeerror_subclass=False",
+    "more_than_one_exception_type=True",
+    "some_raise_plain_runtimeerror=True",
+    "some_raise_ngexception=True",
+    "unknown_name_message_names_the_input=True",
+    "unknown_name_message_lists_allowed=True",
+    "naive_loop_is_broken=True",
+    "chosen_solver_actually_solves=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

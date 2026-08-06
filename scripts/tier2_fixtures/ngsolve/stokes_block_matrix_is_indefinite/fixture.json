@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve stokes#0 (the Stokes block system is indefinite; CG carries no guarantee and fails quietly). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.25, Taylor-Hood order 2/1, no-slip everywhere, pressure pinned. The free-DOF block's symmetric part has 25 negative and 106 positive eigenvalues with the most negative at 5.3e-3 of the largest, so indefiniteness is arithmetic here rather than a description. CG with the Jacobi smoother NGSolve's own CreateSmoother returns exhausts all 400 iterations and hands back a vector containing non-finite entries while raising nothing and printing nothing, checked at the file-descriptor level -- the claim's 'do NOT expect a loud failure'. NUANCE recorded: 'never CG' overstates it. With a block preconditioner built from the velocity Laplacian and the pressure mass matrix the SAME CG converges in 47 iterations to 6.6e-11 against the direct solve, so CG is guarantee-free on this matrix, not guaranteed to fail. Mutation: giving the Jacobi run the block preconditioner makes it converge and the fixture fails on cg_exhausted_its_budget.",
+  "backend": "ngsolve",
+  "physics": "stokes",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "block_matrix_is_indefinite=True",
+    "negative_part_is_not_roundoff=True",
+    "cg_exhausted_its_budget=True",
+    "cg_failure_is_silent=True",
+    "cg_can_converge_with_a_good_preconditioner=True",
+    "never_cg_overstates_it=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
