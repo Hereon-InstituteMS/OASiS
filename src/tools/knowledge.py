@@ -262,6 +262,32 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     return "\n".join(parts)
 
 
+def _coupling_failure_modes() -> str:
+    """The indexed failure-mode block appended to the coupling guide.
+
+    ADDED, NOT SUBSTITUTED. Everything above it in the payload stays prose:
+    the theory, the sign convention, the per-solver notes and the problem
+    tables are reference material and cutting them into fields would help
+    nobody. What is added underneath is the SAME failure modes written in the
+    corpus format the retrieval layer indexes — `[Coupling][Axis]` plus a
+    `Signal:` clause — because reading a guide top to bottom and pasting an
+    error message are two different acts, and the coupling knowledge could
+    only serve the first. An agent whose run has just failed is doing the
+    second.
+
+    Imported lazily and defensively: this module is imported at server start,
+    and a coupling knowledge payload that raised on import would take the
+    whole knowledge surface down with it.
+    """
+    try:
+        from backends.coupling import coupling_failure_index
+    except Exception as exc:                             # pragma: no cover
+        return (f"\n\n## Failure modes, indexed by symptom\n\n"
+                f"UNAVAILABLE on this install: {type(exc).__name__}: {exc}. "
+                f"The prose above is unaffected.\n")
+    return "\n\n" + coupling_failure_index()
+
+
 def register_knowledge_tools(mcp: FastMCP):
 
     @mcp.tool()
@@ -439,26 +465,6 @@ the boundary condition; (2) is about the conservation diagnostic.
 - Use `interpolate_to_points()` for non-matching mesh interpolation
 - Sort interface nodes by tangential coordinate for consistent ordering
 
-## Verified Results (All Solver Combinations)
-
-### Heat DD (T=100 left, T=0 right, no source)
-- Exact solution: T(x) = 100*(1-x), linear
-
-| Solver A | Solver B | Iterations | Final Residual | T(0.5) Error |
-|----------|----------|------------|----------------|--------------|
-| FEniCS   | 4C       | 1          | 3.4e-16        | 0.0          |
-| FEniCS   | FEniCS   | 1          | 4.3e-15        | 4.3e-15      |
-
-### Poisson DD (-Δu=1, u=0 on boundary, θ=0.5)
-- Reference: single-domain FEniCS solve
-
-| Solver A | Solver B | Iterations | Final Residual |
-|----------|----------|------------|----------------|
-| FEniCS   | 4C       | 2          | 1.2e-16        |
-| FEniCS   | FEniCS   | 7          | 9.7e-05        |
-
-- Without relaxation (θ=1.0): oscillates indefinitely!
-
 ### Supported Backend Combinations
 - FEniCS (Dirichlet) ↔ 4C (Neumann): fully tested, production ready
 - FEniCS (Dirichlet) ↔ FEniCS (Neumann): fully tested, proves solver-agnosticism
@@ -509,7 +515,7 @@ Key changes needed for new physics:
 | Nonlinear | 0.7 | Good starting point |
 | Unknown / complex | Aitken | Automatic acceleration |
 | Failing to converge | Reduce θ | Try 0.3, then 0.1 |
-'''
+''' + _coupling_failure_modes()
 
     @mcp.tool()
     def get_tsi_knowledge() -> str:
