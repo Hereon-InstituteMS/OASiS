@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics stokes_darcy#0. Tier-2 for fenics stokes_darcy#0: there is no built-in Stokes-Darcy, Darcy or Brinkman anything in dolfinx - the whole coupled form has to be written by hand. Wrong variant: reach for `dolfinx.fem.StokesDarcy` (or any of the other plausible spellings). Right variant: the single-mesh Brinkman formulation - Taylor-Hood over the whole domain plus (mu/K)*inner(u, v)*dx(porous_marker). Observed on dolfinx 0.10.0: the attribute access raises \"AttributeError: module 'dolfinx.fem' has no attribute 'StokesDarcy'\", and a name scan over dolfinx, dolfinx.fem, dolfinx.fem.petsc, dolfinx.mesh, dolfinx.io, dolfinx.nls and dolfinx.la for any name containing darcy, stokes, brinkman, porous or biot returns an empty list. The hand-written Brinkman form on a 24x12 rectangle solves, KSP reason 4, the mass balance closes to ~1e-16 and the porous bed is two orders of magnitude slower than the free channel. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "AttributeError: module 'dolfinx.fem' has no attribute 'StokesDarcy'",
+    "dolfinx_names_matching_darcy_stokes_brinkman_porous_biot=[]",
+    "no_stokes_darcy_attribute_anywhere=True",
+    "dolfinx_name_scan_is_empty=True",
+    "hand_written_brinkman_route_works=True",
+    "VERDICT=no_builtin_stokes_darcy_write_the_brinkman_form"
+  ],
+  "forbid_in_output": [
+    "-> PRESENT",
+    "VERDICT=dolfinx_offered_a_stokes_darcy_api"
+  ],
+  "timeout_seconds": 300
+}
