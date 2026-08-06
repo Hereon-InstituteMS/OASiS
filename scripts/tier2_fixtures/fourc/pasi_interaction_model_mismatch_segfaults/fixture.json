@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::pasi#1, and a falsification of its Signal. Switching INTERACTION from DEM to SPH on upstream pasi_twoway_norelax_particle_dem_1d_normalcontact_linspring_walldiscretcond.4C.yaml while leaving MAT_ParticleDEM, MAT_ParticleWallDEM and the PARTICLE DYNAMIC/DEM section in place — exactly the mismatch the entry describes — gives neither 'interaction type mismatch' nor silent zero-force coupling. 4C prints its time-stepping banner and then takes Signal: Segmentation fault (11) / Address not mapped (1) with no PROC 0 ERROR block, no message, no MPI_Abort banner, and exit status 139 rather than 1. The run never reaches a result test, so there is no zero-force output to inspect. An agent watching for a diagnostic gets a bare crash. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "pasi",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "DEM_MATERIALS_STILL_PRESENT=2",
+    "DEM_SUBSECTION_STILL_PRESENT=1",
+    "EXIT_DEM=0",
+    "processor 0 finished normally",
+    "DEM_FAILURES=0",
+    "EXIT_MISMATCH=139",
+    "Overview of chosen time stepping",
+    "Signal: Segmentation fault (11)",
+    "Signal code: Address not mapped (1)",
+    "MISMATCH_PROC_ERROR_BLOCKS=0",
+    "CLAIMED_INTERACTION_TYPE_MISMATCH_TEXT=0",
+    "MISMATCH_REACHED_RESULT_TEST=0",
+    "MISMATCH_DIED_ON_A_SIGNAL=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEM=1",
+    "EXIT_MISMATCH=0",
+    "MISMATCH_DIED_ON_A_SIGNAL=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave INTERACTION at DEM in the second arm. The interaction model then matches its materials, the segmentation fault vanishes and EXIT_MISMATCH becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's|  INTERACTION: \"DEM\"|  INTERACTION: \"SPH\"|' \"$BASE\" > \"$TMP/mismatch.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/mismatch.yaml\""
+  }
+}

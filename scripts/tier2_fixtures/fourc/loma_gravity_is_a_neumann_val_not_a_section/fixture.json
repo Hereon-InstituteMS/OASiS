@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#5, half confirmed and half FALSIFIED. Confirmed: there is no GRAVITY section -- a GRAVITY: block is rejected with \"Section 'GRAVITY' is not a valid section name.\" from 4C_io_input_file.cpp, and the only GRAVITY_ACCELERATION / GRAVITY_RAMP_FUNCT keys in 4C belong to PARTICLE DYNAMIC. Falsified: the remedy the entry gave, 'DESIGN VOL NEUMANN with FORCE: [0, 0, -9.81]', does not parse -- Neumann conditions take NUMDOF/ONOFF/VAL/FUNCT/TYPE and have no FORCE key, so substituting FORCE for VAL on the upstream deck loma_2d_heated_chan_30x100 fails with \"Failed to match condition specification in section 'DESIGN SURF NEUMANN CONDITIONS'\" from 4C_fem_condition_definition.cpp. The working form in that deck is a DESIGN SURF NEUMANN entry with VAL and TYPE: 'Dead' (DESIGN VOL NEUMANN in 3D, as in f3_cha_8x8x8_recongradl2); deleting it stops the LOMA solve before the result test. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 5,
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_GRAVSEC=1",
+    "EXIT_FORCEKEY=1",
+    "processor 0 finished normally",
+    "BASE_RESULT_FAILURES=0",
+    "Section 'GRAVITY' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "Failed to match condition specification in section 'DESIGN SURF NEUMANN CONDITIONS'",
+    "4C_fem_condition_definition.cpp",
+    "NOBUOY_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the section arm: do not inject a GRAVITY block. The invalid-section abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/^LOMA CONTROL:/GRAVITY:\\n  ACCELERATION: [0, -9.81, 0]\\nLOMA CONTROL:/' \"$BASE\" > \"$TMP/gravsec.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/gravsec.yaml\""
+    },
+    {
+      "note": "remove the pathology from the key arm: keep the real VAL key instead of the claimed FORCE key. The condition-spec failure vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace(\"    VAL: [0, -9.81, 0, 0, 0, 0]\", \"    FORCE: [0, -9.81, 0, 0, 0, 0]\"))",
+      "to": "    t)"
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_GRAVSEC=0",
+    "EXIT_FORCEKEY=0",
+    "NOBUOY_REACHED_RESULT_TEST=1"
+  ]
+}

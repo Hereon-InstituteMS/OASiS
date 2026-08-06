@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#0 and a FALSIFICATION of its Signal. The rule (PHYSICAL_TYPE must be Loma) holds and is enforced hard: on the upstream deck loma_2d_heated_chan_30x100, PHYSICAL_TYPE: Incompressible aborts in Adapter::FluidBaseAlgorithm setup with \"Input parameter PHYSICAL_TYPE in section FLUID DYNAMIC needs to be 'Loma' or 'Temp_dep_water' for low-Mach-number flow!\" from 4C_adapter_fld_base_algorithm.cpp, before any time step. There is therefore no 'uniformly stagnant velocity field' to diagnose -- the run produces no field at all. The message also names a second accepted value, Temp_dep_water, which the entry omitted; the WATER arm confirms it passes the same check. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 0,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_LOMA=0",
+    "EXIT_INCOMP=1",
+    "processor 0 finished normally",
+    "LOMA_RESULT_FAILURES=0",
+    "Input parameter PHYSICAL_TYPE in section FLUID DYNAMIC needs to be 'Loma' or 'Temp_dep_water' for low-Mach-number flow!",
+    "4C_adapter_fld_base_algorithm.cpp",
+    "INCOMP_REACHED_RESULT_TEST=0",
+    "WATER_PASSED_PHYSICAL_TYPE_CHECK=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep PHYSICAL_TYPE at Loma in the second arm. The abort and its message vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  PHYSICAL_TYPE: \"Loma\"/  PHYSICAL_TYPE: \"Incompressible\"/' \"$BASE\" > \"$TMP/incomp.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/incomp.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_LOMA=1",
+    "EXIT_INCOMP=0",
+    "INCOMP_REACHED_RESULT_TEST=1"
+  ]
+}

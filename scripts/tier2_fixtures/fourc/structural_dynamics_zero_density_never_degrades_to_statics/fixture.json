@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#0, and a correction to its wording. The entry said an implicit scheme with DENS = 0 would lose its inertia term and 'effectively become quasi-static while the user expected transient'. It does not: on one single-HEX8 deck, DYNAMICTYPE GenAlpha with DENS 0.0 finalises ZERO steps and throws 'You are about to invert a singular matrix!' from structure_new/4C_structure_new_integrator.cpp, and DYNAMICTYPE ExplicitEuler with the same DENS 0.0 dies with the identical message at the identical place. The Statics control arm with DENS 1.0 completes all four steps, so the quasi-static answer that the entry expected the implicit run to silently produce is demonstrably not produced. The other half of the entry survives intact: neither diagnostic contains the substring 'densit' anywhere (both counts are 0), which is why DENS has to be checked by inspection. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STATICS_REF=0",
+    "EXIT_GENALPHA_DENS0=1",
+    "EXIT_EXPLICIT_DENS0=1",
+    "processor 0 finished normally",
+    "STATICS_REF_STEPS=4",
+    "GENALPHA_DENS0_STEPS=0",
+    "EXPLICIT_DENS0_STEPS=0",
+    "You are about to invert a singular matrix!",
+    "4C_structure_new_integrator.cpp",
+    "DENSITY_WORD_IN_IMPLICIT_DIAGNOSTIC=0",
+    "DENSITY_WORD_IN_EXPLICIT_DIAGNOSTIC=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GENALPHA_DENS0=0",
+    "EXIT_EXPLICIT_DENS0=0",
+    "STATICS_REF_STEPS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the implicit arm: give it a physical density. It then runs its four steps, EXIT_GENALPHA_DENS0 becomes 0 and GENALPHA_DENS0_STEPS stops being 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck GenAlpha      0.25   0.0 \"$TMP/ga0.4C.yaml\"",
+      "to": "deck GenAlpha      0.25   1.0 \"$TMP/ga0.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the explicit arm the same way. The singular-matrix message is then absent from that log and EXIT_EXPLICIT_DENS0 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck ExplicitEuler 1.0e-4 0.0 \"$TMP/ex0.4C.yaml\"",
+      "to": "deck ExplicitEuler 1.0e-4 1.0 \"$TMP/ex0.4C.yaml\""
+    }
+  ]
+}

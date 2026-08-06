@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::ehl#2, and a FALSIFICATION of both halves of its Signal. The entry said Picard iteration 'diverges or oscillates between two states' and told the reader to apply Aitken or fixed under-relaxation. On upstream ehl_bearing_barus.4C.yaml, multiplying MAT_lubrication_law_barus/PreVisCoeff by 100 does not oscillate: the Newton residual goes 5.33839e+01 -> 7.95637e+70 in one step and the process is killed by SIGFPE, 'Signal code: Floating point divide-by-zero (3)', inside LubricationEleCalc::calc_mat_psl. The shell sees 136; 4C prints no error line, no 'did not converge' and no result-test verdict, because MPI_Abort is never reached. And the recommended relaxation is inert: MAXOMEGA/MINOMEGA/STARTOMEGA live in ELASTO HYDRO DYNAMIC/PARTITIONED, consulted only when COUPALGO is ehl_IterStagg, while the default is ehl_Monolithic — the RELAX arm dies identically with no notice that the keys were ignored. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "ehl",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BAD_ARM_PreVisCoeff:1.12",
+    "RELAX_ARM_HAS_OMEGA_KEYS=1",
+    "EXIT_TUNED=0",
+    "EXIT_BIGALPHA=136",
+    "EXIT_RELAX=136",
+    "processor 0 finished normally",
+    "OK (4)",
+    "Signal: Floating point exception (8)",
+    "Signal code: Floating point divide-by-zero (3)",
+    "LubricationEleCalc",
+    "BIGALPHA_4C_ERROR_LINES=0",
+    "BIGALPHA_NONCONVERGENCE_MESSAGES=0",
+    "BIGALPHA_RESULT_TEST_LINES=0",
+    "RELAX_ARM_STILL_DIES=1",
+    "RELAX_IGNORED_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TUNED=1",
+    "EXIT_BIGALPHA=0",
+    "EXIT_RELAX=0",
+    "RELAX_ARM_STILL_DIES=0",
+    "BAD_ARM_PreVisCoeff:0.0112"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: keep the upstream pressure-viscosity coefficient in both bad arms. Both then run to completion, EXIT_BIGALPHA/EXIT_RELAX stop being 136, the SIGFPE lines vanish and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "BIG_PREVISCOEFF=1.12",
+      "to": "BIG_PREVISCOEFF=0.0112"
+    },
+    {
+      "note": "remove the inert-relaxation half: stop injecting the omega keys. RELAX_ARM_HAS_OMEGA_KEYS drops to 0, so the claim that the recommended relaxation was actually requested and still did nothing is no longer demonstrated and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "RELAX_BLOCK='ELASTO HYDRO DYNAMIC/PARTITIONED:\\n  STARTOMEGA: 0.3\\n  MAXOMEGA: 0.5\\n  MINOMEGA: 0.1\\n'",
+      "to": "RELAX_BLOCK=''"
+    }
+  ]
+}

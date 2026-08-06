@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_airways#0, and the execution that FALSIFIED it. There is no topology check in 4C's reduced-airway module at all: a loop (element 6 closing 2-3-4-2) and a dangling free node (element 6 to an unconstrained node 7) both run the full 5000-step time loop and reach the result test. TOPOLOGY_DIAGNOSTICS=0 across both logs; neither 'node X has degree 1 (dangling)' nor 'cycle detected in airway tree' exists. The only evidence is numeric: node 2 pressure 29.868 -> 29.786 (cycle) and -> 19.776 (dangling). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C on upstream deck red_airway_3airway_2acinus_awacinter.4C.yaml.",
+  "backend": "fourc",
+  "physics": "reduced_airways",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_CYCLE=1",
+    "EXIT_DANGLING=1",
+    "BASE_TESTS_CORRECT=5",
+    "CYCLE_REACHED_RESULT_TEST=1",
+    "DANGLING_REACHED_RESULT_TEST=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=",
+    "TOPOLOGY_DIAGNOSTICS=0",
+    "CLAIMED_DANGLING_TEXT=0",
+    "CLAIMED_CYCLE_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_CYCLE=0",
+    "EXIT_DANGLING=0",
+    "CYCLE_REACHED_RESULT_TEST=0",
+    "DANGLING_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the loop pathology: run the untouched upstream deck in the CYCLE arm. Its result tests then pass, EXIT_CYCLE becomes 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "probe CYCLE    cycle.yaml",
+      "to": "probe CYCLE    base.yaml"
+    },
+    {
+      "note": "remove the dangling-branch pathology: run the untouched upstream deck in the DANGLING arm. EXIT_DANGLING becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "probe DANGLING dangling.yaml",
+      "to": "probe DANGLING base.yaml"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#5, and a FALSIFICATION of it. The entry said ConstDisVelAcc is the recommended (and implicitly default) predictor and that TangDis costs more Newton iterations. On a transient inline HEX8 cantilever under GenAlpha, 4C echoes '=== Structural predictor: ConstDis ===' when PREDICT is not set, so the default is ConstDis; setting PREDICT: ConstDis reproduces the default exactly (24 total Newton iterations over 8 steps, same as the default arm); ConstDisVelAcc costs 31 and TangDis costs 16, i.e. TangDis is the CHEAPEST of the three here, the opposite of the claim. All arms exit 0. A near-miss spelling ('ConstDisVelAccel') is rejected at parse with 'Could not match this input', so the choice cannot go wrong silently. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DEFAULT=0",
+    "EXIT_TYPO=1",
+    "processor 0 finished normally",
+    "DEFAULT_PREDICTOR==== Structural predictor: ConstDis ===",
+    "ITERS_DEFAULT=24",
+    "ITERS_CONSTDIS=24",
+    "ITERS_CONSTDISVELACC=31",
+    "ITERS_TANGDIS=16",
+    "VERDICT: TANGDIS_COSTS_MORE_THAN_CONSTDISVELACC=no",
+    "Could not match this input",
+    "ConstDisVelAccel"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEFAULT=1",
+    "EXIT_TYPO=0",
+    "VERDICT: TANGDIS_COSTS_MORE_THAN_CONSTDISVELACC=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the discriminating arm: make the TangDis deck use ConstDisVelAcc instead. ITERS_TANGDIS then equals the ConstDisVelAcc count and the numeric contrast that carries the correction disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  PREDICT: \"TangDis\"'        \"$TMP/tangdis.4C.yaml\"",
+      "to": "deck $'\\n  PREDICT: \"ConstDisVelAcc\"'        \"$TMP/tangdis.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: spell the enum correctly in the typo arm. The parse error vanishes and EXIT_TYPO becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  PREDICT: \"ConstDisVelAccel\"' \"$TMP/typo.4C.yaml\"",
+      "to": "deck $'\\n  PREDICT: \"ConstDisVelAcc\"' \"$TMP/typo.4C.yaml\""
+    }
+  ]
+}

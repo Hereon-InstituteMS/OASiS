@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::membrane#3, and a FALSIFICATION of its premise. THICK has no default on MEMBRANE4 — it is required:true, and removing it from the upstream membrane_cyl_new_struc deck is a parse error, \"Required value 'THICK' not found in input line\" from core/io/src/4C_io_input_spec_builders.cpp, with zero steps run. The deck as shipped (THICK 0.1) exits 0 against its own result test; doubling THICK to 0.2 and changing nothing else moves node 21's dispz to 1.04764544001445103e+00 against the shipped 2.1487699492144756, i.e. the thickness drives the answer hard but not by the clean linear factor the entry assumed, because the deck is geometrically nonlinear. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "membrane",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_THICK_0p2=1",
+    "EXIT_NO_THICK=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 1.04764544001445103e+00",
+    "Required value 'THICK' not found in input line",
+    "4C_io_input_spec_builders.cpp",
+    "NO_THICK_STEPS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_NO_THICK=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: leave THICK in place in the third arm. The required-value diagnostic vanishes and EXIT_NO_THICK becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/ THICK 0.1//'          \"$BASE\" > \"$TMP/nothick.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/nothick.4C.yaml\""
+    },
+    {
+      "note": "remove the numeric contrast: leave the second arm's thickness alone. Its result test then passes and the changed-answer line disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/THICK 0.1/THICK 0.2/'  \"$BASE\" > \"$TMP/t02.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/t02.4C.yaml\""
+    }
+  ]
+}

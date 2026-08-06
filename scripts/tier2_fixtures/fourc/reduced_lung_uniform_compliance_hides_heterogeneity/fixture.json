@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_lung#1. The knob is reduced_dimensional_lung.lung_tree.terminal_units.elasticity_model.linear.elasticity_e and it accepts 'constant:' or 'from_file:'. On upstream reduced_lung_3_aw_2_tu the uniform value 1.0 splits the flow between the two acini 4.18805 / 4.18657 (1.0004 : 1). A heterogeneous field with the SAME mean -- 0.05 and 1.95 -- gives 83.5285 / 2.1463, a 38.9 : 1 split, and 10.23x the total inlet flow. Both arms exit 0 and HETEROGENEITY_WARNINGS=0. Numbers read from 4C's own ascii VTK q_in cell data. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "reduced_lung",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_UNIFORM=0",
+    "EXIT_HETERO=0",
+    "processor 0 finished normally",
+    "UNIFORM_ACINAR_FLOWS=4.18805 4.18657",
+    "HETERO_ACINAR_FLOWS=83.5285 2.1463",
+    "UNIFORM_ACINAR_FLOW_SPLIT=1.0004",
+    "HETERO_ACINAR_FLOW_SPLIT=38.9177",
+    "HETERO_TOTAL_FLOW_FACTOR=10.230",
+    "HETEROGENEITY_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_UNIFORM=1",
+    "EXIT_HETERO=1",
+    "HETERO_ACINAR_FLOW_SPLIT=1.0004"
+  ],
+  "_mutation": {
+    "note": "remove the heterogeneity: give both acini the uniform stiffness in the second arm. The 38.9 : 1 split collapses back to 1.0004 : 1 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "E_ACINUS_4=0.05",
+    "to": "E_ACINUS_4=1.95"
+  }
+}

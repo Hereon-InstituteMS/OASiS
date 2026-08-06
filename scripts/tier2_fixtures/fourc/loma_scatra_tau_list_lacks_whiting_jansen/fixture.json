@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#4 and a FALSIFICATION. The entry told the reader to keep the stabilisation tau consistent between fluid and scalar transport and to 'use Taylor_Hughes_Zarins_Whiting_Jansen for the fluid tau definition'. Following that literally is impossible: the scatra DEFINITION_TAU enum does not contain Taylor_Hughes_Zarins_Whiting_Jansen. Writing it into SCALAR TRANSPORT DYNAMIC/STABILIZATION on the upstream deck loma_2d_heated_chan_30x100 is rejected with 'Could not match this input' and 4C prints the admissible scatra list (Codina .. Taylor_Hughes_Zarins_wo_dt|Zero), which stops at Taylor_Hughes_Zarins. The same upstream deck ships Whiting_Jansen on the fluid and Taylor_Hughes_Zarins on the scalar, exits 0 and matches all four of its pinned results with no 'stair-stepping' diagnostic of any kind -- so the mixed setting is what the 4C developers regression-test. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 4,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MIXED=0",
+    "EXIT_MATCHED=1",
+    "processor 0 finished normally",
+    "MIXED_RESULT_FAILURES=0",
+    "MIXED_STAIR_STEP_WARNINGS=0",
+    "Could not match this input",
+    "possible values: Codina|Codina_wo_dt|Exact_1D|Franca_Madureira_Valentin|Franca_Madureira_Valentin_wo_dt|Franca_Valentin|Franca_Valentin_wo_dt|Numerical_Value|Shakib_Hughes_Codina|Shakib_Hughes_Codina_wo_dt|Taylor_Hughes_Zarins|Taylor_Hughes_Zarins_wo_dt|Zero",
+    "SCATRA_LIST_HAS_WHITING_JANSEN=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the scatra tau definition alone, so nothing tries to match the fluid's. The parse error and the printed enum list vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  DEFINITION_TAU: \"Taylor_Hughes_Zarins\"/  DEFINITION_TAU: \"Taylor_Hughes_Zarins_Whiting_Jansen\"/' \"$BASE\" > \"$TMP/matched.yaml\"",
+    "to": "sed 's/  DEFINITION_TAU: \"Taylor_Hughes_Zarins\"/  DEFINITION_TAU: \"Taylor_Hughes_Zarins\"/' \"$BASE\" > \"$TMP/matched.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MIXED=1",
+    "EXIT_MATCHED=0",
+    "MIXED_RESULT_FAILURES=1"
+  ]
+}

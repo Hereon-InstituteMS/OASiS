@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::multiscale#3, which prescribes a comparison 4C cannot perform. The entry says the homogenised tangent from a Dirichlet RVE differs from a periodic-BC reference by 10-20%. 4C's multiscale module offers exactly one RVE boundary treatment: the MICROSCALE CONDITIONS section, registered as the MicroBoundary condition in global_legacy_module/4C_global_legacy_module_validconditions.cpp, whose entries carry a node-set id and nothing else. Adding a boundary-type switch is rejected by core/fem/src/condition/4C_fem_condition_definition.cpp, the schema has exactly one such section and no periodic-RVE key, and the word periodic does not occur anywhere in src/stru_multi. The theory is fine; the instruction is unfollowable, which is what this pins. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "multiscale",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_PERIODIC=1",
+    "GOOD_TESTS_CORRECT=3",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "The following data remains unused",
+    "4C_fem_condition_definition.cpp",
+    "MICROSCALE_CONDITION_SECTIONS=1",
+    "PERIODIC_RVE_KEYS_IN_SCHEMA=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_PERIODIC=0",
+    "MICROSCALE_CONDITION_SECTIONS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop injecting the boundary-type switch, so the second arm uses the unmodified micro deck. It then runs and the rejection diagnostics vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "    t.replace(anchor, anchor + \"\\n    BCTYPE: \\\"periodic\\\"\", 1))",
+    "to": "    t)"
+  }
+}

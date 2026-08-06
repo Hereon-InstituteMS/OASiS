@@ -157,103 +157,97 @@ class FSIXFEMGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "[Input] FSI-XFEM does NOT use ALE mesh "
-                    "motion — the fluid mesh is FIXED, and "
-                    "the structure interface cuts through "
-                    "it via XFEM enrichment. Signal: "
-                    "including ALE DYNAMIC or CLONING "
-                    "MATERIAL MAP in an FSI-XFEM input "
-                    "aborts with 'XFEM and ALE are "
-                    "mutually exclusive' from 4C_xfem_"
-                    "fluid_setup.cpp. Remove both sections. "
-                    "(Audit 2026-06-02.)"
+                    '[Input] FSI-XFEM does not use ALE mesh motion: the fluid mesh '
+                    'is fixed and the structure interface cuts through it via XFEM '
+                    'enrichment. But 4C does NOT object to leftover ALE plumbing. '
+                    'Signal: a deck carrying BOTH an ALE DYNAMIC section and a '
+                    "CLONING MATERIAL MAP runs to 'processor 0 finished normally' "
+                    "and reproduces the reference results; there is no 'XFEM and "
+                    "ALE are mutually exclusive' message and no "
+                    '4C_xfem_fluid_setup.cpp in the source. Note also that this '
+                    "problem type creates a discretisation named 'ale' regardless, "
+                    "so grepping the log for 'ale' proves nothing either way. "
+                    'Remove the sections because they are meaningless, not because '
+                    '4C will tell you. (Audit 2026-06-02; corrected by execution '
+                    '2026-08-06.)'
                 ),
                 (
-                    "[Numerical] Ghost-penalty stabilisation "
-                    "is CRITICAL for XFEM. Signal: cut "
-                    "elements with tiny volume fractions "
-                    "(< 1e-6 of full cell volume) cause a "
-                    "singular or severely ill-conditioned "
-                    "stiffness matrix; cond(K) > 1e16 and "
-                    "direct LU fails. Add ghost-penalty "
-                    "terms (typical gamma_g ~ 1) over "
-                    "interior facets near the cut to "
-                    "extend coercivity into trim cells. "
-                    "(Audit 2026-06-02.)"
+                    '[Numerical] Ghost-penalty stabilisation controls the '
+                    'conditioning of cut elements with small volume fractions, but '
+                    'on a monolithic XFSI problem its absence shows up as a wrong '
+                    'answer, not a solver error. Signal: with GHOST_PENALTY_STAB: '
+                    'false, or GHOST_PENALTY_FAC: 0.0, the Newton loop converges, '
+                    'the run reaches its result test and the pinned values move; no '
+                    'condition number, singular-matrix or factorisation message is '
+                    'printed, and a direct solver such as UMFPACK factorises '
+                    'without complaint. Compare against a reference run rather than '
+                    'waiting for the solver to object. (Audit 2026-06-02; corrected '
+                    'by execution 2026-08-06.)'
                 ),
                 (
-                    "[Mesh] The structural mesh acts as the "
-                    "CUTTER MESH for the fluid XFEM "
-                    "enrichment. Its surface must be "
-                    "WATER-TIGHT (closed) for proper "
-                    "inside/outside classification. "
-                    "Signal: an open structural surface "
-                    "(e.g. mesh with hole or missing face) "
-                    "produces ambiguous level-set sign — "
-                    "XFEM cut algorithm aborts with "
-                    "'inside/outside classification "
-                    "inconsistent' or silently makes the "
-                    "fluid permeate the structure. Verify "
-                    "with Gmsh's CheckClosedSurface. "
-                    "(Audit 2026-06-02.)"
+                    '[Mesh] The structural mesh acts as the CUTTER MESH for the '
+                    'fluid XFEM enrichment and its coupled surface must be closed. '
+                    'An open surface is caught, but by the quadrature, not by a '
+                    'classification check. Signal: dropping one side of the '
+                    "coupling surface aborts with 'negative volume predicted by the "
+                    "DirectDivergence integration rule;' from "
+                    '4C_cut_direct_divergence.cpp, usually alongside a '
+                    "Cut::Mesh::DebugDump line. There is no 'inside/outside "
+                    "classification inconsistent' message and no silent permeation: "
+                    'the run stops. Check that every face of the cutter body '
+                    'carries the coupling condition. (Audit 2026-06-02; corrected '
+                    'by execution 2026-08-06.)'
                 ),
                 (
-                    "[Numerical] Nitsche penalty parameter "
-                    "must be tuned. TOO SMALL leads to "
-                    "leaky interfaces (fluid penetrates "
-                    "the structure — visible velocity "
-                    "inside solid in ParaView); TOO LARGE "
-                    "causes ill-conditioning (cond(K) "
-                    "explodes). Signal: gamma_N in "
-                    "[10, 100] * mu / h_cut is the typical "
-                    "range; verify with a flow-around-"
-                    "cylinder benchmark — interface "
-                    "velocity jump should be ~0 at machine "
-                    "precision when gamma_N is right. "
-                    "(Audit 2026-06-02.)"
+                    '[Numerical] The Nitsche penalty is NIT_STAB_FAC in XFLUID '
+                    'DYNAMIC/STABILIZATION (default 35); 4C applies the viscosity '
+                    'and cut-size scaling itself via VISC_STAB_TRACE_ESTIMATE and '
+                    'VISC_STAB_HK, so the value is a bare dimensionless factor. '
+                    'Signal: setting it far too low or far too high does NOT stall '
+                    'Newton and does not print a condition number. The run '
+                    'converges, reaches the result test, and the coupled '
+                    'displacements and velocities are simply wrong. Leave it at the '
+                    'default unless a reference solution tells you otherwise. '
+                    '(Audit 2026-06-02; corrected by execution 2026-08-06.)'
                 ),
                 (
-                    "[Numerical] Time step must be chosen "
-                    "so the structure does NOT traverse "
-                    "more than one fluid element per step "
-                    "(CFL-like constraint for cut-element "
-                    "topology changes). Signal: with "
-                    "dt > h_fluid / v_structure, the cut "
-                    "interface 'jumps' across several "
-                    "elements between time steps — "
-                    "topology-change errors accumulate "
-                    "and structure shows visibly erratic "
-                    "trajectory. Limit dt to "
-                    "0.5 * h_fluid / max(|v_structure|). "
-                    "(Audit 2026-06-02.)"
+                    '[Numerical] Choose the time step so the structure does not '
+                    'traverse more than one fluid element per step; cut-topology '
+                    'changes are reconstructed by a semi-Lagrangean search for '
+                    'nodes the interface has just uncovered. Signal: too large a '
+                    "step aborts with 'Initial point for node N for finding the "
+                    "Lagrangean origin not in domain!' from "
+                    '4C_xfem_xfluid_timeInt_std_SemiLagrange.cpp. Despite being '
+                    'printed with a WARNING prefix it is thrown, not logged: the '
+                    'run stops and never reaches its result test. Reduce TIMESTEP '
+                    'until the message disappears. (Audit 2026-06-02; corrected by '
+                    'execution 2026-08-06.)'
                 ),
                 (
-                    "[Output] Output for CUT fluid elements "
-                    "may need special post-processing — "
-                    "standard ParaView may not display "
-                    "partially cut elements correctly. "
-                    "Signal: opening the IO/RUNTIME VTK "
-                    "OUTPUT FLUID VTU in ParaView shows "
-                    "full hexahedral cells crossing the "
-                    "STRUCTURE (FLUID3 elements with "
-                    "averaged values inside the structure "
-                    "region, visible as artificial fluid "
-                    "behind the structure). Use the "
-                    "dedicated post_xfem filter or "
-                    "visualize the level-set FUNCT "
-                    "separately to mask intersected cells. "
-                    "(Audit 2026-06-02.)"
+                    '[Output] You cannot inspect an XFSI fluid field in ParaView '
+                    'through runtime VTK output, because 4C refuses to produce it. '
+                    'Signal: adding IO/RUNTIME VTK OUTPUT with the FLUID and '
+                    'STRUCTURE sub-sections aborts before the first step with '
+                    "'Runtime output is not available in the old structure time "
+                    'integration! You need to take the new one, i.e. set '
+                    "INT_STRATEGY: Standard!' from 4C_structure_timint.cpp, and "
+                    'setting INT_STRATEGY: Standard does not help, because the XFSI '
+                    'adapter builds the legacy integrator regardless and the same '
+                    'throw reappears. No .vtu is written either way. Use the '
+                    'Ensight .result files or the Gmsh .pos output instead. (Audit '
+                    '2026-06-02; corrected by execution 2026-08-06.)'
                 ),
                 (
-                    "[Input] Fluid element type must use "
-                    "NA: Euler (NOT ALE) — there is no mesh "
-                    "motion in the fluid domain in XFEM. "
-                    "Signal: NA: ALE on an FSI-XFEM input "
-                    "aborts with 'fluid element kinematic "
-                    "type incompatible with XFEM' from "
-                    "4C_fluid_xfem_factory.cpp at setup. "
-                    "Verify all FLUID ELEMENT_BLOCKS use "
-                    "NA: Euler. (Audit 2026-06-02.)"
+                    '[Input] Fluid element blocks must use NA: Euler; there is no '
+                    'mesh motion in the fluid domain under XFEM. Signal: NA: ALE '
+                    'parses cleanly, builds the discretisations, and then aborts '
+                    "with 'Cannot find state dispnp in discretization fluid' from "
+                    '4C_fem_discretization.hpp. The message names neither XFEM nor '
+                    'ALE nor the NA keyword that was mis-set, so it is easy to '
+                    'misread as an output or restart problem; there is no '
+                    "4C_fluid_xfem_factory.cpp and no 'kinematic type incompatible' "
+                    'string in 4C. (Audit 2026-06-02; corrected by execution '
+                    '2026-08-06.)'
                 ),
             ],
             "typical_experiments": [

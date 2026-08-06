@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#2, and a falsification of its Signal. The DOMAINBOUNDINGBOX is left byte-identical to upstream particle_sph_1d_hydrostatic_freesurface_densityintegration_cubicspline_adami.4C.yaml; the only change is the direction and size of gravity, which flings the free-surface column out through the far x face instead of settling it. 4C does not abort: it silently deletes particles as they leave, 48 separate times, each with the same contentless line 'on processor 0 removed 1 particle(s) being outside the computational domain!' carrying no id, no position, no step and no phase. Because the baseline arm removes nothing on the same geometry, all 48 are mid-run — the 'throughout the simulation, including splashing' part a startup-only check would miss. The single PROC 0 ERROR block comes at the very end, 'expected 5 tests but performed 0'. There is no 'particle outside DOMAINBOUNDINGBOX' string. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BOX_IS_UNCHANGED=yes",
+    "EXIT_SETTLES=0",
+    "EXIT_FLUNG=1",
+    "processor 0 finished normally",
+    "SETTLES_FAILURES=0",
+    "SETTLES_REMOVALS=0",
+    "on processor 0 removed 1 particle(s) being outside the computational domain!",
+    "FLUNG_REMOVAL_EVENTS=48",
+    "REMOVALS_ARE_ALL_MID_RUN=yes",
+    "expected 5 tests but performed 0",
+    "CLAIMED_PARTICLE_OUTSIDE_TEXT=0",
+    "FLUNG_PROC_ERROR_BLOCKS_BEFORE_RESULT_TEST=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SETTLES=1",
+    "EXIT_FLUNG=0",
+    "FLUNG_REMOVAL_EVENTS=0",
+    "REMOVALS_ARE_ALL_MID_RUN=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the deck's own settling gravity in the second arm. Nothing then leaves the box, the removal line never appears, the deck passes and EXIT_FLUNG becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's|GRAVITY_ACCELERATION: \"-0.0001 0.0 0.0\"|GRAVITY_ACCELERATION: \"0.01 0.0 0.0\"|' \"$BASE\" > \"$TMP/flung.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/flung.yaml\""
+  }
+}

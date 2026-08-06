@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_lung#2. The 1D-airway / 0D-acinus interface carries a unit error straight through with no distortion and no diagnostic. On upstream reduced_lung_3_aw_2_tu, feeding the linear terminal unit an elasticity_e that is 60x too large -- the size of a seconds/minutes slip -- divides the inlet flow by 59.979 (8.374620 -> 0.139626) and the same factor applies to every element to better than 1e-3 relative. Both arms exit 0 with 'processor 0 finished normally' and UNIT_DIAGNOSTICS=0. Numbers read from 4C's own ascii VTK q_in cell data. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "reduced_lung",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CONSISTENT=0",
+    "EXIT_SLIPPED=0",
+    "processor 0 finished normally",
+    "CONSISTENT_INLET_FLOW=8.374620",
+    "SLIPPED_INLET_FLOW=0.139626",
+    "FLOW_ERROR_FACTOR=59.979",
+    "ERROR_FACTOR_IS_UNIFORM_ACROSS_ELEMENTS=yes",
+    "UNIT_DIAGNOSTICS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CONSISTENT=1",
+    "EXIT_SLIPPED=1",
+    "FLOW_ERROR_FACTOR=1.000"
+  ],
+  "_mutation": {
+    "note": "remove the unit slip: hand the acinus the consistent stiffness. The two arms then agree, FLOW_ERROR_FACTOR becomes 1.000 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "UNIT_SLIP=60.0",
+    "to": "UNIT_SLIP=1.0"
+  }
+}

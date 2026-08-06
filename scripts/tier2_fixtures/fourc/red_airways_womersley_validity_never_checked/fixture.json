@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_airways#4. The rule holds but nothing in 4C helps you apply it: driving upstream red_airway_3airway_2acinus_awacinter at 10 Hz instead of 0.01 Hz -- a thousandfold Womersley jump at unchanged geometry and viscosity -- runs all 5000 steps to the result test with WOMERSLEY_MENTIONS=0 and HFOV_VALIDITY_WARNINGS=0. The word 'Womersley' exists in the 4C source only for 3-D fluid inflow profiles, never in red_airways or art_net. The only visible effect is the answer: node 2 pressure 29.868 -> 16.040. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "reduced_airways",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_HFOV=1",
+    "BASE_TESTS_CORRECT=5",
+    "HFOV_TESTS_WRONG=5",
+    "HFOV_REACHED_RESULT_TEST=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 1.60397917492114388e+01",
+    "WOMERSLEY_MENTIONS=0",
+    "HFOV_VALIDITY_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_HFOV=0",
+    "HFOV_TESTS_WRONG=0",
+    "HFOV_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": {
+    "note": "remove the high-frequency pathology: keep the upstream 0.01 Hz drive in the HFOV arm. The result tests pass, EXIT_HFOV becomes 0, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's|15\\*(sin(pi\\*t/50-pi/2)+1)|15*(sin(2*pi*10*t-pi/2)+1)|' base.yaml > hfov.yaml",
+    "to": "sed 's|15\\*(sin(pi\\*t/50-pi/2)+1)|15*(sin(pi*t/50-pi/2)+1.0)|' base.yaml > hfov.yaml"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::solid_mechanics#6 — INT_STRATEGY: 'Old' on a plain structural deck runs, exits 0 and passes the same result test pinned to 1e-10 (OLD_RESULT_FAILURES=0), so the numbers give you no warning at all. What changes is the whole solver stack: the Standard arm prints four '-- Status Test Results --' NOX blocks and ends on 'nlniter 4', the Old arm prints ZERO of them, ends on 'numiter 4' and uses the legacy banner \"Structural predictor for field 'structure' ConstDis yields absolute res-norm\". Everything NOX-side — status-test XML, line search, custom convergence combinations — is simply absent. The loud sibling is coupling: the same key on the upstream ssi_2D_quad4 deck asserts with 'Only the new solid time integration is supported for SSI problems. Set `INT_STRATEGY` to `Standard`!' from ssi/4C_ssi_dyn.cpp. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "solid_mechanics",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STANDARD=0",
+    "EXIT_OLD=0",
+    "EXIT_SSI_OLD=1",
+    "OLD_RESULT_FAILURES=0",
+    "processor 0 finished normally",
+    "STANDARD_NOX_STATUS_BLOCKS=4",
+    "OLD_NOX_STATUS_BLOCKS=0",
+    "nlniter 4",
+    "numiter 4",
+    "Structural predictor for field 'structure' ConstDis yields absolute res-norm",
+    "Only the new solid time integration is supported for SSI problems. Set `INT_STRATEGY` to `Standard`!",
+    "4C_ssi_dyn.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_OLD=1",
+    "EXIT_SSI_OLD=0",
+    "OLD_NOX_STATUS_BLOCKS=4"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: leave the standalone arm on the default strategy. Its NOX status blocks reappear, OLD_NOX_STATUS_BLOCKS stops being 0 and the legacy predictor banner vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  INT_STRATEGY: \"Old\"' \"$TMP/old.4C.yaml\"",
+      "to": "deck \"\" \"$TMP/old.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the coupled arm: do not inject the legacy strategy into the SSI deck. The SSI assert vanishes and EXIT_SSI_OLD becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "t = t.replace(\"STRUCTURAL DYNAMIC:\", 'STRUCTURAL DYNAMIC:\\n  INT_STRATEGY: \"Old\"', 1)",
+      "to": "pass"
+    }
+  ]
+}

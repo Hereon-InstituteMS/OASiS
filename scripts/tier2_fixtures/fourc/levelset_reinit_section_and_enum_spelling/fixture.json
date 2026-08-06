@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::level_set#1 and a FALSIFICATION of its Signal's spelling. The rule (reinitialise or the signed-distance property degrades) stands; the configuration the entry gave is wrong twice. 'LEVELSET CONTROL' is not a 4C section -- it is rejected with \"Section 'LEVELSET CONTROL' is not a valid section name.\" from 4C_io_input_file.cpp; the real one is LEVEL-SET CONTROL with the sub-section LEVEL-SET CONTROL/REINITIALIZATION. And the enum is case-sensitive: 'signed_distance_function' is rejected with 'possible values: EllipticEq|None|Signed_Distance_Function|Sussman', while 'Signed_Distance_Function' runs to completion on the upstream deck levelset_elliptic_reinit_lin and still matches all six of its pinned phi values. REINITINTERVAL is a sibling key in the same sub-section. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "level_set",
+  "pitfall_index": 1,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_BADSECTION=1",
+    "EXIT_LOWERCASE=1",
+    "EXIT_PROPERSPELLING=0",
+    "processor 0 finished normally",
+    "BASE_RESULT_FAILURES=0",
+    "Section 'LEVELSET CONTROL' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "possible values: EllipticEq|None|Signed_Distance_Function|Sussman",
+    "PROPERSPELLING_RESULT_FAILURES=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the section arm: do not inject the claimed section name. The invalid-section abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^LEVEL-SET CONTROL/REINITIALIZATION:|LEVELSET CONTROL:\\n  REINITIALIZATION: \"signed_distance_function\"\\nLEVEL-SET CONTROL/REINITIALIZATION:|' \"$BASE\" > \"$TMP/badsection.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/badsection.yaml\""
+    },
+    {
+      "note": "remove the pathology from the enum arm: write the value with 4C's capitalisation. The wrong-value list vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  REINITIALIZATION: \"EllipticEq\"/  REINITIALIZATION: \"signed_distance_function\"/' \"$BASE\" > \"$TMP/lowercase.yaml\"",
+      "to": "sed 's/  REINITIALIZATION: \"EllipticEq\"/  REINITIALIZATION: \"Signed_Distance_Function\"/' \"$BASE\" > \"$TMP/lowercase.yaml\""
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_BADSECTION=0",
+    "EXIT_LOWERCASE=0",
+    "EXIT_PROPERSPELLING=1"
+  ]
+}

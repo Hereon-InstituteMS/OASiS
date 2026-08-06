@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::brownian_dynamics#0. The entry's Signal (mean-square displacement scaling) is an ensemble statement not readable from one 4C run, so this fixture certifies the operational consequence instead, which is the thing that actually catches people: a thermal run does not step-converge, so the usual halve-dt-and-see test is meaningless and will let you accept any dt. Five arms on upstream beam3r_line2_backweuler_browndyn_periodic_rve_dirich_element.4C.yaml at fixed end time and fixed RANDSEED. With KT = 0 the transverse displacement of node 2 moves by 7e-17 between dt = 1e-2 and 5e-3, i.e. the deterministic run does converge. With KT > 0 the same quantity reads 1.97729908169594938e-02, 1.41182827349665852e-02 and -9.93856384578826677e-04 at dt = 1e-2, 5e-3, 2.5e-3: it moves by more than its own size and changes sign. Refining dt draws a different realisation, it does not converge the trajectory; dt must be judged against the physical relaxation time. The refined cold arm still trips one test on the AXIAL component, which is prescribed-ramp sampling error, not noise, so the comparison uses dispx only. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "brownian_dynamics",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_COLD_DT1=0",
+    "EXIT_HOT_DT1=1",
+    "EXIT_HOT_DT2=1",
+    "EXIT_HOT_DT3=1",
+    "processor 0 finished normally",
+    "COLD_DT1_FAILURES=0",
+    "is WRONG --> actresult= 1.97729908169594938e-02",
+    "is WRONG --> actresult= 1.41182827349665852e-02",
+    "is WRONG --> actresult=-9.93856384578826677e-04",
+    "DETERMINISTIC_RUN_STEP_CONVERGES=yes",
+    "THERMAL_RUN_STEP_CONVERGES=no",
+    "THERMAL_REFINEMENT_FLIPS_SIGN=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_COLD_DT1=1",
+    "EXIT_HOT_DT1=0",
+    "DETERMINISTIC_RUN_STEP_CONVERGES=no",
+    "THERMAL_RUN_STEP_CONVERGES=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "take the temperature away from the finest thermal arm. It then coincides with the deterministic run, the sign flip and the large refinement change disappear, THERMAL_RUN_STEP_CONVERGES flips to yes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm 4.14e-06 0.0025 400 HOT_DT3",
+      "to": "arm 0.0 0.0025 400 HOT_DT3"
+    },
+    {
+      "note": "stop refining: give every thermal arm the same step. All three then produce the identical realisation, the refinement changes collapse to zero and THERMAL_RUN_STEP_CONVERGES flips to yes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm 4.14e-06 0.005  200 HOT_DT2",
+      "to": "arm 4.14e-06 0.01   100 HOT_DT2"
+    }
+  ]
+}

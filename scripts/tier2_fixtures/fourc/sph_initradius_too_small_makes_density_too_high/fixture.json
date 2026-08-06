@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#1. The rule (INITRADIUS is the kernel SUPPORT radius, not half the spacing) is confirmed against the upstream decks — CubicSpline decks use 2*dx, QuinticSpline decks use 3*dx — but the Signal points the wrong way. Dropping the fluid INITRADIUS to dx/2 on upstream particle_sph_1d_pressurewave_boundary_densitysummation_cubicspline_adami.4C.yaml makes the summation density come out uniformly HIGH: 2.66666666666666652e+00 at both tested particles, i.e. 8/3, exactly the isolated-particle self-density m*W(0) with m = rho*dx and W(0) = 2/(3h). With no neighbour inside the support each particle sees only itself, and the 1/h prefactor in the 1-D kernel means shrinking h RAISES the sum. Anyone screening for the claimed ~0.5*INITDENSITY is off by a factor of five in the wrong direction, and 4C emits no warning about the radius or the neighbour count. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "CUBICSPLINE_SUPPORT_IS_TWO_DX=yes",
+    "QUINTICSPLINE_SUPPORT_IS_THREE_DX=yes",
+    "EXIT_SUPPORTRADIUS=0",
+    "EXIT_HALFSPACING=1",
+    "processor 0 finished normally",
+    "SUPPORTRADIUS_FAILURES=0",
+    "HALFSPACING_FAILURES=6",
+    "is WRONG --> actresult= 2.66666666666666652e+00",
+    "HALFSPACING_WARNINGS=0",
+    "DENSITY_WENT_LOW_AS_CLAIMED=no",
+    "DENSITY_WENT_HIGH_INSTEAD=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SUPPORTRADIUS=1",
+    "EXIT_HALFSPACING=0",
+    "HALFSPACING_FAILURES=0",
+    "DENSITY_WENT_LOW_AS_CLAIMED=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the fluid INITRADIUS at the deck's own support radius. The self-density collapse disappears, the deck passes and EXIT_HALFSPACING becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(old, old.replace(\"INITRADIUS: 0.008\", \"INITRADIUS: 0.002\")))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

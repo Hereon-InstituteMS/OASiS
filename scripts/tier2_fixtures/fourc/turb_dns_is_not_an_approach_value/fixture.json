@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::fluid_turbulence#0. The physics (DNS needs Kolmogorov-scale resolution, DOFs ~ Re^(9/4)) is not a 4C behaviour and is left alone; what this fixture pins is what 4C actually offers. TURBULENCE_APPROACH has exactly two values, CLASSICAL_LES and DNS_OR_RESVMM_LES, and the default lumps DNS together with residual-VMM LES -- writing 'DNS' is rejected with 'possible values: CLASSICAL_LES|DNS_OR_RESVMM_LES'. 4C never checks resolution and never says 'under-resolved'. The entry's advice to check y+ at the first cell IS actionable, but only through the <output>.flow_statistics file, whose y+ column and '(u_tau)^2 = tau_W/rho' line appear only when DUMPING_PERIOD > 0; the upstream channel deck f3_cha_8x8x8_recongradl2 ships DUMPING_PERIOD: 0 and writes a statistics file with zero data rows. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fluid_turbulence",
+  "pitfall_index": 0,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_DNS=1",
+    "EXIT_DUMP=0",
+    "Could not match this input",
+    "possible values: CLASSICAL_LES|DNS_OR_RESVMM_LES",
+    "processor 0 finished normally",
+    "RESOLUTION_CHECK_MENTIONS=0",
+    "BASE_STATS_ROWS=0",
+    "DUMP_STATS_ROWS=41",
+    "DUMP_HAS_YPLUS_COLUMN=1",
+    "(u_tau)^2 = tau_W/rho"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the enum arm: write a value that exists. The rejection and the possible-values line vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^FLUID DYNAMIC/TURBULENCE MODEL:|FLUID DYNAMIC/TURBULENCE MODEL:\\n  TURBULENCE_APPROACH: \"DNS\"|' \"$BASE\" > \"$TMP/dns.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/dns.yaml\""
+    },
+    {
+      "note": "remove the pathology from the diagnostics arm: leave DUMPING_PERIOD at the upstream 0, so no y+ rows are ever written. DUMP_STATS_ROWS drops to 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  DUMPING_PERIOD: 0/  DUMPING_PERIOD: 1/' \"$BASE\" > \"$TMP/dump.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/dump.yaml\""
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_DNS=0",
+    "DUMP_STATS_ROWS=0",
+    "DUMP_HAS_YPLUS_COLUMN=0"
+  ]
+}

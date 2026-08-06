@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#3 — RHO_INF is a key of the nested section STRUCTURAL DYNAMIC/GENALPHA, not of STRUCTURAL DYNAMIC. Written one level up it is rejected at parse with 'Could not match this input' and the RHO_INF line echoed, so the mistake is loud rather than silent. Its default really is 1.0: on one single-HEX8 GenAlpha deck, the arm with no GENALPHA section and the arm with RHO_INF: 1.0 both pass the same result test pinned to 1e-9 (RHO_ONE_RESULT_FAILURES=0), and 4C prints the derived set 'rho=1 beta=0.25 gamma=0.5 alpha_f=0.5 alpha_m=0.5'. RHO_INF: 0.5 changes that set to 'rho=0.5 beta=0.444444 gamma=0.833333 alpha_f=0.333333 alpha_m=0' and moves the answer to 1.68598782665224066e-02. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DEFAULT=0",
+    "EXIT_RHO_ONE=0",
+    "EXIT_RHO_HALF=1",
+    "EXIT_WRONG_SECTION=1",
+    "processor 0 finished normally",
+    "RHO_ONE_RESULT_FAILURES=0",
+    "DEFAULT_COEFFS=rho=1 beta=0.25 gamma=0.5 alpha_f=0.5 alpha_m=0.5",
+    "RHO_HALF_COEFFS=rho=0.5 beta=0.444444 gamma=0.833333 alpha_f=0.333333 alpha_m=0",
+    "is WRONG --> actresult= 1.68598782665224066e-02",
+    "Could not match this input",
+    "RHO_INF: 0.5"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEFAULT=1",
+    "EXIT_RHO_ONE=1",
+    "EXIT_WRONG_SECTION=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the misplacement arm: leave the key out of STRUCTURAL DYNAMIC entirely. The parse error vanishes and EXIT_WRONG_SECTION becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  RHO_INF: 0.5' \"\"                                                \"$TMP/wrong.4C.yaml\"",
+      "to": "deck \"\" \"\"                                                \"$TMP/wrong.4C.yaml\""
+    },
+    {
+      "note": "remove the numeric contrast: give the RHO_HALF arm the default value. Its coefficients and its answer collapse onto the default arm's, so RHO_HALF_COEFFS and the wrong-answer line both change and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"\"                  $'STRUCTURAL DYNAMIC/GENALPHA:\\n  RHO_INF: 0.5\\n' \"$TMP/rho05.4C.yaml\"",
+      "to": "deck \"\"                  $'STRUCTURAL DYNAMIC/GENALPHA:\\n  RHO_INF: 1.0\\n' \"$TMP/rho05.4C.yaml\""
+    }
+  ]
+}

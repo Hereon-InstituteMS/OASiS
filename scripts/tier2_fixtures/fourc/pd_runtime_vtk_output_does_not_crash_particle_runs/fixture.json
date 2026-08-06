@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#12, which execution FALSIFIED outright. The entry said IO/RUNTIME VTK OUTPUT sections are incompatible with particle problems and crash 4C on startup with 'IO/RUNTIME VTK OUTPUT not supported for particle problems' or 'RuntimeVTKOutputParams: invalid for PARTICLE'. Bolting IO/RUNTIME VTK OUTPUT plus IO/RUNTIME VTK OUTPUT/STRUCTURE onto upstream particle_sph_2d_pdbody_gravity.4C.yaml exits 0, prints 'processor 0 finished normally', passes all ten result tests with abs(diff) exactly 0.00000000000000000e+00, keeps the same 1512 bonds, raises no PROC 0 ERROR block, and additionally writes the runtime VTK directory. Neither quoted string exists. Deleting these sections on the entry's advice removes wanted output and fixes nothing. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BASELINE_HAS_RUNTIME_VTK=0",
+    "MUTANT_HAS_RUNTIME_VTK=2",
+    "EXIT_NOVTK=0",
+    "EXIT_WITHVTK=0",
+    "processor 0 finished normally",
+    "NOVTK_FAILURES=0",
+    "WITHVTK_FAILURES=0",
+    "WITHVTK_EXACT_ZERO_DIFFS=10",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "CLAIMED_NOT_SUPPORTED_TEXT=0",
+    "CLAIMED_RUNTIMEVTKOUTPUTPARAMS_TEXT=0",
+    "WITHVTK_PROC_ERROR_BLOCKS=0",
+    "RUNTIME_VTK_DIR_WRITTEN=yes",
+    "VERDICT: RUNTIME_VTK_OUTPUT_CRASHES_PARTICLE_RUNS=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHVTK=1",
+    "MUTANT_HAS_RUNTIME_VTK=0",
+    "RUNTIME_VTK_DIR_WRITTEN=no",
+    "VERDICT: RUNTIME_VTK_OUTPUT_CRASHES_PARTICLE_RUNS=yes"
+  ],
+  "_mutation": {
+    "note": "take the alleged pathology away: do not inject the IO/RUNTIME VTK OUTPUT sections at all. There is then nothing under test — MUTANT_HAS_RUNTIME_VTK drops to 0 and no runtime VTK directory is written — so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(\"IO:\\n\", blk, 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

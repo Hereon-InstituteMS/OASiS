@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::shell#4, and a FALSIFICATION of its recipe. The entry told the reader to 'output both N and M tensors via STRESS_STRAIN'. STRESS_STRAIN is not a SHELL7P element key — appending it to the element line is rejected with \"After parsing, the line still contains 'STRESS_STRAIN plane_stress'.\" from core/io/src/4C_io_input_spec.cpp (it belongs to WALL and MEMBRANE). The key that does exist is the boolean IO/RUNTIME VTK OUTPUT/STRUCTURE.STRESS_STRAIN together with IO's STRUCT_STRESS / STRUCT_STRAIN enums, and what it writes is element_cauchy_stresses_xyz, nodal_cauchy_stresses_xyz, element_GL_strains_xyz and nodal_GL_strains_xyz — Cauchy stress and Green-Lagrange strain tensors in the global frame. The .vtu contains no membrane-force and no bending-moment resultant field at all (both counts 0); the only shell-specific extra is OPTIONAL_QUANTITY, here shell7p_thickness_director. Resultants have to be integrated in post-processing. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "shell",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ELEMENT_KEY=1",
+    "EXIT_VTK_OUTPUT=0",
+    "After parsing, the line still contains 'STRESS_STRAIN plane_stress'.",
+    "4C_io_input_spec.cpp",
+    "processor 0 finished normally",
+    "Name=\"element_cauchy_stresses_xyz\"",
+    "Name=\"nodal_GL_strains_xyz\"",
+    "Name=\"shell7p_thickness_director\"",
+    "VTU_HAS_MEMBRANE_FORCE_RESULTANT=0",
+    "VTU_HAS_BENDING_MOMENT_RESULTANT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ELEMENT_KEY=0",
+    "EXIT_VTK_OUTPUT=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: stop putting the WALL/MEMBRANE key on the shell element line. The leftover-token diagnostic vanishes and EXIT_ELEMENT_KEY becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \" STRESS_STRAIN plane_stress\" \"\"         \"$TMP/eleskey.4C.yaml\"",
+      "to": "deck \"\" \"\"         \"$TMP/eleskey.4C.yaml\""
+    },
+    {
+      "note": "remove the output request: run the second arm without the IO block. No .vtu with stress fields is written, so the field-name assertions cannot be met and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"\"                           \"$IOBLOCK\" \"$TMP/vtk.4C.yaml\"",
+      "to": "deck \"\"                           \"\" \"$TMP/vtk.4C.yaml\""
+    }
+  ]
+}

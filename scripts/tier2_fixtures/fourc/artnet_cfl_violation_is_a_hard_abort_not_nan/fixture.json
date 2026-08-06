@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::arterial_network#0, and the execution that FALSIFIED its Signal. 4C polices the CFL number itself: on upstream one_d_3_artery_network shortened to 50 steps, TIMESTEP 1e-4 -> 2e-3 aborts in the very first element evaluation with 'CFL number at element 0 is 2.0848661028149182' from art_net/4C_art_net_artery_ele_calc_lin_exp.cpp line 1053, before any time step is written (CFL_STEPS_BEFORE_ABORT=0) and before any result test runs. There is no NaN (CFL_NAN_OCCURRENCES=0) and no 'energy not conserved' message (CLAIMED_ENERGY_TEXT=0). The quantity 4C requires below 1 is sqrt(3)*|lambda|_max*dt/dx, so the real limit is dt < dx/(sqrt(3)*c_max), tighter than the claimed dt <= dx/c_max by sqrt(3). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "arterial_network",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_OK=1",
+    "EXIT_CFL=1",
+    "OK_REACHED_RESULT_TEST=1",
+    "CFL_REACHED_RESULT_TEST=0",
+    "CFL number at element 0 is 2.0848661028149182",
+    "4C_art_net_artery_ele_calc_lin_exp.cpp",
+    "is WRONG --> actresult=",
+    "CFL_NAN_OCCURRENCES=0",
+    "CLAIMED_ENERGY_TEXT=0",
+    "CFL_STEPS_BEFORE_ABORT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "OK_REACHED_RESULT_TEST=0",
+    "CFL_REACHED_RESULT_TEST=1",
+    "EXIT_CFL=0"
+  ],
+  "_mutation": {
+    "note": "remove the CFL pathology: keep the upstream time step in the CFL arm. The abort disappears, the arm reaches its result test, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  TIMESTEP: 0.0001/  TIMESTEP: 0.002/' ok.yaml > cfl.yaml",
+    "to": "cp ok.yaml cfl.yaml"
+  }
+}

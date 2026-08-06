@@ -1,0 +1,52 @@
+{
+  "_comment": "Tier-2 for fourc::fluid_turbulence#4 and a FALSIFICATION. The entry wrote 'a FLUID_DYNAMIC LES with TURBULENCE_MODEL: Smagorinsky'. There is no TURBULENCE_MODEL key: 4C rejects it as unused input and its candidate list names the real one, PHYSICAL_MODEL. More importantly the model is not one switch but three. On the upstream channel deck f3_cha_8x8x8_recongradl2, PHYSICAL_MODEL: Smagorinsky together with C_SMAGORINSKY: 0.1 but the DEFAULT TURBULENCE_APPROACH (DNS_OR_RESVMM_LES) reproduces the no-model result exactly -- exit 0, zero result-test failures, and no warning that the model was skipped. Only adding TURBULENCE_APPROACH: CLASSICAL_LES makes the eddy viscosity bite, at which point both pinned velocities shift. C_SMAGORINSKY itself defaults to 0, so it is a third way to get a silent no-op. The entry's separate point about averaging windows is governed by SAMPLING_START / SAMPLING_STOP / DUMPING_PERIOD; 'running_mean' is not 4C vocabulary. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fluid_turbulence",
+  "pitfall_index": 4,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NOMODEL=0",
+    "EXIT_CLAIMEDKEY=1",
+    "EXIT_HALFON=0",
+    "EXIT_FULLON=1",
+    "Could not match this input",
+    "TURBULENCE_MODEL: \"Smagorinsky\"",
+    "Defaulted deprecated_selection 'PHYSICAL_MODEL'",
+    "processor 0 finished normally",
+    "NOMODEL_RESULT_FAILURES=0",
+    "HALFON_RESULT_FAILURES=0",
+    "HALFON_WARNINGS=0",
+    "FULLON_RESULT_FAILURES=2",
+    "is WRONG --> actresult="
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the key-name arm: use the real key. The unused-input rejection vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^FLUID DYNAMIC/TURBULENCE MODEL:|FLUID DYNAMIC/TURBULENCE MODEL:\\n  TURBULENCE_MODEL: \"Smagorinsky\"|' \"$BASE\" > \"$TMP/claimedkey.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/claimedkey.yaml\""
+    },
+    {
+      "note": "remove the pathology from the silently-inert arm: give it the approach switch too, so it becomes a working LES. HALFON_RESULT_FAILURES stops being 0 and the inertness claim collapses, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed \"s|^FLUID DYNAMIC/TURBULENCE MODEL:|$HALF|\" \"$BASE\" > \"$TMP/halfon.yaml\"",
+      "to": "sed \"s|^FLUID DYNAMIC/TURBULENCE MODEL:|$FULL|\" \"$BASE\" > \"$TMP/halfon.yaml\""
+    },
+    {
+      "note": "remove the discriminating arm: build the full-LES deck without the approach switch, so nothing in the fixture ever changes the answer. FULLON_RESULT_FAILURES drops to 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed \"s|^FLUID DYNAMIC/TURBULENCE MODEL:|$FULL|\" \"$BASE\" > \"$TMP/fullon.yaml\"",
+      "to": "sed \"s|^FLUID DYNAMIC/TURBULENCE MODEL:|$HALF|\" \"$BASE\" > \"$TMP/fullon.yaml\""
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NOMODEL=1",
+    "EXIT_CLAIMEDKEY=0",
+    "EXIT_HALFON=1",
+    "EXIT_FULLON=0",
+    "FULLON_RESULT_FAILURES=0"
+  ]
+}

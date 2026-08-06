@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_lung#0. The rule holds and 4C does nothing to enforce it. Rewiring upstream reduced_lung_3_aw_2_tu from one bifurcation with two terminal units into a serial chain with one terminal unit is accepted silently: 4C's setup banner reports 'Bifurcations: | 1' -> '| 0' and 'Terminal Units: | 2' -> '| 1', both runs exit 0 with 'processor 0 finished normally', TREE_VALIDITY_WARNINGS=0, and the inlet flow read from 4C's own ascii VTK cell data halves, 8.374620 -> 4.186200 (ratio 2.0005). No generation count, acinus count or alveolar surface is ever checked. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "reduced_lung",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BAL=0",
+    "EXIT_UNBAL=0",
+    "Terminal Units:       |  2",
+    "Bifurcations:         |  1",
+    "Terminal Units:       |  1",
+    "Bifurcations:         |  0",
+    "processor 0 finished normally",
+    "BAL_INLET_FLOW=8.374620",
+    "UNBAL_INLET_FLOW=4.186200",
+    "INLET_FLOW_RATIO=2.0005",
+    "TREE_VALIDITY_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BAL=1",
+    "EXIT_UNBAL=1",
+    "INLET_FLOW_RATIO=1.0000"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the upstream bifurcating tree instead of the serial chain. Bifurcations goes back to 1, Terminal Units to 2, the flow ratio becomes 1, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "TOPO=serial",
+    "to": "TOPO=balanced"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::shell#3, and a FALSIFICATION of it. The entry said the director vector 'must be SPECIFIED or auto-computed from element normal' and advised smoothed nodal directors on curved meshes. There is no way to specify one: appending 'DIR 0 0 1' to a SHELL7P line is rejected with \"After parsing, the line still contains 'DIR 0 0 1'.\" from core/io/src/4C_io_input_spec.cpp, and the same diagnostic prints the element's entire accepted key set — AXI, CIR, EAS, FIBER1..3, MAT, RAD, SDC, THICK, USE_ANS — which contains no director entry at all (DIRECTOR_KEY_IN_ACCEPTED_LIST=0). The vector keys that do exist are material-orientation data, not directors: adding FIBER1 1 0 0 is accepted and leaves the answer bit-identical, so the same result test pinned to 1e-12 still passes (FIBER1_RESULT_FAILURES=0). The director is computed by the element and is not user input on this build. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "shell",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_DIR=1",
+    "EXIT_FIBER1=0",
+    "processor 0 finished normally",
+    "After parsing, the line still contains 'DIR 0 0 1'.",
+    "Parsed parameters: AXI : none CIR : none EAS : N_4 N_4 N_4 none none FIBER1 : none FIBER2 : none FIBER3 : none MAT : 1 RAD : none SDC : 1 THICK : 0.01 USE_ANS : 1",
+    "4C_io_input_spec.cpp",
+    "DIRECTOR_KEY_IN_ACCEPTED_LIST=0",
+    "FIBER1_RESULT_FAILURES=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_DIR=0",
+    "EXIT_FIBER1=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop trying to give the element a director. The leftover-token diagnostic and the printed key list both vanish and EXIT_DIR becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \" DIR 0 0 1\"     \"$TMP/dir.4C.yaml\"",
+    "to": "deck \"\"     \"$TMP/dir.4C.yaml\""
+  }
+}

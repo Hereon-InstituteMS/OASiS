@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::level_set#0. The rule (a standard level-set advection wants DIFFUSIVITY 0, and any diffusion changes the physics) is confirmed with the sign of the effect measured. The upstream deck levelset_gaussian_hill_pbc is a convection-DIFFUSION Gaussian hill whose MAT_scatra DIFFUSIVITY is deliberately non-zero and whose four pinned phi values include that smearing; setting DIFFUSIVITY to 0.0 fails all four, and at every pinned node the pure-advection value is ABOVE the diffused reference, i.e. the peak survives instead of spreading. 4C emits no warning of any kind -- the run completes, reaches 'Checking results of 4 tests' and just reports other numbers, which is why this is only visible against a reference. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "level_set",
+  "pitfall_index": 0,
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_WITHDIFF=0",
+    "EXIT_NODIFF=1",
+    "processor 0 finished normally",
+    "WITHDIFF_RESULT_FAILURES=0",
+    "NODIFF_REACHED_RESULT_TEST=1",
+    "NODIFF_RESULT_FAILURES=4",
+    "is WRONG --> actresult=",
+    "NODIFF_PEAK_HIGHER=4",
+    "DIFFUSIVITY_WARNINGS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the upstream diffusivity. All four failures and the peak-higher count drop to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/      DIFFUSIVITY: 0.0006666666666/      DIFFUSIVITY: 0.0/' \"$BASE\" > \"$TMP/nodiff.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/nodiff.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHDIFF=1",
+    "EXIT_NODIFF=0",
+    "NODIFF_RESULT_FAILURES=0",
+    "NODIFF_PEAK_HIGHER=0"
+  ]
+}

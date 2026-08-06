@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::pasi#0, and a falsification of its Signal. BINNING STRATEGY really is mandatory for PASI, but the section is declared optional in 4C's input spec, so deleting it from upstream pasi_twoway_norelax_particle_dem_1d_normalcontact_linspring_walldiscretcond.4C.yaml parses fine, sets up both fields, prints the coupled time-stepping banner, and only then dies inside the binning strategy with 'We need a discretization at this point.' from core/binstrategy/4C_binstrategy.cpp line 185. That sentence contains neither 'binning' nor 'PASI' nor 'strategy', so grepping for any word of the claimed 'no binning strategy defined for PASI' finds nothing, and its natural reading points at a missing mesh rather than at the missing section. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "pasi",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BINNING_SECTIONS_REMOVED=1",
+    "EXIT_WITHBINNING=0",
+    "EXIT_NOBINNING=1",
+    "processor 0 finished normally",
+    "WITHBINNING_FAILURES=0",
+    "Overview of chosen time stepping",
+    "We need a discretization at this point.",
+    "4C_binstrategy.cpp, line 185",
+    "CLAIMED_NO_BINNING_STRATEGY_TEXT=0",
+    "DIAGNOSTIC_NAMES_BINNING_OR_PASI=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHBINNING=1",
+    "EXIT_NOBINNING=0",
+    "BINNING_SECTIONS_REMOVED=0",
+    "DIAGNOSTIC_NAMES_BINNING_OR_PASI=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the BINNING STRATEGY block in the second arm. The abort vanishes, BINNING_SECTIONS_REMOVED becomes 0 and EXIT_NOBINNING becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(blk, \"\"))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}
