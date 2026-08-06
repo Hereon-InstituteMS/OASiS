@@ -476,3 +476,39 @@ That is two checkers withdrawn this session (the other: cross-library
 vocabulary, unsound for object-oriented APIs) against eight that shipped. Both
 withdrawals came from running the checker against real data and reading the
 first hit rather than the count.
+
+---
+
+# Self-checked retrieval overstates reach
+
+A pass that rewrote 69 catalog entries verified every one was still findable:
+69 queries, 20 misses on the first attempt — exactly the failure mode where the
+words a query would match get deleted along with the wrong number — then
+restored the vocabulary and reached 69/69.
+
+That work was real and the restoration was right. But the check has a ceiling:
+the queries were written by the same agent that wrote the entries, so they share
+its vocabulary. I ran four queries of my own against the corrected catalog and
+one missed:
+
+    "Newton converged but the displacement is wrong"  -> 3 hits, correct entry
+    "the energy grows every step"                     -> 3 hits, correct entry
+    "CG returned but the field is far too large"      -> 1 hit
+    "the field stopped changing after the first step" -> NO MATCH
+
+The missed entry (ngsolve time_dependent_ns#2) is well written and explains the
+mechanism exactly: an Inverse built on FreeDofs writes zero into every
+constrained row, so `gfu.vec.data = inv * rhs` DELETES the prescribed boundary
+velocity. My query described the CONSEQUENCE an agent would actually observe —
+the field stops changing — in words the entry never uses.
+
+So "all my queries hit" means the entries are consistent with their author's
+mental model, not that they are reachable from a symptom an agent would paste.
+The two differ most exactly where it matters: an agent queries from what it SAW,
+an author writes from what they UNDERSTOOD.
+
+The practical rule, and it costs almost nothing: retrieval checks for a
+correction pass should come from someone who did not write the corrections.
+Failing that, phrase every query as an observation with no mechanism in it —
+"the field stopped changing", "the answer got worse when I refined", "it ran but
+the number is wrong" — never as a description of the cause.
