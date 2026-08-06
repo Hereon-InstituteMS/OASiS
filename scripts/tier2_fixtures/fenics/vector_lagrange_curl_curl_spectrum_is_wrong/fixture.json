@@ -1,0 +1,19 @@
+{
+  "_comment": "PLACEHOLDER",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "no_tested_eigenvalue_is_near_a_true_one=True",
+    "tested_lowest_moves_away_from_one_under_refinement=True",
+    "n1curl_reference_matches_the_exact_spectrum=True",
+    "vector_lagrange_degree_2_interleaves_spurious_and_real=True",
+    "VERDICT=vector_lagrange_curl_curl_spectrum_is_entirely_wrong"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=tested_element_reproduces_the_cavity_spectrum"
+  ],
+  "timeout_seconds": 300
+}
