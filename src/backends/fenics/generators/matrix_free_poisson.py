@@ -92,14 +92,18 @@ KNOWLEDGE = {
         "large, so it needs no reference value to recognise. Or: "
         "the boundary values in the result are not equal to uD "
         "after `bc.set(u.x.array, alpha=1.0)`.",
-        # This clause used to name a closed form — "the exact solution
-        # (1 + x^2 + 2*y^2 on the unit square with f=-6)". That is the dolfinx
-        # tutorial's standard demo problem, so it is public rather than secret,
-        # but shipping it here still hands an agent a ready answer for any
-        # unit-square Poisson problem it is later asked to solve, and the
-        # diagnostic never needed it: the tell is the SIZE of the jump, not the
-        # value it jumps from. Stating the ratio keeps the knowledge and drops
-        # the answer.
+        # This clause used to quote the dolfinx tutorial's demo problem — its
+        # closed-form solution and source term, on the unit square. Public
+        # rather than secret, but it still handed an agent a ready answer for any
+        # unit-square Poisson it might later be asked to solve, and the
+        # diagnostic never needed it: the tell is the SIZE of the error jump,
+        # not the value it jumps from. Stating the ratio keeps the knowledge and
+        # drops the answer.
+        #
+        # The removed form is deliberately NOT repeated here. The contamination
+        # gate scans comments as well as strings, and it caught this very
+        # comment when it first quoted what it was removing — correctly, because
+        # a form sitting in a comment is one copy-paste away from being served.
 
         "[Numerical] Custom CG without a preconditioner is the "
         "demonstration baseline — for ill-conditioned problems "
