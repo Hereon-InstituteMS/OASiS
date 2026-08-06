@@ -1,0 +1,19 @@
+{
+  "_comment": "COUPLING tier-2. The pair with no FEniCSx in it. The sides table names it twice, once in each row. It earns its own fixture because every other cross-code pair in the table has FEniCSx on one side: if the shipped FEniCSx participant and the driver happened to agree on a convention the knowledge states WRONGLY, every FEniCSx pair would still converge to the right answer and the error would be invisible. This pair removes that common factor — two participants written independently, neither of them the one the rest of the table is anchored to, meeting the same closed form. Both are also the awkward backends (DUNE JIT-compiles its forms on a fresh process every iteration; deal.II is a compiled executable driven by a wrapper through a plain-text input file), so it is the slowest pair in the set.",
+  "backend": "coupling",
+  "physics": "pair_dune_dealii",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 3000,
+  "expect_in_output": [
+    "dealii_solver_built=True",
+    "dune_D_dealii_N_iterations=",
+    "dune_D_dealii_N_left_T_err=",
+    "dune_D_dealii_N_flux_balance_rel=",
+    "dealii_D_dune_N_iterations=",
+    "dealii_D_dune_N_right_q_err=",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "failures_count=1"]
+}

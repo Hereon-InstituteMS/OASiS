@@ -33,8 +33,12 @@ import _couplinglib as L                                    # noqa: E402
 
 RHOS = [1.0, 4.0, 9.0]
 BRACKET = [0.6, 1.0, 1.4]      # multiples of theta_opt; all < 2x = the limit
-MAX_ITER = 400
-TOL = 1e-5
+# The RANKING of thetas is set by the asymptotic rate, so a loose tolerance
+# orders them exactly as a tight one would at a fraction of the iterations.
+# The bracket is 0.6x/1.4x rather than something closer because that spreads
+# the rates far enough apart to be told apart at this tolerance.
+MAX_ITER = 300
+TOL = 1e-4
 
 
 def body() -> None:

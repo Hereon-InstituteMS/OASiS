@@ -1,0 +1,18 @@
+{
+  "_comment": "COUPLING tier-2. DUNE-fem's sides-table row: unstarred yes in both columns, 'coupled to FEniCSx and deal.II, both roles ... and all converged.' Two arrangements against FEniCSx, checked against the closed form. DUNE is the backend whose payload makes a claim about the RUN and not only the answer: the participant is a fresh process every coupling iteration and DUNE-fem JIT-compiles each distinct UFL form on first use, so a script that puts imported data into the form TEXT pays a minute-plus compile every iteration and the coupling appears to hang. Finishing inside a bounded wall-clock budget is the observable form of that claim. The payload also states the exported flux carries small solver noise because the default galerkin(..., solver='cg') projection runs at a loose linear tolerance — a claim about the SIZE of an error, which is why the flux tolerance here is the loosest in the set and the measured error is printed.",
+  "backend": "coupling",
+  "physics": "pair_fenics_dune",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 2400,
+  "expect_in_output": [
+    "dune_D_fenics_N_iterations=",
+    "dune_D_fenics_N_left_T_err=",
+    "dune_D_fenics_N_flux_balance_rel=",
+    "fenics_D_dune_N_iterations=",
+    "fenics_D_dune_N_right_q_err=",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "failures_count=1"]
+}

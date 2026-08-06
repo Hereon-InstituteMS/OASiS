@@ -97,6 +97,47 @@ def body() -> None:
     check_binary("fourc", Path(fourc), _tree_of(Path(fourc)))
     check_binary("febio", Path(febio), _tree_of(Path(febio)))
 
+    # ── the guard on the guard ────────────────────────────────────────────
+    # Eight zeroes prove nothing unless the probes can produce a non-zero. A
+    # grep that silently stopped matching, a `nm` that fails on a stripped
+    # binary, a `strings` invoked wrongly — each returns zero hits and each
+    # would let this fixture certify a claim it never tested. So the same three
+    # probes are pointed at a library that DOES contain preCICE, and must find
+    # it. If no preCICE is installed here the fixture says so and fails rather
+    # than quietly accepting an untested detector.
+    # The control has to be a preCICE CONSUMER, not libprecice itself: a
+    # library does not link itself, so `ldd libprecice.so` reports zero preCICE
+    # hits and would look exactly like 4C. That is the discrimination this
+    # control exists to establish, and getting it wrong is how a positive
+    # control turns into a second false negative.
+    control = None
+    for d in (Path("/opt/precice/bin"), Path("/usr/local/bin"), Path("/usr/bin")):
+        if not d.is_dir():
+            continue
+        for cand in sorted(d.iterdir()):
+            try:
+                if cand.is_file() and probe("ldd", [], cand) > 0:
+                    control = cand
+                    break
+            except OSError:
+                continue
+        if control:
+            break
+    if control is None:
+        raise L.Absent(
+            "no binary on this host LINKS preCICE, so the probes cannot be "
+            "shown to detect it at all — eight zero counts from a detector "
+            "never demonstrated to return non-zero is not evidence")
+    print(f"positive_control_binary={control}")
+    for tool, args in (("ldd", []), ("nm", ["-D"]), ("strings", ["-a"])):
+        hits = probe(tool, args, control)
+        name = "nm_D" if tool == "nm" else tool
+        print(f"control_{name}_precice_hits={hits}")
+        L.check(hits > 0, f"control_{name}_found_nothing",
+                f"{tool} found no preCICE in {control}, so this probe cannot "
+                f"detect preCICE and its zero count on the solver binaries "
+                f"means nothing")
+
     # A refusal that does not say what to do instead is how an agent concludes
     # the coupling is impossible. Both payloads must still redirect to `couple`.
     from tools.coupling_knowledge import precice_knowledge

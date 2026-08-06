@@ -1,0 +1,19 @@
+{
+  "_comment": "COUPLING tier-2. deal.II's sides-table row: unstarred yes in both columns, 'coupled to FEniCSx and DUNE-fem, both roles'. deal.II is the only participant that does not exist until it is built — its payload says 'THE PARTICIPANT IS TWO FILES: a compiled C++ solver and a thin Python wrapper', ships heat_iface_dealii.cc and a CMakeLists next to the script, and gives the cmake invocation. So this fixture BUILDS the shipped source before coupling anything: if it does not compile against this install's deal.II, the claim that a deal.II participant is available here is false and the fixture says so instead of skipping. The payload's silent-wrong warning is specific — 'THE NODAL FLUX MUST BE AVERAGED OVER BOTH ADJACENT CELLS ... last-writer-wins silently biases every interior interface node toward one cell' — and a biased nodal flux still converges, showing up only as an interface flux off by a factor related to the cell size, which the closed-form comparison catches and a convergence check does not.",
+  "backend": "coupling",
+  "physics": "pair_fenics_dealii",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 3000,
+  "expect_in_output": [
+    "dealii_solver_built=True",
+    "dealii_D_fenics_N_iterations=",
+    "dealii_D_fenics_N_left_T_err=",
+    "dealii_D_fenics_N_flux_balance_rel=",
+    "fenics_D_dealii_N_iterations=",
+    "fenics_D_dealii_N_right_q_err=",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "dealii_solver_built=False", "failures_count=1"]
+}

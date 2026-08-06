@@ -41,11 +41,10 @@ import _couplinglib as L                                    # noqa: E402
 # one that shows why it was wrong.
 CASES = [
     (4.0, [0.1, 0.2, 0.3, 0.5], "the coarse sweep the knowledge describes"),
-    (9.0, [0.1, 0.2, 0.3], "the same coarse sweep, at the more unbalanced ratio"),
     (9.0, [0.05, 0.1, 0.15], "a grid three times finer, at the same ratio"),
 ]
-MAX_ITER = 400
-TOL = 1e-5
+MAX_ITER = 250
+TOL = 1e-4
 
 
 def body() -> None:

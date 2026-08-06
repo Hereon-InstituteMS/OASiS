@@ -50,7 +50,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import _couplinglib as L                                    # noqa: E402
 
 RHOS = [1.0, 4.0, 9.0]
-GRID = [0.1, 0.2, 0.3, 0.5, 1.0]
+# Four thetas cover all three behaviours at every ratio, including BOTH
+# marginal cases (rho=1 at theta=1.0 and rho=9 at theta=0.2, where the
+# amplification factor is exactly 1). A fifth value bought nothing and
+# each one costs sixty iterations of two solvers.
+GRID = [0.1, 0.2, 0.5, 1.0]
 MAX_ITER = 60
 TOL = 1e-8
 

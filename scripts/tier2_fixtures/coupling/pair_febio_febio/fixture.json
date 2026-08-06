@@ -1,0 +1,20 @@
+{
+  "_comment": "COUPLING tier-2. FEBio's sides-table row is the one that contains a refusal: 'yes | yes | FEBio-to-FEBio, both roles — ELASTICITY, not heat: FEBio 4 has no heat module'. The payload expands it: FEBioHeat was removed upstream and survives only as a plugin, so a conduction participant is impossible here, and the shipped script solves the exact linear analogue — a uniaxial-strain elastic bar where displacement plays temperature and the P-wave modulus plays conductivity. That analogue has its own closed form, so the claim is checkable on the same terms as the conduction pairs: interface displacement, interface traction with the sign each side's own outward normal implies, and conservation across the interface. M = E(1-nu)/((1+nu)(1-2nu)) is computed from E and nu rather than copied, so changing either constant in the shipped script moves the expected answer with it instead of silently invalidating the fixture. Reaching a converged, correct answer is also evidence the shipped deck names a module FEBio 4 registers: an unknown <Module type> SEGFAULTS without an error message, which reads exactly like a corrupted deck.",
+  "backend": "coupling",
+  "physics": "pair_febio_febio",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 2400,
+  "expect_in_output": [
+    "p_wave_modulus_left=",
+    "p_wave_modulus_right=",
+    "febio_L_D_febio_R_N_iterations=",
+    "febio_L_D_febio_R_N_left_u_err=",
+    "febio_L_D_febio_R_N_flux_balance_rel=",
+    "febio_L_N_febio_R_D_iterations=",
+    "febio_L_N_febio_R_D_right_q_err=",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:", "TIMEOUT", "did_not_converge", "failures_count=1"]
+}
