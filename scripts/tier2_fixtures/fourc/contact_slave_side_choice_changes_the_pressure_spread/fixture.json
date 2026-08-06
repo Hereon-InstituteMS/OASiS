@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::contact#4 — which side of a non-matching contact pair is Slave, measured on a deck built to mismatch: the lower block's contact face is split 2x2 (nine nodes), the upper block's is one element (four nodes). Only the Side qualifiers differ between the arms. With the fine face as Slave the fine face's own vertical displacement is nearly uniform between corner and centre; with the coarse face as Slave the mortar projection concentrates the transfer at the coarse nodes and that spread grows more than threefold, which is the 'pressure spikes at master-node locations' the entry describes, made measurable. The active set size follows the slave node count, 9 against 4. The half of the entry that does NOT hold up on this problem is the convergence claim: SWAP_CHANGES_ITERATION_COUNT=no, both arms take the same total Newton iterations, so 'swapping slave and master can cause convergence issues' is not what is at stake here — the load distribution is. Numbers come from 4C's own result-test report via an unmatchable RESULT DESCRIPTION. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_FINESLAVE=1",
+    "EXIT_COARSESLAVE=1",
+    "FINESLAVE_STEPS=10",
+    "COARSESLAVE_STEPS=10",
+    "Contact-Normal-Active-Set-Size = 9",
+    "Contact-Normal-Active-Set-Size = 4",
+    "is WRONG --> actresult=",
+    "COARSE_SLAVE_SPREADS_MORE=yes",
+    "COARSE_SLAVE_SPREADS_AT_LEAST_3X=yes",
+    "SWAP_CHANGES_ITERATION_COUNT=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "FINESLAVE_STEPS=0",
+    "COARSESLAVE_STEPS=0",
+    "COARSE_SLAVE_SPREADS_MORE=no",
+    "COARSE_SLAVE_SPREADS_AT_LEAST_3X=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the same Slave/Master assignment as the first, so the coarse face is no longer the slave. The two arms then produce identical spreads and the comparison collapses, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"Master\" \"Slave\"  > \"$TMP/coarse_slave.yaml\"",
+    "to": "deck \"Slave\"  \"Master\" > \"$TMP/coarse_slave.yaml\""
+  }
+}

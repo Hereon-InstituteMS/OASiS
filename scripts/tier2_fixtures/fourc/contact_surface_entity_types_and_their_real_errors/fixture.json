@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::contact#6, and a correction of its Signal. Neither quoted parser error exists in 4C ('expected node set for contact surface, got element set', 'MortarInterface needs DNODE not DELE') and CLAIMED_ENTITY_TYPE_TEXTS=0 pins that. The real mechanism: every condition carries an optional ENTITY_TYPE — legacy_id (the default, an index into the inline *-NODE TOPOLOGY lists), node_set_id, element_block_id, or NODE_SET_NAME. The last three resolve against a mesh file, so on an inline deck they fail with 'Cannot apply condition 'Contact' to element block 2 / to node set 2 which is not specified in the mesh file.' from core/fem/src/condition/4C_fem_condition.cpp. Declaring the same node groups as DVOLUMEs instead of DSURFACEs fails earlier still, with 'not in range [0:0[' and 'DSurface condition on non existent DSurface?Could not read set from entity type.' The substance of the entry survives — a contact surface is a design SURFACE built from nodes — but element_block_id is a legitimate ENTITY_TYPE that exists to point a condition at an element block, not a forbidden construct, and the refusal above is about the absent mesh file rather than about element sets being rejected. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_LEGACY=0",
+    "EXIT_ELEMENTBLOCK=1",
+    "EXIT_NODESET=1",
+    "EXIT_VOLTOPOLOGY=1",
+    "Building contact interface",
+    "processor 0 finished normally",
+    "Cannot apply condition 'Contact' to element block 2 which is not specified in the mesh file.",
+    "Cannot apply condition 'Contact' to node set 2 which is not specified in the mesh file.",
+    "4C_fem_condition.cpp",
+    "not in range [0:0[",
+    "DSurface condition on non existent DSurface?Could not read set from entity type.",
+    "CLAIMED_ENTITY_TYPE_TEXTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_LEGACY=1",
+    "EXIT_ELEMENTBLOCK=0",
+    "EXIT_NODESET=0",
+    "EXIT_VOLTOPOLOGY=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the element-block arm: leave the conditions on the default legacy_id, which the inline topology supplies. That arm then runs to completion and its refusal disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"    ENTITY_TYPE: element_block_id\n\" DSURF DSURFACE > \"$TMP/element_block.yaml\"",
+      "to": "deck \"\" DSURF DSURFACE > \"$TMP/element_block.yaml\""
+    },
+    {
+      "note": "remove the pathology from the volume-topology arm: declare the node groups as design SURFACES, which is what a surface condition indexes. That arm then runs to completion and the range message disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"\"                                  DVOL  DVOLUME  > \"$TMP/volume_topology.yaml\"",
+      "to": "deck \"\"                                  DSURF DSURFACE > \"$TMP/volume_topology.yaml\""
+    }
+  ]
+}

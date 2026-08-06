@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::constraint#1. The rule holds — the penalty parameter of a penalty-enforced coupling trades constraint accuracy against solvability — and both ends are executed here on upstream beam3r_herm2line3_beam_to_beam_point_coupling_elbow_offset_indirect_global_assembly, whose POSITIONAL_PENALTY_PARAMETER is 1.2 and whose result test is pinned to 1e-12. Three decades down, the run still converges but the joint has drifted enough to fail all three tip tests. Three decades UP, and again eleven decades up, NOX aborts with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp. Two corrections: the stiff-end failure is a Newton failure, not the 'Trilinos iterative solver stagnates' the entry described (this deck uses a direct solver and still fails, and CLAIMED_CONDITIONING_WARNING=0 shows no condition-number warning is ever printed); and the entry's 'alpha ~ 1e3 - 1e5 times the stiffness diagonal' is not a safe recipe, since three decades above the shipped value is already past the edge for this problem. The lagrange_multiplier variant of the same problem is run as the control and converges. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "constraint",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TUNED=0",
+    "EXIT_SOFT=1",
+    "EXIT_STIFF=1",
+    "EXIT_VERYSTIFF=1",
+    "EXIT_LAGRANGE=0",
+    "TUNED_RESULT_FAILURES=0",
+    "LAGRANGE_RESULT_FAILURES=0",
+    "SOFT_RESULT_FAILURES=3",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "CLAIMED_CONDITIONING_WARNING=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TUNED=1",
+    "EXIT_LAGRANGE=1",
+    "EXIT_STIFF=0",
+    "EXIT_VERYSTIFF=0",
+    "SOFT_RESULT_FAILURES=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology at the soft end: leave the penalty at its tuned value. That arm then meets the 1e-12 result test and exits 0, so the drift evidence disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/POSITIONAL_PENALTY_PARAMETER: 1.2/POSITIONAL_PENALTY_PARAMETER: 1.2e-3/'  \"$BASE\" > \"$TMP/soft.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/soft.yaml\""
+    },
+    {
+      "note": "remove the pathology at the stiff end: leave the penalty at its tuned value. That arm then converges and exits 0, so the non-convergence abort disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/POSITIONAL_PENALTY_PARAMETER: 1.2/POSITIONAL_PENALTY_PARAMETER: 1.2e3/'   \"$BASE\" > \"$TMP/stiff.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/stiff.yaml\""
+    }
+  ]
+}
