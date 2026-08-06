@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM contact::1: [Numerical] Penalty parameter: too small = constraint violation, too large = ill-conditioning. Signal: too low -> max penetration > 5% element edge; too high -> SolverGMRES stagnates with condition number > 1e14. Rule of thumb: penalty = 1e3 * E / h for typical Hertz contact with elastic Young \u2026 WHAT THIS RUNS: -- probe \"contact_penalty\" of the shared contact translation unit _shared/contact_family.cc, compiled once and cached so three fixture directories share ONE C++ build. The same indenter problem solved by PENALTY regularisation at five penalties (1, 1e2, the entry's rule 1e3*E/h = 1.6e4, 1e8, 1e14), each with 25 fixed-point sweeps, reporting the worst penetration as a fraction of an element edge, the unpreconditioned CG count, and the condition number from the assembled spectrum. The \"too small\" half of the entry reproduces: penalty 1 leaves 10.4 element edges of penetration. THE OTHER TWO NUMBERS DO NOT. The entry's own rule of thumb, 1e3*E/h, still leaves 0.104 of an element edge -- twice the 5% the entry itself sets as the failure threshold; it takes about 1e8 here to get under it. And at penalty 1e14 the condition number is 1.3e13, an order of magnitude BELOW the quoted 1e14, and CG does not stagnate -- it converges in ONE iteration, because at that penalty the operator is dominated by its own diagonal. Mutation control: T2_MUTATE=1 puts a penalty of 1e8 under test, the penetration drops below the threshold, and the fixture fails its own expectations. OBSERVED, copied from the run: penalty_under_test=1; penetration_under_test_exceeds_five_percent_of_an_element_edge=true; rule_of_thumb_penalty_exceeds_five_percent_of_an_element_edge=true; huge_penalty_condition_number_above_1e14=false; huge_penalty_cg_stagnated=false; VERDICT=penalty_under_test_lets_the_body_penetrate. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "contact",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "penalty_under_test=1",
+    "penetration_under_test_exceeds_five_percent_of_an_element_edge=true",
+    "rule_of_thumb_penalty_exceeds_five_percent_of_an_element_edge=true",
+    "huge_penalty_condition_number_above_1e14=false",
+    "huge_penalty_cg_stagnated=false",
+    "VERDICT=penalty_under_test_lets_the_body_penetrate"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=penalty_under_test_holds_the_constraint"
+  ],
+  "timeout_seconds": 2400
+}

@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM contact::0: [Numerical] Active set changes require iterating between constraint detection (AffineConstraints / PETScWrappers::MPI::Vector test) and SolverGMRES solve. Signal: a single-shot SolverCG / SolverGMRES call where the active set is predicted from the initial guess gives the wrong contact zone for \u2026 WHAT THIS RUNS: -- probe \"contact_single_shot\" of the shared contact translation unit _shared/contact_family.cc, compiled once and cached so three fixture directories share ONE C++ build. A membrane on (-1,1)^2 pressed onto a rigid paraboloid indenter of finite extent, with the load chosen so the contact zone is a disc strictly INSIDE the indenter -- otherwise the contact radius is pinned by the geometry and measures nothing. Both strategies run in the same program: the active set predicted once from the unconstrained solve, and step-41's iterated loop. The entry's own diagnostic does NOT separate them. The outer contact radius is identical to eight digits (0.89976125 both ways), because the single-shot set reaches the rim of the indenter and so does the converged one. What is wrong is the AREA: 2601 active dofs against 184, an EQUIVALENT radius of 0.899 against 0.239 -- 276% out, not the \"~30-50%\" the entry quotes, and in a quantity the entry does not name. The iterated half reproduces exactly: two consecutive active sets agree after three outer iterations, inside the entry's \"usually 3-10\". Mutation control: T2_MUTATE=1 puts the iterated set under test and the fixture fails its own expectations. OBSERVED, copied from the run: strategy=single_shot; outer_radius_diagnostic_separates_the_two_strategies=false; equivalent_contact_radius_under_test_is_wrong_by_more_than_half=true; active_set_under_test_over_predicts_the_contact_area=true; iterated_loop_settled_within_ten_outer_iterations=true; VERDICT=single_shot_active_set_gives_the_wrong_contact_zone. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "contact",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "strategy=single_shot",
+    "outer_radius_diagnostic_separates_the_two_strategies=false",
+    "equivalent_contact_radius_under_test_is_wrong_by_more_than_half=true",
+    "active_set_under_test_over_predicts_the_contact_area=true",
+    "iterated_loop_settled_within_ten_outer_iterations=true",
+    "VERDICT=single_shot_active_set_gives_the_wrong_contact_zone"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=strategy_under_test_finds_the_converged_contact_zone"
+  ],
+  "timeout_seconds": 1800
+}
