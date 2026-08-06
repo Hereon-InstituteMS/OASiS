@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#1: PETScKrylovSolver is a legacy DOLFIN name that exists in no dolfinx 0.10 module. The fixture searches every plausible module for the name and reports what it found, then shows the supported route: LinearProblem(...).solver, which IS a petsc4py KSP. Mutation control: T2_MUTATE=1 searches for a name that DOES exist (LinearProblem), so the \"found nowhere\" observation disappears. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "searched_name=PETScKrylovSolver",
+    "found_anywhere=False",
+    "linearproblem_solver_is_ksp=True",
+    "VERDICT=petsckrylovsolver_absent_use_problem_solver"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=name_resolved"
+  ]
+}

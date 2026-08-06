@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#5: with velocity Dirichlet data on every boundary facet the pressure is determined only up to a constant, because pressure enters the weak form only through its gradient. Rather than depend on how a particular solver reacts to a singular saddle-point matrix, the fixture measures the null space directly: build the constant- pressure vector (1 on every pressure dof, 0 on velocity dofs) and apply the assembled operator to it. If the constant really is in the kernel, the result is at round-off relative to the matrix norm. Mutation control: T2_MUTATE=1 pins one pressure dof, which removes the kernel; the same product is then O(1). Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "constant_pressure_is_in_the_kernel=True",
+    "VERDICT=enclosed_flow_leaves_the_pressure_constant_free"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=pressure_is_determined"
+  ],
+  "timeout_seconds": 300
+}
