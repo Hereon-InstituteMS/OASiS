@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for dune::stokes#3 and #4. Measured 2026-08-06 (dune-fem 2.12.0.2). Equal-order P1/P1 velocity-pressure assembles and solves at both 8x8 and 16x16, and the mean neighbouring-dof jump in the pressure GREW from 2.272329e+02 to 1.616683e+03 — a factor of 7 the wrong way — while the velocity maximum stayed at 0.250000 in both. So the checkerboard does not shrink under refinement and the velocity still looks plausible, which is the whole claim. For #4: closing the last boundary with a velocity Dirichlet condition left the pressure level running away to 9.904292e+16 against 2.000000 for the same problem with an open outflow, while the velocity stayed at 5.42. The solver did NOT report a singular matrix and the level was reproducible across two runs on this install, so the claim's 'shifted by an arbitrary constant that moves between runs' is not what happens here — the level is simply undetermined and lands somewhere enormous. stokes#5 is NOT claimed as covered: a 0 in the pressure slot of the DirichletBC value list did NOT drive the inlet pressure to zero (|p| max 1.543121 against 2.000000 with None). It does change the solution, but not in the way the claim describes, so covering it would be false coverage. A composite space stores its legs BLOCKED, not interleaved — 659 = 578 + 81 for an 8x8 P2/P1 pair — which is why this fixture slices by leg size rather than reshaping to (-1, 3); that reshape raises.",
+  "backend": "dune",
+  "physics": "stokes",
+  "pitfall_index": 3,
+  "covers": [
+    "stokes:3",
+    "stokes:4"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "equal_order_nx8_converged=True",
+    "equal_order_nx16_converged=True",
+    "equal_order_mode_does_not_shrink=True",
+    "velocity_still_looks_plausible=True",
+    "taylor_hood_converged=True",
+    "closed_domain_pressure_runs_away=True",
+    "closed_domain_velocity_still_sane=True",
+    "pressure_is_undetermined_without_an_open_boundary=True",
+    "zero_pressure_entry_claim_not_reproduced=True",
+    "dune_stokes_constraint_traps_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

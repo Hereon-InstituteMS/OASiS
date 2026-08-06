@@ -36,7 +36,8 @@ from dune.ufl import Constant, DirichletBC                      # noqa: E402
 import dune.fem as dfem                                          # noqa: E402
 from ufl import (TrialFunction, TestFunction, SpatialCoordinate, # noqa: E402
                  Identity, as_vector, det, derivative, grad, inner,
-                 ln, tr, variable, dx, ds, conditional, lt, sym)
+                 ln, tr, variable, diff, inv, dx, ds,
+                 conditional, lt, sym)
 
 E, NU = 1.0e4, 0.3
 MU = E / (2 * (1 + NU))
@@ -91,23 +92,72 @@ def main() -> int:
     print(f"ln_of_detF_without_identity={ln_of_zero}")
     print(f"ln_J_blows_up_to_minus_inf={np.isneginf(ln_of_zero)}")
 
-    # ── #4 / #2: the energy is differentiated, and load stepping ───
+    # ── #4 / #2: what is and is NOT differentiated for you ────────
     uh = space.interpolate([0, 0], name="uh")
-    F = I + grad(uh)
-    C = F.T * F
-    J = det(F)
-    W = (MU / 2 * (tr(C) - d) - MU * ln(J) + LAM / 2 * ln(J) ** 2)
     load = Constant(0.0, name="load")
-    Pi = W * dx - load * inner(as_vector([0.0, 1.0]), uh) \
-        * conditional(lt(1.0 - x[0], TOL), 1.0, 0.0) * ds
-    residual = derivative(Pi, uh, v)
+    traction = conditional(lt(1.0 - x[0], TOL), 1.0, 0.0)
+
+    # The ENERGY route the claim describes: hand dune-fem the potential
+    # and let it derive everything. Measured — it does not work.
+    F_h = I + grad(uh)
+    W_h = (MU / 2 * (tr(F_h.T * F_h) - d) - MU * ln(det(F_h))
+           + LAM / 2 * ln(det(F_h)) ** 2)
+    Pi = W_h * dx - load * inner(as_vector([0.0, 1.0]), uh) \
+        * traction * ds
+    energy_residual = derivative(Pi, uh, v)
+    print(f"energy_first_variation_arguments="
+          f"{len(energy_residual.arguments())}")
     clamp = DirichletBC(space, [0, 0], conditional(lt(x[0], TOL), 1, 0))
+    try:
+        galerkin([energy_residual == 0, clamp], solver="bicgstab")
+        print("energy_route_accepted=True")
+        fail.append("dune-fem accepted the first variation of the "
+                    "ENERGY as a scheme; this fixture records that it "
+                    "does not, so the record would be wrong")
+    except ValueError as exc:
+        msg = " ".join(str(exc).split())
+        print(f"energy_route_rejected={type(exc).__name__}")
+        print(f"energy_route_message={msg[:120]}")
+        if "at least two arguments" not in msg:
+            fail.append(f"the rejection is not the two-argument one: "
+                        f"{msg[:160]}")
+
+    # Second attempt at "no hand-coded stress": take P = dW/dF with
+    # ufl.variable + ufl.diff, which keeps the energy as the only input.
+    # Measured — dune-fem's code generator cannot lower a Variable.
+    Fv = variable(I + grad(u))
+    J_v = det(Fv)
+    W_v = (MU / 2 * (tr(Fv.T * Fv) - d) - MU * ln(J_v)
+           + LAM / 2 * ln(J_v) ** 2)
+    residual_var = (inner(diff(W_v, Fv), grad(v)) * dx
+                    - load * inner(as_vector([0.0, 1.0]), v)
+                    * traction * ds)
+    try:
+        galerkin([residual_var == 0, clamp], solver="bicgstab")
+        print("ufl_variable_diff_route_accepted=True")
+        fail.append("dune-fem compiled a form built with "
+                    "ufl.variable/ufl.diff; this fixture records that "
+                    "it cannot, so the record would be wrong")
+    except Exception as exc:                                 # noqa: BLE001
+        msg = " ".join(str(exc).split())
+        print(f"ufl_variable_diff_route_rejected={type(exc).__name__}")
+        print(f"ufl_variable_diff_message={msg[-160:]}")
+
+    # So the FIRST variation has to be written out. Only the TANGENT is
+    # automatic, which is the half of hyperelasticity#4 that survives.
+    Fu = I + grad(u)
+    Ju = det(Fu)
+    Finv_T = inv(Fu).T
+    P_u = MU * (Fu - Finv_T) + LAM * ln(Ju) * Finv_T
+    residual = (inner(P_u, grad(v)) * dx
+                - load * inner(as_vector([0.0, 1.0]), v) * traction * ds)
     scheme = galerkin([residual == 0, clamp], solver="bicgstab",
                       parameters={"nonlinear.maxiterations": 20})
-    print(f"tangent_is_built_by_ufl_derivative=True")
+    print("pk1_had_to_be_written_out=True")
+    print("only_the_tangent_is_automatic=True")
     print(f"residual_argument_count={len(residual.arguments())}")
-    if len(residual.arguments()) != 1:
-        fail.append("derivative(Pi, uh, v) did not produce a one-form")
+    if len(residual.arguments()) != 2:
+        fail.append("the working residual does not carry two arguments")
 
     # full load in one go
     FULL = 60.0
@@ -147,11 +197,11 @@ def main() -> int:
         fail.append(f"a substep needed {max(per_step)} Newton "
                     f"iterations; the claim is a handful per step once "
                     f"the previous solution is the initial guess")
-    if full_ok and int(info_full["iterations"]) <= max(per_step):
-        fail.append(f"applying the whole load at once was no harder "
-                    f"than a substep ({info_full['iterations']} vs "
-                    f"{max(per_step)}); this configuration does not "
-                    f"exercise the load-stepping claim")
+    # hyperelasticity#2 is NOT claimed as covered by this fixture: at
+    # the load reachable here the one-shot solve converged in the same
+    # 3 Newton iterations as each substep, so nothing distinguishes the
+    # two. Printed as evidence rather than asserted.
+    print("load_stepping_claim_not_exercised_at_this_load=True")
 
     if not fail:
         print("dune_hyperelasticity_energy_traps_verified=True")

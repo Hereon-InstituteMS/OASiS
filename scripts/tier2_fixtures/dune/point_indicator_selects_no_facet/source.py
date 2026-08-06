@@ -101,6 +101,19 @@ def main() -> int:
                     f"{delta_point:.6e}; the claim is that it changes "
                     f"it by EXACTLY zero because no facet is selected")
 
+    # The decisive assertion: the constraint the caller ASKED for is not
+    # satisfied. Without this, an indicator that happens to be redundant
+    # with an existing BC would also "change nothing" and the fixture
+    # would pass with the pitfall absent — found by mutation testing.
+    corner_ux = float(abs(with_point[i00, 0]))
+    print(f"corner_ux_with_point_bc={corner_ux:.6e}")
+    print(f"corner_is_not_zero_despite_the_bc={corner_ux > 1e-9}")
+    if corner_ux <= 1e-9:
+        fail.append(f"the corner dof came back at {corner_ux:.6e}, i.e. "
+                    f"the BC the caller wrote WAS honoured; the claim "
+                    f"is that a point indicator selects no facet and "
+                    f"the dof keeps its unconstrained value")
+
     # ── control: an EDGE-sized indicator DOES act ──────────────────
     # The edge has to be one the base does not already constrain in
     # that component, otherwise the merge rule makes the extra BC

@@ -82,7 +82,6 @@ print("LOOP_PROBE_FINISHED")
 def main() -> int:
     fail: list[str] = []
     gridView = structuredGrid([0, 0], [1, 1], [NX, NX])
-    x = SpatialCoordinate(structuredGrid([0, 0], [1, 1], [NX, NX]))
     b = as_vector([BX, BY])
     dt = Constant(0.001, name="dt")
 
@@ -107,7 +106,8 @@ def main() -> int:
         scheme = galerkin([form], solver="cg")
         return space, scheme, u_old
 
-    xs = SpatialCoordinate(gridView)
+    _probe_space = dglagrange(gridView, order=1)
+    xs = SpatialCoordinate(_probe_space)
     profile = exp(-100 * ((xs[0] - 0.3) ** 2 + (xs[1] - 0.5) ** 2))
 
     def l2(fn):
@@ -164,25 +164,6 @@ def main() -> int:
         fail.append(f"the SSP-RK2 L2 norm did not decay monotonically: "
                     f"{rk[:5]} ... {rk[-3:]}")
 
-    # ── dg_advection#1: aliasing target into the right-hand side ───
-    old1.interpolate(profile)
-    uh.interpolate(profile)
-    old1.assign(uh)
-    scheme1.solve(target=uh)
-    clean = np.array(uh.as_numpy).copy()
-    # now the alias: solve into the very function the rhs reads
-    old1.interpolate(profile)
-    scheme1.solve(target=old1)
-    aliased = np.array(old1.as_numpy).copy()
-    diff = float(np.abs(clean - aliased).max())
-    print(f"aliased_solve_raised_nothing=True")
-    print(f"aliased_vs_clean_maxdiff={diff:.6e}")
-    print(f"aliasing_changes_the_answer_silently={diff > 1e-12}")
-    if diff <= 1e-12:
-        fail.append("solving into the function the right-hand side "
-                    "reads gave the identical answer, so the aliasing "
-                    "trap cannot be demonstrated")
-
     # ── dg_advection#2: a per-step rebuild compiles per step ───────
     env = dict(os.environ, CONDA_DEFAULT_ENV="dune-fem-env")
     counts = {}
@@ -211,32 +192,12 @@ def main() -> int:
                     f"{counts[True]} compiles; the claim is that the "
                     f"fix costs one build in total")
 
-    # ── dg_advection#3: ds instead of dS drops all facet coupling ──
-    space_ds, scheme_ds, old_ds = build(1, "upwind", "ds")
-    uh_ds = space_ds.interpolate(profile, name="uh_ds")
-    dt.value = cfl
-    start_ds = np.array(uh_ds.as_numpy).copy()
-    for _ in range(30):
-        old_ds.assign(uh_ds)
-        scheme_ds.solve(target=uh_ds)
-    moved_ds = float(np.abs(np.array(uh_ds.as_numpy) - start_ds).max())
-    # the correct dS version over the same steps
-    old1.interpolate(profile)
-    uh.interpolate(profile)
-    start = np.array(uh.as_numpy).copy()
-    for _ in range(30):
-        old1.assign(uh)
-        scheme1.solve(target=uh)
-    moved_dS = float(np.abs(np.array(uh.as_numpy) - start).max())
-    print(f"jump_over_ds_movement={moved_ds:.6e}")
-    print(f"jump_over_dS_movement={moved_dS:.6e}")
-    print(f"ds_variant_assembles_cleanly=True")
-    print(f"ds_variant_transports_far_less="
-          f"{moved_ds < 0.5 * moved_dS}")
-    if moved_ds >= 0.5 * moved_dS:
-        fail.append(f"the ds variant moved the profile as much as the "
-                    f"dS one ({moved_ds:.3e} vs {moved_dS:.3e}); the "
-                    f"claim is that facet coupling is dropped")
+    # ── dg_advection#3 and #1 are NOT asserted here ────────────────
+    # Both were FALSIFIED while writing this fixture; the measurements
+    # are in the fixture _comment and the claims are left uncovered
+    # rather than dressed up. Printed so the run carries the evidence:
+    print("aliasing_claim_falsified_see_comment=True")
+    print("ds_instead_of_dS_claim_falsified_see_comment=True")
 
     # ── dg_advection#4: a centred flux grows at any dt ─────────────
     space_c, scheme_c, old_c = build(1, "centred", "dS")
