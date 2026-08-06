@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::multiscale#6 — a FALSIFICATION of the remedy the entry prescribed. It told an agent to switch MICRO_TANGENT to ALGORITHMIC to restore quadratic Newton convergence. There is no MICRO_TANGENT key in 4C: zero occurrences in the binary's own --parameters schema. Written into MAT_Struct_Multiscale, the only place it could live, it is rejected with 'Could not match this input' and 'The following data remains unused' from global_data/4C_global_data_read.cpp. That material takes MICROFILE, MICRODIS_NUM and RUNTIMEOUTPUT_GP and carries no tangent switch. The advice was unfollowable: acting on it yields a rejected input file, not a faster Newton. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "multiscale",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_TANGENT=1",
+    "GOOD_TESTS_CORRECT=3",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "The following data remains unused",
+    "4C_global_data_read.cpp",
+    "MICRO_TANGENT_IN_SCHEMA=0",
+    "RUNTIMEOUTPUT_GP_IN_SCHEMA=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_TANGENT=0",
+    "MICRO_TANGENT_IN_SCHEMA=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop injecting the non-existent key, so the second arm is the unmodified deck. It then runs to completion and every rejection diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "    t.replace(anchor, anchor + \"\\n      MICRO_TANGENT: ALGORITHMIC\", 1))",
+    "to": "    t)"
+  }
+}
