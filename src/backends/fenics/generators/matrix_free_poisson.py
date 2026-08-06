@@ -275,8 +275,12 @@ KNOWLEDGE = {'description': 'Poisson problem -div(grad(u)) = f solved WITHOUT ev
               "'action'` raised at the line that builds M. If you skip fem.form and "
               'hand the raw UFL form to fem.assemble_vector, the previously quoted '
               'message "RuntimeError: cannot assemble: form has not been compiled" '
-              "does NOT appear; the actual text is `AttributeError: 'Form' object has "
-              "no attribute '_cpp_object'`.",
+              'does NOT appear, and WHICH AttributeError you get depends on the call '
+              "form: the two-argument in-place call fem.assemble_vector(y.array, M) "
+              "gives `AttributeError: 'Form' object has no attribute '_cpp_object'`, "
+              "while the one-argument fem.assemble_vector(M) gives `AttributeError: "
+              "'Form' object has no attribute 'function_spaces'` instead. Match on the "
+              "AttributeError, not on one of the two attribute names. (Verified by execution on dolfinx 0.10.0, 2026-08-06.)",
               '[API] The in-place assembly entry point is '
               '`fem.assemble_vector(b.array, M_fem)` - first argument is the numpy '
               'ARRAY, not the la.Vector. The one-argument call `b = '
