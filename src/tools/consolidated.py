@@ -19,6 +19,7 @@ from core.fabrication_gate import inspect_result_artefacts
 from core.critic_gate import (CriticRegistry, CriticGateError,
                               setup_digest)
 from core.quality_checks import check_result_files_finite, check_summary_finite
+from core import pitfall_index
 
 _OUTPUT_DIR = Path(__file__).resolve().parents[2] / "simulation_outputs"
 _COUPLING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "coupling"
@@ -1295,9 +1296,17 @@ def register_consolidated_tools(mcp: FastMCP):
 
     @mcp.tool()
     def knowledge(topic: str, solver: str = "", physics: str = "",
-                  signal: str = "") -> str:
+                  signal: str = "", category: str = "",
+                  index: bool = False) -> str:
         """Get knowledge about solvers, physics, materials, coupling,
         post-mortems, or input formats.
+
+        START WITH THE INDEX when you want pitfalls and do not yet know
+        what to ask for: `knowledge(topic='pitfalls', solver=...,
+        index=True)` returns a one-screen map — how many entries exist
+        per physics and per category, and the exact call for each slice.
+        Then narrow. If you already have an error message, skip the
+        index and pass it as `signal=` directly.
 
         This is the single entry point for ALL domain knowledge — the
         catalog, the pitfall database, AND the post-mortem record
@@ -1311,7 +1320,12 @@ def register_consolidated_tools(mcp: FastMCP):
             topic: What you want to know. Options:
                 - "physics" — physics-specific knowledge + matching
                   post-mortems (needs solver + physics)
-                - "pitfalls" — all known pitfalls for a solver
+                - "pitfalls" — known pitfalls for a solver. Unfiltered
+                  returns every entry (comprehensive by design). Narrow
+                  with `signal=` (the error you saw), `physics=`, or
+                  `category=`; `index=True` maps what exists first. A
+                  narrowed answer always states how many entries it held
+                  back and how to get them.
                 - "postmortems" — formal post-mortem records under
                   data/postmortems/*.json, filtered by solver +
                   physics + optional signal pattern. These are the
@@ -1344,10 +1358,22 @@ def register_consolidated_tools(mcp: FastMCP):
                   the delta between two.
             solver: Backend name (e.g. 'fenics', 'fourc', 'dealii', 'ngsolve')
             physics: Physics type (e.g. 'poisson', 'linear_elasticity', 'navier_stokes')
-            signal: Optional substring to filter post-mortem
-                pitfall_db_entries Signal: clauses against — useful
-                when the post-execution critic sees a specific error
-                text and wants to find the matching post-mortem.
+            signal: The error text you actually observed. Paste it raw —
+                quoting, case and whitespace differences are folded, and
+                a paraphrase still matches on distinctive terms. Filters
+                BOTH `pitfalls` and `postmortems`. Every result states
+                the match mode, so a partial word-overlap is labelled
+                weak instead of being presented as an identification.
+                No match means the failure mode is not catalogued for
+                that backend — it does NOT mean the setup is right.
+            category: Narrow pitfalls by kind. In use, commonest first:
+                Numerical, API, Input, Syntax, Physics, Integration,
+                Performance, Output, Mesh, Validation. Spelling variants
+                are folded, so 'numerics' finds 'Numerical'.
+            index: For topic='pitfalls', return the map instead of the
+                content — entry counts per physics and per category plus
+                the call that fetches each. Use it to choose a filter
+                before pulling the full set.
         """
         _get_journal().record("knowledge_lookup", "knowledge",
                               solver=solver, physics=physics,
@@ -1471,6 +1497,69 @@ def register_consolidated_tools(mcp: FastMCP):
                          "category": c.get("category", ""), "confidence": c.get("confidence", 0)}
                         for c in community
                     ]
+                # REFERENCE-ONLY AREAS. `supported_physics()` is a capability
+                # claim — a generator can build a runnable input. Knowledge
+                # coverage is wider. On kratos the gap was 21 of 41 areas
+                # holding 65 verified entries (geomechanics, RANS, IGA, ROM,
+                # topology optimisation, chimera, FEM-to-DEM, FSI). All 20
+                # non-underscore ones were checked: no template, and
+                # generate_input raises ValueError, so keeping them out of
+                # supported_physics() is right. Nothing enumerated them though,
+                # so an agent could not learn they existed — and for a small
+                # model, undiscoverable is indistinguishable from absent.
+                #
+                # Served here under an explicit prefix so the label travels
+                # with the content: knowing four FSI traps is worth a lot even
+                # when OASiS cannot write the FSI input for you, but an agent
+                # must not read their presence as "I can run this".
+                # Only entries not ALREADY served are added. Backends alias
+                # heavily — 4C resolves 154 area names onto 248 texts that the
+                # advertised path already returns, so adding them by name would
+                # have duplicated 942 entry slots and taught an agent that 4C
+                # has 154 undiscovered subjects. It has none; kratos has 20 and
+                # deal.II 2, carrying 66 genuinely unreachable entries between
+                # them. Deduplicating by entry TEXT is what separates the two
+                # cases, and it is why the first count of this was wrong.
+                advertised = {p.name for p in backend.supported_physics()}
+                already = set()
+                for _v in all_pitfalls.values():
+                    already.update(pitfall_index._strings_under(_v))
+                for area in pitfall_index.reference_only_areas(solver,
+                                                               advertised):
+                    k = backend.get_knowledge(area)
+                    if not (isinstance(k, dict) and k.get("pitfalls")):
+                        continue
+                    fresh = [s for s in pitfall_index._strings_under(
+                        k["pitfalls"]) if "Signal:" in s and s not in already]
+                    if not fresh:
+                        continue  # an alias of something already shown
+                    already.update(fresh)
+                    all_pitfalls[
+                        f"{area} [reference only — no generator; "
+                        f"write the input yourself]"] = fresh
+
+                # NARROWING. The signature has always accepted `physics` and
+                # `signal`; this branch read neither. `signal` was wired only
+                # to topic='postmortems', and `physics` was accepted and
+                # ignored, so the loop above collected every physics the
+                # backend supports. An agent holding a stack trace therefore
+                # had to pull the whole dump (87k chars for kratos) and triage
+                # it unaided — affordable in a 200k window, but it spends the
+                # attention of exactly the small model least able to spare it.
+                #
+                # An unfiltered call still returns everything as JSON — now
+                # including the reference-only areas above, which is strictly
+                # more knowledge than before, not less. Filters are additive
+                # and always report what they held back, so narrowing can never
+                # make knowledge unreachable or make a miss look like an empty
+                # database.
+                if index:
+                    return pitfall_index.index_summary(all_pitfalls, solver)
+                if physics or signal or category:
+                    narrowed = pitfall_index.narrow(
+                        all_pitfalls, physics=physics, signal=signal,
+                        category=category)
+                    return pitfall_index.render(narrowed, solver)
                 return json.dumps(all_pitfalls, indent=2)
             return f"No pitfalls found for {solver}"
 
