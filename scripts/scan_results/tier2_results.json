@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 133,
-    "passed": 133,
+    "n_fixtures": 146,
+    "passed": 146,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -2037,6 +2037,66 @@
       "notes": [],
       "captured_head": "STATIC_in_biphasic: rc=1 read_failed=1 names_the_word=1\nSTEADY-STATE: rc=0 normal=1 last=[-105.555555556, 0.0]\nordinal_1: rc=0 normal=1 last=[-105.55555557, 1.6151728908e-08]\nTRANSIENT: rc=0 normal=1 last=[-105.55555557, 1.6151728908e-08]\nordinal_accepted=1 ordinal_1_equals_TRANSIENT=1 differs_from_STEADY_STATE=1\nanalysis_enum_scope=reproduced\n"
     },
+    "febio::biphasic_fsi::0": {
+      "key": "febio::biphasic_fsi::0",
+      "backend": "febio",
+      "physics": "biphasic_fsi",
+      "pitfall_index": 0,
+      "fixture_id": "biphasic_fsi_is_a_material_not_a_module",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "biphasic_fsi_module_segfault=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "wrong: rc=-11 sigsegv=1 read_success=0 read_failed=0 error_box=0 log_written=0 stops_mid_line=1\nright: rc=0 read_success=1 normal=1 steps=10\nbiphasic_fsi_module_segfault=reproduced\n"
+    },
+    "febio::biphasic_fsi::3": {
+      "key": "febio::biphasic_fsi::3",
+      "backend": "febio",
+      "physics": "biphasic_fsi",
+      "pitfall_index": 3,
+      "fixture_id": "biphasic_fsi_needs_nonsymmetric_solver",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "biphasic_fsi_solver=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "bare_solver: rc=1 read_success=1 matrix_format_error=1 steps=0 error_termination=1\nschur: rc=1 read_failed=1 needs_A_solver=1\nright: rc=0 normal=1 steps=10\nbiphasic_fsi_solver=reproduced\n"
+    },
+    "febio::biphasic_fsi::1": {
+      "key": "febio::biphasic_fsi::1",
+      "backend": "febio",
+      "physics": "biphasic_fsi",
+      "pitfall_index": 1,
+      "fixture_id": "biphasic_fsi_required_properties",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "biphasic_fsi_properties=reproduced_with_correction"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "missing_solid: rc=1 read_failed=1 named_with_material_name=1\nmissing_fluid: rc=1 read_failed=1 named_with_material_name=1\nmissing_permeability: rc=1 read_failed=1 named_with_material_name=1\nidentical_runs_max_relative_deviation=4.458e-10 bit_identical=0\nphi0_omitted: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=6.827e-10\nphi0_zero: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=6.827e-10\nphi0_high: rc=0 normal=1 steps=10 named_error=0 max_rel_dev_vs_shipped=7.627e-10\nproperties_named_when_missing=3 of 3\nphi0_is_a_silent_default_not_a_named_error=1\nshipped_deck_cannot_see_phi0=1 (tolerance 1.0e-06)\nbiphasic_fsi_properties=reproduced_with_correction\n"
+    },
+    "febio::multiphasic::1": {
+      "key": "febio::multiphasic::1",
+      "backend": "febio",
+      "physics": "multiphasic",
+      "pitfall_index": 1,
+      "fixture_id": "biphasic_material_rejects_solute_child",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "solute_in_biphasic=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "wrong: rc=1 read_failed=1 unrecognized_tag=1 never_mentions_multiphasic=1\nright: rc=0 normal=1 steps=10\nsolute_in_biphasic=reproduced\n"
+    },
     "febio::biphasic::0": {
       "key": "febio::biphasic::0",
       "backend": "febio",
@@ -2179,6 +2239,51 @@
       "notes": [],
       "captured_head": "elements_HEX8: rc=1 read_failed=1 invalid_element_type=1\nbc_titlecase: rc=1 read_failed=1 invalid_type_attr=1\nanalysis_STATIC: rc=0 normal=1 stress_md5=e51d8024d873\nanalysis_static: rc=0 normal=1 stress_md5=e51d8024d873\nanalysis_Static: rc=0 normal=1 stress_md5=e51d8024d873\nenum_case_insensitive_and_bit_identical=1\ntype_case_sensitivity=reproduced\n"
     },
+    "febio::fluid_fsi::0": {
+      "key": "febio::fluid_fsi::0",
+      "backend": "febio",
+      "physics": "fluid_fsi",
+      "pitfall_index": 0,
+      "fixture_id": "fluid_fsi_module_and_material_share_a_name",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "fluid_fsi_module=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "wrong: rc=1 read_failed=1 msg[0]=1 msg[1]=1\nright: rc=0 read_success=1 normal=1 steps=10 msg_absent=1\nfluid_fsi_module=reproduced\n"
+    },
+    "febio::fluid::0": {
+      "key": "febio::fluid::0",
+      "backend": "febio",
+      "physics": "fluid",
+      "pitfall_index": 0,
+      "fixture_id": "fluid_solver_type_is_module_scoped",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "fluid_module_solver=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "wrong: rc=1 read_failed=1 names_solver=1 never_names_the_material=1\nright: rc=0 normal=1 steps=10\nfluid_module_solver=reproduced\n"
+    },
+    "febio::fluid::1": {
+      "key": "febio::fluid::1",
+      "backend": "febio",
+      "physics": "fluid",
+      "pitfall_index": 1,
+      "fixture_id": "fluid_velocity_dofs_are_w_prefixed",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "fluid_dof_prefix=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "solid_style_y_dof: rc=1 read_failed=1 message=y_dof|unrecognized tag\ninvented_qq_dof:   rc=1 read_failed=1 message=qq_dof|unrecognized tag\nright: rc=0 normal=1 steps=10\nsame_message_modulo_tag_name=1\nfluid_dof_prefix=reproduced\n"
+    },
     "febio::heat::6": {
       "key": "febio::heat::6",
       "backend": "febio",
@@ -2193,6 +2298,21 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "no_globals: rc=1 read_success=1 read_failed=0 names_constant=1\nR_zero: rc=1 read_success=1 read_failed=0 names_constant=1\nT_zero: rc=1 read_success=1 read_failed=0 names_constant=1\nP_omitted: rc=0 normal=1 steps=1 warning=1\ncontrol: rc=0 normal=1 steps=1\nglobals_constants=reproduced\n"
+    },
+    "febio::multiphasic::0": {
+      "key": "febio::multiphasic::0",
+      "backend": "febio",
+      "physics": "multiphasic",
+      "pitfall_index": 0,
+      "fixture_id": "globals_solutes_creates_concentration_dofs",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "globals_solutes=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "no_solutes: rc=1 read_failed=1 names_the_dof=1 never_names_Globals_or_Solutes=1\nundeclared_c9: rc=1 read_failed=1 names_the_dof=1\nright: rc=0 normal=1 steps=10\nglobals_solutes=reproduced\n"
     },
     "febio::linear_elasticity::98": {
       "key": "febio::linear_elasticity::98",
@@ -2314,6 +2434,21 @@
       "notes": [],
       "captured_head": "control: rc=0 read_success=1 normal=1 steps=1\nspelling='isotropic Fourier': rc=1 read_failed=1 invalid_type=1\nspelling='Fourier': rc=1 read_failed=1 invalid_type=1\nspelling='isotropic_Fourier': rc=1 read_failed=1 invalid_type=1\nrejected_spellings=3 of 3\nisotropic_fourier=reproduced\n"
     },
+    "febio::plasticity::3": {
+      "key": "febio::plasticity::3",
+      "backend": "febio",
+      "physics": "plasticity",
+      "pitfall_index": 3,
+      "fixture_id": "no_kinematic_hardening_parameter",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "no_kinematic_hardening=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "extra_kinematic: rc=1 read_failed=1 named_verbatim=1 silently_ignored=0\nextra_beta: rc=1 read_failed=1 named_verbatim=1 silently_ignored=0\nright: rc=0 normal=1 steps=20\nrejected_by_name=2 of 2\nno_kinematic_hardening=reproduced\n"
+    },
     "febio::heat::2": {
       "key": "febio::heat::2",
       "backend": "febio",
@@ -2374,6 +2509,51 @@
       "notes": [],
       "captured_head": "wrong: rc=1 read_failed=1 msg[0]=1 msg[1]=1\nright: rc=0 read_success=1 normal=1 steps=2 msg_absent=1\nnu_instead_of_v=reproduced\n"
     },
+    "febio::polar_fluid::3": {
+      "key": "febio::polar_fluid::3",
+      "backend": "febio",
+      "physics": "polar_fluid",
+      "pitfall_index": 3,
+      "fixture_id": "polar_bc_and_plot_variable_names",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "polar_names=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "bad_bc_type: rc=1 read_failed=1 parse_error=1\nbad_plot_var: rc=1 read_success=1 read_failed=0 fatal_after_read=1\nright: rc=0 normal=1 steps=10\npolar_names=reproduced\n"
+    },
+    "febio::polar_fluid::1": {
+      "key": "febio::polar_fluid::1",
+      "backend": "febio",
+      "physics": "polar_fluid",
+      "pitfall_index": 1,
+      "fixture_id": "polar_viscosity_is_a_property_not_a_parameter",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "micro_viscosity_tag=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "wrong: rc=1 read_failed=1 msg[0]=1 msg[1]=1\nright: rc=0 read_success=1 normal=1 steps=10 msg_absent=1\nmicro_viscosity_tag=reproduced\n"
+    },
+    "febio::multiphasic::3": {
+      "key": "febio::multiphasic::3",
+      "backend": "febio",
+      "physics": "multiphasic",
+      "pitfall_index": 3,
+      "fixture_id": "prescribed_concentration_uses_dof_child",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "concentration_dof_child=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "sol_child: rc=1 read_failed=1 unrecognized_tag=1 not_the_dof_message=1\nundeclared_species: rc=1 read_failed=1 invalid_value=1 not_an_unrecognized_tag=1\nright: rc=0 normal=1 steps=10\nconcentration_dof_child=reproduced\n"
+    },
     "febio::heat::3": {
       "key": "febio::heat::3",
       "backend": "febio",
@@ -2403,6 +2583,21 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "module='heat' rc=-11 sigsegv=1 diagnosed=0 log_written=0\nmodule='biphasic-FSI' rc=-11 sigsegv=1 diagnosed=0 log_written=0\nmodule='Solid' rc=-11 sigsegv=1 diagnosed=0 log_written=0\nmodule='SOLID' rc=-11 sigsegv=1 diagnosed=0 log_written=0\npositive_control_solid_reads=1\nunknown_module_segfault_count=4\n"
+    },
+    "febio::plasticity::1": {
+      "key": "febio::plasticity::1",
+      "backend": "febio",
+      "physics": "plasticity",
+      "pitfall_index": 1,
+      "fixture_id": "von_mises_plasticity_parameter_names",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "plasticity_names=reproduced"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "J2_plasticity: rc=1 read_failed=1 invalid_type=1 no_warning=1\nparameter_Y0: rc=1 read_failed=1 named_verbatim=1 silently_accepted=0\nparameter_yield_stress: rc=1 read_failed=1 named_verbatim=1 silently_accepted=0\nright: rc=0 normal=1 steps=20\nwrong_names_rejected_by_name=2 of 2\nplasticity_names=reproduced\n"
     },
     "febio::linear_elasticity::6": {
       "key": "febio::linear_elasticity::6",

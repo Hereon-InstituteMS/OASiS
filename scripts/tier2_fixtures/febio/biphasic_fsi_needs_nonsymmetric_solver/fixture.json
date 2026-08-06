@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic_fsi#3. <solver type=\"fluid-FSI\"/> with no children inherits the skyline default: the deck reads SUCCESS and then aborts with the matrix-format ERROR box, 0 completed steps, error termination, exit 1 (matched on the fragment 'does not support the requested' because the box wraps). Separately, <linear_solver type=\"schur\"/> is refused at parse with 'Component \"linear_solver\" needs to have property \"A_solver\" defined'. Positive control: the shipped template, unmodified, which reaches normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "biphasic_fsi",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "biphasic_fsi_solver=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

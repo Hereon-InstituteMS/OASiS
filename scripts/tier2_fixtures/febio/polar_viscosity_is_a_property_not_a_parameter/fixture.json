@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::polar_fluid#1. <micro_viscosity>0.001</micro_viscosity> as a parameter of `polar fluid` gives 'tag \"micro_viscosity\" (line N) : unrecognized tag' with 'Reading file ...FAILED!'; the registered form is the <polar type=\"polar linear\"> property. Positive control: the shipped template, unmodified, which reaches normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "polar_fluid",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "micro_viscosity_tag=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

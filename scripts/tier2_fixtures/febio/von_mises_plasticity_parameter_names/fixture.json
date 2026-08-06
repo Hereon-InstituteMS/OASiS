@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::plasticity#1, which is itself a correction of an earlier catalogue entry. Executed: type=\"J2 plasticity\" gives 'tag \"material\" (line N) : invalid value for attribute \"type\"'; <Y0> and <yield_stress> each give 'tag \"<name>\" (line N) : unrecognized tag' with the name echoed verbatim. The fixture additionally requires that NO wrong spelling is silently accepted and that no WARNING appears \u2014 the old entry claimed a warning and a silent default to zero, and that is what these assertions rule out. Positive control: the shipped template, unmodified, which reaches normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "plasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "plasticity_names=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

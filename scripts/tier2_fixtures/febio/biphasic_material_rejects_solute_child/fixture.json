@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::multiphasic#1. A <solute> child inside a `biphasic` material gives 'tag \"solute\" (line N) : unrecognized tag' \u2014 and the fixture asserts the word multiphasic appears nowhere, which is the specific unhelpfulness the pitfall records. Positive control: the shipped template, unmodified, which reaches normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "multiphasic",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "solute_in_biphasic=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

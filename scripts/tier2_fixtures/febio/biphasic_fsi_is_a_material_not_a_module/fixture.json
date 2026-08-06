@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic_fsi#0. <Module type=\"biphasic-FSI\"/> is killed by SIGSEGV: the fixture asserts the signal AND every absence the claim rests on \u2014 no SUCCESS!, no FAILED!, no ERROR box, no .log file, stdout stopping mid-line at 'Reading file in.feb ...'. The positive control is the shipped biphasic_fsi_3d_block template, which differs only in the module string and reaches normal termination, so the crash is attributable to that string alone. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "biphasic_fsi",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "biphasic_fsi_module_segfault=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

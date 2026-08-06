@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::polar_fluid#3. Two invented names, caught at DIFFERENT stages: <bc type=\"zero micro-rotation\"> is a parse error ('tag \"bc\" (line N) : invalid value for attribute \"type\"'), while <var type=\"micro rotation\"/> reads SUCCESS and only then aborts with 'FATAL ERROR: Output variable \"micro rotation\" is not defined'. The fixture asserts read_success on the second, which is the stage difference the claim is about. Positive control: the shipped template, unmodified, which reaches normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF).",
+  "backend": "febio",
+  "physics": "polar_fluid",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "polar_names=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}
