@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics heat#4: Crank-Nicolson rings in TIME on a sharp transient and a min/max check on the field will not see it. T0 = 0, left wall jumps to 1 at t = 0+, other walls insulated. The nodal history at the first free node is scored exactly as the claim describes: differences d_n, count of sign reversals, alternation amplitude. Backward Euler must give zero reversals; Crank-Nicolson must give many. The claim's two corrections are checked too: the field never leaves [0, 1], so a range check is blind. Mutation control: T2_MUTATE=1 runs theta = 1 (backward Euler) in the slot where the pathology is expected; the reversals vanish. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "cn_rings_in_time=True",
+    "be_monotone=True",
+    "cn_field_stays_in_physical_range=True",
+    "VERDICT=cn_rings_in_time_while_field_range_looks_fine"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_ringing_detected"
+  ],
+  "timeout_seconds": 300
+}

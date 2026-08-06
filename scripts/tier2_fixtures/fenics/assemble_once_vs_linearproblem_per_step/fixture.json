@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics heat#9: the theta-method LHS is time-independent, and re-solving through LinearProblem every step re-assembles and re-factorises it. The answer is identical, so only the clock shows the mistake. Three loops over the same transient problem: assemble+factorise once and reuse the KSP; keep one LinearProblem and call .solve() each step; construct a fresh LinearProblem each step. The fixture asserts the ORDERING of the wall-times and that all three end at the same integral \u2014 no absolute timing is pinned, because that would only be true on this machine. Mutation control: T2_MUTATE=1 makes the \"reuse\" loop rebuild a LinearProblem every step as well, so the speed advantage disappears. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 9,
+  "mode": "python",
+  "expect_in_output": [
+    "all_three_give_the_same_answer=True",
+    "reuse_at_least_2x_faster_and_fresh_is_slowest=True",
+    "VERDICT=only_wall_time_reveals_the_reassembly"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_timing_separation"
+  ],
+  "timeout_seconds": 600
+}

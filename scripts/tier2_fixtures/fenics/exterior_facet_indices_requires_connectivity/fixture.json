@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics heat#8: mesh.exterior_facet_indices needs the facet-to-cell connectivity to exist, and says so. Nothing else may touch the mesh first \u2014 a prior locate_entities_boundary builds that connectivity as a side effect and the error never appears. Mutation control: T2_MUTATE=1 calls create_connectivity(tdim-1, tdim) first. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "raised=True",
+    "Facet to cell connectivity has not been computed",
+    "cure_works=True",
+    "VERDICT=exterior_facet_indices_is_eager"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=exterior_facet_indices_is_lazy"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics heat#3: the adiabatic-cell test, and what each mass-term mistake actually looks like. All walls natural, uniform T0 = 1, no source: the answer must stay T = 1 for ever. The claim's IMPORTANT CORRECTION is the point of this fixture \u2014 flipping the sign of the old-time mass term does NOT blow up. max|T| stays exactly 1 while int(T dx) alternates sign every step. A different mistake, dropping the mass term from the LHS, leaves the singular pure-Neumann stiffness matrix and does blow up. The two must be distinguishable, otherwise the diagnosis is a guess. Mutation control: T2_MUTATE=1 uses the correct positive sign on both sides; the alternation disappears. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "sign_flip_peak_stays_one=True",
+    "sign_flip_integral_alternates=True",
+    "no_lhs_mass_blows_up=True",
+    "correct_form_holds_T_equal_one=True",
+    "VERDICT=sign_flip_alternates_bounded_missing_mass_blows_up"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=variants_not_distinguished"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics heat#6: fem.Constant is a constant. A callable or a SpatialCoordinate expression is rejected; a spatially varying property has to be a fem.Function on its own space. Mutation control: T2_MUTATE=1 interpolates the same law into a fem.Function, which is the documented cure, and nothing raises. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "constant_from_callable_raised=True",
+    "constant_from_spatialcoordinate_raised=True",
+    "function_route_works=True",
+    "VERDICT=constant_rejects_callable_and_expression"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=constant_accepted_non_constant"
+  ]
+}
