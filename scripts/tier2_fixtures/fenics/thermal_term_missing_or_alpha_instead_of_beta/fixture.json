@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#0: temperature enters the elasticity form only through the thermal term, and that term must carry the thermal stress modulus beta = (3*lam + 2*mu)*alpha, not alpha. Two wrong variants are run against the same clamped-left square with T = 300 + 100*x and T_ref = 300, SI steel constants. (a) Thermal term omitted: nothing is raised and the returned displacement is BIT-EXACTLY zero -- np.all(uh.x.array == 0.0) is True -- but only because nothing else loads the body. Adding gravity to the same omitted-term model gives a non-zero displacement that is silently just the isothermal answer, so \"zero displacement\" is a tell only for a thermally-loaded-only model. (b) alpha used where (3*lam + 2*mu)*alpha belongs: nothing is raised and max|u| falls by exactly the factor 3*lam + 2*mu (5.25e11 for these constants), i.e. to the 1e-15 range, which reads as zero on any plot. Mutation control: T2_MUTATE=1 puts beta*(T - T_ref)*div(v)*dx into L in both variants, so both become the correct model. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "omitted_thermal_term_is_bit_exactly_zero=True",
+    "alpha_only_is_smaller_by_3lam_plus_2mu=True",
+    "alpha_only_reads_as_zero=True",
+    "body_force_hides_the_missing_thermal_term=True",
+    "VERDICT=thermal_term_must_carry_3lam_plus_2mu_times_alpha"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=thermal_term_errors_were_visible"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#7. Tier-2 for fenics navier_stokes#7: a Dirichlet condition on a sub-space of a mixed (Taylor-Hood) space needs BOTH a Function on the COLLAPSED sub-space and the tuple form of locate_dofs_*. Three wrong spellings are tried on one Taylor-Hood space -- a raw numpy array, a fem.Constant, and a Function on the collapsed space combined with a single (non-tuple) dof array. Observed signal: all three raise the same TypeError, beginning \"__init__(): incompatible function arguments. The following argument types are supported:\", listing four overloads, and ending with a line beginning \"Invoked with types: dolfinx.cpp.fem.DirichletBC_float64,\". The trap the fixture also pins: a Function built on the UNCOLLAPSED mixed space W does NOT raise, so the absence of a TypeError is not proof that the BC is right. The fixture solves a Stokes lid-driven cavity twice, once with the uncollapsed-W Function and once with the correct collapsed Function, and shows that the silently-accepted spelling imposes the wrong boundary velocity. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "__init__(): incompatible function arguments. The following argument types are supported:",
+    "Invoked with types: dolfinx.cpp.fem.DirichletBC_float64,",
+    "all_three_raise_the_same_overload_list=True",
+    "all_three_invoked_line_names_DirichletBC_float64=True",
+    "uncollapsed_W_Function_is_accepted_without_error=True",
+    "accepted_bc_lost_the_lid_velocity=True",
+    "VERDICT=subspace_bc_needs_collapsed_function_and_dof_pair"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=subspace_bc_spellings_agree"
+  ]
+}
