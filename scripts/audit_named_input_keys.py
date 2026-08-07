@@ -49,6 +49,7 @@ just another unverified claim.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -212,6 +213,54 @@ def key_present(key: str, roots: list[Path]) -> bool:
     return bool(p.stdout.strip())
 
 
+# A YAML/XML key sitting at the start of a line inside a template string. This
+# is an unambiguous key POSITION — no context heuristic needed, and therefore
+# almost no false positives.
+_TEMPLATE_KEY = re.compile(r"^[ \t]*([A-Z][A-Z0-9_]{2,})[ \t]*:", re.M)
+
+
+def template_keys(backend: str) -> list[tuple[Path, str]]:
+    """Keys the deck TEMPLATES emit — the most dangerous surface in the corpus.
+
+    `collect_entries` only returns strings containing "Signal:", i.e. warning
+    text. Templates carry no Signal clause, so the whole set of keys OASiS
+    actually WRITES INTO INPUT FILES was invisible to this audit. `AREA0` was
+    caught only because it happened to appear in a warning as well as in the
+    arterial-network template; a key that appeared solely in a template would
+    have passed silently.
+
+    That is the same mistake `test_assembled_payload_is_clean` was written to
+    correct one level up — an audit can be rigorous and still be pointed at the
+    wrong surface. A wrong key in prose misleads a reader who can push back. A
+    wrong key in a template is written into the deck verbatim, every run.
+    """
+    be_dir = REPO / "src" / "backends" / backend
+    out: list[tuple[Path, str]] = []
+    if not be_dir.is_dir():
+        return out
+    for py in sorted(be_dir.rglob("*.py")):
+        try:
+            tree = ast.parse(py.read_text(errors="ignore"))
+        except (SyntaxError, OSError):
+            continue
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Constant)
+                    and isinstance(node.value, str)):
+                continue
+            text = node.value
+            # A template is multi-line and has several key-looking lines; a
+            # sentence that merely starts with a capitalised word does not.
+            if text.count("\n") < 2:
+                continue
+            hits = _TEMPLATE_KEY.findall(text)
+            if len(hits) < 2:
+                continue
+            for k in hits:
+                if k not in _STOPWORDS:
+                    out.append((py, k))
+    return out
+
+
 def audit(backend: str, verbose: bool = False) -> dict:
     src_roots, corpus_roots, notes = search_roots(backend)
     roots = list(src_roots) + list(corpus_roots)
@@ -250,6 +299,12 @@ def audit(backend: str, verbose: bool = False) -> dict:
             if _is_retracted(entry, i, j) or _absence_asserted(entry, i, j):
                 continue          # "there is no SOUNDSPEED key" is the fix
             seen.setdefault(tok, []).append((str(path), signal_of(entry)[:90]))
+
+    # Template keys are added with their own marker: they are the surface that
+    # gets written into a deck, so an unresolved one is strictly more serious
+    # than an unresolved one in prose.
+    for path, tok in template_keys(backend):
+        seen.setdefault(tok, []).append((str(path), "[DECK TEMPLATE]"))
 
     for tok in sorted(seen):
         res["checked"] += 1
