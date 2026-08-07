@@ -3853,19 +3853,42 @@ def register_consolidated_tools(mcp: FastMCP):
         # residual already says NOT CONVERGED it says everything, and repeating
         # it per block just buries the findings that are specific.
         #
-        # Judged against the SAME criterion as the global norm, for the same
-        # reason check_convergence is above. This check asks whether a block is
-        # still moving by more than the tolerance the global norm was held to;
-        # asking a Monte-Carlo participant's blocks to still themselves below a
-        # tol that sits under the sampling noise is the original impossible
-        # demand, one level down. Measured before this line was fixed: a
-        # correct stochastic coupling converged at a floor of 8.3e-03 and was
-        # stamped NOT VERIFIED because its blocks were "still changing by more
-        # than 1.0e-08 relative".
-        if r.converged:
-            f, n = check_residual_blocks(
-                r.block_residuals,
-                r.tol_effective if r.tol_effective else tol)
+        # A MEASURED FLOOR DOES NOT TRANSFER TO THIS STATISTIC, so under one
+        # this check reports coverage rather than a verdict. Two goes were
+        # needed to get that right and the wrong one is worth recording. It
+        # first compared the blocks against the requested `tol`, which faulted a
+        # run held to 8.3e-03 for blocks moving by more than 1.0e-08. Feeding it
+        # `tol_effective` instead looked like the fix and is not: the driver
+        # measures the floor of ONE statistic, the global L2 residual over the
+        # stacked export vector, while a block residual is the WORST ENTRY-WISE
+        # relative change of one block. Those have different noise floors and
+        # the second is far larger — a DSMC surface flux has entries near zero
+        # whose relative change between samples is order 1, measured at
+        # gas.normal_fluxes = 1.00e+00 against an effective limit of 6.9e-01 on
+        # a coupling that is right.
+        #
+        # So there is no threshold here that means anything, and inventing one
+        # would be the softening this whole branch refuses. Say what is missing
+        # instead: scale masking was not ruled out, and it would take a per-block
+        # floor that nothing measures.
+        if r.converged and r.noise_floor:
+            not_run.append(
+                "per-block convergence: NOT CHECKED on a run judged at a "
+                f"measured noise floor ({r.noise_floor:.2e}). That floor is for "
+                "the GLOBAL residual — one L2 norm over the stacked export "
+                "vector — while this check compares the worst ENTRY-WISE "
+                "relative change of each block, a statistic with its own, much "
+                "larger floor that nothing here measures. Comparing the two "
+                "faults correct stochastic couplings, and picking a threshold "
+                "would be guessing. Consequence: scale masking in the global "
+                "residual has NOT been ruled out for this run — the per-block "
+                "residuals are returned in `block_residuals`, and the decisive "
+                "check remains an independent reference (`monolithic`)."
+                + " Blocks: "
+                + ", ".join(f"{k}={v:.2e}" for k, v in
+                            sorted(r.block_residuals.items()) if v == v))
+        elif r.converged:
+            f, n = check_residual_blocks(r.block_residuals, tol)
             val += f; not_run += n
         names = list(r.exports)
         if len(names) == 2:
