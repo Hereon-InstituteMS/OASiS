@@ -1,8 +1,8 @@
 {
   "summary": {
-    "n_fixtures": 206,
-    "passed": 203,
-    "failed": 3,
+    "n_fixtures": 178,
+    "passed": 176,
+    "failed": 2,
     "harness_pending": 0,
     "skipped": 0
   },
@@ -12,7 +12,7 @@
       "backend": "kratos",
       "physics": "auxiliary_overview",
       "pitfall_index": 102,
-      "fixture_id": "catalog_template_executes",
+      "fixture_id": "kratos/catalog_template_executes",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -151,7 +151,7 @@
       "backend": "kratos",
       "physics": "auxiliary_overview",
       "pitfall_index": 99,
-      "fixture_id": "generate_input_no_unhandled_exceptions",
+      "fixture_id": "kratos/generate_input_no_unhandled_exceptions",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -168,7 +168,7 @@
       "backend": "kratos",
       "physics": "auxiliary_overview",
       "pitfall_index": 100,
-      "fixture_id": "mcp_tool_surface_coverage",
+      "fixture_id": "kratos/mcp_tool_surface_coverage",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -191,7 +191,7 @@
       "backend": "kratos",
       "physics": "auxiliary_overview",
       "pitfall_index": 101,
-      "fixture_id": "mms_cross_backend_consistency",
+      "fixture_id": "kratos/mms_cross_backend_consistency",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -204,62 +204,12 @@
       "notes": [],
       "captured_head": "poisson_eval_pts_count=9\nmax_skfem_minus_scipy=5.3598e-04\nmax_skfem_minus_exact=8.0257e-04\nmax_scipy_minus_exact=1.3386e-03\n  pt=(0.25,0.25) u_ex=0.5000 skfem=0.4995 scipy=0.4992\n  pt=(0.50,0.50) u_ex=1.0000 skfem=0.9992 scipy=0.9987\n  pt=(0.75,0.75) u_ex=0.5000 skfem=0.4995 scipy=0.4992\n"
     },
-    "dealii::dg_transport::0": {
-      "key": "dealii::dg_transport::0",
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 0,
-      "fixture_id": "catalog_symbols_vs_headers",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "include_dir=",
-        "catalog_missing=[]",
-        "phantom_typo_present=False",
-        "real_integrate_difference_present=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "include_dir=~/miniconda3/envs/ofa-dealii/include/deal.II\nheaders_scanned=536\ncatalog_missing=[]\nphantom_typo_present=False\nreal_integrate_difference_present=True\n"
-    },
-    "dealii::dg_transport::5": {
-      "key": "dealii::dg_transport::5",
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 5,
-      "fixture_id": "dg_affineconstraints_noop",
-      "mode": "compile_and_run",
-      "status": "passed",
-      "expect_matched": [
-        "make_hanging_node_constraints_on_DG",
-        "n_constraints=0"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "make_hanging_node_constraints_on_DG: n_constraints=0 (n_active_cells=7, n_dofs=28)\n"
-    },
-    "dealii::dg_transport::6": {
-      "key": "dealii::dg_transport::6",
-      "backend": "dealii",
-      "physics": "dg_transport",
-      "pitfall_index": 6,
-      "fixture_id": "dg_interpolate_boundary_silent",
-      "mode": "compile_and_run",
-      "status": "passed",
-      "expect_matched": [
-        "interpolate_boundary_values_on_DG",
-        "boundary_values_size=0"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "interpolate_boundary_values_on_DG: boundary_values_size=0 (n_dofs=64, n_active_cells=16)\n"
-    },
     "dealii::poisson::0": {
       "key": "dealii::poisson::0",
       "backend": "dealii",
       "physics": "poisson",
       "pitfall_index": 0,
-      "fixture_id": "dof_handler_zero_cells",
+      "fixture_id": "dealii/dof_handler_zero_cells",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -275,7 +225,7 @@
       "backend": "dealii",
       "physics": "linear_elasticity",
       "pitfall_index": 5,
-      "fixture_id": "gmsh_second_order_rejected",
+      "fixture_id": "dealii/gmsh_second_order_rejected",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -292,7 +242,7 @@
       "backend": "dealii",
       "physics": "linear_elasticity",
       "pitfall_index": 92,
-      "fixture_id": "grid_in_malformed_format",
+      "fixture_id": "dealii/grid_in_malformed_format",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -307,7 +257,7 @@
       "backend": "dealii",
       "physics": "linear_elasticity",
       "pitfall_index": 4,
-      "fixture_id": "grid_in_unsupported_cell_type",
+      "fixture_id": "dealii/grid_in_unsupported_cell_type",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -318,28 +268,12 @@
       "notes": [],
       "captured_head": "Caught exception of type: N6dealii18StandardExceptions10ExcMessageE\nwhat(): \n--------------------------------------------------------\nAn error occurred in line <1993> of file </home/conda/feedstock_root/build_artifacts/dealii_1582272985224/work/source/grid/grid_in.cc> in function\n    void dealii::GridIn<dim, spacedim>::read_msh(std::istream&) [with int dim = 2; int spacedim = 2; std::istream = std::basic_istream<char>]\nThe violated condition was: \n    cell_type != 2\nAdditional information: \n    Found triangles while reading a file in gmsh format. deal.II does not support triangles\n--------------------------------------------------------\n\n"
     },
-    "dealii::poisson::3": {
-      "key": "dealii::poisson::3",
-      "backend": "dealii",
-      "physics": "poisson",
-      "pitfall_index": 3,
-      "fixture_id": "hanging_nodes_no_condense",
-      "mode": "compile_and_run",
-      "status": "passed",
-      "expect_matched": [
-        "SolverControl",
-        "iterative method"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "SolverControl: \n--------------------------------------------------------\nAn error occurred in line <455> of file <~/Schreibtisch/dealii-debug/include/deal.II/lac/solver_cg.h> in function\n    void dealii::SolverCG<VectorType>::solve(const MatrixType&, VectorType&, const VectorType&, const PreconditionerType&) [with MatrixType = dealii::SparseMatrix<double>; PreconditionerType = dealii::PreconditionIdentity; VectorType = dealii::Vector<double>]\nThe violated condition was: \n    false\nAdditional information: \nIterative method reported convergence failure in step 20. The residual in the last step was 1.61538e-05.\n\nThis error message can indicate that you have simply not allowed a sufficiently large number of iterations for your iterative solver to converge. This often happens when you increase "
-    },
     "dealii::helmholtz::0": {
       "key": "dealii::helmholtz::0",
       "backend": "dealii",
       "physics": "helmholtz",
       "pitfall_index": 0,
-      "fixture_id": "helmholtz_cg_resonant_breakdown",
+      "fixture_id": "dealii/helmholtz_cg_resonant_breakdown",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -355,7 +289,7 @@
       "backend": "dealii",
       "physics": "poisson",
       "pitfall_index": 1,
-      "fixture_id": "hyper_cube_single_boundary_id",
+      "fixture_id": "dealii/hyper_cube_single_boundary_id",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -366,31 +300,12 @@
       "notes": [],
       "captured_head": "GridTools-equivalent enumeration: 1 unique boundary_id(s):\n  boundary_id = 0\n"
     },
-    "dealii::adaptive_refinement::0": {
-      "key": "dealii::adaptive_refinement::0",
-      "backend": "dealii",
-      "physics": "adaptive_refinement",
-      "pitfall_index": 0,
-      "fixture_id": "install_feature_flags_visible",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "config_h_path=",
-        "dealii_version=",
-        "features_on=",
-        "features_off=",
-        "catalog_claims_install_doesnt_support="
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "config_h_path=~/miniconda3/envs/ofa-dealii/include/deal.II/base/config.h\ndealii_version=9.1.1\nfeatures_on=['DEAL_II_WITH_MUPARSER']\nfeatures_off=['DEAL_II_WITH_HDF5', 'DEAL_II_WITH_LAPACK', 'DEAL_II_WITH_METIS', 'DEAL_II_WITH_MPI', 'DEAL_II_WITH_P4EST', 'DEAL_II_WITH_PETSC', 'DEAL_II_WITH_SLEPC', 'DEAL_II_WITH_TRILINOS']\ncatalog_claims_install_doesnt_support=['p4est-distributed AMR claim (data/dealii_knowledge.py adaptive_refinement.parallel)', 'MPI-parallel Poisson generator (parallel.py)', 'PETSc MUMPS / PETScWrappers solver claims', 'Trilinos Amesos solver claims', 'SLEPc eigenvalue solver claims']\n"
-    },
     "dealii::linear_elasticity::98": {
       "key": "dealii::linear_elasticity::98",
       "backend": "dealii",
       "physics": "linear_elasticity",
       "pitfall_index": 98,
-      "fixture_id": "iterative_method_failed_to_converge",
+      "fixture_id": "dealii/iterative_method_failed_to_converge",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -406,7 +321,7 @@
       "backend": "dealii",
       "physics": "poisson",
       "pitfall_index": 2,
-      "fixture_id": "poisson_hyper_rectangle_colorize",
+      "fixture_id": "dealii/poisson_hyper_rectangle_colorize",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -422,7 +337,7 @@
       "backend": "dealii",
       "physics": "stokes",
       "pitfall_index": 0,
-      "fixture_id": "solvercg_on_indefinite",
+      "fixture_id": "dealii/solvercg_on_indefinite",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -437,7 +352,7 @@
       "backend": "dealii",
       "physics": "hyperelasticity",
       "pitfall_index": 9,
-      "fixture_id": "subdivided_rect_no_colorize",
+      "fixture_id": "dealii/subdivided_rect_no_colorize",
       "mode": "compile_and_run",
       "status": "passed",
       "expect_matched": [
@@ -448,30 +363,12 @@
       "notes": [],
       "captured_head": "GridGenerator::subdivided_hyper_rectangle (colorize=false): 1 unique boundary_id(s)\n  boundary_id = 0\n"
     },
-    "dune::mixed_methods::0": {
-      "key": "dune::mixed_methods::0",
-      "backend": "dune",
-      "physics": "mixed_methods",
-      "pitfall_index": 0,
-      "fixture_id": "raviartThomas_camelcase_not_lowercase",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "raviartThomas_camelcase_def_present=True",
-        "raviartthomas_lowercase_def_present=False",
-        "raviartthomas_hh_include_present_in_text=True",
-        "catalog_lowercase_count=0"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "spaces_py_source=~/miniconda3/envs/dune-fem-env/lib/python3.12/site-packages/dune/fem/space/_spaces.py\nraviartThomas_camelcase_def_present=True\nraviartthomas_lowercase_def_present=False\nraviartthomas_hh_include_present_in_text=True\ncatalog_lowercase_count=0\nInvalid MIT-MAGIC-COOKIE-1 key"
-    },
     "fenics::linear_elasticity::1": {
       "key": "fenics::linear_elasticity::1",
       "backend": "fenics",
       "physics": "linear_elasticity",
       "pitfall_index": 1,
-      "fixture_id": "array_size_mismatch",
+      "fixture_id": "fenics/array_size_mismatch",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -482,29 +379,12 @@
       "notes": [],
       "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/array_size_mismatch/source.py\", line 21, in main\n    u.x.array[:] = np.zeros(2 * n)\n    ~~~~~~~~~^^^\nValueError: could not broadcast input array from shape (50,) into shape (25,)\n"
     },
-    "fenics::navier_stokes::3": {
-      "key": "fenics::navier_stokes::3",
-      "backend": "fenics",
-      "physics": "navier_stokes",
-      "pitfall_index": 3,
-      "fixture_id": "bc_subspace_needs_collapsed_function",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "TypeError",
-        "incompatible function arguments",
-        "dirichletbc"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/bcs.py\", line 229, in dirichletbc\n    bc = bctype(_value, dofs, V)\n         ^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: __init__(): incompatible function arguments. The following argument types are supported:\n    1. __init__(self, g: ndarray[dtype=float64, order='C', writable=False], dofs: ndarray[dtype=int32, shape=(*), order='C', writable=False], V: dolfinx.cpp.fem.FunctionSpace_float64) -> None\n    2. __init__(self, g: dolfinx.cpp.fem.Constant_float64, dofs: ndarray[dtype=int32, shape=(*), order='C', writable=False], V: dolfinx.cpp.fem.FunctionSpace_float64) -> None\n    3. __init__(self, g: dolfinx.cpp.fem.Function_float64, dofs: ndarray[dtype=int32, shape=(*), order='C', writable=Fa"
-    },
     "fenics::maxwell::92": {
       "key": "fenics::maxwell::92",
       "backend": "fenics",
       "physics": "maxwell",
       "pitfall_index": 92,
-      "fixture_id": "curl_on_scalar_space",
+      "fixture_id": "fenics/curl_on_scalar_space",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -520,7 +400,7 @@
       "backend": "fenics",
       "physics": "linear_elasticity",
       "pitfall_index": 99,
-      "fixture_id": "elasticity_mms_convergence",
+      "fixture_id": "fenics/elasticity_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -532,107 +412,12 @@
       "notes": [],
       "captured_head": "P1_nx32_l2err=8.993059e-03_tol=1e-02\nP2_nx32_l2err=5.881655e-05_tol=1e-04\nP1_eoc_h16_to_h32=1.925_expected=2.0\n"
     },
-    "fenics::biharmonic::0": {
-      "key": "fenics::biharmonic::0",
-      "backend": "fenics",
-      "physics": "biharmonic",
-      "pitfall_index": 0,
-      "fixture_id": "functionspace_factory_vs_class",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "factory_returns_FunctionSpace=True",
-        "factory_callable=True",
-        "class_exists=True",
-        "class_direct_call_raises_typeerror=True",
-        "class_diag_has_cppv=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "factory_returns_FunctionSpace=True\nfactory_callable=True\nclass_exists=True\nclass_direct_call_raises_typeerror=True\nclass_diag_has_cppv=True\n"
-    },
-    "fenics::stokes::7": {
-      "key": "fenics::stokes::7",
-      "backend": "fenics",
-      "physics": "stokes",
-      "pitfall_index": 7,
-      "fixture_id": "gmshio_install_gap_diagnostic",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "gmshio_present=",
-        "gmsh_present=",
-        "catalog_uses_gmshio="
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "gmshio_present=False\ngmsh_pyver=4.15.2\ngmsh_present=True\ncatalog_uses_gmshio=['src/backends/fenics/generators/advanced.py (model_to_mesh import for Gmsh-driven workflows)']\n"
-    },
-    "fenics::helmholtz::0": {
-      "key": "fenics::helmholtz::0",
-      "backend": "fenics",
-      "physics": "helmholtz",
-      "pitfall_index": 0,
-      "fixture_id": "helmholtz_maxwell_nearly_incomp_smoke",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "helmholtz_chars=",
-        "maxwell_chars=",
-        "nearly_incompressible_elasticity_chars=",
-        "helmholtz_uses_basix_ufl=True",
-        "helmholtz_has_dirichlet=True",
-        "maxwell_uses_N1E=True",
-        "maxwell_uses_basix_family=True",
-        "maxwell_has_curl=True",
-        "nearly_incomp_uses_mixed_element=True",
-        "nearly_incomp_has_stabilization=True",
-        "nearly_incomp_has_taylor_hood_p2_p1=True",
-        "fracture_chars=",
-        "fracture_has_two_fields_u_and_d=True",
-        "fracture_has_damage_irreversibility=True",
-        "fracture_has_phase_field_length_scale=True",
-        "fracture_has_alt_min_two_linearproblems=True",
-        "stokes_darcy_chars=",
-        "stokes_darcy_uses_subdomain_measure=True",
-        "stokes_darcy_uses_meshtags=True",
-        "stokes_darcy_has_brinkman_penalty=True",
-        "stokes_darcy_uses_taylor_hood=True",
-        "stokes_darcy_has_two_subdomain_dxs=True",
-        "forbidden_ufl_FiniteElement=False",
-        "forbidden_ufl_VectorElement=False",
-        "forbidden_ufl_MixedElement=False"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "helmholtz_chars=1512\nmaxwell_chars=1767\nnearly_incompressible_elasticity_chars=2121\nfracture_chars=3905\nstokes_darcy_chars=3815\nhelmholtz_uses_basix_ufl=True\nhelmholtz_has_dirichlet=True\nhelmholtz_has_indefinite_solver=True\nmaxwell_uses_N1E=True\nmaxwell_uses_basix_family=True\nmaxwell_has_curl=True\nnearly_incomp_uses_mixed_element=True\nnearly_incomp_has_stabilization=True\nnearly_incomp_has_taylor_hood_p2_p1=True\nfracture_has_two_fields_u_and_d=True\nfracture_has_damage_irreversibility=True\nfracture_has_phase_field_length_scale=True\nfracture_has_alt_min_two_linearproblems=True\nstokes_darcy_uses_subdomain_measure=True\nstokes_darcy_uses_meshtags=True\nstokes_darcy_has_brinkman_penalty=True\nstokes_darcy_uses_taylor_hood=True\nstokes_darcy_has_two_subdomain_dxs=True\nforbidden_ufl_FiniteElement=Fals"
-    },
-    "fenics::magnetostatics::0": {
-      "key": "fenics::magnetostatics::0",
-      "backend": "fenics",
-      "physics": "magnetostatics",
-      "pitfall_index": 0,
-      "fixture_id": "interpolation_points_is_property",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "has_interpolation_points=True",
-        "interpolation_points_type=ndarray",
-        "interpolation_points_callable=False",
-        "call_as_method_raises_typeerror=True",
-        "call_as_method_diag_has_not_callable=True",
-        "property_shape_ok=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "has_interpolation_points=True\ninterpolation_points_type=ndarray\ninterpolation_points_callable=False\ncall_as_method_raises_typeerror=True\ncall_as_method_diag_has_not_callable=True\nproperty_shape_ok=True\n"
-    },
     "fenics::nonlinear_pde::0": {
       "key": "fenics::nonlinear_pde::0",
       "backend": "fenics",
       "physics": "nonlinear_pde",
       "pitfall_index": 0,
-      "fixture_id": "nonlinear_problem_signature_kwargs",
+      "fixture_id": "fenics/nonlinear_problem_signature_kwargs",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -651,7 +436,7 @@
       "backend": "fenics",
       "physics": "poisson",
       "pitfall_index": 99,
-      "fixture_id": "poisson_mms_convergence",
+      "fixture_id": "fenics/poisson_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -669,7 +454,7 @@
       "backend": "fenics",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
-      "fixture_id": "scalar_space_for_elasticity",
+      "fixture_id": "fenics/scalar_space_for_elasticity",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -685,7 +470,7 @@
       "backend": "fenics",
       "physics": "eigenvalue",
       "pitfall_index": 0,
-      "fixture_id": "slepc_and_petsc_scalar_type",
+      "fixture_id": "fenics/slepc_and_petsc_scalar_type",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -702,7 +487,7 @@
       "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 0,
-      "fixture_id": "stokes_basix_element_construction",
+      "fixture_id": "fenics/stokes_basix_element_construction",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -721,7 +506,7 @@
       "backend": "fenics",
       "physics": "stokes",
       "pitfall_index": 99,
-      "fixture_id": "stokes_mms_convergence",
+      "fixture_id": "fenics/stokes_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -734,29 +519,12 @@
       "notes": [],
       "captured_head": "P2_u_h32_l2err=1.399777e-04_tol=5e-04\nP1_p_h32_l2err=4.427915e-04_tol=5e-03\nP2_u_eoc_h16_to_h32=2.996_expected=3.0\nP1_p_eoc_h16_to_h32=2.634_expected=2.0\n"
     },
-    "fenics::stokes::1": {
-      "key": "fenics::stokes::1",
-      "backend": "fenics",
-      "physics": "stokes",
-      "pitfall_index": 1,
-      "fixture_id": "ufl_element_classes_removed_use_basix_ufl",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "removed_in_ufl={'FiniteElement': False, 'VectorElement': False, 'MixedElement': False, 'TensorElement': False}",
-        "basix_ufl_present={'element': True, 'mixed_element': True, 'blocked_element': True}",
-        "taylor_hood_dim="
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "removed_in_ufl={'FiniteElement': False, 'VectorElement': False, 'MixedElement': False, 'TensorElement': False}\nbasix_ufl_present={'element': True, 'mixed_element': True, 'blocked_element': True}\ntaylor_hood_dim=59\ndolfinx_version=0.10.0\nufl_version=2025.2.1\n"
-    },
     "fenics::hyperelasticity::3": {
       "key": "fenics::hyperelasticity::3",
       "backend": "fenics",
       "physics": "hyperelasticity",
       "pitfall_index": 3,
-      "fixture_id": "ufl_variable_diff_tangent",
+      "fixture_id": "fenics/ufl_variable_diff_tangent",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -767,45 +535,12 @@
       "notes": [],
       "captured_head": "F_var_type=Variable\nP_type=VariableDerivative\n"
     },
-    "fenics::linear_elasticity::8": {
-      "key": "fenics::linear_elasticity::8",
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 8,
-      "fixture_id": "unknown_element_family",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "ValueError",
-        "Unknown element family"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "Traceback (most recent call last):\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/finite_element.py\", line 986, in string_to_family\n    return families[family]\n           ~~~~~~~~^^^^^^^^\nKeyError: 'NotAFamily'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/unknown_element_family/source.py\", line 23, in main\n    functionspace(mesh, (\"NotAFamily\", 1))\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/fem/function.py\", line 604, in functionspace\n    ufl_e = basix.ufl.element(\n            ^^^^^^^^^^^^^^^^^^\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/basix/ufl.py\", line 1613, in element\n    famil"
-    },
-    "fenics::linear_elasticity::3": {
-      "key": "fenics::linear_elasticity::3",
-      "backend": "fenics",
-      "physics": "linear_elasticity",
-      "pitfall_index": 3,
-      "fixture_id": "xdmf_degree_mismatch",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "RuntimeError",
-        "Degree of output Function must be same as mesh degree",
-        "interpolated"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "Traceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/fenics/xdmf_degree_mismatch/source.py\", line 33, in main\n    f.write_function(u)\n  File \"~/miniconda3/envs/ofa-fenicsx/lib/python3.12/site-packages/dolfinx/io/utils.py\", line 177, in write_function\n    super().write_function(getattr(u, \"_cpp_object\", u), t, mesh_xpath)\nRuntimeError: Degree of output Function must be same as mesh degree. Maybe the Function needs to be interpolated?\n"
-    },
     "fourc::beams::9": {
       "key": "fourc::beams::9",
       "backend": "fourc",
       "physics": "beams",
       "pitfall_index": 9,
-      "fixture_id": "beam_material_camelcase_no_inner_underscore",
+      "fixture_id": "fourc/beam_material_camelcase_no_inner_underscore",
       "mode": "python",
       "status": "failed",
       "expect_matched": [],
@@ -819,46 +554,12 @@
       ],
       "captured_head": "FAIL: 4C_schema.json not found\n"
     },
-    "fourc::_input_format::0": {
-      "key": "fourc::_input_format::0",
-      "backend": "fourc",
-      "physics": "_input_format",
-      "pitfall_index": 0,
-      "fixture_id": "dat_format_rejected",
-      "mode": "cmd",
-      "status": "passed",
-      "expect_matched": [
-        "Cannot infer format of input file",
-        "Only .yaml, .yml, and .json are supported",
-        "4C_io_input_file"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_file.cpp, line 428:\nCan"
-    },
-    "fourc::_input_format::1": {
-      "key": "fourc::_input_format::1",
-      "backend": "fourc",
-      "physics": "_input_format",
-      "pitfall_index": 1,
-      "fixture_id": "invalid_problemtype_value",
-      "mode": "cmd",
-      "status": "passed",
-      "expect_matched": [
-        "Could not match this input",
-        "PROBLEMTYPE",
-        "input_spec_builders"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_spec_builders.cpp, line"
-    },
     "fourc::scalar_transport::0": {
       "key": "fourc::scalar_transport::0",
       "backend": "fourc",
       "physics": "scalar_transport",
       "pitfall_index": 0,
-      "fixture_id": "scatra_section_name_required",
+      "fixture_id": "fourc/scatra_section_name_required",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -874,7 +575,7 @@
       "backend": "fourc",
       "physics": "linear_elasticity",
       "pitfall_index": 4,
-      "fixture_id": "structural_2d_solid_quad4_not_wall",
+      "fixture_id": "fourc/structural_2d_solid_quad4_not_wall",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -885,29 +586,12 @@
       "notes": [],
       "captured_head": "WALL_ACCEPTS_QUAD4=yes\nSOLID_ACCEPTS_QUAD4=no\nEXACTLY_ONE_2D_FACTORY=yes\nVERDICT: 2D_ELEMENT=WALL\nElement 'SOLID' does not seem to know cell type 'quad4'.\n"
     },
-    "fourc::structural_dynamics::7": {
-      "key": "fourc::structural_dynamics::7",
-      "backend": "fourc",
-      "physics": "structural_dynamics",
-      "pitfall_index": 7,
-      "fixture_id": "structural_dynamic_dynamictype_enum",
-      "mode": "cmd",
-      "status": "passed",
-      "expect_matched": [
-        "Could not match this input",
-        "STRUCTURAL DYNAMIC",
-        "DYNAMICTYPE"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.ggkgiJ9W00/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
-    },
     "fourc::thermo::0": {
       "key": "fourc::thermo::0",
       "backend": "fourc",
       "physics": "thermo",
       "pitfall_index": 0,
-      "fixture_id": "thermo_mat_fourier_conduct_constant_wrapper",
+      "fixture_id": "fourc/thermo_mat_fourier_conduct_constant_wrapper",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -924,7 +608,7 @@
       "backend": "fourc",
       "physics": "fluid",
       "pitfall_index": 4,
-      "fixture_id": "time_integration_enum_per_section",
+      "fixture_id": "fourc/time_integration_enum_per_section",
       "mode": "python",
       "status": "failed",
       "expect_matched": [],
@@ -938,31 +622,12 @@
       ],
       "captured_head": "FAIL: 4C_schema.json not found\n"
     },
-    "fourc::tsi::7": {
-      "key": "fourc::tsi::7",
-      "backend": "fourc",
-      "physics": "tsi",
-      "pitfall_index": 7,
-      "fixture_id": "tsi_coupalgo_enum_names",
-      "mode": "python",
-      "status": "failed",
-      "expect_matched": [],
-      "forbid_violated": [
-        "FAIL:"
-      ],
-      "notes": [
-        "missing in output: ['all_match=True', 'catalog_extra=[]', 'historical_wrong_in_schema=[]', 'schema_extra=[]']",
-        "forbidden tokens appeared: ['FAIL:']",
-        "2026-08-03 ENVIRONMENTAL, not a falsified claim: this fixture compares the catalogue against 4C's compiled JSON schema, and the deployed build on this host does not carry 4C_schema.json. That artefact is produced post-build by `create-schema-files 4C_metadata.yaml 4C_schema.json` (see apps/global_full/CMakeLists.txt); the raw metadata IS present as <build>/4C_metadata.yaml and is also obtainable from `4C --parameters`, but the build venv's interpreter is broken here so the conversion could not be run. The fixture now also honours $FOURC_SCHEMA_JSON and the deployed build path, so it self-heals once the schema is regenerated. Its recorded 'passed' state from the 2026-06 host was NOT contradicted by any run."
-      ],
-      "captured_head": "FAIL: 4C_schema.json not found at expected paths\n"
-    },
     "kratos::linear_elasticity::8": {
       "key": "kratos::linear_elasticity::8",
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 8,
-      "fixture_id": "constitutive_law_class_not_instance",
+      "fixture_id": "kratos/constitutive_law_class_not_instance",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -978,7 +643,7 @@
       "backend": "kratos",
       "physics": "contact",
       "pitfall_index": 0,
-      "fixture_id": "contact_condition_naming_with_shape_suffix",
+      "fixture_id": "kratos/contact_condition_naming_with_shape_suffix",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -995,7 +660,7 @@
       "backend": "kratos",
       "physics": "cosimulation",
       "pitfall_index": 0,
-      "fixture_id": "cosimulation_accelerator_mapper_names",
+      "fixture_id": "kratos/cosimulation_accelerator_mapper_names",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1009,29 +674,12 @@
       "notes": [],
       "captured_head": "accel_files=['__init__', 'aitken', 'anderson', 'block_ibqnls', 'block_mvqn', 'constant_relaxation', 'convergence_accelerator_wrapper', 'iqnils', 'mvqn']\ncatalog_accel_in_files=['aitken', 'anderson', 'constant_relaxation', 'mvqn']\nibqn_literal_present=False\nblock_ibqnls_present=True\ncatalog_mappers_present_in_binary=['barycentric', 'nearest_neighbor', 'radial_basis_function']\nempire_anywhere_in_mapping_binary=False\nnearest_element_present=True\ncoupling_geometry_present=True\n |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\n"
     },
-    "kratos::dem::3": {
-      "key": "kratos::dem::3",
-      "backend": "kratos",
-      "physics": "dem",
-      "pitfall_index": 3,
-      "fixture_id": "dem_spheric_particle_2d_rejected",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "RuntimeError",
-        "SphericParticle2D",
-        "is not registered"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosDEMApplication \n\n     KRATOS |  _ \\| ____|  \\/  |  _ \\ __ _  ___| | __      \n            | | | |  _| | |\\/| | |_) / _` |/ __| |/ /      \n            | |_| | |___| |  | |  __/ (_| | (__|   <       \n            |____/|_____|_|  |_|_|   \\__,_|\\___|_|\\_\\      \nImporting DEMApplication...  done.\nDeregistering KratosMultiphysics\nDeregistering DEMApplication\nTraceback (most recent call last):\n  File \"~/Schreibt"
-    },
     "kratos::linear_elasticity::7": {
       "key": "kratos::linear_elasticity::7",
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 7,
-      "fixture_id": "echo_level_missing",
+      "fixture_id": "kratos/echo_level_missing",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1049,7 +697,7 @@
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 98,
-      "fixture_id": "elasticity_mms_convergence",
+      "fixture_id": "kratos/elasticity_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1067,7 +715,7 @@
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
-      "fixture_id": "element_name_missing_node_count",
+      "fixture_id": "kratos/element_name_missing_node_count",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1083,7 +731,7 @@
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 1,
-      "fixture_id": "element_no_constitutive_law",
+      "fixture_id": "kratos/element_no_constitutive_law",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1095,29 +743,12 @@
       "notes": [],
       "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosStructuralMechanicsApplication \n    KRATOS   ___|  |                   |                   |\n           \\___ \\  __|  __| |   |  __| __| |   |  __| _` | |\n                 | |   |    |   | (    |   |   | |   (   | |\n           _____/ \\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\__,_|_| MECHANICS\nInitializing KratosStructuralMechanicsApplication...\nImporting    KratosConstitutiveLawsApplication \nInitializing KratosC"
     },
-    "kratos::plasticity::4": {
-      "key": "kratos::plasticity::4",
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 4,
-      "fixture_id": "friction_angle_wrong_module",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "AttributeError",
-        "KratosMultiphysics",
-        "FRICTION_ANGLE"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nDeregistering KratosMultiphysics\nTraceback (most recent call last):\n  File \"~/Schreibtisch/Open-FEM-agent/scripts/tier2_fixtures/kratos/friction_angle_wrong_module/source.py\", line 27, in main\n    KM.FRICTION_ANGLE\n  File \"~/Schreibtisch/Open-FEM-agent/.venv/lib/python3.12/site-packages/KratosMultiphysics/__init__.py\", line 68, in __getattr__\n    raise AttributeError(f\"Module {__name__} has no attribute {name}.\")\nAttribute"
-    },
     "kratos::fsi::0": {
       "key": "kratos::fsi::0",
       "backend": "kratos",
       "physics": "fsi",
       "pitfall_index": 0,
-      "fixture_id": "fsi_application_accelerator_classes",
+      "fixture_id": "kratos/fsi_application_accelerator_classes",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1136,7 +767,7 @@
       "backend": "kratos",
       "physics": "geomechanics",
       "pitfall_index": 0,
-      "fixture_id": "geomechanics_cl_naming",
+      "fixture_id": "kratos/geomechanics_cl_naming",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1156,7 +787,7 @@
       "backend": "kratos",
       "physics": "iga",
       "pitfall_index": 0,
-      "fixture_id": "iga_surface_condition_naming",
+      "fixture_id": "kratos/iga_surface_condition_naming",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1175,7 +806,7 @@
       "backend": "kratos",
       "physics": "mpm",
       "pitfall_index": 0,
-      "fixture_id": "mpm_element_naming_mpm_prefix",
+      "fixture_id": "kratos/mpm_element_naming_mpm_prefix",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1186,29 +817,12 @@
       "notes": [],
       "captured_head": "all_base_names_rejected=True\nall_corrected_mpm_prefix_ok=True\n |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosMPMApplication \n    KRATOS  ____ __   ____ _____ _  ___ _   ____\n           |  _ |  \\ |  _ |_   _| |/   | | | ___|\n           |   _| \\ \\|    | | | | |   (  |_| _|_\n           |__|__/ \\_\\_|\\_\\ |_| |_|\\___|___|____|MECHANICS\nInitializing KratosMPMApplication...\nDeregistering KratosMultiphysics\nDeregistering MPMApplication\n"
     },
-    "kratos::plasticity::5": {
-      "key": "kratos::plasticity::5",
-      "backend": "kratos",
-      "physics": "plasticity",
-      "pitfall_index": 5,
-      "fixture_id": "plasticity_factory_takes_no_args",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "TypeError",
-        "incompatible constructor arguments",
-        "SmallStrainIsotropicPlasticityFactory"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": " |  /           |                  \n ' /   __| _` | __|  _ \\   __|    \n . \\  |   (   | |   (   |\\__ \\  \n_|\\_\\_|  \\__,_|\\__|\\___/ ____/\n           Multi-Physics 10.4.\"2\"--0-Release-x86_64\n           Compiled for GNU/Linux and Python3.12 with GCC-15.2\nCompiled with threading and MPI support. Threading support with OpenMP.\nMaximum number of threads: 20.\nRunning without MPI.\nImporting    KratosStructuralMechanicsApplication \n    KRATOS   ___|  |                   |                   |\n           \\___ \\  __|  __| |   |  __| __| |   |  __| _` | |\n                 | |   |    |   | (    |   |   | |   (   | |\n           _____/ \\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\__,_|_| MECHANICS\nInitializing KratosStructuralMechanicsApplication...\nImporting    KratosConstitutiveLawsApplication \nInitializing KratosC"
-    },
     "kratos::plasticity::0": {
       "key": "kratos::plasticity::0",
       "backend": "kratos",
       "physics": "plasticity",
       "pitfall_index": 0,
-      "fixture_id": "plasticity_rankine_simoju_are_damage_only",
+      "fixture_id": "kratos/plasticity_rankine_simoju_are_damage_only",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1225,7 +839,7 @@
       "backend": "kratos",
       "physics": "poisson",
       "pitfall_index": 0,
-      "fixture_id": "poisson_cda_element_string_factory",
+      "fixture_id": "kratos/poisson_cda_element_string_factory",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1246,7 +860,7 @@
       "backend": "kratos",
       "physics": "poisson",
       "pitfall_index": 1,
-      "fixture_id": "poisson_laplacian_element_assembles_heat_flux",
+      "fixture_id": "kratos/poisson_laplacian_element_assembles_heat_flux",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1267,7 +881,7 @@
       "backend": "kratos",
       "physics": "poisson",
       "pitfall_index": 99,
-      "fixture_id": "poisson_mms_convergence",
+      "fixture_id": "kratos/poisson_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1285,7 +899,7 @@
       "backend": "kratos",
       "physics": "rans",
       "pitfall_index": 0,
-      "fixture_id": "rans_shallowwater_element_naming",
+      "fixture_id": "kratos/rans_shallowwater_element_naming",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1301,7 +915,7 @@
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 2,
-      "fixture_id": "submodelpart_case_sensitive",
+      "fixture_id": "kratos/submodelpart_case_sensitive",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1318,7 +932,7 @@
       "backend": "kratos",
       "physics": "heat",
       "pitfall_index": 0,
-      "fixture_id": "temperature_variable_not_added",
+      "fixture_id": "kratos/temperature_variable_not_added",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1336,7 +950,7 @@
       "backend": "kratos",
       "physics": "linear_elasticity",
       "pitfall_index": 9,
-      "fixture_id": "variable_not_added_before_access",
+      "fixture_id": "kratos/variable_not_added_before_access",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1352,7 +966,7 @@
       "backend": "kratos",
       "physics": "fluid",
       "pitfall_index": 0,
-      "fixture_id": "velocity_variable_not_added",
+      "fixture_id": "kratos/velocity_variable_not_added",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1370,7 +984,7 @@
       "backend": "ngsolve",
       "physics": "helmholtz",
       "pitfall_index": 2,
-      "fixture_id": "api_inventory_toplevel_vs_submodule",
+      "fixture_id": "ngsolve/api_inventory_toplevel_vs_submodule",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1389,7 +1003,7 @@
       "backend": "ngsolve",
       "physics": "maxwell",
       "pitfall_index": 5,
-      "fixture_id": "arnoldi_shift_zero_singular",
+      "fixture_id": "ngsolve/arnoldi_shift_zero_singular",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1406,7 +1020,7 @@
       "backend": "ngsolve",
       "physics": "convection_diffusion",
       "pitfall_index": 0,
-      "fixture_id": "convection_diffusion_dgjumps_required",
+      "fixture_id": "ngsolve/convection_diffusion_dgjumps_required",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1425,7 +1039,7 @@
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 0,
-      "fixture_id": "dirichlet_case_mismatch_silent",
+      "fixture_id": "ngsolve/dirichlet_case_mismatch_silent",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1442,7 +1056,7 @@
       "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 98,
-      "fixture_id": "elasticity_mms_convergence",
+      "fixture_id": "ngsolve/elasticity_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1460,7 +1074,7 @@
       "backend": "ngsolve",
       "physics": "maxwell",
       "pitfall_index": 7,
-      "fixture_id": "h1_curl_operator_unknown",
+      "fixture_id": "ngsolve/h1_curl_operator_unknown",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1477,7 +1091,7 @@
       "backend": "ngsolve",
       "physics": "maxwell",
       "pitfall_index": 8,
-      "fixture_id": "hcurl_grad_mismatch",
+      "fixture_id": "ngsolve/hcurl_grad_mismatch",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1494,7 +1108,7 @@
       "backend": "ngsolve",
       "physics": "maxwell",
       "pitfall_index": 0,
-      "fixture_id": "hcurl_singular_without_nograds",
+      "fixture_id": "ngsolve/hcurl_singular_without_nograds",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1511,7 +1125,7 @@
       "backend": "ngsolve",
       "physics": "heat",
       "pitfall_index": 0,
-      "fixture_id": "heat_nonsym_kwarg_warning",
+      "fixture_id": "ngsolve/heat_nonsym_kwarg_warning",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1528,7 +1142,7 @@
       "backend": "ngsolve",
       "physics": "helmholtz",
       "pitfall_index": 0,
-      "fixture_id": "helmholtz_complex_on_real_fespace",
+      "fixture_id": "ngsolve/helmholtz_complex_on_real_fespace",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1545,7 +1159,7 @@
       "backend": "ngsolve",
       "physics": "hyperelasticity",
       "pitfall_index": 0,
-      "fixture_id": "hyperelasticity_newton_maxit_kwarg",
+      "fixture_id": "ngsolve/hyperelasticity_newton_maxit_kwarg",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1562,7 +1176,7 @@
       "backend": "ngsolve",
       "physics": "eigenvalue",
       "pitfall_index": 1,
-      "fixture_id": "multidim_gridfunction_vecs",
+      "fixture_id": "ngsolve/multidim_gridfunction_vecs",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1579,7 +1193,7 @@
       "backend": "ngsolve",
       "physics": "plasticity",
       "pitfall_index": 0,
-      "fixture_id": "plasticity_newtoncf_in_fem_submodule",
+      "fixture_id": "ngsolve/plasticity_newtoncf_in_fem_submodule",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1599,7 +1213,7 @@
       "backend": "ngsolve",
       "physics": "helmholtz",
       "pitfall_index": 1,
-      "fixture_id": "pml_radial_requires_origin",
+      "fixture_id": "ngsolve/pml_radial_requires_origin",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1617,7 +1231,7 @@
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 99,
-      "fixture_id": "poisson_mms_convergence",
+      "fixture_id": "ngsolve/poisson_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1636,7 +1250,7 @@
       "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 1,
-      "fixture_id": "stokes_compound_space_tnt",
+      "fixture_id": "ngsolve/stokes_compound_space_tnt",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1654,7 +1268,7 @@
       "backend": "ngsolve",
       "physics": "stokes",
       "pitfall_index": 99,
-      "fixture_id": "stokes_mms_convergence",
+      "fixture_id": "ngsolve/stokes_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1673,7 +1287,7 @@
       "backend": "ngsolve",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
-      "fixture_id": "vector_h1_vs_h1_dim2_equivalence",
+      "fixture_id": "ngsolve/vector_h1_vs_h1_dim2_equivalence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1691,7 +1305,7 @@
       "backend": "ngsolve",
       "physics": "poisson",
       "pitfall_index": 92,
-      "fixture_id": "vector_source_on_scalar_form",
+      "fixture_id": "ngsolve/vector_source_on_scalar_form",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1708,7 +1322,7 @@
       "backend": "skfem",
       "physics": "stokes",
       "pitfall_index": 6,
-      "fixture_id": "asm_quadrature_mismatch",
+      "fixture_id": "skfem/asm_quadrature_mismatch",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1725,7 +1339,7 @@
       "backend": "skfem",
       "physics": "biharmonic",
       "pitfall_index": 0,
-      "fixture_id": "biharmonic_element_dof_counts",
+      "fixture_id": "skfem/biharmonic_element_dof_counts",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1742,7 +1356,7 @@
       "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 4,
-      "fixture_id": "boundary_not_tagged",
+      "fixture_id": "skfem/boundary_not_tagged",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1758,7 +1372,7 @@
       "backend": "skfem",
       "physics": "mixed_poisson",
       "pitfall_index": 2,
-      "fixture_id": "condense_solve_signature_pinned",
+      "fixture_id": "skfem/condense_solve_signature_pinned",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1777,7 +1391,7 @@
       "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 98,
-      "fixture_id": "elasticity_mms_convergence",
+      "fixture_id": "skfem/elasticity_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1796,7 +1410,7 @@
       "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
-      "fixture_id": "elasticity_vector_basis_and_lame",
+      "fixture_id": "skfem/elasticity_vector_basis_and_lame",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1813,7 +1427,7 @@
       "backend": "skfem",
       "physics": "mixed_poisson",
       "pitfall_index": 0,
-      "fixture_id": "element_class_inventory_vs_catalog",
+      "fixture_id": "skfem/element_class_inventory_vs_catalog",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1831,7 +1445,7 @@
       "backend": "skfem",
       "physics": "linear_elasticity",
       "pitfall_index": 97,
-      "fixture_id": "element_vector_dof_interleaving",
+      "fixture_id": "skfem/element_vector_dof_interleaving",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1848,7 +1462,7 @@
       "backend": "skfem",
       "physics": "heat",
       "pitfall_index": 3,
-      "fixture_id": "forward_euler_instability",
+      "fixture_id": "skfem/forward_euler_instability",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1865,7 +1479,7 @@
       "backend": "skfem",
       "physics": "heat",
       "pitfall_index": 0,
-      "fixture_id": "heat_dofsview_and_condense_x_shape",
+      "fixture_id": "skfem/heat_dofsview_and_condense_x_shape",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1885,7 +1499,7 @@
       "backend": "skfem",
       "physics": "eigenvalue",
       "pitfall_index": 0,
-      "fixture_id": "laplace_eigenvalue_basics",
+      "fixture_id": "skfem/laplace_eigenvalue_basics",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1901,7 +1515,7 @@
       "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 94,
-      "fixture_id": "missing_condense_singular",
+      "fixture_id": "skfem/missing_condense_singular",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1918,7 +1532,7 @@
       "backend": "skfem",
       "physics": "stokes",
       "pitfall_index": 4,
-      "fixture_id": "nbfun_vs_global_dof",
+      "fixture_id": "skfem/nbfun_vs_global_dof",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1935,7 +1549,7 @@
       "backend": "skfem",
       "physics": "nonlinear",
       "pitfall_index": 0,
-      "fixture_id": "nonlinear_helpers_present",
+      "fixture_id": "skfem/nonlinear_helpers_present",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1953,7 +1567,7 @@
       "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 0,
-      "fixture_id": "poisson_get_dofs_named_boundary",
+      "fixture_id": "skfem/poisson_get_dofs_named_boundary",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1974,7 +1588,7 @@
       "backend": "skfem",
       "physics": "poisson",
       "pitfall_index": 99,
-      "fixture_id": "poisson_mms_convergence",
+      "fixture_id": "skfem/poisson_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -1993,7 +1607,7 @@
       "backend": "skfem",
       "physics": "mixed_poisson",
       "pitfall_index": 1,
-      "fixture_id": "rt0_element_registration",
+      "fixture_id": "skfem/rt0_element_registration",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2010,7 +1624,7 @@
       "backend": "skfem",
       "physics": "stokes",
       "pitfall_index": 99,
-      "fixture_id": "stokes_mms_convergence",
+      "fixture_id": "skfem/stokes_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2029,7 +1643,7 @@
       "backend": "febio",
       "physics": "active_contraction",
       "pitfall_index": 1,
-      "fixture_id": "active_contraction_mat_axis_default",
+      "fixture_id": "febio/active_contraction_mat_axis_default",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2044,7 +1658,7 @@
       "backend": "febio",
       "physics": "active_contraction",
       "pitfall_index": 0,
-      "fixture_id": "active_contraction_needs_a_passive_base",
+      "fixture_id": "febio/active_contraction_needs_a_passive_base",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2059,7 +1673,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 6,
-      "fixture_id": "analysis_vocabulary_is_module_scoped",
+      "fixture_id": "febio/analysis_vocabulary_is_module_scoped",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2074,7 +1688,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 4,
-      "fixture_id": "bicgstab_converges_on_one_element_only",
+      "fixture_id": "febio/bicgstab_converges_on_one_element_only",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2089,7 +1703,7 @@
       "backend": "febio",
       "physics": "biphasic_fsi",
       "pitfall_index": 0,
-      "fixture_id": "biphasic_fsi_is_a_material_not_a_module",
+      "fixture_id": "febio/biphasic_fsi_is_a_material_not_a_module",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2104,7 +1718,7 @@
       "backend": "febio",
       "physics": "biphasic_fsi",
       "pitfall_index": 3,
-      "fixture_id": "biphasic_fsi_needs_nonsymmetric_solver",
+      "fixture_id": "febio/biphasic_fsi_needs_nonsymmetric_solver",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2119,7 +1733,7 @@
       "backend": "febio",
       "physics": "biphasic_fsi",
       "pitfall_index": 1,
-      "fixture_id": "biphasic_fsi_required_properties",
+      "fixture_id": "febio/biphasic_fsi_required_properties",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2134,7 +1748,7 @@
       "backend": "febio",
       "physics": "multiphasic",
       "pitfall_index": 1,
-      "fixture_id": "biphasic_material_rejects_solute_child",
+      "fixture_id": "febio/biphasic_material_rejects_solute_child",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2149,7 +1763,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 0,
-      "fixture_id": "biphasic_module_gates_analysis_word",
+      "fixture_id": "febio/biphasic_module_gates_analysis_word",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2164,7 +1778,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 1,
-      "fixture_id": "biphasic_needs_nested_properties",
+      "fixture_id": "febio/biphasic_needs_nested_properties",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2179,7 +1793,7 @@
       "backend": "febio",
       "physics": "elasticity_mms",
       "pitfall_index": 1,
-      "fixture_id": "body_force_is_per_unit_mass",
+      "fixture_id": "febio/body_force_is_per_unit_mass",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2194,7 +1808,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 99,
-      "fixture_id": "catalog_physics_template_knowledge_consistency",
+      "fixture_id": "febio/catalog_physics_template_knowledge_consistency",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2216,7 +1830,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 6,
-      "fixture_id": "center_of_mass_silently_overrides",
+      "fixture_id": "febio/center_of_mass_silently_overrides",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2231,7 +1845,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 4,
-      "fixture_id": "conduction_needs_velocity_fixed",
+      "fixture_id": "febio/conduction_needs_velocity_fixed",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2246,7 +1860,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 2,
-      "fixture_id": "control_without_nested_solver",
+      "fixture_id": "febio/control_without_nested_solver",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2261,7 +1875,7 @@
       "backend": "febio",
       "physics": "damage",
       "pitfall_index": 2,
-      "fixture_id": "damage_cap_is_range_checked",
+      "fixture_id": "febio/damage_cap_is_range_checked",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2276,7 +1890,7 @@
       "backend": "febio",
       "physics": "damage",
       "pitfall_index": 3,
-      "fixture_id": "damage_cdf_scale_saturates_in_cycle_one",
+      "fixture_id": "febio/damage_cdf_scale_saturates_in_cycle_one",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2291,7 +1905,7 @@
       "backend": "febio",
       "physics": "damage",
       "pitfall_index": 0,
-      "fixture_id": "damage_is_irreversible_and_saturates",
+      "fixture_id": "febio/damage_is_irreversible_and_saturates",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2306,7 +1920,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 3,
-      "fixture_id": "default_contact_penalty_is_inactive",
+      "fixture_id": "febio/default_contact_penalty_is_inactive",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2321,7 +1935,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 7,
-      "fixture_id": "degenerate_hex8_clean_wrong_result",
+      "fixture_id": "febio/degenerate_hex8_clean_wrong_result",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2336,7 +1950,7 @@
       "backend": "febio",
       "physics": "hyperelasticity",
       "pitfall_index": 2,
-      "fixture_id": "density_defaults_silently_under_dynamic",
+      "fixture_id": "febio/density_defaults_silently_under_dynamic",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2351,7 +1965,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 5,
-      "fixture_id": "diffusion_length_under_one_element",
+      "fixture_id": "febio/diffusion_length_under_one_element",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2366,7 +1980,7 @@
       "backend": "febio",
       "physics": "viscoelasticity",
       "pitfall_index": 0,
-      "fixture_id": "dynamic_step_load_rings_forever",
+      "fixture_id": "febio/dynamic_step_load_rings_forever",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2381,7 +1995,7 @@
       "backend": "febio",
       "physics": "damage",
       "pitfall_index": 1,
-      "fixture_id": "elastic_damage_property_names",
+      "fixture_id": "febio/elastic_damage_property_names",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2396,7 +2010,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 9,
-      "fixture_id": "error_box_wraps_at_71_columns",
+      "fixture_id": "febio/error_box_wraps_at_71_columns",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2411,7 +2025,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 8,
-      "fixture_id": "factory_type_strings_case_sensitive",
+      "fixture_id": "febio/factory_type_strings_case_sensitive",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2426,7 +2040,7 @@
       "backend": "febio",
       "physics": "hyperelasticity",
       "pitfall_index": 4,
-      "fixture_id": "final_time_is_steps_times_step_size",
+      "fixture_id": "febio/final_time_is_steps_times_step_size",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2441,7 +2055,7 @@
       "backend": "febio",
       "physics": "fluid",
       "pitfall_index": 2,
-      "fixture_id": "fluid_bulk_modulus_and_log_variable_names",
+      "fixture_id": "febio/fluid_bulk_modulus_and_log_variable_names",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2456,7 +2070,7 @@
       "backend": "febio",
       "physics": "fluid_fsi",
       "pitfall_index": 0,
-      "fixture_id": "fluid_fsi_module_and_material_share_a_name",
+      "fixture_id": "febio/fluid_fsi_module_and_material_share_a_name",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2471,7 +2085,7 @@
       "backend": "febio",
       "physics": "fluid",
       "pitfall_index": 0,
-      "fixture_id": "fluid_solver_type_is_module_scoped",
+      "fixture_id": "febio/fluid_solver_type_is_module_scoped",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2486,7 +2100,7 @@
       "backend": "febio",
       "physics": "fluid",
       "pitfall_index": 1,
-      "fixture_id": "fluid_velocity_dofs_are_w_prefixed",
+      "fixture_id": "febio/fluid_velocity_dofs_are_w_prefixed",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2501,7 +2115,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 6,
-      "fixture_id": "globals_constants_required_for_ideal_gas",
+      "fixture_id": "febio/globals_constants_required_for_ideal_gas",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2516,7 +2130,7 @@
       "backend": "febio",
       "physics": "multiphasic",
       "pitfall_index": 0,
-      "fixture_id": "globals_solutes_creates_concentration_dofs",
+      "fixture_id": "febio/globals_solutes_creates_concentration_dofs",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2531,7 +2145,7 @@
       "backend": "febio",
       "physics": "growth_remodeling",
       "pitfall_index": 2,
-      "fixture_id": "growth_against_a_clamped_boundary",
+      "fixture_id": "febio/growth_against_a_clamped_boundary",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2546,7 +2160,7 @@
       "backend": "febio",
       "physics": "growth_remodeling",
       "pitfall_index": 3,
-      "fixture_id": "growth_axis_is_the_growth_tensor_fiber",
+      "fixture_id": "febio/growth_axis_is_the_growth_tensor_fiber",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2561,7 +2175,7 @@
       "backend": "febio",
       "physics": "plasticity",
       "pitfall_index": 0,
-      "fixture_id": "hardening_modulus_sets_the_peak_stress",
+      "fixture_id": "febio/hardening_modulus_sets_the_peak_stress",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2576,7 +2190,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 98,
-      "fixture_id": "hex8_patch_test_exact_stress",
+      "fixture_id": "febio/hex8_patch_test_exact_stress",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2591,7 +2205,7 @@
       "backend": "febio",
       "physics": "fiber_reinforced",
       "pitfall_index": 1,
-      "fixture_id": "hgo_fibers_carry_load_only_in_tension",
+      "fixture_id": "febio/hgo_fibers_carry_load_only_in_tension",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2606,7 +2220,7 @@
       "backend": "febio",
       "physics": "fiber_reinforced",
       "pitfall_index": 2,
-      "fixture_id": "hgo_kappa_range_is_closed_zero_third",
+      "fixture_id": "febio/hgo_kappa_range_is_closed_zero_third",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2621,7 +2235,7 @@
       "backend": "febio",
       "physics": "fiber_reinforced",
       "pitfall_index": 0,
-      "fixture_id": "hgo_mat_axis_default",
+      "fixture_id": "febio/hgo_mat_axis_default",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2636,7 +2250,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 7,
-      "fixture_id": "ideal_gas_ao_cp_are_function1d",
+      "fixture_id": "febio/ideal_gas_ao_cp_are_function1d",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2651,7 +2265,7 @@
       "backend": "febio",
       "physics": "growth_remodeling",
       "pitfall_index": 0,
-      "fixture_id": "kinematic_growth_is_top_level",
+      "fixture_id": "febio/kinematic_growth_is_top_level",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2666,7 +2280,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 4,
-      "fixture_id": "loadcurve_id_without_loaddata",
+      "fixture_id": "febio/loadcurve_id_without_loaddata",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2681,7 +2295,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 0,
-      "fixture_id": "material_name_attr_and_domain_by_name",
+      "fixture_id": "febio/material_name_attr_and_domain_by_name",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2696,7 +2310,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 8,
-      "fixture_id": "material_name_required_and_nodeset_syntax",
+      "fixture_id": "febio/material_name_required_and_nodeset_syntax",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2711,7 +2325,7 @@
       "backend": "febio",
       "physics": "elasticity_mms",
       "pitfall_index": 2,
-      "fixture_id": "math_expressions_need_uppercase_coordinates",
+      "fixture_id": "febio/math_expressions_need_uppercase_coordinates",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2726,7 +2340,7 @@
       "backend": "febio",
       "physics": "hyperelasticity",
       "pitfall_index": 5,
-      "fixture_id": "max_ups_belongs_to_qn_method",
+      "fixture_id": "febio/max_ups_belongs_to_qn_method",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2741,7 +2355,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 1,
-      "fixture_id": "meshdomains_missing_blames_the_bc",
+      "fixture_id": "febio/meshdomains_missing_blames_the_bc",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2756,7 +2370,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 3,
-      "fixture_id": "missing_control_silent_zero_result",
+      "fixture_id": "febio/missing_control_silent_zero_result",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2771,7 +2385,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 2,
-      "fixture_id": "no_contact_section_means_pass_through",
+      "fixture_id": "febio/no_contact_section_means_pass_through",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2786,7 +2400,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 1,
-      "fixture_id": "no_isotropic_fourier_material",
+      "fixture_id": "febio/no_isotropic_fourier_material",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2801,7 +2415,7 @@
       "backend": "febio",
       "physics": "plasticity",
       "pitfall_index": 3,
-      "fixture_id": "no_kinematic_hardening_parameter",
+      "fixture_id": "febio/no_kinematic_hardening_parameter",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2816,7 +2430,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 2,
-      "fixture_id": "no_prescribed_temperature_bc",
+      "fixture_id": "febio/no_prescribed_temperature_bc",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2831,7 +2445,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 8,
-      "fixture_id": "nodeset_is_comma_list_not_children",
+      "fixture_id": "febio/nodeset_is_comma_list_not_children",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2846,7 +2460,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 5,
-      "fixture_id": "null_test_linear_solver_reports_success",
+      "fixture_id": "febio/null_test_linear_solver_reports_success",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2861,7 +2475,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 5,
-      "fixture_id": "poisson_ratio_is_v_not_nu",
+      "fixture_id": "febio/poisson_ratio_is_v_not_nu",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2876,7 +2490,7 @@
       "backend": "febio",
       "physics": "polar_fluid",
       "pitfall_index": 3,
-      "fixture_id": "polar_bc_and_plot_variable_names",
+      "fixture_id": "febio/polar_bc_and_plot_variable_names",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2891,7 +2505,7 @@
       "backend": "febio",
       "physics": "polar_fluid",
       "pitfall_index": 0,
-      "fixture_id": "polar_micro_rotation_names_are_not_real",
+      "fixture_id": "febio/polar_micro_rotation_names_are_not_real",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2906,7 +2520,7 @@
       "backend": "febio",
       "physics": "polar_fluid",
       "pitfall_index": 2,
-      "fixture_id": "polar_moduli_do_nothing_without_vorticity",
+      "fixture_id": "febio/polar_moduli_do_nothing_without_vorticity",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2921,7 +2535,7 @@
       "backend": "febio",
       "physics": "polar_fluid",
       "pitfall_index": 1,
-      "fixture_id": "polar_viscosity_is_a_property_not_a_parameter",
+      "fixture_id": "febio/polar_viscosity_is_a_property_not_a_parameter",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2936,7 +2550,7 @@
       "backend": "febio",
       "physics": "multiphasic",
       "pitfall_index": 3,
-      "fixture_id": "prescribed_concentration_uses_dof_child",
+      "fixture_id": "febio/prescribed_concentration_uses_dof_child",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2951,7 +2565,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 4,
-      "fixture_id": "reversed_contact_facet_winding",
+      "fixture_id": "febio/reversed_contact_facet_winding",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2966,7 +2580,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 0,
-      "fixture_id": "rigid_bcs_live_in_the_rigid_section",
+      "fixture_id": "febio/rigid_bcs_live_in_the_rigid_section",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2981,7 +2595,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 1,
-      "fixture_id": "rigid_dof_spelling_per_bc_type",
+      "fixture_id": "febio/rigid_dof_spelling_per_bc_type",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -2996,7 +2610,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 3,
-      "fixture_id": "skyline_cannot_store_unsymmetric_biphasic",
+      "fixture_id": "febio/skyline_cannot_store_unsymmetric_biphasic",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3011,7 +2625,7 @@
       "backend": "febio",
       "physics": "active_contraction",
       "pitfall_index": 3,
-      "fixture_id": "static_activation_ramp_shape_does_not_matter",
+      "fixture_id": "febio/static_activation_ramp_shape_does_not_matter",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3026,7 +2640,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 2,
-      "fixture_id": "steady_state_switches_the_fluid_phase_off",
+      "fixture_id": "febio/steady_state_switches_the_fluid_phase_off",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3041,7 +2655,7 @@
       "backend": "febio",
       "physics": "hyperelasticity",
       "pitfall_index": 1,
-      "fixture_id": "substeps_and_the_real_convergence_threshold",
+      "fixture_id": "febio/substeps_and_the_real_convergence_threshold",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3056,7 +2670,7 @@
       "backend": "febio",
       "physics": "rigid_body",
       "pitfall_index": 5,
-      "fixture_id": "surfacepair_and_contact_type_strings",
+      "fixture_id": "febio/surfacepair_and_contact_type_strings",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3071,7 +2685,7 @@
       "backend": "febio",
       "physics": "biphasic",
       "pitfall_index": 7,
-      "fixture_id": "symmetric_stiffness_workaround_keeps_the_answer",
+      "fixture_id": "febio/symmetric_stiffness_workaround_keeps_the_answer",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3086,7 +2700,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 3,
-      "fixture_id": "thermofluid_requires_linear_solver",
+      "fixture_id": "febio/thermofluid_requires_linear_solver",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3101,7 +2715,7 @@
       "backend": "febio",
       "physics": "hyperelasticity",
       "pitfall_index": 0,
-      "fixture_id": "uncoupled_materials_require_bulk_modulus",
+      "fixture_id": "febio/uncoupled_materials_require_bulk_modulus",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3116,7 +2730,7 @@
       "backend": "febio",
       "physics": "viscoelasticity",
       "pitfall_index": 1,
-      "fixture_id": "uncoupled_viscoelastic_child_kind",
+      "fixture_id": "febio/uncoupled_viscoelastic_child_kind",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3131,7 +2745,7 @@
       "backend": "febio",
       "physics": "heat",
       "pitfall_index": 0,
-      "fixture_id": "unknown_module_type_segfaults",
+      "fixture_id": "febio/unknown_module_type_segfaults",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3146,7 +2760,7 @@
       "backend": "febio",
       "physics": "plasticity",
       "pitfall_index": 1,
-      "fixture_id": "von_mises_plasticity_parameter_names",
+      "fixture_id": "febio/von_mises_plasticity_parameter_names",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3161,7 +2775,7 @@
       "backend": "febio",
       "physics": "linear_elasticity",
       "pitfall_index": 6,
-      "fixture_id": "zero_based_connectivity_rejected",
+      "fixture_id": "febio/zero_based_connectivity_rejected",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3176,7 +2790,7 @@
       "backend": "dune",
       "physics": "poisson",
       "pitfall_index": 7,
-      "fixture_id": "dirichletbc_not_in_scheme_list_silent",
+      "fixture_id": "dune/dirichletbc_not_in_scheme_list_silent",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3194,7 +2808,7 @@
       "backend": "dune",
       "physics": "poisson",
       "pitfall_index": 99,
-      "fixture_id": "poisson_mms_convergence",
+      "fixture_id": "dune/poisson_mms_convergence",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3214,7 +2828,7 @@
       "backend": "dune",
       "physics": "poisson",
       "pitfall_index": 9,
-      "fixture_id": "solver_name_not_validated",
+      "fixture_id": "dune/solver_name_not_validated",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3234,7 +2848,7 @@
       "backend": "dune",
       "physics": "poisson",
       "pitfall_index": 11,
-      "fixture_id": "ufl_cell_reports_simplex_on_cube_grid",
+      "fixture_id": "dune/ufl_cell_reports_simplex_on_cube_grid",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3254,7 +2868,7 @@
       "backend": "sparta",
       "physics": "adaptive_grid",
       "pitfall_index": 0,
-      "fixture_id": "adapt_grid_unfed_fix_is_not_a_noop",
+      "fixture_id": "sparta/adapt_grid_unfed_fix_is_not_a_noop",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3273,7 +2887,7 @@
       "backend": "sparta",
       "physics": "axisymmetric",
       "pitfall_index": 0,
-      "fixture_id": "axisymmetric_boundary_letter_forms",
+      "fixture_id": "sparta/axisymmetric_boundary_letter_forms",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3290,7 +2904,7 @@
       "backend": "sparta",
       "physics": "surface_interaction",
       "pitfall_index": 5,
-      "fixture_id": "compute_surf_array_and_mixture_groups",
+      "fixture_id": "sparta/compute_surf_array_and_mixture_groups",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3310,7 +2924,7 @@
       "backend": "sparta",
       "physics": "rarefied_flow",
       "pitfall_index": 4,
-      "fixture_id": "compute_temp_includes_streaming_velocity",
+      "fixture_id": "sparta/compute_temp_includes_streaming_velocity",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3324,84 +2938,12 @@
       "notes": [],
       "captured_head": "vstream_0_compute_temp=271.429\nvstream_0_thermal_grid=236.409\nvstream_1000_compute_temp=1871.225\nvstream_1000_thermal_grid=237.900\nvstream_10_compute_temp=271.580\npredicted_offset_m_v2_over_3kB=1600.7\nmeasured_offset=1599.8\nall_runs_exit_zero=True\nno_warnings=True\noffset_matches_m_v2_over_3kB=True\nthermal_grid_stays_near_thermal=True\nslow_flow_offset_is_negligible=True\n"
     },
-    "sparta::rarefied_flow::10": {
-      "key": "sparta::rarefied_flow::10",
-      "backend": "sparta",
-      "physics": "rarefied_flow",
-      "pitfall_index": 10,
-      "fixture_id": "create_particles_and_mixture_nrho_overrides",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "n_zero_honours_nrho=True",
-        "n_nonzero_overrides_nrho=True",
-        "mixture_nrho_overrides_global=True",
-        "global_after_create_particles_gives_zero=True",
-        "region_scales_the_requested_count=True",
-        "all_runs_exit_zero=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "created_n0=999\ncreated_n500=500\ncreated_mixture_nrho_1e21=14\ncreated_global_after=0\ncreated_n500_in_half_region=250\nall_runs_exit_zero=True\nn_zero_honours_nrho=True\nn_nonzero_overrides_nrho=True\nmixture_nrho_overrides_global=True\nglobal_after_create_particles_gives_zero=True\nregion_scales_the_requested_count=True\n"
-    },
-    "sparta::rarefied_flow::18": {
-      "key": "sparta::rarefied_flow::18",
-      "backend": "sparta",
-      "physics": "rarefied_flow",
-      "pitfall_index": 18,
-      "fixture_id": "docpage_names_are_not_commands",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "n_true_commands=66",
-        "n_docpage_only=55",
-        "installed_version=24 Sep 2025",
-        "validate_accepts_good_deck=True",
-        "validate_rejects_docpage_form=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "docpage_forms_rejected_by_binary=['compute_grid', 'dump_image', 'fix_ave_surf', 'suffix', 'surf_react_adsorb']\nall_docpage_forms_rejected=True\nreal_forms_accepted=['balance_grid', 'compute']\nall_real_forms_accepted=True\nn_true_commands=66\nn_docpage_only=55\ninstalled_version=24 Sep 2025\ncommand_reference_resolves=True\nvalidate_accepts_good_deck=True\nvalidate_rejects_docpage_form=True\n"
-    },
-    "sparta::rarefied_flow::9": {
-      "key": "sparta::rarefied_flow::9",
-      "backend": "sparta",
-      "physics": "rarefied_flow",
-      "pitfall_index": 9,
-      "fixture_id": "generators_execute_on_installed_build",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "knowledge_has_no_host_paths=True",
-        "all_pitfalls_carry_a_signal=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "absolute_host_paths_in_knowledge=[]\nknowledge_has_no_host_paths=True\nknowledge_payload_max_bytes=17203\nknowledge_payload_mean_bytes=14322\npitfalls_without_signal=[]\nall_pitfalls_carry_a_signal=True\nrarefied_flow/box_2d: rc=0 validate=[] missing_data=[] err=[]\nrarefied_flow/channel_2d: rc=0 validate=[] missing_data=[] err=[]\ncollision_relaxation/box_2d: rc=0 validate=[] missing_data=[] err=[]\ncollision_relaxation/internal_energy_2d: rc=0 validate=[] missing_data=[] err=[]\nhypersonic_flow/circle_2d: rc=0 validate=[] missing_data=[] err=[]\nsurface_interaction/circle_2d: rc=0 validate=[] missing_data=[] err=[]\nchemistry/box_3d: rc=0 validate=[] missing_data=[] err=[]\naxisymmetric/body_2d: rc=0 validate=[] missing_data=[] err=[]\nparticle_emission/channel_2d: rc=0 validate=[] missing_data=[] err"
-    },
-    "sparta::rarefied_flow::13": {
-      "key": "sparta::rarefied_flow::13",
-      "backend": "sparta",
-      "physics": "rarefied_flow",
-      "pitfall_index": 13,
-      "fixture_id": "no_collide_is_free_molecular",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "both_runs_exit_zero=True",
-        "ncoll_identically_zero_without_collide=True",
-        "flux_overestimated_by_more_than_5x=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "sparta_version_line=SPARTA (24 Sep 2025)\nrc_with_collide=0\nrc_without_collide=0\nboth_runs_exit_zero=True\ncold_wall_flux_with_collide=2.0917e+05\ncold_wall_flux_without_collide=1.7615e+06\nflux_ratio_without_over_with=8.421\nmid_gas_T_with_collide=660.3\nmid_gas_T_without_collide=538.5\nmax_ncoll_with_collide=1816\nmax_ncoll_without_collide=0\nncoll_identically_zero_without_collide=True\nflux_overestimated_by_more_than_5x=True\n"
-    },
     "sparta::chemistry::0": {
       "key": "sparta::chemistry::0",
       "backend": "sparta",
       "physics": "chemistry",
       "pitfall_index": 0,
-      "fixture_id": "react_file_is_parsed_in_pairs",
+      "fixture_id": "sparta/react_file_is_parsed_in_pairs",
       "mode": "python",
       "status": "passed",
       "expect_matched": [
@@ -3416,51 +2958,12 @@
       "notes": [],
       "captured_head": "ar_vss_one_data_line: rc=0 n_reactions=0 err=[]\nair_vss_many_lines:   rc=1 err=['ERROR: Invalid reaction formula in file (../react_bird.cpp:641)']\njunk_odd_lines:       rc=0 n_reactions=0 err=[]\njunk_even_lines:      rc=1 err=['ERROR: Invalid reaction formula in file (../react_bird.cpp:641)']\nreal_tce_file:        rc=0 n_reactions=45\nqk_style_on_tce_file: rc=0 n_reactions=45 err=[]\nfew_species_declared: rc=0 n_reactions=45\nno_react_command:     rc=0 tally_block=False\nodd_line_file_loads_silently_with_zero_reactions=True\neven_line_junk_file_aborts_loudly=True\nreal_reaction_file_parses=True\nqk_style_on_a_tce_file_is_accepted=True\nundeclared_species_do_not_change_the_parsed_count=True\ntally_block_only_appears_with_a_react_command=True\n"
     },
-    "sparta::rarefied_flow::12": {
-      "key": "sparta::rarefied_flow::12",
-      "backend": "sparta",
-      "physics": "rarefied_flow",
-      "pitfall_index": 12,
-      "fixture_id": "units_cgs_silently_rescales_si_data",
-      "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "both_runs_exit_zero=True",
-        "no_warning_in_either_log=True",
-        "cgs_collision_rate_is_far_higher=True",
-        "compute_temp_is_identical=True",
-        "cell_touches_tell_present=True"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "rc_si=0\nrc_cgs=0\nboth_runs_exit_zero=True\nmax_ncoll_si=14\nmax_ncoll_cgs=32133\ncgs_collision_rate_is_far_higher=True\ncompute_temp_si=271.42855\ncompute_temp_cgs=271.42855\ncompute_temp_is_identical=True\ncell_touches_si=1.0346\ncell_touches_cgs=108.8740\ncell_touches_tell_present=True\nwarnings_si=0 warnings_cgs=0\nno_warning_in_either_log=True\n"
-    },
-    "fourc::structural_mechanics::9": {
-      "key": "fourc::structural_mechanics::9",
-      "backend": "fourc",
-      "physics": "structural_mechanics",
-      "pitfall_index": 9,
-      "fixture_id": "material_parameter_validation_bounds",
-      "mode": "cmd",
-      "status": "passed",
-      "expect_matched": [
-        "nue_ok: EXIT=0",
-        "fill_complete() on discretization structure",
-        "nue_half: EXIT=1",
-        "Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)",
-        "dens_missing: EXIT=1",
-        "Expected parameter 'DENS'"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "=== NUE 0.49 (inside range) \u2014 must run ===\nnue_ok: EXIT=0\nfill_complete() on discretization structure\n=== NUE 0.5 (incompressible limit) \u2014 must be rejected ===\nnue_half: EXIT=1\nCandidate parameter 'NUE' does not pass validation: in_range[-1,0.5)\n=== DENS omitted under Statics \u2014 must be rejected ===\ndens_missing: EXIT=1\nExpected parameter 'DENS'\n"
-    },
     "fourc::structural_dynamics::8": {
       "key": "fourc::structural_dynamics::8",
       "backend": "fourc",
       "physics": "structural_dynamics",
       "pitfall_index": 8,
-      "fixture_id": "maxtime_truncates_numstep_silently",
+      "fixture_id": "fourc/maxtime_truncates_numstep_silently",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3479,7 +2982,7 @@
       "backend": "fourc",
       "physics": "input_format",
       "pitfall_index": 25,
-      "fixture_id": "neumann_type_enum_vs_element_support",
+      "fixture_id": "fourc/neumann_type_enum_vs_element_support",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3499,7 +3002,7 @@
       "backend": "fourc",
       "physics": "input_format",
       "pitfall_index": 21,
-      "fixture_id": "problem_size_is_optional_and_inert",
+      "fixture_id": "fourc/problem_size_is_optional_and_inert",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3516,7 +3019,7 @@
       "backend": "fourc",
       "physics": "structural_dynamics",
       "pitfall_index": 9,
-      "fixture_id": "restartevery_section_placement",
+      "fixture_id": "fourc/restartevery_section_placement",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3536,7 +3039,7 @@
       "backend": "fourc",
       "physics": "input_format",
       "pitfall_index": 17,
-      "fixture_id": "result_description_gates_the_exit_code",
+      "fixture_id": "fourc/result_description_gates_the_exit_code",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3556,7 +3059,7 @@
       "backend": "fourc",
       "physics": "input_format",
       "pitfall_index": 26,
-      "fixture_id": "runtime_vtk_output_needs_both_sections",
+      "fixture_id": "fourc/runtime_vtk_output_needs_both_sections",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3574,7 +3077,7 @@
       "backend": "fourc",
       "physics": "structural_dynamics",
       "pitfall_index": 6,
-      "fixture_id": "structural_dynamic_dynamictype_enum",
+      "fixture_id": "fourc/structural_dynamic_dynamictype_enum",
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
@@ -3585,24 +3088,7 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_spec_builders.cpp, line"
-    },
-    "fourc::thermal::3": {
-      "key": "fourc::thermal::3",
-      "backend": "fourc",
-      "physics": "thermal",
-      "pitfall_index": 3,
-      "fixture_id": "thermo_prefixed_dirich_silently_ignored",
-      "mode": "cmd",
-      "status": "passed",
-      "expect_matched": [
-        "is WRONG --> actresult= 0.00000000000000000e+00",
-        "EXIT_PREFIXED=1",
-        "is CORRECT",
-        "EXIT_PLAIN=0"
-      ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "=== THERMO-prefixed section (silently ignored) ===\nTHERMAL  : thermo          temp     at node   2\t is WRONG --> actresult= 0.00000000000000000e+00, givenresult= 1.00000000000000000e+02, abs(diff)= 1.00000000000000000e+02 > 1.00000000000000002e-08\nEXIT_PREFIXED=1\n=== plain section (works) ===\nTHERMAL  : thermo          temp     at node   2\t is CORRECT, abs(diff)= 0.00000000000000000e+00 < 1.00000000000000002e-08\nEXIT_PLAIN=0\n"
     }
-  }
+  },
+  "_coverage_note": "PARTIAL RECORD. These rows are the union of what the twelve campaign branches each recorded on their own tree; they were never all produced by one run on one host. No fixture_fingerprint is written, so test_signal_verification's currency check correctly reports the snapshot as unverifiable rather than treating it as current. Regenerate with scripts/run_tier2_fixtures.py --write-results once the solver stacks are all available."
 }

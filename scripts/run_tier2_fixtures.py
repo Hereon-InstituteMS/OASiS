@@ -204,7 +204,13 @@ def _eval_fixture(fixture_dir: Path,
     key = f"{backend}::{physics}::{idx}"
     result = FixtureResult(
         key=key, backend=backend, physics=physics,
-        pitfall_index=idx, fixture_id=fixture_dir.name,
+        # BACKEND-QUALIFIED. The bare directory name is not unique across the
+        # tree — elasticity_mms_convergence, poisson_mms_convergence and
+        # stokes_mms_convergence each exist under several backends — and the
+        # results record is read row-wise by fixture_id, so a bare name made
+        # each backend's row overwrite the previous one's and ten runs
+        # collapsed to three. Qualifying it keeps every run its own row.
+        pitfall_index=idx, fixture_id=f"{backend}/{fixture_dir.name}",
         mode=mode,
     )
     expect = [str(s) for s in meta.get("expect_in_output", [])]
