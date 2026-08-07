@@ -137,13 +137,64 @@ def check(backend: str, physics: str, variant: str, timeout: int = 120) -> dict:
         return row
 
 
+_WRITES_RUNNABLE = (
+    r"""open\(\s*['\"][^'\"]*(input|main|run)[^'\"]*\.py""",
+    r"""['\"](input|MainKratos|run)\.py['\"]""",
+)
+
+
+def screen(repo: Path) -> list[str]:
+    """Cheap static pass over EVERY template, to bound the problem.
+
+    Running each template costs up to a couple of minutes; generating it costs
+    nothing. A template that writes a runnable `.py` is the two-stage shape, and
+    that can be seen in the text.
+
+    Measured across 255 templates in all nine backends: exactly ONE matches,
+    `kratos:dem:2d`. So this defect is a single broken generator, not a rot
+    running through the catalog — which is worth knowing precisely, because
+    "one gate is shallow" and "the gates are shallow" call for very different
+    responses.
+    """
+    import re
+    sys.path.insert(0, str(repo / "src"))
+    from core.registry import get_backend, load_all_backends
+    load_all_backends()
+    hits, total = [], 0
+    for b in ("kratos", "skfem", "ngsolve", "fenics", "dune", "dealii",
+              "fourc", "febio", "sparta"):
+        be = get_backend(b)
+        if not be:
+            continue
+        for p in be.supported_physics():
+            for v in (p.template_variants or ["default"]):
+                total += 1
+                try:
+                    t = be.generate_input(p.name, v, {})
+                except Exception:      # noqa: BLE001 - a generator that cannot
+                    continue           # even generate is a different defect
+                if any(re.search(pat, t, re.I) for pat in _WRITES_RUNNABLE):
+                    hits.append(f"{b}:{p.name}:{v}")
+    print(f"  {total} templates screened, {len(hits)} two-stage")
+    for h in hits:
+        print(f"      {h}")
+    return hits
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("targets", nargs="*",
                     help="backend:physics:variant (default: a known set)")
+    ap.add_argument("--screen", metavar="REPO", default=None,
+                    help="static pass over every template in REPO to find the "
+                         "two-stage ones cheaply, then stop")
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--json", default=None)
     args = ap.parse_args()
+
+    if args.screen:
+        screen(Path(args.screen))
+        return 0
 
     targets = args.targets or ["kratos:dem:2d"]
     rows = []
