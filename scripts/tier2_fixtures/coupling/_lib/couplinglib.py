@@ -1335,7 +1335,6 @@ def _check_vector_interface_physics(tag: str, res: dict, p: VectorProblem,
                            "scalar problem in vector clothing"))
     # ...and VARY along the interface, or a mapping between non-matching
     # meshes has nothing to get wrong and the claim is vacuous.
-    var = float(np.max(ul, axis=0).max() - np.min(ul, axis=0).min())
     spread = [float(ul[:, c].max() - ul[:, c].min()) for c in (0, 1)]
     print(f"{tag}_interface_u_spread=({spread[0]:.6g},{spread[1]:.6g})")
     lives.append(check(min(spread) > 0,
@@ -1343,7 +1342,8 @@ def _check_vector_interface_physics(tag: str, res: dict, p: VectorProblem,
                        "the interface displacement does not vary along the "
                        "interface, so any mapping reproduces it and the "
                        "non-matching-mesh claim is not exercised"))
-    print(f"{tag}_both_components_live={bool(all(lives))} (spread {var:.3g})")
+    print(f"{tag}_both_components_live={bool(all(lives))} "
+          f"(smallest component spread {min(spread):.3g})")
 
     # (2) CONTINUITY OF DISPLACEMENT across the interface, componentwise, with
     # each side mapped onto the other's points.
