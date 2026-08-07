@@ -716,3 +716,124 @@ Merge order confirmed by this probe: purge first, then the campaign branches;
 conflicts are 1-4 files each and are purge's decontamination against the same
 file's contaminated version, which resolves by taking the purged side and
 re-applying any genuinely new content on top.
+
+---
+
+# The last merge, and the class of defect it exposed
+
+`knowledge/coupling-revision` was deliberately left for last, and correctly:
+it and `feature/coupling-robustness` rewrote the same iteration loop, the same
+`_aitken`, and the same `couple()` for different reasons. The two rewrites turn
+out to be COMPLEMENTARY where they touch code and CONTRADICTORY where they
+touch text, and separating those two is most of the work.
+
+## The code merged by layering, once the question was asked the right way
+
+The conflict looks like two competing loop bodies. It is not.
+coupling-robustness's loop is the same loop plus evidence collection
+(`returncodes`, per-block residuals, responsiveness digests, the graph, the
+sensitivity probe) plus four refusals (non-zero exit, empty export, changed
+export length, unknown partner name). coupling-revision's `_invoke()` is the
+loop body as it stood BEFORE any of that, factored into a function so the
+noise-floor measurement could drive participants down the same path.
+
+So the resolution is not a side. Keep coupling-robustness's loop whole, keep
+`_invoke` for what it was factored out for, and make `_invoke` reproduce the
+loop's observable behaviour (`sort_keys`, stale-export deletion, non-zero-exit
+refusal) so the floor really is a floor for the residual the loop reports.
+Taking `_invoke` for the loop — which is what "pick a side" would have done —
+deletes every refusal silently.
+
+`tests/test_coupling_robustness.py` decides the `_aitken` half outright:
+`test_aitken_formula_matches_the_hand_computation` pins the recurrence against
+a hand computation and `test_aitken_is_given_the_residual_and_not_the_raw_export`
+pins `theta['residual_norm']`. There is nothing to weigh.
+
+## FIVE served statements were true on one branch and false on the other
+
+This is the shape worth recording, because nothing in the gate stack sees it
+and it is not "the knowledge is wrong". Each of these was measured, correct,
+and carefully written on `knowledge/coupling-revision` — and each describes a
+driver that `feature/coupling-robustness` had already replaced:
+
+    served claim                              measured on the merged driver
+    ---------------------------------------   ---------------------------------
+    "does NOT check your exit code"           refused: "participant A exited
+    (in two places)                           with code 7 ... output of a
+                                              FAILED run"
+    "theta adapts per participant"            199 _aitken calls over 200
+    (on BOTH branches)                        iterations with 2 participants
+    "two fallback paths floor it at 0.1"      theta_prev=0.07 comes back 0.07
+    "NOT the textbook recurrence — feeds      it is handed res_prev;
+     the previous RAW EXPORT"                 residual_norm 6.1e-06, not the
+                                              size of the solution
+    "`data_files` is NOT supported by this    the file arrives in work_dir and
+     tool, silently ignored"                  the participant sees it
+
+Two of those five were the corrections the merge brief specifically asked to
+preserve. They could not be preserved, because preserving them would ship a
+false statement — which is the point: **a correction is only true against the
+code it was measured on, and a merge changes the code.** Any branch that
+CORRECTS documentation is carrying a hidden dependency on its own tree, and
+that dependency is invisible in the diff. The text and the code it describes
+conflict semantically while merging cleanly.
+
+The tell is cheap and should be routine: for every doc correction a branch
+carries, re-run the measurement on the merged tree before believing it. Five
+for five failed here.
+
+## Two fixtures asserted the pre-fix behaviour
+
+Same mechanism one level down, and worse, because a fixture wears the badge
+that means "executed". `driver_invariants_the_contract_asserts` asserted
+`participant_exited_nonzero_and_was_still_accepted=True` and
+`data_files_key_staged_the_file=False`; `aitken_clamp_bounds_theta` asserted
+`theta_adapts_per_participant=True`. All three were true when written.
+
+Turning an assertion round is not enough — the recorded MUTATION usually stops
+discriminating at the same time. The old exit-code mutation (write the export
+under another name) killed the old assertion because the run then failed; it
+cannot kill the new one, because the run fails either way. The replacement
+flips `sys.exit(7)` to `sys.exit(0)`, which isolates the exit code as the cause.
+**When a fixture's direction reverses, its control has to be re-derived, not
+re-pointed.**
+
+## A dead mechanism found by asking who calls it
+
+`knowledge.py` carried `_coupling_failure_modes()`, added on
+coupling-robustness to append the 32-entry failure index to the coupling guide.
+Its call site was the inline payload string, and that string had been replaced
+by the `coupling_knowledge` module — so the helper sat there calling nothing,
+and its docstring still described a call that no longer happened. That is how
+the loss stayed invisible: the function reads as live.
+
+Restoring the append was the obvious repair and the wrong one.
+`test_knowledge_tool_output_matches_the_payload_function` requires the tool to
+serve exactly what `coupling_knowledge()` returns, "not a second copy", so the
+append fails a gate — and on the numbers it deserves to: the block is 38 kB
+against a 35 kB guide, so `knowledge(topic='coupling')` would more than double
+and carry TWO symptom corpora for an agent holding one error message. The guide
+now carries a 900-byte cross-reference instead, inside the payload function, and
+each corpus stays in one place.
+
+## A behaviour difference the merge does not cause and must not hide
+
+Measured on the skfem conduction pair, rho = 4, tol = 1e-4, max_iter = 200:
+
+    accelerator="constant", theta=0.2   CONVERGED, 83 iters, 9.4e-05
+    accelerator="constant", theta=0.5   not converged, 8.2e-01 (above the
+                                        stability limit 2/(1+rho) = 0.4)
+    accelerator="aitken",   theta0=0.5  not converged, STALLS at 3.7e-03
+    accelerator="aitken",   theta0=0.2  not converged, STALLS at 2.4e-03
+
+The Aitken arms do not diverge — the interface value is 3.1e-04 from the closed
+form — the residual stops falling, with theta on the 0.05 floor for 40 of 199
+adaptations. The per-participant Aitken this replaced converged this same case
+inside the same budget, which is why `aitken_clamp_bounds_theta` was written
+against it.
+
+This is a property of `ffb5d1c6`, not of this merge: `_aitken` and the loop are
+taken from coupling-robustness unchanged. It is recorded here because the served
+sweep ("Aitken matched or beat a constant theta almost everywhere, measured
+across rho from 1/4 to 9") was measured on the OTHER driver, and one cell of it
+does not reproduce. The sweep has not been re-run.
