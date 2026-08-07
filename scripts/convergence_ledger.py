@@ -68,6 +68,7 @@ problems and mean nothing by it.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -203,7 +204,70 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
     backends_dir = repo / "src" / "backends"
     fixtures_dir = repo / "scripts" / "tier2_fixtures"
 
-    def _claims_with_a_fixture(fx_dir: Path) -> set[str]:
+    SENTINEL_INDEX = 90        # >= this is a synthetic fixture; it credits no claim
+
+    def _claim_text_map(backend: str):
+        """{(physics, index) -> claim TEXT} straight from the registry.
+
+        Resolving a fixture key to the TEXT it names is what makes the coverage
+        numerator and denominator the same universe. Without it the metric
+        divided a count of KEYS by a count of TEXTS — two unrelated cardinalities
+        — which is why four backends reported above 100%, the exact symptom this
+        function's own docstring calls proof that the metric is not measuring
+        coverage.
+        """
+        try:
+            sys.path.insert(0, str(repo / "src"))
+            from core.registry import get_backend, load_all_backends
+            load_all_backends()
+            be = get_backend(backend)
+        except Exception:
+            return None
+        if be is None:
+            return None
+        out = {}
+        names = []
+        try:
+            names = [c.name for c in be.supported_physics()]
+        except Exception:
+            pass
+        seen_phys = set()
+        for phys in names:
+            if phys in seen_phys:
+                continue
+            seen_phys.add(phys)
+            try:
+                k = be.get_knowledge(phys)
+            except Exception:
+                continue
+            if isinstance(k, dict):
+                for i, entry in enumerate(k.get("pitfalls") or []):
+                    if isinstance(entry, str):
+                        out[(phys, i)] = entry
+        return out
+
+    def _resolve(backend: str, cmap, phys: str, idx: int):
+        """Claim text for one key, or None. Tries the physics name, then the
+        backend's own alias resolution, so a fixture keyed on an alias is not
+        silently counted as covering nothing."""
+        if cmap is None:
+            return None
+        if (phys, idx) in cmap:
+            return cmap[(phys, idx)]
+        try:
+            sys.path.insert(0, str(repo / "src"))
+            from core.registry import get_backend
+            be = get_backend(backend)
+            k = be.get_knowledge(phys) if be is not None else None
+            if isinstance(k, dict):
+                ps = k.get("pitfalls") or []
+                if 0 <= idx < len(ps) and isinstance(ps[idx], str):
+                    return ps[idx]
+        except Exception:
+            return None
+        return None
+
+    def _claims_with_a_fixture(fx_dir: Path, backend: str = "") -> set[str]:
         """Distinct CLAIMS a backend's fixtures attest to, not fixture count.
 
         Counting fixture directories is wrong in both directions, and both
@@ -232,6 +296,7 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
         found: set[str] = set()
         if not fx_dir.is_dir():
             return found
+        cmap = _claim_text_map(backend) if backend else None
         for d in sorted(fx_dir.iterdir()):
             manifest = d / "fixture.json"
             if not manifest.is_file():
@@ -241,13 +306,36 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
             except (json.JSONDecodeError, OSError):
                 continue
             covers = spec.get("covers")
+            keys = []
             if isinstance(covers, list) and covers:
-                found.update(str(c) for c in covers if isinstance(c, str))
-                continue
-            physics = spec.get("physics")
-            idx = spec.get("pitfall_index")
-            if physics is not None and idx is not None:
-                found.add(f"{physics}:{idx}")
+                keys = [str(c) for c in covers if isinstance(c, str)]
+            else:
+                physics = spec.get("physics")
+                idx = spec.get("pitfall_index")
+                if physics is not None and idx is not None:
+                    keys = [f"{physics}::{idx}"]
+            for raw in keys:
+                # BOTH CONVENTIONS. `covers` entries are written `physics::index`
+                # (deal.II, coupling) and `physics:index` (SPARTA); the fallback
+                # used to emit the single-colon form regardless. Reading only one
+                # spelling silently dropped every fixture that used the other.
+                m = re.match(r"^\s*(.+?):{1,2}(\d+)\s*$", raw)
+                if not m:
+                    continue
+                phys, i = m.group(1), int(m.group(2))
+                # SENTINELS CREDIT NOTHING. An index >= 90 is the documented
+                # range for synthetic fixtures — install diagnostics and the
+                # like — which are worth keeping and are not evidence for any
+                # claim. Counting them inflated the numerator with keys that
+                # name no claim at all.
+                if i >= SENTINEL_INDEX:
+                    continue
+                text = _resolve(backend, cmap, phys, i)
+                # A key naming a claim that does not exist counts for nothing,
+                # exactly as this function's contract says: otherwise coverage
+                # could be raised by inventing keys.
+                if text:
+                    found.add(text)
         return found
 
     def _registry_claims(backend: str) -> set[str] | None:
@@ -333,17 +421,28 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
         n_fx = 0
         if fx.is_dir():
             n_fx = len([d for d in fx.iterdir() if (d / "fixture.json").is_file()])
-        attributed = _claims_with_a_fixture(fx)
+        # Can this surface's keys be resolved to claim TEXTS at all? Only a
+        # registered backend exposes an ordered pitfall list per physics. When
+        # it cannot, attribution is UNMEASURABLE — not zero. Reporting zero
+        # would be the same lie in the other direction: `coupling` keys its 18
+        # fixtures on a flat 0..17 numbering under topic labels, so there is no
+        # positional list to resolve against, and printing 0% would read as
+        # "the flagship has no evidence" when what is true is "this metric
+        # cannot see it".
+        resolvable = _claim_text_map(name) is not None
+        attributed = (_claims_with_a_fixture(fx, name) & (signals or set())
+                      if resolvable else None)
         out[name] = {
             "pitfall_claims": len(signals),
             "fixtures": n_fx,
             # Fixture directories over claims. A FLOOR, not the figure: see
             # _claims_with_a_fixture for why it is wrong in both directions.
             "covered_crude": round(n_fx / len(signals), 4) if signals else None,
-            "claims_attributed": len(attributed),
+            "claims_attributed": (len(attributed) if attributed is not None
+                                  else None),
             "denominator_source": source,
             "covered": (round(len(attributed) / len(signals), 4)
-                        if signals else None),
+                        if (attributed is not None and signals) else None),
         }
 
     # The served surfaces that live outside src/backends/<name>/. Grouped under
@@ -363,7 +462,14 @@ def measured_pitfall_coverage(repo: Path | None = None) -> dict[str, dict]:
         out[label] = {
             "pitfall_claims": len(sigs),
             "fixtures": n_fx,
-            "covered": round(n_fx / len(sigs), 4),
+            # These surfaces have no per-physics ordered list either, so a
+            # fixture key cannot be resolved to the claim it names. The crude
+            # fixture-count ratio is kept as a floor and clearly labelled, but
+            # `covered` stays None so the freeze criterion judges them as
+            # UNMEASURABLE rather than on a number that is not coverage.
+            "covered_crude": round(n_fx / len(sigs), 4),
+            "claims_attributed": None,
+            "covered": None,
         }
 
     # Fixture directories with no denominator at all. `coupling` is the one that
@@ -398,7 +504,7 @@ def print_measured_coverage() -> None:
     for be, d in sorted(rows.items()):
         tp += d["pitfall_claims"]
         tf += d["fixtures"]
-        ta += d.get("claims_attributed", 0)
+        ta += d.get("claims_attributed") or 0
         if d["covered"] is None:
             cov, bar = "UNMEASURABLE", ""
         else:
@@ -407,7 +513,7 @@ def print_measured_coverage() -> None:
         if d["covered"] is None:
             unmeasurable.append(be)
         print(f"{be:<15} {d['pitfall_claims']:>7} {d['fixtures']:>9} "
-              f"{d.get('claims_attributed', 0):>11} {cov:>9}  {bar}")
+              f"{(d.get('claims_attributed') if d.get('claims_attributed') is not None else '—'):>11} {cov:>9}  {bar}")
     print("-" * 60)
     print(f"{'TOTAL':<15} {tp:>7} {tf:>9} {ta:>11} "
           f"{(ta / tp if tp else 0):>8.1%}")

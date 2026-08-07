@@ -2,7 +2,7 @@
   "_comment": "Tier-2 SYNTHETIC (linear_elasticity::90, the sentinel range the coverage metric excludes): dolfinx.fem.functionspace rejects an element family basix does not register. RE-KEYED 2026-08-06 off linear_elasticity::8, an index past the end of that pitfall list \u2014 the list stops at 7, so the key named nothing. The claim it actually defends is linear_elasticity::6, and that is already owned by p1_family_name_rejected_cg_deprecated, which additionally pins that 'CG' still works with a deprecation warning. Crediting no claim is better than miscrediting one, so this moves to the sentinel range rather than onto a live slot.",
   "backend": "fenics",
   "physics": "linear_elasticity",
-  "pitfall_index": 6,
+  "pitfall_index": 90,
   "mode": "python",
   "env": {
     "PYTHONUNBUFFERED": "1"
@@ -12,8 +12,6 @@
     "Unknown element family"
   ],
   "forbid_in_output": [],
-  "_key_correction": "off-by-one drift: keyed 8 where the list ends at 7; the element-family claim IS index 6. Verified during consolidation: fenics/linear_elasticity has 8 pitfalls (0..7) and #6 is '[API] dolfinx.fem.functionspace rejects element family names that basix does not register' \u2014 the claim this fixture exercises. knowledge/fenics-verify had re-keyed it to the >=90 sentinel range, which would have credited no claim at all; kept at 6 and made explicit via covers.",
-  "covers": [
-    "linear_elasticity::6"
-  ]
+  "_key_correction": "RE-KEYED to the >=90 sentinel range, which the coverage metric excludes. History: it was keyed linear_elasticity::8, an index past the end of a 7-entry list, so it credited nothing. During consolidation it was briefly moved to ::6 because claim #6 IS the element-family claim \u2014 that was verified but incomplete: knowledge/fenics-verify had already written p1_family_name_rejected_cg_deprecated as the dedicated fixture for #6, and two fixtures on one key make the runner mark BOTH failed. A claim may have only one owner. This one keeps the sentinel, credits no claim, and the collision was caught by the post-merge fixture-key measurement.",
+  "covers": []
 }
