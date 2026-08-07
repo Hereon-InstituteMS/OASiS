@@ -105,14 +105,24 @@ def main() -> int:
         ok = False
 
     # --- how quickly does it leave zero? --------------------------------
-    first = int(np.argmax(b_bad > 1e-6))
+    # GUARD BOTH argmax CALLS.  np.argmax returns 0 on an all-False array, so
+    # the unguarded form answers "index 0" — i.e. "immediately" — for a
+    # boundary that never leaves zero at all.  That made
+    # free_boundary_leaves_zero_immediately print True under T2_MUTATE=1 with
+    # free_boundary_max_over_run=0.000000e+00 on the same run.  -1 means "never",
+    # and the assertion below now has to exclude it.
+    first = int(np.argmax(b_bad > 1e-6)) if (b_bad > 1e-6).any() else -1
     reaches_1 = int(np.argmax(b_bad > 0.1)) if (b_bad > 0.1).any() else -1
     print(f"free_boundary_first_step_above_1e_minus_6={first}")
     print(f"free_boundary_first_step_above_0p1={reaches_1}")
-    print(f"free_boundary_leaves_zero_immediately={first <= 2}")
+    print(f"free_boundary_leaves_zero_immediately={0 <= first <= 2}")
     print(f"free_boundary_order_one_within_100_steps="
           f"{0 <= reaches_1 <= 100}")
-    if first > 2:
+    if first < 0:
+        print("FAIL: the boundary never left zero, so 'immediately' has no "
+              "meaning here", file=sys.stderr)
+        ok = False
+    elif first > 2:
         print(f"FAIL: the boundary took {first} steps to leave zero",
               file=sys.stderr)
         ok = False
