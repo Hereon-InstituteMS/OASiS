@@ -167,6 +167,7 @@ def main() -> int:
     mismatches = 0
     for root, must in ((GOOD_ROOT, True), (BAD_ROOT, False)):
         got, msg = initialises(root)
+        print()
         print(f"initialises[{root}]={got}_expected={must}")
         if msg:
             print(f"message[{root}]={msg}")
