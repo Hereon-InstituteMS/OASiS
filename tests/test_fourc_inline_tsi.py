@@ -115,16 +115,16 @@ class TestFourcInlineTsiMonolithic(unittest.TestCase):
 
 
 class TestFourcTsiPlaneStrain(unittest.TestCase):
-    """tsi/plane_strain_2d — the pseudo-2D thin-slab route added after the
-    T14 evaluation campaign (2026-07): agents given a 2D plane-strain
-    thermo-mechanical problem dead-ended, because 4C has no 2D TSI
-    elements, WALL QUAD4 rejects MAT_Struct_ThermoStVenantK ('Invalid
-    type of material law for wall element', 4C_w1_mat.cpp:179) and the
-    deployed binary rejects SOLID QUAD4 outright ("Element 'SOLID' does
-    not seem to know cell type 'quad4'"). Verified live against
-    /home/alexander/4C/build/4C 2026-08-01: rc=0 and max|u| = 2.462e-3 m
-    vs the analytic plane-strain estimate (1+nu)*alpha*int(T-Tref)dx =
-    2.449e-3 m (0.5%). GEN-ONLY here so CI needs no binary."""
+    """tsi/plane_strain_2d — the pseudo-2D thin-slab route for 2D
+    plane-strain thermo-mechanics. 4C has no 2D TSI elements: WALL QUAD4
+    rejects MAT_Struct_ThermoStVenantK ('Invalid type of material law for
+    wall element', 4C_w1_mat.cpp:179) and current builds reject SOLID
+    QUAD4 outright ("Element 'SOLID' does not seem to know cell type
+    'quad4'"), so the route is a one-element-thick 3D SOLIDSCATRA slab.
+    Verified live against a built 4C binary: rc=0, and the tip
+    displacement tracks the analytic plane-strain thermal-expansion
+    estimate (1+nu)*alpha*int(T-Tref)dx. GEN-ONLY here so CI needs no
+    binary."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -145,8 +145,8 @@ class TestFourcTsiPlaneStrain(unittest.TestCase):
         self.assertNotIn("FILE:", content)
 
     def test_no_2d_eletypes(self) -> None:
-        """The exact eletypes that dead-ended the T14 agents must NOT
-        appear — the route is a 3D SOLIDSCATRA slab."""
+        """The 2D eletypes that 4C rejects for TSI must NOT appear —
+        the route is a 3D SOLIDSCATRA slab."""
         content = self._gen()
         self.assertIn("SOLIDSCATRA HEX8", content)
         self.assertNotIn("WALL QUAD4", content)
@@ -201,9 +201,10 @@ class TestFourcTsiPlaneStrain(unittest.TestCase):
 
 class TestFourcTsiOnewayVariant(unittest.TestCase):
     """tsi/oneway_3d — the pre-existing inline one-way input, now exposed
-    as a variant and carrying the COUPVARIABLE Temperature fix (it
-    produced max|u| = 0.0 with the 4C default; 9.12e-4 after the fix,
-    both verified live 2026-08-01)."""
+    as a variant and carrying the COUPVARIABLE Temperature fix: with the
+    4C default the deck runs rc=0 and produces exactly zero
+    displacement, and only with COUPVARIABLE Temperature does the
+    thermal field actually load the structure (both verified live)."""
 
     @classmethod
     def setUpClass(cls) -> None:

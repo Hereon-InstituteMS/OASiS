@@ -1,18 +1,20 @@
 """Gen-only regression: fourc thermo_transient_mms/temporal_mms_2d.
 
-Created 2026-08-01 (deliverable E3). Unsteady-heat MMS extension family
-on 4C graded on TEMPORAL convergence order: manufactured solution
+Unsteady-heat MMS extension family on 4C graded on TEMPORAL
+convergence order: manufactured solution
 u*(x,y,t) = temp_offset + (amp*sin(kx x)*sin(ky y) + grad_amp*x/lx)*f(t)
 on a FIXED QUAD4 mesh, exact volumetric source rho*c*du*/dt -
 kappa*lap(u*) as a SYMBOLIC_FUNCTION_OF_SPACE_TIME body load,
 time-dependent Dirichlet u* on the whole boundary, initial field
 u*(x,0), One-Step-Theta time integration.
 
-Verified live against the deployed binary /home/alexander/4C/build/4C
-on 2026-08-01 (dt-halving to the same T_end on a fixed mesh):
-    theta=0.5: Richardson orders ||u_dt - u_dt/2|| 2.018 / 2.004
-               (error vs exact saturates at the spatial Q1 floor)
-    theta=1.0: orders vs exact 0.95 / 1.00 / 1.05
+The live gate is a dt-halving study against a built 4C binary: the
+Richardson orders ||u_dt - u_dt/2|| must approach the theoretical
+One-Step-Theta rates (2 at theta=0.5, 1 at theta=1.0). The error
+against the exact solution saturates at the spatial Q1 floor, so it is
+Richardson -- not error-vs-exact -- that grades the time integrator.
+The measured orders are outputs of that run and are deliberately not
+recorded here.
 
 The load-bearing 4C fact these decks encode: the volumetric source in
 STANDALONE Thermo must use the PLAIN "DESIGN SURF NEUMANN CONDITIONS"
@@ -20,12 +22,12 @@ STANDALONE Thermo must use the PLAIN "DESIGN SURF NEUMANN CONDITIONS"
 "DESIGN SURF/VOL THERMO NEUMANN CONDITIONS" are registered under
 "ThermoSurfaceNeumann"/"ThermoVolumeNeumann" and are SILENTLY dropped
 by both Discretization::evaluate_neumann and TemperImpl::radiation()
-(probe 2026-08-01: rc=0, no warning, field converged to the
-source-free solution). These tests pin the plain section so the deck
-never regresses to the silently-ignored variant.
+(probed live: rc=0, no warning, field converged to the source-free
+solution). These tests pin the plain section so the deck never
+regresses to the silently-ignored variant.
 
 Tests are GEN-ONLY (no 4C binary needed) so they run in CI; the live
-execution gate is the dt-halving smoke recorded in the E3 report.
+execution gate is the separate dt-halving study.
 """
 from __future__ import annotations
 
@@ -118,8 +120,8 @@ class TestFourcThermoTransientMMS(unittest.TestCase):
         """THE 4C trap this family exists to encode: the volumetric
         source must go through the PLAIN Neumann section. The
         THERMO-prefixed one is silently ignored in standalone Thermo
-        (verified live 2026-08-01: rc=0, no warning, RMS error 0.55
-        vs 5e-4 after the switch)."""
+        (verified live: rc=0, no warning, and a field that converged to
+        the SOURCE-FREE solution until the plain section was used)."""
         content = self._gen()
         parsed = yaml.safe_load(content)
         self.assertIn("DESIGN SURF NEUMANN CONDITIONS", parsed)

@@ -1,8 +1,8 @@
 """Gen-only tests for the deal.II poisson_3d_mixed_bc generator.
 
-Created 2026-08-01 (deliverable E1): 3D Poisson on the unit cube with
-MIXED Dirichlet-Neumann boundaries, manufactured solution (MMS),
-global refinement and per-cycle L2 error output.
+3D Poisson on the unit cube with MIXED Dirichlet-Neumann boundaries,
+manufactured solution (MMS), global refinement and per-cycle L2 error
+output.
 
 These tests do NOT require the deal.II library — they pin the
 *generator* contract only:
@@ -17,10 +17,11 @@ These tests do NOT require the deal.II library — they pin the
   * validate_parameters flags nonsensical inputs and the generator
     refuses to emit code for them.
 
-The live execution gate is the convergence smoke run (deal.II
-9.8.0-pre, 2026-08-01): degree=1 observed L2 orders 2.06/1.96/1.99/
-2.00, degree=2 observed 1.55(pre-asymptotic)/2.92/2.98/3.00 — the
-verified numbers are recorded in the module KNOWLEDGE.
+The live execution gate (outside pytest, deal.II 9.8.0-pre) is a
+convergence run whose per-cycle L2 errors must approach the
+theoretical order k+1 for FE_Q(k). Those measured orders are outputs
+of the run and are deliberately NOT recorded here or in the module
+KNOWLEDGE.
 """
 from __future__ import annotations
 
