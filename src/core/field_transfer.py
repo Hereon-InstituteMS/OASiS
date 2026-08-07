@@ -152,40 +152,53 @@ def interpolate_to_points(
     def _shape(a):
         return a if vector else a.ravel()
 
-    # Determine dimensionality of the interface
-    # Remove the constant-axis columns
-    nonconst = []
-    for ax in range(src_coords.shape[1]):
-        if src_coords[:, ax].max() - src_coords[:, ax].min() > 1e-10:
-            nonconst.append(ax)
+    # THE INTERFACE'S OWN DIMENSION, not the number of coordinate columns that
+    # happen to vary. Dropping constant columns is right only for an
+    # axis-aligned interface: a flat patch that is TILTED in 3-D varies in all
+    # three columns while being a 2-D manifold, and handing those three columns
+    # to Qhull raises "initial simplex is not full dimensional" — the same
+    # class of mistake as measuring a surface with a path length. So the
+    # intrinsic dimension comes from an SVD of the centred coordinates and the
+    # interpolation happens in the interface's OWN principal coordinates, which
+    # also fixes the 1-D branch for any interface that is not parallel to an
+    # axis. Target points are projected with the SAME basis.
+    if len(src_coords) == 0:
+        return _shape(np.zeros((len(target_coords), ncomp)))
+    origin = src_coords.mean(axis=0)
+    centred = src_coords - origin
+    try:
+        u_, sv, vt = np.linalg.svd(centred, full_matrices=False)
+    except np.linalg.LinAlgError:
+        sv, vt = np.zeros(1), np.eye(src_coords.shape[1])
+    rank = int(np.sum(sv > 1e-8 * sv[0])) if sv.size and sv[0] > 0 else 0
 
-    if len(nonconst) == 0:
+    if rank == 0:
         # Single location — return that constant, per component
         return _shape(np.tile(src_values[0], (len(target_coords), 1)))
 
-    if len(nonconst) == 1:
+    src_p = centred @ vt[:rank].T
+    tgt_p = (target_coords[:, :src_coords.shape[1]] - origin) @ vt[:rank].T
+
+    if rank == 1:
         # 1D interface — use numpy interp (robust, no scipy needed)
-        ax = nonconst[0]
-        order = np.argsort(src_coords[:, ax])
+        s, t = src_p[:, 0], tgt_p[:, 0]
+        order = np.argsort(s)
         out = np.column_stack([
-            np.interp(target_coords[:, ax], src_coords[order, ax],
-                      src_values[order, c])
+            np.interp(t, s[order], src_values[order, c])
             for c in range(ncomp)])
         return _shape(out)
 
-    # 2D+ interface — use scipy griddata
+    # 2D+ interface — use scipy griddata in the interface's own coordinates
     from scipy.interpolate import griddata
-    src_2d = src_coords[:, nonconst]
-    tgt_2d = target_coords[:, nonconst]
     cols = []
     for c in range(ncomp):
-        col = np.asarray(griddata(src_2d, src_values[:, c], tgt_2d,
+        col = np.asarray(griddata(src_p, src_values[:, c], tgt_p,
                                   method=method), float).ravel()
         # Fill NaN (extrapolation) with nearest
         nans = ~np.isfinite(col)
         if np.any(nans):
             col[nans] = np.asarray(
-                griddata(src_2d, src_values[:, c], tgt_2d[nans],
+                griddata(src_p, src_values[:, c], tgt_p[nans],
                          method="nearest"), float).ravel()
         cols.append(col)
     return _shape(np.column_stack(cols))
