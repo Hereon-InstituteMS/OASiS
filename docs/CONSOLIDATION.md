@@ -1179,3 +1179,95 @@ re-pinning a luckier seed would have restored the tick and kept the defect.
 Before quoting a number, ask what the instrument would report if it were broken.
 Where that answer is the same as the finding — 23 of 23 unresolved, 0 entries
 checked, every claim absent — the finding is not yet evidence. Run the control.
+
+---
+
+# The last four tips, and what happens when a gate meets the whole corpus
+
+Thirteen commits closed the consolidation: ten from `feature/anti-fabrication`
+and one execution ledger each from `knowledge/fenics-verify`,
+`knowledge/dealii-verify` and `knowledge/febio-extraction`. The gates went
+first, deliberately, so that the corpus arriving behind them was judged rather
+than trusted.
+
+## The conflicts, and what decided each one
+
+Four conflicts across the four merges, and not one of them was decided on which
+side looked more reasonable.
+
+`docs/CONSOLIDATION.md` was an append/append at line 718. Both blocks were kept
+whole, and that was checked rather than assumed: the merged file's lines
+721-1057 diff empty against the consolidation branch's own text, and its lines
+1069-1181 diff empty against the anti-fabrication branch's. The two record
+different things — everything above documents defects in the KNOWLEDGE the
+campaigns produced, everything below documents defects in the TOOLS that were
+judging it — and a corpus can be wrong while its instrument is right, or the
+reverse, so collapsing them into one shorter account would have destroyed the
+only way to tell those two cases apart.
+
+`scripts/scan_results/backend_imports.json` and `signal_verification.json` both
+went to ours, on evidence rather than on which run was newer. The entire diff in
+the first is the absolute path of the worktree that ran the scan — 24 lines,
+ofa-consolidate against ofa-meshcheck, no other field — and
+`TestBackendImportSnapshot.setUp` re-runs the audit and reads the file it has
+just written, so the committed bytes are never what the test asserts on. The
+second is read by nothing at all: a grep for the literal filename across
+`tests/`, `scripts/` and `.github/` returns two hits, both in
+`verify_signal_clauses.py`, both writes. It holds one backend's scan and cannot
+hold two.
+
+`scripts/build_execution_ledger.py` conflicted add/add in all three ledger
+merges, which looks alarming and is not. Those three branches forked before the
+file existed, so git had no base to merge against; each one's copy is
+byte-identical to the blob consolidation itself carried until the
+anti-fabrication merge. Taking theirs would have reverted the shared matcher,
+the recipe-driven mutation arm and the TIMEOUT fix in exchange for nothing.
+
+`scripts/run_tier2_fixtures.py` did NOT conflict, which is worth recording
+because it was the file everyone expected trouble in. The two sides edit
+disjoint regions: theirs the matcher at the top and the expect loop, ours the
+deal.II discovery, the conda interpreter probe, the coupling route and the CLI
+filters. Both mechanisms are present and neither is layered on the other,
+because they answer different questions.
+
+## The matcher, verified rather than reasoned about
+
+The defect being closed was two definitions of "is this needle present" that
+disagreed — the runner lowercased both sides, the ledger compared raw strings,
+and the same fixture got different verdicts depending on which tool ran. The end
+state was checked by executing it, not by reading the imports:
+
+    ledger matcher IS runner matcher                              True
+    "same_name_files=1" against output "same_name_files=10"       False
+    expect "space_has_nedelec=False" vs "space_has_Nedelec=False" pass
+
+## Three gates went red, and only the third is a surprise
+
+`test_fixtures_carry_a_mutation_control` fails for five of eleven backends: 61
+of 1306 fixtures ship no control. That number is believable — the fourc figure
+reproduces the campaign branch's exactly, 18 of 395 measured independently on
+both trees. What does NOT survive contact with the data is the story attached to
+it. The 18 were described as legacy pre-campaign fixtures; 8 of them are on
+`main` and the other 10 were written during the campaign itself on 2026-08-03,
+in `2cc29cef`, `c36b91eb` and `05d46402`. Kratos is worse in the same direction:
+9 of its 11 uncontrolled fixtures were written on 2026-08-06. The debt is not
+inherited, it is current, and it is 61 fixtures rather than 18.
+
+`test_named_input_keys_exist` fails for all nine backends. 34 baselined keys had
+been fixed by the merged corpus and were pruned — an entry that outlives its fix
+re-permits the same fabrication later. 121 further candidates were found and
+deliberately NOT baselined; see `named_key_baseline.json` for what they are and
+why triaging them is separate work.
+
+`test_quoted_diagnostics_are_real` gained two failures, fenics and kratos, and
+this is the case worth reading carefully, because a new red normally means a new
+defect and here it means the opposite. On the pre-merge tree the audit answered
+`UNKNOWN — the backend's own source is not available here` for both, and the
+test's own line 75 turns UNKNOWN into a skip. Running the pre-merge script
+against the same corpus reproduces both UNKNOWNs exactly. The merge gave the
+audit the conda `fenics` env and the 28-application Kratos build, so both now
+return a verdict: fenics 202 entries, 18 quoted fragments present, 57 absent, 19
+unjudgeable. Nothing about the knowledge changed. Two backends stopped being
+invisible, and the count of failing tests went up because of it. A suite whose
+red count is used as a quality signal will read that as a regression, and it is
+the reverse.
