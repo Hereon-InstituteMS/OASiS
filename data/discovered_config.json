@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "discovered_at": "2026-05-13T02:03:00.225485",
+  "backends": {
+    "ngsolve": {
+      "location": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python",
+      "confidence": "definite",
+      "version": "6.2.2604",
+      "confirmed_at": "2026-05-13T02:03:00.225503"
+    },
+    "skfem": {
+      "location": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python",
+      "confidence": "definite",
+      "version": "12.0.1",
+      "confirmed_at": "2026-05-13T02:03:00.225511"
+    },
+    "kratos": {
+      "location": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python",
+      "confidence": "definite",
+      "version": "unknown",
+      "confirmed_at": "2026-05-13T02:03:00.225517",
+      "source_root": "/home/alexander/Kratos",
+      "git_branch": "master"
+    },
+    "dune": {
+      "location": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python",
+      "confidence": "definite",
+      "version": "unknown",
+      "confirmed_at": "2026-05-13T02:03:00.225523"
+    },
+    "fourc": {
+      "location": "/home/alexander/4C/build/4C",
+      "confidence": "definite",
+      "version": "",
+      "confirmed_at": "2026-05-13T02:03:00.225527",
+      "source_root": "/home/alexander/4C",
+      "git_branch": "feature/pd-precracks-fixedflag"
+    }
+  }
+}

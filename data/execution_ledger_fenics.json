@@ -1,5 +1,5 @@
 {
-  "commit": "b812b15afd16",
+  "commit": "30ec83105f8c",
   "tree_dirty": true,
   "rows": [
     {
@@ -7,37 +7,47 @@
       "fixture": "a_coarse_mesh_makes_the_phase_field_model_tougher",
       "claim": "fracture::1",
       "claim_text_sha": "622f6b629572cf6c",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-06T23:57:42+00:00",
+      "recorded": "2026-08-07T22:23:19+00:00",
       "unmutated": {
-        "status": "TIMEOUT",
-        "seconds": 150
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 33.8,
+        "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "TIMEOUT",
-        "seconds": 150
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 36.9,
+        "missing": [
+          "mesh_under_test_overshoots_griffith_by_over_thirty_five_percent=True",
+          "VERDICT=a_coarse_mesh_dissipates_more_than_griffith_not_less",
+          "FORBIDDEN:VERDICT=the_coarse_mesh_undershot_griffith"
+        ]
       },
-      "discriminates": false
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "adiabatic_wall_is_natural_not_dirichlet_zero",
       "claim": "heat:0",
       "claim_text_sha": "7bf0b0767f086019",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:02:43+00:00",
+      "recorded": "2026-08-07T22:24:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.4,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.4,
+        "seconds": 1.4,
         "missing": [
           "dirichlet_zero_pulls_field_to_zero_and_leaks_flux=True",
           "VERDICT=dirichlet_zero_on_insulated_wall_changes_the_problem",
@@ -51,19 +61,20 @@
       "fixture": "allen_cahn_dt_as_python_float_is_baked_into_the_form",
       "claim": "multiphase::8",
       "claim_text_sha": "47d744df69c5bc09",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:02:49+00:00",
+      "recorded": "2026-08-07T22:24:33+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.2,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 1.9,
         "missing": [
           "selected_dt_change_had_no_effect=True",
           "VERDICT=python_float_is_baked_in_only_a_constant_can_be_updated",
@@ -77,19 +88,20 @@
       "fixture": "allen_cahn_loses_volume_while_energy_decreases",
       "claim": "multiphase::2",
       "claim_text_sha": "ef08738ce6f27990",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:02:56+00:00",
+      "recorded": "2026-08-07T22:24:38+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.9,
+        "seconds": 1.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 2.0,
         "missing": [
           "volume_drift_exceeds_one_percent=True",
           "VERDICT=volume_drifts_while_the_energy_is_a_lyapunov_functional",
@@ -103,19 +115,20 @@
       "fixture": "allen_cahn_nonlinearproblem_prefix_required_j_optional",
       "claim": "multiphase::9",
       "claim_text_sha": "5adec6778fb6406b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:03+00:00",
+      "recorded": "2026-08-07T22:24:42+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.9,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.3,
         "missing": [
           "prefix_omitted_error=TypeError: NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'",
           "newtonsolver_wrap_error=AttributeError: 'NonlinearProblem' object has no attribute 'a'",
@@ -130,41 +143,47 @@
       "fixture": "array_size_mismatch",
       "claim": "linear_elasticity:1",
       "claim_text_sha": "92126e143285c432",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:07+00:00",
+      "recorded": "2026-08-07T22:24:45+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "ValueError",
+          "broadcast input array"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "assemble_once_vs_linearproblem_per_step",
       "claim": "heat:9",
       "claim_text_sha": "a5b8c628028c4460",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:09+00:00",
+      "recorded": "2026-08-07T22:24:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.9,
+        "seconds": 2.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.9,
+        "seconds": 3.6,
         "missing": [
-          "reuse_at_least_2x_faster_and_fresh_is_slowest=True",
-          "VERDICT=only_wall_time_reveals_the_reassembly",
           "FORBIDDEN:VERDICT=no_timing_separation"
         ]
       },
@@ -175,19 +194,20 @@
       "fixture": "assemble_vector_takes_the_array_not_the_vector",
       "claim": "matrix_free_poisson::1",
       "claim_text_sha": "126bad18cf315b05",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:18+00:00",
+      "recorded": "2026-08-07T22:24:53+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.1,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.0,
+        "seconds": 1.4,
         "missing": [
           "AttributeError: 'Vector' object has no attribute 'function_spaces'",
           "la_vector_as_first_argument_raises_attributeerror=True",
@@ -202,19 +222,20 @@
       "fixture": "b_minus_au_is_not_the_residual_after_bc_set",
       "claim": "matrix_free_poisson::3",
       "claim_text_sha": "c97220d9855bee81",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:23+00:00",
+      "recorded": "2026-08-07T22:24:57+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.7,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.2,
         "missing": [
           "b_minus_Au_over_b_AFTER_bc_set=",
           "b_minus_Au_after_bc_set_is_order_one=True",
@@ -229,50 +250,46 @@
       "fixture": "bbtree_contact_search_is_a_modest_win",
       "claim": "contact:5",
       "claim_text_sha": "5a160b2c90639197",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:27+00:00",
+      "recorded": "2026-08-07T22:25:00+00:00",
       "unmutated": {
-        "status": "FAIL",
-        "rc": 1,
-        "seconds": 3.6,
-        "missing": [
-          "tree_scaling_is_not_near_linear=True",
-          "VERDICT=bbtree_is_a_modest_win_not_a_near_linear_one",
-          "FORBIDDEN:VERDICT=bbtree_behaved_as_folklore_claims"
-        ]
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.8,
+        "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 2.0,
         "missing": [
-          "allpairs_scaling_is_quadratic=True",
           "tree_scaling_is_not_near_linear=True",
-          "VERDICT=bbtree_is_a_modest_win_not_a_near_linear_one",
           "FORBIDDEN:VERDICT=bbtree_behaved_as_folklore_claims"
         ]
       },
-      "discriminates": false
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "bdm_costs_double_for_the_same_pressure_rate",
       "claim": "mixed_poisson:5",
       "claim_text_sha": "859ea1393a01eb6d",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:35+00:00",
+      "recorded": "2026-08-07T22:25:05+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.4,
+        "seconds": 2.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 0,
-        "seconds": 6.2,
+        "seconds": 2.7,
         "missing": [
           "both_pairs_are_first_order_in_the_pressure=True",
           "bdm_pressure_rate_matches_rt=True",
@@ -286,19 +303,20 @@
       "fixture": "bratu_past_the_fold_no_solver_setting_helps",
       "claim": "nonlinear_pde::4",
       "claim_text_sha": "7ee6de3b87325eff",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:48+00:00",
+      "recorded": "2026-08-07T22:25:11+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.5,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.3,
         "missing": [
           "big_load_fails_in_every_arm=True",
           "raising_snes_max_it_does_not_help=True",
@@ -313,19 +331,20 @@
       "fixture": "bratu_solve_returns_a_diverged_field_quietly",
       "claim": "nonlinear_pde::1",
       "claim_text_sha": "d7ad624594481158",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:54+00:00",
+      "recorded": "2026-08-07T22:25:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.5,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.3,
         "missing": [
           "reason_is_negative=True",
           "Error: error code 91",
@@ -340,19 +359,20 @@
       "fixture": "brinkman_equal_order_pressure_checkerboard",
       "claim": "stokes_darcy::3",
       "claim_text_sha": "ca779b6c6bae259f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:03:59+00:00",
+      "recorded": "2026-08-07T22:25:17+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 14.6,
+        "seconds": 6.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 13.8,
+        "seconds": 5.3,
         "missing": [
           "equal_order_oscillation_ratio_between_0p7_and_0p99_everywhere=True",
           "equal_order_peak_pressure_far_above_the_imposed_inlet_value=True",
@@ -367,19 +387,20 @@
       "fixture": "brinkman_screening_layer_is_not_beavers_joseph",
       "claim": "stokes_darcy::6",
       "claim_text_sha": "6aa553041069bd40",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:04:28+00:00",
+      "recorded": "2026-08-07T22:25:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 10.1,
+        "seconds": 3.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 9.7,
+        "seconds": 3.1,
         "missing": [
           "cells_at_ten_times_sqrt_K_put_the_interface_velocity_a_third_low=True",
           "cells_at_ten_times_sqrt_K_cost_a_couple_of_percent_of_the_flux=True",
@@ -394,19 +415,20 @@
       "fixture": "c0ip_penalty_alpha_is_stability_floor",
       "claim": "biharmonic:0",
       "claim_text_sha": "d57b7d326b6b9698",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:04:49+00:00",
+      "recorded": "2026-08-07T22:25:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 11.2,
+        "seconds": 3.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 12.2,
+        "seconds": 2.8,
         "missing": [
           "rule_of_thumb_error_exceeds_alpha_one_by_more_than_3x=True",
           "VERDICT=penalty_rule_of_thumb_is_a_stability_floor_not_an_accuracy_optimum",
@@ -420,19 +442,20 @@
       "fixture": "cahn_hilliard_dt_too_large_damps_silently",
       "claim": "cahn_hilliard::0",
       "claim_text_sha": "a64390f06f8eceb1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:13+00:00",
+      "recorded": "2026-08-07T22:25:42+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.5,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.4,
         "missing": [
           "too_large_dt_field_is_the_initial_mean_to_4_digits=True",
           "big_dt_converges_but_flattens=True",
@@ -447,19 +470,20 @@
       "fixture": "cell_marked_source_current_integral_check",
       "claim": "magnetostatics:7",
       "claim_text_sha": "db68df7ea8a203e4",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:19+00:00",
+      "recorded": "2026-08-07T22:25:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.4,
         "missing": [
           "total_current_off_by_more_than_5x=True",
           "max_Az_off_by_more_than_10x=True",
@@ -474,19 +498,20 @@
       "fixture": "cg_inner_products_must_skip_ghost_dofs",
       "claim": "matrix_free_poisson::5",
       "claim_text_sha": "64f7e932cf2ad3ab",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:24+00:00",
+      "recorded": "2026-08-07T22:25:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.2,
+        "seconds": 1.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.9,
+        "seconds": 1.7,
         "missing": [
           "two_rank_residual_ratio_climbs_above_one_and_keeps_growing=True",
           "two_rank_field_magnitude_exceeds_1e3=True",
@@ -501,19 +526,20 @@
       "fixture": "cg_on_indefinite_helmholtz_diverges",
       "claim": "helmholtz:1",
       "claim_text_sha": "a2d308e62fecf9bf",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:31+00:00",
+      "recorded": "2026-08-07T22:25:53+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": [
           "every_cg_variant_diverges=True",
           "VERDICT=cg_diverges_on_the_indefinite_operator_lu_works",
@@ -527,19 +553,20 @@
       "fixture": "changing_dt_without_reassembling_A_is_silent",
       "claim": "time_dependent_heat:3",
       "claim_text_sha": "b0f99fcf64be2a91",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:36+00:00",
+      "recorded": "2026-08-07T22:25:56+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.0,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": [
           "stale_matrix_profile_differs_from_the_reassembled_one=True",
           "VERDICT=stale_matrix_is_a_converged_wrong_answer",
@@ -553,19 +580,20 @@
       "fixture": "complex_coefficient_in_real_build",
       "claim": "poisson:1",
       "claim_text_sha": "89ff46aae1c25c3b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:41+00:00",
+      "recorded": "2026-08-07T22:25:59+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.5,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.6,
+        "seconds": 1.0,
         "missing": [
           "form_raised=True",
           "array_assign_raised=True",
@@ -579,19 +607,20 @@
       "fixture": "complex_mode_requires_a_complex_petsc_build",
       "claim": "helmholtz:3",
       "claim_text_sha": "5ec3af0fea559788",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:45+00:00",
+      "recorded": "2026-08-07T22:26:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.6,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": [
           "form_raised=True",
           "Unexpected complex value in real expression",
@@ -606,19 +635,20 @@
       "fixture": "conditional_material_is_quadrature_point_geometry",
       "claim": "magnetostatics:4",
       "claim_text_sha": "4eb4581c0b7f79d1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:49+00:00",
+      "recorded": "2026-08-07T22:26:04+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.6,
+        "seconds": 2.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.6,
+        "seconds": 1.7,
         "missing": [
           "p2_relative_difference_exceeds_1e_3=True",
           "VERDICT=conditional_material_geometry_follows_the_quadrature_degree",
@@ -632,19 +662,20 @@
       "fixture": "constant_rejects_callable_and_needs_function_for_varying",
       "claim": "heat:6",
       "claim_text_sha": "0c4b9cf642903cfe",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:05:56+00:00",
+      "recorded": "2026-08-07T22:26:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.4,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.5,
+        "seconds": 1.0,
         "missing": [
           "constant_from_callable_raised=True",
           "constant_from_spatialcoordinate_raised=True",
@@ -658,19 +689,20 @@
       "fixture": "contact_solve_never_raises_check_equilibrium",
       "claim": "contact:6",
       "claim_text_sha": "c6f67ab1ce6b4a7e",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:00+00:00",
+      "recorded": "2026-08-07T22:26:11+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.1,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.4,
+        "seconds": 1.9,
         "missing": [
           "second_run_reason_is_negative=True",
           "equilibrium_fails_for_second_run=True",
@@ -685,19 +717,20 @@
       "fixture": "crank_nicolson_probe_history_rings_in_time",
       "claim": "time_dependent_heat::5",
       "claim_text_sha": "53df9a2feaadfd56",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:07+00:00",
+      "recorded": "2026-08-07T22:26:15+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.3,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": [
           "selected_probe_history_is_non_monotone=True",
           "VERDICT=crank_nicolson_rings_in_time_inside_the_physical_range",
@@ -711,19 +744,20 @@
       "fixture": "crank_nicolson_time_ringing_not_range_violation",
       "claim": "heat:4",
       "claim_text_sha": "8cc26d71eb5af377",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:12+00:00",
+      "recorded": "2026-08-07T22:26:18+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": [
           "cn_rings_in_time=True",
           "VERDICT=cn_rings_in_time_while_field_range_looks_fine",
@@ -737,19 +771,20 @@
       "fixture": "create_submesh_returns_four_objects",
       "claim": "stokes_darcy:1",
       "claim_text_sha": "4a045f5183e7a1aa",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:18+00:00",
+      "recorded": "2026-08-07T22:26:21+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": [
           "ValueError: too many values to unpack (expected 3)",
           "three_value_unpack_raised_valueerror=True",
@@ -764,19 +799,20 @@
       "fixture": "curl_of_a_2d_scalar_is_a_vector_and_the_mixup_is_silent",
       "claim": "magnetostatics::5",
       "claim_text_sha": "902d7211e01c71d2",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:20+00:00",
+      "recorded": "2026-08-07T22:26:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.9,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.9,
+        "seconds": 1.9,
         "missing": [
           "curl_curl_energy_equals_grad_grad_energy=True",
           "VERDICT=curl_of_a_2d_scalar_is_the_plane_curl_and_the_scalar_vector_mixup_is_silent",
@@ -790,38 +826,46 @@
       "fixture": "curl_on_scalar_space",
       "claim": "maxwell:92",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:27+00:00",
+      "recorded": "2026-08-07T22:26:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "ValueError",
+          "Invalid ranks"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "dS_integral_needs_side_restricted_facet_normal",
       "claim": "dg_methods:5",
       "claim_text_sha": "08dc95efeea4005b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:29+00:00",
+      "recorded": "2026-08-07T22:26:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 1.3,
         "missing": [
           "fem_form_compiled=False",
           "ValueError: Discontinuous type Jacobian must be restricted.",
@@ -836,19 +880,20 @@
       "fixture": "dg_boundary_advection_must_be_outflow_only",
       "claim": "dg_methods:0",
       "claim_text_sha": "1164f8b441029272",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:06:35+00:00",
+      "recorded": "2026-08-07T22:26:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 12.9,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 13.3,
+        "seconds": 2.0,
         "missing": [
           "bad_slot_matrix_numerically_singular=True",
           "is_diverged_pc_failed=True",
@@ -863,19 +908,20 @@
       "fixture": "dg_centred_flux_has_no_upwind_dissipation",
       "claim": "dg_methods:3",
       "claim_text_sha": "9174805104560163",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:07:02+00:00",
+      "recorded": "2026-08-07T22:26:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.3,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 5.4,
+        "seconds": 1.6,
         "missing": [
           "upwind_dissipation_is_symmetric_psd_and_nonzero=True",
           "slot_reason_is_diverged_pc_failed=True",
@@ -890,22 +936,21 @@
       "fixture": "dg_mass_matrix_is_block_diagonal",
       "claim": "dg_methods:8",
       "claim_text_sha": "6cd71c222f94d1db",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:07:12+00:00",
+      "recorded": "2026-08-07T22:26:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.8,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.7,
+        "seconds": 1.6,
         "missing": [
-          "generic_sparse_solver_is_slower=True",
-          "VERDICT=dg_mass_is_block_diagonal_invert_it_per_cell",
           "FORBIDDEN:VERDICT=no_advantage_from_the_block_structure"
         ]
       },
@@ -916,19 +961,20 @@
       "fixture": "dg_nitsche_block_missing_boundary_defect_stalls",
       "claim": "dg_methods:1",
       "claim_text_sha": "b5772960c6cae1d2",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:07:19+00:00",
+      "recorded": "2026-08-07T22:26:43+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.8,
+        "seconds": 2.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.6,
+        "seconds": 2.1,
         "missing": [
           "defect_stalls_under_refinement=True",
           "VERDICT=boundary_value_never_applied_without_nitsche_block",
@@ -942,19 +988,20 @@
       "fixture": "direct_solver_failures_are_sporadic",
       "claim": "mixed_poisson:2",
       "claim_text_sha": "772797281ab27149",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:07:28+00:00",
+      "recorded": "2026-08-07T22:26:48+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 67.5,
+        "seconds": 9.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 21.6,
+        "seconds": 8.9,
         "missing": [
           "some_configuration_returned_a_negative_converged_reason=True",
           "mumps_and_superlu_dist_failure_sets_do_not_overlap=True",
@@ -969,19 +1016,20 @@
       "fixture": "dirichlet_constant_rebinding_does_nothing",
       "claim": "heat:1",
       "claim_text_sha": "e3ba894790ea95b2",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:08:58+00:00",
+      "recorded": "2026-08-07T22:27:07+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.3,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": [
           "rebind_bit_identical_to_no_update=True",
           "VERDICT=rebinding_the_name_is_a_silent_noop",
@@ -995,19 +1043,20 @@
       "fixture": "dof_counting_is_quantised_and_rank_local",
       "claim": "multiphase:3",
       "claim_text_sha": "6d942d5921e62844",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:03+00:00",
+      "recorded": "2026-08-07T22:27:10+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.2,
+        "seconds": 2.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.7,
+        "seconds": 2.1,
         "missing": [
           "dof_count_fraction_is_frozen_over_most_of_the_run=True",
           "integral_detects_more_motion_than_dof_counting=True",
@@ -1022,19 +1071,20 @@
       "fixture": "ds_marker_without_subdomain_data_integrates_nothing",
       "claim": "heat:7",
       "claim_text_sha": "899b702cbacbf352",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:12+00:00",
+      "recorded": "2026-08-07T22:27:15+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.0,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": [
           "bare_is_exactly_zero=True",
           "VERDICT=untagged_ds_marker_silently_integrates_nothing",
@@ -1048,38 +1098,45 @@
       "fixture": "elasticity_mms_convergence",
       "claim": "linear_elasticity:99",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:17+00:00",
+      "recorded": "2026-08-07T22:27:17+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 6.8,
+        "seconds": 0.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.9,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "enclosed_flow_pressure_nullspace",
       "claim": "navier_stokes:5",
       "claim_text_sha": "300bfdf8cada35f9",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:25+00:00",
+      "recorded": "2026-08-07T22:27:19+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.9,
+        "seconds": 1.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.0,
+        "seconds": 1.1,
         "missing": [
           "constant_pressure_is_in_the_kernel=True",
           "VERDICT=enclosed_flow_leaves_the_pressure_constant_free",
@@ -1093,19 +1150,20 @@
       "fixture": "entity_maps_is_a_sequence_of_entitymap",
       "claim": "stokes_darcy:2",
       "claim_text_sha": "1855177954acbd65",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:30+00:00",
+      "recorded": "2026-08-07T22:27:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.7,
+        "seconds": 1.4,
         "missing": [
           "RuntimeError: Incompatible mesh. argument entity_maps must be provided.",
           "TypeError: __init__(): incompatible function arguments.",
@@ -1120,19 +1178,20 @@
       "fixture": "eps_converged_reason_is_positive_check_count",
       "claim": "eigenvalue:2",
       "claim_text_sha": "e7c61d3afc7f905a",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:36+00:00",
+      "recorded": "2026-08-07T22:27:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.2,
         "missing": [
           "primary_health_check_calls_this_solve_a_failure=True",
           "VERDICT=reason_code_is_positive_on_success_so_check_the_count",
@@ -1146,19 +1205,20 @@
       "fixture": "equal_order_p1p1_has_extra_pressure_kernel",
       "claim": "nearly_incompressible_elasticity:1",
       "claim_text_sha": "15717e46315b45e7",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:09:41+00:00",
+      "recorded": "2026-08-07T22:27:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 25.0,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 36.1,
+        "seconds": 1.7,
         "missing": [
           "tested_nullity_exceeds_taylor_hood=True",
           "kernel_contains_non_constant_pressure_modes=True",
@@ -1173,19 +1233,20 @@
       "fixture": "explicit_euler_with_supg_diverges",
       "claim": "convection_diffusion:3",
       "claim_text_sha": "42684d968e47948d",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:10:43+00:00",
+      "recorded": "2026-08-07T22:27:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.6,
+        "seconds": 2.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.2,
+        "seconds": 1.7,
         "missing": [
           "primary_amplifies_by_more_than_1e6=True",
           "VERDICT=explicit_euler_with_supg_diverges_below_the_convective_cfl",
@@ -1199,19 +1260,20 @@
       "fixture": "explicit_reaction_blows_up_while_snes_reports_converged",
       "claim": "reaction_diffusion:7",
       "claim_text_sha": "ccfa32f60c39dfd6",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:10:52+00:00",
+      "recorded": "2026-08-07T22:27:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.5,
+        "seconds": 1.5,
         "missing": [
           "explicit_reaction_blows_up=True",
           "explicit_reaction_blows_up_within_five_steps=True",
@@ -1226,19 +1288,20 @@
       "fixture": "exterior_facet_indices_requires_connectivity",
       "claim": "heat:8",
       "claim_text_sha": "e1d39c657fbe7148",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:11:00+00:00",
+      "recorded": "2026-08-07T22:27:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": [
           "raised=True",
           "Facet to cell connectivity has not been computed",
@@ -1253,19 +1316,20 @@
       "fixture": "exterior_facet_indices_vs_lazy_connectivity",
       "claim": "poisson:0",
       "claim_text_sha": "a2d4556e2f1c8720",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:11:02+00:00",
+      "recorded": "2026-08-07T22:27:42+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": [
           "eager_exterior_facet_indices_raised=True",
           "Facet to cell connectivity has not been computed",
@@ -1279,24 +1343,25 @@
       "fixture": "field_extrema_and_integrals_are_rank_local",
       "claim": "magnetostatics::9",
       "claim_text_sha": "3e51d533281e00a6",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:11:05+00:00",
+      "recorded": "2026-08-07T22:27:44+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.1,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.7,
+        "seconds": 1.8,
         "missing": [
-          "ranks_that_reported=2",
-          "array_includes_ghost_entries=True",
           "ranks_report_different_maxima=True",
-          "ranks_report_different_integrals=True"
+          "ranks_report_different_integrals=True",
+          "at_least_one_rank_reports_a_wrong_max=True",
+          "per_rank_integrals_sum_to_the_global_one=True"
         ]
       },
       "discriminates": true
@@ -1306,19 +1371,20 @@
       "fixture": "flux_bc_everywhere_gives_constant_garbage_pressure",
       "claim": "mixed_poisson:0",
       "claim_text_sha": "db770cb74c6503c1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:11:13+00:00",
+      "recorded": "2026-08-07T22:27:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.1,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.9,
+        "seconds": 1.4,
         "missing": [
           "primary_pressure_is_a_single_constant=True",
           "primary_pressure_magnitude_exceeds_1e6=True",
@@ -1333,19 +1399,20 @@
       "fixture": "flux_is_essential_pressure_is_natural",
       "claim": "mixed_poisson:6",
       "claim_text_sha": "2652bd2ee158e45d",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:11:22+00:00",
+      "recorded": "2026-08-07T22:27:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 6.5,
+        "seconds": 2.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 6.5,
+        "seconds": 2.2,
         "missing": [
           "facet_lookup_on_dg0_pressure_is_empty=True",
           "pressure_dirichletbc_outflow_is_wrong=True",
@@ -1360,19 +1427,20 @@
       "fixture": "forgotten_wall_becomes_a_free_outlet",
       "claim": "stokes_darcy::5",
       "claim_text_sha": "ef663a2ed50623f6",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:11:36+00:00",
+      "recorded": "2026-08-07T22:27:56+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 56.1,
+        "seconds": 3.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 53.1,
+        "seconds": 3.7,
         "missing": [
           "inlet_outlet_balance_is_off_by_order_one=True",
           "VERDICT=an_unconstrained_face_is_a_free_outlet_and_only_the_flux_balance_shows_it",
@@ -1386,19 +1454,20 @@
       "fixture": "form_divided_by_constant_typeerror",
       "claim": "heat:5",
       "claim_text_sha": "bb530ebd6c5643f4",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:13:26+00:00",
+      "recorded": "2026-08-07T22:28:04+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": [
           "division_raised=True",
           "unsupported operand type(s) for /: 'Form' and 'Constant'",
@@ -1412,19 +1481,20 @@
       "fixture": "frozen_penalty_h_does_not_degrade_rate",
       "claim": "biharmonic:1",
       "claim_text_sha": "a2b2759a3a79bf33",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:13:28+00:00",
+      "recorded": "2026-08-07T22:28:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 20.5,
+        "seconds": 4.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 18.3,
+        "seconds": 3.2,
         "missing": [
           "primary_penalty_weight_does_not_track_the_mesh=True",
           "primary_rate_stays_above_two=True",
@@ -1439,19 +1509,20 @@
       "fixture": "function_collapse_vs_space_collapse",
       "claim": "reaction_diffusion:2",
       "claim_text_sha": "7553d0d1904cb2af",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:08+00:00",
+      "recorded": "2026-08-07T22:28:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": [
           "NotImplementedError: Cannot take length of non-vector expression.",
           "function_collapse_cannot_be_unpacked=True",
@@ -1466,19 +1537,20 @@
       "fixture": "functionspace_lowercase_factory",
       "claim": "heat:12",
       "claim_text_sha": "563287f91f526936",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:11+00:00",
+      "recorded": "2026-08-07T22:28:15+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.1,
+        "seconds": 0.5,
         "missing": [
           "class_call_raised=True",
           "VERDICT=only_the_lowercase_factory_works",
@@ -1492,19 +1564,20 @@
       "fixture": "galerkin_oscillates_above_cell_peclet_one",
       "claim": "convection_diffusion:0",
       "claim_text_sha": "fde65351b25b47ca",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:14+00:00",
+      "recorded": "2026-08-07T22:28:17+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.3,
         "missing": [
           "primary_undershoot_below_minus_one_on_coarse_mesh=True",
           "VERDICT=galerkin_oscillates_above_cell_peclet_one_and_damps_only_by_resolving_the_layer",
@@ -1518,45 +1591,51 @@
       "fixture": "gamg_near_nullspace_iteration_count",
       "claim": "linear_elasticity:4",
       "claim_text_sha": "a9362c2f52047177",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:21+00:00",
+      "recorded": "2026-08-07T22:28:20+00:00",
       "unmutated": {
-        "status": "PASS",
+        "status": "FAIL",
         "rc": 0,
-        "seconds": 3.4,
-        "missing": []
+        "seconds": 1.9,
+        "missing": [
+          "without_nullspace_still_converged=True",
+          "nullspace_reduces_iterations=True"
+        ]
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.2,
+        "seconds": 1.9,
         "missing": [
+          "without_nullspace_still_converged=True",
           "nullspace_reduces_iterations=True",
           "VERDICT=near_nullspace_is_iteration_win_not_correctness_gate",
           "FORBIDDEN:VERDICT=no_iteration_difference"
         ]
       },
-      "discriminates": true
+      "discriminates": null
     },
     {
       "backend": "fenics",
       "fixture": "geometry_compute_collisions_renamed",
       "claim": "contact:4",
       "claim_text_sha": "9a134a03945d99dd",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:29+00:00",
+      "recorded": "2026-08-07T22:28:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.1,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": [
           "module 'dolfinx.geometry' has no attribute 'compute_collisions'",
           "VERDICT=compute_collisions_gone_use_compute_collisions_points",
@@ -1570,19 +1649,20 @@
       "fixture": "ghost_contributions_need_scatter_reverse_on_two_ranks",
       "claim": "matrix_free_poisson::4",
       "claim_text_sha": "0926d9deae827c3b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:32+00:00",
+      "recorded": "2026-08-07T22:28:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 1.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.5,
+        "seconds": 1.8,
         "missing": [
           "two_rank_run_missed_rtol_within_the_iteration_cap=True",
           "two_rank_field_max_differs_from_serial_by_over_ten_percent=True",
@@ -1597,17 +1677,19 @@
       "fixture": "gmshio_install_gap_diagnostic",
       "claim": "stokes:90",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:39+00:00",
+      "recorded": "2026-08-07T22:28:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.1,
+        "seconds": 0.6,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "NOT_MUTABLE_DECLARED",
+        "reason": "NOT MUTABLE, recorded deliberately, and NON-DISCRIMINATING. All three asserted strings \u2014 'gmshio_present=', 'gmsh_present=', 'catalog_uses_gmshio=' \u2014 are LABELS this script prints unconditionally; no value is asserted, so no environment answer can turn the fixture red. Measured, not assumed, on 2026"
       },
       "discriminates": null
     },
@@ -1616,19 +1698,20 @@
       "fixture": "hand_rolled_cg_falls_out_of_max_iter_silently",
       "claim": "matrix_free_poisson::8",
       "claim_text_sha": "14eba9a5130dfa00",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:42+00:00",
+      "recorded": "2026-08-07T22:28:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.3,
+        "seconds": 1.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.1,
         "missing": [
           "silent_loop_exited_with_returncode_zero=True",
           "hand_rolled_loop_return_value_has_no_convergedreason=True",
@@ -1643,19 +1726,20 @@
       "fixture": "hand_written_jacobian_drops_cross_partial",
       "claim": "reaction_diffusion:5",
       "claim_text_sha": "b58cb3dc3af835cb",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:47+00:00",
+      "recorded": "2026-08-07T22:28:34+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 1.6,
         "missing": [
           "ValueError: Expecting a Variable or SpatialCoordinate in diff.",
           "ufl_diff_on_a_split_species_raises=True",
@@ -1670,38 +1754,48 @@
       "fixture": "helmholtz_maxwell_nearly_incomp_smoke",
       "claim": "helmholtz:99",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:55+00:00",
+      "recorded": "2026-08-07T22:28:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.1,
+        "missing": [
+          "maxwell_chars=",
+          "maxwell_uses_N1E=True",
+          "maxwell_uses_basix_family=True",
+          "maxwell_has_curl=True"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "heterogeneous_k_needs_kinv_weighting",
       "claim": "mixed_poisson:7",
       "claim_text_sha": "ebf8e01891b79217",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:14:56+00:00",
+      "recorded": "2026-08-07T22:28:38+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 7.0,
+        "seconds": 3.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 7.4,
+        "seconds": 2.5,
         "missing": [
           "no_kinv_flux_is_continuous_across_the_interface=True",
           "no_kinv_outflow_is_the_homogeneous_value=True",
@@ -1716,13 +1810,13 @@
       "fixture": "high_k_helmholtz_needs_a_shifted_laplacian_pc",
       "claim": "helmholtz::2",
       "claim_text_sha": "aba3b07b75619af0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:15:12+00:00",
+      "recorded": "2026-08-07T22:28:44+00:00",
       "unmutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.1,
+        "seconds": 0.5,
         "missing": [
           "scalar_type=complex128",
           "under_test_pc_fails_to_converge=True",
@@ -1730,10 +1824,11 @@
           "shifted_laplacian_converges=True"
         ]
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": [
           "scalar_type=complex128",
           "under_test_pc_fails_to_converge=True",
@@ -1741,26 +1836,27 @@
           "shifted_laplacian_converges=True"
         ]
       },
-      "discriminates": false
+      "discriminates": null
     },
     {
       "backend": "fenics",
       "fixture": "history_seeded_precrack_pushes_damage_over_one",
       "claim": "fracture::6",
       "claim_text_sha": "88c22d24994f9b6b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:15:15+00:00",
+      "recorded": "2026-08-07T22:28:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 91.3,
+        "seconds": 5.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": [
           "max_d_exceeds_one_right_after_seeding=True",
           "max_d_still_exceeds_one_at_every_load_step=True",
@@ -1775,19 +1871,20 @@
       "fixture": "hoisted_rhs_vector_must_be_zeroed_every_step",
       "claim": "time_dependent_heat::1",
       "claim_text_sha": "a9cfa4d95a8e72fe",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:16:48+00:00",
+      "recorded": "2026-08-07T22:28:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.8,
+        "seconds": 1.5,
         "missing": [
           "checked_grew_past_1e10=True",
           "VERDICT=unzeroed_hoisted_rhs_blows_up_while_every_ksp_reports_converged",
@@ -1801,19 +1898,20 @@
       "fixture": "hyperelastic_newtonsolver_pairing_removed_in_0_10",
       "claim": "hyperelasticity:0",
       "claim_text_sha": "c39da54ea83a2fe1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:16:54+00:00",
+      "recorded": "2026-08-07T22:28:55+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.8,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.4,
+        "seconds": 1.4,
         "missing": [
           "legacy_newtonsolver_pairing_raised=True AttributeError: 'NonlinearProblem' object has no attribute 'a'",
           "dolfinx.nls.petsc.NewtonSolver is deprecated. Use dolfinx.fem.petsc.NonlinearProblem, a high level interface to PETSc SNES.",
@@ -1828,19 +1926,20 @@
       "fixture": "hyperelastic_single_load_step_diverges",
       "claim": "hyperelasticity:1",
       "claim_text_sha": "e4e475028029d738",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:01+00:00",
+      "recorded": "2026-08-07T22:28:58+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.5,
         "missing": [
           "single_step_diverged=True",
           "single_step_reason_name=DIVERGED_MAX_IT",
@@ -1855,19 +1954,20 @@
       "fixture": "identity2_trace_is_two_not_three",
       "claim": "thermal_structural:3",
       "claim_text_sha": "7619f4c275eb05eb",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:07+00:00",
+      "recorded": "2026-08-07T22:29:02+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.8,
+        "seconds": 3.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 6.1,
+        "seconds": 3.1,
         "missing": [
           "ratio_is_two_lam_plus_two_mu_over_three_lam_plus_two_mu=True",
           "error_grows_with_nu=True",
@@ -1882,19 +1982,20 @@
       "fixture": "implicit_dt_is_limited_by_accuracy_not_stability",
       "claim": "time_dependent_heat::9",
       "claim_text_sha": "8b64dcdc522c2512",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:20+00:00",
+      "recorded": "2026-08-07T22:29:09+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.5,
+        "seconds": 1.4,
         "missing": [
           "selected_probe_peak_error_exceeds_fifty_percent=True",
           "VERDICT=implicit_dt_is_limited_by_accuracy_not_by_stability",
@@ -1908,19 +2009,20 @@
       "fixture": "inconsistent_tanh_width_dumps_energy_in_the_first_step",
       "claim": "multiphase::6",
       "claim_text_sha": "8245771efd5c7d33",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:27+00:00",
+      "recorded": "2026-08-07T22:29:12+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.0,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 1.7,
         "missing": [
           "selected_first_step_release_is_at_least_50x_the_consistent_one=True",
           "VERDICT=inconsistent_initial_width_spends_the_first_steps_reprofiling",
@@ -1934,19 +2036,20 @@
       "fixture": "interior_penalty_ds_assembly_cost",
       "claim": "biharmonic:2",
       "claim_text_sha": "69ff90e379f3e026",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:34+00:00",
+      "recorded": "2026-08-07T22:29:16+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.4,
+        "seconds": 2.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.2,
+        "seconds": 2.5,
         "missing": [
           "primary_assembly_costs_more_than_5x_poisson_per_dof=True",
           "VERDICT=interior_facet_integrals_dominate_biharmonic_assembly",
@@ -1960,19 +2063,20 @@
       "fixture": "interpolant_difference_measures_the_krylov_tolerance",
       "claim": "matrix_free_poisson::10",
       "claim_text_sha": "8b2dbef7cb733979",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:43+00:00",
+      "recorded": "2026-08-07T22:29:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.8,
+        "seconds": 2.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.4,
+        "seconds": 2.3,
         "missing": [
           "matrix_free_difference_is_at_the_krylov_tolerance_1em6=True",
           "cg_rtol=1e-06",
@@ -1987,19 +2091,20 @@
       "fixture": "interpolation_points_is_property",
       "claim": "nonlinear_pde::8",
       "claim_text_sha": "9908e8f3c8eeed64",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:53+00:00",
+      "recorded": "2026-08-07T22:29:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 1.1,
+        "seconds": 0.5,
         "missing": [
           "call_as_method_raises_typeerror=True",
           "call_as_method_diag_has_not_callable=True"
@@ -2012,19 +2117,20 @@
       "fixture": "ipcs_convective_cfl_needs_fixed_step_count",
       "claim": "navier_stokes:8",
       "claim_text_sha": "3d3b3d308f16236c",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:17:55+00:00",
+      "recorded": "2026-08-07T22:29:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.0,
+        "seconds": 2.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.2,
+        "seconds": 2.4,
         "missing": [
           "fixed_step_count_run_blows_up=True",
           "VERDICT=explicit_convection_cfl_shows_up_only_at_fixed_step_count",
@@ -2038,19 +2144,20 @@
       "fixture": "isochoric_volumetric_split_pressure",
       "claim": "hyperelasticity:5",
       "claim_text_sha": "de7559b23b85ca7d",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:06+00:00",
+      "recorded": "2026-08-07T22:29:33+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 7.4,
+        "seconds": 4.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 7.1,
+        "seconds": 4.1,
         "missing": [
           "pressure_under_test_oscillates_element_to_element=True",
           "VERDICT=split_alone_does_not_smooth_the_pressure_mixed_space_does",
@@ -2064,19 +2171,20 @@
       "fixture": "kappa_coefficient_scales_stiffness",
       "claim": "poisson:4",
       "claim_text_sha": "bf4509198a58a644",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:21+00:00",
+      "recorded": "2026-08-07T22:29:42+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.0,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.0,
         "missing": [
           "off_by_exactly_kappa=True",
           "VERDICT=missing_coefficient_scales_stiffness_by_kappa",
@@ -2090,19 +2198,20 @@
       "fixture": "ksp_converged_reason_and_finiteness_must_be_checked",
       "claim": "dg_methods:2",
       "claim_text_sha": "914c3fc5e54de3ff",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:26+00:00",
+      "recorded": "2026-08-07T22:29:44+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.2,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 1.8,
         "missing": [
           "reason_is_diverged_pc_failed=True",
           "all_dofs_nonfinite=True",
@@ -2117,19 +2226,20 @@
       "fixture": "ksp_failure_is_silent_and_the_script_completes",
       "claim": "time_dependent_heat:2",
       "claim_text_sha": "8dc0b895fda19092",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:33+00:00",
+      "recorded": "2026-08-07T22:29:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.3,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": [
           "reason_name=DIVERGED_MAX_IT",
           "selected_reason_is_negative=True",
@@ -2144,19 +2254,20 @@
       "fixture": "lambda_choice_is_silent_plane_strain",
       "claim": "linear_elasticity:5",
       "claim_text_sha": "0bcf565404ad3ea3",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:38+00:00",
+      "recorded": "2026-08-07T22:29:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.9,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.6,
+        "seconds": 1.3,
         "missing": [
           "answers_differ=True",
           "VERDICT=lambda_choice_changes_answer_with_no_diagnostic",
@@ -2170,19 +2281,20 @@
       "fixture": "large_dt_fails_in_newton_not_as_an_instability",
       "claim": "multiphase:5",
       "claim_text_sha": "90241f5523dafdec",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:45+00:00",
+      "recorded": "2026-08-07T22:29:55+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.0,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 0,
-        "seconds": 2.7,
+        "seconds": 1.5,
         "missing": [
           "too_large_dt_fails_at_the_very_first_step=True",
           "too_large_dt_field_stays_finite_and_bounded=True",
@@ -2197,19 +2309,20 @@
       "fixture": "layered_conductivity_needs_a_dg0_function",
       "claim": "time_dependent_heat::7",
       "claim_text_sha": "97d397b6bded7c81",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:18:52+00:00",
+      "recorded": "2026-08-07T22:29:59+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.3,
+        "seconds": 2.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 1.9,
         "missing": [
           "selected_time_change_had_no_effect=True",
           "selected_space_route_misses_the_layered_answer=True",
@@ -2224,19 +2337,20 @@
       "fixture": "line_search_changes_which_failure_not_whether",
       "claim": "nonlinear_pde::7",
       "claim_text_sha": "9734372805753c13",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:19:00+00:00",
+      "recorded": "2026-08-07T22:30:03+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.2,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.8,
+        "seconds": 1.3,
         "missing": [
           "name=DIVERGED_MAX_IT",
           "name=DIVERGED_LINE_SEARCH",
@@ -2251,19 +2365,20 @@
       "fixture": "linearproblem_prefix_and_mumps_on_32bit_petsc",
       "claim": "magnetostatics::8",
       "claim_text_sha": "7c6ef85b49db1db9",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:19:07+00:00",
+      "recorded": "2026-08-07T22:30:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.4,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.5,
+        "seconds": 1.3,
         "missing": [
           "prefix_omitted_construction_raised=True",
           "missing 1 required keyword-only argument: 'petsc_options_prefix'",
@@ -2278,19 +2393,20 @@
       "fixture": "linearproblem_solve_never_raises_on_ksp_failure",
       "claim": "magnetostatics::6",
       "claim_text_sha": "365c7ccd4d622fb8",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:19:17+00:00",
+      "recorded": "2026-08-07T22:30:09+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": [
           "failing_solve_raised=False",
           "wrote_output_after_a_failed_solve=True",
@@ -2305,19 +2421,20 @@
       "fixture": "low_frequency_curl_curl_conditioning_scales_like_one_over_omega_squared",
       "claim": "maxwell::3",
       "claim_text_sha": "d3b436ed7a96c9bc",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:19:22+00:00",
+      "recorded": "2026-08-07T22:30:12+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.8,
+        "seconds": 3.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.6,
+        "seconds": 2.7,
         "missing": [
           "under_test_condition_number_grows_100x_per_decade_of_omega=True",
           "gmres_iterations_grow_by_more_than_10x=True",
@@ -2332,19 +2449,20 @@
       "fixture": "mass_and_energy_are_the_reference_free_checks",
       "claim": "cahn_hilliard::5",
       "claim_text_sha": "ccade8002f9fd7a3",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:19:33+00:00",
+      "recorded": "2026-08-07T22:30:19+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 7.7,
+        "seconds": 4.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 7.9,
+        "seconds": 4.0,
         "missing": [
           "dirichlet_on_c_leaks_mass=True",
           "drift_ratio_is_many_orders_of_magnitude=True",
@@ -2359,19 +2477,20 @@
       "fixture": "mass_diag_zero_needs_sinvert",
       "claim": "eigenvalue:4",
       "claim_text_sha": "9c2783abde26114f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:19:50+00:00",
+      "recorded": "2026-08-07T22:30:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 10.3,
+        "seconds": 1.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 10.6,
+        "seconds": 1.7,
         "missing": [
           "Zero pivot in LU factorization",
           "Zero pivot row 0 value 0. tolerance 2.22045e-14",
@@ -2386,19 +2505,20 @@
       "fixture": "mass_matrix_bc_diag_gives_spurious_unit_eigenvalues",
       "claim": "eigenvalue:3",
       "claim_text_sha": "b85e9df5772b0aa8",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:12+00:00",
+      "recorded": "2026-08-07T22:30:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.5,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.6,
+        "seconds": 1.3,
         "missing": [
           "primary_lowest_eigenvalues_are_exactly_one=True",
           "VERDICT=shared_dirichlet_diagonal_puts_spurious_modes_at_lambda_one",
@@ -2412,19 +2532,20 @@
       "fixture": "mass_term_sign_flip_is_bounded_not_blowup",
       "claim": "heat:3",
       "claim_text_sha": "a7d5bc35f14f6a75",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:18+00:00",
+      "recorded": "2026-08-07T22:30:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.5,
+        "seconds": 1.7,
         "missing": [
           "sign_flip_integral_alternates=True",
           "VERDICT=sign_flip_alternates_bounded_missing_mass_blows_up",
@@ -2438,19 +2559,20 @@
       "fixture": "matrix_free_petsckrylovsolver_and_linearproblem_prefix",
       "claim": "matrix_free_poisson::9",
       "claim_text_sha": "d5853a33c569dded",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:26+00:00",
+      "recorded": "2026-08-07T22:30:39+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": [
           "AttributeError: module 'dolfinx' has no attribute 'PETScKrylovSolver'",
           "missing 1 required keyword-only argument: 'petsc_options_prefix'",
@@ -2465,19 +2587,20 @@
       "fixture": "max_b_grows_under_refinement_flux_ratio_does_not",
       "claim": "magnetostatics:1",
       "claim_text_sha": "9f9379c696528c72",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:31+00:00",
+      "recorded": "2026-08-07T22:30:42+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.0,
+        "seconds": 2.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 5.8,
+        "seconds": 2.1,
         "missing": [
           "max_B_grows_monotonically_under_refinement=True",
           "VERDICT=max_B_tracks_the_mesh_while_the_flux_check_is_invariant",
@@ -2491,19 +2614,20 @@
       "fixture": "maxwell_complex_form_exact_error_text",
       "claim": "maxwell:1",
       "claim_text_sha": "285cf5bfe967419a",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:42+00:00",
+      "recorded": "2026-08-07T22:30:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.3,
         "missing": [
           "form_raised=True",
           "Unexpected complex value in real expression",
@@ -2518,19 +2642,20 @@
       "fixture": "missing_apply_lifting_passes_the_min_max_print",
       "claim": "time_dependent_heat::0",
       "claim_text_sha": "99c9389a1a7a683c",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:48+00:00",
+      "recorded": "2026-08-07T22:30:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.0,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 1.7,
         "missing": [
           "checked_stored_heat_is_more_than_ten_times_too_small=True",
           "checked_free_dof_residual_is_order_one=True",
@@ -2545,19 +2670,20 @@
       "fixture": "missing_apply_lifting_silently_wrong",
       "claim": "heat:10",
       "claim_text_sha": "14d63623017f0b3f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:20:55+00:00",
+      "recorded": "2026-08-07T22:30:53+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.5,
         "missing": [
           "no_lifting_residual_is_order_one=True",
           "VERDICT=missing_apply_lifting_is_a_converged_wrong_answer",
@@ -2571,19 +2697,20 @@
       "fixture": "missing_old_solution_copy_freezes_time_loop",
       "claim": "heat:2",
       "claim_text_sha": "a82146ff39e06aaf",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:01+00:00",
+      "recorded": "2026-08-07T22:30:57+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.8,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.7,
+        "seconds": 1.5,
         "missing": [
           "every_step_bit_identical=True",
           "VERDICT=missing_copy_freezes_the_solution_silently",
@@ -2597,19 +2724,20 @@
       "fixture": "missing_set_bc_breaks_the_maximum_principle",
       "claim": "time_dependent_heat::4",
       "claim_text_sha": "c24f4831f39c964a",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:08+00:00",
+      "recorded": "2026-08-07T22:31:00+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.2,
         "missing": [
           "checked_min_is_negative=True",
           "checked_hot_wall_never_reaches_its_prescribed_value=True",
@@ -2624,19 +2752,20 @@
       "fixture": "missing_step_copy_freezes_the_reaction_loop",
       "claim": "reaction_diffusion:11",
       "claim_text_sha": "0947d9f8e123277e",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:14+00:00",
+      "recorded": "2026-08-07T22:31:03+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.4,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.4,
         "missing": [
           "without_copy_solution_is_frozen=True",
           "without_copy_newton_count_collapses_to_one_or_zero=True",
@@ -2651,19 +2780,20 @@
       "fixture": "mixed_element_needs_a_list",
       "claim": "reaction_diffusion:0",
       "claim_text_sha": "d02ebbcc4e7f3237",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:19+00:00",
+      "recorded": "2026-08-07T22:31:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": [
           "mixed_element() takes 1 positional argument but 2 were given",
           "mixed_element_rejects_positional_elements=True",
@@ -2678,19 +2808,20 @@
       "fixture": "mixed_subspace_bc_needs_collapsed_function_and_dof_pair",
       "claim": "navier_stokes:7",
       "claim_text_sha": "2ab1287494aa4f72",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:22+00:00",
+      "recorded": "2026-08-07T22:31:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": [
           "__init__(): incompatible function arguments. The following argument types are supported:",
           "Invoked with types: dolfinx.cpp.fem.DirichletBC_float64,",
@@ -2705,19 +2836,20 @@
       "fixture": "naive_fourth_order_form_assembles_silently",
       "claim": "biharmonic:3",
       "claim_text_sha": "27e427536229b649",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:25+00:00",
+      "recorded": "2026-08-07T22:31:09+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.7,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.0,
+        "seconds": 2.2,
         "missing": [
           "P1_matrix_is_identically_zero=True",
           "VERDICT=naive_h2_form_compiles_and_yields_a_silently_wrong_operator",
@@ -2731,19 +2863,20 @@
       "fixture": "near_incompressible_p1_locks_p2_does_not",
       "claim": "hyperelasticity:2",
       "claim_text_sha": "fa8a026d737b7eb1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:32+00:00",
+      "recorded": "2026-08-07T22:31:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.1,
+        "seconds": 3.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.5,
+        "seconds": 2.6,
         "missing": [
           "under_test_is_many_times_too_stiff_at_nu_4999=True",
           "VERDICT=p1_locks_at_nu_4999_p2_is_close_to_taylor_hood",
@@ -2757,19 +2890,20 @@
       "fixture": "nedelec_dofs_are_edge_moments_not_components",
       "claim": "maxwell::4",
       "claim_text_sha": "681ecdc22d67fea6",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:43+00:00",
+      "recorded": "2026-08-07T22:31:20+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": [
           "under_test_tangential_trace_is_wrong=True",
           "VERDICT=edge_moments_must_be_interpolated_handwritten_dofs_are_silently_wrong",
@@ -2783,19 +2917,20 @@
       "fixture": "newtonsolver_cannot_wrap_nonlinearproblem",
       "claim": "navier_stokes:0",
       "claim_text_sha": "be5340b1b893bb31",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:47+00:00",
+      "recorded": "2026-08-07T22:31:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.2,
         "missing": [
           "legacy_pairing_raised=True",
           "VERDICT=legacy_newtonsolver_pairing_is_broken_on_0_10",
@@ -2809,19 +2944,20 @@
       "fixture": "no_adaptive_dt_control_in_nonlinearproblem",
       "claim": "cahn_hilliard::3",
       "claim_text_sha": "2b6f11ed4ee16af0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:52+00:00",
+      "recorded": "2026-08-07T22:31:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.6,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 1.7,
         "missing": [
           "dt_stayed_exactly_where_the_caller_put_it=True",
           "fixed_dt_loop_died_at_the_failing_step=True",
@@ -2836,19 +2972,20 @@
       "fixture": "no_builtin_stokes_darcy_in_dolfinx",
       "claim": "stokes_darcy:0",
       "claim_text_sha": "bedf3ed740a8d5dd",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:00+00:00",
+      "recorded": "2026-08-07T22:31:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 8.1,
+        "seconds": 2.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 9.5,
+        "seconds": 2.7,
         "missing": [
           "AttributeError: module 'dolfinx.fem' has no attribute 'StokesDarcy'",
           "no_stokes_darcy_attribute_anywhere=True",
@@ -2863,19 +3000,20 @@
       "fixture": "no_contact_api_in_dolfinx",
       "claim": "contact:0",
       "claim_text_sha": "a340416fa160c336",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:20+00:00",
+      "recorded": "2026-08-07T22:31:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.0,
+        "seconds": 1.0,
         "missing": [
           "module 'dolfinx.fem' has no attribute 'ContactBoundary'",
           "module 'dolfinx.fem' has no attribute 'ContactProblem'",
@@ -2890,19 +3028,20 @@
       "fixture": "no_phase_field_framework_in_dolfinx",
       "claim": "fracture:5",
       "claim_text_sha": "ab25275dedb0c4ab",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:24+00:00",
+      "recorded": "2026-08-07T22:31:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 2.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.5,
+        "seconds": 2.0,
         "missing": [
           "ModuleNotFoundError: No module named 'phasefieldx'",
           "every_third_party_phase_field_package_absent=True",
@@ -2917,19 +3056,20 @@
       "fixture": "non_integer_power_dies_when_u_goes_negative",
       "claim": "nonlinear_pde::3",
       "claim_text_sha": "4daaebaae6b74661",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:32+00:00",
+      "recorded": "2026-08-07T22:31:42+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.5,
+        "seconds": 2.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.1,
+        "seconds": 1.8,
         "missing": [
           "non_integer_power_dies_at_iteration_zero=True",
           "solution_left_exactly_at_zero=True",
@@ -2944,38 +3084,48 @@
       "fixture": "nonlinear_problem_signature_kwargs",
       "claim": "nonlinear_pde:0",
       "claim_text_sha": "6b4cfa3edd48207b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:41+00:00",
+      "recorded": "2026-08-07T22:31:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "positional_bcs_raises=True",
+          "no_prefix_raises=True",
+          "no_prefix_diag_has_prefix_name=True",
+          "linear_problem_no_prefix_raises=True"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "nonlinearproblem_prefix_and_snes_access",
       "claim": "reaction_diffusion:10",
       "claim_text_sha": "c056147dbc5b05b1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:43+00:00",
+      "recorded": "2026-08-07T22:31:48+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.0,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": [
           "NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'",
           "petsc_options_prefix_is_required=True",
@@ -2990,19 +3140,20 @@
       "fixture": "only_the_spectral_split_tells_tension_from_compression",
       "claim": "fracture::2",
       "claim_text_sha": "d1680de268e6377e",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:22:48+00:00",
+      "recorded": "2026-08-07T22:31:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 127.9,
+        "seconds": 8.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 83.2,
+        "seconds": 6.3,
         "missing": [
           "model_under_test_tension_and_compression_agree_to_every_printed_digit=True",
           "model_under_test_compression_alone_drives_damage_above_0p95=True",
@@ -3017,19 +3168,20 @@
       "fixture": "operator_action_must_zero_dirichlet_rows",
       "claim": "matrix_free_poisson::2",
       "claim_text_sha": "98c55e4b6ddd697b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:26:20+00:00",
+      "recorded": "2026-08-07T22:32:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.3,
         "missing": [
           "no_zeroing_rnorm_over_rnorm0_at_iter_100=",
           "no_zeroing_converged=False",
@@ -3044,19 +3196,20 @@
       "fixture": "overshoot_is_physical_clamping_breaks_mass",
       "claim": "cahn_hilliard::7",
       "claim_text_sha": "7c6c322891e3aee0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:26:25+00:00",
+      "recorded": "2026-08-07T22:32:10+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 7.8,
+        "seconds": 3.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 8.0,
+        "seconds": 4.2,
         "missing": [
           "clamping_to_the_unit_interval_breaks_mass_conservation=True",
           "VERDICT=the_overshoot_is_physical_the_clamp_is_the_bug",
@@ -3070,19 +3223,20 @@
       "fixture": "p1_family_name_rejected_cg_deprecated",
       "claim": "linear_elasticity:6",
       "claim_text_sha": "0b13ef498f814ec0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:26:42+00:00",
+      "recorded": "2026-08-07T22:32:18+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 0.5,
         "missing": [
           "family_P1_raised=True",
           "Unknown element family: P1 with cell type triangle",
@@ -3096,19 +3250,20 @@
       "fixture": "p1_locks_at_nu_0p4999_mixed_does_not",
       "claim": "nearly_incompressible_elasticity:0",
       "claim_text_sha": "af898a56f590e518",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:26:45+00:00",
+      "recorded": "2026-08-07T22:32:19+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 5.8,
+        "seconds": 2.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 6.6,
+        "seconds": 2.2,
         "missing": [
           "locking_ratio_exceeds_5=True",
           "VERDICT=p1_locks_while_p2_and_mixed_agree",
@@ -3122,19 +3277,20 @@
       "fixture": "p1p0_stagnates_where_taylor_hood_is_second_order",
       "claim": "nearly_incompressible_elasticity:2",
       "claim_text_sha": "b35d6da6bf7b8995",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:26:58+00:00",
+      "recorded": "2026-08-07T22:32:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 13.1,
+        "seconds": 3.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 28.4,
+        "seconds": 2.6,
         "missing": [
           "p1p0_direct_solve_reason_is_negative=True",
           "p1p0_velocity_error_is_not_finite=True",
@@ -3149,19 +3305,20 @@
       "fixture": "p_laplacian_singular_diffusivity_needs_epsilon",
       "claim": "nonlinear_pde::2",
       "claim_text_sha": "091a4e7eaf384252",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:27:40+00:00",
+      "recorded": "2026-08-07T22:32:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.0,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.3,
         "missing": [
           "jacobian_at_the_start_has_nan_entries=True",
           "unregularised_reason_is_fnorm_nan=True",
@@ -3176,19 +3333,20 @@
       "fixture": "penalty_continuation_reaches_stiff_penalty",
       "claim": "contact:3",
       "claim_text_sha": "5b00fc04cc3f8e09",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:27:47+00:00",
+      "recorded": "2026-08-07T22:32:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": [
           "slot_reason_is_diverged_dtol=True",
           "VERDICT=continuation_reaches_what_a_cold_start_cannot",
@@ -3202,19 +3360,20 @@
       "fixture": "penalty_kappa_is_a_tuning_parameter",
       "claim": "nearly_incompressible_elasticity:3",
       "claim_text_sha": "b29f99e445de8b73",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:27:52+00:00",
+      "recorded": "2026-08-07T22:32:38+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 13.3,
+        "seconds": 5.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 0,
-        "seconds": 10.9,
+        "seconds": 2.3,
         "missing": [
           "condition_number_exceeds_1e12_somewhere=True",
           "newton_failed_at_some_setting=True",
@@ -3229,19 +3388,20 @@
       "fixture": "penalty_too_large_diverges_on_dtol_not_conditioning",
       "claim": "contact:2",
       "claim_text_sha": "149fdd6442d7a21b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:17+00:00",
+      "recorded": "2026-08-07T22:32:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.7,
+        "seconds": 1.8,
         "missing": [
           "slot_reason_is_diverged_dtol=True",
           "slot_diverged_after_one_iteration=True",
@@ -3256,19 +3416,20 @@
       "fixture": "penalty_too_small_converges_and_penetrates",
       "claim": "contact:1",
       "claim_text_sha": "a48545d8f0fe7779",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:23+00:00",
+      "recorded": "2026-08-07T22:32:50+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.7,
+        "seconds": 1.3,
         "missing": [
           "slot_penetration_exceeds_ten_element_edges=True",
           "VERDICT=converged_reason_is_not_evidence_the_constraint_holds",
@@ -3282,13 +3443,13 @@
       "fixture": "permeability_geometry_not_contrast_drives_cg_counts",
       "claim": "stokes_darcy::7",
       "claim_text_sha": "5447c2593fb72a68",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:27+00:00",
+      "recorded": "2026-08-07T22:32:53+00:00",
       "unmutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": [
           "random_geometry_degrades_jacobi_by_over_three_times=True",
           "disconnected_island_degrades_jacobi_by_over_two_and_a_half_times=True",
@@ -3296,10 +3457,11 @@
           "quoted_block_jacobi_stall_does_not_reproduce=True"
         ]
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": [
           "random_geometry_degrades_jacobi_by_over_three_times=True",
           "disconnected_island_degrades_jacobi_by_over_two_and_a_half_times=True",
@@ -3307,26 +3469,27 @@
           "quoted_block_jacobi_stall_does_not_reproduce=True"
         ]
       },
-      "discriminates": false
+      "discriminates": null
     },
     {
       "backend": "fenics",
       "fixture": "petsc_options_prefix_is_required",
       "claim": "heat:11",
       "claim_text_sha": "9dcb40ddbba62a91",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:32+00:00",
+      "recorded": "2026-08-07T22:32:56+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.8,
+        "seconds": 0.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.7,
+        "seconds": 1.6,
         "missing": [
           "LinearProblem_without_prefix_raised=True",
           "NonlinearProblem_without_prefix_raised=True",
@@ -3341,19 +3504,20 @@
       "fixture": "petsckrylovsolver_exists_nowhere",
       "claim": "navier_stokes:1",
       "claim_text_sha": "ce0758249d2f2ab7",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:37+00:00",
+      "recorded": "2026-08-07T22:32:58+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": [
           "searched_name=PETScKrylovSolver",
           "found_anywhere=False",
@@ -3368,19 +3532,20 @@
       "fixture": "phi_min_max_are_rank_local_and_prints_duplicate",
       "claim": "multiphase:4",
       "claim_text_sha": "34c2058dbcfeb1f3",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:41+00:00",
+      "recorded": "2026-08-07T22:33:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": [
           "every_step_line_printed_once_per_rank=True",
           "the_two_ranks_disagree_about_the_range=True",
@@ -3395,19 +3560,20 @@
       "fixture": "picard_lagging_stalls_where_newton_is_quadratic",
       "claim": "reaction_diffusion:4",
       "claim_text_sha": "9e2fea2b0bbe973f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:46+00:00",
+      "recorded": "2026-08-07T22:33:04+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.8,
+        "seconds": 2.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.3,
         "missing": [
           "lagged_residual_after_200_iterations_still_above_1e-10=True",
           "lagged_ratio_is_steady_not_alternating=True",
@@ -3422,19 +3588,20 @@
       "fixture": "plane_strain_vs_plane_stress_lambda",
       "claim": "linear_elasticity:2",
       "claim_text_sha": "13d6f0cacad4991e",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:53+00:00",
+      "recorded": "2026-08-07T22:33:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.4,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.4,
         "missing": [
           "nu=0.3_matches_one_minus_nu_squared=True",
           "nu=0.45_matches_one_minus_nu_squared=True",
@@ -3448,19 +3615,20 @@
       "fixture": "plane_strain_vs_plane_stress_thermal_modulus",
       "claim": "thermal_structural:4",
       "claim_text_sha": "2879609f3510d079",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:59+00:00",
+      "recorded": "2026-08-07T22:33:11+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 11.5,
+        "seconds": 6.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 10.2,
+        "seconds": 6.2,
         "missing": [
           "plane_stress_lambda_with_three_lam_beta_overshoots=True",
           "model_under_test_disagrees_with_3d_free_z_reference=True",
@@ -3475,38 +3643,45 @@
       "fixture": "poisson_mms_convergence",
       "claim": "poisson:99",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:21+00:00",
+      "recorded": "2026-08-07T22:33:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.9,
+        "seconds": 0.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.9,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "pure_advection_dg_only_clean_at_lowest_order",
       "claim": "convection_diffusion:2",
       "claim_text_sha": "958fedd0bafed2b0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:27+00:00",
+      "recorded": "2026-08-07T22:33:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.0,
+        "seconds": 2.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.9,
+        "seconds": 2.3,
         "missing": [
           "primary_violates_the_zero_one_range=True",
           "VERDICT=upwind_dg_is_oscillation_free_only_at_lowest_order",
@@ -3520,19 +3695,20 @@
       "fixture": "pure_advection_ip_penalty_survives_eps_zero",
       "claim": "dg_methods:7",
       "claim_text_sha": "183e11669499afdc",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:36+00:00",
+      "recorded": "2026-08-07T22:33:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.2,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.2,
+        "seconds": 1.9,
         "missing": [
           "eps_free_penalty_survives_at_eps0=True",
           "jump_structure_crushed_by_penalty=True",
@@ -3547,19 +3723,20 @@
       "fixture": "pure_neumann_constant_nullspace",
       "claim": "poisson:3",
       "claim_text_sha": "b230518253628061",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:43+00:00",
+      "recorded": "2026-08-07T22:33:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": [
           "reason_is_negative=True",
           "offset_dominates=True",
@@ -3574,19 +3751,20 @@
       "fixture": "quadrilateral_taylor_hood_cell_must_match",
       "claim": "stokes:2",
       "claim_text_sha": "125d1892ca7ad12f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:48+00:00",
+      "recorded": "2026-08-07T22:33:39+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": [
           "mismatched_cell_raised=True",
           "VERDICT=quads_supported_but_the_cell_must_match_the_mesh",
@@ -3600,19 +3778,20 @@
       "fixture": "real_build_drops_complex_eigenproblem",
       "claim": "eigenvalue:5",
       "claim_text_sha": "2dcc76da7fbb6354",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:50+00:00",
+      "recorded": "2026-08-07T22:33:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.6,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.2,
         "missing": [
           "imaginary_coefficient_rejected_at_form_compilation=True",
           "Unexpected complex value in real expression.",
@@ -3627,13 +3806,13 @@
       "fixture": "real_only_pml_stretch_reflects_instead_of_absorbing",
       "claim": "maxwell::2",
       "claim_text_sha": "318bcf1950578727",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:55+00:00",
+      "recorded": "2026-08-07T22:33:43+00:00",
       "unmutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.7,
+        "seconds": 0.5,
         "missing": [
           "scalar_type=complex128",
           "complex_build=True",
@@ -3641,10 +3820,11 @@
           "complex_pml_decays_by_orders_of_magnitude=True"
         ]
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": [
           "scalar_type=complex128",
           "complex_build=True",
@@ -3652,26 +3832,27 @@
           "complex_pml_decays_by_orders_of_magnitude=True"
         ]
       },
-      "discriminates": false
+      "discriminates": null
     },
     {
       "backend": "fenics",
       "fixture": "reference_free_checks_catch_a_truncated_solve",
       "claim": "nonlinear_pde::9",
       "claim_text_sha": "62583abc246d8c1f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:29:57+00:00",
+      "recorded": "2026-08-07T22:33:45+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.9,
+        "seconds": 1.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.9,
+        "seconds": 1.9,
         "missing": [
           "truncated_solve_fails_the_residual_check=True",
           "truncated_solve_fails_the_energy_identity=True",
@@ -3686,19 +3867,20 @@
       "fixture": "reference_temperature_shifts_more_than_the_displacement",
       "claim": "thermal_structural:6",
       "claim_text_sha": "72c5eff6e563ea16",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:04+00:00",
+      "recorded": "2026-08-07T22:33:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.4,
+        "seconds": 2.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.2,
+        "seconds": 2.1,
         "missing": [
           "minimal_constraints_displacement_shifts=True",
           "clamped_displacement_grows_several_fold=True",
@@ -3713,19 +3895,20 @@
       "fixture": "rt_family_spellings_and_degree_suffix",
       "claim": "mixed_poisson:8",
       "claim_text_sha": "cdecd3c2e8301bc3",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:11+00:00",
+      "recorded": "2026-08-07T22:33:54+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": [
           "Unknown element family: RT1 with cell type triangle",
           "degree_suffixed_family_rejected=True",
@@ -3740,19 +3923,20 @@
       "fixture": "rt_with_dg_k_is_singular",
       "claim": "mixed_poisson:4",
       "claim_text_sha": "57d1869bbba09264",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:14+00:00",
+      "recorded": "2026-08-07T22:33:55+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.8,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": [
           "dg_k_pressure_dofs_exceed_rt_flux_dofs=True",
           "bad_pair_matrix_is_rank_deficient=True",
@@ -3767,19 +3951,20 @@
       "fixture": "saddle_point_indefinite_cg_diverges",
       "claim": "mixed_poisson:3",
       "claim_text_sha": "f3bbd10e5c259a5b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:19+00:00",
+      "recorded": "2026-08-07T22:33:59+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.4,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 1.5,
         "missing": [
           "primary_exited_with_an_indefinite_reason_code=True",
           "VERDICT=mixed_poisson_saddle_point_is_indefinite_and_cg_refuses_it",
@@ -3793,19 +3978,20 @@
       "fixture": "saddle_point_lu_failure_exits_zero",
       "claim": "mixed_poisson:1",
       "claim_text_sha": "dd6ab2912053c0dd",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:26+00:00",
+      "recorded": "2026-08-07T22:34:02+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.6,
+        "seconds": 1.4,
         "missing": [
           "converged_reason_is_diverged_pcsetup_failed_minus_eleven=True",
           "solution_vector_is_entirely_inf=True",
@@ -3820,38 +4006,46 @@
       "fixture": "scalar_space_for_elasticity",
       "claim": "linear_elasticity:0",
       "claim_text_sha": "e19f1af5ef1de45f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:31+00:00",
+      "recorded": "2026-08-07T22:34:05+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 1.1,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "ValueError",
+          "Symmetric part of tensor with rank != 2"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "sharp_conditional_is_newton_safe_but_quadrature_dependent",
       "claim": "multiphase:7",
       "claim_text_sha": "96426993df3e9103",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:33+00:00",
+      "recorded": "2026-08-07T22:34:07+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 7.2,
+        "seconds": 3.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 6.8,
+        "seconds": 4.1,
         "missing": [
           "selected_h_integral_moves_with_quadrature_degree=True",
           "VERDICT=conditional_is_newton_safe_but_quadrature_dependent",
@@ -3865,19 +4059,20 @@
       "fixture": "sinvert_needed_for_interior_eigenvalues",
       "claim": "eigenvalue:1",
       "claim_text_sha": "978ee5162f73acd9",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:48+00:00",
+      "recorded": "2026-08-07T22:34:15+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.0,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.4,
+        "seconds": 1.2,
         "missing": [
           "primary_returned_the_largest_eigenvalue_of_the_matrix=True",
           "primary_stayed_more_than_one_away_from_the_target=True",
@@ -3892,19 +4087,20 @@
       "fixture": "sipg_penalty_must_scale_with_dg_degree",
       "claim": "dg_methods:4",
       "claim_text_sha": "c327feaa17258c89",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:30:55+00:00",
+      "recorded": "2026-08-07T22:34:18+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.9,
+        "seconds": 2.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.1,
+        "seconds": 2.5,
         "missing": [
           "deg3_fixed_penalty_blows_up=True",
           "VERDICT=sipg_penalty_must_scale_with_degree",
@@ -3918,38 +4114,45 @@
       "fixture": "slepc_and_petsc_scalar_type",
       "claim": "eigenvalue:0",
       "claim_text_sha": "af67a4530b759180",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:04+00:00",
+      "recorded": "2026-08-07T22:34:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "EPS_available=True"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "small_dt_undershoot_on_the_p1_mass_matrix",
       "claim": "reaction_diffusion:6",
       "claim_text_sha": "1c63c4e73b7372e9",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:06+00:00",
+      "recorded": "2026-08-07T22:34:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.5,
+        "seconds": 2.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.8,
+        "seconds": 1.9,
         "missing": [
           "small_dt_undershoots_below_minus_1e_3=True",
           "undershoot_is_a_percent_of_the_peak=True",
@@ -3964,19 +4167,20 @@
       "fixture": "snes_divergence_returns_a_frozen_field_silently",
       "claim": "multiphase:0",
       "claim_text_sha": "fd055b4a7c153978",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:14+00:00",
+      "recorded": "2026-08-07T22:34:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.3,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.4,
         "missing": [
           "every_step_reason_negative=True",
           "reason_name=DIVERGED_LINE_SEARCH",
@@ -3991,19 +4195,20 @@
       "fixture": "snes_monitor_none_and_empty_string_are_identical",
       "claim": "nonlinear_pde::6",
       "claim_text_sha": "f0c6020d132a2ef1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:21+00:00",
+      "recorded": "2026-08-07T22:34:33+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.7,
+        "seconds": 2.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 5.0,
+        "seconds": 2.9,
         "missing": [
           "no_monitor_arm_has_zero_monitor_lines=True",
           "VERDICT=monitor_none_equals_empty_and_the_history_is_the_diagnosis",
@@ -4017,19 +4222,20 @@
       "fixture": "snes_monitor_writes_to_stdout",
       "claim": "hyperelasticity:6",
       "claim_text_sha": "9dae6f4ea3271969",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:31+00:00",
+      "recorded": "2026-08-07T22:34:39+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.3,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.4,
         "missing": [
           "SNES Function norm",
           "monitor_goes_to_stdout_only=True",
@@ -4044,19 +4250,20 @@
       "fixture": "snes_reason_two_is_fnorm_abs_not_relative",
       "claim": "nonlinear_pde::5",
       "claim_text_sha": "3de8d63dce66ca5a",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:37+00:00",
+      "recorded": "2026-08-07T22:34:43+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.6,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": [
           "naive_wrapper_mislabelled_a_real_solve=True",
           "VERDICT=test_only_the_sign_the_names_are_easy_to_shift",
@@ -4070,19 +4277,20 @@
       "fixture": "solve_does_not_raise_on_newton_failure",
       "claim": "navier_stokes:2",
       "claim_text_sha": "3405c173b8ee805e",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:42+00:00",
+      "recorded": "2026-08-07T22:34:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.1,
+        "seconds": 1.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.2,
+        "seconds": 1.3,
         "missing": [
           "reason_is_negative_or_zero=True",
           "VERDICT=failed_solve_returns_quietly_check_the_reason",
@@ -4096,19 +4304,20 @@
       "fixture": "species_dirichletbc_needs_collapsed_space",
       "claim": "reaction_diffusion:3",
       "claim_text_sha": "6e2f5c54653e40a0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:47+00:00",
+      "recorded": "2026-08-07T22:34:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.5,
         "missing": [
           "TypeError: __init__(): incompatible function arguments. The following argument types are supported:",
           "Invoked with types: dolfinx.cpp.fem.DirichletBC_float64, dolfinx.cpp.fem.Constant_float64, list, dolfinx.cpp.fem.FunctionSpace_float64",
@@ -4123,19 +4332,20 @@
       "fixture": "staggered_loop_iterates_on_a_diverged_displacement_solve",
       "claim": "fracture::7",
       "claim_text_sha": "46caf5bb21fddf5c",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:31:50+00:00",
+      "recorded": "2026-08-07T22:34:50+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 116.1,
+        "seconds": 12.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 0,
-        "seconds": 25.6,
+        "seconds": 3.1,
         "missing": [
           "displacement_solve_never_raised=True",
           "damage_solve_never_raised=True",
@@ -4150,37 +4360,47 @@
       "fixture": "staggered_sweep_count_explodes_in_the_propagation_step",
       "claim": "fracture::3",
       "claim_text_sha": "ec6b1be8fbc5f0fc",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:34:12+00:00",
+      "recorded": "2026-08-07T22:35:07+00:00",
       "unmutated": {
-        "status": "TIMEOUT",
-        "seconds": 150
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 23.0,
+        "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "TIMEOUT",
-        "seconds": 150
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 24.4,
+        "missing": [
+          "a_cap_of_a_few_tens_truncates_exactly_that_step=True",
+          "VERDICT=sweep_count_explodes_in_the_propagation_step_and_a_small_cap_truncates_it",
+          "FORBIDDEN:VERDICT=sweep_count_stayed_roughly_constant"
+        ]
       },
-      "discriminates": false
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "stale_ffcx_cache_hides_the_real_form_error",
       "claim": "thermal_structural:2",
       "claim_text_sha": "c3a32d08e268edab",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:13+00:00",
+      "recorded": "2026-08-07T22:35:55+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.8,
+        "seconds": 3.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.6,
         "missing": [
           "attempt2_error=TimeoutError",
           "JIT compilation timed out, probably due to a failed previous compile. Try cleaning cache (e.g. remove",
@@ -4195,19 +4415,20 @@
       "fixture": "stale_previous_step_function_freezes_the_run",
       "claim": "cahn_hilliard::6",
       "claim_text_sha": "6119e86a33a446e1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:19+00:00",
+      "recorded": "2026-08-07T22:35:59+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.2,
+        "seconds": 3.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 5.3,
+        "seconds": 4.0,
         "missing": [
           "stale_u0_iteration_count_collapses=True",
           "stale_u0_field_stopped_evolving=True",
@@ -4222,19 +4443,20 @@
       "fixture": "steady_ns_cold_start_needs_reynolds_continuation",
       "claim": "navier_stokes:6",
       "claim_text_sha": "3b6894f6fb0ff26f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:29+00:00",
+      "recorded": "2026-08-07T22:36:07+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.0,
+        "seconds": 2.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 2.3,
         "missing": [
           "solve did not converge due to DIVERGED_DTOL",
           "cold_start_reason_name=DIVERGED_DTOL",
@@ -4249,19 +4471,20 @@
       "fixture": "stiff_kinetics_need_no_external_ode_package",
       "claim": "reaction_diffusion:8",
       "claim_text_sha": "d624f6e2be0ba63f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:36+00:00",
+      "recorded": "2026-08-07T22:36:12+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 6.2,
+        "seconds": 4.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 0,
-        "seconds": 6.6,
+        "seconds": 4.4,
         "missing": [
           "ModuleNotFoundError: No module named 'sundials'",
           "ModuleNotFoundError: No module named 'assimulo'",
@@ -4275,19 +4498,20 @@
       "fixture": "stoichiometric_invariant_catches_a_wrong_reaction_term",
       "claim": "reaction_diffusion:9",
       "claim_text_sha": "14acde77f223b53d",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:49+00:00",
+      "recorded": "2026-08-07T22:36:21+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.0,
+        "seconds": 2.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.6,
         "missing": [
           "wrong_factor_drifts_by_more_than_a_percent=True",
           "VERDICT=the_invariant_catches_the_wrong_stoichiometric_factor",
@@ -4301,38 +4525,47 @@
       "fixture": "stokes_basix_element_construction",
       "claim": "stokes:0",
       "claim_text_sha": "b63692fa86314db1",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:55+00:00",
+      "recorded": "2026-08-07T22:36:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "taylor_hood_dim=187",
+          "dim_ordering_th_gt_mini_gt_eq=True",
+          "FORBIDDEN:ERROR"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "stokes_minres_needs_fieldsplit",
       "claim": "stokes:3",
       "claim_text_sha": "41d06fdd6b5d5444",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:39:57+00:00",
+      "recorded": "2026-08-07T22:36:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.6,
+        "seconds": 2.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.0,
+        "seconds": 2.1,
         "missing": [
           "primary_iterations_grow_by_more_than_1p6x_per_refinement=True",
           "primary_needs_more_than_ten_times_the_schur_iterations=True",
@@ -4347,38 +4580,45 @@
       "fixture": "stokes_mms_convergence",
       "claim": "stokes:99",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:40:04+00:00",
+      "recorded": "2026-08-07T22:36:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 0.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.9,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "strict_split_predicate_drops_the_facets_on_the_seam",
       "claim": "stokes_darcy::4",
       "claim_text_sha": "918f9b4edaf0e2d8",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:40:07+00:00",
+      "recorded": "2026-08-07T22:36:34+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.7,
+        "seconds": 2.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 5.5,
+        "seconds": 2.7,
         "missing": [
           "strict_split_left_two_facets_in_neither_set=True",
           "strict_tagged_length_is_short_of_the_true_boundary=True",
@@ -4393,19 +4633,20 @@
       "fixture": "strong_dirichletbc_on_dg_space_is_a_noop",
       "claim": "dg_methods:6",
       "claim_text_sha": "7c2585a4014cc693",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:40:18+00:00",
+      "recorded": "2026-08-07T22:36:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.0,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.0,
+        "seconds": 1.3,
         "missing": [
           "slot_boundary_value_has_no_effect=True",
           "VERDICT=strong_dirichletbc_on_dg_is_a_silent_noop",
@@ -4419,19 +4660,20 @@
       "fixture": "supg_fixed_tau_stalls_convergence",
       "claim": "convection_diffusion:1",
       "claim_text_sha": "2a82ca472233bd1a",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:40:23+00:00",
+      "recorded": "2026-08-07T22:36:43+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.2,
+        "seconds": 2.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.6,
         "missing": [
           "primary_tau_rate_collapses_below_0p3=True",
           "primary_error_barely_moves_ratio_below_1p3=True",
@@ -4446,19 +4688,20 @@
       "fixture": "t_min_max_is_rank_local_under_mpirun",
       "claim": "time_dependent_heat::8",
       "claim_text_sha": "5717c2c64ec958ab",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:40:29+00:00",
+      "recorded": "2026-08-07T22:36:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 13.0,
+        "seconds": 4.8,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 11.8,
+        "seconds": 2.9,
         "missing": [
           "range_line_printed_once_per_rank=True",
           "some_rank_range_differs_from_the_serial_range=True",
@@ -4473,19 +4716,20 @@
       "fixture": "thermal_load_without_displacement_bc_is_singular",
       "claim": "thermal_structural:5",
       "claim_text_sha": "ad83b202b3fe9c93",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:40:55+00:00",
+      "recorded": "2026-08-07T22:36:55+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.0,
+        "seconds": 2.3,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.4,
+        "seconds": 2.3,
         "missing": [
           "two_d_has_exactly_three_rigid_modes=True",
           "three_d_has_exactly_six_rigid_modes=True",
@@ -4500,19 +4744,20 @@
       "fixture": "thermal_term_in_bilinear_form_arity_mismatch",
       "claim": "thermal_structural:1",
       "claim_text_sha": "3953d93d795d2f7c",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:03+00:00",
+      "recorded": "2026-08-07T22:37:00+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.1,
+        "seconds": 1.5,
         "missing": [
           "ufl.algorithms.check_arities.ArityMismatch: Adding expressions with non-matching form arguments () vs ('v_1',).",
           "thermal_term_in_a_is_an_arity_mismatch=True",
@@ -4527,19 +4772,20 @@
       "fixture": "thermal_term_missing_or_alpha_instead_of_beta",
       "claim": "thermal_structural:0",
       "claim_text_sha": "5c7c87e18b605dda",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:08+00:00",
+      "recorded": "2026-08-07T22:37:04+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.5,
+        "seconds": 2.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.5,
         "missing": [
           "omitted_thermal_term_is_bit_exactly_zero=True",
           "alpha_only_is_smaller_by_3lam_plus_2mu=True",
@@ -4554,19 +4800,20 @@
       "fixture": "theta_as_bare_float_kills_the_integration_domain",
       "claim": "time_dependent_heat::6",
       "claim_text_sha": "93cee1ce6ea4d943",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:14+00:00",
+      "recorded": "2026-08-07T22:37:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.4,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.7,
         "missing": [
           "theta_1p0_bare_float_error=ValueError: This integral is missing an integration domain.",
           "bare_float_theta_1p0_raised_value_error=True",
@@ -4581,19 +4828,20 @@
       "fixture": "three_reference_free_checks_catch_what_min_max_cannot",
       "claim": "time_dependent_heat:10",
       "claim_text_sha": "4a6697a5c2a2d101",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:20+00:00",
+      "recorded": "2026-08-07T22:37:12+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.3,
+        "seconds": 1.5,
         "missing": [
           "residual_check_catches_the_second_run=True",
           "VERDICT=the_three_checks_hold_and_the_residual_catches_what_min_max_cannot",
@@ -4607,19 +4855,20 @@
       "fixture": "two_way_thermo_mechanical_one_shot_error",
       "claim": "thermal_structural:7",
       "claim_text_sha": "63b2812d48f48ff5",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:25+00:00",
+      "recorded": "2026-08-07T22:37:15+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 3.9,
+        "seconds": 2.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.3,
+        "seconds": 2.2,
         "missing": [
           "picard_change_falls_geometrically=True",
           "one_shot_error_is_about_a_tenth_of_the_thermal_strain=True",
@@ -4634,19 +4883,20 @@
       "fixture": "u_sub_in_residual_gives_a_zero_jacobian",
       "claim": "cahn_hilliard::4",
       "claim_text_sha": "833f3c78d36f50a9",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:33+00:00",
+      "recorded": "2026-08-07T22:37:20+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.4,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.0,
+        "seconds": 1.4,
         "missing": [
           "u_sub_jacobian_is_exactly_zero=True",
           "petsc4py.PETSc.Error: error code 73",
@@ -4661,19 +4911,20 @@
       "fixture": "ufl_abs_symbol_does_not_exist",
       "claim": "dg_methods:9",
       "claim_text_sha": "f9a06494ebe7df7f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:38+00:00",
+      "recorded": "2026-08-07T22:37:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.6,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.7,
+        "seconds": 0.5,
         "missing": [
           "ufl_Abs_raised_attributeerror=True",
           "module 'ufl' has no attribute 'Abs'",
@@ -4688,19 +4939,20 @@
       "fixture": "ufl_action_not_a_form_method",
       "claim": "matrix_free_poisson::0",
       "claim_text_sha": "aeafd8c70461a28f",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:40+00:00",
+      "recorded": "2026-08-07T22:37:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.3,
         "missing": [
           "AttributeError: 'Form' object has no attribute 'action'",
           "AttributeError: 'Form' object has no attribute '_cpp_object'",
@@ -4715,38 +4967,48 @@
       "fixture": "ufl_element_classes_removed_use_basix_ufl",
       "claim": "stokes:98",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:44+00:00",
+      "recorded": "2026-08-07T22:37:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "removed_in_ufl={'FiniteElement': False, 'VectorElement': False, 'MixedElement': False, 'TensorElement': False}",
+          "basix_ufl_present={'element': True, 'mixed_element': True, 'blocked_element': True}",
+          "taylor_hood_dim=",
+          "FORBIDDEN:FAIL:"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "ufl_split_vs_function_sub_in_residual",
       "claim": "reaction_diffusion:1",
       "claim_text_sha": "c18187291267f28a",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:46+00:00",
+      "recorded": "2026-08-07T22:37:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.5,
+        "seconds": 1.7,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.3,
         "missing": [
           "function_sub_jacobian_is_entirely_empty=True",
           "function_sub_solve_raised=True",
@@ -4761,38 +5023,46 @@
       "fixture": "ufl_variable_diff_tangent",
       "claim": "hyperelasticity:3",
       "claim_text_sha": "2b4e077285bf54e9",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:51+00:00",
+      "recorded": "2026-08-07T22:37:33+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "F_var_type=Variable",
+          "P_type=VariableDerivative"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "ufl_variable_module_shadowed_by_function",
       "claim": "hyperelasticity:4",
       "claim_text_sha": "1799004bd58fa661",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:52+00:00",
+      "recorded": "2026-08-07T22:37:34+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.8,
+        "seconds": 1.0,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.5,
+        "seconds": 1.0,
         "missing": [
           "AttributeError: 'function' object has no attribute 'Variable'",
           "submodule_shadowed_by_function=True",
@@ -4807,19 +5077,20 @@
       "fixture": "under_resolved_eps_overshoots_without_any_solver_failure",
       "claim": "multiphase:1",
       "claim_text_sha": "7e779791163de8ed",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:56+00:00",
+      "recorded": "2026-08-07T22:37:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.2,
+        "seconds": 1.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 2.5,
+        "seconds": 1.4,
         "missing": [
           "selected_leaves_physical_range=True",
           "selected_overshoot_is_only_a_few_percent=True",
@@ -4834,19 +5105,20 @@
       "fixture": "ungauged_curl_curl_gives_a_solver_dependent_A",
       "claim": "magnetostatics::3",
       "claim_text_sha": "fc647640b7975df5",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:02+00:00",
+      "recorded": "2026-08-07T22:37:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.4,
+        "seconds": 2.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.8,
+        "seconds": 2.3,
         "missing": [
           "A_differs_between_solvers_by_more_than_2x=True",
           "VERDICT=ungauged_curl_curl_is_silently_solver_dependent_in_A",
@@ -4860,19 +5132,20 @@
       "fixture": "uniform_initial_concentration_never_separates",
       "claim": "cahn_hilliard::1",
       "claim_text_sha": "e2e2a0c23a7b368b",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:11+00:00",
+      "recorded": "2026-08-07T22:37:45+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 6.9,
+        "seconds": 4.6,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 10.9,
+        "seconds": 7.4,
         "missing": [
           "uniform_0p5_never_separates=True",
           "uniform_0p63_never_separates=True",
@@ -4887,38 +5160,46 @@
       "fixture": "unknown_element_family",
       "claim": "linear_elasticity:90",
       "claim_text_sha": "",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:29+00:00",
+      "recorded": "2026-08-07T22:37:58+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "ValueError",
+          "Unknown element family"
+        ]
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "fenics",
       "fixture": "unpreconditioned_cg_iterations_scale_like_one_over_h",
       "claim": "matrix_free_poisson::7",
       "claim_text_sha": "e3e502dce22b9d48",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:31+00:00",
+      "recorded": "2026-08-07T22:37:59+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 4.7,
+        "seconds": 2.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.7,
+        "seconds": 2.8,
         "missing": [
           "fine_mesh_hit_the_coarse_max_iter=True",
           "VERDICT=unpreconditioned_cg_count_scales_like_one_over_h",
@@ -4932,19 +5213,20 @@
       "fixture": "unreduced_scalar_diagnostics_are_quietly_too_small",
       "claim": "matrix_free_poisson::6",
       "claim_text_sha": "03de56c180c5ed89",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:41+00:00",
+      "recorded": "2026-08-07T22:38:05+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.9,
+        "seconds": 1.2,
         "missing": [
           "two_rank_reported_norm_is_smaller_than_the_serial_value=True",
           "VERDICT=unreduced_scalar_diagnostics_are_quietly_too_small",
@@ -4958,19 +5240,20 @@
       "fixture": "vector_lagrange_cannot_carry_the_normal_jump",
       "claim": "maxwell::0",
       "claim_text_sha": "0be0ed9e990a1d94",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:45+00:00",
+      "recorded": "2026-08-07T22:38:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 6.9,
+        "seconds": 3.2,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 4.0,
+        "seconds": 2.2,
         "missing": [
           "under_test_error_stays_above_5_percent=True",
           "VERDICT=lagrange_cannot_carry_the_normal_jump_n1curl_is_exact",
@@ -4984,19 +5267,20 @@
       "fixture": "vector_lagrange_curl_curl_spectrum_is_garbage",
       "claim": "magnetostatics::2",
       "claim_text_sha": "d8b09455eb3bcad6",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:42:57+00:00",
+      "recorded": "2026-08-07T22:38:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 30.1,
+        "seconds": 22.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 45.9,
+        "seconds": 36.5,
         "missing": [
           "under_test_has_no_mode_within_5_percent_of_the_exact_spectrum=True",
           "under_test_spurious_modes_collapse_toward_zero=True",
@@ -5011,19 +5295,20 @@
       "fixture": "vtx_writer_rejects_non_lagrange",
       "claim": "poisson:2",
       "claim_text_sha": "04943188a2243ccf",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:44:14+00:00",
+      "recorded": "2026-08-07T22:39:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.6,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.6,
+        "seconds": 0.5,
         "missing": [
           "stage=raised_at_construction",
           "Only (discontinuous) Lagrange functions are supported",
@@ -5037,19 +5322,20 @@
       "fixture": "without_the_history_field_the_crack_heals_on_unloading",
       "claim": "fracture::0",
       "claim_text_sha": "b3b69b6c5155b588",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:44:16+00:00",
+      "recorded": "2026-08-07T22:39:15+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 124.9,
+        "seconds": 23.9,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 132.3,
+        "seconds": 24.8,
         "missing": [
           "no_history_worst_nodal_step_change_is_near_minus_one=True",
           "no_history_integrated_damage_lost_over_thirty_percent_of_its_peak=True",
@@ -5064,19 +5350,20 @@
       "fixture": "wrong_double_well_derivative_looks_healthier",
       "claim": "cahn_hilliard::2",
       "claim_text_sha": "4ad003e54a4281fd",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:48:33+00:00",
+      "recorded": "2026-08-07T22:40:05+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 6.4,
+        "seconds": 4.1,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 8.2,
+        "seconds": 4.9,
         "missing": [
           "corrupted_run_needed_fewer_newton_iterations=True",
           "corrupted_run_never_separated=True",
@@ -5091,19 +5378,20 @@
       "fixture": "xdmf_p2_on_p1_mesh_rejected",
       "claim": "linear_elasticity:7",
       "claim_text_sha": "269a6ac7f5d146c0",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:48:49+00:00",
+      "recorded": "2026-08-07T22:40:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.6,
+        "seconds": 0.4,
         "missing": [
           "write_function_raised=True",
           "Degree of output Function must be same as mesh degree",
@@ -5117,19 +5405,20 @@
       "fixture": "xdmf_rejects_p2_velocity",
       "claim": "navier_stokes:9",
       "claim_text_sha": "8485e78d60f0a210",
-      "commit": "b812b15afd16",
+      "commit": "30ec83105f8c",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:48:51+00:00",
+      "recorded": "2026-08-07T22:40:16+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": []
       },
+      "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.5,
         "missing": [
           "write_function_raised=True",
           "Degree of output Function must be same as mesh degree",
