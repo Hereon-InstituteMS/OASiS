@@ -80,7 +80,13 @@ _NOT_WALL_CLOCK = re.compile(
     # ratios. Both hold on any host. Anchored on the quantity's own name
     # (drop_per_iter / _rate_is_) rather than on faster|slower, so a genuine
     # `solve_is_slower_than` still fails.
-    r"|drop_per_iter|_rate_is_(?:slower|faster)",
+    r"|drop_per_iter|_rate_is_(?:slower|faster)"
+    # Two more quantities that borrow the vocabulary of speed without being
+    # clocks. `envelope_shrinks_slower_than_0p98_per_iteration` is
+    # (r_n/r_0)**(1/20) over the RESIDUAL history; `still_relaxing_faster_after
+    # _20_steps` is a ratio of ENERGY released per step between two runs.
+    # Both are properties of the iteration, identical on any host.
+    r"|envelope_shrinks_(?:slower|faster)|still_relaxing_(?:slower|faster)",
     re.IGNORECASE)
 
 BACKENDS = sorted(p.name for p in FIXTURES.iterdir() if p.is_dir()) \

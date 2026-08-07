@@ -712,7 +712,7 @@ _MULTIPHASE_KNOWLEDGE = {
      'explanation': 'Allen-Cahn is a single scalar second-order equation, so one ordinary '
                     'Lagrange space is enough. The only structural requirement is a second '
                     'Function holding the previous time level.',
-     'pitfalls': ['phi_old must be a separate Function, copied with phi_old.x.array[:] = '
+     'pitfalls': ['[API] phi_old must be a separate Function, copied with phi_old.x.array[:] = '
                   'phi.x.array at the TOP of each step. Signal: if you forget, phi stops '
                   'changing after step 1 and the SNES iteration count collapses to 1 with '
                   'converged reason 4 (CONVERGED_SNORM_RELATIVE, i.e. a zero Newton '
@@ -731,7 +731,7 @@ _MULTIPHASE_KNOWLEDGE = {
                     'double well against the eps in front of the gradient term is what '
                     'fixes the equilibrium interface thickness at O(eps) and the profile '
                     'at tanh(d/(eps*sqrt(2))); use the same eps in the initial condition.',
-     'pitfalls': ['Do not multiply a form integrand by a Python float that can be exactly '
+     'pitfalls': ['[API] Do not multiply a form integrand by a Python float that can be exactly '
                   '0.0 (a theta-scheme with theta=1). Signal: ValueError: This integral is '
                   'missing an integration domain. Wrap the weight in fem.Constant(msh, '
                   'value) instead.']},
@@ -743,7 +743,7 @@ _MULTIPHASE_KNOWLEDGE = {
      'explanation': 'The interface is interior to the domain; the boundary only has to be '
                     'transparent to it. The natural condition of the weak form already '
                     'gives zero normal flux, so nothing has to be added.',
-     'pitfalls': ['A surface term written with plain ufl.ds is applied to EVERY exterior '
+     'pitfalls': ['[BC] A surface term written with plain ufl.ds is applied to EVERY exterior '
                   'facet, not just the wall you meant. Signal: measured on the same '
                   'assembly path in a heat problem, switching a Robin term from a tagged '
                   'ds(tag) to plain ufl.ds changed the steady profile from 0.95, 0.85, '
@@ -765,10 +765,10 @@ _MULTIPHASE_KNOWLEDGE = {
                     'reached through dolfinx.fem.petsc.NonlinearProblem; '
                     'dolfinx.nls.petsc.NewtonSolver is the deprecated path and cannot wrap '
                     'this class.',
-     'pitfalls': ['problem.solve() NEVER raises on a diverged SNES. Signal: converged '
+     'pitfalls': ['[API] problem.solve() NEVER raises on a diverged SNES. Signal: converged '
                   'reason -6 (DIVERGED_LINE_SEARCH) with iterations dropping to 0 and phi '
                   'silently unchanged, while the script runs to the end and exits 0.',
-                  'Do not wrap this NonlinearProblem in dolfinx.nls.petsc.NewtonSolver. '
+                  '[API] Do not wrap this NonlinearProblem in dolfinx.nls.petsc.NewtonSolver. '
                   "Signal: AttributeError: 'NonlinearProblem' object has no attribute "
                   "'a'."]},
     'time_integration': {'REQUIRED': 'for step in range(n_steps):\n'
@@ -783,7 +783,7 @@ _MULTIPHASE_KNOWLEDGE = {
                     "Newton's basin of attraction, not by linear stability: the relevant "
                     'scale is dt against eps^2, because the potential term is O(1/eps) '
                     'stiff.',
-     'pitfalls': ['Too large a dt does not blow up - it stops converging. Signal: SNES '
+     'pitfalls': ['[Numerical] Too large a dt does not blow up - it stops converging. Signal: SNES '
                   'converged reason -6 at the first step; phi stays at the previous value '
                   'and the reported time keeps advancing.']},
     'materials': {'epsilon': 'interface half-width; choose eps >= 2*h_min, typically 2-4 mesh cells '
@@ -1144,7 +1144,7 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {'description': 'Transient heat conduction rho*
                                    'one extra Function to hold the previous time '
                                    'level. Spatially varying material data lives in a '
                                    'separate DG0 space, one value per cell.',
-                    'pitfalls': ['Heterogeneous k, rho or cp must be a fem.Function on '
+                    'pitfalls': ['[API] Heterogeneous k, rho or cp must be a fem.Function on '
                                  'a DG0 space, not a single fem.Constant. Signal: with '
                                  'a Constant the temperature field is smooth '
                                  'everywhere and shows no kink at the material '
@@ -1163,12 +1163,12 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {'description': 'Transient heat conduction rho*
                               'form a, everything known goes into L. With constant '
                               'coefficients a is time-independent, so its matrix is '
                               'assembled once outside the loop and only L is rebuilt.',
-               'pitfalls': ['A Neumann or Robin surface term that you forget is '
+               'pitfalls': ['[BC] A Neumann or Robin surface term that you forget is '
                             'silently an insulated boundary; the natural condition of '
                             'this form is zero flux. Signal: no error and no warning - '
                             'just a boundary whose normal temperature gradient stays '
                             'at 0.',
-                            'Do not multiply a form integrand by a Python float that '
+                            '[API] Do not multiply a form integrand by a Python float that '
                             'can be 0.0 (theta=1 in a theta-scheme). Signal: '
                             'ValueError: This integral is missing an integration '
                             'domain.']},
@@ -1197,18 +1197,18 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {'description': 'Transient heat conduction rho*
                                         'the constrained rows with the prescribed '
                                         'values. The ghost update MUST sit between '
                                         'them.',
-                         'pitfalls': ['Omitting apply_lifting is the classic silent '
+                         'pitfalls': ['[BC] Omitting apply_lifting is the classic silent '
                                       'failure. Signal: min/max of T still print '
                                       'exactly the prescribed BC range, but the '
                                       'interior collapses towards zero and the total '
                                       'stored energy is an order of magnitude too '
                                       'small.',
-                                      'Omitting set_bc leaves the prescribed values '
+                                      '[BC] Omitting set_bc leaves the prescribed values '
                                       'unenforced. Signal: the field takes values '
                                       'OUTSIDE the range spanned by the boundary data '
                                       'and the initial condition (measured: [-1.07, '
                                       '+0.94] for data in [0, 1]).',
-                                      'Plain ufl.ds is the WHOLE exterior boundary. '
+                                      '[BC] Plain ufl.ds is the WHOLE exterior boundary. '
                                       'For a flux or convective term on one wall only, '
                                       'use a tagged Measure. Signal: measured, adding '
                                       'h_conv*T*ufl.ds with h_conv = 10 to a '
@@ -1236,11 +1236,11 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {'description': 'Transient heat conduction rho*
                            'algebraic-multigrid preconditioner is the scalable choice '
                            'and the factorisation-free path reuses the same matrix for '
                            'every step.',
-            'pitfalls': ['Neither ksp.solve nor LinearProblem.solve raises on failure. '
+            'pitfalls': ['[API] Neither ksp.solve nor LinearProblem.solve raises on failure. '
                          'Signal: KSP converged reason is negative while the script '
                          'carries on; check getConvergedReason() > 0 every step or '
                          'pass "ksp_error_if_not_converged": True.',
-                         'If you change dt, k, rho or cp mid-run, the matrix must be '
+                         '[API] If you change dt, k, rho or cp mid-run, the matrix must be '
                          'reassembled. Signal: T still prints inside the prescribed BC '
                          'range while the interior profile silently collapses.']},
  'time_integration': {'REQUIRED': 'for step in range(n_steps):\n'
@@ -1264,7 +1264,7 @@ _TIME_DEPENDENT_HEAT_KNOWLEDGE = {'description': 'Transient heat conduction rho*
                                      'you need the transient resolved. Crank-Nicolson '
                                      'is second order but is only A-stable, not '
                                      'L-stable, so it rings on a step change.',
-                      'pitfalls': ['The reused right-hand-side vector MUST be zeroed '
+                      'pitfalls': ['[API] The reused right-hand-side vector MUST be zeroed '
                                    'at the top of each step. Signal: T grows without '
                                    'bound while every KSP solve reports converged.',
                                    'Do not choose dt from an explicit-stability '
@@ -1801,7 +1801,7 @@ _NONLINEAR_PDE_KNOWLEDGE = {
                     'because the residual has to be evaluated at it. Using a TrialFunction '
                     'for the unknown makes the form bilinear and the problem is no longer '
                     'the one you meant to solve.',
-     'pitfalls': ['u must be a fem.Function. Signal: with a ufl.TrialFunction as the '
+     'pitfalls': ['[API] u must be a fem.Function. Signal: with a ufl.TrialFunction as the '
                   'unknown, form construction fails with '
                   'ufl.algorithms.check_arities.ArityMismatch: Applying nonlinear operator '
                   'Power to expression depending on form argument v_1.']},
@@ -1816,7 +1816,7 @@ _NONLINEAR_PDE_KNOWLEDGE = {
                     'form F(u; v). Newton then needs dF/du, which dolfinx obtains from UFL '
                     'by automatic differentiation - including through exp, tanh, powers '
                     'and conditionals.',
-     'pitfalls': ['A diffusivity that can hit zero or a non-integer power of a quantity '
+     'pitfalls': ['[Numerical] A diffusivity that can hit zero or a non-integer power of a quantity '
                   'that can go negative makes the residual non-differentiable at the '
                   'starting guess. Signal: SNES returns converged reason -4 '
                   '(DIVERGED_FNORM_NAN) at iteration 0 with u left exactly at its initial '
@@ -1835,7 +1835,7 @@ _NONLINEAR_PDE_KNOWLEDGE = {
                     'update at constrained DOFs and lifts the residual, so no manual '
                     'apply_lifting/set_bc is needed. Give it the bcs list and start from '
                     'an iterate that already satisfies them.',
-     'pitfalls': ['An initial guess that violates the Dirichlet data is fine, but one '
+     'pitfalls': ['[Numerical] An initial guess that violates the Dirichlet data is fine, but one '
                   'outside the domain of D(u) or R(u) is not. Signal: SNES returns '
                   'converged reason -4 (DIVERGED_FNORM_NAN) or -6 (DIVERGED_LINE_SEARCH) '
                   'at iteration 0, and solve() hands back the unchanged initial guess '
@@ -1857,12 +1857,12 @@ _NONLINEAR_PDE_KNOWLEDGE = {
      'explanation': 'problem.solver is the underlying PETSc SNES object, so the whole '
                     'petsc4py SNES API (getConvergedReason, getIterationNumber, '
                     'getFunctionNorm) is available after the solve.',
-     'pitfalls': ['problem.solve() returns the solution Function whether or not SNES '
+     'pitfalls': ['[API] problem.solve() returns the solution Function whether or not SNES '
                   'converged. Signal: a negative converged reason with a perfectly finite, '
                   'plausible-looking field.',
-                  'dolfinx.nls.petsc.NewtonSolver cannot wrap a 0.10 NonlinearProblem. '
+                  '[API] dolfinx.nls.petsc.NewtonSolver cannot wrap a 0.10 NonlinearProblem. '
                   "Signal: AttributeError: 'NonlinearProblem' object has no attribute 'a'.",
-                  'dolfinx.PETScKrylovSolver does not exist. Signal: AttributeError: '
+                  '[API] dolfinx.PETScKrylovSolver does not exist. Signal: AttributeError: '
                   "module 'dolfinx' has no attribute 'PETScKrylovSolver'."]},
     'postprocessing': {'REQUIRED': 'W = fem.functionspace(msh, ("DG", 0))\n'
                  'Dh = fem.Function(W)\n'
@@ -1873,7 +1873,7 @@ _NONLINEAR_PDE_KNOWLEDGE = {
      'explanation': 'fem.Expression compiles a UFL expression for evaluation at the '
                     'interpolation points of the target element; Function.interpolate then '
                     'fills the Function.',
-     'pitfalls': ['element.interpolation_points is a PROPERTY (a numpy array) in dolfinx '
+     'pitfalls': ['[API] element.interpolation_points is a PROPERTY (a numpy array) in dolfinx '
                   "0.10, not a method. Signal: TypeError: 'numpy.ndarray' object is not "
                   'callable, if you write interpolation_points().']},
     'pitfalls': ['[API] The Jacobian keyword `J` is OPTIONAL on dolfinx 0.10 (signature: `J: '
@@ -2184,7 +2184,7 @@ _MAGNETOSTATICS_KNOWLEDGE = {
                     'tangential and DISCONTINUOUS normal components across material '
                     'interfaces; only H(curl)-conforming elements can represent that, and '
                     'using vector Lagrange instead poisons the whole discrete spectrum.',
-     'pitfalls': ['3D vector Lagrange for curl-curl assembles a perfectly ordinary matrix '
+     'pitfalls': ['[Numerical] 3D vector Lagrange for curl-curl assembles a perfectly ordinary matrix '
                   'and solves without complaint - there is no error to catch. Signal: the '
                   'discrete spectrum is entirely spurious (see the top-level pitfall for '
                   'measured eigenvalues).']},
@@ -2205,10 +2205,10 @@ _MAGNETOSTATICS_KNOWLEDGE = {
                     'operator, and it keeps the DG0 material Function as a plain factor. '
                     'In 2D the whole curl-curl reduces to a Laplacian in Az, so the same '
                     'assembly path as any scalar diffusion problem applies.',
-     'pitfalls': ['The 3D pure curl-curl operator without any gauge term is SINGULAR '
+     'pitfalls': ['[Numerical] The 3D pure curl-curl operator without any gauge term is SINGULAR '
                   '(every gradient field is in its kernel). Signal: it still solves - see '
                   'the top-level gauge pitfall.',
-                  'ufl.curl accepts a 2D SCALAR (shape (2,)) and a 2D VECTOR (shape ()); '
+                  '[API] ufl.curl accepts a 2D SCALAR (shape (2,)) and a 2D VECTOR (shape ()); '
                   'both compile through fem.form. Signal: inner(curl(s), curl(s))*dx for a '
                   'SCALAR s assembles silently and returns exactly the same number as '
                   'inner(grad(s), grad(s))*dx (measured 10.328124999999996 for both), so a '
@@ -2229,7 +2229,7 @@ _MAGNETOSTATICS_KNOWLEDGE = {
                     'models a far-field box or a flux-return path. For Nedelec spaces a '
                     'scalar bc value is not meaningful because the degrees of freedom are '
                     'tangential moments, not point values - pass a Function.',
-     'pitfalls': ['For a Nedelec space the bc value must be a Function of that space, not '
+     'pitfalls': ['[BC] For a Nedelec space the bc value must be a Function of that space, not '
                   'a scalar. Signal: RuntimeError: Rank mismatch between Constant and '
                   'function space in DirichletBC.']},
     'solver': {'REQUIRED': 'problem = LinearProblem(a, L, bcs=[bc], petsc_options_prefix="mag_",\n'
@@ -2247,9 +2247,9 @@ _MAGNETOSTATICS_KNOWLEDGE = {
                     'condition removes the constant mode, so CG plus algebraic multigrid '
                     'is both correct and scalable. A very large mu_r contrast raises the '
                     'condition number, which shows up as a rising iteration count.',
-     'pitfalls': ['LinearProblem.solve() never raises on failure. Signal: a negative KSP '
+     'pitfalls': ['[API] LinearProblem.solve() never raises on failure. Signal: a negative KSP '
                   'converged reason with the script continuing normally.',
-                  'A converged KSP says nothing about whether the system was well posed. '
+                  '[Numerical] A converged KSP says nothing about whether the system was well posed. '
                   'Signal: measured on an ungauged 3D curl-curl system, LU, CG and GMRES '
                   'all reported converged and returned ||A||_L2 of 1.1599, 0.03213 and '
                   '0.03207 respectively - a factor 36 apart.']},
@@ -2262,7 +2262,7 @@ _MAGNETOSTATICS_KNOWLEDGE = {
                  'and DG1/CG1 gain nothing.',
      'explanation': 'ufl.curl applied to a 2D scalar already produces the correct '
                     '2-vector, so there is no reason to spell out the components by hand.',
-     'pitfalls': ['element.interpolation_points is a PROPERTY, not a method. Signal: '
+     'pitfalls': ['[API] element.interpolation_points is a PROPERTY, not a method. Signal: '
                   "TypeError: 'numpy.ndarray' object is not callable."]},
     'materials': {'mu0': '4*pi*1e-7 H/m',
      'mu_r': '1 for air/copper; 500-10000 for linear soft iron - but only below '

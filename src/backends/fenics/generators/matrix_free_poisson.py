@@ -147,7 +147,7 @@ KNOWLEDGE = {'description': 'Poisson problem -div(grad(u)) = f solved WITHOUT ev
                                    'the space; the only structural requirement is one '
                                    'extra Function (ui) that the operator action '
                                    'writes the input vector into before re-assembling.',
-                    'pitfalls': ['Use fem.functionspace (lower-case s), not '
+                    'pitfalls': ['[API] Use fem.functionspace (lower-case s), not '
                                  'fem.FunctionSpace. Signal: fem.FunctionSpace still '
                                  'EXISTS in dolfinx 0.10 as a class, so the wrong '
                                  'spelling does not give AttributeError; it gives '
@@ -165,9 +165,9 @@ KNOWLEDGE = {'description': 'Poisson problem -div(grad(u)) = f solved WITHOUT ev
                               'the linear form v -> a(ui,v). Assembling that linear '
                               'form is exactly the matrix-vector product A*ui, so no '
                               'sparse matrix is ever built.',
-               'pitfalls': ['Write ufl.action(a, ui), not a.action(ui). Signal: '
+               'pitfalls': ['[API] Write ufl.action(a, ui), not a.action(ui). Signal: '
                             "AttributeError: 'Form' object has no attribute 'action'.",
-                            'Compile the action with fem.form(...) before assembling. '
+                            '[API] Compile the action with fem.form(...) before assembling. '
                             "Signal: AttributeError: 'Form' object has no attribute "
                             "'_cpp_object'."]},
  'boundary_conditions': {'REQUIRED': 'msh.topology.create_connectivity(tdim - 1, '
@@ -205,11 +205,11 @@ KNOWLEDGE = {'description': 'Poisson problem -div(grad(u)) = f solved WITHOUT ev
                                         'operator application so the Krylov method '
                                         'never updates them, and write the prescribed '
                                         'values back at the end.',
-                         'pitfalls': ['Never omit bc.set(y.array, alpha=0.0) inside '
+                         'pitfalls': ['[BC] Never omit bc.set(y.array, alpha=0.0) inside '
                                       'the operator action. Signal: rnorm/rnorm0 GROWS '
                                       'past 1e30 and max(u) reaches ~1e31 within 200 '
                                       'iterations, in serial.',
-                                      'The residual b - A*u is only meaningful BEFORE '
+                                      '[Validation] The residual b - A*u is only meaningful BEFORE '
                                       'bc.set(u.x.array, alpha=1.0) writes the '
                                       'Dirichlet values back. Signal: recomputing it '
                                       'afterwards gives ||b-Au||/||b|| = 1.002 for a '
@@ -234,10 +234,12 @@ KNOWLEDGE = {'description': 'Poisson problem -div(grad(u)) = f solved WITHOUT ev
                            'for production runs a preconditioner (which needs at least '
                            'a diagonal or a coarse operator) is what actually pays for '
                            'itself.',
-            'pitfalls': ['dolfinx.PETScKrylovSolver does not exist. Signal: '
-                         "AttributeError: module 'dolfinx' has no attribute "
-                         "'PETScKrylovSolver'.",
-                         'The CG inner product must use owned DOFs only: v[:nr] with '
+            # The PETScKrylovSolver note that stood here was verbatim-identical to
+            # the one in fenics/advanced.py. This file already carries a fuller,
+            # version-qualified copy in its top-level pitfalls list (it also says
+            # what to use instead), so the short duplicate is dropped rather than
+            # maintained in two places where a fix could land on only one.
+            'pitfalls': ['[Integration] The CG inner product must use owned DOFs only: v[:nr] with '
                          'nr = index_map.size_local. Signal: on 2 MPI ranks '
                          'rnorm/rnorm0 grows to ~4e13 and max|u| reaches ~3e8, while '
                          'the identical run in serial converges.']},
@@ -255,11 +257,11 @@ KNOWLEDGE = {'description': 'Poisson problem -div(grad(u)) = f solved WITHOUT ev
                              'back to their owner with scatter_reverse(add), and any '
                              'scalar or extremum must be reduced across ranks. All of '
                              'this is invisible in a serial run.',
-              'pitfalls': ['Omitting scatter_reverse after in-place assembly. Signal: '
+              'pitfalls': ['[Integration] Omitting scatter_reverse after in-place assembly. Signal: '
                            'identical in serial, but on 2 ranks CG fails to reach rtol '
                            'in 200 iterations and u lands in [-2.8e+02, 1.1e+03] '
                            'instead of the correct O(1) range.',
-                           'Omitting comm.allreduce around fem.assemble_scalar. '
+                           '[Integration] Omitting comm.allreduce around fem.assemble_scalar. '
                            'Signal: an integral that is silently too SMALL on multiple '
                            'ranks (measured 7.10e-07 instead of 1.02e-06 on 2 ranks) - '
                            "both values look 'small', so nothing draws attention to "

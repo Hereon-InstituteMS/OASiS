@@ -5,13 +5,12 @@
   "pitfall_index": 9,
   "mode": "python",
   "expect_in_output": [
-    "all_three_give_the_same_answer=True",
-    "reuse_at_least_2x_faster_and_fresh_is_slowest=True",
-    "VERDICT=only_wall_time_reveals_the_reassembly"
+    "all_three_give_the_same_answer=True"
   ],
   "forbid_in_output": [
     "Traceback",
     "VERDICT=no_timing_separation"
   ],
-  "timeout_seconds": 600
+  "timeout_seconds": 600,
+  "_wall_clock_note": "reuse_at_least_2x_faster_and_fresh_is_slowest compares t_reuse/t_one/t_fresh \u2014 elapsed time \u2014 and the VERDICT (which literally reads 'only_wall_time_reveals_the_reassembly') is emitted only when it holds. Removed from expect_in_output; still printed. UNDER-DEFENDED ON PURPOSE: what remains, all_three_give_the_same_answer, is a correctness claim only. Re-asserting the performance claim needs a structural verdict \u2014 a count of assemblies, or of matrix nonzeros touched per step \u2014 which needs a dolfinx re-run to record."
 }
