@@ -849,7 +849,8 @@ def is_stub_output(content: str) -> str | None:
 
 
 def check_interface_sensitivity(sensitivity: dict, floor: float = 1e-9,
-                                noise_margin: float = 3.0
+                                noise_margin: float = 3.0,
+                                noise_floor: float | None = None
                                 ) -> tuple[list[str], list[str]]:
     """Did each participant's answer measurably depend on what it was handed?
 
@@ -893,6 +894,39 @@ def check_interface_sensitivity(sensitivity: dict, floor: float = 1e-9,
             continue
         if noise is not None and noise > 0 and signal is not None \
                 and signal <= noise * noise_margin:
+            # THIS BRANCH CANNOT TELL ITS TWO CAUSES APART, and its own message
+            # says so: "hidden state between calls, OR it is stochastic". When
+            # the caller has DECLARED the coupling stochastic and the driver has
+            # MEASURED a non-zero residual floor, the second cause is not a
+            # suspicion — it is the established fact the run was judged against,
+            # and a Monte-Carlo participant re-run on identical imports moves by
+            # construction. Reported as coverage there, because it is exactly a
+            # question this instrument could not answer; still a FINDING with no
+            # floor in play, where "it is stochastic" would be an unevidenced
+            # excuse. Measured before this split: a correct noisy pair converged
+            # at a floor of 8.3e-03 with the probe reporting noise 2.29e-02
+            # against signal 9.63e-03, and the finding stamped it NOT VERIFIED.
+            # ...but ONLY when there is a response to be ambiguous about. A
+            # participant whose export does not move AT ALL when its imports are
+            # perturbed is not coupled to anything, and no amount of sampling
+            # noise makes that acceptable — measured: with signal exactly 0 the
+            # first guard alone routed it to coverage and the zero-response
+            # finding below was never reached. So fall through to it.
+            if noise_floor and S == S and S >= floor:
+                not_checked.append(
+                    f"interface sensitivity for {name}: NOT SEPARABLE. Re-running "
+                    f"it on the SAME data moved its answer by {noise:.2e} "
+                    f"relative and perturbing the data moved it by {signal:.2e}, "
+                    f"which this probe cannot tell apart. With a measured "
+                    f"residual noise floor of {noise_floor:.2e} that is what a "
+                    f"sampled estimator looks like and is expected — but it is "
+                    f"ALSO what a participant carrying hidden state looks like, "
+                    f"and nothing here separates them. Compare the ANSWER "
+                    f"against a reference (`monolithic`, or an independent "
+                    f"solve) if you need that distinction. Note the response is "
+                    f"still non-zero, so the participant is not ignoring its "
+                    f"imports outright — that half is checked below.")
+                continue
             findings.append(
                 f"Participant {name} is NOT A FUNCTION of its imports: re-running "
                 f"it on the SAME data moved its answer by {noise:.2e} relative, "
@@ -900,7 +934,10 @@ def check_interface_sensitivity(sensitivity: dict, floor: float = 1e-9,
                 "cannot be told apart from its own run-to-run drift. It carries "
                 "hidden state between calls, or it is stochastic. A partitioned "
                 "fixed-point iteration over such a participant has not converged "
-                "to a coupled solution, whatever the residual history shows.")
+                "to a coupled solution, whatever the residual history shows. If "
+                "a participant really is a sampled estimator, say so with "
+                "`noise_replicates` — the driver then MEASURES its floor and "
+                "this becomes a coverage note instead of a finding.")
             continue
         if not (S == S) or S < floor:
             findings.append(

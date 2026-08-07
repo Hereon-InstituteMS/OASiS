@@ -3834,7 +3834,14 @@ def register_consolidated_tools(mcp: FastMCP):
         f, n = check_coupling_directionality(r.graph, max_iter); val += f; not_run += n
         f, n = check_participant_responsiveness(r.responsiveness); val += f; not_run += n
         if probe:
-            f, n = check_interface_sensitivity(r.sensitivity); val += f; not_run += n
+            # The measured floor is handed over, so the one branch that cannot
+            # tell "stochastic" from "hidden state" reports coverage instead of
+            # a finding when the run has an established floor. The branch that
+            # catches a participant ignoring its imports outright (S below the
+            # response floor) is unaffected and stays a finding either way.
+            f, n = check_interface_sensitivity(r.sensitivity,
+                                               noise_floor=r.noise_floor)
+            val += f; not_run += n
         else:
             not_run.append(
                 "interface sensitivity: NOT probed (probe=False). The one solve "
