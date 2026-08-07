@@ -1,0 +1,3451 @@
+{
+  "commit": "7255aba8dde4",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "kratos",
+      "fixture": "aux_dem_is_3d_only_spheric_particle",
+      "claim": "_auxiliary_overview:4",
+      "claim_text_sha": "13a8bb84d9b34138",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "registered[SphericParticle3D]=True_expected=True",
+          "registered[SphericParticle2D]=False_expected=False",
+          "registered[NanoParticle3D]=True_expected=True",
+          "registry_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "beam_requires_rotation_variable",
+      "claim": "linear_elasticity:4",
+      "claim_text_sha": "a1822e4e28f39d34",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "rotation_read_raised=True",
+          "observed=variables_list_container_error",
+          "beam_rotation_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_check_before_initialize_segfaults",
+      "claim": "cable_net:0",
+      "claim_text_sha": "9a47fe15bdb8f4c6",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "check_first_returncode=-11",
+          "check_first_survived=False",
+          "cable_check_order_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_empirical_spring_polynomial_variable",
+      "claim": "cable_net:4",
+      "claim_text_sha": "48306a1603f173d2",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[CN.SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL]=True_expected=True",
+          "probe[KM.SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL]=False_expected=False",
+          "probe[two_entry_vector_accepted]=True_expected=True",
+          "probe_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_empirical_spring_rhs_aliasing",
+      "claim": "cable_net:2",
+      "claim_text_sha": "f4aee5bfb1ff97ab",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "y_aligned_spring_force_is_exactly_zero=True",
+          "z_aligned_spring_force_is_exactly_zero=True",
+          "xy_skew_force_is_misdirected=True",
+          "xyz_skew_force_is_misdirected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_line3dn_stub_geometry",
+      "claim": "cable_net:10",
+      "claim_text_sha": "318310d941cbf438",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "domain_size_raised=True",
+          "domain_size_message_has_source_typo=True",
+          "shape_functions_returned_empty_without_raising=True",
+          "edges_number=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_process_wrappers_fail",
+      "claim": "cable_net:12",
+      "claim_text_sha": "0faaaa573f679e3b",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "mismatched_arrays_raised=True",
+          "raiser=TypeError",
+          "observed=numpy_polyfit_same_length",
+          "cablenet_process_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_registry_split_vs_structural",
+      "claim": "cable_net:3",
+      "claim_text_sha": "112387c806593719",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "sma_only[SlidingCableElement3D3N]=False",
+          "sma_only[RingElement3D3N]=False",
+          "sma_only[EmpiricalSpringElement3D2N]=False",
+          "cablenet_registry_split_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_ring_check_ignores_properties",
+      "claim": "cable_net:7",
+      "claim_text_sha": "0ce9e93b1610d597",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "empty_properties_stiffness_is_exactly_zero=True",
+          "ring_check_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_sliding_cable_requires_constitutive_law",
+      "claim": "cable_net:6",
+      "claim_text_sha": "e79cac5074048de1",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "initialize_without_law_raised=True",
+          "observed=constitutive_law_needed_for_element",
+          "sliding_cable_law_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_sliding_edge_process_paths",
+      "claim": "cable_net:13",
+      "claim_text_sha": "7739e7d094db9d12",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "wrapper_partial_input_error=RuntimeError",
+          "wrapper_validates_defaults_against_user_input=True",
+          "python_wrapper_is_unusable_by_both_paths=True",
+          "cablenet_sliding_edge_process_paths_verified=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_spring_mass_matrix_always_lumped",
+      "claim": "cable_net:5",
+      "claim_text_sha": "1c710949d19c0694",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[mass_matrix_has_nonzero_diagonal]=True_expected=True",
+          "probe[default_offdiag_is_zero]=True_expected=True",
+          "probe[offdiag_still_zero_with_flag_False]=True_expected=True",
+          "probe[offdiag_nonzero_with_flag_False]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cablenet_vtkoutput_rejects_line3dn",
+      "claim": "cable_net:1",
+      "claim_text_sha": "c572b6a5968949a6",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "vtk_on_line3dn_raised=True",
+          "observed=no_vtk_output_implemented_for_geometry",
+          "vtk_line3dn_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cda_conductivity_is_nodal",
+      "claim": "poisson:4",
+      "claim_text_sha": "1a7de2eff46c70a9",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "nodal_conductivity_drives_diffusion=True",
+          "lhs00_prop1_nodal999=999.0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cda_element_diffusion_vs_mass",
+      "claim": "poisson:2",
+      "claim_text_sha": "9e68a4a2319b75e7",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.9,
+        "missing": [
+          "eulerian_lhs_is_mass_no_diffusion=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "chimera_requires_fluiddynamics",
+      "claim": "chimera:0",
+      "claim_text_sha": "2b01b965f03a9c39",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "importable[ChimeraApplication]=False_expected=False",
+          "importable[NoSuchKratosApplication]=False_expected=False",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "chimera_wheel_installs_but_import_fails",
+      "claim": "chimera:1",
+      "claim_text_sha": "a1ea7bf107d5e698",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[ChimeraApplication]=False_expected=False",
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "app_import_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "constitutive_law_class_not_instance",
+      "claim": "linear_elasticity:8",
+      "claim_text_sha": "8cce49f4d2c444fd",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "TypeError",
+          "incompatible function arguments"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "constitutive_law_registry_names",
+      "claim": "constitutive_laws:0",
+      "claim_text_sha": "babe84b980e32ff6",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "all_stale_names_unresolvable=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "contact_application_is_on_pypi_after_all",
+      "claim": "_auxiliary_overview:5",
+      "claim_text_sha": "35a07730139f89a5",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[ContactStructuralMechanicsApplication]=True_expected=True",
+          "importable[ContactMechanicsApplication]=False_expected=False",
+          "importable[SolidMechanicsApplication]=False_expected=False",
+          "importable[StructuralMechanicsApplication]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "contact_condition_naming_with_shape_suffix",
+      "claim": "contact:0",
+      "claim_text_sha": "635ffbd9c977948e",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "all_base_names_rejected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "contact_mortar_entities_are_conditions",
+      "claim": "contact:1",
+      "claim_text_sha": "e5d20d767c60b663",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "as_element[ALMFrictionlessMortarContactCondition2D2N]=False",
+          "as_element[ALMFrictionalMortarContactCondition2D2N]=False",
+          "as_element[PenaltyFrictionlessMortarContactCondition2D2N]=False",
+          "is not registered"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cosimulation_accelerator_mapper_names",
+      "claim": "cosimulation:0",
+      "claim_text_sha": "fd2c7b4cb4aef57e",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:10+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "empire_anywhere_in_mapping_binary=False",
+          "nearest_element_present=True",
+          "coupling_geometry_present=True"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cpf_freestream_variable_names",
+      "claim": "compressible_potential:1",
+      "claim_text_sha": "c810b21dc41b8ab8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[CPF.FREESTREAM_VELOCITY]=False_expected=False",
+          "probe[CPF.MACH_INFINITY]=False_expected=False",
+          "probe[KM.MACH_INFINITY]=False_expected=False",
+          "probe[CPF.FREE_STREAM_VELOCITY]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "cpf_potentialwall_needs_shape_suffix",
+      "claim": "compressible_potential:0",
+      "claim_text_sha": "d7f6b84c18b5c77d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "registered[PotentialWallCondition2D2N]=True_expected=True",
+          "registered[PotentialWallCondition3D3N]=True_expected=True",
+          "registered[PotentialWallCondition]=False_expected=False",
+          "registry_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "curved_mms_conductivity_is_nodal_not_property",
+      "claim": "curved_mms:1",
+      "claim_text_sha": "d9fc541212660df8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.CONDUCTIVITY]=True_expected=True",
+          "probe[CDA.CONDUCTIVITY]=False_expected=False",
+          "probe[KM.HEAT_FLUX]=True_expected=True",
+          "probe[KM.REACTION_FLUX]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dam_hydro_condition_load_process_surface",
+      "claim": "dam:1",
+      "claim_text_sha": "3850aed4333aa667",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[DAM.DamHydroConditionLoadProcess]=True_expected=True",
+          "probe[KM.DamHydroConditionLoadProcess]=False_expected=False",
+          "probe[KM.POSITIVE_FACE_PRESSURE]=True_expected=True",
+          "probe[DAM.POSITIVE_FACE_PRESSURE]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dam_needs_sma_line_load_condition",
+      "claim": "dam:2",
+      "claim_text_sha": "8cf62e9935399e5d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "registered[LineLoadCondition2D2N]=True_expected=True",
+          "registered[DamLineLoadCondition2D2N]=False_expected=False",
+          "registered[HydroLineLoadCondition2D2N]=False_expected=False",
+          "registry_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dam_smoothing_scheme_nodal_set",
+      "claim": "dam:4",
+      "claim_text_sha": "b6c1b43f8bb3db7a",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[DAM.IncrementalUpdateStaticSmoothingScheme]=True_expected=True",
+          "probe[KM.NODAL_AREA]=True_expected=True",
+          "probe[PORO.NODAL_CAUCHY_STRESS_TENSOR]=True_expected=True",
+          "probe[KM.NODAL_CAUCHY_STRESS_TENSOR]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dam_thermal_law_class_vs_registered_string",
+      "claim": "dam:0",
+      "claim_text_sha": "005e1e585091b6a7",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[python_attr_ThermalLinearElastic2DPlaneStrain]=True_expected=True",
+          "probe[registered_ThermalLinearElastic2DPlaneStrain]=False_expected=False",
+          "probe[registered_ThermalLinearPlaneStrain]=True_expected=True",
+          "probe[registered_ThermalLinearPlaneStress]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dam_thermomech_element_variables",
+      "claim": "dam:3",
+      "claim_text_sha": "e0c7f02deedb1fa4",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[DAM.NODAL_REFERENCE_TEMPERATURE]=True_expected=True",
+          "probe[SMA.NODAL_REFERENCE_TEMPERATURE]=False_expected=False",
+          "probe[DAM.THERMAL_EXPANSION]=True_expected=True",
+          "probe[SMA.THERMAL_EXPANSION]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_constitutive_law_names_exact",
+      "claim": "constitutive_laws:1",
+      "claim_text_sha": "ad99aeae89fd9531",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[DEM.DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
+          "probe[DEM.DEM_D_Linear_viscous_Coulomb]=True_expected=True",
+          "probe[DEM.DEM_KDEM]=True_expected=True",
+          "probe[DEM.Hertz_viscous_Coulomb]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_materials_law_name_must_match",
+      "claim": "dem:0",
+      "claim_text_sha": "5e0c761d428cb4c5",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
+          "probe[DEM_D_Linear_viscous_Coulomb]=True_expected=True",
+          "probe[Hertz_viscous_Coulomb_abbrev]=False_expected=False",
+          "probe[DEM_D_Hertz_abbrev]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_radius_is_a_core_variable",
+      "claim": "dem:3",
+      "claim_text_sha": "7360b231bb20f659",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.RADIUS]=True_expected=True",
+          "probe[DEM.RADIUS]=False_expected=False",
+          "probe[nodal_read_without_variable]=False_expected=False",
+          "probe[nodal_default_is_zero]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_spheric_particle_2d_rejected",
+      "claim": "dem:1",
+      "claim_text_sha": "2fff9945bd839431",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "is not registered"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_structures_compute_fem_results_option",
+      "claim": "dem_structures_coupling:3",
+      "claim_text_sha": "0038960a2942a6be",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[DEM.COMPUTE_FEM_RESULTS_OPTION]=True_expected=True",
+          "probe[KM.COMPUTE_FEM_RESULTS_OPTION]=False_expected=False",
+          "probe[DSC.DEM_SURFACE_LOAD]=True_expected=True",
+          "probe[DEM.DEM_SURFACE_LOAD]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_structures_nodal_variables_split_three_ways",
+      "claim": "dem_structures_coupling:5",
+      "claim_text_sha": "4e57237591bc9a9b",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[DSC.DEM_SURFACE_LOAD]=True_expected=True",
+          "probe[DSC.SMOOTHED_STRUCTURAL_VELOCITY]=True_expected=True",
+          "probe[DEM.DELTA_DISPLACEMENT]=True_expected=True",
+          "probe[DEM.DEM_PRESSURE]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_structures_properties_id_on_wall_part",
+      "claim": "dem_structures_coupling:1",
+      "claim_text_sha": "4102f15ae8869a79",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[DEM.PROPERTIES_ID]=True_expected=True",
+          "probe[KM.PROPERTIES_ID]=False_expected=False",
+          "probe[DSC.DemStructuresCouplingUtilities]=True_expected=True",
+          "probe[modelpart_setvalue_roundtrip]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_structures_requires_dem_and_structural",
+      "claim": "dem_structures_coupling:0",
+      "claim_text_sha": "bc6ab5e3cd374ff8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "importable[DEMApplication]=True_expected=True",
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[DemStructuresCouplingApplication]=True_expected=True",
+          "importable[NoSuchKratosApplication]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_structures_surfaceload_no_quad_skin",
+      "claim": "dem_structures_coupling:2",
+      "claim_text_sha": "de5fb20ad25aea01",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "registered[SurfaceLoadFromDEMCondition3D3N]=True_expected=True",
+          "registered[LineLoadFromDEMCondition2D2N]=True_expected=True",
+          "registered[SurfaceLoadFromDEMCondition3D4N]=False_expected=False",
+          "registry_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_total_forces_lives_in_core",
+      "claim": "dem_structures_coupling:4",
+      "claim_text_sha": "e2c7502a3e1678da",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[DEM.TOTAL_FORCES_Z]=False_expected=False",
+          "probe[KM.TOTAL_FORCES_Z]=True_expected=True",
+          "probe[DEM.CONTACT_FORCES]=True_expected=True",
+          "probe[KM.CONTACT_FORCES]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "dem_wall_rigidface_is_3d_only",
+      "claim": "dem:2",
+      "claim_text_sha": "70753d5de0848519",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "registered[RigidFace3D3N]=True_expected=True",
+          "registered[RigidFace3D4N]=True_expected=True",
+          "registered[RigidFace2D2N]=False_expected=False",
+          "registered[RigidEdge3D2N]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "droplet_dynamics_has_no_template",
+      "claim": "droplet_dynamics:0",
+      "claim_text_sha": "fdf8f8a9295ef458",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:19+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "in_knowledge[droplet_dynamics]=True",
+          "generators_for[droplet_dynamics]=[]",
+          "stub_template_mismatches=0",
+          "FORBIDDEN:Traceback"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "echo_level_missing",
+      "claim": "linear_elasticity:7",
+      "claim_text_sha": "9095dc5c8b66df31",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "Getting a value that does not exist",
+          "kratos_parameters"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "elasticity_mms_convergence",
+      "claim": "linear_elasticity:98",
+      "claim_text_sha": "",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.3,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "element_name_missing_node_count",
+      "claim": "linear_elasticity:0",
+      "claim_text_sha": "7f55d52f1e22388d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "discriminates": false
+    },
+    {
+      "backend": "kratos",
+      "fixture": "element_no_constitutive_law",
+      "claim": "linear_elasticity:1",
+      "claim_text_sha": "4fe45afc65697719",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "constitutive law needs to be specified",
+          "base_solid_element"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fem_to_dem_application_absent",
+      "claim": "fem_to_dem:0",
+      "claim_text_sha": "9b07f6783767e1e5",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:24+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "importable[FemToDemApplication]=False_expected=False",
+          "importable[DEMApplication]=True_expected=True",
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fluid_biomedical_has_no_template",
+      "claim": "fluid_biomedical:0",
+      "claim_text_sha": "84df4df1cf5f8c29",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:24+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "in_knowledge[fluid_biomedical]=True",
+          "generators_for[fluid_biomedical]=[]",
+          "stub_template_mismatches=0",
+          "FORBIDDEN:Traceback"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fluid_hydraulics_has_no_template",
+      "claim": "fluid_hydraulics:0",
+      "claim_text_sha": "7a5c636d40ca934d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:25+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "in_knowledge[fluid_hydraulics]=True",
+          "generators_for[fluid_hydraulics]=[]",
+          "stub_template_mismatches=0",
+          "FORBIDDEN:Traceback"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fluid_inlet_velocity_outlet_pressure_variables",
+      "claim": "fluid:3",
+      "claim_text_sha": "db5bc7ea0166e82d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.VELOCITY]=True_expected=True",
+          "probe[KM.PRESSURE]=True_expected=True",
+          "probe[FDA.VELOCITY]=False_expected=False",
+          "probe[FDA.PRESSURE]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fluid_material_variables_live_in_core",
+      "claim": "fluid:1",
+      "claim_text_sha": "34f49e235c241d3a",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.DENSITY]=True_expected=True",
+          "probe[FDA.DENSITY]=False_expected=False",
+          "probe[KM.DYNAMIC_VISCOSITY]=True_expected=True",
+          "probe[FDA.DYNAMIC_VISCOSITY]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fluid_twofluid_distance_variable",
+      "claim": "fluid:4",
+      "claim_text_sha": "3fafdbdaa6ca2297",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.DISTANCE]=True_expected=True",
+          "probe[FDA.DISTANCE]=False_expected=False",
+          "probe[nodal_read_without_variable]=False_expected=False",
+          "probe[nodal_default_is_zero]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "free_surface_has_no_template",
+      "claim": "free_surface:0",
+      "claim_text_sha": "6160630078154c69",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:27+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "in_knowledge[free_surface]=True",
+          "generators_for[free_surface]=[]",
+          "stub_template_mismatches=0",
+          "FORBIDDEN:Traceback"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "friction_angle_wrong_module",
+      "claim": "plasticity:5",
+      "claim_text_sha": "3c0c19d64199ffe2",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "AttributeError"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fsi_application_accelerator_classes",
+      "claim": "fsi:0",
+      "claim_text_sha": "4fcf663b773706dd",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "accel_classes_missing=[]"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fsi_needs_four_applications",
+      "claim": "fsi:1",
+      "claim_text_sha": "3346adfdfe5ee9b5",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[MeshMovingApplication]=True_expected=True",
+          "importable[MappingApplication]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "fsi_requires_mapping_and_meshmoving",
+      "claim": "_auxiliary_overview:1",
+      "claim_text_sha": "72652445f8da1f17",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[FSIApplication]=True_expected=True",
+          "importable[MappingApplication]=True_expected=True",
+          "importable[MeshMovingApplication]=True_expected=True",
+          "importable[FluidDynamicsApplication]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "geomechanics_and_poromechanics_coexist",
+      "claim": "geomechanics:1",
+      "claim_text_sha": "dd5497e1c31ef6a8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "importable[GeoMechanicsApplication]=True_expected=True",
+          "importable[PoromechanicsApplication]=True_expected=True",
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[NoSuchKratosApplication]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "geomechanics_cl_naming",
+      "claim": "geomechanics:0",
+      "claim_text_sha": "7aaca70aa658cb08",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:30+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.1,
+        "missing": [
+          "catalog_present_count=2/7",
+          "catalog_correct_subset_ok=True",
+          "all_5_wrong_catalog_names_missing=True",
+          "real_names_present_count=6/6"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "heat_dirichlet_constrained_flag_fixes_dof",
+      "claim": "heat:1",
+      "claim_text_sha": "8bbd3e7a788d37a8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "constrained_false_isfixed=False",
+          "dirichlet_constrained_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "heat_neumann_targets_face_heat_flux",
+      "claim": "heat:2",
+      "claim_text_sha": "d3be0d7ea2176ec8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.FACE_HEAT_FLUX]=True_expected=True",
+          "probe[CDA.FACE_HEAT_FLUX]=False_expected=False",
+          "probe[KM.TEMPERATURE]=True_expected=True",
+          "probe[ApplyConstantScalarValueProcess_exists]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "heat_transient_consistent_mass_beats_lumped",
+      "claim": "heat_transient:2",
+      "claim_text_sha": "5f289467f504b6f2",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.2,
+        "missing": [
+          "consistent_has_offdiagonal=True",
+          "consistent_more_accurate=True",
+          "mass_matrix_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "heat_transient_crank_nicolson_is_second_order",
+      "claim": "heat_transient:1",
+      "claim_text_sha": "813d37068d0221c2",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.1,
+        "missing": [
+          "cn_order_near_2=True",
+          "cn_beats_be_at_same_dt=True",
+          "crank_nicolson_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "heat_transient_template_violates_maximum_principle",
+      "claim": "heat_transient:0",
+      "claim_text_sha": "e9b3d4da430bf347",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.0,
+        "missing": [
+          "loop_under_test=shipped",
+          "maxT_grows_under_refinement=True",
+          "heat_transient_maximum_principle_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "iga_nurbs_geometry_classes_are_core",
+      "claim": "iga:1",
+      "claim_text_sha": "8d1cfe850fb81f8e",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.NurbsSurfaceGeometry3D]=True_expected=True",
+          "probe[IGA.NurbsSurfaceGeometry3D]=False_expected=False",
+          "probe[KM.NurbsCurveGeometry3D]=True_expected=True",
+          "probe[IGA.NurbsCurveGeometry3D]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "iga_surface_condition_naming",
+      "claim": "iga:0",
+      "claim_text_sha": "8cee7a564ce918c1",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "base_name_as_condition_rejected=True",
+          "surface_load_3D3N_condition_ok=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "iga_surfaceload_vs_surface_condition",
+      "claim": "iga:90",
+      "claim_text_sha": "",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "registered[SurfaceLoadCondition]=False_expected=False",
+          "registered[SurfaceLoadCondition3D3N]=True_expected=True",
+          "registered[SurfaceLoadCondition3D4N]=True_expected=True",
+          "registered[SurfaceCondition3D3N]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "kratos_knowledge_source_of_truth",
+      "claim": "_auxiliary_overview:6",
+      "claim_text_sha": "7648e862856bd6b6",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:38+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "generators_KNOWLEDGE_is_a_dict=True",
+          "backend_imports_generators_KNOWLEDGE=True",
+          "backend_imports_data_kratos_knowledge=False",
+          "source_of_truth_mismatches=0"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "kratos_runs_in_a_venv_not_only_system_python",
+      "claim": "curved_mms:0",
+      "claim_text_sha": "a6dfbdee22909761",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:39+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "interpreter_is_system_python3=False",
+          "python_major_minor=3.12",
+          "running_in_venv=True",
+          "env_claim_mismatches=0"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "linear_elasticity_max_iteration_is_positional",
+      "claim": "linear_elasticity:3",
+      "claim_text_sha": "70243ca3b02599da",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "probe[strategy_ctor_with_max_iteration]=True_expected=True",
+          "probe[strategy_ctor_without_max_iteration]=False_expected=False",
+          "probe[ResidualCriteria_has_max_iteration]=False_expected=False",
+          "probe_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "linear_elasticity_point_load_direction_process",
+      "claim": "linear_elasticity:6",
+      "claim_text_sha": "a0514fd49b2b6939",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[SMA.AssignVectorByDirectionProcess]=False_expected=False",
+          "probe[core_assign_vector_by_direction_process]=True_expected=True",
+          "probe[core_assign_vector_variable_process]=True_expected=True",
+          "probe[core_assign_vector_by_direction_to_condition_process]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "mapperfactory_moved_to_core",
+      "claim": "_auxiliary_overview:3",
+      "claim_text_sha": "dafd74ad1ff681dd",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.MapperFactory]=True_expected=True",
+          "probe[MAP.MapperFactory]=True_expected=True",
+          "probe[they_are_distinct_objects]=True_expected=True",
+          "probe[they_are_the_same_object]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "mpm_element_naming_mpm_prefix",
+      "claim": "mpm:0",
+      "claim_text_sha": "569882a9102c6b60",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "all_base_names_rejected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "optimization_point_load_not_in_core",
+      "claim": "optimization:3",
+      "claim_text_sha": "9d4cfbf3d5c7f30e",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.POINT_LOAD]=False_expected=False",
+          "probe[SMA.POINT_LOAD]=True_expected=True",
+          "probe[KM.THICKNESS_SENSITIVITY]=False_expected=False",
+          "probe[SMA.THICKNESS_SENSITIVITY]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "optimization_response_utils_are_compiled_statics",
+      "claim": "optimization:4",
+      "claim_text_sha": "4fa69fc83db71b3d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[KOA.ResponseUtils]=True_expected=True",
+          "probe[KOA.ResponseUtils.MassResponseUtils]=True_expected=True",
+          "probe[KOA.ResponseUtils.LinearStrainEnergyResponseUtils]=True_expected=True",
+          "probe[KOA.MassResponseUtils_flat]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "optimization_tensor_adaptors_not_on_core",
+      "claim": "optimization:1",
+      "claim_text_sha": "236e557f45f253d4",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[KM.DoubleCombinedTensorAdaptor]=False_expected=False",
+          "probe[KM.VariableTensorAdaptor]=False_expected=False",
+          "probe[KM.DoubleTensorAdaptor]=False_expected=False",
+          "probe[KOA.OptimizationUtils]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "optimization_thickness_needs_plane_stress_law",
+      "claim": "optimization:2",
+      "claim_text_sha": "14ee64ef1983109f",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[SMA.LinearElasticPlaneStress2DLaw]=True_expected=True",
+          "probe[SMA.LinearElasticPlaneStrain2DLaw]=True_expected=True",
+          "probe[KM.THICKNESS]=True_expected=True",
+          "probe[KM.DENSITY]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "parameters_unknown_key_raises",
+      "claim": "structural_dynamics:1",
+      "claim_text_sha": "9d6b64cfcfb57488",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 8.6,
+        "missing": [
+          "validate_unknown_key_raises=True",
+          "validate_message_mentions_not_in_default_values=True",
+          "wrong_key_aborts_the_run=True",
+          "wrong_key_is_silently_ignored=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "pfem2_has_no_template",
+      "claim": "pfem2:0",
+      "claim_text_sha": "cbc66cec92b30a37",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:56+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "in_knowledge[pfem2]=True",
+          "generators_for[pfem2]=[]",
+          "stub_template_mismatches=0",
+          "FORBIDDEN:Traceback"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "pfem_applications_absent",
+      "claim": "pfem_fluid:0",
+      "claim_text_sha": "015ea21237810773",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "importable[PfemFluidDynamicsApplication]=False_expected=False",
+          "importable[DelaunayMeshingApplication]=False_expected=False",
+          "importable[PfemSolidMechanicsApplication]=False_expected=False",
+          "importable[PFEM2Application]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "pfem_requires_delaunay_meshing",
+      "claim": "pfem_fluid:1",
+      "claim_text_sha": "8b8425771234d7d3",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "importable[DelaunayMeshingApplication]=False_expected=False",
+          "importable[PfemFluidDynamicsApplication]=False_expected=False",
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[FluidDynamicsApplication]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "pfem_solid_has_no_template",
+      "claim": "pfem_solid:0",
+      "claim_text_sha": "8b28a1f24f7feef9",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:58+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.5,
+        "missing": [
+          "in_knowledge[pfem_solid]=True",
+          "generators_for[pfem_solid]=[]",
+          "stub_template_mismatches=0",
+          "FORBIDDEN:Traceback"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_all_dirichlet_cell_is_vacuous",
+      "claim": "plasticity:8",
+      "claim_text_sha": "5ba062f77316d5c4",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "all_dirichlet_iteration_counts=1,1,1,1,1,1",
+          "all_dirichlet_is_one_iteration_every_step=True",
+          "displacement_only_cell_passes_without_testing_the_tangent=True",
+          "plasticity_all_dirichlet_cell_verified=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_factory_takes_no_args",
+      "claim": "plasticity:6",
+      "claim_text_sha": "0e44fded30fd5b3c",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "TypeError",
+          "incompatible constructor arguments",
+          "SmallStrainIsotropicPlasticityFactory"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_hardening_curve_not_range_checked",
+      "claim": "constitutive_laws:6",
+      "claim_text_sha": "883eae27b776c2bb",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:59+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "curve[6]_demands=EQUIVALENT_STRESS_VECTOR_PLASTICITY_POINT_CURVE",
+          "hardening_curve_range_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_j2_planestrain_strain_size_4",
+      "claim": "constitutive_laws:2",
+      "claim_text_sha": "1b653a48016248ca",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[J2PlaneStrain_size_is_4]=True_expected=True",
+          "probe[J2PlaneStrain_size_is_3]=False_expected=False",
+          "probe[generic_planestrain_size_is_3]=True_expected=True",
+          "probe[elastic_planestrain_size_is_3]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_law_check_required_properties",
+      "claim": "constitutive_laws:4",
+      "claim_text_sha": "8a435a0918d7645c",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "step[0]_reported=HARDENING_CURVE",
+          "step[1]_reported=FRACTURE_ENERGY",
+          "step[2]_reported=YIELD_STRESS_TENSION",
+          "step[3]_reported=YIELD_STRESS_COMPRESSION"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_mohr_coulomb_two_parameterisations",
+      "claim": "plasticity:3",
+      "claim_text_sha": "6a3261737124cadd",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "each_law_accepts_its_own_parameterisation=True",
+          "modified_rejects_classical_style_on_dilatancy=True",
+          "two_parameterisations_are_not_interchangeable=True",
+          "plasticity_mohr_coulomb_parameterisations_verified=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_outputs_read_from_element",
+      "claim": "constitutive_laws:8",
+      "claim_text_sha": "eb5999b2e7162250",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[CLA.EQUIVALENT_PLASTIC_STRAIN]=True_expected=True",
+          "probe[KM.EQUIVALENT_PLASTIC_STRAIN]=False_expected=False",
+          "probe[CLA.UNIAXIAL_STRESS]=True_expected=True",
+          "probe[KM.UNIAXIAL_STRESS]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_perfect_plasticity_needs_curve_three",
+      "claim": "plasticity:4",
+      "claim_text_sha": "373eb19530d98023",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "curve0_gf1e+10_slope_is_negative=True",
+          "curve0_droops_at_every_fracture_energy=True",
+          "curve0_softening_decays_as_one_over_fracture_energy=True",
+          "only_curve_three_gives_perfect_plasticity=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_rankine_simoju_are_damage_only",
+      "claim": "plasticity:0",
+      "claim_text_sha": "9d84cbf727c31bff",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "all_plasticity_rankine_simoju_missing=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_tangent_operator_estimation_knob",
+      "claim": "constitutive_laws:3",
+      "claim_text_sha": "ac7725b8dd708991",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "probe[CLA.TANGENT_OPERATOR_ESTIMATION]=True_expected=True",
+          "probe[KM.TANGENT_OPERATOR_ESTIMATION]=False_expected=False",
+          "probe[properties_roundtrip_secant_3]=True_expected=True",
+          "probe_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "plasticity_two_registry_holes",
+      "claim": "constitutive_laws:5",
+      "claim_text_sha": "b8b61116b0035ec7",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[kinematic_python_attr]=True_expected=True",
+          "probe[kinematic_registered]=False_expected=False",
+          "probe[factory_python_attr]=True_expected=True",
+          "probe[factory_registered]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "point_load_direction_process_rejects",
+      "claim": "structural_dynamics:6",
+      "claim_text_sha": "8e4cc1fa89b85b27",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.6,
+        "missing": [
+          "core_by_direction_raises=True",
+          "raises_about_fix_free_dof=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poisson_cda_element_string_factory",
+      "claim": "poisson:0",
+      "claim_text_sha": "2dd1535243c0943b",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "wrong_name_rejected=True",
+          "FORBIDDEN:ERROR"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poisson_convectiondiffusionsettings_on_processinfo",
+      "claim": "poisson:3",
+      "claim_text_sha": "638ddc1eee5ad701",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.ConvectionDiffusionSettings]=True_expected=True",
+          "probe[CDA.ConvectionDiffusionSettings]=False_expected=False",
+          "probe[KM.CONVECTION_DIFFUSION_SETTINGS]=True_expected=True",
+          "probe[fresh_Has_is_true]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poisson_laplacian_element_assembles_heat_flux",
+      "claim": "poisson:1",
+      "claim_text_sha": "3992ffdc5b395277",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "rhs10_node0=1.666667",
+          "rhs10_node1=1.666667",
+          "rhs10_node2=1.666667",
+          "per_node_matches_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poisson_mms_convergence",
+      "claim": "poisson:99",
+      "claim_text_sha": "",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.9,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poisson_vtk_output_process_surface",
+      "claim": "poisson:6",
+      "claim_text_sha": "b4acad28c17e4a44",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[vtk_output_process_Factory]=True_expected=True",
+          "probe[KM.VtkOutput]=True_expected=True",
+          "probe[CDA.VtkOutput]=False_expected=False",
+          "probe_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poromechanics_biot_coefficient_is_required",
+      "claim": "poromechanics:3",
+      "claim_text_sha": "a25dc2d59ffb0a91",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[PORO.BIOT_COEFFICIENT]=True_expected=True",
+          "probe[KM.BIOT_COEFFICIENT]=False_expected=False",
+          "probe[properties_roundtrip]=True_expected=True",
+          "probe[BULK_MODULUS_SOLID_is_separate]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poromechanics_newmark_scheme_signature",
+      "claim": "poromechanics:5",
+      "claim_text_sha": "e54cc02e275094d8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[ctor_four_args]=True_expected=True",
+          "probe[ctor_three_args]=False_expected=False",
+          "probe[wrong_order_still_accepted]=True_expected=True",
+          "probe[GetVariable_VELOCITY_COEFFICIENT]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poromechanics_upl_exotic_nodal_variables",
+      "claim": "poromechanics:4",
+      "claim_text_sha": "d432f9f2f9724714",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[PORO.INITIAL_STRESS_TENSOR]=True_expected=True",
+          "probe[PORO.NODAL_EFFECTIVE_STRESS_TENSOR]=True_expected=True",
+          "probe[PORO.NODAL_MID_PLANE_LIQUID_PRESSURE]=True_expected=True",
+          "probe[PORO.NODAL_SLIP_TENDENCY]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poromechanics_upl_not_upw",
+      "claim": "poromechanics:1",
+      "claim_text_sha": "6e1253f5f41a7545",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "rejected_name=UPwSmallStrainElement2D4N",
+          "is not registered",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "poromechanics_variables_cpp_registered_only",
+      "claim": "poromechanics:2",
+      "claim_text_sha": "31756f61699ed245",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[KM.DENSITY_SOLID]=False_expected=False",
+          "probe[PORO.DENSITY_SOLID]=False_expected=False",
+          "probe[GetVariable_DENSITY_SOLID]=True_expected=True",
+          "probe[GetVariable_DENSITY_FLUID]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "prefer_modern_over_legacy_solid_apps",
+      "claim": "_auxiliary_overview:2",
+      "claim_text_sha": "41fd38a8b4778620",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[ContactStructuralMechanicsApplication]=True_expected=True",
+          "importable[SolidMechanicsApplication]=False_expected=False",
+          "importable[ContactMechanicsApplication]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "quad4_shear_locking_vs_quad8",
+      "claim": "structural_dynamics:5",
+      "claim_text_sha": "ca839a7894cba994",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 7.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 7.8,
+        "missing": [
+          "quad4_locks_20_to_40_percent=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "rans_requires_fluiddynamics",
+      "claim": "rans:1",
+      "claim_text_sha": "0bdf12b1d1b8992d",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "importable[RANSApplication]=True_expected=True",
+          "importable[NoSuchKratosApplication]=False_expected=False",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "rans_shallowwater_element_naming",
+      "claim": "rans:0",
+      "claim_text_sha": "b88444a8a2083d9e",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "all_catalog_wrong_names_rejected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "rom_works_with_structural_and_fluid",
+      "claim": "rom:0",
+      "claim_text_sha": "eb9312d11769cdb3",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "importable[RomApplication]=True_expected=True",
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "importable[NoSuchKratosApplication]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "shallowwater_bdf2_scheme_exists",
+      "claim": "shallow_water:3",
+      "claim_text_sha": "6ec8a2bab7e48640",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[SW.ShallowWaterResidualBasedBDFScheme]=True_expected=True",
+          "probe[KM.ShallowWaterResidualBasedBDFScheme]=False_expected=False",
+          "probe[buffer_three_accepted]=True_expected=True",
+          "probe[default_buffer_is_three]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "shallowwater_element_is_boussinesq_stem",
+      "claim": "shallow_water:0",
+      "claim_text_sha": "413c3086278574cd",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "rejected_name=ShallowWaterElement2D3N",
+          "is not registered",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "shallowwater_free_surface_elevation_is_derived",
+      "claim": "shallow_water:4",
+      "claim_text_sha": "e3d570ce017d9c63",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[SW.FREE_SURFACE_ELEVATION]=True_expected=True",
+          "probe[KM.FREE_SURFACE_ELEVATION]=False_expected=False",
+          "probe[SW.HEIGHT]=True_expected=True",
+          "probe[SW.TOPOGRAPHY]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "shallowwater_gravity_is_scalar_processinfo",
+      "claim": "shallow_water:2",
+      "claim_text_sha": "9762538aa0806931",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[GRAVITY_Z_resolves]=True_expected=True",
+          "probe[GRAVITY_Z_is_a_component_of_GRAVITY]=True_expected=True",
+          "probe[processinfo_roundtrip_9_81]=True_expected=True",
+          "probe[nodal_read_without_variable]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "shallowwater_is_2d_only",
+      "claim": "shallow_water:1",
+      "claim_text_sha": "e584aaef51b94345",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "registered[BoussinesqElement2D3N]=True_expected=True",
+          "registered[BoussinesqElement2D4N]=True_expected=True",
+          "registered[BoussinesqElement3D4N]=False_expected=False",
+          "registered[BoussinesqElement3D8N]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "structural_dynamics_echo_level_missing",
+      "claim": "structural_dynamics:7",
+      "claim_text_sha": "6d8fa2ce21c75366",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[lookup_missing_echo_level]=False_expected=False",
+          "probe[lookup_present_echo_level]=True_expected=True",
+          "probe[Has_reports_absent]=False_expected=False",
+          "probe_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "structural_dynamics_lumped_mass_flag",
+      "claim": "structural_dynamics:2",
+      "claim_text_sha": "37ccbdec4294b12f",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[KM.COMPUTE_LUMPED_MASS_MATRIX]=True_expected=True",
+          "probe[SMA.COMPUTE_LUMPED_MASS_MATRIX]=False_expected=False",
+          "probe[unset_lookup_raises]=False_expected=False",
+          "probe[set_true_roundtrip]=True_expected=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "structural_dynamics_schemes_live_on_core",
+      "claim": "structural_dynamics:0",
+      "claim_text_sha": "839447c4a4dd6ce1",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "probe[KM.ResidualBasedNewmarkDisplacementScheme]=True_expected=True",
+          "probe[SMA.ResidualBasedNewmarkDisplacementScheme]=False_expected=False",
+          "probe[KM.ResidualBasedBossakDisplacementScheme]=True_expected=True",
+          "probe[SMA.ResidualBasedBossakDisplacementScheme]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "submodelpart_case_sensitive",
+      "claim": "linear_elasticity:2",
+      "claim_text_sha": "e64391c19d1c79ad",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "no sub model part with name",
+          "model_part"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "swimming_dem_requires_fluid_and_dem",
+      "claim": "swimming_dem:0",
+      "claim_text_sha": "b26447525ff872d8",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "importable[DEMApplication]=True_expected=True",
+          "importable[SwimmingDEMApplication]=False_expected=False",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "swimming_dem_wheel_pins_older_core",
+      "claim": "swimming_dem:1",
+      "claim_text_sha": "edd2013532c1095b",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[SwimmingDEMApplication]=False_expected=False",
+          "importable[DEMApplication]=True_expected=True",
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "temperature_variable_not_added",
+      "claim": "heat:0",
+      "claim_text_sha": "e5a9ac36d089bcdf",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "variables list",
+          "doesn't have this variable"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "thermal_dem_application_absent",
+      "claim": "thermal_dem:1",
+      "claim_text_sha": "634ada6a7f24627c",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[ThermalDEMApplication]=False_expected=False",
+          "importable[DEMApplication]=True_expected=True",
+          "app_import_mismatches=0",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "thermal_dem_requires_dem_base",
+      "claim": "thermal_dem:0",
+      "claim_text_sha": "449ed5685dbd82b9",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[DEMApplication]=True_expected=True",
+          "importable[ThermalDEMApplication]=False_expected=False",
+          "importable[NoSuchKratosApplication]=False_expected=False",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "topology_optimization_requires_structural",
+      "claim": "topology_optimization:0",
+      "claim_text_sha": "c6dedc01157743ef",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[StructuralMechanicsApplication]=True_expected=True",
+          "importable[TopologyOptimizationApplication]=False_expected=False",
+          "importable[OptimizationApplication]=True_expected=True",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "trilinos_absent_metis_present",
+      "claim": "_auxiliary_overview:0",
+      "claim_text_sha": "377262b7952fb1b5",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[TrilinosApplication]=False_expected=False",
+          "importable[MetisApplication]=True_expected=True",
+          "importable[LinearSolversApplication]=True_expected=True",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "variable_not_added_before_access",
+      "claim": "linear_elasticity:9",
+      "claim_text_sha": "655d38c14cd5d301",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "variables list"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "velocity_variable_not_added",
+      "claim": "fluid:0",
+      "claim_text_sha": "190e1e98634a3cc7",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "RuntimeError",
+          "variables list",
+          "doesn't have this variable"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "wind_engineering_application_absent",
+      "claim": "wind_engineering:1",
+      "claim_text_sha": "343709ae7dca989e",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[WindEngineeringApplication]=False_expected=False",
+          "importable[RANSApplication]=True_expected=True",
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "wind_engineering_requires_fluid_and_rans",
+      "claim": "wind_engineering:0",
+      "claim_text_sha": "a73151bf76dad28a",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "importable[FluidDynamicsApplication]=True_expected=True",
+          "importable[RANSApplication]=True_expected=True",
+          "importable[WindEngineeringApplication]=False_expected=False",
+          "app_import_mismatches=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "kratos",
+      "fixture": "yield_surface_tags_are_not_laws",
+      "claim": "constitutive_laws:7",
+      "claim_text_sha": "01c8ec81cedfada7",
+      "commit": "7255aba8dde4",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.2,
+        "missing": [
+          "probe[registered_VonMises]=False_expected=False",
+          "probe[registered_Tresca]=False_expected=False",
+          "probe[registered_DruckerPrager]=False_expected=False",
+          "probe[registered_MohrCoulomb]=False_expected=False"
+        ]
+      },
+      "discriminates": true
+    }
+  ]
+}
