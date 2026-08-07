@@ -96,18 +96,28 @@ RESULT DESCRIPTION:
 YAML
 }
 
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology from both arms that carry
+# one: arm (b) gets the CORRECT value, so nothing is wrong to report, and arm (c)
+# gets a TIGHT tolerance, so its wrong answer is no longer hidden.  "is WRONG -->
+# actresult=", "Result check failed with 1 errors out of 1 tests", "EXIT_B=1" and
+# "EXIT_C=0" all disappear and the forbidden "EXIT_B=0" appears — red either way.
+MUTATE="${T2_MUTATE:-0}"
+B_VALUE=999.0
+C_TOLERANCE=1.0
+if [ "$MUTATE" = "1" ]; then B_VALUE=4.47909266337460053e-03; C_TOLERANCE=1e-10; fi
+
 echo "=== (a) correct VALUE, tight TOLERANCE — must exit 0 ==="
 mk 4.47909266337460053e-03 1e-10 "$TMP/ok.4C.yaml"
 run4c "$TMP/ok.4C.yaml" "$TMP/o_ok" | grep -E "is CORRECT|is WRONG" | head -2
 echo "EXIT_A=${PIPESTATUS[0]}"
 
 echo "=== (b) wrong VALUE, tight TOLERANCE — must exit 1 ==="
-mk 999.0 1e-10 "$TMP/bad.4C.yaml"
+mk "$B_VALUE" 1e-10 "$TMP/bad.4C.yaml"
 run4c "$TMP/bad.4C.yaml" "$TMP/o_bad" | grep -E "is WRONG|Result check failed" | head -2
 echo "EXIT_B=${PIPESTATUS[0]}"
 
 echo "=== (c) wrong VALUE, loose TOLERANCE — silently exits 0 ==="
-mk 0.0 1.0 "$TMP/loose.4C.yaml"
+mk 0.0 "$C_TOLERANCE" "$TMP/loose.4C.yaml"
 run4c "$TMP/loose.4C.yaml" "$TMP/o_loose" | grep -E "is CORRECT|is WRONG" | head -2
 echo "EXIT_C=${PIPESTATUS[0]}"
 exit 0

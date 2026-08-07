@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fourc::input_format#26 — runtime VTK output is a silent no-op unless BOTH IO/RUNTIME VTK OUTPUT (with INTERVAL_STEPS > 0; the default is -1 = never, see src/inpar/4C_inpar_IO_runtime_output.cpp) and the per-field IO/RUNTIME VTK OUTPUT/STRUCTURE sub-section are present. The fixture runs the same 2-step HEX8 deck four ways and reports EXIT and the .vtu count. All four exit 0; only the complete configuration writes files, which is exactly why this failure mode is invisible without counting output. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf).",
+  "_comment": "Tier-2 for fourc::input_format#26 — runtime VTK output is a silent no-op unless BOTH IO/RUNTIME VTK OUTPUT (with INTERVAL_STEPS > 0; the default is -1 = never, see src/inpar/4C_inpar_IO_runtime_output.cpp) and the per-field IO/RUNTIME VTK OUTPUT/STRUCTURE sub-section are present. The fixture runs the same 2-step HEX8 deck four ways and reports EXIT and the .vtu count. All four exit 0; only the complete configuration writes files, which is exactly why this failure mode is invisible without counting output. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): the parent_only, no_interval_steps and no_io_at_all arms are all built from the complete IO block. Their three VTU=0 expectations disappear. Proved KILLED 2026-08-07.",
   "backend": "fourc",
   "physics": "input_format",
   "pitfall_index": 26,
@@ -13,5 +13,11 @@
   ],
   "forbid_in_output": [
     "both_sections: EXIT=0 VTU=0"
-  ]
+  ],
+  "_mutation": {
+    "note": "remove the pathology from all three deficient arms: each gets the COMPLETE pair of sections plus INTERVAL_STEPS, so each writes its 3 .vtu files. 'parent_only: EXIT=0 VTU=0', 'no_interval_steps: EXIT=0 VTU=0' and 'no_io_at_all: EXIT=0 VTU=0' all disappear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
 }

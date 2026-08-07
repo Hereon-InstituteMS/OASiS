@@ -94,20 +94,34 @@ run_case() {  # $1 = label, $2 = the IO preamble
   echo "$1: EXIT=$rc VTU=$n NO_DATA_THROW=$throw"
 }
 
-run_case with_displacement 'IO/RUNTIME VTK OUTPUT:
+BOTH_FLAGS='IO/RUNTIME VTK OUTPUT:
   INTERVAL_STEPS: 1
 IO/RUNTIME VTK OUTPUT/STRUCTURE:
   OUTPUT_STRUCTURE: true
   DISPLACEMENT: true'
-
-run_case output_structure_only 'IO/RUNTIME VTK OUTPUT:
+STRUCTURE_ONLY='IO/RUNTIME VTK OUTPUT:
   INTERVAL_STEPS: 1
 IO/RUNTIME VTK OUTPUT/STRUCTURE:
   OUTPUT_STRUCTURE: true'
-
-run_case displacement_only 'IO/RUNTIME VTK OUTPUT:
+DISPLACEMENT_ONLY='IO/RUNTIME VTK OUTPUT:
   INTERVAL_STEPS: 1
 IO/RUNTIME VTK OUTPUT/STRUCTURE:
   DISPLACEMENT: true'
+
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology from both deficient arms:
+# each is given BOTH field flags.  The output_structure_only arm then runs to
+# completion with 3 .vtu files and no "No data was written" throw, so
+# `output_structure_only: EXIT=1 VTU=1 NO_DATA_THROW=yes` disappears and the
+# forbidden `output_structure_only: EXIT=0 VTU=3` appears; the displacement_only
+# arm writes its files too, so `displacement_only: EXIT=0 VTU=0` disappears.
+# Red on both halves.
+MUTATE="${T2_MUTATE:-0}"
+if [ "$MUTATE" = "1" ]; then
+  STRUCTURE_ONLY="$BOTH_FLAGS"; DISPLACEMENT_ONLY="$BOTH_FLAGS"
+fi
+
+run_case with_displacement "$BOTH_FLAGS"
+run_case output_structure_only "$STRUCTURE_ONLY"
+run_case displacement_only "$DISPLACEMENT_ONLY"
 
 exit 0

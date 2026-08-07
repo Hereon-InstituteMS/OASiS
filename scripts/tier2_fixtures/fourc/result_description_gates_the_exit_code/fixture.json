@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fourc::input_format#17 (RESULT DESCRIPTION gates the exit code) and #19 (a loose TOLERANCE silently passes a wrong answer). Runs one HEX8 cantilever three times: correct VALUE + tight TOLERANCE -> 'is CORRECT' and EXIT_A=0; wrong VALUE + tight TOLERANCE -> 'is WRONG --> ...' + 'Result check failed with 1 errors out of 1 tests' and EXIT_B=1; wrong VALUE + TOLERANCE 1.0 -> 'is CORRECT' and EXIT_C=0, the silent branch. The reference value 4.47909266337460053e-03 was read off the loose run's abs(diff). Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "_comment": "Tier-2 for fourc::input_format#17 (RESULT DESCRIPTION gates the exit code) and #19 (a loose TOLERANCE silently passes a wrong answer). Runs one HEX8 cantilever three times: correct VALUE + tight TOLERANCE -> 'is CORRECT' and EXIT_A=0; wrong VALUE + tight TOLERANCE -> 'is WRONG --> ...' + 'Result check failed with 1 errors out of 1 tests' and EXIT_B=1; wrong VALUE + TOLERANCE 1.0 -> 'is CORRECT' and EXIT_C=0, the silent branch. The reference value 4.47909266337460053e-03 was read off the loose run's abs(diff). Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. MUTATION CONTROL (T2_MUTATE=1, re-runnable): arm (b)'s VALUE becomes the correct 4.47909266337460053e-03 and arm (c)'s TOLERANCE becomes 1e-10. The wrong-result diagnostic, the result-check summary, EXIT_B=1 and EXIT_C=0 all disappear and the forbidden EXIT_B=0 appears. Proved KILLED 2026-08-07.",
   "backend": "fourc",
   "physics": "input_format",
   "pitfall_index": 17,
@@ -16,5 +16,11 @@
   "forbid_in_output": [
     "EXIT_A=1",
     "EXIT_B=0"
-  ]
+  ],
+  "_mutation": {
+    "note": "remove the pathology from both arms that carry one: arm (b) gets the CORRECT value so there is nothing wrong to report, and arm (c) gets a TIGHT tolerance so its wrong answer is no longer hidden. 'is WRONG --> actresult=', 'Result check failed with 1 errors out of 1 tests', EXIT_B=1 and EXIT_C=0 all disappear and the forbidden EXIT_B=0 appears - the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
 }

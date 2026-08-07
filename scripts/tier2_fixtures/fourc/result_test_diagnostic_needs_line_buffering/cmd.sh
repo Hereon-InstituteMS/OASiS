@@ -106,9 +106,19 @@ echo "plain_pipe: EXIT=$PIPE_RC ENDS_AT_CHECKING=$PIPE_ENDS"
 
 # (b) plain redirect to a FILE — the half the original claim got wrong.
 # Repeat three times so a one-off scheduling fluke cannot pass it.
+#
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology: arm (b) gets the very
+# line buffering whose absence it exists to demonstrate.  The "is WRONG" line
+# then survives the MPI_Abort in all three runs,
+# `plain_file_redirect: IS_WRONG_LINES_IN_3_RUNS=0` becomes `...=3`, and the
+# fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+BUF=""
+[ "$MUTATE" = "1" ] && BUF="stdbuf -oL -eL"
+
 FILE_HITS=0
 for i in 1 2 3; do
-  "$BIN" "$IN" "$TMP/ob$i" > "$TMP/f$i.log" 2>&1
+  $BUF "$BIN" "$IN" "$TMP/ob$i" > "$TMP/f$i.log" 2>&1
   n=$(grep -c "is WRONG" "$TMP/f$i.log" || true)
   FILE_HITS=$((FILE_HITS + n))
 done

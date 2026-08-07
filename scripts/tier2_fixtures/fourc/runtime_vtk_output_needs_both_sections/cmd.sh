@@ -92,9 +92,21 @@ IO/RUNTIME VTK OUTPUT/STRUCTURE:
   OUTPUT_STRUCTURE: true
   DISPLACEMENT: true'
 
+NO_IO='IO:
+  VERBOSITY: standard'
+
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology from all three deficient
+# arms: each is given the COMPLETE pair of sections plus INTERVAL_STEPS, so each
+# writes its 3 .vtu files.  `parent_only: EXIT=0 VTU=0`,
+# `no_interval_steps: EXIT=0 VTU=0` and `no_io_at_all: EXIT=0 VTU=0` all
+# disappear and the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+if [ "$MUTATE" = "1" ]; then
+  PARENT_ONLY="$FULL"; NO_INTERVAL="$FULL"; NO_IO="$FULL"
+fi
+
 probe both_sections "$FULL"
 probe parent_only "$PARENT_ONLY"
 probe no_interval_steps "$NO_INTERVAL"
-probe no_io_at_all "IO:
-  VERBOSITY: standard"
+probe no_io_at_all "$NO_IO"
 exit 0

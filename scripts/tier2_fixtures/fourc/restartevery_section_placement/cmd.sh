@@ -84,6 +84,16 @@ probe() {  # $1 = label, $2 = placement
   grep -m1 -o "Restart of the structural simulation from step 2" "$d/log2" || true
 }
 
-probe io_section   io
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology: the arm LABELLED
+# io_section is built with RESTARTEVERY in STRUCTURAL DYNAMIC, the placement that
+# works.  It then writes a restart record and restarts cleanly, so
+# `io_section: RESTART_EXIT=1` and "No restart entry for discretization
+# 'structure' step 2" disappear and the forbidden
+# `io_section: WRITE_EXIT=0 RESTART_RECORDS=1` appears — the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+IO_ARM_PLACEMENT=io
+[ "$MUTATE" = "1" ] && IO_ARM_PLACEMENT=sdyn
+
+probe io_section   "$IO_ARM_PLACEMENT"
 probe sdyn_section sdyn
 exit 0

@@ -94,8 +94,20 @@ probe() {  # $1 = label, $2 = element line
   fi
 }
 
-WALL_OK=$(probe wall "1 WALL QUAD4 1 2 3 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2")
-SOLID_OK=$(probe solid "1 SOLID QUAD4 1 2 3 4 MAT 1 KINEM linear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain")
+# MUTATION CONTROL — a POSITIVE one, because the claim here is an INVARIANT over
+# whatever 4C is installed ("exactly one of the two factories accepts quad4"),
+# not an injected pathology that could be taken back out.  T2_MUTATE=1 gives the
+# second probe the SAME element line as the first, so both arms necessarily
+# agree, EXACTLY_ONE_2D_FACTORY flips to `no` — a forbidden token — and the
+# expectation disappears.  That rules out the case that would make the fixture
+# worthless: a verdict printed rather than derived from two independent 4C runs.
+MUTATE="${T2_MUTATE:-0}"
+WALL_LINE="1 WALL QUAD4 1 2 3 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2"
+SOLID_LINE="1 SOLID QUAD4 1 2 3 4 MAT 1 KINEM linear THICKNESS 1.0 PLANE_ASSUMPTION plane_strain"
+[ "$MUTATE" = "1" ] && SOLID_LINE="$WALL_LINE"
+
+WALL_OK=$(probe wall "$WALL_LINE")
+SOLID_OK=$(probe solid "$SOLID_LINE")
 
 echo "WALL_ACCEPTS_QUAD4=$WALL_OK"
 echo "SOLID_ACCEPTS_QUAD4=$SOLID_OK"
