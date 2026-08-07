@@ -4,16 +4,27 @@ you pass, and really is clamped into [0.05, 1.0].
 THE CLAIM UNDER TEST is the description of the `couple` tool's DEFAULT
 accelerator, the one sentence an agent reads before deciding what to pass:
 
-  "'aitken' — theta adapts per participant, starting from the theta you pass,
-   clamped into [0.05, 1.0]."
+  "'aitken' — ONE theta for the whole interface state, recomputed every
+   iteration, starting from the theta you pass and clamped into [0.05, 1.0].
+   ... The two fallback paths inside the update ... hold the previous theta,
+   clamped into the same [0.05, 1.0]."
 
-Three separate assertions live in that sentence and each one can be wrong on
-its own. PER PARTICIPANT is a statement about how many independent thetas the
-driver carries. STARTING FROM THE THETA YOU PASS is a statement about what the
-first adaptation is seeded with — a driver that quietly seeded 0.5 whatever you
-passed would look identical from the outside on most problems. CLAMPED INTO
-[0.05, 1.0] is a statement about two numbers, and a bound that is present in
-the source but never reached is not a bound anyone has tested.
+Four separate assertions live there and each one can be wrong on its own. ONE
+THETA FOR THE WHOLE INTERFACE STATE is a statement about how many independent
+thetas the driver carries — this fixture asserted the opposite until the two
+coupling branches were reconciled, because knowledge/coupling-revision's driver
+really did carry one per participant and feature/coupling-robustness replaced
+that (giving each participant its own theta relaxes the two halves of one
+coupled system by different amounts, which drove the two thetas to opposite
+clamps on a Dirichlet-Neumann split). STARTING FROM THE THETA YOU PASS is a
+statement about what the first adaptation is seeded with — a driver that
+quietly seeded 0.5 whatever you passed would look identical from the outside on
+most problems. CLAMPED INTO [0.05, 1.0] is a statement about two numbers, and a
+bound that is present in the source but never reached is not a bound anyone has
+tested. THE FALLBACKS CLAMP THE SAME WAY is the fourth: an earlier version of
+this driver floored them at 0.1 instead, so the served interval was incomplete,
+and the two paths are reached often enough (iteration 1, and any degenerate
+denominator) that the difference is visible in real numbers.
 
 WHICH PART IS UNIT-LEVEL AND WHICH IS END-TO-END, stated plainly because the
 two carry different weight:
@@ -174,7 +185,48 @@ def unit_bounds() -> bool:
                      f"clamp must not touch a value already in range") and mid_ok
     print(f"unclamped_value_inside_the_bounds_passed_through={bool(mid_ok)}")
 
-    return bool(ok and hi_ok and mid_ok)
+    # (4) THE TWO FALLBACK PATHS clamp into the SAME interval. This is the half
+    # of the served sentence that used to be wrong in the other direction: both
+    # paths floored theta at 0.1 while the advertised interval started at 0.05,
+    # so a theta_prev between the two came back changed for no stated reason.
+    # A theta_prev strictly inside [0.05, 0.1] separates the two rules by
+    # construction — under the old floor it comes back 0.1, under the correct
+    # one it comes back untouched — and it is used for both paths.
+    fb_ok = True
+    probe_theta = 0.07
+    L.check(CLAMP_LOW < probe_theta < 0.1, "fallback_probe_is_not_between",
+            f"{probe_theta} must lie strictly between the served floor "
+            f"{CLAMP_LOW} and the 0.1 an earlier driver used, or this arm "
+            f"cannot tell the two apart")
+    # first iteration: no previous residual to extrapolate from
+    th_first, _ = _aitken(np.array([300.0, 301.0]), np.array([301.0, 302.0]),
+                          None, probe_theta)
+    print(f"fallback_first_iteration_returned={th_first!r}")
+    fb_ok = L.check(th_first == probe_theta,
+                    "first_iteration_fallback_did_not_hold_theta",
+                    f"with no previous residual the update must hold "
+                    f"theta_prev={probe_theta} inside [{CLAMP_LOW}, "
+                    f"{CLAMP_HIGH}]; it returned {th_first!r}") and fb_ok
+    # degenerate denominator: r_k identical to r_{k-1}, so dr is exactly zero
+    r_same = np.array([1.0, 1.0])
+    th_degen, _ = _aitken(np.array([300.0, 301.0]),
+                          np.array([300.0, 301.0]) + r_same, r_same, probe_theta)
+    print(f"fallback_degenerate_denominator_returned={th_degen!r}")
+    fb_ok = L.check(th_degen == probe_theta,
+                    "degenerate_fallback_did_not_hold_theta",
+                    f"with a zero residual change the update must hold "
+                    f"theta_prev={probe_theta} inside [{CLAMP_LOW}, "
+                    f"{CLAMP_HIGH}]; it returned {th_degen!r}") and fb_ok
+    # and they DO clamp — a theta_prev below the floor comes back at the floor,
+    # so "hold the previous theta" is not "return it unconditionally".
+    th_below, _ = _aitken(np.array([300.0]), np.array([301.0]), None, 0.001)
+    print(f"fallback_below_the_floor_returned={th_below!r}")
+    fb_ok = L.check(th_below == CLAMP_LOW, "fallback_did_not_clamp_at_all",
+                    f"a theta_prev of 0.001 must come back at the floor "
+                    f"{CLAMP_LOW}, not {th_below!r}") and fb_ok
+    print(f"fallbacks_clamp_into_the_same_interval={bool(fb_ok)}")
+
+    return bool(ok and hi_ok and mid_ok and fb_ok)
 
 
 # ── end to end: a real coupling through the registered `couple` tool ────────
@@ -300,28 +352,35 @@ def body() -> None:
             f"watched: converged={watched['converged']} "
             f"iterations={watched['iterations']} T={watched['t_left']!r}")
 
-    # (a) theta adapts PER PARTICIPANT: the driver relaxes every participant,
-    # and iteration 1 has nothing to adapt from, so a converged run at
-    # iteration N must have asked for exactly N_PARTICIPANTS * (N - 1) thetas.
-    expected_calls = N_PARTICIPANTS * (watched["iterations"] - 1)
+    # (a) ONE theta for the WHOLE INTERFACE STATE. The driver relaxes every
+    # participant, but Aitken is applied to the composite fixed-point map, so a
+    # run that reached iteration N must have asked for exactly N - 1 thetas —
+    # not N_PARTICIPANTS * (N - 1), which is what a per-participant scheme
+    # gives and what this fixture asserted before the two coupling branches
+    # were reconciled. The discrimination is in the arithmetic: with two
+    # participants the two counts differ by a factor of two, so neither
+    # assertion can be satisfied by the other implementation.
+    expected_calls = watched["iterations"] - 1
+    per_participant_would_be = N_PARTICIPANTS * expected_calls
     print(f"aitken_theta_calls={len(seen)}")
     print(f"aitken_theta_calls_expected={expected_calls}")
-    per_participant = bool(len(seen) == expected_calls and expected_calls > 0)
-    print(f"theta_adapts_per_participant={per_participant}")
-    L.check(per_participant, "theta_was_not_adapted_per_participant",
+    print(f"aitken_theta_calls_if_per_participant={per_participant_would_be}")
+    one_global = bool(len(seen) == expected_calls and expected_calls > 0)
+    print(f"one_theta_for_the_whole_interface_state={one_global}")
+    L.check(one_global, "theta_was_not_a_single_global_one",
             f"{len(seen)} adaptations over {watched['iterations']} iterations "
-            f"with {N_PARTICIPANTS} participants; a single shared theta would "
-            f"give half of {expected_calls}")
+            f"with {N_PARTICIPANTS} participants; ONE global theta gives "
+            f"{expected_calls} and a per-participant theta gives "
+            f"{per_participant_would_be}")
 
-    # (b) STARTING FROM THE THETA YOU PASS: the first adaptation on each
-    # participant is seeded with theta0 and nothing else.
-    first = [tp for tp, _, _ in seen[:N_PARTICIPANTS]]
-    print(f"first_theta_prev_per_participant={first}")
-    seeded = bool(len(first) == N_PARTICIPANTS
-                  and all(tp == THETA0 for tp in first))
+    # (b) STARTING FROM THE THETA YOU PASS: the first adaptation is seeded with
+    # theta0 and nothing else.
+    first = [tp for tp, _, _ in seen[:1]]
+    print(f"first_theta_prev={first}")
+    seeded = bool(len(first) == 1 and all(tp == THETA0 for tp in first))
     print(f"first_theta_prev_was_the_theta_passed={seeded}")
     L.check(seeded, "the_first_theta_was_not_the_one_passed",
-            f"the first adaptations were seeded with {first}, not "
+            f"the first adaptation was seeded with {first}, not "
             f"{THETA0} — 'starting from the theta you pass' is then wrong")
 
     # (c) the interval, observed from a real run.

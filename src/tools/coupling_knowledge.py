@@ -143,9 +143,13 @@ Dirichlet-Neumann coupling, but know that it happens.
     Omit a name and that participant simply never sees that partner's data.
   * `timeout` — seconds per participant call (default 3600). A compiled code
     that hangs will otherwise stall the whole coupling.
-  * `data_files` is NOT supported by this tool — an extra key in the spec is
-    silently ignored. Copy every mesh/species/config file your solver opens
-    into `work_dir` yourself before calling `couple`.
+  * `data_files` — a list of ABSOLUTE paths to files your solver opens (mesh,
+    species, surface, config). They are copied into `work_dir` once, before the
+    iteration starts, and a path that does not exist is a LOUD setup error
+    rather than a solver dying mid-iteration on 'Cannot open ...'. Declaring a
+    file here also binds it into the critic review, so rewriting it after the
+    review invalidates the approval. You may still copy files in yourself;
+    `data_files` is the supported way and the one that gets both of those.
   * `theta` must be in (0, 1]; `accelerator` must be exactly "constant" or
     "aitken". Both are rejected with an error message if not.
   * `noise_replicates` — ONLY when a participant is a Monte-Carlo / sampled
@@ -2110,8 +2114,10 @@ def _sparta() -> str:
         "stochasticity note below before using it.",
         "sparta", _launch_py(_interp_wrapper(
             "SPARTA", "SPARTA",
-            extra="\n   Copy the surf / species / vss files into `work_dir` yourself:\n"
-                  "   `couple` has no `data_files`, so nothing else puts them there."),
+            extra="\n   List the surf / species / vss files in the participant's\n"
+                  "   `data_files` (absolute paths). `couple` stages them into\n"
+                  "   `work_dir` before the first iteration and fails loudly on a\n"
+                  "   missing one, instead of SPARTA dying on 'Cannot open ...'."),
             _STEP2_SPARTA),
         '''\
 * STOCHASTICITY IS THE HEADLINE, AND `couple` HAS A SWITCH FOR IT. DSMC output

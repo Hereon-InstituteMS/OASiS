@@ -17,13 +17,14 @@ around and be wrong about:
      iteration 2 it must see its partner's ITERATION-1 export, not the one
      produced moments earlier in the same sweep.
 
-  2. THE FILE IS THE RESULT, NOT THE EXIT CODE. "The driver checks that the
-     file EXISTS; it does NOT check your exit code. A complete file written
-     before a later crash is accepted as a result." That is the contract's own
-     warning and it is a silent-wrong route: a participant that writes
-     exports.json and then dies leaves a coupling that converges on stale
-     physics. Checked with a participant that exits non-zero every iteration
-     after writing a complete file.
+  2. THE FILE IS NOT ENOUGH — THE EXIT CODE IS ENFORCED. "write `exports.json`
+     LAST, only after the solve succeeded, AND EXIT 0. The driver requires
+     both." A participant that writes a complete exports.json and then dies
+     used to be accepted, and the coupling then converged on the output of a
+     crashed solve; that route is closed. Checked with a participant that
+     exits non-zero after writing a complete file, and — the half that makes it
+     discriminating — with the byte-identical participant exiting 0, which must
+     be accepted.
 
   3. WHAT COMES BACK IS RELAXED, NOT RAW. "The `exports` returned are the
      RELAXED blend the driver holds, not the last raw output of your solver."
@@ -31,12 +32,14 @@ around and be wrong about:
      relaxed value must still be short of that constant after a bounded number
      of iterations, by exactly (1-theta)^k of the initial gap.
 
-  4. `data_files` IS SILENTLY IGNORED BY `couple`. "an extra key in the spec is
-     silently ignored. Copy every mesh/species/config file your solver opens
-     into `work_dir` yourself." The `Participant` dataclass HAS the field and
-     `run_coupling` stages it; the TOOL does not pass it through. A reader who
-     saw the dataclass would conclude the opposite. Checked by handing `couple`
-     a `data_files` entry and asserting the file does not arrive.
+  4. `data_files` REACHES THE DRIVER THROUGH `couple`. "a list of ABSOLUTE
+     paths to files your solver opens... copied into `work_dir` once, before
+     the iteration starts." The tool used to drop the key while the
+     `Participant` dataclass had the field and `run_coupling` staged it, so the
+     contract told agents to copy their own files and a reader of the source
+     would have concluded the opposite; both levels are now checked, and
+     separately, because a tool that copied files by some other route would
+     satisfy one and not the other.
 
 These use trivial synthetic participants on purpose. The claim under test is
 about the driver, and a real solver would only add ways for the fixture to fail
@@ -86,13 +89,23 @@ Path("exports.json").write_text(json.dumps({
     "values": [mine]}))
 '''
 
-# Writes a COMPLETE export, then dies. The contract says this is accepted.
+# Writes a COMPLETE export, then dies. The contract says this ends the run.
 CRASHER = '''\
 import json, sys
 from pathlib import Path
 Path("exports.json").write_text(json.dumps({
     "field_name": "x", "n_points": 1, "coordinates": [[0.0]], "values": [%(v)s]}))
 sys.exit(7)
+'''
+
+# BYTE-FOR-BYTE the same participant with a zero exit, so the refusal above can
+# be attributed to the exit code and to nothing else about the run.
+EXIT_OK = '''\
+import json, sys
+from pathlib import Path
+Path("exports.json").write_text(json.dumps({
+    "field_name": "x", "n_points": 1, "coordinates": [[0.0]], "values": [%(v)s]}))
+sys.exit(0)
 '''
 
 # Always returns the same number, whatever it is given.
@@ -168,22 +181,54 @@ def jacobi() -> None:
             f"A saw {sa} vs {seen(root2, 'A')}")
 
 
-# ── 2. the file is the result, the exit code is not read ────────────────────
+# ── 2. the file is NOT enough: a non-zero exit ends the run ─────────────────
 
-def exit_code_is_not_read() -> None:
+def exit_code_is_enforced() -> None:
+    """A complete exports.json written before a later crash is REFUSED.
+
+    This arm was written the other way round, against the driver as it stood on
+    knowledge/coupling-revision, and it quoted the contract's own warning that
+    "the driver checks that the file EXISTS; it does NOT check your exit code".
+    feature/coupling-robustness closed that route — a solver that diverges
+    commonly writes its last iterate and then aborts, and the iteration used to
+    continue on it — so the invariant now runs the other way and the served
+    contract has been corrected to match. The claim is the same claim; what
+    changed is which answer is the safe one.
+
+    EXIT_OK below is what makes this discriminating rather than a restatement
+    of "the run failed": the identical participant, differing only in its exit
+    code, must be ACCEPTED. A driver that refused every run would fail that
+    half.
+    """
     root = L.workroot("inv_exit")
     a = put(root, "A", CRASHER % {"v": 3.0}, ["B"])
     b = put(root, "B", HOLDER % {"v": 4.0}, ["A"])
     res = L.couple([a, b], max_iter=6, tol=1e-9, accelerator="constant",
                    theta=1.0)
-    got = float(res["exports"]["A"]["values"][0]) if res.get("exports") else None
-    accepted = bool(res.get("converged")) and got == 3.0
-    print(f"participant_exited_nonzero_and_was_still_accepted={accepted}")
-    L.check(accepted, "a_crashing_participant_was_rejected",
-            f"the contract warns that a complete exports.json written before a "
-            f"later crash IS accepted — that is the silent-wrong route it "
-            f"names. converged={res.get('converged')} A={got!r} "
-            f"error={str(res.get('error'))[:160]}")
+    err = str(res.get("error") or "")
+    refused = (not res.get("converged")) and ("exited with code" in err)
+    print(f"crashing_participant_error={err[:120]!r}")
+    print(f"participant_exited_nonzero_and_the_run_was_refused={refused}")
+    L.check(refused, "a_crashing_participant_was_coupled_on",
+            f"a participant that writes a complete exports.json and then exits "
+            f"non-zero must end the run: its file is the output of a FAILED "
+            f"solve. converged={res.get('converged')} error={err[:160]}")
+
+    # The other half: the SAME participant exiting 0 is accepted, so the
+    # refusal above is about the exit code and not about the run.
+    root2 = L.workroot("inv_exit_ok")
+    a2 = put(root2, "A", EXIT_OK % {"v": 3.0}, ["B"])
+    b2 = put(root2, "B", HOLDER % {"v": 4.0}, ["A"])
+    res2 = L.couple([a2, b2], max_iter=6, tol=1e-9, accelerator="constant",
+                    theta=1.0)
+    got = (float(res2["exports"]["A"]["values"][0])
+           if res2.get("exports") else None)
+    ok = bool(res2.get("converged")) and got == 3.0
+    print(f"same_participant_exiting_zero_is_accepted={ok}")
+    L.check(ok, "a_clean_participant_was_also_rejected",
+            f"the identical script exiting 0 must be accepted, or the check "
+            f"above is not about the exit code. converged={res2.get('converged')} "
+            f"A={got!r} error={str(res2.get('error'))[:160]}")
 
 
 # ── 3. what comes back is the RELAXED blend, not the raw export ─────────────
@@ -242,7 +287,21 @@ def exports_are_relaxed() -> None:
 
 # ── 4. `data_files` is silently ignored by the TOOL ─────────────────────────
 
-def data_files_ignored() -> None:
+def data_files_are_staged() -> None:
+    """`data_files` reaches the driver THROUGH the tool, and the file arrives.
+
+    Written the other way round originally: on knowledge/coupling-revision the
+    tool dropped the key on the floor while the Participant dataclass had the
+    field and the driver staged it, so the served contract told agents to copy
+    their own files and a reader of the source would have concluded the
+    opposite. The tool now passes it through, measured here at both levels, and
+    the served contract has been corrected.
+
+    The one that is NOT a duplicate is the second half: the driver is exercised
+    DIRECTLY as well, because "the tool stages it" and "the driver stages it"
+    fail independently — a tool that quietly copied files itself would satisfy
+    the first and not the second.
+    """
     root = L.workroot("inv_data")
     payload = root / "needed.dat"
     payload.parent.mkdir(parents=True, exist_ok=True)
@@ -254,14 +313,12 @@ def data_files_ignored() -> None:
                    theta=1.0)
     arrived = float(res["exports"]["A"]["values"][0]) == 1.0
     print(f"data_files_key_staged_the_file={arrived}")
-    L.check(not arrived, "data_files_is_no_longer_ignored",
-            "the served contract says `data_files` is NOT supported by this "
-            "tool and the extra key is silently ignored, so an agent is told "
-            "to copy its own files. If the tool now stages them, that sentence "
-            "sends people to do unnecessary work and must be corrected.")
-    # And the underlying driver DOES support it — which is exactly why the
-    # tool-level silence is worth a fixture: the dataclass field exists and a
-    # reader of the source would conclude the opposite of the truth.
+    L.check(arrived, "data_files_did_not_reach_the_driver",
+            "the served contract now tells agents to declare mesh/species/"
+            "config files in `data_files` and lets the tool stage them. If the "
+            "key is dropped again, that sentence sends people into an opaque "
+            "'Cannot open ...' from inside the solver.")
+    # The DRIVER as well, separately, because the two can fail on their own.
     from core.coupling_driver import Participant, run_coupling
     root2 = L.workroot("inv_data_driver")
     pay2 = root2 / "needed.dat"
@@ -284,9 +341,9 @@ def data_files_ignored() -> None:
 
 def body() -> None:
     jacobi()
-    exit_code_is_not_read()
+    exit_code_is_enforced()
     exports_are_relaxed()
-    data_files_ignored()
+    data_files_are_staged()
     print("invariants_checked=4")
 
 
