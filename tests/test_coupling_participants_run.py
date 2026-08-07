@@ -141,7 +141,16 @@ def _dealii_exe():
                  (Path(c) / "lib/cmake/deal.II/deal.IIConfig.cmake").is_file()), None)
     if not root:
         return None
-    build = Path(os.environ.get("TMPDIR", "/tmp")) / "oasis_dealii_participant_build"
+    # Keyed to THIS checkout's participant directory. A single fixed path under
+    # TMPDIR meant a second checkout on the same machine found the first one's
+    # binary already sitting there and used it, so this test could pass against
+    # a solver built from different source; and cmake refuses to regenerate a
+    # cache whose source directory has changed, so a genuinely new target
+    # failed to build with no useful message.
+    import hashlib as _hl
+    _tag = _hl.sha1(str(PART_DIR.resolve()).encode()).hexdigest()[:10]
+    build = (Path(os.environ.get("TMPDIR", "/tmp"))
+             / f"oasis_dealii_participant_build_{_tag}")
     exe = build / "heat_iface_dealii"
     if exe.is_file():
         return exe

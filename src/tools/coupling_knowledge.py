@@ -494,6 +494,14 @@ Note in particular that the DEPRECATED `coupled_solve` docstring lists 4C on the
 Neumann side only — that limitation belongs to its own fixed generators, not
 to 4C.
 
+EVERY ROW ABOVE EXCHANGES ONE SCALAR. A VECTOR interface — displacement and
+traction, velocity and force, anything with components — is a separate claim
+with a separate table, three pairs behind it (FEniCSx <-> scikit-fem,
+FEniCSx <-> deal.II, NGSolve <-> scikit-fem), its own participant scripts
+(`participant_*_elastic.py`) and five rules that a scalar coupling does not
+need. Read section 6a before writing one; four of those five converge cleanly
+to the wrong answer if you get them wrong.
+
 Nothing in the driver is specific to heat conduction. A backend that can (a)
 impose a prescribed field on a boundary, (b) impose a flux/traction on a
 boundary and (c) report both at interface points, can take either side for
