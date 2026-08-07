@@ -118,11 +118,43 @@ def main():
     fx = float(np.sum(asm(neumann, fb, tx=tq[..., 0], ty=0.0 * tq[..., 1])))
     fy = float(np.sum(asm(neumann, fb, tx=0.0 * tq[..., 0], ty=tq[..., 1])))
 
+    # ── what this body ACTUALLY received on the interface ───────────────────
+    # This is the traction after THIS participant's own interpolation from the
+    # fluid's (different) interface points, sampled at this body's nodes. It is
+    # what `normal_fluxes` carries, and what the driver's conservation check
+    # therefore measures is THE FORCE TRANSFER: whether the mapping between two
+    # non-matching interface discretisations conserved the interface force.
+    # That is the conservation question a partitioned FSI actually has to
+    # answer, and a lossy or partially-covering mapping shows up here.
+    #
+    # It is NOT an independent statement about the structure's stress state,
+    # and it therefore cannot catch a sign convention that is wrong on BOTH
+    # sides — only a reference solve can. Do not read a clean balance as more
+    # than it is.
+    #
+    # WHY NOT THE TRACTION RECOVERED FROM THE STRUCTURE'S OWN STRESS FIELD,
+    # which would be independent: it does not converge on a bending structure
+    # with clamped ends. sigma_s . n_s was measured here against the applied
+    # traction on this exact case at four refinements (40x4, 80x8, 160x16,
+    # 240x24 P2 elements). The applied net came out 148.29 / 148.22 / 148.19 /
+    # 148.18 against the fluid's 148.183, while the RECOVERED net went
+    # 44.0 / 60.7 / 67.1 / 69.2 and its pointwise maximum GREW with refinement,
+    # 1.06e4 / 1.15e4 / 1.31e4 / 1.45e4, against an applied maximum of 297.
+    # Both are correct behaviour: the clamped corners where the Dirichlet
+    # boundary meets the loaded face carry a genuine stress singularity, so the
+    # pointwise traction there diverges under refinement and a nodal quadrature
+    # of it converges to the wrong number. A check built on it would fault a
+    # coupling that is right.
+    t_applied = sampler(x_if)
+
     out = {
         "field_name": "interface_displacement",
         "n_points": int(len(x_if)),
         "coordinates": ref_coords.tolist(),
         "values": disp.tolist(),
+        # w.r.t. THIS body's own outward normal n_s, so that this and the
+        # fluid's `normal_fluxes` (w.r.t. n_f = -n_s) must SUM to zero.
+        "normal_fluxes": t_applied.tolist(),
         "meta": {
             "net_force_received": [fx, fy],
             "feedback": bool(FEEDBACK),

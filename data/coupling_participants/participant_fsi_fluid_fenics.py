@@ -271,11 +271,22 @@ def main():
         "n_points": int(len(x_iface)),
         "coordinates": ref_coords.tolist(),
         "values": traction.tolist(),
+        # `normal_fluxes` is the SAME traction expressed w.r.t. THIS
+        # participant's own outward normal, which is the convention the driver's
+        # conservation check requires: the two participants' normals are
+        # anti-parallel, so the two exported flux fields must SUM to zero.
+        "normal_fluxes": (-traction).tolist(),
         "meta": {
-            "sign_convention": "sigma_f . n_s (load ON the structure)",
+            "sign_convention": "values = sigma_f . n_s (load ON the structure); "
+                               "normal_fluxes = sigma_f . n_f (own outward normal)",
             "net_force": [float(fx), float(fy)],
             "mesh_moved": bool(MOVE_MESH),
             "newton_iterations": int(nit),
+            # what this participant ACTUALLY imposed on the interface, at its own
+            # interface nodes — the kinematic-continuity check compares this
+            # against the structure's displacement and so measures the transfer
+            # in the structure->fluid direction rather than assuming it
+            "displacement_imposed": d_iface.tolist(),
             "p_inlet_mean": float(
                 fem.assemble_scalar(fem.form(ph * ds(1)))
                 / fem.assemble_scalar(fem.form(fem.Constant(msh, 1.0) * ds(1)))),
