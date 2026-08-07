@@ -1,19 +1,19 @@
 Solve the following boundary value problem as a COUPLED simulation using TWO codes: FEniCSx (dolfinx) on subdomain A and deal.II (build and run the C++ program) on subdomain B.
 
 GLOBAL DOMAIN: the rectangle (0, 3/2) x (0,1)
-SUBDOMAIN A: A = (0, 5/8) x (0,1), lambda = 577, mu = 385
-SUBDOMAIN B: B = (5/8, 3/2) x (0,1), lambda = 577, mu = 1155
+SUBDOMAIN A: A = (0, 5/8) x (0,1), thermal conductivity k = 1, heat capacity 1
+SUBDOMAIN B: B = (5/8, 3/2) x (0,1), thermal conductivity k = 4, heat capacity 1
 INTERFACE: the line x = 5/8, where the two materials meet
-EQUATION: -div(sigma(u)) = f, sigma(u) = 2*mu*sym(grad(u)) + lambda*div(u)*I   (plane strain)
-COEFFICIENTS: subdomain A: lambda = 577, mu = 385 (E = 962885/962, nu = 577/1924); subdomain B: lambda = 577, mu = 1155 (E = 4667355/1732, nu = 577/3464). The shear modulus jumps by a factor 3 across the interface; lambda is the same on both sides.
-SOURCE TERM: f(x, y) = f_x = -7700*x**2*y**3 + 11550*x**2*y**2 - 4620*x**2*y + 385*x**2 - 34630*x*y**3 + 51945*x*y**2 - 20778*x*y + 3463*x/2 - 2694*y**5 + 6735*y**4 - 9236*y**3 + 7119*y**2 - 11544*y/5 + 962/5
-               f_y = -80820*x**2*y**2 + 80820*x**2*y - 16164*x**2 - 9620*x*y**4 + 19240*x*y**3 - 27708*x*y**2 + 18088*x*y - 16164*x/5 - 1445*y**4 + 2890*y**3 - 1734*y**2 + 289*y   (subdomain A)
-               f_x = 234329700*x**2*y**3/20209 - 351494550*x**2*y**2/20209 + 140597820*x**2*y/20209 - 11716485*x**2/20209 + 8236762374*x*y**3/141463 - 12355143561*x*y**2/141463 + 24710287122*x*y/707315 - 4118381187*x/1414630 + 142018*y**5/49 - 355045*y**4/49 - 2096357531*y**3/40418 + 48123567811*y**2/565852 - 48943579743*y/1414630 + 16314526581/5658520
-               f_y = 9899523*x**2*y**2/49 - 9899523*x**2*y/49 + 9899523*x**2/245 + 1229875880*x*y**4/141463 - 2459751760*x*y**3/141463 - 51218854647*x*y**2/161672 + 368370989569*x*y/1131704 - 128278071*x/1960 + 1416592535*y**4/282926 - 1416592535*y**3/141463 + 95738436831*y**2/2263408 - 84405696551*y/2263408 + 5690277/784   (subdomain B)
-OUTER BOUNDARY CONDITIONS: u = 0 (both components) on the entire outer boundary
-INTERFACE CONDITIONS: the displacement vector and the traction sigma.n (BOTH components) must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
-DISCRETISATION: vector Lagrange P1 elements in both codes
-MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32
+EQUATION: du/dt - div(k grad u) = f in each subdomain
+COEFFICIENTS: thermal conductivity k = 1, heat capacity 1 in subdomain A; thermal conductivity k = 4, heat capacity 1 in subdomain B
+SOURCE TERM: f(x, y) = in subdomain A: (128*t*x**3*y**3 - 32*t*x**3*y**2 - 1632*t*x**3*y + 128*t*x**3 - 204*t*x**2*y**3 + 27*t*x**2*y**2 + 2625*t*x**2*y - 108*t*x**2 - 1455*t*x*y**3 + 384*t*x*y**2 + 99*t*x*y + 816*t*y**3 - 108*t*y**2 - 708*t*y + 256*x**3*y**3 - 64*x**3*y**2 - 192*x**3*y - 408*x**2*y**3 + 54*x**2*y**2 + 354*x**2*y + 162*x*y**3 - 162*x*y)*exp(t/2)/256
+               in subdomain B: (512*t*x**3*y**3 - 128*t*x**3*y**2 - 24960*t*x**3*y + 2048*t*x**3 - 384*t*x**2*y**3 - 288*t*x**2*y**2 + 19104*t*x**2*y + 4608*t*x**2 - 26232*t*x*y**3 + 6414*t*x*y**2 + 99306*t*x*y - 4320*t*x + 7764*t*y**3 + 5283*t*y**2 - 90807*t*y - 10800*t + 1024*x**3*y**3 - 256*x**3*y**2 - 768*x**3*y - 768*x**2*y**3 - 576*x**2*y**2 + 1344*x**2*y - 3312*x*y**3 + 540*x*y**2 + 2772*x*y + 3240*y**3 + 1350*y**2 - 4590*y)*exp(t/2)/65536
+INITIAL CONDITION: u = 0 everywhere at t = 0
+TIME DISCRETISATION: Crank-Nicolson, integrate to t_end = 1/4 with dt = h/4, so dt = 1/32, 1/64, 1/128 on the three levels. Report the solution at t = t_end.
+OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary at all times
+INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
+DISCRETISATION: Lagrange P1 elements in both codes
+MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32, with dt halved alongside
 
 
 REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
@@ -24,7 +24,7 @@ EACH subdomain, evaluate your computed solution at every probe point of that
 subdomain and write one CSV file
     solution_level<k>_<side>.csv        (k = 1,2,3,...; side = A or B)
 with a header line and one row per probe point, in the order defined below:
-    x, y, ux, uy
+    x, y, u
 
 PROBE POINTS, subdomain A: the 1936 points given by x = 0 + (i_x+0.5)*0.625/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
 PROBE POINTS, subdomain B: the 1936 points given by x = 0.625 + (i_x+0.5)*0.875/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
@@ -35,8 +35,8 @@ appear exactly once and no other points may appear.
 (2) INTERFACE. For every mesh level and EACH subdomain, write
     interface_level<k>_<side>.csv
 with a header line and one row per interface probe point, in this order:
-    x, y, ux, uy, tx, ty
-where (tx, ty) is that subdomain's OUTWARD normal traction t = sigma(u) . n_out, evaluated from
+    x, y, u, qn
+where qn is that subdomain's OUTWARD normal conductive flux qn = -(K grad u) . n_out, evaluated from
 that subdomain's own solution and its own material, with the unit normal
 pointing OUT of that subdomain. The two subdomains therefore use opposite
 normals at the same physical point.

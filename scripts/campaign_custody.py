@@ -159,10 +159,26 @@ def cmd_verify(args):
         if not p.is_file():
             missing.append(e["path"])
             continue
+        # The hash-only builders are sealed for the campaign's duration. Verify
+        # has to be able to read them or the commitment is uncheckable exactly
+        # when it matters; it unseals, hashes, and re-seals, restoring whatever
+        # mode it found. It never prints the content.
+        import os
+        restore = None
+        if not os.access(p, os.R_OK):
+            restore = p.stat().st_mode & 0o777
+            try:
+                os.chmod(p, 0o600)
+            except OSError:
+                missing.append(f"{e['path']} (unreadable and not chmod-able)")
+                continue
         try:
             (ok if sha256(p) == e["sha256"] else bad).append(e["path"])
         except PermissionError:
             missing.append(f"{e['path']} (unreadable — sealed)")
+        finally:
+            if restore is not None:
+                os.chmod(p, restore)
     recomputed = hashlib.sha256(
         json.dumps(man["entries"], sort_keys=True).encode()).hexdigest()
     self_ok = recomputed == man.get("manifest_sha256")

@@ -1,34 +1,55 @@
 Solve the following boundary value problem as a COUPLED simulation using TWO codes: FEniCSx (dolfinx) on subdomain A and deal.II (build and run the C++ program) on subdomain B.
 
 GLOBAL DOMAIN: the box (0, 3/2) x (0,1) x (0,1)
-SUBDOMAIN A: A = (0, 3/5) x (0,1) x (0,1)
-SUBDOMAIN B: B = (3/5, 3/2) x (0,1) x (0,1)
-INTERFACE: the plane x = 3/5
-EQUATION (both subdomains): -laplace(u) = f
-COEFFICIENTS: unit diffusivity in both subdomains
-SOURCE TERM: f(x, y, z) = 4*x**3*y**2/5 - 4*x**3*y/5 + 4*x**3*z**2/5 - 4*x**3*z/5 + 4*x**2*y**2/5 - 4*x**2*y/5 + 4*x**2*z**2/5 - 4*x**2*z/5 + 12*x*y**2*z**2/5 - 12*x*y**2*z/5 - 3*x*y**2 - 12*x*y*z**2/5 + 12*x*y*z/5 + 3*x*y - 3*x*z**2 + 3*x*z + 4*y**2*z**2/5 - 4*y**2*z/5 - 4*y*z**2/5 + 4*y*z/5
-OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary of the box
+SUBDOMAIN A: A = (0, 5/8) x (0,1) x (0,1), thermal conductivity k = 1
+SUBDOMAIN B: B = (5/8, 3/2) x (0,1) x (0,1), thermal conductivity k = 6
+INTERFACE: the plane x = 5/8, where the two materials meet
+EQUATION: -div(k grad u) = f in each subdomain
+COEFFICIENTS: thermal conductivity k = 1 in subdomain A; thermal conductivity k = 6 in subdomain B
+SOURCE TERM: f(x, y, z) = in subdomain A: 2*x**3*y**3/5 - x**3*y**2/10 + 6*x**3*y*z**2/5 - 6*x**3*y*z/5 - 3*x**3*y/10 - x**3*z**2/10 + x**3*z/10 - 73*x**2*y**3/120 + 37*x**2*y**2/480 - 73*x**2*y*z**2/40 + 73*x**2*y*z/40 + 17*x**2*y/32 + 37*x**2*z**2/480 - 37*x**2*z/480 + 6*x*y**3*z**2/5 - 6*x*y**3*z/5 + 37*x*y**3/160 - 3*x*y**2*z**2/10 + 3*x*y**2*z/10 - 33*x*y*z**2/160 + 33*x*y*z/160 - 37*x*y/160 - 73*y**3*z**2/120 + 73*y**3*z/120 + 37*y**2*z**2/480 - 37*y**2*z/480 + 17*y*z**2/32 - 17*y*z/32
+               in subdomain B: x**3*y**3/90 - x**3*y**2/360 + x**3*y*z**2/30 - x**3*y*z/30 - x**3*y/120 - x**3*z**2/360 + x**3*z/360 + x**2*y**3/360 - 19*x**2*y**2/1440 + x**2*y*z**2/120 - x**2*y*z/120 + x**2*y/96 - 19*x**2*z**2/1440 + 19*x**2*z/1440 + x*y**3*z**2/30 - x*y**3*z/30 - 443*x*y**3/5760 - x*y**2*z**2/120 + x*y**2*z/120 - 5*x*y**2/4608 - 491*x*y*z**2/1920 + 491*x*y*z/1920 + 599*x*y/7680 - 5*x*z**2/4608 + 5*x*z/4608 + y**3*z**2/360 - y**3*z/360 + 55*y**3/768 - 19*y**2*z**2/1440 + 19*y**2*z/1440 + 125*y**2/3072 + 173*y*z**2/768 - 173*y*z/768 - 115*y/1024 + 125*z**2/3072 - 125*z/3072
+OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
-DISCRETISATION: Lagrange P1 (tetrahedral) elements in both codes
-MESH SEQUENCE: uniform meshes, h halved per level: N = 4, 8, 16 elements per side
+DISCRETISATION: Lagrange P1 elements in both codes
+MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32
 
 
 REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
-Your solution is assessed at FIXED probe points that do not depend on your
-mesh, defined separately for each subdomain. For every mesh level and for EACH
-subdomain, evaluate your computed solution at every probe point of that
+
+(1) FIELD. Your solution is assessed at FIXED probe points that do not depend on
+your mesh, defined separately for each subdomain. For every mesh level and for
+EACH subdomain, evaluate your computed solution at every probe point of that
 subdomain and write one CSV file
     solution_level<k>_<side>.csv        (k = 1,2,3,...; side = A or B)
 with a header line and one row per probe point, in the order defined below:
     x, y, z, u
 
-PROBE POINTS, subdomain A: the 4096 points given by x = 0 + (i_x+0.5)*0.6/16; y = (i_y+0.5)/16; z = (i_z+0.5)/16, for i_x, i_y, i_z = 0, 1, ..., 15 independently, ordered with the last index varying fastest
-PROBE POINTS, subdomain B: the 4096 points given by x = 0.6 + (i_x+0.5)*0.9/16; y = (i_y+0.5)/16; z = (i_z+0.5)/16, for i_x, i_y, i_z = 0, 1, ..., 15 independently, ordered with the last index varying fastest
+PROBE POINTS, subdomain A: the 9261 points given by x = 0 + (i_x+0.5)*0.625/21; y = 0 + (i_y+0.5)*1/21; z = 0 + (i_z+0.5)*1/21, for i_x, i_y, i_z = 0, 1, ..., 20 independently, ordered with the last index varying fastest
+PROBE POINTS, subdomain B: the 9261 points given by x = 0.625 + (i_x+0.5)*0.875/21; y = 0 + (i_y+0.5)*1/21; z = 0 + (i_z+0.5)*1/21, for i_x, i_y, i_z = 0, 1, ..., 20 independently, ordered with the last index varying fastest
 Evaluate (interpolate) your finite element solution at these points. They are
 deliberately not mesh nodes. Write full precision; every probe point must
 appear exactly once and no other points may appear.
 
-Then write the single summary file `RESULT.txt` with exactly these lines:
+(2) INTERFACE. For every mesh level and EACH subdomain, write
+    interface_level<k>_<side>.csv
+with a header line and one row per interface probe point, in this order:
+    x, y, z, u, qn
+where qn is that subdomain's OUTWARD normal conductive flux qn = -(K grad u) . n_out, evaluated from
+that subdomain's own solution and its own material, with the unit normal
+pointing OUT of that subdomain. The two subdomains therefore use opposite
+normals at the same physical point.
+
+INTERFACE PROBE POINTS: the 441 points (x, y, z) = (5/8, (i+0.5)/21, (j+0.5)/21) for i, j = 0, 1, ..., 20, ordered with j varying fastest
+
+(3) COUPLING HISTORY. For every mesh level write
+    residual_level<k>.csv
+with a header line and one row per coupling iteration:
+    iteration, interface_residual
+listing the relative interface mismatch at every iteration of your partitioned
+scheme, from the first to the last. A coupled run that cannot produce this did
+not couple.
+
+(4) Then write the single summary file `RESULT.txt` with exactly these lines:
     LEVELS = <number of mesh levels solved>
     FILES = <comma-separated list of all CSV files you wrote>
     INTERFACE_RESIDUAL = <final relative interface mismatch of the coupling iteration>

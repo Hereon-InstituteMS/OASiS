@@ -633,3 +633,96 @@ covered by a hash commitment so they cannot be silently edited either.
   instance hands over its solution, and none is one algebraic step away.
 * **The evidence gate is not proof of execution.** See §6.
 * **The seal is still not a sandbox.** The agent runs as the directory's owner.
+
+## 9. Every instance was solved before it was allowed near a paid run
+
+Verifying a manufactured solution's algebra says the PROBLEM is right. It does
+not say the problem is GRADEABLE. Each instance was therefore solved on the mesh
+sequence and probe grid the task prescribes, and both grading phases computed:
+
+| id | contrast | phase 1 (mesh halving) | phase 2 (true error) | agree | flux jump | solver |
+|---|---|---|---|---|---|---|
+| D1 | K11 1:3, K22 2:5 | 1.890 | 1.901 | yes | 5.6e-15 | partitioned DN |
+| D2 | 1:6 | — | — | — | — | not solved here (3D) |
+| D3 | 1:4 | 1.940 | 1.955 | yes | 4.8e-15 | partitioned DN |
+| D4 | mu 1:3 | 1.872 | 1.931 | yes | — | monolithic reference |
+| D4 | mu 1:3 | 1.838 | 1.838 | yes | 5.2e-15 | partitioned DN (vector) |
+| D5 | 1:5/2 and 1:2 | 1.875 | 1.935 | yes | — | monolithic reference |
+| D6 | 1:1000 | 1.958 | 1.976 | yes | 6.1e-15 | partitioned DN |
+| D7 | 1:3 | 1.929 | 1.944 | yes | 4.8e-15 | partitioned DN |
+| D8 | 1:4 | — | — | — | — | not solved here (transient) |
+
+The key-free and key-based orders agree everywhere they are both defined, which
+is the cross-check that catches a wrong sealed solution. The two-sided flux jump
+of a *correct* partitioned coupling is at roundoff, which is what makes an O(1)
+jump a usable signal rather than a threshold argument.
+
+D2 and D8 are not solved by the verification solver, which is 2D and steady.
+They are verified symbolically to exact zero and numerically by finite
+differences including the time derivative, and their construction is shared
+exactly with D3, which is solved. That is stated rather than omitted.
+
+## 10. The vector coupling path has never executed
+
+Of the ten shipped coupling participants, **one** — FEBio — implements a vector
+interface. `participant_fenics.py`, `participant_dealii.py`,
+`participant_ngsolve.py`, `participant_kratos.py`, `participant_skfem.py`,
+`participant_dune.py` and `participant_fourc.py` are conduction-only. Of 29
+coupling fixtures, 2 contain any vector construct and 14 are the same split
+conduction problem.
+
+D4 names FEniCSx and deal.II, and neither has a vector participant. So the
+generic coupling path would execute its first-ever vector interface for those
+codes inside the paid, graded campaign, where a tool bug reads as agent failure
+and is charged to the OASiS arm.
+
+What is established here is narrower and is stated as such: **the arrangement is
+solvable by exactly the scheme D4 describes.** A partitioned Dirichlet-Neumann
+iteration exchanging a displacement vector and a two-component traction across
+the shear-modulus jump converges in 23-24 iterations at every level, reproduces
+the manufactured solution at order 1.838, and closes the traction jump to
+5e-15. D4 is therefore a fair task. Whether OASiS's own participants can serve
+it is a separate question, it is currently answered NO for seven of nine codes,
+and it must be answered before D4 is run — that work belongs to the vector
+coupling participants, not to the problem set.
+
+## 11. One defect of this amendment's own making, and its guard
+
+The coupled builder was made solution-free so that a pre-registered design could
+be version-controlled: the hidden fields are drawn from a CSPRNG at build time
+and only the draw seed reaches the sealed key. That property was then destroyed
+by hard-coding the seed in a verification script, which was committed. A seed in
+the repository re-derives every hidden field by re-running the builder,
+whatever the builder itself holds.
+
+Found while auditing this amendment's own work, before any run. The instances
+were rebuilt from a fresh CSPRNG draw whose seed is in no file and was never
+printed, the scripts and tests now use a clearly-labelled DEMONSTRATION seed
+that is not the campaign's, and
+`tests/test_blind_campaign_integrity.py::test_no_live_draw_seed_appears_in_any_tracked_file`
+reads every live key's `draw_seed` and fails if it appears in any tracked file.
+The check is a test rather than a review note because a control that depends on
+somebody remembering is not a control — which is the same reasoning §4 of the
+original document applies to the phase gate.
+
+The seed that built the superseded instances remains in this branch's git
+history. Those instances no longer exist, so it recovers nothing.
+
+## 12. The campaign's own lifecycle, and what must happen before it runs
+
+The problem set is BUILT, not yet sealed. In order:
+
+1. `scripts/campaign_custody.py commit` — hashes the design, runner, grader,
+   phase gate, builder and every task text into
+   `data/blind_campaign_commitment.json`. Done.
+2. `scripts/blind_keys.py commit` — hashes every key file into
+   `data/blind_key_commitment.json`. Done.
+3. `scripts/blind_keys.py encrypt` — **operator action, requires the
+   passphrase.** The eight rebuilt coupled keys are currently plaintext on
+   disk. `test_no_plaintext_keys_are_left_on_disk` fails until this is run, and
+   that failure is the control working.
+4. `scripts/blind_keys.py seal`.
+5. `run_blind.py` — its preflight now refuses on any of: keys not sealed, seal
+   not surviving an executed read, plaintext keys present, builder sources
+   readable, missing commitment, a non-empty exposure sweep, or a coupled task
+   whose intended path has no recorded throwaway run (§10).

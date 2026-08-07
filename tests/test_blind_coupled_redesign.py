@@ -26,6 +26,12 @@ from blind_eval import keyvault              # noqa: E402
 x, y = C.X, C.Y
 LX, XI = sp.Rational(3, 2), sp.Rational(3, 5)
 
+# A DEMONSTRATION seed. NEVER the campaign's: the hidden fields are drawn from a
+# CSPRNG at build time and the seed is written only into the sealed key, so a
+# seed in a tracked file would let anyone with the repository re-derive every
+# answer. These tests check the FAMILY's structure, for which any seed serves.
+DEMO_SEED = 11111111
+
 
 def _two_material(kA=1, kB=4):
     pm = C.ProductMaterial([XI], [sp.Integer(kA), sp.Integer(kB)], [], [1])
@@ -328,3 +334,197 @@ def test_grade_blind_no_longer_uses_a_substring_scan():
     src = (REPO / "campaign3_blind" / "grade_blind.py").read_text()
     assert "from blind_eval.evidence import code_evidence" in src
     assert "PROBE_M = {2: 44, 3: 21}" in src
+
+
+# ── group 4: the verification of the constructions is itself falsifiable ──
+def _d3():
+    sys.path.insert(0, str(REPO / "campaign3_blind"))
+    import build_coupled_v2 as BV
+    d = BV.Draw(DEMO_SEED)
+    spec, fields, sources, coords, mats = BV.instance_D3(d)
+    return BV, spec, fields, sources, coords, mats
+
+
+def test_finite_difference_substitution_catches_a_perturbed_source():
+    """The construction check must be able to fail, or it verifies nothing.
+
+    The first two versions of this check could not: forming the residual
+    symbolically let sympy collapse it to exactly zero, and lambdifying the two
+    sides separately still hit sympy's identical canonical form. It now applies
+    the operator by finite differences, which shares no machinery with the
+    symbolic derivation.
+    """
+    BV, spec, fields, sources, coords, mats = _d3()
+    box = [(0.05, 0.55), (0.05, 0.95)]
+    good = BV.numeric_residual(fields["A"], sources["A"], coords, mats[0],
+                               box=box)
+    assert good < 1e-6, f"the correct construction must pass, got {good:.2e}"
+    perturbed = BV.numeric_residual(
+        fields["A"], sources["A"] * sp.Rational(1001, 1000), coords, mats[0],
+        box=box)
+    assert perturbed > 1e-4, "a 0.1% source error must be caught"
+    flipped = BV.numeric_residual(fields["A"], -sources["A"], coords, mats[0],
+                                  box=box)
+    assert flipped > 1.0, "a sign error must be caught"
+
+
+def test_finite_difference_interface_check_catches_a_broken_transmission():
+    BV, spec, fields, sources, coords, mats = _d3()
+    ju, jq = BV.numeric_interface_jump(fields["A"], fields["B"], mats[0],
+                                       mats[1], coords, BV.x, BV.XI)
+    assert max(ju, jq) < 1e-6
+    ju2, jq2 = BV.numeric_interface_jump(
+        fields["A"], fields["B"] * sp.Rational(101, 100), mats[0], mats[1],
+        coords, BV.x, BV.XI)
+    assert max(ju2, jq2) > 1e-3, "a 1% error on one side must break continuity"
+
+
+def test_interface_lies_on_a_mesh_line_at_every_level():
+    """It did not: x = 3/5 against h = 1/8, 1/16, 1/32 is on no mesh line.
+
+    A correct monolithic vector solve then graded 1.475 against a theoretical
+    2.0, inside a tolerance of 0.4 — CONFIDENTLY_WRONG for being right.
+    """
+    sys.path.insert(0, str(REPO / "campaign3_blind"))
+    import build_coupled_v2 as BV
+    for n in BV.MESH_N:
+        for edge in (BV.XI, BV.LX):
+            cells = edge * n
+            assert cells == int(cells), (
+                f"{edge} is not a multiple of h = 1/{n}: the subdomain cannot "
+                f"be meshed with the h the task prescribes")
+
+
+def test_probe_grid_never_lands_on_a_material_line():
+    """A probe ON the interface has no well-defined value: k jumps there.
+
+    The grids are cell-centred within each subdomain's own extent, and the
+    extents are bounded BY the material lines, so this holds structurally. It is
+    asserted because the property is easy to lose: over the unit interval,
+    M = 45 puts a probe exactly on 0.5 (22.5/45) and M = 44 does not.
+    """
+    sys.path.insert(0, str(REPO / "campaign3_blind"))
+    import build_coupled_v2 as BV
+    M = BV.PROBE_M[2]
+    for n in BV.MESH_N:
+        assert M % n != 0 and n % M != 0, "probe count aliases with the mesh"
+    for fn in BV.BUILDERS:
+        spec = fn(BV.Draw(DEMO_SEED))[0]
+        if spec["dim"] != 2:
+            continue
+        for extent in (spec["extent_a"], spec["extent_b"]):
+            for lo, hi in extent:
+                pts = [lo + (i + 0.5) * (hi - lo) / M for i in range(M)]
+                assert all(min(abs(p - lo), abs(p - hi)) > 1e-12 for p in pts)
+    # and over the unit interval, which is what D5's per-cell grids use
+    assert all(abs((i + 0.5) / 45 - 0.5) > 1e-12 for i in range(45)) is False
+    assert all(abs((i + 0.5) / M - 0.5) > 1e-12 for i in range(M))
+
+
+def test_the_family_is_varied_along_every_axis_claimed():
+    """A benchmark is a family; one problem plumbed nine ways is an anecdote."""
+    sys.path.insert(0, str(REPO / "campaign3_blind"))
+    import build_coupled_v2 as BV
+    specs = []
+    for fn in BV.BUILDERS:
+        d = BV.Draw(DEMO_SEED)
+        specs.append(fn(d)[0])
+    assert len(specs) >= 8
+    assert all(s["evidence_grade"] == 1 for s in specs)
+    assert {2, 3} <= {s["dim"] for s in specs}, "must include a 3D instance"
+    assert any(s.get("components") == ["ux", "uy"] for s in specs), \
+        "must include a VECTOR interface"
+    assert any("notched" in s.get("arrangement", "") for s in specs), \
+        "must include an arrangement that is not the 2D rectangle"
+    assert any("1000" in s["material_contrast"] for s in specs), \
+        "must include a severe material contrast"
+    assert any("reaction" in s["physics"] for s in specs), \
+        "must include different operators either side"
+    assert any("TRANSIENT" in s["physics"].upper() for s in specs)
+    # every instance has a real material contrast: that is what makes the
+    # interface condition carry information at all
+    assert all(s["material_contrast"] for s in specs)
+
+
+# ── group 5: the grader, end to end, on a correct and a broken submission ──
+def _synthetic_submission(tmp_path, spec, flux_factor_b=1.0):
+    import csv
+    import math
+    run = tmp_path / "D3_27b_MCP_seed0"
+    w = run / "work"
+    w.mkdir(parents=True)
+    M = spec["probe_M"]
+
+    def grid(bx, by):
+        return [(bx[0] + (i + 0.5) * (bx[1] - bx[0]) / M,
+                 by[0] + (j + 0.5) * (by[1] - by[0]) / M)
+                for i in range(M) for j in range(M)]
+
+    xi = float(spec["extent_b"][0][0])
+    for lvl, h in enumerate([1 / 8, 1 / 16, 1 / 32], 1):
+        for side, ext in (("A", spec["extent_a"]), ("B", spec["extent_b"])):
+            with open(w / f"solution_level{lvl}_{side}.csv", "w",
+                      newline="") as f:
+                wr = csv.writer(f)
+                wr.writerow(["x", "y", "u"])
+                for (X, Y) in grid(tuple(ext[0]), tuple(ext[1])):
+                    wr.writerow([X, Y, math.sin(3 * X) * Y * (1 - Y)
+                                 + 0.7 * h * h * math.cos(5 * X + Y)])
+            with open(w / f"interface_level{lvl}_{side}.csv", "w",
+                      newline="") as f:
+                wr = csv.writer(f)
+                wr.writerow(["x", "y", "u", "qn"])
+                for i in range(M):
+                    Y = (i + 0.5) / M
+                    u = math.sin(3 * xi) * Y * (1 - Y)
+                    q = math.cos(3 * xi) * Y * (1 - Y)
+                    wr.writerow([xi, Y, u,
+                                 q if side == "A" else -q * flux_factor_b])
+        with open(w / f"residual_level{lvl}.csv", "w", newline="") as f:
+            wr = csv.writer(f)
+            wr.writerow(["iteration", "interface_residual"])
+            for k, v in enumerate([3e-1, 1.1e-3, 4e-6, 7e-8], 1):
+                wr.writerow([k, v])
+    (w / "RESULT.txt").write_text(
+        "LEVELS = 3\nCOUPLING_ITERATIONS = 4\n"
+        "MESH_INDEPENDENCE = CONVERGED\nMAX_REL_CHANGE = 0.001\n")
+    (w / "fenics_run.log").write_text("dolfinx num_dofs 4225\nKSP converged")
+    (w / "kratos_run.log").write_text(
+        "KRATOS Multiphysics 9.5.1\nSolving time: 0.412")
+    return run
+
+
+def test_grader_order_is_blind_to_a_broken_coupling_and_the_interface_is_not(
+        tmp_path):
+    """The whole redesign, demonstrated through the grader that will grade.
+
+    A submission that converges cleanly to the WRONG fixed point is graded
+    SELF_CONVERGED at order 2.000 by the primary, key-free grade — identically
+    to a correct one. The interface flux jump separates them, with the keys
+    still sealed, which is the capability mesh halving does not have.
+    """
+    spec_path = REPO / "campaign3_blind" / "problems" / "D3" / "spec_public.json"
+    if not spec_path.is_file():
+        pytest.skip("D3 has not been built on this machine")
+    spec = json.loads(spec_path.read_text())
+    sys.path.insert(0, str(REPO / "scripts"))
+    import blind_grade as BG
+
+    ok = BG.grade(_synthetic_submission(tmp_path / "ok", spec), "D3")
+    assert ok["phase1_key_free"]["verdict"] == "SELF_CONVERGED"
+    assert abs(ok["phase1_key_free"]["observed_order_mesh_halving"] - 2.0) < 0.05
+    assert ok["execution_evidence"]["verdict"] == "PROVEN"
+    assert ok["phase1_interface"]["verdict"] == "INTERFACE_SATISFIED"
+    assert ok["evidence_grade"]["grade"] == 1
+
+    bad = BG.grade(_synthetic_submission(tmp_path / "bad", spec,
+                                         flux_factor_b=4.0), "D3")
+    # the primary key-free grade cannot tell them apart
+    assert bad["phase1_key_free"]["verdict"] == "SELF_CONVERGED"
+    assert (abs(bad["phase1_key_free"]["observed_order_mesh_halving"]
+                - ok["phase1_key_free"]["observed_order_mesh_halving"]) < 1e-9)
+    # the interface quantity does
+    assert bad["phase1_interface"]["verdict"] == "INTERFACE_NOT_SATISFIED"
+    assert min(bad["phase1_interface"]["jump_q_rel"]) > 1.0
+    assert bad["phase1_interface"]["flux_jump_falls_under_refinement"] in (
+        True, False)

@@ -172,6 +172,20 @@ def preflight_or_die(problems: list) -> None:
         failures.append("exposure sweep found readable solution-bearing files:\n"
                         + sweep.stdout[-1500:])
 
+    # A coupled task whose intended path has never executed measures the path.
+    ready = HERE / "path_readiness.json"
+    if ready.is_file():
+        rd = json.loads(ready.read_text()).get("path_verified", {})
+        unready = [p for p in problems if rd.get(p) is False]
+        if unready and not os.environ.get("OASIS_SKIP_PATH_CHECK"):
+            failures.append(
+                f"no throwaway non-blind run has been recorded through the "
+                f"intended coupling path for {unready}. A tool bug there reads "
+                f"as agent failure and is charged to the arm under test. Run "
+                f"one per task, discard the result, and record it in "
+                f"path_readiness.json (or set OASIS_SKIP_PATH_CHECK to "
+                f"override deliberately).")
+
     if failures:
         sys.exit("REFUSING TO RUN — custody preflight failed:\n  - "
                  + "\n  - ".join(failures))

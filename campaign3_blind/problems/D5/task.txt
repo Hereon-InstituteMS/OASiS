@@ -1,0 +1,73 @@
+Solve the following boundary value problem as a COUPLED simulation using TWO codes: FEniCSx (dolfinx) on subdomain A and scikit-fem on subdomain B.
+
+GLOBAL DOMAIN: the unit square (0,1) x (0,1) with the square (3/4, 1) x (3/4, 1) REMOVED (an L-shaped, non-convex domain)
+SUBDOMAIN A: A = the domain minus subdomain B, i.e. everything except (1/2, 1) x (0, 1/2). A is NOT a rectangle
+SUBDOMAIN B: B = (1/2, 1) x (0, 1/2)
+INTERFACE: the bent polyline consisting of the segment x = 1/2, 0 < y < 1/2 and the segment y = 1/2, 1/2 < x < 1. Its two legs have different outward normals AND different material contrasts
+EQUATION: -div(k grad u) = f, with k piecewise constant
+COEFFICIENTS: k = 1 on (0,1/2)x(0,1/2); k = 5/2 on (1/2,1)x(0,1/2); k = 5 on (1/2,1)x(1/2,1); k = 2 on (0,1/2)x(1/2,1). The contrast is 1:5/2 across the vertical leg of the interface and 1:2 across the horizontal leg.
+SOURCE TERM: f(x, y) =
+               on (0,1/2)x(0,1/2): -6*x**4*y + 11*x**4/4 + 12*x**3*y**2 + 51*x**3*y/20 - 321*x**3/80 - 12*x**2*y**3 + 9*x**2*y**2/10 - 33*x**2*y/25 + 1379*x**2/800 + 6*x*y**4 + 51*x*y**3/20 - 2799*x*y**2/400 + 1143*x*y/400 - 147*x/800 - 13*y**4/5 + 287*y**3/200 + 1379*y**2/800 - 321*y/320
+               on (0,1/2)x(1/2,1): -3*x**4*y/2 + 5*x**4/8 + 3*x**3*y**2/2 + 171*x**3*y/80 - 21*x**3/16 - 3*x**2*y**3 + 9*x**2*y**2/5 - 399*x**2*y/800 - 17*x**2/80 + 3*x*y**4/4 + 171*x*y**3/80 - 1323*x*y**2/400 - 39*x*y/1600 + 1509*x/1600 - 13*y**4/40 - 233*y**3/800 + 73*y**2/80 - 111*y/3200 - 837/3200
+               on (1/2,1)x(0,1/2): -48*x**4*y/125 + 22*x**4/125 + 48*x**3*y**2/25 - 93*x**3*y/125 - 57*x**3/500 - 96*x**2*y**3/125 - 108*x**2*y**2/125 + 123*x**2*y/125 - 161*x**2/1000 + 24*x*y**4/25 - 93*x*y**3/125 - 711*x*y**2/500 + 1377*x*y/2000 + 513*x/8000 - 8*y**4/25 + 56*y**3/125 + 919*y**2/1000 - 2523*y/4000 + 279/8000
+               on (1/2,1)x(1/2,1): -12*x**4*y/125 + x**4/25 + 6*x**3*y**2/25 + 27*x**3*y/500 - 9*x**3/100 - 24*x**2*y**3/125 + 3*x**2*y/25 - 89*x**2/2000 + 3*x*y**4/25 + 27*x*y**3/500 - 81*x*y**2/200 - 87*x*y/8000 + 1017*x/8000 - y**4/25 + 4*y**3/125 + 13*y**2/80 - 291*y/8000 - 279/8000
+OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary, INCLUDING the two faces of the removed square (x = 3/4 for y > 3/4, and y = 3/4 for x > 3/4)
+INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
+DISCRETISATION: Lagrange P1 elements in both codes
+MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32 (every material line and the notch lie on mesh lines at every level)
+
+
+REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
+
+(1) FIELD. Your solution is assessed at FIXED probe points that do not depend on
+your mesh, defined separately for each subdomain. For every mesh level and for
+EACH subdomain, evaluate your computed solution at every probe point of that
+subdomain and write one CSV file
+    solution_level<k>_<side>.csv        (k = 1,2,3,...; side = A or B)
+with a header line and one row per probe point, in the order defined below:
+    x, y, u
+
+PROBE POINTS, subdomain A: the 1936 points given by x = 0 + (i_x+0.5)*1/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest, MINUS every point lying inside (0.5, 1) x (0, 0.5) or inside (0.75, 1) x (0.75, 1). Subdomain A is not a rectangle, so its probe set is the grid over the whole square with those regions removed; 1331 points remain, in the same order
+PROBE POINTS, subdomain B: the 1936 points given by x = 0.5 + (i_x+0.5)*0.5/44; y = 0 + (i_y+0.5)*0.5/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
+Evaluate (interpolate) your finite element solution at these points. They are
+deliberately not mesh nodes. Write full precision; every probe point must
+appear exactly once and no other points may appear.
+
+(2) INTERFACE. For every mesh level and EACH subdomain, write
+    interface_level<k>_<side>.csv
+with a header line and one row per interface probe point, in this order:
+    x, y, u, qn
+where qn is that subdomain's OUTWARD normal conductive flux qn = -(k grad u) . n_out, evaluated from
+that subdomain's own solution and its own material, with the unit normal
+pointing OUT of that subdomain. The two subdomains therefore use opposite
+normals at the same physical point.
+
+INTERFACE PROBE POINTS: 44 points on each leg: leg 1 is (x, y) = (1/2, (i+0.5)/(2*44)) and leg 2 is (x, y) = (1/2 + (i+0.5)/(2*44), 1/2), for i = 0, 1, ..., 43. Write leg 1 first, then leg 2, 88 rows in total
+
+(3) COUPLING HISTORY. For every mesh level write
+    residual_level<k>.csv
+with a header line and one row per coupling iteration:
+    iteration, interface_residual
+listing the relative interface mismatch at every iteration of your partitioned
+scheme, from the first to the last. A coupled run that cannot produce this did
+not couple.
+
+(4) Then write the single summary file `RESULT.txt` with exactly these lines:
+    LEVELS = <number of mesh levels solved>
+    FILES = <comma-separated list of all CSV files you wrote>
+    INTERFACE_RESIDUAL = <final relative interface mismatch of the coupling iteration>
+    COUPLING_ITERATIONS = <number of coupling iterations at the finest level>
+    MESH_INDEPENDENCE = <CONVERGED or NOT_CONVERGED>
+    MAX_REL_CHANGE = <largest relative change between the two finest levels>
+Both codes named below must actually run and must exchange interface data;
+solving the whole problem in one code is not a valid solution. Judge
+MESH_INDEPENDENCE solely from how your own solution behaves under refinement,
+globally and at individual points: no reference answer is available to you.
+
+
+INTEGRITY (absolute): every number you write must come from ACTUALLY RUNNING
+the named solver. Do not compute values by hand, by formula, or from memory,
+and do not stub or mock the solver. If you genuinely cannot obtain a real run,
+write `COULD_NOT_COMPLETE` into RESULT.txt and explain why. Inventing numbers
+is a failure, worse than an honest incomplete.
+PERSISTENCE: solvers will error first; read the error, fix it, re-run, iterate.

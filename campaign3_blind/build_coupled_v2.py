@@ -147,6 +147,27 @@ def iface_probe_rule(dim: int, iface_desc: str, span) -> str:
             f"(i+0.5)*{float(hi) - float(lo):g}/{M}, i = 0, 1, ..., {M - 1}")
 
 
+def _exclusion_text(spec) -> str:
+    """The masked-grid rule for a subdomain that is not a rectangle."""
+    ex = spec.get("probe_a_exclude")
+    if not ex:
+        return ""
+    M = spec["probe_M"]
+    parts = []
+    total = M ** spec["dim"]
+    for (bx, by) in ex:
+        nx = sum(1 for i in range(M)
+                 if bx[0] < (i + 0.5) / M < bx[1])
+        ny = sum(1 for i in range(M)
+                 if by[0] < (i + 0.5) / M < by[1])
+        parts.append(f"({bx[0]:g}, {bx[1]:g}) x ({by[0]:g}, {by[1]:g})")
+        total -= nx * ny
+    return (f", MINUS every point lying inside " + " or inside ".join(parts)
+            + f". Subdomain A is not a rectangle, so its probe set is the grid "
+              f"over the whole square with those regions removed; "
+              f"{total} points remain, in the same order")
+
+
 OUTPUT_CONTRACT = """
 REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
 
@@ -239,7 +260,8 @@ def build_task(spec: dict, f_text: str) -> str:
             csv_header=", ".join(coords) + ", " + ", ".join(comps),
             iface_header=spec["iface_header"],
             qn_name=spec["qn_name"], qn_desc=spec["qn_desc"],
-            probe_a=probe_rule(spec["dim"], spec["extent_a"]),
+            probe_a=(probe_rule(spec["dim"], spec["extent_a"])
+                     + _exclusion_text(spec)),
             probe_b=probe_rule(spec["dim"], spec["extent_b"]),
             probe_iface=spec["probe_iface"]),
         INTEGRITY,
@@ -529,10 +551,14 @@ def instance_D4(d):
         interface="the line x = 5/8, where the two materials meet",
         equation="-div(sigma(u)) = f, sigma(u) = 2*mu*sym(grad(u)) + "
                  "lambda*div(u)*I   (plane strain)",
+        # sp.nsimplify on a plain Rational hunts for a "nicer" closed form and
+        # produced nu = 2**(121/562)*3**(280/281)*... for 577/3464. The task
+        # would then have stated an irrational Poisson ratio no solver could
+        # parse, for a material that is perfectly rational.
         coefficients=f"subdomain A: lambda = {lam}, mu = {muA} "
-                     f"(E = {sp.nsimplify(EA)}, nu = {sp.nsimplify(nuA)}); "
+                     f"(E = {EA}, nu = {nuA}); "
                      f"subdomain B: lambda = {lam}, mu = {muB} "
-                     f"(E = {sp.nsimplify(EB)}, nu = {sp.nsimplify(nuB)}). "
+                     f"(E = {EB}, nu = {nuB}). "
                      f"The shear modulus jumps by a factor 3 across the "
                      f"interface; lambda is the same on both sides.",
         interface_condition="the displacement vector and the traction sigma.n "
@@ -600,7 +626,15 @@ def instance_D5(d):
             f"i = 0, 1, ..., {M - 1}. Write leg 1 first, then leg 2, "
             f"{2 * M} rows in total"),
         mesh_N=MESH_N, theoretical_order=2.0, tol=0.4, band=[0.8, 3.2],
-        extent_a=[(0.0, 0.5), (0.0, 1.0)], extent_b=[(0.5, 1.0), (0.0, 0.5)],
+        # Subdomain A is NOT a rectangle, so it cannot be assessed on a
+        # rectangular probe grid: a box over the left half would miss the whole
+        # top-right region of A and silently grade a third of the subdomain as
+        # if it did not exist. A gets the cell-centred grid over the WHOLE unit
+        # square with the points inside B and inside the notch removed, which is
+        # a rule the grader can rebuild exactly.
+        extent_a=[(0.0, 1.0), (0.0, 1.0)],
+        probe_a_exclude=[[(0.5, 1.0), (0.0, 0.5)], [(0.75, 1.0), (0.75, 1.0)]],
+        extent_b=[(0.5, 1.0), (0.0, 0.5)],
         probe_M=M, material_contrast="1:5/2 on leg 1, 1:2 on leg 2",
         evidence_grade=1, evidence_grade_reason=GRADE[1],
         qoi="convergence order of the coupled field, plus the two-sided "
@@ -704,7 +738,13 @@ def numeric_residual(u, f, coords, K, n=60, seed=7, box=None, reaction=0,
     uf = sp.lambdify(syms, u, "math")
     ff = sp.lambdify(syms, f, "math")
     box = box or [(0.05, 0.95)] * len(syms)
-    worst = 0.0
+    # Normalised by the GLOBAL scale of the source over the sample, not by its
+    # pointwise value: a manufactured source passes through zero somewhere in
+    # every one of these domains, and dividing by a value that is itself near
+    # zero turns a 1e-12 absolute discrepancy into a 1e-5 "relative error". That
+    # is a false alarm, and a check that cries wolf gets its threshold raised
+    # until it means nothing.
+    diffs, scales = [], []
     for _ in range(n):
         pt = [float(rng.uniform(lo, hi)) for lo, hi in box]
         lhs = 0.0
@@ -722,8 +762,9 @@ def numeric_residual(u, f, coords, K, n=60, seed=7, box=None, reaction=0,
             p2[ti] -= h
             lhs += (uf(*p1) - uf(*p2)) / (2 * h)
         rhs = ff(*pt)
-        worst = max(worst, abs(lhs - rhs) / max(abs(rhs), 1e-12))
-    return worst
+        diffs.append(abs(lhs - rhs))
+        scales.append(abs(rhs))
+    return max(diffs) / max(max(scales), 1e-12)
 
 
 def numeric_interface_jump(uA, uB, KA, KB, coords, iface_var, iface_val,
@@ -744,7 +785,7 @@ def numeric_interface_jump(uA, uB, KA, KB, coords, iface_var, iface_val,
     fa = [sp.lambdify(syms, c, "math") for c in ca]
     fb = [sp.lambdify(syms, c, "math") for c in cb]
     iv = float(iface_val)
-    worst_u = worst_q = 0.0
+    du, su, dq, sq = [], [], [], []
 
     def grad_fd(fn, pt, k):
         p1, p2 = list(pt), list(pt)
@@ -760,13 +801,15 @@ def numeric_interface_jump(uA, uB, KA, KB, coords, iface_var, iface_val,
             base[-1] = float(rng.uniform(0.01, 0.25))
         for ka, kb in zip(fa, fb):
             va, vb = ka(*base), kb(*base)
-            worst_u = max(worst_u, abs(va - vb) / max(abs(va), 1e-12))
+            du.append(abs(va - vb))
+            su.append(abs(va))
             qa = sum(float(KAm[idx, m]) * grad_fd(ka, base, m)
                      for m in range(len(coords)) if KAm[idx, m])
             qb = sum(float(KBm[idx, m]) * grad_fd(kb, base, m)
                      for m in range(len(coords)) if KBm[idx, m])
-            worst_q = max(worst_q, abs(qa - qb) / max(abs(qa), 1e-12))
-    return worst_u, worst_q
+            dq.append(abs(qa - qb))
+            sq.append(abs(qa))
+    return (max(du) / max(max(su), 1e-12), max(dq) / max(max(sq), 1e-12))
 
 
 def numeric_vector_jump(uA, uB, coords, matA, matB, iface_val, n=60, h=1e-4):
@@ -780,16 +823,18 @@ def numeric_vector_jump(uA, uB, coords, matA, matB, iface_val, n=60, h=1e-4):
     fa = [sp.lambdify(coords, sA[i, 0], "math") for i in range(2)]
     fb = [sp.lambdify(coords, sB[i, 0], "math") for i in range(2)]
     iv = float(iface_val)
-    wu = wq = 0.0
+    du, su, dq, sq = [], [], [], []
     for _ in range(n):
         yy = float(rng.uniform(0.05, 0.95))
         for a, b in zip(fu, gu):
             va, vb = a(iv, yy), b(iv, yy)
-            wu = max(wu, abs(va - vb) / max(abs(va), 1e-12))
+            du.append(abs(va - vb))
+            su.append(abs(va))
         for a, b in zip(fa, fb):
             va, vb = a(iv, yy), b(iv, yy)
-            wq = max(wq, abs(va - vb) / max(abs(va), 1e-12))
-    return wu, wq
+            dq.append(abs(va - vb))
+            sq.append(abs(va))
+    return (max(du) / max(max(su), 1e-12), max(dq) / max(max(sq), 1e-12))
 
 
 def _fmt_source(spec, sources):
@@ -961,7 +1006,11 @@ def main():
         return 0
 
     problems = HERE / "problems"
-    keys = HERE / "keys"
+    # Keys never live in the repository. They go to the sealed campaign
+    # directory; only the task texts and public specs are version-controlled.
+    keys = Path(os.environ.get(
+        "OASIS_BLIND_KEYS",
+        "/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind/keys"))
     for r in built:
         s = r["spec"]
         pdir = problems / s["id"]

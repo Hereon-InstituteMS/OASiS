@@ -54,7 +54,14 @@ def test_no_plaintext_keys_are_left_on_disk():
     if keyvault.is_sealed(KEYS):
         pytest.skip("keys sealed — cannot enumerate (which is the point)")
     plain = [p for p in KEYS.rglob("*.json") if not p.name.endswith(".enc")]
-    assert not plain, f"plaintext answer keys on disk: {[str(p) for p in plain]}"
+    assert not plain, (
+        f"plaintext answer keys on disk: {[str(p) for p in plain]}.\n"
+        f"This is the state a freshly BUILT problem set is in, and the campaign "
+        f"must not run from it. The lifecycle is: build -> "
+        f"scripts/blind_keys.py commit -> scripts/blind_keys.py encrypt (types "
+        f"the passphrase, which touches no disk) -> scripts/blind_keys.py seal. "
+        f"run_blind.py's preflight refuses to start while this is true, so the "
+        f"failure is the control working, not a broken test.")
 
 
 @needs_campaign
@@ -104,30 +111,40 @@ def test_every_problem_passes_the_leak_gate():
     """
     if keyvault.is_sealed(KEYS):
         pytest.skip("keys sealed — run this as a pre-campaign audit, unsealed")
-    n_problems = sum(1 for p in PROBLEMS.iterdir()
-                     if (p / "task.txt").is_file())
+    probs = [p for p in sorted(PROBLEMS.iterdir()) if (p / "task.txt").is_file()]
+    n_problems = len(probs)
     if n_problems and not any((KEYS / p.name / "key.json").is_file()
-                              for p in PROBLEMS.iterdir()):
+                              for p in probs):
         pytest.skip("keys are encrypted — run the gate audit before "
                     "scripts/blind_keys.py encrypt, or decrypt to audit")
 
-    leaking, checked = [], 0
-    for pdir in sorted(PROBLEMS.iterdir()):
-        task = pdir / "task.txt"
+    # A campaign is routinely MIXED: rebuilding a subset leaves those keys in
+    # plaintext while the rest stay encrypted. Coverage must still be asserted,
+    # so every problem has to be accounted for as either audited or encrypted —
+    # silently auditing a subset and reporting PASS is the failure mode this
+    # assertion exists to prevent.
+    leaking, audited, encrypted = [], [], []
+    for pdir in probs:
         kpath = KEYS / pdir.name / "key.json"
-        if not (task.is_file() and kpath.is_file()):
+        if not kpath.is_file():
+            if (KEYS / pdir.name / "key.json.enc").is_file():
+                encrypted.append(pdir.name)
             continue
-        checked += 1
-        rep = scan(task.read_text(), json.loads(kpath.read_text()), pdir.name)
+        audited.append(pdir.name)
+        rep = scan((pdir / "task.txt").read_text(),
+                   json.loads(kpath.read_text()), pdir.name)
         worst = [f for f in rep.findings
                  if f.severity in ("CRITICAL", "HIGH", "MEDIUM")]
         if worst:
             leaking.append((pdir.name, [f.rule for f in worst]))
     assert not leaking, f"problems disclose their solution: {leaking}"
-    assert checked == n_problems, (
-        f"gate audited {checked} of {n_problems} problems — the rest have no "
-        f"readable key, so this test proved nothing about them")
-    assert checked > 0
+    assert len(audited) + len(encrypted) == n_problems, (
+        f"gate audited {audited} and found {encrypted} encrypted, but there "
+        f"are {n_problems} problems — the remainder have no key at all, so "
+        f"this test proved nothing about them")
+    assert audited, (
+        f"no problem had a readable key; all {len(encrypted)} are encrypted, "
+        f"so the gate checked nothing")
 
 
 @needs_campaign
@@ -184,3 +201,52 @@ def test_no_agent_readable_file_carries_a_derivation_source():
         if "sympy" in text and any(m in text for m in markers):
             exposed.append(str(p))
     assert not exposed, f"agent-readable derivation sources: {exposed}"
+
+
+# ── the builder holds no answer only if the SEED is not in the repo ───
+def test_no_live_draw_seed_appears_in_any_tracked_file():
+    """A seed in git re-derives every hidden field, whatever the builder holds.
+
+    The coupled builder was made solution-free so it could be version-controlled:
+    the fields are drawn from a CSPRNG and only the seed reaches the sealed key.
+    That property is destroyed the moment the seed itself is committed — and it
+    was, in a verification script, which is how this test came to exist. The
+    check is here rather than in review because a review that has to remember
+    something is not a control.
+    """
+    import json as _json
+    import subprocess as _sp
+    from pathlib import Path as _P
+    repo = _P(__file__).resolve().parents[1]
+    keys = _P("/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind/keys")
+    if not keys.is_dir():
+        pytest.skip("no key directory on this machine")
+    seeds = []
+    for kp in sorted(keys.rglob("key.json")):
+        try:
+            s = _json.loads(kp.read_text()).get("draw_seed")
+        except (PermissionError, ValueError):
+            continue
+        if s is not None:
+            seeds.append(str(s))
+    if not seeds:
+        pytest.skip("keys are sealed or encrypted; cannot check")
+    tracked = _sp.run(["git", "ls-files"], cwd=repo, capture_output=True,
+                      text=True).stdout.split()
+    hits = []
+    for rel in tracked:
+        p = repo / rel
+        if not p.is_file() or p.stat().st_size > 4_000_000:
+            continue
+        try:
+            txt = p.read_text(errors="ignore")
+        except OSError:
+            continue
+        for s in seeds:
+            if s in txt:
+                hits.append((rel, s))
+    assert not hits, (
+        f"a live draw seed appears in version-controlled file(s) {hits}: "
+        f"anyone with the repository can re-derive the hidden fields by "
+        f"re-running the builder, which is exactly what the solution-free "
+        f"builder was for")

@@ -1,0 +1,27 @@
+{
+  "schema": "oasis-blind-path-readiness/1",
+  "why": "A coupled task whose intended execution path has never run measures the path, not the agent, and a tool bug in it reads as agent failure and is charged to the arm under test. Each coupled instance must have had ONE throwaway, non-blind run through the path it names, with the result discarded, before it may be graded.",
+  "measured_2026_08_07": {
+    "shipped_coupling_participants": 10,
+    "with_a_vector_interface": 1,
+    "vector_participant": "participant_febio.py",
+    "conduction_only": ["fenics", "dealii", "ngsolve", "kratos", "skfem", "dune", "fourc"],
+    "coupling_fixtures": 29,
+    "fixtures_with_any_vector_construct": 2,
+    "fixtures_using_the_same_split_conduction_problem": 14
+  },
+  "arrangement_solvable": {
+    "note": "Established here with the harness's own partitioned solver: the ARRANGEMENT each task describes is solvable by exactly the scheme the task prescribes. This does NOT establish that OASiS's shipped participants can serve it.",
+    "D1": "partitioned DN, order 1.890/1.901, flux jump 5.6e-15",
+    "D3": "partitioned DN, order 1.940/1.955, flux jump 4.8e-15",
+    "D4": "partitioned DN with a VECTOR interface, order 1.838, traction jump 5.2e-15, 24 iterations",
+    "D5": "monolithic on the notched domain, order 1.875/1.935",
+    "D6": "partitioned DN at contrast 1:1000, order 1.958/1.976",
+    "D7": "partitioned DN with different operators either side, order 1.929/1.944"
+  },
+  "path_verified": {
+    "D1": false, "D2": false, "D3": false, "D4": false,
+    "D5": false, "D6": false, "D7": false, "D8": false
+  },
+  "blocking": "D4 names FEniCSx and deal.II and neither has a vector participant. Seven of nine codes are conduction-only. This must be closed on the vector-coupling branch before D4 is graded."
+}

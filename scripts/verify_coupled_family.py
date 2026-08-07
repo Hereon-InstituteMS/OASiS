@@ -40,7 +40,17 @@ from blind_eval import femdd as F              # noqa: E402
 import build_coupled_v2 as B                   # noqa: E402
 
 x, y = B.x, B.y
-SEED = 20260807
+# A DEMONSTRATION seed, deliberately not the campaign's.
+#
+# The campaign's hidden fields are drawn from a CSPRNG at build time and the
+# draw seed is written only into the sealed key. Hard-coding that seed in a
+# version-controlled file would let anyone with the repository re-derive every
+# hidden field by re-running the builder -- which defeats the whole point of a
+# builder that holds no answers. This file rebuilds instances from the same
+# FAMILY to measure that the family is gradeable; it never touches the campaign
+# instances. tests/test_blind_campaign_integrity.py fails if a tracked file
+# ever contains a live draw seed.
+SEED = 11111111
 LEVELS = (8, 16, 32)
 
 
@@ -210,14 +220,28 @@ def main():
                 bx = (0.5, 1.0) if i else (0.0, 0.5)
                 by = (0.5, 1.0) if j else (0.0, 0.5)
                 src[(bx, by)] = e
-            probe_sets = []
-            for (i, j), e in fields.items():
-                bx = (0.5, 1.0) if i else (0.0, 0.5)
-                by = (0.5, 1.0) if j else (0.0, 0.5)
-                P = F.probe_grid_2d(bx, by, spec["probe_M"] // 2)
-                keep = ~((P[:, 0] > 0.75) & (P[:, 1] > 0.75))
-                P = P[keep]
-                probe_sets.append((P, _f(e)(P[:, 0], P[:, 1])))
+            # The SHIPPED probe rule, not a convenient substitute: subdomain A
+            # is the 44x44 grid over the whole square minus the points inside B
+            # and inside the notch, and B is its own 44x44 grid. Verifying on a
+            # different probe set would measure a different thing from the one
+            # the campaign grades.
+            M = spec["probe_M"]
+            PA = F.probe_grid_2d((0.0, 1.0), (0.0, 1.0), M)
+            drop = (((PA[:, 0] > 0.5) & (PA[:, 1] < 0.5))
+                    | ((PA[:, 0] > 0.75) & (PA[:, 1] > 0.75)))
+            PA = PA[~drop]
+            PB = F.probe_grid_2d((0.5, 1.0), (0.0, 0.5), M)
+
+            def exact_at(P):
+                out = np.zeros(len(P))
+                for (i, j), e in fields.items():
+                    m = (((P[:, 0] > 0.5) == bool(i))
+                         & ((P[:, 1] > 0.5) == bool(j)))
+                    if m.any():
+                        out[m] = _f(e)(P[m, 0], P[m, 1])
+                return out
+
+            probe_sets = [(PA, exact_at(PA)), (PB, exact_at(PB))]
             out[pid] = verify_monolithic_scalar(
                 spec, fields, src, k_of, [(0.75, 1.0, 0.75, 1.0)],
                 [(0.0, 1.0), (0.0, 1.0)], probe_sets)

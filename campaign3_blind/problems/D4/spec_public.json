@@ -1,0 +1,72 @@
+{
+  "id": "D4",
+  "kind": "coupled",
+  "codes": [
+    "fenics",
+    "dealii"
+  ],
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "components": [
+    "ux",
+    "uy"
+  ],
+  "code_a_label": "FEniCSx (dolfinx)",
+  "code_b_label": "deal.II (build and run the C++ program)",
+  "physics": "two-material linear elasticity, shear-modulus jump",
+  "domain": "the rectangle (0, 3/2) x (0,1)",
+  "subdomain_a": "A = (0, 5/8) x (0,1), lambda = 577, mu = 385",
+  "subdomain_b": "B = (5/8, 3/2) x (0,1), lambda = 577, mu = 1155",
+  "interface": "the line x = 5/8, where the two materials meet",
+  "equation": "-div(sigma(u)) = f, sigma(u) = 2*mu*sym(grad(u)) + lambda*div(u)*I   (plane strain)",
+  "coefficients": "subdomain A: lambda = 577, mu = 385 (E = 962885/962, nu = 577/1924); subdomain B: lambda = 577, mu = 1155 (E = 4667355/1732, nu = 577/3464). The shear modulus jumps by a factor 3 across the interface; lambda is the same on both sides.",
+  "interface_condition": "the displacement vector and the traction sigma.n (BOTH components)",
+  "element": "vector Lagrange P1 elements in both codes",
+  "mesh_text": "uniform meshes, h halved per level: h = 1/8, 1/16, 1/32",
+  "bc_text": "u = 0 (both components) on the entire outer boundary",
+  "interface_tol": "1e-6 relative",
+  "iface_header": "x, y, ux, uy, tx, ty",
+  "qn_name": "(tx, ty)",
+  "qn_desc": "traction t = sigma(u) . n_out",
+  "probe_iface": "the 44 points (x, y) = (5/8, (i+0.5)/44) for i = 0, 1, ..., 43",
+  "mesh_N": [
+    8,
+    16,
+    32
+  ],
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "extent_a": [
+    [
+      0.0,
+      0.625
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "extent_b": [
+    [
+      0.625,
+      1.5
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "probe_M": 44,
+  "material_contrast": "mu 1:3, lambda shared",
+  "evidence_grade": 1,
+  "evidence_grade_reason": "exact manufactured solution: proves the answer is CORRECT",
+  "qoi": "convergence order of the coupled displacement, plus the two-sided interface traction jump",
+  "graded_against": "hidden manufactured solution (true error) AND reference-free mesh halving"
+}

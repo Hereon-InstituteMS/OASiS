@@ -443,3 +443,64 @@ def evaluate_vector(grid: Grid, u: np.ndarray, pts: np.ndarray):
     """Evaluate a 2-component P1 field, component by component."""
     return np.column_stack([evaluate(grid, u[0::2], pts),
                             evaluate(grid, u[1::2], pts)])
+
+
+@dataclass
+class VecSide:
+    grid: Grid
+    lam: float
+    mu: float
+    f: object
+    iface_face: str
+    outer_faces: tuple
+
+
+def dn_couple_vector(A_side: VecSide, B_side: VecSide, *, theta=0.5,
+                     max_iter=400, tol=1e-11):
+    """Partitioned Dirichlet-Neumann for a VECTOR interface.
+
+    D4 asks an agent to exchange a displacement vector and a traction with two
+    components across a material jump.  Of the ten shipped coupling
+    participants, one supports a vector interface at all, so this arrangement
+    has never been executed through the generic path.  A task whose intended
+    path has never run is a task that measures the path, not the agent, so the
+    arrangement is shown here to be solvable by exactly the scheme the task
+    describes.
+    """
+    KA, fA = assemble_elasticity(A_side.grid, A_side.lam, A_side.mu, A_side.f)
+    KB, fB = assemble_elasticity(B_side.grid, B_side.lam, B_side.mu, B_side.f)
+    ifA = A_side.grid.face_nodes(A_side.iface_face)
+    ifB = B_side.grid.face_nodes(B_side.iface_face)
+    if len(ifA) != len(ifB):
+        raise ValueError("matching interface nodes required")
+    dA = np.concatenate([2 * ifA, 2 * ifA + 1])
+    dB = np.concatenate([2 * ifB, 2 * ifB + 1])
+
+    outA = np.setdiff1d(np.unique(np.concatenate(
+        [A_side.grid.face_nodes(f) for f in A_side.outer_faces])), ifA)
+    outB = np.setdiff1d(np.unique(np.concatenate(
+        [B_side.grid.face_nodes(f) for f in B_side.outer_faces])), ifB)
+    oA = np.concatenate([2 * outA, 2 * outA + 1])
+    oB = np.concatenate([2 * outB, 2 * outB + 1])
+
+    g = np.zeros(len(dA))
+    uA = uB = None
+    for it in range(1, max_iter + 1):
+        dof = np.concatenate([oA, dA])
+        val = np.concatenate([np.zeros(len(oA)), g])
+        uA = solve_with_dirichlet(KA, fA, dof, val)
+        lam_t = (KA @ uA - fA)[dA]
+        rhsB = fB.copy()
+        rhsB[dB] -= lam_t
+        uB = solve_with_dirichlet(KB, rhsB, oB, np.zeros(len(oB)))
+        g_new = theta * uB[dB] + (1 - theta) * g
+        res = np.abs(g_new - g).max() / max(np.abs(g_new).max(), 1e-30)
+        g = g_new
+        if res < tol:
+            break
+    tracA = (KA @ uA - fA)[dA]
+    tracB = (KB @ uB - fB)[dB]
+    return {"converged": res < tol, "iterations": it, "residual": res,
+            "uA": uA, "uB": uB,
+            "traction_jump_rel": float(np.abs(tracA + tracB).sum()
+                                       / max(np.abs(tracA).sum(), 1e-30))}

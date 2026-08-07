@@ -1,0 +1,70 @@
+{
+  "id": "D8",
+  "kind": "coupled",
+  "codes": [
+    "fenics",
+    "dealii"
+  ],
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "code_a_label": "FEniCSx (dolfinx)",
+  "code_b_label": "deal.II (build and run the C++ program)",
+  "domain": "the rectangle (0, 3/2) x (0,1)",
+  "subdomain_a": "A = (0, 5/8) x (0,1), thermal conductivity k = 1, heat capacity 1",
+  "subdomain_b": "B = (5/8, 3/2) x (0,1), thermal conductivity k = 4, heat capacity 1",
+  "interface": "the line x = 5/8, where the two materials meet",
+  "equation": "du/dt - div(k grad u) = f in each subdomain",
+  "coefficients": "thermal conductivity k = 1, heat capacity 1 in subdomain A; thermal conductivity k = 4, heat capacity 1 in subdomain B",
+  "interface_condition": "the field and its normal flux",
+  "element": "Lagrange P1 elements in both codes",
+  "mesh_text": "uniform meshes, h halved per level: h = 1/8, 1/16, 1/32, with dt halved alongside",
+  "bc_text": "u = 0 on the entire outer boundary at all times",
+  "interface_tol": "1e-6 relative",
+  "iface_header": "x, y, u, qn",
+  "qn_name": "qn",
+  "qn_desc": "conductive flux qn = -(K grad u) . n_out",
+  "probe_iface": "the 44 points (x, y) = (5/8, (i+0.5)/44) for i = 0, 1, ..., 43",
+  "mesh_N": [
+    8,
+    16,
+    32
+  ],
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "extent_a": [
+    [
+      0.0,
+      0.625
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "extent_b": [
+    [
+      0.625,
+      1.5
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "probe_M": 44,
+  "material_contrast": "1:4",
+  "evidence_grade": 1,
+  "evidence_grade_reason": "exact manufactured solution: proves the answer is CORRECT",
+  "qoi": "convergence order of the coupled field at t_end, plus the two-sided interface flux jump",
+  "graded_against": "hidden manufactured solution (true error) AND reference-free mesh halving",
+  "physics": "transient two-material heat conduction",
+  "initial_condition": "u = 0 everywhere at t = 0",
+  "time_grid": "Crank-Nicolson, integrate to t_end = 1/4 with dt = h/4, so dt = 1/32, 1/64, 1/128 on the three levels. Report the solution at t = t_end."
+}

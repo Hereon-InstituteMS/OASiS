@@ -1,34 +1,55 @@
 Solve the following boundary value problem as a COUPLED simulation using TWO codes: FEniCSx (dolfinx) on subdomain A and NGSolve on subdomain B.
 
 GLOBAL DOMAIN: the rectangle (0, 3/2) x (0,1)
-SUBDOMAIN A: A = (0, 3/5) x (0,1)
-SUBDOMAIN B: B = (3/5, 3/2) x (0,1)
-INTERFACE: the line x = 3/5
-EQUATION (both subdomains): -laplace(u) = f
-COEFFICIENTS: unit diffusivity in both subdomains
-SOURCE TERM: f(x, y) = -x**3 - 9*x**2*y/5 + x**2/10 - 3*x*y**2 + 57*x*y/10 + 21*x/10 - 3*y**3/5 + y**2/10 + y/2
-OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary of the rectangle
+SUBDOMAIN A: A = (0, 5/8) x (0,1), anisotropic conductivity K = [[1, 1/2], [1/2, 2]]
+SUBDOMAIN B: B = (5/8, 3/2) x (0,1), anisotropic conductivity K = [[3, 1/2], [1/2, 5]]
+INTERFACE: the line x = 5/8, where the two materials meet
+EQUATION: -div(K grad u) = f in each subdomain
+COEFFICIENTS: anisotropic conductivity K = [[1, 1/2], [1/2, 2]] in subdomain A; anisotropic conductivity K = [[3, 1/2], [1/2, 5]] in subdomain B
+SOURCE TERM: f(x, y) = in subdomain A: -12*x**3*y + x**3 - 9*x**2*y**2 + 43*x**2*y/2 + 4*x**2/3 - 6*x*y**3 + 23*x*y**2/2 - 14*x*y/3 - 23*x/8 + 10*y**3/3 - 121*y**2/48 - 23*y/8 + 11/16
+               in subdomain B: -10*x**3*y/9 + 5*x**3/54 - x**2*y**2/3 + 13*x**2*y/9 + 19*x**2/108 - 2*x*y**3/3 + 4*x*y**2/9 + 253*x*y/108 - 271*x/864 + 5*y**3/18 + 17*y**2/72 - 2123*y/864 - 37/144
+OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes
 MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32
 
 
 REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
-Your solution is assessed at FIXED probe points that do not depend on your
-mesh, defined separately for each subdomain. For every mesh level and for EACH
-subdomain, evaluate your computed solution at every probe point of that
+
+(1) FIELD. Your solution is assessed at FIXED probe points that do not depend on
+your mesh, defined separately for each subdomain. For every mesh level and for
+EACH subdomain, evaluate your computed solution at every probe point of that
 subdomain and write one CSV file
     solution_level<k>_<side>.csv        (k = 1,2,3,...; side = A or B)
 with a header line and one row per probe point, in the order defined below:
     x, y, u
 
-PROBE POINTS, subdomain A: the 1024 points given by x = 0 + (i_x+0.5)*0.6/32; y = (i_y+0.5)/32, for i_x, i_y = 0, 1, ..., 31 independently, ordered with the last index varying fastest
-PROBE POINTS, subdomain B: the 1024 points given by x = 0.6 + (i_x+0.5)*0.9/32; y = (i_y+0.5)/32, for i_x, i_y = 0, 1, ..., 31 independently, ordered with the last index varying fastest
+PROBE POINTS, subdomain A: the 1936 points given by x = 0 + (i_x+0.5)*0.625/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
+PROBE POINTS, subdomain B: the 1936 points given by x = 0.625 + (i_x+0.5)*0.875/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
 Evaluate (interpolate) your finite element solution at these points. They are
 deliberately not mesh nodes. Write full precision; every probe point must
 appear exactly once and no other points may appear.
 
-Then write the single summary file `RESULT.txt` with exactly these lines:
+(2) INTERFACE. For every mesh level and EACH subdomain, write
+    interface_level<k>_<side>.csv
+with a header line and one row per interface probe point, in this order:
+    x, y, u, qn
+where qn is that subdomain's OUTWARD normal conductive flux qn = -(K grad u) . n_out, evaluated from
+that subdomain's own solution and its own material, with the unit normal
+pointing OUT of that subdomain. The two subdomains therefore use opposite
+normals at the same physical point.
+
+INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, (i+0.5)/44) for i = 0, 1, ..., 43
+
+(3) COUPLING HISTORY. For every mesh level write
+    residual_level<k>.csv
+with a header line and one row per coupling iteration:
+    iteration, interface_residual
+listing the relative interface mismatch at every iteration of your partitioned
+scheme, from the first to the last. A coupled run that cannot produce this did
+not couple.
+
+(4) Then write the single summary file `RESULT.txt` with exactly these lines:
     LEVELS = <number of mesh levels solved>
     FILES = <comma-separated list of all CSV files you wrote>
     INTERFACE_RESIDUAL = <final relative interface mismatch of the coupling iteration>
