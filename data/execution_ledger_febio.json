@@ -1,0 +1,1877 @@
+{
+  "commit": "b1cf65d6f0ab",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "febio",
+      "fixture": "active_contraction_mat_axis_default",
+      "claim": "active_contraction:1",
+      "claim_text_sha": "c737939c68cb54f6",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:52:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 26.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 24.1,
+        "missing": [
+          "active_mat_axis_default=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "active_contraction_needs_a_passive_base",
+      "claim": "active_contraction:0",
+      "claim_text_sha": "2e511c3a17155798",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:53:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 10.3,
+        "missing": [
+          "active_needs_passive=reproduced_with_correction",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "analysis_vocabulary_is_module_scoped",
+      "claim": "biphasic:6",
+      "claim_text_sha": "892fef688ae9ece9",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:53:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.8,
+        "missing": [
+          "analysis_enum_scope=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "bicgstab_converges_on_one_element_only",
+      "claim": "biphasic:4",
+      "claim_text_sha": "62d73316512fcc08",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:53:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 4.0,
+        "missing": [
+          "bicgstab_mesh_dependence=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "biphasic_fsi_is_a_material_not_a_module",
+      "claim": "biphasic_fsi:0",
+      "claim_text_sha": "68c1433fb58e8f4a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:53:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 19.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 73.3,
+        "missing": [
+          "biphasic_fsi_module_segfault=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "biphasic_fsi_needs_nonsymmetric_solver",
+      "claim": "biphasic_fsi:3",
+      "claim_text_sha": "05bb9924d9cf6964",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 30.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 48.2,
+        "missing": [
+          "biphasic_fsi_solver=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "biphasic_fsi_required_properties",
+      "claim": "biphasic_fsi:1",
+      "claim_text_sha": "910f489347d27e94",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 141.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "biphasic_material_rejects_solute_child",
+      "claim": "multiphasic:1",
+      "claim_text_sha": "b33694aa5f0b9fa6",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 7.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 14.3,
+        "missing": [
+          "solute_in_biphasic=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "biphasic_module_gates_analysis_word",
+      "claim": "biphasic:0",
+      "claim_text_sha": "dc12d1e350432be6",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 12.4,
+        "missing": [
+          "module_gates_analysis=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "biphasic_needs_nested_properties",
+      "claim": "biphasic:1",
+      "claim_text_sha": "2f699ccc119d2472",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 6.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 16.4,
+        "missing": [
+          "biphasic_flat_vs_missing=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "body_force_is_per_unit_mass",
+      "claim": "elasticity_mms:1",
+      "claim_text_sha": "c1c9edff9a44c826",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.1,
+        "missing": [
+          "mms_density_coupling=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "catalog_physics_template_knowledge_consistency",
+      "claim": "linear_elasticity:99",
+      "claim_text_sha": "",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.1,
+        "missing": [
+          "templates_count=18",
+          "missing_templates=[]",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "center_of_mass_silently_overrides",
+      "claim": "rigid_body:6",
+      "claim_text_sha": "aad4bb6e3ce879a3",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 13.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 6.4,
+        "missing": [
+          "center_of_mass=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "conduction_needs_velocity_fixed",
+      "claim": "heat:4",
+      "claim_text_sha": "5279100145c5c930",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.8,
+        "missing": [
+          "thermofluid_free_velocity=reproduced_with_correction",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "control_without_nested_solver",
+      "claim": "linear_elasticity:2",
+      "claim_text_sha": "06fcb38f4f290bd4",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 2.2,
+        "missing": [
+          "control_no_solver=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "damage_cap_is_range_checked",
+      "claim": "damage:2",
+      "claim_text_sha": "49e7f20ace4fb13c",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 12.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 79.6,
+        "missing": [
+          "dmax_range_check=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "damage_cdf_scale_saturates_in_cycle_one",
+      "claim": "damage:3",
+      "claim_text_sha": "a1f577c04329899e",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:04:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 64.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "damage_is_irreversible_and_saturates",
+      "claim": "damage:0",
+      "claim_text_sha": "7e9d2255c25a4f8a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:08:05+00:00",
+      "unmutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "mutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "discriminates": false
+    },
+    {
+      "backend": "febio",
+      "fixture": "default_contact_penalty_is_inactive",
+      "claim": "rigid_body:3",
+      "claim_text_sha": "8684bbad137972b1",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:13:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 84.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 133.5,
+        "missing": [
+          "contact_penalty=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "degenerate_hex8_clean_wrong_result",
+      "claim": "linear_elasticity:7",
+      "claim_text_sha": "ff8bc87ec1c3127a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:16:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.0,
+        "missing": [
+          "degenerate_hex8=clean_run_wrong_stress",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "density_defaults_silently_under_dynamic",
+      "claim": "hyperelasticity:2",
+      "claim_text_sha": "6805d69f3aeb49f2",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:16:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 87.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 69.5,
+        "missing": [
+          "density_default=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "diffusion_length_under_one_element",
+      "claim": "heat:5",
+      "claim_text_sha": "26eec45660a377cc",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:19:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 18.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 23.7,
+        "missing": [
+          "diffusion_length_undershoot=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "dynamic_step_load_rings_forever",
+      "claim": "viscoelasticity:0",
+      "claim_text_sha": "55eea9c68e3f5b61",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:20:08+00:00",
+      "unmutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "mutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "discriminates": false
+    },
+    {
+      "backend": "febio",
+      "fixture": "elastic_damage_property_names",
+      "claim": "damage:1",
+      "claim_text_sha": "c05bee6fa5d17d45",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:25:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 96.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "TIMEOUT",
+        "seconds": 150
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "error_box_wraps_at_71_columns",
+      "claim": "linear_elasticity:9",
+      "claim_text_sha": "55c78f9a79d2cb88",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:29:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.3,
+        "missing": [
+          "error_box_wrap=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "factory_type_strings_case_sensitive",
+      "claim": "linear_elasticity:8",
+      "claim_text_sha": "8d30b69058f268d1",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:29:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 6.0,
+        "missing": [
+          "type_case_sensitivity=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "final_time_is_steps_times_step_size",
+      "claim": "hyperelasticity:4",
+      "claim_text_sha": "1166e1108a19a576",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:29:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 7.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 8.9,
+        "missing": [
+          "final_time_not_step_count=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "fluid_bulk_modulus_and_log_variable_names",
+      "claim": "fluid:2",
+      "claim_text_sha": "918bb6136e600f6a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:29:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 9.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 13.3,
+        "missing": [
+          "fluid_k_and_log_names=reproduced_with_correction",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "fluid_fsi_module_and_material_share_a_name",
+      "claim": "fluid_fsi:0",
+      "claim_text_sha": "914e2f2971d87df1",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:30:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 10.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 21.5,
+        "missing": [
+          "fluid_fsi_module=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "fluid_solver_type_is_module_scoped",
+      "claim": "fluid:0",
+      "claim_text_sha": "8897d8d030fee1ee",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:30:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.4,
+        "missing": [
+          "fluid_module_solver=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "fluid_velocity_dofs_are_w_prefixed",
+      "claim": "fluid:1",
+      "claim_text_sha": "265c6b6cfb59ae04",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:30:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 5.8,
+        "missing": [
+          "fluid_dof_prefix=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "globals_constants_required_for_ideal_gas",
+      "claim": "heat:6",
+      "claim_text_sha": "1e4de059c99e33e8",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:30:52+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 2.3,
+        "missing": [
+          "globals_constants=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "globals_solutes_creates_concentration_dofs",
+      "claim": "multiphasic:0",
+      "claim_text_sha": "7406111d3812413c",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:30:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 8.9,
+        "missing": [
+          "globals_solutes=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "growth_against_a_clamped_boundary",
+      "claim": "growth_remodeling:2",
+      "claim_text_sha": "e30c170a5d1a1b27",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:31:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 8.7,
+        "missing": [
+          "clamped_growth=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "growth_axis_is_the_growth_tensor_fiber",
+      "claim": "growth_remodeling:3",
+      "claim_text_sha": "842df13a55c00ddb",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:31:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 18.6,
+        "missing": [
+          "growth_axis_names=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "hardening_modulus_sets_the_peak_stress",
+      "claim": "plasticity:0",
+      "claim_text_sha": "3303e98569af54c2",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:31:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 135.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 136.4,
+        "missing": [
+          "hardening_sweep=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "hex8_patch_test_exact_stress",
+      "claim": "linear_elasticity:98",
+      "claim_text_sha": "",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:36:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "febio_patch_test=passed",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "hgo_fibers_carry_load_only_in_tension",
+      "claim": "fiber_reinforced:1",
+      "claim_text_sha": "dbf2a75d6f5b1953",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:36:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 26.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 27.6,
+        "missing": [
+          "fibers_tension_only=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "hgo_kappa_range_is_closed_zero_third",
+      "claim": "fiber_reinforced:2",
+      "claim_text_sha": "b43e9e48af12fa83",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:37:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 19.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 48.4,
+        "missing": [
+          "kappa_range=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "hgo_mat_axis_default",
+      "claim": "fiber_reinforced:0",
+      "claim_text_sha": "782eec0c9bebaf3f",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:38:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 27.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 27.4,
+        "missing": [
+          "hgo_mat_axis_default=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "ideal_gas_ao_cp_are_function1d",
+      "claim": "heat:7",
+      "claim_text_sha": "f1febd2f0812fde6",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "cp_needs_type_attr=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "kinematic_growth_is_top_level",
+      "claim": "growth_remodeling:0",
+      "claim_text_sha": "f002fbe24cd8ff40",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 11.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 11.7,
+        "missing": [
+          "kinematic_growth_shape=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "loadcurve_id_without_loaddata",
+      "claim": "linear_elasticity:4",
+      "claim_text_sha": "355bc67ca6613425",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.9,
+        "missing": [
+          "missing_load_controller=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "material_name_attr_and_domain_by_name",
+      "claim": "linear_elasticity:0",
+      "claim_text_sha": "f6c566f84d39932a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 2.7,
+        "missing": [
+          "material_name_and_domain=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "material_name_required_and_nodeset_syntax",
+      "claim": "biphasic:8",
+      "claim_text_sha": "2dde86750e9fa5e9",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 2.5,
+        "missing": [
+          "name_attr_and_nodeset=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "math_expressions_need_uppercase_coordinates",
+      "claim": "elasticity_mms:2",
+      "claim_text_sha": "51a2119003fd421f",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.5,
+        "missing": [
+          "lowercase_coordinate_symbols=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "max_ups_belongs_to_qn_method",
+      "claim": "hyperelasticity:5",
+      "claim_text_sha": "56228998596f958f",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 7.6,
+        "missing": [
+          "max_ups_placement=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "meshdomains_missing_blames_the_bc",
+      "claim": "linear_elasticity:1",
+      "claim_text_sha": "bf22646b1ebf8793",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:39:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.9,
+        "missing": [
+          "meshdomains_missing=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "missing_control_silent_zero_result",
+      "claim": "linear_elasticity:3",
+      "claim_text_sha": "ce59aef015fea95f",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:40:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.6,
+        "missing": [
+          "missing_control_silent=reproduced",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "no_contact_section_means_pass_through",
+      "claim": "rigid_body:2",
+      "claim_text_sha": "6caeba27dec9b8cf",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:40:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 6.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 12.4,
+        "missing": [
+          "missing_contact=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "no_isotropic_fourier_material",
+      "claim": "heat:1",
+      "claim_text_sha": "495e00c60bf000f1",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:40:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.8,
+        "missing": [
+          "isotropic_fourier=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "no_kinematic_hardening_parameter",
+      "claim": "plasticity:3",
+      "claim_text_sha": "b5428273d5471132",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:40:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 9.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 44.7,
+        "missing": [
+          "no_kinematic_hardening=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "no_prescribed_temperature_bc",
+      "claim": "heat:2",
+      "claim_text_sha": "7388b3daec92a3d6",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "prescribed_temperature_bc=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "nodeset_is_comma_list_not_children",
+      "claim": "heat:8",
+      "claim_text_sha": "a2d7cf3bbd02a757",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": [
+          "nodeset_child_elements=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "null_test_linear_solver_reports_success",
+      "claim": "biphasic:5",
+      "claim_text_sha": "cd01adbd4360b453",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.8,
+        "missing": [
+          "null_test_solver=clean_run_not_solved",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "poisson_ratio_is_v_not_nu",
+      "claim": "linear_elasticity:5",
+      "claim_text_sha": "384f816c886fcace",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.2,
+        "missing": [
+          "nu_instead_of_v=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "polar_bc_and_plot_variable_names",
+      "claim": "polar_fluid:3",
+      "claim_text_sha": "cc9034bacc500a2f",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.9,
+        "missing": [
+          "polar_names=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "polar_micro_rotation_names_are_not_real",
+      "claim": "polar_fluid:0",
+      "claim_text_sha": "ffcfb7fa788643e8",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 9.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 10.8,
+        "missing": [
+          "polar_micro_rotation_names=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "polar_moduli_do_nothing_without_vorticity",
+      "claim": "polar_fluid:2",
+      "claim_text_sha": "eb83fb1c01510263",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 10.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.9,
+        "missing": [
+          "polar_invariance=reproduced",
+          "FORBIDDEN:FAIL:",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "polar_viscosity_is_a_property_not_a_parameter",
+      "claim": "polar_fluid:1",
+      "claim_text_sha": "d4b2b9943ec58b9a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.8,
+        "missing": [
+          "micro_viscosity_tag=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "prescribed_concentration_uses_dof_child",
+      "claim": "multiphasic:3",
+      "claim_text_sha": "9c53bbaa717d2497",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:42:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 6.2,
+        "missing": [
+          "concentration_dof_child=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "reversed_contact_facet_winding",
+      "claim": "rigid_body:4",
+      "claim_text_sha": "6c8f7ae751fdb977",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:42:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 8.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 11.8,
+        "missing": [
+          "facet_winding=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "rigid_bcs_live_in_the_rigid_section",
+      "claim": "rigid_body:0",
+      "claim_text_sha": "843aca549a4bb2dd",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:42:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.6,
+        "missing": [
+          "rigid_bc_section=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "rigid_dof_spelling_per_bc_type",
+      "claim": "rigid_body:1",
+      "claim_text_sha": "e9f5ad4282d0a351",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:42:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.7,
+        "missing": [
+          "rigid_dof_spelling=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "skyline_cannot_store_unsymmetric_biphasic",
+      "claim": "biphasic:3",
+      "claim_text_sha": "ed92e27f9167879f",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:42:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 25.3,
+        "missing": [
+          "biphasic_solver_sweep=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "static_activation_ramp_shape_does_not_matter",
+      "claim": "active_contraction:3",
+      "claim_text_sha": "2d64003326f67048",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:43:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 6.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 7.6,
+        "missing": []
+      },
+      "discriminates": false
+    },
+    {
+      "backend": "febio",
+      "fixture": "steady_state_switches_the_fluid_phase_off",
+      "claim": "biphasic:2",
+      "claim_text_sha": "6a5324577a7552fe",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:43:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.5,
+        "missing": [
+          "steady_state_flat_pressure=reproduced",
+          "FORBIDDEN:FAIL:",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "substeps_and_the_real_convergence_threshold",
+      "claim": "hyperelasticity:1",
+      "claim_text_sha": "4ffc68a5b9e28697",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:43:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 6.8,
+        "missing": [
+          "substep_threshold=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "surfacepair_and_contact_type_strings",
+      "claim": "rigid_body:5",
+      "claim_text_sha": "b5ee745ff7b2c9bc",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:43:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 19.1,
+        "missing": [
+          "contact_syntax=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "symmetric_stiffness_workaround_keeps_the_answer",
+      "claim": "biphasic:7",
+      "claim_text_sha": "711a82222b597e9d",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:44:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.1,
+        "missing": [
+          "symmetric_workaround=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "thermofluid_requires_linear_solver",
+      "claim": "heat:3",
+      "claim_text_sha": "d05d50d04491b94a",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:44:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "thermofluid_needs_bicgstab=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "uncoupled_materials_require_bulk_modulus",
+      "claim": "hyperelasticity:0",
+      "claim_text_sha": "0ac747fed76523da",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:44:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 4.5,
+        "missing": [
+          "uncoupled_needs_k=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "uncoupled_viscoelastic_child_kind",
+      "claim": "viscoelasticity:1",
+      "claim_text_sha": "41c26b80f38647aa",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:44:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 24.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 125.9,
+        "missing": [
+          "viscoelastic_child_kind=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "unknown_module_type_segfaults",
+      "claim": "heat:0",
+      "claim_text_sha": "a4fb2ff78562f7dc",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:46:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.5,
+        "missing": [
+          "unknown_module_segfault_count=4",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "von_mises_plasticity_parameter_names",
+      "claim": "plasticity:1",
+      "claim_text_sha": "ecfc27b0e9779b22",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:46:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 19.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 83.6,
+        "missing": [
+          "plasticity_names=reproduced",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "febio",
+      "fixture": "zero_based_connectivity_rejected",
+      "claim": "linear_elasticity:6",
+      "claim_text_sha": "e0b6fc9147e1be5e",
+      "commit": "b1cf65d6f0ab",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:48:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.0,
+        "missing": [
+          "zero_based_connectivity=rejected_at_init",
+          "FORBIDDEN:not_reproduced"
+        ]
+      },
+      "discriminates": true
+    }
+  ]
+}
