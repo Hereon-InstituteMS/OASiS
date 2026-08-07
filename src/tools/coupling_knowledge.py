@@ -1683,15 +1683,24 @@ OASiS writes `work_dir/precice-config.xml` for you, containing:
   * the `<coupling-scheme:...>` with `<time-window-size>`, `<max-time>`,
     `<participants first=... second=...>` and one `<exchange>` per entry.
 
-For an IMPLICIT scheme it additionally emits, with values you CANNOT currently
-change through the tool:
-  * `<max-iterations value="20" />`
-  * `<relative-convergence-measure limit="1e-6" />` on the FIRST exchanged data
+For an IMPLICIT scheme it additionally emits:
+  * `<max-iterations value="20" />`        — argument `max_iterations`
+  * `<relative-convergence-measure limit="1e-6" />` on the exchanged data
+                                           — argument `convergence_tol`
   * `<acceleration:aitken>` with `<initial-relaxation value="0.5" />`
-If you need different acceleration, a different mapping (`nearest-projection`,
-`rbf`) or a different tolerance, write `precice-config.xml` yourself and launch
-the participants yourself — `generate_precice_config` supports them, the tool
-does not pass them through.
+                                           — argument `relaxation`
+and the read mapping takes `mapping` (`nearest-neighbor` |
+`nearest-projection`). Those four ARE forwarded — this note used to say they
+were not, which was true of an earlier version of the tool and false of this
+one. Checked by generating a config with non-default values and reading them
+back out of the XML.
+
+What is still NOT reachable through the tool: a different acceleration TYPE and
+an `rbf` mapping. `generate_precice_config` takes both — `acceleration={"type":
+"aitken"|"IQN-ILS", "data": ..., "mesh": ...}` and `mapping="rbf"` — and
+`couple_precice` passes neither. For those, or for anything
+`<coupling-scheme:multi>` needs, call `generate_precice_config` yourself and
+launch the participants yourself.
 
 HARD LIMITS OF THE GENERATED CONFIG, know them before you design the coupling:
   * EXACTLY TWO PARTICIPANTS. `<participants first= second= >` names only the
@@ -1839,17 +1848,47 @@ def precice_knowledge(solver: str = "") -> str:
             f"{entry['body']}\n\n---\n\n{_PRECICE_CORE}")
 
 
-# Per-backend preCICE verdicts. Every CAN was established by running a real
+# Per-backend preCICE verdicts, and WHICH FIXTURE ESTABLISHES EACH ONE.
+#
+# This comment used to say "Every CAN was established by running a real
 # two-participant coupling through OASiS's own preCICE orchestrator on this
-# install; every CANNOT was established by looking for a preCICE entry point in
-# the installed code and not finding one.
+# install" while only TWO of the seven CANs had one. The other five were
+# written from an import check or from nothing: the strong fixture's own
+# docstring downgrades NGSolve and DUNE to the import GATE, and deal.II, Kratos
+# and SPARTA had no preCICE fixture at all — the shipped deal.II participant is
+# a `couple` file-handshake wrapper and neither it nor its CMakeLists mentioned
+# preCICE, so a reader greping for a preCICE-linked participant found nothing
+# and the boldest sentence in the file was the false one.
+#
+# Every verdict below now NAMES the fixture that establishes it, so the claim
+# is checkable rather than merely asserted:
+#
+#   scikit-fem, FEniCSx
+#       scripts/tier2_fixtures/coupling/precice_can_verdicts_proven_by_a_real_run
+#   NGSolve, DUNE-fem, deal.II, Kratos
+#       scripts/tier2_fixtures/coupling/precice_can_verdicts_for_the_other_four
+#   SPARTA
+#       scripts/tier2_fixtures/coupling/sparta_precice_load_order_and_coupled_run
+#
+# Each of those runs a REAL two-participant coupling through the registered
+# `couple_precice` tool and checks the EXCHANGED FIELDS — against a closed form
+# for the seven FEM pairs, against SPARTA run standalone at the same wall
+# temperature for the DSMC one. None of them accepts `converged` as evidence.
+#
+# Every CANNOT (4C, FEBio) was established by looking for a preCICE entry point
+# in the installed code and not finding one — that is a weaker kind of evidence
+# than a run, and it is labelled as such in those two entries.
 _PRECICE_BY_BACKEND = {
     "fenics": {
         "title": "FEniCSx (dolfinx)",
-        "verdict": "CAN — proven by a real coupled run",
+        "verdict": ("CAN — proven by a real coupled run "
+                    "(fixture: precice_can_verdicts_proven_by_a_real_run)"),
         "body": '''\
 `import precice` works in the same interpreter as `dolfinx`, and a FEniCSx
-participant was coupled to a second code through `couple_precice` end to end.
+participant was coupled to a second code through `couple_precice` end to end:
+FEniCSx on the Neumann side against a scikit-fem Dirichlet side, non-matching
+interface meshes, serial-implicit, interface temperature and flux checked
+against a closed form.
 
   * You do NOT need `fenicsprecice`. The raw `precice` bindings are enough and
     are what was proven here; the adapter is a convenience layer, not a
@@ -1871,12 +1910,19 @@ participant was coupled to a second code through `couple_precice` end to end.
     },
     "ngsolve": {
         "title": "NGSolve",
-        "verdict": "CAN — proven by a real coupled run",
+        "verdict": ("CAN — proven by a real coupled run "
+                    "(fixture: precice_can_verdicts_for_the_other_four)"),
         "body": '''\
 `import precice` works in the interpreter that carries NGSolve, and an NGSolve
-participant was coupled to a second code end to end.
+participant was coupled to a second code end to end: NGSolve on the Neumann
+side against a scikit-fem Dirichlet side, non-matching interface meshes,
+serial-implicit, interface temperature and flux checked against a closed form.
+NGSolve shares the OASiS venv with scikit-fem here, so that pair is one
+interpreter — the coupling is real, but it is not what proves preCICE spans
+separate environments; the FEniCSx, DUNE and Kratos pairs are.
 
-TWO NGSolve-SPECIFIC SILENT-WRONG TRAPS, both found by running:
+TWO NGSolve-SPECIFIC SILENT-WRONG TRAPS, both found by running, and both
+avoided in the participant that fixture couples:
   * TWO CONSECUTIVE `gfu.Set(value, definedon=mesh.Boundaries(...))` CALLS
     CANCEL EACH OTHER. The second `Set` zeroes what the first wrote outside its
     own region, so a participant that sets an outer Dirichlet value and then an
@@ -1893,11 +1939,16 @@ TWO NGSolve-SPECIFIC SILENT-WRONG TRAPS, both found by running:
     },
     "skfem": {
         "title": "scikit-fem",
-        "verdict": "CAN — proven by a real coupled run",
+        "verdict": ("CAN — proven by a real coupled run "
+                    "(fixture: precice_can_verdicts_proven_by_a_real_run, and "
+                    "as the partner in precice_can_verdicts_for_the_other_four)"),
         "body": '''\
 `import precice` works in the interpreter that carries scikit-fem, and a
-scikit-fem participant was coupled to a second code end to end. It is the
-lightest participant of all of them: pure Python, no compilation, no JIT.
+scikit-fem participant was coupled to a second code end to end — in BOTH roles,
+Dirichlet and Neumann, and against four different partner codes. It is the
+lightest participant of all of them: pure Python, no compilation, no JIT, which
+is why it is the standing partner the other backends' couplings are checked
+against.
 
   * Interface vertices come straight out of `mesh.p` — plain numpy, so keeping
     a fixed order is trivial. Slice to the first `dimensions` columns.
@@ -1911,10 +1962,14 @@ lightest participant of all of them: pure Python, no compilation, no JIT.
     },
     "dune": {
         "title": "DUNE-fem",
-        "verdict": "CAN — proven by a real coupled run",
+        "verdict": ("CAN — proven by a real coupled run "
+                    "(fixture: precice_can_verdicts_for_the_other_four)"),
         "body": '''\
-A DUNE-fem participant was coupled end to end. Two install-level facts decide
-whether it works at all:
+A DUNE-fem participant was coupled end to end: DUNE on the Neumann side, in its
+own conda environment, against a scikit-fem Dirichlet side in the OASiS venv,
+non-matching interface meshes, serial-implicit, interface temperature and flux
+checked against a closed form. Two install-level facts decide whether it works
+at all:
 
   * `precice` and `dune.fem` must be importable in ONE interpreter. If DUNE
     lives in its own conda environment without `pyprecice`, you do not have to
@@ -1923,25 +1978,46 @@ whether it works at all:
     the DUNE interpreter imports both. Verify with a one-line
     `python -c "import precice, dune.fem"` BEFORE coupling — a failed import
     leaves the partner blocking in `initialize()` with no error.
-  * DUNE-fem JIT-COMPILES EACH DISTINCT SCHEME, which takes on the order of a
-    minute. Build the scheme ONCE, BEFORE `precice.Participant(...)`, or the
-    partner blocks on connect while you compile. Make the coupled boundary
-    datum a `dune.ufl.Constant` (or a discrete function) and MUTATE `.value`
-    each window instead of rebuilding the scheme, or you pay that compile on
-    every coupling iteration.''',
+    That whole-site-packages form works HERE because the DUNE environment has
+    no package the OASiS venv would shadow badly. It is not universal: see the
+    Kratos entry, where the same recipe shadows the good install and has to be
+    narrowed to a directory of symlinks.
+  * DUNE-fem JIT-COMPILES EACH DISTINCT SCHEME. Measured on a cold cache here
+    that is MINUTES, not the "about a minute" this note used to claim — the two
+    schemes of a Dirichlet-Neumann heat participant took about seven. Build and
+    COMPILE the scheme ONCE, BEFORE `precice.Participant(...)` — a throw-away
+    `scheme.solve(...)` is what actually triggers the compile, so constructing
+    the scheme is not enough — or the partner blocks on connect while you wait.
+    Make the coupled boundary datum a `dune.ufl.Constant` (or a discrete
+    function) and MUTATE it each window instead of rebuilding the scheme, or
+    you pay that compile on every coupling iteration.''',
     },
     "dealii": {
         "title": "deal.II",
-        "verdict": "CAN, as a C++ participant — proven by a real coupled run",
+        "verdict": ("CAN, as a C++ participant — proven by a real coupled run "
+                    "(fixture: precice_can_verdicts_for_the_other_four)"),
         "body": '''\
 deal.II has no Python API, so the participant is a compiled C++ executable that
-links `libprecice` directly. One was built and coupled to a Python participant
-end to end.
+links `libprecice` directly. One is SHIPPED here —
+`data/coupling_participants/precice_heat_dealii.cc`, with an optional CMake
+target beside the `couple` participant's — and it was built and coupled to a
+scikit-fem Python participant end to end, non-matching interface meshes,
+serial-implicit, interface temperature and flux checked against a closed form.
+Start from that file rather than from this description.
 
   * Build through CMake with `DEAL_II_SETUP_TARGET` and add
+    `target_include_directories(<target> PRIVATE <precice>/include)` plus
     `target_link_libraries(<target> <path-to>/libprecice.so)`. A hand-rolled
     `g++ -I<dealii>/include` does NOT work — it fails on deal.II's own bundled
-    headers.
+    headers — and the preCICE flags must go ON TOP of `deal_ii_setup_target`,
+    not instead of it.
+  * Guard the target on `find_library(precice)`. A hard `find_package` breaks
+    the `couple` participant's build on an install with no preCICE, which is
+    most of them.
+  * `ldd <exe> | grep libprecice` is the one-line check that the thing you
+    built is actually a preCICE participant. Nothing else in the tree tells you
+    — a deal.II wrapper driven by the file-handshake `couple` driver looks
+    identical from the outside and links no preCICE at all.
   * `DEAL_II_DIR` must point at the BUILD/INSTALL tree that contains
     `lib/cmake/deal.II/deal.IIConfig.cmake`. Pointing it at the source
     checkout silently falls back to whatever system deal.II exists, which is
@@ -1956,19 +2032,51 @@ end to end.
     },
     "kratos": {
         "title": "Kratos Multiphysics",
-        "verdict": "CAN — proven by a real coupled run, with a caveat about WHICH Kratos",
+        "verdict": ("CAN — proven by a real coupled run "
+                    "(fixture: precice_can_verdicts_for_the_other_four), with "
+                    "a caveat about WHICH Kratos"),
         "body": '''\
-A Kratos participant was coupled to a second code end to end. The install is
-the hard part:
+A Kratos participant was coupled to a second code end to end: Kratos on the
+Neumann side, in its own interpreter, against a scikit-fem Dirichlet side in
+the OASiS venv, non-matching interface meshes, serial-implicit, interface
+temperature and flux checked against a closed form. The install is the hard
+part, and it is harder than for any other backend here:
 
   * A Kratos wheel can import cleanly on one host and be unusable on another —
     one on this class of host fails at import with a `GLIBC` version error from
     its bundled shared objects. If that happens, use a Kratos built from source
     and set BOTH `PYTHONPATH` to the install root and `LD_LIBRARY_PATH` to its
     `libs` directory, via `extra_env`.
+  * THE PYTHONPATH RECIPE THAT WORKS FOR DUNE DOES NOT WORK HERE, and it fails
+    in two different ways at once. Pointing `PYTHONPATH` at the WHOLE
+    site-packages of the interpreter that has `pyprecice`:
+      - shadows the good Kratos, because `PYTHONPATH` is searched BEFORE the
+        target interpreter's own site-packages, so a broken `KratosMultiphysics`
+        sitting in the preCICE interpreter wins and dies at import; and
+      - breaks `cyprecice`, which is a compiled extension built against ONE
+        numpy ABI — import it next to a different numpy and it fails with
+        `numpy.core.multiarray failed to import`.
+    What works is a NARROW shim: a directory of symlinks to exactly `precice`,
+    `cyprecice` (package and `.so`), `numpy`, `numpy.libs` and `mpi4py`, and
+    that directory on `PYTHONPATH`. preCICE then gets the numpy it was built
+    against and Kratos keeps everything else of its own.
+  * PROBE THE WHOLE GATE, not half of it. `import KratosMultiphysics` alone
+    picks the wrong interpreter: this host has a system Python that imports
+    Kratos fine and is 3.8, so it cannot load a cp312 `pyprecice` at all — it
+    passes a Kratos-only probe and then dies inside the coupling on a numpy
+    C-extension error. Probe
+    `import precice, KratosMultiphysics, KratosMultiphysics.<App>` in ONE
+    command, with the shim already on `PYTHONPATH`.
   * A core-only Kratos has NO `ConvectionDiffusionApplication` and therefore no
     thermal element at all. Check `import KratosMultiphysics.<App>` for every
     application your participant needs BEFORE coupling.
+  * On the NEUMANN side the incoming flux density goes on as `FACE_HEAT_FLUX`
+    on `ThermalFace2D2N` conditions built along the interface — that is
+    ConvectionDiffusion's surface-source route, declared with
+    `settings.SetSurfaceSourceVariable(KM.FACE_HEAT_FLUX)`. Setting the nodal
+    variable WITHOUT creating the conditions does nothing at all: there is then
+    no boundary integral to carry it, and the participant silently solves an
+    insulated problem.
   * Kratos drives its own time loop, so the preCICE loop wraps
     `InitializeSolutionStep()` / `SolveSolutionStep()` /
     `FinalizeSolutionStep()`, and the checkpoint save/restore is a copy of the
@@ -1978,31 +2086,62 @@ the hard part:
     },
     "sparta": {
         "title": "SPARTA (DSMC)",
-        "verdict": "CAN, but ONLY with RTLD_DEEPBIND — proven by a real coupled run",
+        "verdict": ("CAN — proven by a real coupled run (fixture: "
+                    "sparta_precice_load_order_and_coupled_run); IN-PROCESS "
+                    "only with RTLD_DEEPBIND"),
         "body": '''\
 A SPARTA DSMC participant was coupled to a solid conduction participant end to
-end. There is exactly one way to load it, and every other way segfaults:
+end: rarefied argon past a cylinder against a lumped thermal shell, ten time
+windows, serial-explicit, and the coupled wall temperature checked against
+SPARTA run STANDALONE at uniform wall temperatures bracketing it.
 
-  * `libsparta.so` DEFINES ITS OWN `MPI_*` STUB SYMBOLS and links no real MPI.
-    `import precice` pulls a real MPI into the global symbol namespace, and
-    SPARTA's stub calls are then interposed by it, so SPARTA crashes inside
-    `PMPI_Type_size` with a segfault — MPI was never initialised. Loading
-    SPARTA first instead fails the other way, with a missing `libmpi`.
-    `from mpi4py import MPI` first does not help.
-  * THE FIX: load SPARTA's library yourself with deep binding, so its own
-    symbols win:
+RUN SPARTA AS A SUBPROCESS. That is what the coupled run does and what the
+shipped participant does: one `spa_serial -in <deck>` invocation per time
+window, with the wall temperature written into the deck's
+`custom surf ... file` and the flux read back out of a surf dump. Two separate
+reasons, and neither goes away:
+
+  * the SPARTA Python library exposes `command` / `extract_global` /
+    `extract_compute` / `extract_variable` and NO per-surf scatter, so an
+    in-process participant can exchange a SCALAR and nothing more, while the
+    deck carries a per-element field;
+  * in-process, SPARTA and preCICE fight over MPI symbols — see below.
+
+IF YOU DRIVE IT IN PROCESS ANYWAY, there is exactly one load order that works.
+All four were run:
+
+  * `import precice` first, then the stock `sparta.py` wrapper — SEGFAULT.
+    `libsparta.so` DEFINES ITS OWN `MPI_*` STUB SYMBOLS and links no real MPI;
+    `import precice` pulls a real MPI into the global symbol namespace, SPARTA's
+    stub calls are interposed by it, and SPARTA dies inside `PMPI_Type_size`
+    with MPI never initialised.
+  * `from mpi4py import MPI` first, then preCICE, then SPARTA — SEGFAULT, same
+    frame. It does not help.
+  * SPARTA first through the stock wrapper (which uses `RTLD_GLOBAL`) — fails
+    the other way: `import precice` then dies with
+    `ImportError: libmpi.so.12: cannot open shared object file`.
+  * THE ONE THAT WORKS: load SPARTA's library yourself with deep binding and
+    LOCAL visibility, so its own symbols win inside it and preCICE's inside
+    preCICE:
 
 ```python
 import ctypes, os
 mode = os.RTLD_NOW | os.RTLD_LOCAL | os.RTLD_DEEPBIND
 lib = ctypes.CDLL("<path to>/libsparta.so", mode=mode)
+import precice                       # only now
 ```
 
   * SPARTA is a Monte-Carlo code. Its interface output carries statistical
     noise, so an IMPLICIT scheme's convergence measure may never be met even
     though the physics is fine. An explicit scheme with enough sampling per
     window is the honest choice; if you use implicit, set the tolerance above
-    the sampling noise and say so.
+    the sampling noise and say so. `couple_precice` reports an explicit scheme
+    as UNMEASURED rather than converged, which is the right verdict here — so
+    grade a DSMC coupling on its fixed point against standalone runs at the
+    same wall temperature, not on anything the orchestrator returns.
+  * USE A NEW SEED EACH WINDOW. With a fixed seed the run is bit-reproducible
+    and a fixed-point iteration can look converged when only the RNG is
+    repeating.
   * A SPARTA surface can take a prescribed TEMPERATURE
     (`surf_collide ... diffuse`) but there is NO surface-collision style that
     accepts a prescribed heat flux, so treat SPARTA as a Dirichlet-side
@@ -2013,13 +2152,19 @@ lib = ctypes.CDLL("<path to>/libsparta.so", mode=mode)
     },
     "fourc": {
         "title": "4C Multiphysics",
-        "verdict": "CANNOT — 4C has no preCICE entry point",
+        "verdict": ("CANNOT — 4C has no preCICE entry point (established by "
+                    "ABSENCE, not by a run: fixture "
+                    "precice_absent_in_fourc_and_febio)"),
         "body": '''\
 There is no preCICE support in 4C. Searching the installed 4C source tree for
 `precice` returns nothing, the built binary contains no preCICE symbols, and it
 links no preCICE library. This is not a configuration problem you can fix from
 the outside: adding preCICE to 4C means writing and building an adapter into
 4C's own source.
+
+Note what kind of evidence that is. A CAN here is backed by a coupling that
+RAN; this CANNOT is backed by not finding an entry point, which is weaker and
+is why it is worded as absence.
 
 USE `couple` INSTEAD. 4C works well as a participant in OASiS's file-handshake
 driver — it has been run there on BOTH the Dirichlet and the Neumann side of a
@@ -2028,7 +2173,9 @@ complete runnable 4C participant.''',
     },
     "febio": {
         "title": "FEBio",
-        "verdict": "CANNOT (as installed) — no preCICE in the binary, no Python API",
+        "verdict": ("CANNOT (as installed) — no preCICE in the binary, no "
+                    "Python API (established by ABSENCE, not by a run: "
+                    "fixture precice_absent_in_fourc_and_febio)"),
         "body": '''\
 The installed FEBio binary contains no preCICE symbols and FEBio ships no
 Python module, so there is nothing to call `precice` from. FEBio runs an XML

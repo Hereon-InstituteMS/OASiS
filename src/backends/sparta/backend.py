@@ -537,15 +537,35 @@ class SpartaBackend(SolverBackend):
         return f"SPARTA ({_KB.get('n_commands', 0)} commands distilled)"
 
     def precice_participant(self) -> dict:
-        """SPARTA as a preCICE participant — drive it via its Python library, exchange a
-        surface quantity (e.g. heat flux out, wall temperature in). Verified pattern."""
+        """SPARTA as a preCICE participant, in the load order that actually runs.
+
+        THIS USED TO SERVE THE OPPOSITE OF THE TRUTH. The snippet here began
+        `import precice` and then `from sparta import sparta`, under the words
+        "Verified pattern", while knowledge(topic='precice', solver='sparta')
+        said that exact ordering segfaults. Both went to agents. Running all
+        four orderings settles it in favour of the knowledge module: with
+        preCICE imported first, `sparta(name='serial')` dies inside
+        `PMPI_Type_size`, because libsparta defines its own MPI_* stubs, links
+        no real MPI, and a real libmpi in the global symbol namespace
+        interposes them. The fixture that runs them is
+        scripts/tier2_fixtures/coupling/sparta_precice_load_order_and_coupled_run.
+        """
         return {
-            "description": "SPARTA DSMC preCICE participant (driven via libsparta Python library)",
+            "description": ("SPARTA DSMC preCICE participant, in-process via libsparta — "
+                            "libsparta MUST be loaded first, with RTLD_DEEPBIND|RTLD_LOCAL"),
             "exchange_loop": (
-                "import precice, numpy as np\n"
-                "from sparta import sparta                 # PYTHONPATH=<sparta>/python\n"
-                "spa = sparta(name='serial')               # loads libsparta_serial.so\n"
-                "for line in setup_deck.splitlines(): spa.command(line)\n"
+                "# LOAD ORDER IS NOT OPTIONAL. `import precice` first segfaults; loading\n"
+                "# SPARTA first through the stock sparta.py wrapper (RTLD_GLOBAL) makes\n"
+                "# `import precice` fail with 'libmpi.so.12: cannot open shared object\n"
+                "# file'; mpi4py first does not help. Deep binding is the one that works.\n"
+                "import ctypes, os\n"
+                "mode = os.RTLD_NOW | os.RTLD_LOCAL | os.RTLD_DEEPBIND\n"
+                "lib = ctypes.CDLL('<sparta>/src/libsparta_serial.so', mode=mode)\n"
+                "import precice, numpy as np              # only now\n"
+                "spa = ctypes.c_void_p()\n"
+                "lib.sparta_open_no_mpi(0, None, ctypes.byref(spa))\n"
+                "cmd = lambda s: lib.sparta_command(spa, s.encode())\n"
+                "for line in setup_deck.splitlines(): cmd(line)\n"
                 "# setup must include: compute <id> surf all all etot ; fix ave/surf ;\n"
                 "#   variable twall equal <T0> ; surf_collide <sc> diffuse v_twall 1.0 ;\n"
                 "#   compute totflux reduce sum f_<avesurf>\n"
@@ -555,17 +575,25 @@ class SpartaBackend(SolverBackend):
                 "while p.is_coupling_ongoing():\n"
                 "    dt = p.get_max_time_step_size()\n"
                 "    T = p.read_data('Gas-Mesh','Wall-Temperature',vid,dt)\n"
-                "    spa.command('variable twall delete'); spa.command(f'variable twall equal {float(T[0])}')\n"
-                "    spa.command('run 500')                 # advance DSMC, re-average flux\n"
-                "    q = spa.extract_compute('totflux',0,0) / WALL_AREA\n"
+                "    cmd('variable twall delete'); cmd(f'variable twall equal {float(T[0])}')\n"
+                "    cmd('run 500')                       # advance DSMC, re-average flux\n"
+                "    q = <read the averaged flux back> / WALL_AREA\n"
                 "    p.write_data('Gas-Mesh','Heat-Flux',vid,np.array([q])); p.advance(dt)\n"
                 "p.finalize()"
             ),
-            "notes": ("Build libsparta_serial.so via 'make mode=shlib serial'. The Python library "
-                      "exposes command/extract_global/extract_compute/extract_variable only (no surf "
-                      "scatter) -> couple a SCALAR (total flux <-> uniform wall temp) by re-issuing a "
-                      "SPARTA equal-variable for the wall temperature each window. Set LD_LIBRARY_PATH "
-                      "to <sparta>/src and /opt/precice/lib."),
+            "notes": ("Build libsparta_serial.so via 'make mode=shlib serial'. Set "
+                      "LD_LIBRARY_PATH to <sparta>/src and /opt/precice/lib.\n"
+                      "PREFER THE SUBPROCESS ROUTE. The in-process library exposes "
+                      "command/extract_global/extract_compute/extract_variable only (no surf "
+                      "scatter), so it can exchange a SCALAR and nothing more — total flux "
+                      "against a uniform wall temperature, re-issued as a SPARTA "
+                      "equal-variable each window. Running `spa_serial -in <deck>` once per "
+                      "time window instead carries a PER-ELEMENT wall temperature through "
+                      "`custom surf ... file` and reads a per-element flux out of a surf "
+                      "dump, and gives SPARTA its own address space so the MPI symbol "
+                      "clash cannot arise at all. That is what the shipped participant "
+                      "(data/coupling_participants/participant_sparta.py) does and what "
+                      "the coupled run behind SPARTA's preCICE verdict used."),
         }
 
 
