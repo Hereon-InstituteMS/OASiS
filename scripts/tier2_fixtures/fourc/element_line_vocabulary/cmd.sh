@@ -114,17 +114,44 @@ probe() {  # $1 label  $2 builder  $3 element line
   echo "EXIT_$1=$?"
 }
 
-probe S_HEX8_OK    struct   "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear"
-probe S_NOKINEM    struct   "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1"
-probe S_QUAD4      struct   "1 SOLID QUAD4 1 2 3 4 MAT 1 KINEM nonlinear"
-probe S_BOGUS      struct   "1 FROBNICATE HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear"
-probe S_TOTLAG     struct   "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinearTotLag"
-probe S_TECH_TET   struct   "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear TECH banana"
-probe S_INT_BOTH   struct   "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear INTEGRATION RESIDUUM hex_27point MASS hex_8point"
-probe S_INT_PART   struct   "1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear INTEGRATION RESIDUUM hex_27point"
-probe T_QUAD4_OK   thermo2d "1 THERMO QUAD4 1 2 3 4 MAT 1"
-probe T_EXTRAKEY   thermo2d "1 THERMO QUAD4 1 2 3 4 MAT 1 KINEM linear"
-probe T_TRI6_DEAD  thermo2d "1 THERMO TRI6 1 2 3 5 6 7 MAT 1"
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology from every bad arm: each
+# is given the SAME well-formed element line as its own OK arm — "1 SOLID HEX8
+# ... MAT 1 KINEM nonlinear" for the structural probes, "1 THERMO QUAD4 1 2 3 4
+# MAT 1" for the thermal ones.  Every EXIT_*=1 expectation becomes 0, EXIT_S_INT_
+# PART=134 becomes 0, and both forbidden tokens EXIT_S_HEX8_OK=1 / EXIT_T_QUAD4_
+# OK=1 stay absent while every quoted diagnostic disappears — the fixture must go
+# red.  S_INT_PART_FOURC_ERROR_BLOCKS=0 is the one expectation that survives: it
+# counts an ABSENCE, and a clean run has no error block either.  That is exactly
+# why it is a weak assertion on its own and why the other ten carry the fixture.
+MUTATE="${T2_MUTATE:-0}"
+S_GOOD="1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear"
+T_GOOD="1 THERMO QUAD4 1 2 3 4 MAT 1"
+S_NOKINEM_L="1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1"
+S_QUAD4_L="1 SOLID QUAD4 1 2 3 4 MAT 1 KINEM nonlinear"
+S_BOGUS_L="1 FROBNICATE HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear"
+S_TOTLAG_L="1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinearTotLag"
+S_TECH_L="1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear TECH banana"
+S_INT_BOTH_L="1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear INTEGRATION RESIDUUM hex_27point MASS hex_8point"
+S_INT_PART_L="1 SOLID HEX8 1 2 3 4 5 6 7 8 MAT 1 KINEM nonlinear INTEGRATION RESIDUUM hex_27point"
+T_EXTRAKEY_L="1 THERMO QUAD4 1 2 3 4 MAT 1 KINEM linear"
+T_TRI6_L="1 THERMO TRI6 1 2 3 5 6 7 MAT 1"
+if [ "$MUTATE" = "1" ]; then
+  S_NOKINEM_L="$S_GOOD"; S_QUAD4_L="$S_GOOD"; S_BOGUS_L="$S_GOOD"
+  S_TOTLAG_L="$S_GOOD"; S_TECH_L="$S_GOOD"; S_INT_BOTH_L="$S_GOOD"
+  S_INT_PART_L="$S_GOOD"; T_EXTRAKEY_L="$T_GOOD"; T_TRI6_L="$T_GOOD"
+fi
+
+probe S_HEX8_OK    struct   "$S_GOOD"
+probe S_NOKINEM    struct   "$S_NOKINEM_L"
+probe S_QUAD4      struct   "$S_QUAD4_L"
+probe S_BOGUS      struct   "$S_BOGUS_L"
+probe S_TOTLAG     struct   "$S_TOTLAG_L"
+probe S_TECH_TET   struct   "$S_TECH_L"
+probe S_INT_BOTH   struct   "$S_INT_BOTH_L"
+probe S_INT_PART   struct   "$S_INT_PART_L"
+probe T_QUAD4_OK   thermo2d "$T_GOOD"
+probe T_EXTRAKEY   thermo2d "$T_EXTRAKEY_L"
+probe T_TRI6_DEAD  thermo2d "$T_TRI6_L"
 
 # The partial-INTEGRATION arm must produce NO 4C error block at all.
 echo "S_INT_PART_FOURC_ERROR_BLOCKS=$(grep -c 'PROC 0 ERROR' "$TMP/S_INT_PART.log")"

@@ -148,14 +148,30 @@ arm() {  # $1 label  $2 cd  $3 mortar  $4 cond
   echo "EXIT_$1=$?"
 }
 
-arm GOOD        "$CD_OK"        "$MO_OK"      "$CO_OK"
-arm NOSOLVER    "$CD_NOSOLVER"  "$MO_OK"      "$CO_OK"
-arm NOCONTACTSEC ""             "$MO_OK"      "$CO_OK"
-arm NOPENALTY   "$CD_NOPEN"     "$MO_OK"      "$CO_OK"
-arm MORTARDEF   "$CD_OK"        "$MO_DEFAULT" "$CO_OK"
-arm TWOMASTER   "$CD_OK"        "$MO_OK"      "$CO_TWOMASTER"
-arm MISMATCH    "$CD_OK"        "$MO_OK"      "$CO_MISMATCH"
-arm NOCONDITION "$CD_OK"        "$MO_OK"      ""
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology from all seven broken
+# arms: each is rebuilt from the three CORRECT blocks the GOOD arm uses.  Every
+# EXIT_*=1 expectation becomes 0, all five quoted 4C diagnostics disappear, and
+# the NOCONDITION arm — the dangerous silent one — now carries its contact
+# condition, so it builds the interface and the forbidden
+# NOCONDITION_BUILDS_INTERFACE=1 appears.  The fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+CD_NOSOLVER_A="$CD_NOSOLVER"; CD_NONE_A=""; CD_NOPEN_A="$CD_NOPEN"
+MO_DEFAULT_A="$MO_DEFAULT"; CO_TWOMASTER_A="$CO_TWOMASTER"
+CO_MISMATCH_A="$CO_MISMATCH"; CO_NONE_A=""
+if [ "$MUTATE" = "1" ]; then
+  CD_NOSOLVER_A="$CD_OK"; CD_NONE_A="$CD_OK"; CD_NOPEN_A="$CD_OK"
+  MO_DEFAULT_A="$MO_OK"; CO_TWOMASTER_A="$CO_OK"
+  CO_MISMATCH_A="$CO_OK"; CO_NONE_A="$CO_OK"
+fi
+
+arm GOOD        "$CD_OK"          "$MO_OK"          "$CO_OK"
+arm NOSOLVER    "$CD_NOSOLVER_A"  "$MO_OK"          "$CO_OK"
+arm NOCONTACTSEC "$CD_NONE_A"     "$MO_OK"          "$CO_OK"
+arm NOPENALTY   "$CD_NOPEN_A"     "$MO_OK"          "$CO_OK"
+arm MORTARDEF   "$CD_OK"          "$MO_DEFAULT_A"   "$CO_OK"
+arm TWOMASTER   "$CD_OK"          "$MO_OK"          "$CO_TWOMASTER_A"
+arm MISMATCH    "$CD_OK"          "$MO_OK"          "$CO_MISMATCH_A"
+arm NOCONDITION "$CD_OK"          "$MO_OK"          "$CO_NONE_A"
 
 echo "GOOD_STEPS=$(grep -c 'Finalised step' "$TMP/GOOD.log")"
 echo "GOOD_BUILDS_INTERFACE=$(grep -c 'Building contact interface' "$TMP/GOOD.log")"
