@@ -348,12 +348,28 @@ def body() -> None:
             f"the floor came out {floor:.3e}, at or under tol={TOL:.1e}, so "
             f"nothing was actually blocked by sampling noise")
     print(f"floor_exceeds_requested_tol={bool(floor > TOL)}")
-    said = " | ".join(str(w) for w in aware.get("validation", []))
+    # WHERE the floor is announced matters as much as THAT it is. `validation`
+    # is the findings channel and `couple` treats any entry in it as making the
+    # coupling untrustworthy — so a correct stochastic run whose notice sat
+    # there came back NOT VERIFIED, which is the verdict this feature exists to
+    # stop being unavoidable. The notice belongs in the coverage channel, which
+    # is always printed inside `verification` and never flips it. Both halves
+    # are checked: it must be SAID, and `validation` must be EMPTY.
+    said = " | ".join(str(w) for w in aware.get("checks_not_run", []))
+    in_verdict = "NOISE FLOOR" in str(aware.get("verification", "")).upper()
     print(f"result_names_the_floor_to_the_agent="
-          f"{bool('NOISE FLOOR' in said.upper())}")
+          f"{bool('NOISE FLOOR' in said.upper() and in_verdict)}")
     L.check("NOISE FLOOR" in said.upper(), "floor_not_reported_to_the_agent",
             "a verdict reached at the noise floor that does not SAY so is a "
             "softened failure, which is worse than the honest one it replaced")
+    L.check(in_verdict, "floor_not_carried_into_the_verdict",
+            "the coverage channel is appended to `verification`; if the floor "
+            "is not there, an agent reading only the verdict never sees it")
+    print(f"noise_aware_validation_stayed_empty={not bool(aware.get('validation'))}")
+    L.check(not aware.get("validation"), "noise_aware_validation_not_empty",
+            "a correct coupling judged at its measured floor must leave the "
+            "findings block EMPTY — a non-empty one stamps NOT VERIFIED: "
+            + " | ".join(str(w) for w in aware.get("validation", []))[:300])
 
     # ── and the physics is right, against the independent fixed point ─────
     t_got = mean_wall_T(aware)

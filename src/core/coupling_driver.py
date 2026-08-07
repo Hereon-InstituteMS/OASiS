@@ -150,8 +150,22 @@ class CouplingResult:
     # validation block is what a correct coupling looks like. Putting a routine
     # measurement note there would make every stochastic-aware run look flagged
     # and every deterministic one that merely asked for a floor look flagged
-    # too. Only a floor that actually CHANGED the verdict is a warning.
+    # too.
     notes: list[str] = field(default_factory=list)
+    # THE CRITERION ACTUALLY APPLIED — a third channel, and it exists because
+    # the other two are both wrong for it. "This run was judged at the measured
+    # noise floor rather than at your tol" is not provenance (an agent MUST see
+    # it, and must not grade tighter than the floor) and it is not a finding
+    # either (the coupling is correct). It sat in `warnings` when this branch
+    # was written, which was harmless there because the tool then decided
+    # trustworthiness with a keyword filter that these words happened to miss.
+    # The tool now takes any finding at all as untrustworthy — deliberately, so
+    # that no check can be lost by rewording — and under that rule a warning
+    # here stamps NOT VERIFIED on every correct stochastic coupling, which is
+    # the exact verdict this whole branch exists to stop being unavoidable.
+    # So it gets its own list, and the tool reports it in the coverage channel
+    # that is always printed and never flips the verdict.
+    criterion_notes: list[str] = field(default_factory=list)
 
 
 def _stack(ifd: InterfaceData) -> np.ndarray:
@@ -494,6 +508,7 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
     # measured; _finish reads them at call time, so a late measurement is
     # reported by an early-written return path without any threading.
     notes: list[str] = []
+    criterion_notes: list[str] = []
     floor: Optional[float] = None if noise_floor is None else float(noise_floor)
     tol_eff: float = tol
     block: int = 1
@@ -519,6 +534,7 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
                                 "residual_norm": (None if rp is None
                                                   else float(np.linalg.norm(rp)))})
         kw.setdefault("notes", notes)
+        kw.setdefault("criterion_notes", criterion_notes)
         kw.setdefault("noise_floor", floor)
         # Only reported once a floor is in play. Naming an effective tolerance
         # on a run that had none would invite a grader to use it.
@@ -550,7 +566,7 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
     tol_eff = tol if not floor else max(tol, float(floor))
     block = max(1, int(noise_block)) if floor else 1
     if floor and tol_eff > tol:
-        warnings.append(
+        criterion_notes.append(
             f"CONVERGENCE IS AT THE NOISE FLOOR, NOT AT tol: the requested "
             f"tol={tol:.1e} is below the residual noise floor {floor:.3e}, "
             f"which no amount of iterating can cross. The run is judged against "
@@ -668,7 +684,8 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
                            f"every iteration (and keep normal_fluxes present or "
                            f"absent consistently) — the driver relaxes export "
                            f"vectors element by element."),
-                    warnings=warnings, notes=notes)
+                    warnings=warnings, notes=notes,
+                    criterion_notes=criterion_notes)
 
         total_res = 0.0
         total_ref = 0.0
@@ -755,7 +772,7 @@ def run_coupling(participants: list[Participant], max_iter: int = 50,
                 tol_eff = max(tol, float(floor))
             if _stat(history, block) < tol_eff:
                 at_floor = True
-                warnings.append(
+                criterion_notes.append(
                     f"CONVERGED AT THE RE-MEASURED NOISE FLOOR. The iteration did "
                     f"not reach tol={tol:.1e}, but the residual noise floor "
                     f"measured with the participants in their FINAL state is "

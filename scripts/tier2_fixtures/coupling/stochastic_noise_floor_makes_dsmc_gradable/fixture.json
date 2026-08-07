@@ -28,6 +28,7 @@
     "arm_noise_aware_converged_at_floor=True",
     "floor_exceeds_requested_tol=True",
     "result_names_the_floor_to_the_agent=True",
+    "noise_aware_validation_stayed_empty=True",
     "coupled_matches_independent_reference=True",
     "deterministic_floor_is_exactly_zero=True",
     "deterministic_arm_unaffected=True",
@@ -45,6 +46,8 @@
     "failures_count=1",
     "arm_plain_converged=True",
     "arm_noise_aware_converged=False",
-    "deterministic_floor_is_exactly_zero=False"
+    "deterministic_floor_is_exactly_zero=False",
+    "result_names_the_floor_to_the_agent=False",
+    "noise_aware_validation_stayed_empty=False"
   ]
 }

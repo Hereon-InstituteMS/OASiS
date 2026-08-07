@@ -3806,6 +3806,19 @@ def register_consolidated_tools(mcp: FastMCP):
         # are printed in it, so "not checked" is never read as "checked and fine").
         val = list(r.warnings)
         not_run: list[str] = [_DIGEST_SCOPE_LIMIT]
+        # THE CRITERION THE RUN WAS HELD TO goes in the COVERAGE channel, never
+        # in the findings one. "Judged at the measured noise floor instead of at
+        # your tol" must be printed — an agent that grades tighter than the
+        # floor is grading the sampler — but it is not a fault, and `val` is the
+        # list where anything at all means the coupling cannot be trusted. Left
+        # in `val` it stamps NOT VERIFIED on every correct stochastic coupling,
+        # measured: a converged run at a floor of 1.0e-02 came back "NOT
+        # VERIFIED — the coupling did not converge, or failed one of OASiS's
+        # silent-wrong checks", which is the verdict the whole branch exists to
+        # stop being unavoidable. The driver hands these over in their own list
+        # rather than being pattern-matched out of `warnings`, so a reworded
+        # message cannot silently start or stop flipping the verdict.
+        not_run += list(r.criterion_notes)
         # Judge against the criterion the run was actually held to. Quoting the
         # requested `tol` in a NOT CONVERGED message on a run that was judged
         # against a measured noise floor would name a threshold the driver never
@@ -3832,8 +3845,21 @@ def register_consolidated_tools(mcp: FastMCP):
         # case where a still-moving small block is invisible. When the global
         # residual already says NOT CONVERGED it says everything, and repeating
         # it per block just buries the findings that are specific.
+        #
+        # Judged against the SAME criterion as the global norm, for the same
+        # reason check_convergence is above. This check asks whether a block is
+        # still moving by more than the tolerance the global norm was held to;
+        # asking a Monte-Carlo participant's blocks to still themselves below a
+        # tol that sits under the sampling noise is the original impossible
+        # demand, one level down. Measured before this line was fixed: a
+        # correct stochastic coupling converged at a floor of 8.3e-03 and was
+        # stamped NOT VERIFIED because its blocks were "still changing by more
+        # than 1.0e-08 relative".
         if r.converged:
-            f, n = check_residual_blocks(r.block_residuals, tol); val += f; not_run += n
+            f, n = check_residual_blocks(
+                r.block_residuals,
+                r.tol_effective if r.tol_effective else tol)
+            val += f; not_run += n
         names = list(r.exports)
         if len(names) == 2:
             a, b = r.exports[names[0]], r.exports[names[1]]

@@ -160,9 +160,23 @@ def test_measured_floor_lets_a_stochastic_coupling_converge(tmp_path):
     assert r.stopped_at_noise_floor
     assert r.noise_floor and r.noise_floor > 1e-9
     assert r.tol_effective == max(1e-9, r.noise_floor)
-    assert any("NOISE FLOOR" in w.upper() for w in r.warnings), (
+    # SAID, and said in `criterion_notes` rather than in `warnings`. The
+    # sentence and its job are unchanged — a verdict reached at the floor that
+    # does not SAY so is a softened failure, which is worse than the honest one
+    # it replaced — but the field moved when this branch met
+    # feature/coupling-robustness. There, `couple` takes ANY entry in the
+    # findings list as making a coupling untrustworthy, on purpose, so that no
+    # check can be lost by rewording; and it builds that list from `warnings`.
+    # A correct stochastic coupling therefore came back NOT VERIFIED, which is
+    # the verdict this whole branch exists to stop being unavoidable. The notice
+    # is now reported in the coverage channel, which is always printed in the
+    # verdict and never flips it.
+    assert any("NOISE FLOOR" in w.upper() for w in r.criterion_notes), (
         "a verdict reached at the floor that does not SAY so is a softened "
         "failure, which is worse than the honest one it replaced")
+    assert not any("NOISE FLOOR" in w.upper() for w in r.warnings), (
+        "the criterion notice must NOT be a warning: `couple` copies warnings "
+        "into `validation` and treats a non-empty `validation` as untrustworthy")
     # The physics is still right: the fixed point of x=0.5y+1, y=0.5x+2.
     assert abs(r.exports["A"]["values"][0] - 8 / 3) < 0.3
     assert abs(r.exports["B"]["values"][0] - 10 / 3) < 0.3
