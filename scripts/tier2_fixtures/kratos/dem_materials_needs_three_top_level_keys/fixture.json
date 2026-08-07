@@ -1,0 +1,15 @@
+{
+  "_comment": "Tier-2 for kratos.dem pitfall #4: MaterialsDEM.json needs materials + material_relations + material_assignation_table, and is NOT the StructuralMechanics 'properties' schema. Executed 2026-08-07 on Kratos 10.4.3 Release with DEMApplication. The fixture drives MaterialsAssignationUtility directly, so it needs no mesh. Measured: a FEM-shaped materials document -- {'properties': [{'model_part_name':..., 'Material': {'Variables':..., 'constitutive_law': {'name':...}}}]}, exactly what the OASiS DEM generator emitted -- raises RuntimeError 'Error: Getting a value that does not exist. entry string : materials' from kratos/sources/kratos_parameters.cpp:426, because all three DEM keys are read with unguarded Parameters lookups and the first missing one names itself. Dropping only the assignation table from an otherwise correct file gives the same error with 'entry string : material_assignation_table'. The deeper point the error does not tell you: DEM splits material data in two. Per-particle quantities (PARTICLE_DENSITY, YOUNG_MODULUS, POISSON_RATIO) live in 'materials'; per-CONTACT-PAIR quantities (STATIC_FRICTION, DYNAMIC_FRICTION, COEFFICIENT_OF_RESTITUTION, FRICTION_DECAY, DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME, DEM_CONTINUUM_CONSTITUTIVE_LAW_NAME, DEM_ROLLING_FRICTION_MODEL_NAME) live in 'material_relations'. There is no 'constitutive_law': {'name': ...} key anywhere in the DEM schema. INTERPRETER: needs a Kratos build carrying DEMApplication; set KRATOS_PYTHON. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the mutation REPLACES the FEM-shaped document with a correctly shaped DEM one carrying all three keys, leaving the utility call and the assertions untouched. Verified: unmutated PASSES (rc=0) with fem_shaped_materials_rejected=True; with T2_MUTATE=1 it FAILS (rc=1), that line flips to False, first_message becomes <no exception> and dem_materials_schema_check=ok disappears. Re-verify: cd scripts/tier2_fixtures/kratos/dem_materials_needs_three_top_level_keys && $KRATOS_PYTHON source.py (passes), then T2_MUTATE=1 $KRATOS_PYTHON source.py (fails).",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "fem_shaped_materials_rejected=True_expected=True",
+    "entry string : materials",
+    "dem_materials_schema_check=ok"
+  ],
+  "forbid_in_output": [
+    "MISMATCH"
+  ]
+}

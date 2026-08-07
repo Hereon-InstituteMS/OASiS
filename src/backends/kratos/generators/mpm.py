@@ -269,17 +269,60 @@ KNOWLEDGE = {
             "JohnsonCookThermalPlastic3DLaw / JohnsonCookThermalPlastic2DPlaneStrainLaw / "
             "JohnsonCookThermalPlastic2DAxisymLaw (rate-dependent plasticity)",
         ],
-        "solver_types": ["USL (Update Stress Last)", "USF (Update Stress First)", "MUSL (Modified USL)"],
+        # solver_type is a SHORT LABEL, not a class name. The accepted strings are
+        # "static"/"Static", "quasi_static"/"Quasi-static" and "dynamic"/"Dynamic";
+        # for "dynamic" a second key "time_integration_method" selects
+        # "implicit" or "explicit". The class names MPMStaticSolver /
+        # MPMImplicitDynamicSolver / MPMExplicitSolver are NOT accepted values.
+        "solver_types": [
+            "static (or Static)",
+            "quasi_static (or Quasi-static)",
+            "dynamic (or Dynamic) + time_integration_method: implicit | explicit",
+        ],
+        "scheme_types": {
+            "implicit dynamic / quasi-static": ["newmark", "bossak (default)"],
+            "explicit dynamic": ["central_difference (default)", "forward_euler"],
+            "static": "no scheme_type key exists; supplying one fails validation",
+        },
+        # USL / USF / MUSL are values of the "stress_update" key and apply ONLY to
+        # an explicit solver running scheme_type "forward_euler"; with
+        # "central_difference" the option is forced to 0 and stress_update is
+        # ignored entirely.
+        "stress_update": ["usf (default)", "usl", "musl"],
+        "model_parts": (
+            "MPM needs TWO mdpa files and creates three model parts. "
+            "solver_settings.grid_model_import_settings.input_filename names the "
+            "background GRID mdpa (meshed with plain FEM element names such as "
+            "Element2D4N); solver_settings.model_import_settings.input_filename names "
+            "the BODY mdpa (meshed with MPM* element names). The model parts are "
+            "'Background_Grid', 'MPM_Material' and 'Initial_MPM_Material' \u2014 those names "
+            "are fixed, there is no key to rename the grid. Boundary conditions attach "
+            "to sub model parts of Background_Grid; materials attach to sub model parts "
+            "of Initial_MPM_Material."
+        ),
         "pitfalls": [
-            "[API] Kratos MPM element names ALL start with the literal prefix \"MPM\": MPMUpdatedLagrangian2D4N, MPMUpdatedLagrangian3D8N, MPMUpdatedLagrangianAxisymmetry2D4N, MPMUpdatedLagrangianPQ, MPMUpdatedLagrangianUP, etc. The prior catalog listed UpdatedLagrangianPQ2D / UpdatedLagrangianAxisym (without the MPM prefix) \u2014 none of those are registered. Signal: model_part.CreateNewElement(\"UpdatedLagrangianPQ2D\", ...) raises 'Error: The Element X is not registered!' from kratos/python/add_model_part_to_python.cpp; prepending MPM makes the call succeed. (Verified empirically 2026-06-01 \u2014 Tier-2 fixture mpm_element_naming_mpm_prefix in scripts/tier2_fixtures/kratos/.)",
+            "[API] Kratos MPM element names ALL start with the literal prefix \"MPM\": MPMUpdatedLagrangian2D4N, MPMUpdatedLagrangian3D8N, MPMUpdatedLagrangianAxisymmetry2D4N, MPMUpdatedLagrangianPQ, MPMUpdatedLagrangianUP, etc. The prior catalog listed UpdatedLagrangianPQ2D / UpdatedLagrangianAxisym (without the MPM prefix) \u2014 none of those are registered. Signal: model_part.CreateNewElement(\"UpdatedLagrangian2D3N\", ...) raises 'Error: The Element \"UpdatedLagrangian2D3N\" is not registered!' and lists the registered elements; prepending MPM makes the identical call succeed. Beware grepping for the bare name \u2014 it matches as a substring of the MPM-prefixed one, so only element creation settles it. (Verified by execution 2026-08-07.)",
+            "[Input] MPM reads TWO mdpa files, and the background grid has its own key: solver_settings.grid_model_import_settings.input_filename. Omitting that block does not raise a missing-key error \u2014 the default filename is used and the failure surfaces as a missing file. Signal: RuntimeError 'Error: Error opening mdpa file : \"unknown_name_Grid.mdpa\"' \u2014 the literal string unknown_name_Grid is the giveaway that the grid import block is absent rather than the file being misnamed. (Verified by execution 2026-08-07.)",
+            "[Input] MATERIAL_POINTS_PER_ELEMENT is mandatory and lives in the MATERIALS json, under properties[i].Material.Variables \u2014 not in ProjectParameters. On the installed 10.4.3 build its absence is a hard error, not a defaulted warning. Signal: RuntimeError 'Error: \"MATERIAL_POINTS_PER_ELEMENT\" is not specified in Properties' raised from MaterialPointGeneratorUtility during solver Initialize. (Verified by execution 2026-08-07.)",
+            "[Input] The number of material points per element is drawn from a fixed set that depends on the GRID element geometry, and the sets are NOT the same across geometries: Triangular 1/3/4/6/12, Quadrilateral 1/4/9/16/25, Tetrahedral 1/4/8/14/24, Hexahedral 1/8/27/64/125. Anything else is rejected on 10.4.3. Signal: RuntimeError 'Error: The input number of MATERIAL_POINTS_PER_ELEMENT (5) is not available for Quadrilateral elements' followed by 'Available options are: 1, 4, 9, 16 and 25.' \u2014 the message names the GRID geometry, so it is also how you discover your background grid is quads when you assumed triangles. (Verified by execution 2026-08-07; the allowed sets were read back from the installed libKratosMPMCore. Kratos master after this release downgrades this to a warning that silently clamps to the geometry default, so on a newer build the same mistake yields a different material-point count instead of an error.)",
+            "[Input] The legacy spelling PARTICLES_PER_ELEMENT still works, and the solver REWRITES YOUR MATERIALS FILE ON DISK to the new name as a side effect of running. Signal: the run prints '[DEPRECATED INPUT PARAMETERS] \\'PARTICLES_PER_ELEMENT\\' is deprecated; use \\'MATERIAL_POINTS_PER_ELEMENT\\' instead.' and completes normally, after which the materials json in the working directory no longer contains the string PARTICLES_PER_ELEMENT \u2014 a version-controlled input file is modified by a simulation run. (Verified by execution 2026-08-07.)",
+            "[Input] Materials entries address the BODY through 'Initial_MPM_Material.<SubModelPart>'. Using the MPM_Material root instead fails, because at materials-reading time the body sub model parts only exist under Initial_. Signal: RuntimeError 'Error: There is no sub model part with name \"Parts_Parts_Auto1\" in model part \"MPM_Material\"' followed by the list of sub model parts that DO exist. (Verified by execution 2026-08-07.)",
+            "[BC] Boundary conditions attach to sub model parts of Background_Grid, never of MPM_Material \u2014 the material points move, the grid does not, so the constrained set has to be a grid region. Signal: pointing a constraints_process_list entry at 'MPM_Material.<name>' raises RuntimeError 'Error: There is no sub model part with name \"DISPLACEMENT_Displacement_Auto1\" in model part \"MPM_Material\"'; the same block with 'Background_Grid.<name>' runs. (Verified by execution 2026-08-07.)",
+            "[API] solver_settings.solver_type takes a short label, not a solver class name. Accepted: 'static'/'Static', 'quasi_static'/'Quasi-static', 'dynamic'/'Dynamic' (which then requires time_integration_method 'implicit' or 'explicit'). Signal: 'MPMImplicitDynamicSolver' raises Exception 'The requested solver type \"MPMImplicitDynamicSolver\" is not in the python solvers wrapper' + 'Available options are: \"static\", \"dynamic\", \"quasi_static\"'. (Verified by execution 2026-08-07 \u2014 the class-name spellings were previously served as the solver_types list.)",
+            "[API] scheme_type is partitioned by solver: an implicit run takes only newmark or bossak, an explicit run only central_difference or forward_euler, and a static run has no scheme_type key at all. Signal: scheme_type 'central_difference' on an implicit dynamic solver raises Exception 'The requested scheme type \"central_difference\" is not available!' + 'Available options are: \"newmark\", \"bossak\"'. (Verified by execution 2026-08-07.)",
+            "[Input] Constitutive law names are the fully-qualified registered strings; the short family label is the single most common MPM setup error. Signal: 'LinearElasticPlaneStrain2DLaw' raises RuntimeError 'Error: Kratos components missing \"LinearElasticPlaneStrain2DLaw\"' \u2014 the fix is LinearElasticIsotropicPlaneStrain2DLaw, i.e. the 'Isotropic' the short name drops. (Verified by execution 2026-08-07.)",
+            "[Numerical] Material points that leave the background grid are DELETED, and the mass they carry leaves the simulation with them. The receipt is two log lines, not an error, so a partially-escaped body silently loses mass; only when the last point is gone does the run stop. Signal: 'MPMSearchElementUtility: WARNING: Search Element for Material Point: 26 is failed. Geometry is cleared.' then '[WARNING] MaterialPointEraseProcess: 1 particle elements have been erased.', and once the body is entirely outside, RuntimeError 'Error: No degrees of freedom in model part: MPM_Material'. (Verified by execution 2026-08-07 by letting a body free-fall out of its grid.)",
+            "[Physics] Gravity is opt-in. Without an assign_gravity_to_material_point_process block, MP_VOLUME_ACCELERATION stays zero and the body simply does not fall \u2014 the run is successful, converged and wrong. Signal: an otherwise identical deck with the gravity process removed completes with exit code 0, unchanged total material-point mass, and MP_DISPLACEMENT exactly 0.0 where the reference gives -0.04905; no warning is emitted. (Verified by execution 2026-08-07.)",
+            "[Input] The BODY mdpa carries MPM* element names but the runtime ignores them: the material-point element type is chosen from the GRID geometry plus the ProjectParameters flags pressure_dofs and is_pqmpm. Writing MPMUpdatedLagrangianUP2D3N in the body mdpa without \"pressure_dofs\": true silently yields plain displacement elements. Signal: no message at all \u2014 the mixed formulation is simply absent, so a nearly-incompressible run shows volumetric locking rather than reporting a configuration error. (Verified from Kratos source 10.4.3, MaterialPointGeneratorUtility hard-codes the element stem; not separately executed.)",
         ],
         "guidance": [
-            "[Numerical] Background grid must cover entire domain of particle motion",
-            "[Numerical] Cell crossing instability: use GIMP or CPDI shape functions for stability",
-            "[Numerical] Particles per cell: 4-16 typical (2x2 or 4x4 per cell in 2D)",
-            "[Numerical] Time step: dt < h/c where h=cell size, c=wave speed",
-            "[Numerical] Zero-energy modes possible with linear elements: use stabilization",
-            "[Physics] For free surface: particles leaving grid are lost (expand grid or use remeshing)",
+            "[Numerical] The background grid must enclose the whole TRAJECTORY of the body, not just its initial position \u2014 points that exit are erased (see pitfalls).",
+            "[Numerical] Penalty Dirichlet conditions take penalty_coefficient (the older name penalty_factor is auto-renamed). It defaults to 0, which silently disables the constraint; shipped tests use 1e10 to 1e12, i.e. two to three orders above YOUNG_MODULUS.",
+            "[Numerical] Cell-crossing instability: Kratos MPM does NOT implement GIMP or CPDI — both strings appear in zero files of MPMApplication, so advice to 'use GIMP or CPDI shape functions' cannot be acted on here. The mitigation Kratos does provide is PQMPM (partitioned-quadrature MPM), switched on with \"is_pqmpm\": true in solver_settings, which makes the generator build MPMUpdatedLagrangianPQ elements instead.",
+            "[Numerical] Material points per cell: 4-16 typical, but only from the geometry's allowed set (see pitfalls).",
+            "[Numerical] Time step: dt < h/c where h=cell size, c=wave speed.",
+            "[Numerical] Zero-energy modes possible with linear elements: use stabilization.",
+            "[Numerical] An inverted deformation gradient is the canonical MPM blow-up and it does raise: 'MPM UPDATED LAGRANGIAN DISPLACEMENT ELEMENT INVERTED: |F|<0 detF = <value>'. It usually means the time step is too large or there are too few material points per element.",
         ]
     },
 }

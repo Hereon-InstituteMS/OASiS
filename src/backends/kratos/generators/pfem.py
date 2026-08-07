@@ -28,29 +28,72 @@ KNOWLEDGE = {
             "release is 10.2.3 and it publishes no distribution installable for this "
             "interpreter/platform, so pip reports 'from versions: none' — do not read the "
             "message as 'the package does not exist'. "
-            "Build from source with -DPFEM_FLUID_DYNAMICS_"
-            "APPLICATION=ON + -DDELAUNAY_MESHING_APPLICATION=ON."
+            "Build from source by appending the application PATHS to "
+            "KRATOS_APPLICATIONS (the add_app helper in the configure script) — "
+            "there is NO -DPFEM_FLUID_DYNAMICS_APPLICATION=ON flag, that spelling "
+            "appears nowhere in Kratos' build system. DelaunayMeshingApplication "
+            "must be built too, and needs -DUSE_TRIANGLE_NONFREE_TPL=ON "
+            "(2D) and -DUSE_TETGEN_NONFREE_TPL=ON (3D) or configure aborts."
         ),
-        # UNVERIFIED-ON-THIS-INSTALL: the application cannot be installed at 10.4.x, so
-        # these three element names could not be confirmed against a registry here
-        # (2026-08-03). Every other element name in the kratos catalog HAS been confirmed
-        # by ModelPart.CreateNewElement on the installed build.
+        # EVIDENCE BASIS, stated plainly: no PFEM application is installed or
+        # importable on this host, and none could be made so — PfemFluidDynamics,
+        # DelaunayMeshing, PfemSolidMechanics, Pfem, PFEM2, ContactMechanics and
+        # SolidMechanics all fail to import even on the richest Kratos build
+        # available here (10.4.3 with 28 applications). Every PFEM entry below is
+        # therefore SOURCE-READ from the Kratos master checkout, never executed.
+        # Names were taken from the KRATOS_REGISTER_ELEMENT / _CONDITION calls and
+        # error strings from the KRATOS_ERROR / raise sites; nothing here has been
+        # confirmed against a live registry, unlike the DEM and MPM entries.
+        #
+        # CORRECTION (2026-08-07): the three element names previously listed here
+        # carried node-count suffixes — ...Element2D3N, ...FluidElement2D3N,
+        # ...Element3D4N. PFEM fluid element names have NO node-count suffix; they
+        # end at 2D / 3D / 2Dquadratic / 3Dquadratic. The middle one also had a
+        # spurious "Implicit". The corrected names are below.
         "elements": {
-            "2D": ["TwoStepUpdatedLagrangianVPImplicitNodallyIntegratedElement2D3N",
-                   "TwoStepUpdatedLagrangianVPImplicitFluidElement2D3N"],
-            "3D": ["TwoStepUpdatedLagrangianVPImplicitNodallyIntegratedElement3D4N"],
+            "note": ("PFEM fluid ELEMENT names carry no node-count suffix "
+                     "(they end at 2D / 3D / 2Dquadratic / 3Dquadratic), while the "
+                     "CONDITION names do carry one. Rigid-wall bodies in the same "
+                     "mdpa use the plain core name Element2D2N, which does carry a "
+                     "suffix — mixing the two conventions is the usual mistake."),
+            "2D": ["TwoStepUpdatedLagrangianVPFluidElement2D",
+                   "TwoStepUpdatedLagrangianVPImplicitNodallyIntegratedElement2D",
+                   "TwoStepUpdatedLagrangianVPSolidElement2D"],
+            "3D": ["TwoStepUpdatedLagrangianVPFluidElement3D",
+                   "TwoStepUpdatedLagrangianVPImplicitNodallyIntegratedElement3D",
+                   "TwoStepUpdatedLagrangianVPSolidElement3D"],
+            "conditions": ["CompositeCondition2D2N", "CompositeCondition3D3N"],
         },
         "capabilities": ["free_surface_tracking", "remeshing", "alpha_shape_boundary_detection",
                          "fluid_structure_with_topology_changes"],
-        "solver_types": ["two_step_v_p_solver (velocity-pressure split)"],
+        # Accepted solver_type strings, read from python_solvers_wrapper_pfem_fluid.
+        "solver_types": [
+            "pfem_fluid_solver (alias PfemFluid) — two-step velocity-pressure split",
+            "pfem_fluid_nodal_integration_solver (alias PfemFluidNodalIntegration)",
+            "pfem_fluid_three_step_solver (alias PfemFluidThreeStep)",
+            "pfem_fluid_thermal_solver (alias PfemFluidThermal)",
+            "pfem_fluid_thermally_coupled_solver (alias PfemFluidThermallyCoupled)",
+            "pfem_dem_solver (alias PfemDem)",
+        ],
         "pitfalls": [
-            "[Integration] PFEM applications (PfemFluidDynamicsApplication, DelaunayMeshingApplication, PfemSolidMechanicsApplication, PFEM2Application) are NOT published on PyPI as of Kratos 10.4.2. The pip-install hint in some legacy templates fails with \"ERROR: No matching distribution found for KratosPfemFluidDynamicsApplication\". Build Kratos from source with -DPFEM_FLUID_DYNAMICS_APPLICATION=ON + -DDELAUNAY_MESHING_APPLICATION=ON to enable. Signal: pip install of any KratosPfem*Application package returns 'No matching distribution found' from the index. (Verified empirically 2026-06-01.)",
-            "[Numerical] Requires DelaunayMeshingApplication for remeshing Signal: `import KratosMultiphysics.DelaunayMeshingApplication` raises ModuleNotFoundError and no wheel is published at any version, so the remeshing dependency cannot be satisfied on a pip stack at all.",
+            "[Setup] No PFEM application is obtainable on a pip stack. PfemFluidDynamicsApplication, DelaunayMeshingApplication, PfemSolidMechanicsApplication, PfemApplication and PFEM2Application publish no distribution installable against a 10.4.x core, and none of them imports even on a source-built Kratos carrying 28 other applications. Signal: `import KratosMultiphysics.PfemFluidDynamicsApplication` raises ModuleNotFoundError on every environment tested here, while DEMApplication and MPMApplication in the same interpreter import cleanly — so the failure is this application's absence, not a broken Kratos. (Verified by execution 2026-08-07 for the ABSENCE only: seven PFEM-chain applications were probed on the richest build available and none imported. Everything below is source-read and could not be executed anywhere on this host.)",
+            "[Setup] There is no -DPFEM_FLUID_DYNAMICS_APPLICATION=ON flag; that spelling appears nowhere in Kratos' build system and any guide offering it is wrong. Modern Kratos selects applications by appending their PATH to a semicolon-separated KRATOS_APPLICATIONS list, via the add_app helper in the configure script. The shipped default configure builds LinearSolvers, StructuralMechanics, FluidDynamics and Iga — no PFEM application at all. Signal: a configure run that never prints '-- [Info] Adding dependency .../DelaunayMeshingApplication' has not enabled PFEM, whatever -D flags were passed. (Source-read only; not executed.)",
+            "[Setup] PFEM needs a non-free external mesher and the build aborts at CONFIGURE time without it, not at link or run time. Triangle (2D) and TetGen (3D) are guarded by -DUSE_TRIANGLE_NONFREE_TPL=ON and -DUSE_TETGEN_NONFREE_TPL=ON, but the mesher sources compile unconditionally, so omitting the flag is fatal. Signal: CMake FATAL_ERROR 'INCLUDE_TRIANGLE not defined, neither USE_TRIANGLE_NONFREE_TPL=ON is defined. The application DelaunayMeshingApplication will not compile'. (Source-read only; not executed.)",
+            "[Integration] The dependency chain is declared only in CMake and in the Python module, never in the application manifests — every PFEM app's .json lists KratosMultiphysics as its sole dependency, so a wheel would not pull what it needs. PfemFluidDynamicsApplication imports DelaunayMeshingApplication at module scope; PfemSolidMechanicsApplication transitively requires five applications (ContactMechanics, Pfem, DelaunayMeshing, SolidMechanics and itself). Signal: importing PfemFluidDynamicsApplication fails inside its own __init__ on the DelaunayMeshing import line — the traceback names an application the user never imported. (Source-read only; not executed.)",
+            "[Input] The remeshing process lives under a TOP-LEVEL 'problem_process_list', not under 'processes' where every other Kratos application puts its processes, and its absence is completely silent. With no meshing_domains entry the domain count is zero, remeshing is switched off, and the run degenerates to plain updated-Lagrangian FEM: elements distort until the solver diverges or the free surface simply freezes. Signal: no message of any kind — diagnose it by the absence of any mesher output and by a node/element count that never changes between steps. This is the worst silent failure in the application. (Source-read only; not executed.)",
+            "[Numerical] The alpha-shape value in the JSON is NOT the value used. 'alpha_shape' is rescaled per element by node flags before the test — multiplied by 1.5 for all-interior elements, by 1.5 again when inlet nodes are present, and by up to 5.0 inside a refining box, or shrunk to 0.975 (2D) / 0.95 (3D) otherwise — so a written 1.25 can act anywhere from roughly 1.19 to 9.4. Signal: too small erases elements and the fluid body loses volume and splinters into disconnected blobs, printing ' Sliver (radius) <r> (alpha_volume) <v>' on stdout; too large glues distant particles together so droplets merge and jets fail to separate. (Source-read only; not executed.)",
+            "[Numerical] Alpha defaults disagree between the two meshing-domain modules: the PFEM-fluid domain defaults to 1.25, the generic Delaunay meshing domain to 2.4, and the C++ default when Python never sets it is 0 — which rejects every element. Alpha is only pushed down inside the active-remeshing branch, so a domain with remesh false keeps 0. Signal: an all-empty mesh after the first meshing step points at alpha 0, i.e. the value was never transferred, rather than at a bad alpha choice. (Source-read only; not executed.)",
+            "[Input] The default meshing bounding box is +/-10 in each direction, and nodes outside it are deleted one by one with no message. Any model in millimetres, or any geometry larger than 10 units, has its entire fluid silently removed on the first meshing step. The shipped tests all override it to +/-100. Signal: node count collapsing to near zero on the first meshing step while alpha and the elements themselves look correct. (Source-read only; not executed.)",
+            "[Input] body_type is matched against the exact literals 'Fluid', 'Solid', 'Rigid' and 'Interface' by an if/elif chain with NO else branch, so a lowercase or invented spelling assigns no flags at all — no FLUID, no RIGID, no BOUNDARY. Alpha-shape then sees no free-surface and no rigid nodes anywhere and the model has no free surface to track. Signal: silent; the giveaway is that FREE_SURFACE is set on no node, since that flag is derived by the boundary-building process and is never user-set. (Source-read only; not executed.)",
+            "[API] An unknown constitutive law is PRINTED, not raised: the solver emits 'ERROR: THE CONSTITUTIVE LAW PROVIDED FOR THIS SUBMODEL PART IS NOT IN THE PFEM FLUID DATABASE' and carries on. The law-specific nodal variables (YIELD_SHEAR, COHESION, ...) are then never added to the model part and silently read 0.0. Signal: that literal line on stdout with a zero exit code and a run that behaves as an inviscid Newtonian fluid regardless of what was requested. (Source-read only; not executed.)",
+            "[API] The wrong-solver_type message under-reports its own options: it lists only pfem_fluid_solver, pfem_fluid_nodal_integration_solver and pfem_fluid_thermally_coupled_solver, while pfem_fluid_three_step_solver, pfem_fluid_thermal_solver and pfem_dem_solver are equally valid. Signal: Exception 'The requested solver type \"<x>\" is not in the python solvers wrapper.' followed by a three-item list that is missing half the accepted values — do not treat the list as complete. (Source-read only; not executed.)",
+            "[API] The default reference_condition_type in the fluid meshing strategy is 'CompositeCondition2D3N', a name registered nowhere — only CompositeCondition2D2N and CompositeCondition3D3N exist. Relying on the default therefore detonates. Signal: 'The component \"CompositeCondition2D3N\" is not registered!' + 'The following components of this type are registered:' — from the default value, not from anything the user wrote. (Source-read only; not executed.)",
+            "[Input] Omitting the 'update_conditions_on_free_surface' block does not fall back cleanly: its default is an empty object, which passes the non-recursive validation and then fails on the first inner lookup. Signal: RuntimeError 'Getting a value that does not exist. entry string : update_conditions' raised from the remeshing process constructor. (Source-read only; not executed.)",
         ],
         "guidance": [
-            "[Physics] Alpha-shape parameter controls free-surface detection (default ~1.25)",
-            "[Numerical] Time step must be small enough for remeshing stability",
-            "[Numerical] Output: particles move, so mesh changes every step",
+            "[Numerical] Time step must be small enough for remeshing stability.",
+            "[Numerical] Output: particles move, so the mesh changes every step.",
+            "[Numerical] A remeshing step that changes the system size mid-run is reported as 'The equation system size has changed during the simulation. This is not permitted.'",
         ]
     },
     "pfem_solid": {
@@ -76,7 +119,10 @@ KNOWLEDGE = {
         ],
     },
     "pfem2": {
-        "description": "PFEM2 (streamline integration) for two-phase flows",
+        "description": ("PFEM2: operator-splitting semi-Lagrangian (particle) "
+                        "incompressible Navier-Stokes. Despite the name it is "
+                        "unrelated to the Delaunay-remeshing PFEM of the other "
+                        "four applications and shares no code with them."),
         "application": "PFEM2Application",
         "capabilities": ["two_phase_flow", "interface_tracking", "bubble_dynamics"],
         "pitfalls": [
@@ -89,6 +135,7 @@ KNOWLEDGE = {
             "Signal: emitted script < 30 lines, "
             "results_summary.json has only a 'note' key. "
             "(Verified empirically 2026-06-01.)",
+            "[Setup] PFEM2Application is effectively unmaintained and its Python entry point cannot import on any modern Kratos: pfem_2_fluid_dynamics_analysis.py still does the pre-namespace `from fluid_dynamics_analysis import FluidDynamicsAnalysis`, and also imports ExternalSolversApplication, an application that no longer exists (it was replaced by LinearSolversApplication). Its three shipped tests are `assertEqual(True, True)` stubs, and it appears in no CI matrix and no configure script. Signal: `ModuleNotFoundError: No module named 'fluid_dynamics_analysis'` from PFEM2Application's own analysis module — a bare, un-namespaced module name, which dates the code to before the KratosMultiphysics.* import convention. Do not recommend PFEM2 for new work. (Source-read only; the application is not installable on this host and this was not executed.)",
         ],
     },
 }
