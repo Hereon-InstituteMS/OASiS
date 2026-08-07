@@ -780,6 +780,27 @@ _CAPABILITY_LIMITS = [
     "(Verified 2026-08-07: a 20 mm bar at 80 elements reported "
     "masternodes.size()=324, coupling.size()=320 and aborted; the same problem "
     "at 2 m ran at 80, 160, 320 and 640 elements)",
+
+    "[Coupling][Verification] A PARTICIPANT SOLVING ON A SMALLER BODY THAN ITS "
+    "PARTNER IS NOT DETECTED. The interface-identity check is a DISJOINTNESS "
+    "test: it fires when the two exported point clouds do not overlap at all, "
+    "which catches the two-different-surfaces mistake, and says nothing when "
+    "one cloud is CONTAINED in the other. In a volume (field) coupling that is "
+    "the likelier error — one side meshed to the wrong extent — and every "
+    "exchange beyond the smaller body's edge then becomes an extrapolation. "
+    "Signal: nothing. The interfaces 'describe the same region of space', the "
+    "mesh-conformity note reports a non-matching interface as usual, and the "
+    "iteration converges. Whether it changes the ANSWER depends on the physics: "
+    "where the exchanged quantity is determined pointwise by the partner's "
+    "field — tr(eps) = beta*theta/(lam+2mu) in uniaxial strain, for instance — "
+    "even the monolithic comparison stays green, so a mesh-extent mistake can "
+    "be genuinely harmless there and catastrophic elsewhere. Check the extents "
+    "yourself against the geometry you meant to solve; nothing here does. "
+    "(Established 2026-08-07 by shrinking one participant's body to 75% of its "
+    "partner's as a declared mutation: every check survived, and the mutation "
+    "is recorded as NON-DISCRIMINATING in "
+    "scripts/tier2_fixtures/coupling/tsi_twoway_ngsolve_fenics/fixture.json "
+    "rather than replaced quietly)",
 ]
 
 
