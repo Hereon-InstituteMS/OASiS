@@ -94,6 +94,23 @@ def check_one(fixture_dir: Path) -> dict:
         row["verdict"] = "NO_MUTATION_DECLARED"
         return row
 
+    # A `_mutation` block with a `note` and NO `from` is a DECLARATION that the
+    # fixture cannot be mutated faithfully — DUNE's helmholtz_indefinite_no_
+    # diagnostic is the reference case: its claim is that the solver's report is
+    # uninformative, which is true at every wavenumber, so the pathology cannot
+    # be removed from outside.
+    #
+    # Without this branch such a block was scored SURVIVED, because an empty
+    # `from` is "in" every text, `str.replace("", "")` is a no-op, and the
+    # unchanged copy passes. SURVIVED is the verdict for a mutation that failed
+    # to kill — the opposite of what the author declared — so an honest
+    # admission read as a defect and, worse, an author who wanted a green run
+    # had an incentive to invent a fake control instead.
+    if all("from" not in m for m in muts):
+        row["verdict"] = "NOT_MUTABLE_DECLARED"
+        row["note"] = str(muts[0].get("note", ""))[:400]
+        return row
+
     # ── vacuity precheck ────────────────────────────────────────────────
     # Run the UNMUTATED copy in the scratch tree first. If it does not pass
     # there, every mutant will "fail" for reasons that have nothing to do with
@@ -161,8 +178,11 @@ def main() -> int:
         rows.append(row)
         glyph = {"KILLED": "✓", "SURVIVED": "✗",
                  "VACUOUS_BASELINE": "∅",
+                 "NOT_MUTABLE_DECLARED": "≡",
                  "NO_MUTATION_DECLARED": "—"}[row["verdict"]]
         print(f"  {glyph} {row['fixture']}: {row['verdict']}", flush=True)
+        if row["verdict"] == "NOT_MUTABLE_DECLARED":
+            print(f"      {row.get('note', '')}")
         if row["verdict"] == "VACUOUS_BASELINE":
             print(f"      unmutated copy did not pass in the scratch tree "
                   f"({row.get('baseline_status')}); the mutation verdict would "
@@ -173,7 +193,11 @@ def main() -> int:
             if not r.get("killed", False):
                 print(f"      arm {r['i']}: {r.get('status', r.get('mutant_status'))}"
                       f" {r.get('from', '')}")
-        if row["verdict"] != "KILLED":
+        # A declared non-mutable fixture is not a failure — it is the honest
+        # outcome the gate asks for. It is counted separately and printed so the
+        # number stays visible; a corpus where that number grows is a corpus
+        # quietly opting out.
+        if row["verdict"] not in ("KILLED", "NOT_MUTABLE_DECLARED"):
             bad += 1
 
     n = len(rows)
@@ -181,8 +205,10 @@ def main() -> int:
     surv = sum(1 for r in rows if r["verdict"] == "SURVIVED")
     vac = sum(1 for r in rows if r["verdict"] == "VACUOUS_BASELINE")
     nod = sum(1 for r in rows if r["verdict"] == "NO_MUTATION_DECLARED")
+    nom = sum(1 for r in rows if r["verdict"] == "NOT_MUTABLE_DECLARED")
     print(f"\nmutation-killed {killed}/{n};  survived {surv};  "
-          f"vacuous baseline {vac};  no mutation declared {nod}")
+          f"vacuous baseline {vac};  declared not mutable {nom};  "
+          f"no mutation declared {nod}")
     if args.json:
         Path(args.json).write_text(json.dumps(rows, indent=1))
     return 0 if bad == 0 else 1

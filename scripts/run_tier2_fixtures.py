@@ -643,7 +643,28 @@ def _eval_fixture(fixture_dir: Path,
                 f"{probe_module}; tried {tried or cands}; set {env_var}")
             return None
 
-        if backend == "fenics":
+        # A cross_backend fixture is not a single-backend fixture, and its
+        # `backend` field does not say what it needs. All four are filed as
+        # `backend: kratos` "for runner-routing purposes" (their own _comment
+        # says so) because the kratos slot used to land in the repo .venv, which
+        # is where the MCP stack lives. That stopped being true: the kratos
+        # branch now PROBES `import KratosMultiphysics`, the repo venv's Kratos
+        # wheel fails on this host with `GLIBC_2.32 not found`, and the only
+        # interpreter that does import Kratos (/mnt/kratos-tier2/kv) has no
+        # `mcp`. So all four reported `skipped` — indistinguishable, to a
+        # reader, from "no Kratos installed here", while their recorded status
+        # stayed `passed` from an older run.
+        #
+        # They are routed like `coupling` instead, for the same reason: what
+        # they actually import is the MCP stack and the live registry. Probing
+        # `mcp` is the honest requirement; probing any one backend is a claim
+        # about what the fixture runs that is not true.
+        if fixture_dir.parent.name == "cross_backend":
+            cand = _route_to_repo_venv("OASIS_PYTHON", "OASiS server", "mcp")
+            if cand is None:
+                return result
+            python = cand
+        elif backend == "fenics":
             cand = _conda_python("FENICS_PYTHON",
                                  ["fenics", "ofa-fenicsx", "fenicsx",
                                   "dolfinx"], "FEniCSx", "dolfinx")
