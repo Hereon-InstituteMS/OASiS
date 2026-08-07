@@ -21,15 +21,27 @@ two modules are needed — the correct sym(grad(u)) form and the wrong
 bare-grad(u) one.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 substitutes the PLANE-STRESS Lame
+parameter lam_ps = 2 mu lam / (lam + 2 mu) before the first run — the
+pathology (a plane-strain run judged against the plane-stress formula)
+removed. The ratio then lands on 1.0 instead of 1 - nu^2, so
+'plane_strain_over_plane_stress_ratio=0.9114' and
+'strain_run_judged_by_stress_formula_looks_soft=True' are no longer
+printed and a FAIL: line appears. lam is a dune.ufl.Constant, so the
+mutation costs no rebuild.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -83,6 +95,10 @@ def main() -> int:
         return info, vals
 
     # ── correct parameters: tension stretches, sides pull IN ─────────
+    if MUTATE:
+        print("mutation=the_first_run_uses_the_plane_stress_lame_"
+              "parameter")
+        lam.value = 2 * MU_OK * LAM_OK / (LAM_OK + 2 * MU_OK)
     info_ok, vals_ok = run("ok")
     ux_max, uy_min = float(vals_ok[:, 0].max()), float(vals_ok[:, 1].min())
     print(f"correct_converged={bool(info_ok['converged'])}")

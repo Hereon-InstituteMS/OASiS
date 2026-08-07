@@ -16,15 +16,26 @@ dune.ufl.Constant, so the sweep over k costs no rebuild — only the two
 polynomial orders are separate modules.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the elements-per-wavelength sweep on
+the P3 space instead of the P1 one — the pathology (an under-resolved
+low-order discretisation) removed. The error at four elements per
+wavelength then drops out of the tens-of-per-cent band, so
+'p1_below_5_per_wavelength_is_tens_of_percent=True' is no longer
+printed and a FAIL: line appears. The P3 scheme is one the fixture
+already builds, so nothing extra compiles.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -71,11 +82,16 @@ def main() -> int:
     print(f"p3_dofs={space3.size}")
 
     # ── helmholtz#4 / maxwell#2: elements per wavelength ───────────
+    if MUTATE:
+        print("mutation=the_elements_per_wavelength_sweep_runs_on_p3")
+        sweep = (space3, scheme3, exact3)
+    else:
+        sweep = (space1, scheme1, exact1)
     results = {}
     for epw in (20, 10, 4):
         # wavelength lambda = 2 pi / k, elements per wavelength = lam/h
         k_value = 2 * np.pi / (epw * h)
-        conv, rel = relative_error(space1, scheme1, exact1, k_value,
+        conv, rel = relative_error(sweep[0], sweep[1], sweep[2], k_value,
                                    f"p1_{epw}")
         results[epw] = rel
         print(f"p1_elements_per_wavelength_{epw}_k={k_value:.2f}")

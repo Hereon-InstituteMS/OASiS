@@ -18,15 +18,24 @@ scheme, the explicit (mass-matrix) scalar scheme, and the two-species
 coupled scheme.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the "above the limit" explicit sweep
+at the STABLE step instead — the pathology removed. The march then
+stays finite, so 'explicit_blows_up_above_the_limit=True' is no longer
+printed and a FAIL: line appears. dt is a dune.ufl.Constant, so the
+mutation costs no rebuild.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -93,7 +102,11 @@ def main() -> int:
     stable_dt = 0.5 * 2.0 / 50.0
     unstable_dt = 20.0 * 2.0 / 50.0
     ok_small, max_small = march(scheme_exp, 10, stable_dt)
-    ok_big, max_big = march(scheme_exp, 10, unstable_dt)
+    if MUTATE:
+        print("mutation=the_above_the_limit_sweep_uses_the_"
+              "stable_step")
+    ok_big, max_big = march(scheme_exp, 10,
+                            stable_dt if MUTATE else unstable_dt)
     print(f"explicit_stability_limit_2_over_lambda={2.0 / 50.0:.4f}")
     print(f"explicit_dt_below_limit={stable_dt:.4f} finite={ok_small}")
     print(f"explicit_dt_above_limit={unstable_dt:.4f} finite={ok_big}")

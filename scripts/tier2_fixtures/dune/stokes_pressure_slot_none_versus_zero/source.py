@@ -18,15 +18,28 @@ reproduce. It does. The scheme's own dirichletBlocks show the same
 pressure ones, and the pressure on the constrained boundary is exactly
 zero in the second case. The refinement level is run twice so it is
 clear the over-constraint is not a coarse-grid artefact.
+
+MUTATION CONTROL. T2_MUTATE=1 puts None in the pressure slot of the
+"zero" run as well, so both runs use the correct spelling — the
+pathology removed. No pressure dof is then constrained in either run,
+so 'zero_slot_constrains_pressure_dofs=True',
+'zero_slot_pins_boundary_pressure_to_exactly_zero=True',
+'over_constraint_grows_with_refinement=True' and
+'zero_slot_changes_the_solution=True' are no longer printed and a
+FAIL: line appears. DirichletBC maps None and 0 to the same ufl_value,
+so no new module is compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange, composite                  # noqa: E402
@@ -111,10 +124,12 @@ def main() -> int:
                     f"stated mechanism")
 
     # 2. The consequence, counted.
+    if MUTATE:
+        print("mutation=the_zero_pressure_slot_run_uses_none_too")
     runs = {}
     for n in LEVELS:
         runs[(n, "none")] = solve(n, None, "none")
-        runs[(n, "zero")] = solve(n, 0, "zero")
+        runs[(n, "zero")] = solve(n, None if MUTATE else 0, "zero")
         for tag in ("none", "zero"):
             r = runs[(n, tag)]
             print(f"n{n}_{tag}_converged={r['converged']}")

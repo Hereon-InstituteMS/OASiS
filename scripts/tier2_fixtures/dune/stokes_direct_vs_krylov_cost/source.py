@@ -21,15 +21,25 @@ asserted by ORDER OF MAGNITUDE, never by digits: the catalog itself
 records that an earlier revision's six figures did not reproduce.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the three Krylov labels with the
+direct UMFPACK solver — the pathology (an unpreconditioned Krylov
+method on a saddle-point system) removed. Every count drops to 1, so
+'krylov_costs_orders_of_magnitude_more=True' is no longer printed and
+FAIL: lines appear. The direct scheme is one the fixture already
+builds.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange, composite                  # noqa: E402
@@ -65,11 +75,15 @@ def main() -> int:
     print(f"taylor_hood_dofs={W.size}")
     print(f"taylor_hood_dimRange={W.dimRange}")
 
+    if MUTATE:
+        print("mutation=every_krylov_label_uses_the_direct_solver")
     results = {}
     for label, solver in (("umfpack", ("suitesparse", "umfpack")),
                           ("cg", "cg"),
                           ("gmres", "gmres"),
                           ("bicgstab", "bicgstab")):
+        if MUTATE:
+            solver = ("suitesparse", "umfpack")
         scheme = galerkin([a == L] + bcs, solver=solver,
                           parameters={"linear.tolerance": 1e-12,
                                       "linear.maxiterations": 200000})

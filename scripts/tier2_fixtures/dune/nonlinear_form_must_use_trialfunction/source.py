@@ -25,15 +25,26 @@ One nonlinear problem, -div((1+u^2) grad u) = 1 on a small grid,
 supports all five.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 writes the "discrete function" form with
+the TRIAL function instead — the pathology removed, because the form
+then carries two arguments. Nothing is rejected, so
+'discrete_form_argument_count=1' and
+'discrete_function_form_rejected=ValueError' are no longer printed and
+a FAIL: line appears. The corrected form is the one the fixture already
+compiles for the a == b spelling.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -52,7 +63,12 @@ def main() -> int:
 
     # ── nonlinear#1 / navier_stokes#1: the rejected spelling ────────
     uh_bad = space.interpolate(0, name="uh_bad")
-    bad = (1 + uh_bad ** 2) * dot(grad(uh_bad), grad(v)) * dx
+    if MUTATE:
+        print("mutation=the_rejected_form_is_written_in_the_trial_"
+              "function_so_it_carries_two_arguments")
+        bad = (1 + u ** 2) * dot(grad(u), grad(v)) * dx
+    else:
+        bad = (1 + uh_bad ** 2) * dot(grad(uh_bad), grad(v)) * dx
     print(f"discrete_form_argument_count={len(bad.arguments())}")
     try:
         galerkin([bad == 0, dbc], solver="cg")

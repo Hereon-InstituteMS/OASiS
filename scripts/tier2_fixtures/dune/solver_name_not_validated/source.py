@@ -15,13 +15,23 @@ for the default (numpy/"fem") storage — this fixture harvests it rather
 than trusting documentation. The valid names are asserted to work.
 
 Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.
+
+MUTATION CONTROL. T2_MUTATE=1 passes 'cg' — a name the enumeration
+accepts — in the slot where the base run passes the plausible-but-wrong
+'conjugate_gradient'. That is the pathology removed: nothing is
+rejected, so 'bogus_solver_rejected=True' and
+'bogus_solver_names_the_parameter=True' are no longer printed and a
+FAIL: line appears. Same form, so no new module is compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                       # noqa: E402
 from dune.fem.space import lagrange                        # noqa: E402
@@ -44,8 +54,11 @@ def main() -> int:
     # 1. A plausible but wrong name must be REJECTED, and the message
     #    must name the parameter and enumerate the alternatives.
     msg = ""
+    bogus_name = "cg" if MUTATE else "conjugate_gradient"
+    if MUTATE:
+        print("mutation=the_bogus_slot_passes_an_accepted_solver_name")
     try:
-        galerkin(eqn, solver="conjugate_gradient")
+        galerkin(eqn, solver=bogus_name)
         print("bogus_solver_rejected=False")
         fail.append("solver='conjugate_gradient' was ACCEPTED — the "
                     "parameter enumeration no longer guards it")

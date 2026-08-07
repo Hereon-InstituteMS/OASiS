@@ -12,13 +12,24 @@ share a fixture. No weak form is built, so nothing here JIT-compiles a
 scheme; only the grid and space modules are needed.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 builds the 2D grid under test with
+aluConformGrid on the same cartesianDomain — the pathology removed,
+because that grid really is simplicial. structured_2d_types then reads
+['triangle'] and structured_2d_cells 32, so
+"structured_2d_types=['quadrilateral']" and 'structured_2d_cells=16'
+are no longer printed and a FAIL: line appears. The ALU grid is one the
+fixture already builds.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid, cartesianDomain          # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -29,7 +40,11 @@ def main() -> int:
     fail: list[str] = []
 
     # ── 2D: cubes, and the SAME dof count as the simplex grid ────────
-    cube2 = structuredGrid([0, 0], [1, 1], [4, 4])
+    if MUTATE:
+        print("mutation=the_grid_under_test_is_a_simplex_alugrid")
+        cube2 = aluConformGrid(cartesianDomain([0, 0], [1, 1], [4, 4]))
+    else:
+        cube2 = structuredGrid([0, 0], [1, 1], [4, 4])
     types2 = sorted({str(e.type) for e in cube2.elements})
     print(f"structured_2d_cells={cube2.size(0)}")
     print(f"structured_2d_types={types2}")

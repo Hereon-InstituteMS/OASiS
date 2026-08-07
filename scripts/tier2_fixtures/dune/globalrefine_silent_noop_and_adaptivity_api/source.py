@@ -35,15 +35,25 @@ objects, and because the working mark/adapt cycle at the end is the
 control that makes the six failures meaningful.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the poisson#13 probe — the
+globalRefine(level, uh) call — on adaptiveLeafGridView(aluConformGrid)
+instead of on the YaspGrid, i.e. on the view where that call is not a
+no-op. The (cells, space size, dof count) triple then changes, so
+'yasp_globalRefine_is_a_silent_noop=True' is no longer printed and a
+FAIL: line appears. The ALU view is one the fixture already builds.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid, cartesianDomain            # noqa: E402
 from dune.fem.space import lagrange, finiteVolume                # noqa: E402
@@ -110,11 +120,21 @@ def main() -> int:
                     "not and that adapt() resizes the space for you")
 
     # ── poisson#13: globalRefine(level, uh) on a YaspGrid ──────────
+    if MUTATE:
+        # The pathology removed: run the same globalRefine(level, uh)
+        # call on the adaptively wrapped ALU view, where it is not a
+        # no-op.
+        print("mutation=the_globalrefine_probe_runs_on_the_adaptive_"
+              "alu_view")
+        refine_view = alu_ad
+    else:
+        refine_view = yasp
+    sp_yasp = lagrange(refine_view, order=1)
     x = SpatialCoordinate(sp_yasp)
     uh_yasp = sp_yasp.interpolate(x[0], name="uh_yasp")
-    before = state(yasp, sp_yasp, uh_yasp)
+    before = state(refine_view, sp_yasp, uh_yasp)
     dfem.globalRefine(1, uh_yasp)
-    after = state(yasp, sp_yasp, uh_yasp)
+    after = state(refine_view, sp_yasp, uh_yasp)
     print(f"yasp_before={before}")
     print(f"yasp_after_globalRefine_uh={after}")
     print(f"yasp_globalRefine_is_a_silent_noop={before == after}")

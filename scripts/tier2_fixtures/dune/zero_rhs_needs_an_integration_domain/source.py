@@ -8,13 +8,23 @@ dune.ufl.Constant components, and `a == 0` — are both exercised so the
 fixture proves a fix as well as a failure.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 writes the zero right-hand side with
+dune.ufl.Constant components in the slot where the base run writes
+Python zeros — the pathology removed, because those components carry a
+domain. Nothing raises, so 'python_zero_rhs_rejected=ValueError' and
+the 'missing an integration domain' text are no longer printed and a
+FAIL: line appears. Pure UFL; nothing extra compiles.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -32,8 +42,15 @@ def main() -> int:
     a = inner(grad(u), grad(v)) * dx
 
     # 1. The broken spelling — pure UFL, no DUNE involvement.
+    if MUTATE:
+        print("mutation=the_broken_slot_writes_the_zero_rhs_with_"
+              "dune_ufl_constants")
+        zero_rhs = as_vector([Constant(0.0, name="mfx"),
+                              Constant(0.0, name="mfy")])
+    else:
+        zero_rhs = as_vector([0, 0])
     try:
-        inner(as_vector([0, 0]), v) * dx
+        inner(zero_rhs, v) * dx
         print("python_zero_rhs_rejected=False")
         fail.append("inner(as_vector([0, 0]), v)*dx was accepted; UFL "
                     "no longer folds it to a domain-less Zero")

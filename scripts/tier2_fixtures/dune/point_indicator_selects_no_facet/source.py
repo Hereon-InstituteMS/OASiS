@@ -22,9 +22,37 @@ explanation is checked directly by evaluating the point indicator at
 the facet centres.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL — AND IT DOES NOT DISCRIMINATE (2026-08-06).
+T2_MUTATE=1 replaces the point indicator with one that selects the two
+EDGES meeting at the corner, Or(x[0]<tol, x[1]<tol). That is the
+pathology removed in the most direct sense available: the indicator now
+does select boundary facets, and those facets do contain the corner
+node. The fixture STILL PASSES. Measured 2026-08-06:
+
+    extra Or-BC appended   max_change 0.000000e+00  corner 1.909986e-06
+    extra Or-BC prepended  max_change 0.000000e+00  corner 1.909986e-06
+    extra point-BC         max_change 0.000000e+00  corner 1.909986e-06
+    ONLY the Or-BC         max_change 4.772543e-06  corner 0, 0
+
+and scheme.dirichletBlocks reports the SAME 23 constrained entries in
+all three of the first cases. So the null result this fixture reports
+is not attributable to "a point indicator selects no facet": an extra
+DirichletBC on facets the scheme ALREADY constrains contributes
+nothing whatever its indicator, in either list order. The behavioural
+assertions here — point_bc_max_change, point_bc_changed_nothing and
+the corner_is_not_zero strengthening added in the earlier round — are
+therefore satisfied by a whole family of indicators, not only by a
+point-sized one, and the strengthening does not close that hole.
+
+What IS decisive is the direct geometric count further down:
+facet_centres_satisfying_the_point_test=0 out of boundary_facets=16.
+That counts the thing being claimed instead of standing in for it.
+The mutation is left in place so the negative result is re-runnable.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
@@ -32,13 +60,15 @@ import numpy as np
 
 warnings.filterwarnings("ignore")
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
 from dune.fem.scheme import galerkin                            # noqa: E402
 from dune.ufl import DirichletBC                                # noqa: E402
 from ufl import (TrialFunction, TestFunction,                    # noqa: E402
                  SpatialCoordinate, Identity, as_vector,
-                 grad, inner, sym, tr, dx, ds, conditional, lt, And)
+                 grad, inner, sym, tr, dx, ds, conditional, lt, And, Or)
 
 E, NU, TRACTION = 210e9, 0.3, 1.0e6
 MU = E / (2 * (1 + NU))
@@ -72,7 +102,15 @@ def main() -> int:
     L = conditional(lt(1.0 - x[0], TOL), TRACTION * v[0], 0.0) * ds
     left = conditional(lt(x[0], TOL), 1, 0)
     bottom = conditional(lt(x[1], TOL), 1, 0)
-    corner_point = conditional(And(lt(x[0], TOL), lt(x[1], TOL)), 1, 0)
+    if MUTATE:
+        # The pathology removed: an indicator that DOES select facets
+        # at the corner — the two edges meeting there — so the corner
+        # dof really is pinned.
+        print("mutation=the_point_indicator_becomes_the_two_edges_"
+              "meeting_at_the_corner")
+        corner_point = conditional(Or(lt(x[0], TOL), lt(x[1], TOL)), 1, 0)
+    else:
+        corner_point = conditional(And(lt(x[0], TOL), lt(x[1], TOL)), 1, 0)
 
     X = np.array(space.interpolate(as_vector([x[0], x[1]]),
                                    name="X").as_numpy).reshape(-1, 2)

@@ -24,10 +24,19 @@
 One assembled matrix answers all four, so they share a fixture.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 takes the "with bc" matrix from the
+SCHEME's linear operator — the object that really does apply the
+constraints — instead of from assemble(a, bc). The bc is then not
+ignored, assemble_with_bc_maxdiff stops being 0.0 and
+bc_argument_silently_ignored reads False, so both expectations
+disappear. No new form is compiled: the scheme is the one this fixture
+already builds at the end.
 """
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 import warnings
 
@@ -35,6 +44,8 @@ import numpy as np
 import scipy.sparse as sp
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -111,8 +122,18 @@ def main() -> int:
                     "same because .tocsr() does nothing")
 
     # ── the bc argument is accepted and ignored ─────────────────────
-    B = dfem.assemble(a, DirichletBC(space, [0]))
-    N = B.as_numpy
+    from dune.fem.scheme import galerkin
+    scheme = galerkin([a == 1.0 * v * dx, DirichletBC(space, 0)],
+                      solver="cg")
+    if MUTATE:
+        # The pathology removed: take the matrix from the object that
+        # DOES honour the constraint, so the bc is no longer ignored.
+        print("mutation=the_with_bc_matrix_comes_from_the_scheme_"
+              "which_really_constrains")
+        N = dfem.operator.linear(scheme).as_numpy
+    else:
+        B = dfem.assemble(a, DirichletBC(space, [0]))
+        N = B.as_numpy
     diff = abs(M - N)
     maxdiff = float(diff.max()) if diff.nnz else 0.0
     print(f"assemble_with_bc_accepted=True")
@@ -129,9 +150,6 @@ def main() -> int:
     # …and the scheme, which is where constraints really live, does
     # change the matrix. Without this the fixture cannot tell 'ignored'
     # from 'this bc happens to be a no-op'.
-    from dune.fem.scheme import galerkin
-    scheme = galerkin([a == 1.0 * v * dx, DirichletBC(space, 0)],
-                      solver="cg")
     S = dfem.operator.linear(scheme).as_numpy
     sdiff = abs(M - S)
     smax = float(sdiff.max()) if sdiff.nnz else 0.0

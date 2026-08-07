@@ -29,13 +29,23 @@ The fixture asserts:
       simplices, with exactly twice the element count in 2D
 
 Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.
+
+MUTATION CONTROL. T2_MUTATE=1 builds the 2D grid under test with
+aluConformGrid on the same cartesianDomain, so the reported UFL cell
+'triangle' is TRUE rather than a lie — the pathology removed.
+grid2d_element_types then reads ['triangle'], so
+"grid2d_element_types=['quadrilateral']" is no longer printed and a
+FAIL: line appears. The ALU grid is one the fixture already builds.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid, cartesianDomain      # noqa: E402
 from dune.alugrid import aluConformGrid                    # noqa: E402
@@ -45,7 +55,13 @@ N = 4
 
 
 def main() -> int:
-    gv2 = structuredGrid([0, 0], [1, 1], [N, N])
+    if MUTATE:
+        print("mutation=the_2d_grid_under_test_is_a_simplex_alugrid_"
+              "so_the_reported_ufl_cell_is_true")
+        gv2 = aluConformGrid(cartesianDomain([0, 0], [1, 1], [N, N]),
+                             dimgrid=2)
+    else:
+        gv2 = structuredGrid([0, 0], [1, 1], [N, N])
     sp2 = lagrange(gv2, order=1)
     types2 = sorted({str(e.type) for e in gv2.elements})
 

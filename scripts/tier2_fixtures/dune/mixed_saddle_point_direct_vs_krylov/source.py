@@ -23,16 +23,27 @@ composite() on this dune-fem — the claim's own advice.
 Cost is asserted through iteration counts and residual norms only.
 Nothing here is timed: a wall-clock assertion goes red when the machine
 is busy and says nothing about the solver.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the "cg" probe with the direct
+UMFPACK solver instead — the pathology (an unpreconditioned CG applied
+to an indefinite matrix) removed. The result is then usable, so
+'cg_result_is_unusable=True', 'cg_failure_is_silent=True' and
+'saddle_point_needs_direct_or_preconditioned=True' are no longer
+printed and a FAIL: line appears. The direct scheme is one the fixture
+already builds.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange, composite                  # noqa: E402
@@ -146,9 +157,13 @@ def main() -> int:
     #    loudly, one reports success and returns NaN.
     n = LEVELS[0]
     quiet_failures = {}
+    if MUTATE:
+        print("mutation=the_cg_probe_uses_the_direct_umfpack_solver")
     for name in ("bicgstab", "cg"):
+        chosen = ("suitesparse", "umfpack") if (MUTATE and name == "cg") \
+            else name
         try:
-            out = solve_with(n, name, name)
+            out = solve_with(n, chosen, name)
         except Exception as exc:                              # noqa: BLE001
             print(f"{name}_raised={type(exc).__name__}")
             quiet_failures[name] = ("raised", False)

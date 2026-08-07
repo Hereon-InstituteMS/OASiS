@@ -12,6 +12,12 @@ Nothing here builds a weak form; the interpolant is the only compiled
 artefact and it is shared with the other fixtures.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 passes number=step in the trap loop —
+the pathology removed. The ten calls then leave ten files, so
+'same_name_files=1', "same_name_file_list=['overwritten.vtu']" and
+'same_name_leaves_one_frame=True' are no longer printed and a FAIL:
+line appears.
 """
 from __future__ import annotations
 
@@ -22,6 +28,8 @@ import tempfile
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid, OutputType                # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -41,8 +49,14 @@ def main() -> int:
     steps = 10
 
     # ── the trap: same name every step ──────────────────────────────
-    for _ in range(steps):
-        gridView.writeVTK("overwritten", pointdata={"u": uh})
+    if MUTATE:
+        print("mutation=the_trap_loop_passes_number_step")
+    for step in range(steps):
+        if MUTATE:
+            gridView.writeVTK("overwritten", pointdata={"u": uh},
+                              number=step)
+        else:
+            gridView.writeVTK("overwritten", pointdata={"u": uh})
     same_name = sorted(os.path.basename(p)
                        for p in glob.glob("overwritten*.vtu"))
     print(f"steps_written={steps}")

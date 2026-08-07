@@ -7,13 +7,22 @@ dglagrange(gridView, order=0) and finiteVolume(gridView), and the claim
 is that both have exactly one dof per CELL.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 asks for order=1 in the slot where the
+base run asks for order=0 — the pathology removed, since order 1 is
+inside the guard. The space is built, nothing raises,
+'lagrange_order0_rejected=KeyError' and the guard's message are no
+longer printed and a FAIL: line appears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import (lagrange, dglagrange,               # noqa: E402
@@ -26,8 +35,12 @@ def main() -> int:
     n_cells = gridView.size(0)
     print(f"cells={n_cells}")
 
+    probe_order = 1 if MUTATE else 0
+    if MUTATE:
+        print("mutation=the_rejected_slot_asks_for_order_1_"
+              "which_is_inside_the_guard")
     try:
-        lagrange(gridView, order=0)
+        lagrange(gridView, order=probe_order)
         print("lagrange_order0_rejected=False")
         fail.append("lagrange(gridView, order=0) was ACCEPTED; the "
                     "order>=1 guard has gone")

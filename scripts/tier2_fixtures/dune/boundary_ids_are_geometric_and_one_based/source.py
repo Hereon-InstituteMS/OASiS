@@ -22,13 +22,24 @@ ds(id) term gives 0.0 or the exact answer depending only on which edge
 the id names.
 
 Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.
+
+MUTATION CONTROL. T2_MUTATE=1 puts the flux on ds(2) — the FREE edge —
+in the slot where the base run puts it on ds(1), the edge the Dirichlet
+condition clamps. That is the pathology removed: the term no longer
+lands on eliminated test functions. flux_on_clamped_edge_max_abs stops
+being 0.000000 and that expectation disappears, together with the
+verdict token. No new form is compiled — the ds(2) scheme is the one
+the fixture already builds for the free-edge run.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np                                         # noqa: E402
 from dune.grid import structuredGrid                       # noqa: E402
@@ -78,7 +89,11 @@ def main() -> int:
         return uh
 
     left = conditional(lt(x[0], TOL), 1, 0)
-    uh_clamped = solve(left, 1, "clamped")     # flux on the CLAMPED edge
+    clamped_flux_id = 2 if MUTATE else 1
+    if MUTATE:
+        print("mutation=the_clamped_edge_run_puts_its_flux_on_ds2_"
+              "which_is_the_free_edge")
+    uh_clamped = solve(left, clamped_flux_id, "clamped")  # CLAMPED edge
     uh_free = solve(left, 2, "free")           # flux on the FREE edge
     m_clamped = float(np.abs(np.array(uh_clamped.as_numpy)).max())
     m_free = float(np.array(uh_free.as_numpy).max())

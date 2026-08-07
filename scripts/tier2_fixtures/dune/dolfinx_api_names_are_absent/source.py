@@ -16,6 +16,12 @@ process can assert it: the weak form is built from `ufl` symbols ALONE
 The dolfinx side was confirmed separately — see the fixture _comment.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 installs XDMFFile and VTXWriter
+attributes on dune.grid — the world in which dune-fem HAS grown the
+dolfinx IO names. dune_grid_has_XDMFFile and dune_grid_has_VTXWriter
+then read True, both '...=False' expectations disappear and a FAIL:
+line appears.
 """
 from __future__ import annotations
 
@@ -25,6 +31,8 @@ import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 # Deliberately at module scope: on a machine without dune-fem this
 # raises and the runner records a failure, never a pass.
@@ -112,6 +120,10 @@ def main() -> int:
     # 5. poisson#4: writeVTK exists on the GRID VIEW and produces a
     #    .vtu; the dolfinx writer names are absent from dune.grid.
     import dune.grid as dgrid
+    if MUTATE:
+        print("mutation=dune_grid_gains_the_dolfinx_io_names")
+        dgrid.XDMFFile = object
+        dgrid.VTXWriter = object
     for name in ("XDMFFile", "VTXWriter", "VTKFile"):
         present = hasattr(dgrid, name)
         print(f"dune_grid_has_{name}={present}")
