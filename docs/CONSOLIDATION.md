@@ -860,3 +860,55 @@ Fixtures re-run individually after the merge, each passing:
 `sides_table_backed_by_runs`. Plus the four static fixture-hygiene gates
 (1349 passed, 1 skipped) over the whole fixture tree including the six new
 coupling fixtures.
+
+## The one collision neither branch could have seen
+
+Everything above was found by reading the two sides. This one was only found by
+running the merged tool, and it is the most instructive thing in the merge.
+
+`knowledge/coupling-revision` puts "CONVERGENCE IS AT THE NOISE FLOOR, NOT AT
+tol" into `CouplingResult.warnings`. On its own branch that is harmless, because
+`couple()` there decided trustworthiness with a keyword filter:
+
+    checks_ok = r.converged and not any(
+        ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w
+         or "NOT COUPLED" in w) for w in val)
+
+and the noise message contains none of those four. `feature/coupling-robustness`
+deleted that filter deliberately — it was silently discarding the findings of
+seven other checks — and replaced it with `checks_ok = r.converged and not val`.
+Both changes are right. Together they stamp NOT VERIFIED on every correct
+stochastic coupling, measured:
+
+    converged        True
+    noise_floor      1.039e-02
+    tol_effective    1.039e-02
+    verification     NOT VERIFIED — the coupling did not converge, or failed
+                     one of OASiS's silent-wrong checks
+
+Neither branch's tests could catch it. coupling-revision's assert on the driver
+result, one level below `couple()`. coupling-robustness's never set
+`noise_replicates`, because the argument does not exist there.
+
+**A merge can be wrong in a way that neither side is wrong, and no test on
+either branch covers.** The only instrument is running the merged surface with
+both features switched on at once — which is a short list per merge and should
+be written down before merging, not discovered after.
+
+The repair is a CHANNEL, not a filter: `CouplingResult.criterion_notes`. The
+criterion a run was held to is neither provenance nor a finding, and the two
+existing lists are both wrong for it. It is reported in `checks_not_run`, which
+is always printed inside the verdict and never flips it. Handed over as its own
+list rather than pattern-matched back out of `warnings`, so a reworded message
+cannot silently start or stop flipping a verdict — which is the failure the
+keyword filter had.
+
+Re-running after that fix found the SAME defect a second time, in a different
+check: `check_residual_blocks` was still judged against the requested `tol`, so
+a run held to 8.3e-03 was faulted for blocks "still changing by more than
+1.0e-08 relative". It now takes `tol_effective`, as `check_convergence` beside
+it already did. **One instance of this shape is rarely the only one** — every
+check that takes a tolerance has to be asked which tolerance it means.
+
+After both: `validation` empty, and with a review on record the same run comes
+back VERIFIED with the floor named in its coverage section.
