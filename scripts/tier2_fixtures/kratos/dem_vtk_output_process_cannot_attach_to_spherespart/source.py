@@ -251,7 +251,49 @@ def main() -> int:
     except ModuleNotFoundError:
         dem_vtk_imports = False
 
+    # The failure UNDERNEATH the ProcessInfo one: even handed a DEM model part
+    # directly, the core writer has no cell type for a DEM particle. Driven
+    # here without any analysis stage, so nothing shields it.
+    #
+    # This half was briefly deleted from the catalog on 2026-08-07 as a
+    # suspected fabrication, because the message cannot be grepped: it lives in
+    # libKratosCore.so as two adjacent literals with a runtime slot between
+    # them, so a search for the whole sentence returns nothing whichever way
+    # you space it. It is real, and this probe prints it.
+    import KratosMultiphysics as _KM
+
+    def _vtk_geometry_verdict(element_name):
+        model = _KM.Model()
+        part = model.CreateModelPart("Probe")
+        part.AddNodalSolutionStepVariable(_KM.DISPLACEMENT)
+        part.CreateNewNode(1, 0.0, 0.0, 0.0)
+        props = part.CreateNewProperties(1)
+        name = element_name if not MUTATE else "Element2D3N"
+        if MUTATE:
+            part.CreateNewNode(2, 1.0, 0.0, 0.0)
+            part.CreateNewNode(3, 0.0, 1.0, 0.0)
+            nodes = [1, 2, 3]
+        else:
+            nodes = [1]
+        part.CreateNewElement(name, 1, nodes, props)
+        settings = _KM.Parameters(
+            '{"model_part_name": "Probe", "file_format": "ascii",'
+            ' "output_control_type": "step", "output_interval": 1,'
+            ' "output_sub_model_parts": false, "output_path": "vtk_probe"}')
+        try:
+            _KM.VtkOutput(part, settings).PrintOutput()
+            return ""
+        except Exception as exc:                  # noqa: BLE001 - classifying
+            return str(exc).replace("\n", " ")
+
+    geom_2d = _vtk_geometry_verdict("CylinderParticle2D")
+    geom_3d = _vtk_geometry_verdict("SphericParticle3D")
+    NO_WRITER = ("Modelpart contains elements or conditions with geometries "
+                 "for which no VTK-output is implemented!")
+
     checks = [
+        ("dem_2d_particle_has_no_vtk_cell_type", NO_WRITER in geom_2d, True),
+        ("dem_3d_particle_has_no_vtk_cell_type", NO_WRITER in geom_3d, True),
         ("step_control_raises", results["step"].get("exception"), "RuntimeError"),
         ("step_control_names_STEP_on_spherespart",
          "STEP not found in process info of SpheresPart" in step_msg, True),
