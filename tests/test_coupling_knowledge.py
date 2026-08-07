@@ -392,37 +392,47 @@ def test_the_default_accelerator_is_not_disparaged():
         "safer one")
 
 
-def test_iteration_floor_figures_are_arithmetically_right():
-    """The knowledge tells the agent to size max_iter from
-    log(tol)/log(1-theta) and then quotes worked values. One was computed at a
-    DIFFERENT tolerance than the sentence states: "about 27 at theta=0.5 for
-    tol=1e-8, about 40 at theta=0.3" — 27 is right for 1e-8, but theta=0.3 at
-    1e-8 needs ~52; 40 is the 1e-6 figure. Under-budgeting max_iter looks
-    exactly like a physics failure, which is what the paragraph warns about.
+def test_iteration_sizing_is_a_worked_formula_not_a_lookup_table():
+    """The knowledge tells the agent to size max_iter from log(tol)/log(1-theta).
+
+    It used to follow that with six pre-evaluated values — "about 27 iterations
+    at theta=0.5, 52 at theta=0.3, 83 at theta=0.2; at tol=1e-6, about
+    20 / 39 / 62" — in the same breath as telling the reader to "evaluate the
+    expression for your own theta and tol instead of reusing a number". The
+    numbers were arithmetic, not measurements, so no contamination gate saw
+    them; the objection is different. A table of six reusable figures is a
+    lookup table, and the one thing an agent graded on a relaxation study will
+    do with a lookup table is quote it as a result. One worked example teaches
+    the method; six teach the answers.
+
+    So: exactly one worked evaluation, it must be arithmetically right, and it
+    must say in words that it is a value of the formula rather than something
+    observed.
     """
     import math
     core = _core()
-    assert "not a lower bound" in core or "SIZING GUIDE, not a lower bound" in core, (
-        "the figures were stated as a bound the iteration needs 'AT LEAST', and "
-        "three measured runs beat it (rho=1/4, 1/2 and 1 at theta=0.1 reached "
-        "tol=1e-8 in 148, 153 and 165 iterations against a quoted 175) because "
-        "the residual is normalised by the field magnitude, so a good relative "
-        "starting point needs fewer iterations, not more")
-    m = re.search(r"tol=1e-8 gives about\s+(\d+) iterations at theta=0\.5, (\d+) at "
-                  r"theta=0\.3, (\d+) at theta=0\.2", core)
-    assert m, "the tol=1e-8 iteration-count figures are not in the knowledge"
-    for got, th in zip(m.groups(), (0.5, 0.3, 0.2)):
-        want = math.log(1e-8) / math.log(1 - th)
-        assert abs(int(got) - want) <= 1.5, (
-            f"floor figure for theta={th} at tol=1e-8 is quoted as {got}, "
-            f"but log(1e-8)/log(1-{th}) = {want:.1f}")
-    m6 = re.search(r"at tol=1e-6,\s+about (\d+) / (\d+) / (\d+)", core)
-    assert m6, "the tol=1e-6 iteration-count figures are not in the knowledge"
-    for got, th in zip(m6.groups(), (0.5, 0.3, 0.2)):
-        want = math.log(1e-6) / math.log(1 - th)
-        assert abs(int(got) - want) <= 1.5, (
-            f"floor figure for theta={th} at tol=1e-6 is quoted as {got}, "
-            f"but log(1e-6)/log(1-{th}) = {want:.1f}")
+    assert "SIZING GUIDE" in core or "not a lower bound" in core, (
+        "the figure was stated as a bound the iteration needs 'AT LEAST', and "
+        "runs beat it, because the residual is normalised by the field "
+        "magnitude — a good relative starting point needs FEWER iterations")
+    assert "not something anybody observed" in core, (
+        "the worked figure must be marked as a value of the formula; without "
+        "that it reads as a measured iteration count and will be quoted as one")
+    worked = re.findall(
+        r"theta=([\d.]+), tol=(1e-\d+), d0=1\s*->\s*log\(1e-\d+\)/log\("
+        r"[\d.]+\)\s*~\s*(\d+) iterations", core)
+    assert len(worked) == 1, (
+        f"expected exactly ONE worked evaluation of the sizing formula, found "
+        f"{len(worked)}; a list of them is a lookup table")
+    th, tol, got = worked[0]
+    want = math.log(float(tol)) / math.log(1 - float(th))
+    assert abs(int(got) - want) <= 1.5, (
+        f"the worked figure for theta={th} at tol={tol} is quoted as {got}, "
+        f"but log({tol})/log(1-{th}) = {want:.1f}")
+    # And no second table sneaking back in.
+    assert not re.search(r"about \d+ / \d+ / \d+", core), (
+        "a slash-separated run of iteration counts is the lookup-table shape "
+        "this test exists to keep out")
 
 
 def test_sides_table_does_not_overstate_what_converged_here():
@@ -434,12 +444,33 @@ def test_sides_table_does_not_overstate_what_converged_here():
     over them was not, and it is the headline `discover('coupling')` serves.
     """
     table = coupling_sides_table()
-    assert "Every UNSTARRED" in table, (
-        "the table's summary sentence must not claim that every yes converged "
-        "on this install while the Kratos and SPARTA rows say otherwise")
-    for label in ("Kratos", "SPARTA"):
-        row = next(r for r in table.splitlines() if r.startswith(f"| {label}"))
-        assert "yes*" in row, f"{label} must carry the weaker-evidence marker"
+    assert "Every \"yes\" above means" in table or "Every UNSTARRED" in table, (
+        "the table needs a summary sentence stating what a yes is evidence of")
+    # The rule, whichever way a cell is marked: an UNSTARRED yes may not sit in
+    # a row whose own text takes it back. Both stars were removed once real
+    # couplings backed them (pair_kratos_skfem for Kratos on Dirichlet,
+    # tests/test_coupling_pair_fourc_kratos.py for Kratos on Neumann,
+    # stochastic_noise_floor_makes_dsmc_gradable for SPARTA), and this is what
+    # stops the next star being removed without the run behind it.
+    RETRACTIONS = ("NOT reproducible", "not reproducible", "reported FAILURE",
+                   "cannot beat", "could not be run", "was not run here")
+    for line in table.splitlines():
+        if not line.startswith("|") or "yes" not in line:
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3 or cells[0] in ("Backend",):
+            continue
+        unstarred = [c for c in cells[1:3] if c.startswith("yes")
+                     and not c.startswith("yes*")]
+        if not unstarred:
+            continue
+        for phrase in RETRACTIONS:
+            assert phrase not in line, (
+                f"the {cells[0]} row carries an UNSTARRED yes while its own "
+                f"text says {phrase!r}. Either star the cell or delete the "
+                f"retraction — the summary sentence is the headline "
+                f"discover('coupling') serves and it must not be contradicted "
+                f"by the row underneath it.")
 
 
 def test_sides_table_agrees_with_the_per_backend_payloads():

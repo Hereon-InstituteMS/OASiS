@@ -439,11 +439,24 @@ def call_tool(name: str, args: dict) -> str:
 
 
 def couple(specs: list[dict], max_iter: int = 120, tol: float = 1e-8,
-           accelerator: str = "constant", theta: float = 0.5) -> dict:
-    """Run the REGISTERED `couple` tool and return its parsed JSON."""
-    raw = call_tool("couple", {
-        "participants": json.dumps(specs), "max_iter": max_iter, "tol": tol,
-        "accelerator": accelerator, "theta": theta, "critic_approved": True})
+           accelerator: str = "constant", theta: float = 0.5,
+           noise_replicates: int = 0, noise_floor: float = 0.0,
+           noise_block: int = 3) -> dict:
+    """Run the REGISTERED `couple` tool and return its parsed JSON.
+
+    The three `noise_*` arguments are the tool's stochastic branch and are
+    passed straight through, so a fixture exercises them exactly as an agent
+    would rather than reaching into the driver.
+    """
+    args = {"participants": json.dumps(specs), "max_iter": max_iter, "tol": tol,
+            "accelerator": accelerator, "theta": theta, "critic_approved": True}
+    if noise_replicates:
+        args["noise_replicates"] = noise_replicates
+    if noise_floor:
+        args["noise_floor"] = noise_floor
+    if noise_block != 3:
+        args["noise_block"] = noise_block
+    raw = call_tool("couple", args)
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
@@ -499,7 +512,14 @@ def heat_arrangement(tag: str, backend_left: str, backend_right: str,
         return res
     print(f"{tag}_iterations={res['iterations']}")
     print(f"{tag}_residual={res['residual']:.3e}")
+    print(f"{tag}_converged=True")
     _check_interface_physics(tag, res, p.t_iface, p.q, t_atol, q_atol)
+    # And against a SECOND, independently computed reference: the same problem
+    # solved un-split in one code. See monolithic_interface_state.
+    ex = res["exports"]
+    t_got = 0.5 * sum(span(ex["left"]["values"]))
+    q_got = 0.5 * sum(span(ex["left"]["normal_fluxes"]))
+    assert_against_monolithic(tag, t_got, q_got, p)
     return res
 
 
@@ -547,6 +567,12 @@ def elastic_arrangement(tag: str, backend_left: str, backend_right: str,
         return res
     print(f"{tag}_iterations={res['iterations']}")
     print(f"{tag}_residual={res['residual']:.3e}")
+    print(f"{tag}_converged=True")
+    # No monolithic counterpart here: the un-split solve in the harness is the
+    # CONDUCTION problem, and FEBio's participant is the elastic analogue. The
+    # closed form for the bar is the only independent answer this arrangement
+    # has, and saying so is better than reusing a reference for a different
+    # physics and calling it a check.
     _check_interface_physics(tag, res, p.u_iface, p.q, u_atol, q_atol,
                              value="u")
     return res
@@ -644,6 +670,103 @@ def _quiet_stage(root: Path, name: str, backend: str, edits: dict,
     return spec
 
 
+# ── the MONOLITHIC reference: the same problem solved un-split, in one code ─
+#
+# Every pair fixture already checks the converged interface state against the
+# closed form. That is an independent answer, but it is an independent FORMULA:
+# it shares an author with the fixture, and if the formula were wrong every pair
+# fixture would agree with it in unison. So the harness also solves the WHOLE
+# rectangle as ONE problem — no interface, no partitioning, no driver — and
+# compares against that.
+#
+# Two properties this deliberately has:
+#   * it is COMPUTED HERE, in the fixture harness, never served. An agent cannot
+#     reach it through any tool, so it cannot be quoted back as an answer;
+#   * it is a different KIND of evidence. The closed form assumes the solution is
+#     piecewise linear in x with no y-variation; the monolithic solve assumes
+#     nothing and would disagree if that were wrong.
+#
+# The monolithic flux is taken from the LEFT DIRICHLET BOUNDARY REACTION rather
+# than from a gradient at the interface. In steady conduction with no source the
+# heat crossing every vertical section is the same, so the boundary reaction IS
+# the interface flux — and a reaction needs no differentiation of the discrete
+# solution, which is what makes it accurate enough to be a reference at all.
+
+_MONO_CACHE: dict = {}
+
+
+def monolithic_interface_state(problem: Problem | None = None,
+                               nxl: int = 40, nxr: int = 36,
+                               ny: int = 24) -> tuple[float, float]:
+    """Solve the un-split problem in one code; return (T at the interface,
+    flux density in +x through it). Cached per (problem, mesh)."""
+    import numpy as np
+    p = problem or DEFAULT
+    key = (p, nxl, nxr, ny)
+    if key in _MONO_CACHE:
+        return _MONO_CACHE[key]
+    try:
+        from skfem import (Basis, BilinearForm, ElementTriP1, MeshTri, asm,
+                           condense, solve)
+        from skfem.helpers import dot, grad
+    except ImportError as e:
+        raise Absent(f"the monolithic reference needs scikit-fem: {e}")
+
+    # A mesh whose x-lines include the interface, so "the interface nodes" is
+    # exact rather than a tolerance search.
+    x = np.concatenate([np.linspace(p.xl, p.xi, nxl + 1),
+                        np.linspace(p.xi, p.xr, nxr + 1)[1:]])
+    y = np.linspace(p.y0, p.y1, ny + 1)
+    m = MeshTri.init_tensor(x, y)
+    basis = Basis(m, ElementTriP1())
+    xc = m.p[0][m.t].mean(axis=0)                     # element centroid x
+    kel = np.where(xc < p.xi, p.kl, p.kr)
+
+    @BilinearForm
+    def a(u, v, w):
+        return w["k"] * dot(grad(u), grad(v))
+
+    K = asm(a, basis, k=kel[:, None])                 # (nelems, 1) broadcasts
+    f = basis.zeros()
+    left = np.flatnonzero(np.isclose(m.p[0], p.xl))
+    right = np.flatnonzero(np.isclose(m.p[0], p.xr))
+    u = basis.zeros()
+    u[left] = p.tl
+    u[right] = p.tr
+    D = np.concatenate([left, right])
+    u = solve(*condense(K, f, x=u, D=D))
+
+    iface = np.flatnonzero(np.isclose(m.p[0], p.xi))
+    t_iface = float(np.mean(u[iface]))
+    # Reaction at the left Dirichlet boundary = heat entering there; in steady
+    # conduction with no source that is the heat crossing the interface too.
+    react = K @ u - f
+    q = float(np.sum(react[left])) / (p.y1 - p.y0)
+    _MONO_CACHE[key] = (t_iface, q)
+    return t_iface, q
+
+
+def assert_against_monolithic(tag: str, t_got: float, q_got: float,
+                              problem: Problem | None = None,
+                              rtol: float = 0.02) -> bool:
+    """Compare a converged coupled interface state against the un-split solve.
+
+    Uses `core.quality_checks.check_monolithic_consistency` — the same detector
+    an agent gets — so the fixture proves the detector as well as the coupling.
+    Prints a discrete verdict, because an expectation that names an assertion is
+    worth more than one that names a variable.
+    """
+    from core.quality_checks import check_monolithic_consistency
+    p = problem or DEFAULT
+    t_mono, q_mono = monolithic_interface_state(p)
+    print(f"{tag}_monolithic_T={t_mono:.9g} monolithic_q={q_mono:.9g}")
+    w = (check_monolithic_consistency(t_got, t_mono, rtol=rtol, qoi=f"{tag}_T")
+         + check_monolithic_consistency(q_got, q_mono, rtol=rtol, qoi=f"{tag}_q"))
+    ok = check(not w, f"{tag}_disagrees_with_monolithic", "; ".join(w)[:300])
+    print(f"{tag}_matches_monolithic={bool(ok)}")
+    return bool(ok)
+
+
 def _check_interface_physics(tag: str, res: dict, exact_value: float,
                              exact_q: float, v_atol: float, q_atol: float,
                              value: str = "T") -> None:
@@ -654,39 +777,50 @@ def _check_interface_physics(tag: str, res: dict, exact_value: float,
     # partitioned coupling, and every pair claim states it explicitly.
     nl, nr = len(ex["left"]["coordinates"]), len(ex["right"]["coordinates"])
     print(f"{tag}_n_points={nl}/{nr}")
-    check(nl != nr, f"{tag}_matching_meshes",
-          f"both sides used {nl} interface points, so the claim about "
-          f"NON-matching interface meshes was not exercised")
+    print(f"{tag}_meshes_nonmatching="
+          f"{bool(check(nl != nr, f'{tag}_matching_meshes', f'both sides used {nl} interface points, so the claim about NON-matching interface meshes was not exercised'))}")
 
     # (1) the interface value, from BOTH sides, against the closed form
+    ok_v = True
     for side in ("left", "right"):
         lo, hi = span(ex[side]["values"])
         print(f"{tag}_{side}_{value}_span=[{lo:.10g},{hi:.10g}]")
-        close(0.5 * (lo + hi), exact_value, v_atol, f"{tag}_{side}_{value}_err")
-        check(hi - lo < max(v_atol, 1e-12), f"{tag}_{side}_{value}_not_uniform",
-              f"the exact interface {value} has no y-variation, got a spread "
-              f"of {hi - lo:.3e}")
+        ok_v &= close(0.5 * (lo + hi), exact_value, v_atol,
+                      f"{tag}_{side}_{value}_err")
+        ok_v &= check(hi - lo < max(v_atol, 1e-12),
+                      f"{tag}_{side}_{value}_not_uniform",
+                      f"the exact interface {value} has no y-variation, got a "
+                      f"spread of {hi - lo:.3e}")
+    print(f"{tag}_interface_{value}_matches_reference={bool(ok_v)}")
 
     # (2) the interface flux. The two sides export with respect to their OWN
     # outward normals, which are anti-parallel, so the signs differ.
+    ok_q = True
     for side, sign in (("left", +1.0), ("right", -1.0)):
         lo, hi = span(ex[side]["normal_fluxes"])
         print(f"{tag}_{side}_q_span=[{lo:.10g},{hi:.10g}]")
-        close(0.5 * (lo + hi), sign * exact_q, q_atol, f"{tag}_{side}_q_err")
+        ok_q &= close(0.5 * (lo + hi), sign * exact_q, q_atol,
+                      f"{tag}_{side}_q_err")
+    print(f"{tag}_interface_q_matches_reference={bool(ok_q)}")
+    print(f"{tag}_flux_signs_are_opposite="
+          f"{bool(span(ex['left']['normal_fluxes'])[0] * span(ex['right']['normal_fluxes'])[0] < 0)}")
 
     # (3) conservation: what leaves one subdomain enters the other.
     net_l, net_r = net_flux(ex["left"]), net_flux(ex["right"])
     scale = max(abs(net_l), abs(net_r), 1e-30)
     print(f"{tag}_flux_balance_rel={abs(net_l + net_r) / scale:.3e}")
-    check(abs(net_l + net_r) / scale < 1e-4, f"{tag}_flux_not_balanced",
-          f"net(left)={net_l:.6e} net(right)={net_r:.6e}")
+    ok_b = check(abs(net_l + net_r) / scale < 1e-4, f"{tag}_flux_not_balanced",
+                 f"net(left)={net_l:.6e} net(right)={net_r:.6e}")
     bal = check_balance(res)
-    check(not bal, f"{tag}_balance_check_complained", "; ".join(bal)[:300])
+    ok_b &= check(not bal, f"{tag}_balance_check_complained",
+                  "; ".join(bal)[:300])
+    print(f"{tag}_flux_balanced={bool(ok_b)}")
 
     # (4) an empty `validation` block is what an agent is told to expect from a
     # coupling that is right.
-    check(not res["validation"], f"{tag}_validation_not_empty",
-          "; ".join(res["validation"])[:300])
+    ok_val = check(not res["validation"], f"{tag}_validation_not_empty",
+                   "; ".join(res["validation"])[:300])
+    print(f"{tag}_validation_empty={bool(ok_val)}")
 
 
 # ── measuring the physics out of a coupling result ─────────────────────────

@@ -27,6 +27,13 @@ sys.path.insert(0, str(REPO))
 PAIR_DIR = REPO / "benchmarks" / "coupling_pairs" / "fourc_kratos_cht"
 PARAMS = json.loads((PAIR_DIR / "params.json").read_text())
 
+# Which (backend, role) cells of the served sides table this file establishes.
+# Read by scripts/tier2_fixtures/coupling/sides_table_backed_by_runs, so a table
+# cell can be backed by a live pytest coupling as well as by a tier-2 fixture.
+# It sits next to the run it describes: a wrong entry here is a lie in the same
+# file as the evidence it claims.
+SIDES_COVERED = [("fourc", "dirichlet"), ("kratos", "neumann")]
+
 
 def _kratos_usable() -> bool:
     py = PARAMS["kratos_python"]

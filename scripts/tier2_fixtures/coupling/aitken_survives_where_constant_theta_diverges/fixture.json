@@ -1,0 +1,28 @@
+{
+  "_comment": "COUPLING tier-2. \"aitken\" is the `couple` tool's DEFAULT accelerator and nothing behind that word had ever been run: every theta fixture in this set sweeps the CONSTANT accelerator, so the whole measured basis of the theta advice was about the option the knowledge tells agents NOT to reach for first. The claim here is the sentence attached to the knowledge's own divergence example — 'Note the default aitken survives this particular case; do not read the constant-theta stability limit as a property of the tool's default'. One problem, run twice, with ONE string different: same rho=4, same theta0=0.5, same max_iter, same tol, same non-matching meshes, same starting guess, only `accelerator`. WHAT IS MEASURED follows couplinglib.probe_theta's reasoning because the trap is the same — the residual is normalised by the export magnitude so a diverging run SATURATES it near a constant of order one, and the raw interface value sits near 316 K so a fiftyfold amplified error still leaves it within a factor of two of the answer; the DEVIATION from the exact interface temperature is what grows as the amplification factor to the power of the iteration count with nothing to hide behind. And 'survives' is not 'did not crash': the Aitken arm has its interface temperature from both sides, its interface flux from both sides against ±q with the two outward normals' opposite signs, its conservation balance and its validation block all checked against the closed form, so a run that settled on the wrong fixed point cannot pass for a survivor. couplinglib's probe_theta hard-codes accelerator='constant' and that file is owned elsewhere, so the probe is reproduced in source.py with the accelerator as a parameter and nothing else changed.",
+  "_mutation": {
+    "note": "Point the second arm at the constant accelerator too, so the surviving arm becomes the diverging one. Both arms then run the case the knowledge says diverges, the second arm's interface temperature ends orders of magnitude from the closed form, aitken_reached_closed_form prints False, the physics checks fire and the vacuity guard the_two_arms_ran_different_accelerators prints False as well. A fixture that merely ran the default and checked it did not crash would survive this; one that races the default against the constant it is supposed to beat cannot.",
+    "file": "source.py",
+    "from": "AITKEN = \"aitken\"",
+    "to": "AITKEN = \"constant\""
+  },
+  "backend": "coupling",
+  "physics": "relaxation",
+  "pitfall_index": 40,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "constant_theta_diverged=True",
+    "aitken_reached_closed_form=True",
+    "aitken_deviation_below_constant=True",
+    "the_two_arms_ran_different_accelerators=True",
+    "arms=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

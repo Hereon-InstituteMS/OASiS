@@ -145,10 +145,24 @@ Dirichlet-Neumann coupling, but know that it happens.
     into `work_dir` yourself before calling `couple`.
   * `theta` must be in (0, 1]; `accelerator` must be exactly "constant" or
     "aitken". Both are rejected with an error message if not.
+  * `noise_replicates` — ONLY when a participant is a Monte-Carlo / sampled
+    estimator (DSMC, a stochastic solver, anything whose answer to the same
+    question differs run to run). Set it to 2 or more and the driver runs every
+    participant that many times on the SAME imports BEFORE iterating, measures
+    the residual between independent replicates, and judges convergence against
+    max(tol, that floor). See section 4a. It costs
+    `noise_replicates` extra solves per participant. Leave it at 0 for
+    deterministic solvers — where it does nothing anyway.
+  * `noise_floor` — declare a floor you established yourself instead of (or on
+    top of) measuring one. `noise_block` — how many consecutive residuals must
+    AVERAGE below the criterion before the run stops; only in effect when a
+    non-zero floor is.
 
 Returns JSON with `converged`, `iterations`, `residual`, `history`, per-
 participant `exports`, a `validation` block, and OASiS's `verification` /
-`trustworthy_result` verdict. Two things about it:
+`trustworthy_result` verdict — plus `noise_floor`, `tol_effective`,
+`stopped_at_noise_floor` and `noise_notes` whenever a floor was in play. Two
+things about it:
   * the `exports` returned are the RELAXED blend the driver holds, not the last
     raw output of your solver. On a converged run the difference is below the
     tolerance; on a failed run they are a mixture of two iterations, which is
@@ -194,22 +208,28 @@ once the raw output has settled, and the iteration count you need is roughly
     log(tol / d0) / log(1 - theta)
 
 where d0 is the INITIAL mismatch measured the way the residual is — relative to
-the field magnitude. Take d0 = 1 (a 100%-wrong start) and tol=1e-8 gives about
-27 iterations at theta=0.5, 52 at theta=0.3, 83 at theta=0.2; at tol=1e-6,
-about 20 / 39 / 62. Those are a SIZING GUIDE, not a lower bound: a field with a
-large offset — temperatures around 300 K whose interface value is wrong by a few
-K — starts at d0 of a few percent and reaches tol in measurably fewer iterations
-than the d0=1 figure. Evaluate the expression for your own theta and tol instead
-of reusing a number, then give max_iter generous headroom, because
-under-budgeting looks exactly like a physics failure: a run that stops at
-max_iter=20 with theta=0.3 never had a chance. (With accelerator="aitken" theta
-moves, so the rate moves with it, but the same mechanism is there.)
+the field magnitude. EVALUATE IT FOR YOUR OWN theta AND tol; it is three
+keystrokes and there is no table to look up:
+
+    theta=0.5, tol=1e-8, d0=1  ->  log(1e-8)/log(0.5)  ~  27 iterations
+
+That is a value of the formula, not something anybody observed, and it is an
+ORDER-OF-MAGNITUDE SIZING GUIDE rather than a lower bound — a field with a large
+offset, temperatures around 300 K whose interface value is wrong by a few K,
+starts at a d0 of a few percent and gets there in fewer. What matters is the
+shape: the count grows without limit as theta shrinks, so give max_iter generous
+headroom, because under-budgeting looks exactly like a physics failure — a run
+that stops at max_iter=20 with a small theta never had a chance. (With
+accelerator="aitken" theta moves, so the rate moves with it, but the same
+mechanism is there.)
 
 `accelerator`: **the default, "aitken", is also the safer one — reach for
 "constant" to DIAGNOSE, not as your first choice.**
   * "aitken" — theta adapts per participant, starting from the theta you pass,
-    clamped into [0.05, 1.0]. THIS IS THE DEFAULT AND YOU SHOULD NORMALLY KEEP
-    IT. Measured across conductance ratios rho from 1/4 to 9 and theta from 0.1
+    clamped into [0.05, 1.0]. (Two fallback paths inside the update — the first
+    iteration, where there is no previous residual, and a degenerate denominator
+    — floor it at 0.1 instead. It matters only if you are reading the numbers.)
+    THIS IS THE DEFAULT AND YOU SHOULD NORMALLY KEEP IT. Measured across conductance ratios rho from 1/4 to 9 and theta from 0.1
     to 1.0 on this driver, Aitken matched or beat a constant theta almost
     everywhere, and in a quarter of those settings it converged to the right
     interface value where the SAME constant theta diverged by tens of orders of
@@ -225,6 +245,17 @@ moves, so the rate moves with it, but the same mechanism is there.)
     was still marginally above tol at the iteration budget. That is the
     exception, not the rule; if "aitken" stalls, raise max_iter first, then try
     the same theta constant, and only then touch the physics.
+
+WHAT "AITKEN" MEANS HERE, so you do not port a textbook formula's expectations
+onto it. The update is dynamic relaxation in the Aitken family — theta is
+recomputed each iteration from the change in the interface residual — but it is
+not the textbook recurrence: the driver feeds the previous RAW EXPORT into the
+slot the classical formula fills with the previous RESIDUAL. Everything stated
+about it above is what this implementation was measured to do, and it does hold;
+what does not follow is any property you might expect from the classical
+derivation, including its convergence rate. Do not tune against a textbook
+formula, and if you need a specific acceleration scheme, drive the coupling with
+`couple_precice` and a `serial-implicit` scheme instead.
 
 ### Choosing theta — this maps to the real `theta` parameter
 
@@ -288,6 +319,62 @@ Observed on this driver, running real two-code couplings:
 There is no theta that makes this driver converge in one step for a two-code
 Dirichlet-Neumann split. Budget tens to hundreds of iterations and set max_iter
 and the per-participant `timeout` accordingly.
+
+### 4a. A STOCHASTIC PARTICIPANT — the residual has a floor and `tol` cannot cross it
+
+If ANY participant is a Monte-Carlo or otherwise sampled estimator — a DSMC
+code, a stochastic solver, anything that answers the same question slightly
+differently each time it is asked — then read this before you set `tol`.
+
+The residual is the CHANGE in the export vector between iterations. A sampled
+participant changes its export every run whether or not the physics moved, so
+the residual cannot fall below the size of that scatter, however well the
+coupling has converged. A `tol` underneath the floor is unreachable BY
+CONSTRUCTION: the run always ends "did not converge", on a coupling that is
+right. Sizing `tol` by guesswork does not fix it — too tight and every run fails,
+too loose and you have declared victory at a number you cannot defend.
+
+`noise_replicates` MEASURES the floor instead. The driver runs every participant
+that many times on the SAME imports and evaluates its own residual expression
+across the replicates, so the floor is the residual a perfectly converged run
+would still report. Convergence is judged against max(tol, floor), over a block
+mean of the last few residuals so that one lucky dip into the noise cannot end
+the run. The result carries `noise_floor` and `stopped_at_noise_floor`.
+
+USE 4 OR MORE, not the minimum of 2. The floor is itself an estimate and a small
+one is a bad estimate: three replicates give three samples, and the same
+coupling can measure a floor several times larger or smaller from one attempt to
+the next purely from that scatter. The driver adds a note below six samples.
+
+THE MEASUREMENT HAPPENS TWICE, and the two are not the same number. Before the
+loop there is no previous relaxed vector to compare against, so all that can be
+measured is the scatter BETWEEN independent answers — a LOWER BOUND, because the
+loop compares against a lagged relaxed average carrying its own accumulated
+noise, and because noise that has propagated through a partner over earlier
+iterations is not in it. That bound is used to avoid a pointless long run. If the
+loop still finishes un-converged, the floor is re-measured with the participants
+in their FINAL state, against the very vector the loop compares to — that one is
+the residual the loop actually reports, measured — and the verdict is re-judged.
+The re-measurement is paid only on failure.
+
+THREE THINGS THAT FOLLOW, and they are the whole discipline:
+  * READ `noise_floor` BEFORE APPLYING ANY TOLERANCE TO THE RESULT. A grading,
+    acceptance or agreement tolerance tighter than the floor is measuring the
+    sampler, not the coupling;
+  * a floor of EXACTLY ZERO from a Monte-Carlo participant means its SEED IS
+    FIXED. The run is repeatable, not converged, and a residual that falls under
+    a fixed seed is no evidence it would fall under another. `noise_notes` says
+    so explicitly. Vary the seed between runs if you want the floor to mean
+    anything;
+  * the floor answers "can this sampler still see the iteration moving", NOT
+    "has the iteration finished". A physics drift smaller per iteration than the
+    sampling noise but accumulating over many of them is invisible to it.
+    Increase the sampling (which lowers the floor) if you need to see smaller
+    steps.
+
+For a deterministic solver the replicates come back bit-identical, the floor is
+zero, max(tol, 0) is tol and nothing about the run changes. There is no reason
+to set it there, and no harm if you do.
 
 If you need genuine Gauss-Seidel sub-iteration inside a time window, that is
 what `couple_precice` with a `serial-implicit` scheme provides — see
@@ -363,21 +450,27 @@ not copied from a docstring:
 | DUNE-fem   | yes       | yes     | a Python script          | coupled to FEniCSx and deal.II, both roles |
 | deal.II    | yes       | yes     | Python wrapper + C++ exe | coupled to FEniCSx and DUNE-fem, both roles |
 | FEBio      | yes       | yes     | Python wrapper + XML     | FEBio-to-FEBio, both roles — ELASTICITY, not heat: FEBio 4 has no heat module |
-| Kratos     | yes*      | yes*    | a Python script          | coupled to FEniCSx, both roles — NOT reproducible here: see the asterisk |
-| SPARTA     | yes*      | not natively | Python wrapper + deck | coupled to a thermal shell; no flux BC exists, only an indirect radiative-equilibrium route, and the residual cannot beat the Monte-Carlo noise |
+| Kratos     | yes       | yes     | a Python script          | Neumann side coupled to the real 4C binary against an analytic reference; Dirichlet side against FEniCSx — but in ITS OWN interpreter, see below |
+| SPARTA     | yes       | not natively | Python wrapper + deck | coupled to a thermal shell and CONVERGED once the residual is judged against its measured Monte-Carlo noise floor; no flux BC exists, only an indirect radiative-equilibrium route |
 
-Every UNSTARRED "yes" means a real two-code coupling was run in that role on
-THIS install and CONVERGED; it is not copied from a tool docstring. The two
-starred rows are weaker, and the difference matters before you plan around them:
+Every "yes" above means a real two-code coupling was run in that role on THIS
+install and CONVERGED; it is not copied from a tool docstring. Two rows carry
+conditions you must know before planning around them:
 
-  * KRATOS was proven in a SEPARATE Kratos install, not in OASiS's interpreter
-    here. A core-only Kratos has no thermal element, so
-    `import KratosMultiphysics.ConvectionDiffusionApplication` is the thing to
-    test first — if it fails, the conduction participant cannot run at all on
-    this machine, whatever the table says.
-  * SPARTA's Dirichlet role ran end to end and the physics agreed, but `couple`
-    reported FAILURE: a Monte-Carlo residual has a noise floor. "yes" here means
-    the ROLE is possible, NOT that you will get a converged run out of it.
+  * KRATOS runs in ITS OWN INTERPRETER, not the one OASiS itself runs in. The
+    coupling to 4C was driven with the Kratos participant under a separate
+    Python — which is exactly what the `command` field is for, so this is a
+    configuration fact and not a limitation. A core-only Kratos has no thermal
+    element, so `import KratosMultiphysics.ConvectionDiffusionApplication` in
+    THAT interpreter is the thing to test first: if it fails, the conduction
+    participant cannot run there whatever the table says. Note also that
+    `discover(query='list')` probes Kratos in OASiS's own interpreter, so it can
+    report Kratos unavailable on a machine where the coupling works.
+  * SPARTA is a Monte-Carlo code, so its residual has a floor and a `tol` under
+    that floor can never be met. That used to make every SPARTA coupling report
+    FAILURE even when the physics agreed. Pass `noise_replicates=5` and the
+    driver measures the floor and judges against it — see section 4a. Without
+    it, expect "did not converge" on a correct run.
 
 Note in particular that the DEPRECATED `coupled_solve` docstring lists 4C on the
 Neumann side only — that limitation belongs to its own fixed generators, not
@@ -403,25 +496,637 @@ def coupling_sides_table() -> str:
     """The side table on its own, for discover(query='coupling')."""
     return _SIDES_TABLE
 
+# ══════════════════════════════════════════════════════════════════════════
+# FAILURE MODES — ONE source, rendered two ways
+# ══════════════════════════════════════════════════════════════════════════
+#
+# These rows were a hand-written markdown table and nothing else, which cost
+# them their only route in: every other family of knowledge in OASiS ships its
+# symptoms in the `[Category] ... Signal: ...` shape, and `knowledge(signal=...)`
+# is how a post-execution critic gets from a symptom to the entry that explains
+# it. Coupling had no pitfall list at all, so a coupling failure could not be
+# routed to the very rows that name it — the reader had to already know to ask
+# for `topic='coupling'` and then read 40 kB.
+#
+# So the rows live HERE, once, and both surfaces are generated from them:
+# the table in the core payload, and a searchable pitfall list. A row cannot
+# appear in one and be missing from the other.
+#
+# `observations` is the part that makes the search work at all. The `seen`
+# string is what the TOOL prints; a person arriving with a problem types what
+# THEY saw, in their own words, with no mechanism in it — "the two sides stopped
+# agreeing", "it converged but the answer is wrong". A substring match against
+# tool output never finds those. Each row therefore carries plain-language
+# phrasings of the same symptom, and the matcher scores against them too.
+
+_FAILURE_ROWS: list[dict] = [
+    {
+        "cat": "Handshake",
+        "seen": "`participant X wrote no exports.json (rc=...)`",
+        "means": "your script died. The stderr tail is in the message — read "
+                 "it. Run the script standalone in its work_dir first.",
+        "observations": ["the participant produced no output file",
+                         "one side crashed", "my script exited and nothing "
+                         "was written", "the run stops on the first iteration",
+                         "the run aborted partway through with an mpi error",
+                         "one program never starts at all",
+                         "the handshake never completes",
+                         "a participant died and took the coupling with it"],
+    },
+    {
+        "cat": "Handshake",
+        "seen": "`participant X bad exports.json`",
+        "means": "malformed JSON, a TRUNCATED file, or a missing required key. "
+                 "All three of `field_name`, `coordinates`, `values` must be "
+                 "present.",
+        "observations": ["the export file cannot be read",
+                         "the driver rejects the file my script wrote",
+                         "a key is missing from the exported data",
+                         "exports.json is missing a key the driver requires",
+                         "my exported json has different keys than expected"],
+    },
+    {
+        "cat": "Handshake",
+        "seen": "`participant X changed its export size from N to M`",
+        "means": "that participant exported a different number of points (or "
+                 "dropped `normal_fluxes`) between iterations. Usually a mesh "
+                 "or interface-detection step that depends on the imported "
+                 "data. Fix the participant; the driver cannot relax a "
+                 "changing vector.",
+        "observations": ["the number of interface points changes between "
+                         "iterations", "one side sometimes exports the flux "
+                         "and sometimes does not", "the mesh is rebuilt every "
+                         "iteration"],
+    },
+    {
+        "cat": "Handshake",
+        "seen": "`participant X timed out`",
+        "means": "raise `timeout` in the participant spec, or coarsen that "
+                 "side's mesh.",
+        "observations": ["one side takes far too long", "the coupling hangs "
+                         "on one participant", "the solver is stuck and never "
+                         "finishes", "it hangs and I have to kill it",
+                         "nothing happens for a very long time",
+                         "the run deadlocks at startup",
+                         "one participant waits forever for the other",
+                         "it just hangs with no error"],
+    },
+    {
+        "cat": "Relaxation",
+        "seen": "`did not converge to tol=... in N iters`",
+        "means": "in order: is max_iter above the (1-theta) floor in section 4; "
+                 "is theta right for this conductance ratio; would swapping "
+                 "which side is Dirichlet help; do the two decks actually agree "
+                 "on units and material. NOT a result. If any participant is a "
+                 "Monte-Carlo / sampled estimator, see the stochastic entry "
+                 "below before touching any of that.",
+        "observations": ["it ran out of iterations", "the residual never got "
+                         "small enough", "the coupling will not finish",
+                         "it is stuck and will not finish",
+                         "it stops at the iteration limit",
+                         "it never reaches the tolerance I asked for",
+                         "convergence is painfully slow",
+                         "the sub-iterations hit the maximum count every step",
+                         "it takes far too many outer iterations"],
+    },
+    {
+        "cat": "Relaxation",
+        "seen": "residual stuck at O(1), oscillating",
+        "means": "theta too large, or a SIGN error — the Neumann side is "
+                 "pushing the flux the wrong way.",
+        "observations": ["the residual goes up and down and never settles",
+                         "the interface value flips back and forth",
+                         "the answer bounces between two values",
+                         "the interface oscillates in a checkerboard pattern",
+                         "the transferred load has the wrong sign",
+                         "the traction looks mirrored",
+                         "the structure moves the opposite way to the load",
+                         "the flux is pushed the wrong way",
+                         "it ping-pongs between the participants and makes no "
+                         "progress",
+                         "the two sides chase each other and never settle"],
+    },
+    {
+        "cat": "Relaxation",
+        "seen": "residual GROWING, values exploding",
+        "means": "theta above the stability limit for this conductance ratio. "
+                 "Halve it. See section 4.",
+        "observations": ["the numbers keep getting bigger",
+                         "the solution blows up", "the interface temperature "
+                         "runs away", "the temperatures are becoming enormous",
+                         "the values are growing without limit",
+                         "huge unphysical numbers", "the answer diverges",
+                         "it is unstable",
+                         "it will not stabilise even with heavy "
+                         "under-relaxation",
+                         "the amplitude grows every step until it crashes",
+                         "the displacement grows every coupling iteration "
+                         "until it overflows",
+                         "it goes unstable when one side is much stiffer or "
+                         "much more conductive than the other"],
+    },
+    {
+        "cat": "Conservation",
+        "seen": "converged, but `Interface flux NOT balanced`",
+        "means": "most often both sides exported `normal_fluxes` with the same "
+                 "sign (section 5). Otherwise: different units on the two "
+                 "sides, or one side exporting an INTEGRATED flux where the "
+                 "other exports a DENSITY.",
+        "observations": ["the two sides stopped agreeing",
+                         "the two sides do not agree about the flux",
+                         "each side reports a different amount of heat",
+                         "energy is not conserved across the interface",
+                         "what leaves one subdomain does not enter the other",
+                         "the forces I send over do not add up to the same "
+                         "total on the other side",
+                         "the load transfer is not conservative",
+                         "the total force before and after mapping differs",
+                         "the energy at the interface grows every step",
+                         "there is a flux imbalance at the interface",
+                         "the lift one code computes is not the lift the "
+                         "other one feels",
+                         "the load one side applies is not the load the other "
+                         "side receives",
+                         "the transfer is not conservative"],
+    },
+    {
+        "cat": "Conservation",
+        "seen": "`Interface conservation was NOT CHECKED`",
+        "means": "one side exported no `normal_fluxes`, so nothing verifies "
+                 "conservation. The run is not wrong, it is unguarded. Export "
+                 "the flux on both sides.",
+        "observations": ["nothing checked the conservation",
+                         "the result says the balance was not checked",
+                         "there is no flux in my export"],
+    },
+    {
+        "cat": "Silent-wrong",
+        "seen": "`NOT COUPLED: no participant lists imports_from`",
+        "means": "nobody was given a partner's name, so nothing was exchanged. "
+                 "The run is not a coupling.",
+        "observations": ["nothing was exchanged between the codes",
+                         "the two runs are independent of each other",
+                         "nothing seems to be passed between the solvers",
+                         "no data is transferred between the participants",
+                         "neither side reacts to the other"],
+    },
+    {
+        "cat": "Silent-wrong",
+        "seen": "`ONE-WAY: participant(s) X list no imports_from`",
+        "means": "X never sees its partners. A note, not a failure — a "
+                 "master/slave coupling really does look like this. If you "
+                 "meant a two-way coupling, that is the bug.",
+        "observations": ["only one side reacts to the other",
+                         "one participant never changes",
+                         "the coupling only goes one way",
+                         "only one of the two codes actually moved",
+                         "one program does nothing while the other updates",
+                         "the feedback from one side is missing"],
+    },
+    {
+        "cat": "Silent-wrong",
+        "seen": "`NOT COUPLED: no participant's export changed`",
+        "means": "converged at iteration 2 with an exactly zero residual. Both "
+                 "participants returned their initial guess: they are not "
+                 "reading `imports.json`, or they are reading it under the "
+                 "wrong partner name. THIS IS THE MOST CONVINCING WRONG RESULT "
+                 "THE TOOL CAN PRODUCE — it looks like an instant, perfect "
+                 "convergence.",
+        "observations": ["it converged immediately",
+                         "it converged on the second iteration",
+                         "the residual was exactly zero",
+                         "it converged far too fast",
+                         "it converged on the very first step which seems too "
+                         "good to be true",
+                         "the answer is just my initial guess",
+                         "the export did not change between iterations",
+                         "the exported numbers are identical every iteration",
+                         "the log prints the same number every iteration",
+                         "the second program receives nothing",
+                         "the field I send is not arriving"],
+    },
+    {
+        "cat": "Silent-wrong",
+        "seen": "`non-finite export values at iter N` (a warning)",
+        "means": "your solve diverged; the run CONTINUES to max_iter, so look "
+                 "for this in `validation` rather than expecting it to stop. "
+                 "Usually a subdomain with no essential BC anywhere, which is "
+                 "singular.",
+        "observations": ["I am getting nan in the output",
+                         "nan appeared in the results",
+                         "the values became infinite",
+                         "inf and nan in the exported field",
+                         "one subdomain has no boundary condition",
+                         "the subdomain problem is singular",
+                         "it crashed with nan after a few coupling steps",
+                         "the displacements went to infinity"],
+    },
+    {
+        "cat": "Silent-wrong",
+        "seen": "converged to a plausible but wrong answer",
+        "means": "check `n_points` from each side on iteration 1: an empty or "
+                 "wrongly located interface set gives a well-behaved solution "
+                 "of the wrong problem. Then check that both sides use the same "
+                 "units and the same interface coordinate.",
+        "observations": ["it converged but the answer is wrong",
+                         "everything looks fine but the number is wrong",
+                         "the result is plausible and still wrong",
+                         "the answer looks reasonable but does not match my "
+                         "hand calculation",
+                         "the number disagrees with the analytical solution",
+                         "the two subdomains may not be touching",
+                         "the interface is in the wrong place",
+                         "there is a visible gap between the two subdomains",
+                         "my interface meshes do not line up exactly",
+                         "the two interfaces are misaligned",
+                         "the two sides have different numbers of nodes on "
+                         "the interface",
+                         "the transferred field is spiky at the boundary "
+                         "between the two meshes",
+                         "the two surfaces do not coincide",
+                         "each code is fine on its own but the coupled "
+                         "outcome is nonsense"],
+    },
+    # ── rows below are not in the original table. Each is behind a fixture. ──
+    {
+        "cat": "Silent-wrong",
+        "seen": "converged, balanced, EMPTY `validation`, and still wrong",
+        "means": "a UNIT MISMATCH between the two decks passes every check the "
+                 "tool has. Conservation is a property of the fixed point and "
+                 "holds whatever units the boundary data is in, so the balance "
+                 "closes, the residual falls and the validation block stays "
+                 "empty while the interface value is out by tens of percent. "
+                 "NOTHING INSIDE `couple` CAN SEE THIS. The only detector is an "
+                 "independently computed answer for the same quantity — a "
+                 "monolithic re-solve of the un-split problem, or a closed form "
+                 "— compared against the converged interface state.",
+        "observations": ["it converged but the answer is wrong",
+                         "every check passed and the number is still wrong",
+                         "the answer does not match my hand calculation or a "
+                         "reference solution",
+                         "the validation block is empty and I do not trust it",
+                         "one deck is in celsius and the other in kelvin",
+                         "the two sides use different units",
+                         "the value is off by a factor of a thousand",
+                         "it came out a thousand times too large",
+                         "the field arrives scaled by some random factor",
+                         "the magnitude is wrong by a clean power of ten",
+                         "the coupled outcome is offset by a constant "
+                         "everywhere",
+                         "everything is shifted by the same amount",
+                         "the deformation is about half of what the "
+                         "experiment shows",
+                         "the outcome disagrees with a published measurement",
+                         "the residual goes down but the physics is wrong",
+                         "one field is transferred and the receiving code "
+                         "produces garbage"],
+    },
+    {
+        "cat": "Silent-wrong",
+        "seen": "a wrong material on BOTH sides moves the flux and NOT the "
+                "interface value",
+        "means": "if both subdomains carry the same wrong factor on their "
+                 "material coefficient, the CONDUCTANCE RATIO is unchanged, so "
+                 "the interface value lands exactly where it should and only "
+                 "the flux is wrong. Checking the primary interface quantity — "
+                 "the temperature, the displacement — CANNOT detect it, and "
+                 "neither can the balance. Check the FLUX against an "
+                 "independent answer as well as the value.",
+        "observations": ["the interface temperature is right but the heat flow "
+                         "is wrong", "the value is right and the flux is not",
+                         "the material may be wrong on both sides"],
+    },
+    {
+        "cat": "Stochastic",
+        "seen": "`did not converge` with the residual FLAT rather than falling",
+        "means": "a Monte-Carlo participant (DSMC, any sampled estimator) "
+                 "returns a slightly different export every time it is asked "
+                 "the same question, so the residual has a FLOOR at the size of "
+                 "that scatter and a `tol` underneath it can never be met. The "
+                 "run is right and the verdict is useless. Pass "
+                 "`noise_replicates=5` (four or more \u2014 the floor is itself an "
+                 "estimate and three samples is a bad one): `couple` then runs each "
+                 "participant that many times on the SAME imports, measures the "
+                 "residual between independent replicates, and judges "
+                 "convergence against max(tol, that floor) over a block mean. "
+                 "It returns `noise_floor`, and ANY tolerance you or a grader "
+                 "then apply must be at least that floor. A floor measured as "
+                 "exactly zero on a Monte-Carlo code means the SEED IS FIXED: "
+                 "the run is repeatable, not converged.",
+        "observations": ["the residual stops falling and stays there",
+                         "the residual plateaus",
+                         "it never converges no matter how many iterations",
+                         "one side is a particle code",
+                         "my solver gives a slightly different answer every "
+                         "time", "monte carlo noise", "the physics looks right "
+                         "but it reports failure",
+                         "a rerun gives a different number",
+                         "repeating the identical run does not repeat"],
+    },
+]
+
+
+def _failure_table() -> str:
+    rows = "\n".join(f"| {r['seen']} | {r['means']} |" for r in _FAILURE_ROWS)
+    return (
+        "| What you see | Cause |\n"
+        "|--------------|-------|\n" + rows)
+
+
+def coupling_pitfall_entries() -> list[str]:
+    """The failure rows in the `[Category] ... Signal: ...` shape the rest of
+    the catalog uses, so `knowledge(topic='coupling', signal=...)` can route a
+    symptom to one. Generated from `_FAILURE_ROWS`, never maintained twice."""
+    out = []
+    for r in _FAILURE_ROWS:
+        obs = "; ".join(r["observations"])
+        out.append(f"[Coupling][{r['cat']}] {r['means']} "
+                   f"Signal: {r['seen']} — in plain words: {obs}.")
+    return out
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# SEARCH — routing a described SYMPTOM to the entry that explains it
+# ══════════════════════════════════════════════════════════════════════════
+#
+# The query is what a person SAW; the entries are what the tool PRINTS and what
+# the author of the entries thought the symptom sounded like. Those two
+# vocabularies overlap far less than either author expects, and a self-check by
+# the person who wrote the entries measures almost nothing — they share a
+# vocabulary with themselves by construction.
+#
+# THIS SCORER IS THE SECOND ONE. The first was a plain token overlap divided by
+# the query length, and a hostile third-party pass with a hundred queries it
+# wrote before reading anything measured it at ~62% recall and ~52% top-1. Three
+# faults, all structural, all fixed here:
+#
+#   1. DIVIDING BY THE QUERY LENGTH PENALISED DETAIL. `nan` found the right
+#      entry; `solver crashed with nan after the third coupling step` found
+#      nothing, because one match out of seven tokens fell under the threshold.
+#      That is backwards: a user who types more has told you more. The score is
+#      now driven by the BEST evidence in the query (`core`), with coverage only
+#      breaking ties, so extra words can never remove a hit.
+#   2. EVERY TOKEN COUNTED THE SAME, so `interface`, `iteration`, `step` and
+#      `mesh` — which appear in most entries — decided the ranking, and the
+#      wordiest entry became a magnet that topped queries about energy balance
+#      and about flux imbalance. Tokens are IDF-weighted against the entry set
+#      now, so a word that appears everywhere carries nothing and `energy` beats
+#      `interface`.
+#   3. THE ENTRIES SPEAK THERMAL AND HALF THE USERS SPEAK MECHANICS. Every
+#      force / load / traction / pressure / mapping phrasing missed, including
+#      the two highest-value entries in the table. Hence SYNONYMS, plus a much
+#      wider set of `observations` on the rows themselves.
+#
+# A fourth, cheap: a stem that is not in the vocabulary is retried as a
+# five-character prefix, so `oscilating` still reaches `oscillating`.
+
+_STOP = {
+    "the", "and", "but", "for", "with", "that", "this", "was", "were", "are",
+    "its", "it", "is", "not", "you", "your", "have", "has", "had", "did",
+    "does", "from", "into", "out", "off", "get", "got", "when", "what", "why",
+    "how", "all", "any", "one", "two", "both", "same", "each", "still", "just",
+    "only", "very", "some", "there", "then", "than", "them", "they", "their",
+    "which", "who", "will", "would", "can", "could", "should", "about", "run",
+    "runs", "ran", "code", "codes", "side", "sides", "thing", "things", "make",
+    "made", "see", "saw", "look", "looks", "like", "way", "ways", "use", "used",
+    "problem", "result", "results", "answer", "answers", "give", "gives",
+    "solver", "solvers", "simulation", "case", "model", "keep", "keeps",
+    # Generic English that a blind tester caught ACTING AS THE DECIDING TOKEN:
+    # `much` alone returned the stability-limit row (it appears in "much
+    # stiffer"), `slightly` returned the Monte-Carlo row, `second` collided
+    # "the second program" with "the second iteration", and `condition`
+    # returned the singular-subdomain row from the words "boundary condition".
+    # An intensifier or an ordinal is not evidence about a failure mode.
+    "much", "many", "slightly", "little", "second", "third", "condition",
+    "seem", "seems", "actually", "really", "quite", "rather", "even",
+}
+
+# Query vocabulary -> entry vocabulary. Every group below was written from a
+# recorded MISS, not from imagination: these are the words engineers actually
+# used for symptoms the table already covered.
+SYNONYMS: dict[str, tuple[str, ...]] = {
+    # a structural engineer's word for the thing the table calls a flux
+    "force": ("flux", "conserv"), "forc": ("flux", "conserv"),
+    "load": ("flux",), "traction": ("flux",), "pressure": ("flux",),
+    "stress": ("flux",), "heat": ("flux",),
+    "transfer": ("flux", "exchang"), "mapping": ("interpolat", "point"),
+    "conservative": ("conserv", "balanc"), "conservation": ("conserv", "balanc"),
+    "imbalance": ("balanc", "conserv"), "sum": ("balanc", "conserv"),
+    "total": ("balanc", "conserv"),
+    # runaway
+    "explod": ("blow", "grow", "stabil"), "explode": ("blow", "grow", "stabil"),
+    "explosion": ("blow", "grow"), "infinity": ("infinit",),
+    "overflow": ("infinit", "grow"), "unstable": ("stabil", "blow"),
+    "instabil": ("stabil", "blow"), "unstabl": ("stabil", "blow"),
+    "runaway": ("grow", "blow"), "diverg": ("blow", "grow"),
+    "enormou": ("enormou", "huge", "grow"), "huge": ("huge", "grow"),
+    "bigger": ("grow",), "amplitude": ("oscillat", "grow"),
+    "checkerboard": ("oscillat",), "bounc": ("oscillat", "flip"),
+    "flip": ("flip", "oscillat"), "wobbl": ("oscillat",),
+    # a stalled process
+    "deadlock": ("hang", "stuck"), "freeze": ("hang", "stuck"),
+    "frozen": ("hang", "stuck"), "wait": ("hang", "stuck"),
+    "stall": ("hang", "stuck", "plateau"), "hung": ("hang",),
+    # geometry that does not meet
+    "gap": ("touch", "meet"), "misalign": ("touch", "meet", "place"),
+    "align": ("touch", "meet", "place"), "overlap": ("touch", "meet"),
+    "coincid": ("touch", "meet"),
+    # magnitude errors, which is what a unit mismatch looks like
+    "factor": ("unit", "celsiu", "kelvin"), "scale": ("unit",),
+    "scaled": ("unit",), "thousand": ("unit",), "million": ("unit",),
+    "magnitude": ("unit",), "convert": ("unit",), "conversion": ("unit",),
+    # sign
+    "mirror": ("sign", "opposit"), "opposit": ("sign", "opposit"),
+    "revers": ("sign", "opposit"), "backward": ("sign", "opposit"),
+    "inward": ("sign",), "outward": ("sign",), "negativ": ("sign",),
+    # the iteration
+    "subiteration": ("iteration",), "substep": ("iteration",),
+    "sweep": ("iteration",), "relaxation": ("relaxation", "theta"),
+    "underrelaxation": ("relaxation", "theta"),
+    "stochast": ("carlo", "sampl", "nois"), "random": ("carlo", "sampl", "nois"),
+    "particl": ("carlo", "sampl", "nois"), "dsmc": ("carlo", "sampl", "nois"),
+    "plateau": ("plateau", "stop", "fall"),
+    "nonsens": ("wrong",), "garbage": ("wrong",), "rubbish": ("wrong",),
+    "bogus": ("wrong",), "implausibl": ("wrong",),
+}
+
+
+def _stem(w: str) -> str:
+    for suf in ("ings", "ing", "ies", "ed", "es", "s"):
+        if w.endswith(suf) and len(w) - len(suf) >= 4:
+            return w[: -len(suf)]
+    return w
+
+
+def _toks(s: str) -> list[str]:
+    import re as _re
+    return [_stem(w) for w in _re.findall(r"[a-zA-Z_]{3,}", s.lower())
+            if w not in _STOP]
+
+
+def _hay(r: dict) -> str:
+    """Everything an entry can be matched against — INCLUDING its category.
+    Leaving the category out meant that typing the word the row is filed under,
+    `conservation` or `relaxation`, matched nothing at all."""
+    return " ".join([r["cat"], r["seen"], r["means"], *r["observations"]])
+
+
+_SEARCH_INDEX: dict = {}
+
+
+def _search_index() -> dict:
+    """Entry token sets plus an IDF weight per token, built once."""
+    if _SEARCH_INDEX:
+        return _SEARCH_INDEX
+    import math
+    sets = [set(_toks(_hay(r))) for r in _FAILURE_ROWS]
+    n = len(sets)
+    df: dict[str, int] = {}
+    for s in sets:
+        for tok in s:
+            df[tok] = df.get(tok, 0) + 1
+    scale = math.log(n + 1)
+    idf = {tok: math.log((n + 1) / (d + 1)) / scale for tok, d in df.items()}
+    prefixes: dict[str, set[str]] = {}
+    for tok in df:
+        if len(tok) >= 6:
+            prefixes.setdefault(tok[:5], set()).add(tok)
+    _SEARCH_INDEX.update({"sets": sets, "idf": idf, "prefixes": prefixes,
+                          "vocab": set(df)})
+    return _SEARCH_INDEX
+
+
+# A prefix rescue is a GUESS, so it is worth less than a real match, and it is
+# never allowed to be the ONLY evidence. `install` shares five characters with
+# `instant`, so a conda question was answered with "it converged at iteration 2
+# with an exactly zero residual" — a confidently wrong answer, which is the
+# worst thing this search can produce. So a prefix match is discounted AND
+# cannot supply `core`: it can lift an entry another token already reached, and
+# nothing more. That is enough for the case it exists for, a typo inside a
+# sentence whose other words are right.
+_PREFIX_WEIGHT = 0.8
+
+# An entry must match at least one query token this informative. Coverage alone
+# must never be enough: `wrong`, `converging`, `interface` and `mesh` appear
+# across most of the table, and an entry selected by those has been selected by
+# nothing. This is what stops a one-word query from returning five rows.
+#
+# Both constants were chosen by SWEEPING them against two independent blind
+# query sets — one from each hostile tester — and taking the point where recall
+# on the first set is unchanged and refusals are highest. They trade precision
+# against recall directly and cannot be tuned to fix both.
+_CORE_MIN = 0.55
+
+# The verbatim-containment bonuses are strong evidence and were firing on any
+# query short enough to be a substring of somebody's observation — `wrong` is
+# inside eight of them. They need a phrase, not a word.
+_PHRASE_MIN_CHARS = 12
+
+# WHAT AN UNRECOGNISED WORD COSTS. A word the table has never heard of used to
+# be scored at the MAXIMUM weight in the coverage denominator, so every extra
+# word an engineer typed pushed the right entry down — `handshake` returned all
+# four handshake rows and `handshake never completes` returned nothing. That is
+# the exact fault this scorer was rewritten to remove, reintroduced through the
+# denominator, and a second blind tester found it by typing sentences instead of
+# phrases. An unknown word is weak evidence of anything, so it now costs little.
+_UNKNOWN_W = 0.12
+
+
+def _synonyms_for(tok: str) -> tuple[str, ...]:
+    """SYNONYM keys are written as stems, but `_stem` strips only -ing/-ed/-s
+    and friends, so `wobble` never became `wobbl` and the entry it pointed at
+    was unreachable from the most natural spelling of the word. Try the token,
+    its stem, and its e-less form."""
+    for k in (tok, _stem(tok), tok[:-1] if tok.endswith("e") else tok):
+        hit = SYNONYMS.get(k)
+        if hit:
+            return hit
+    return ()
+
+
+def _expand(tok: str, vocab: set[str], prefixes: dict) -> dict[str, float]:
+    """The entry-vocabulary tokens this query token can stand for, each with the
+    confidence it carries."""
+    out = {tok: 1.0}
+    for s in _synonyms_for(tok):
+        out.setdefault(s, 1.0)
+    if tok not in vocab and len(tok) >= 6:
+        for cand in prefixes.get(tok[:5], set()):
+            out.setdefault(cand, _PREFIX_WEIGHT)
+    return out
+
+
+# Above this, an entry is returned. Chosen so that a query whose only match is a
+# word appearing across most of the table — `wrong`, `converging`, `interface` —
+# falls below it, while a single informative word on its own clears it.
+_THRESHOLD = 0.60
+
+
+def coupling_signal_search(signal: str, limit: int = 5) -> list[str]:
+    """Rank the coupling failure entries against a free-text symptom.
+
+    Score per entry:
+      3.0   the whole query appears verbatim in the entry
+      2.0   the query and one of the entry's plain-language observations
+            contain each other
+      0.7 * core  + 0.3 * coverage
+            `core` is the IDF weight of the single most informative query token
+            the entry matches, so extra words cannot take a hit away. `coverage`
+            is the share of the query's weight the entry explains, and breaks
+            ties towards the entry that accounts for more of what was said; an
+            unrecognised word carries almost no weight there, or coverage would
+            punish detail through the back door.
+    """
+    idx = _search_index()
+    idf, vocab, prefixes = idx["idf"], idx["vocab"], idx["prefixes"]
+    raw = _toks(signal)
+    if not raw:
+        return []
+    # De-duplicate but keep the expansion per distinct token.
+    expanded = {t: _expand(t, vocab, prefixes) for t in dict.fromkeys(raw)}
+    # An unmatched token still costs coverage: it is part of what was said.
+    denom = sum(max((idf.get(e, _UNKNOWN_W) * c for e, c in exp.items()),
+                    default=_UNKNOWN_W)
+                for exp in expanded.values()) or 1.0
+    low = signal.lower().strip()
+    phrase = len(low) >= _PHRASE_MIN_CHARS
+    scored = []
+    for i, (r, entry) in enumerate(zip(_FAILURE_ROWS, coupling_pitfall_entries())):
+        toks = idx["sets"][i]
+        core = 0.0
+        got = 0.0
+        for exp in expanded.values():
+            hits = [(idf.get(e, 0.0) * c, c) for e, c in exp.items()
+                    if e in toks]
+            if not hits:
+                continue
+            w, conf = max(hits)
+            got += w
+            if conf >= 1.0:                 # a guess never becomes the evidence
+                core = max(core, w)
+        score = 0.7 * core + 0.3 * (got / denom) if core >= _CORE_MIN else 0.0
+        if phrase and low in _hay(r).lower():
+            score += 3.0
+        if phrase:
+            for o in r["observations"]:
+                if low in o.lower() or o.lower() in low:
+                    score += 2.0
+                    break
+        if score > _THRESHOLD:
+            scored.append((score, entry))
+    scored.sort(key=lambda x: -x[0])
+    return [e for _, e in scored[:limit]]
+
+
 _FAILURES = '''\
 ## 7. FAILURE MODES, and what each one actually means
 
-| What you see                                        | Cause                        |
-|-----------------------------------------------------|------------------------------|
-| `participant X wrote no exports.json (rc=...)`      | your script died. The stderr tail is in the message — read it. Run the script standalone in its work_dir first. |
-| `participant X bad exports.json`                    | malformed JSON, a TRUNCATED file, or a missing required key. All three of `field_name`, `coordinates`, `values` must be present. |
-| `participant X changed its export size from N to M` | that participant exported a different number of points (or dropped `normal_fluxes`) between iterations. Usually a mesh or interface-detection step that depends on the imported data. Fix the participant; the driver cannot relax a changing vector. |
-| `participant X timed out`                           | raise `timeout` in the participant spec, or coarsen that side's mesh. |
-| `did not converge to tol=... in N iters`            | in order: is max_iter above the (1-theta) floor in section 4; is theta right for this conductance ratio; would swapping which side is Dirichlet help; do the two decks actually agree on units and material. NOT a result. |
-| residual stuck at O(1), oscillating                 | theta too large, or a SIGN error — the Neumann side is pushing the flux the wrong way. |
-| residual GROWING, values exploding                  | theta above the stability limit for this conductance ratio. Halve it. See section 4. |
-| converged, but `Interface flux NOT balanced`        | most often both sides exported `normal_fluxes` with the same sign (section 5). Otherwise: different units on the two sides, or one side exporting an INTEGRATED flux where the other exports a DENSITY. |
-| `Interface conservation was NOT CHECKED`            | one side exported no `normal_fluxes`, so nothing verifies conservation. The run is not wrong, it is unguarded. Export the flux on both sides. |
-| `NOT COUPLED: no participant lists imports_from`     | nobody was given a partner's name, so nothing was exchanged. The run is not a coupling. |
-| `ONE-WAY: participant(s) X list no imports_from`    | X never sees its partners. A note, not a failure — a master/slave coupling really does look like this. If you meant a two-way coupling, that is the bug. |
-| `NOT COUPLED: no participant's export changed`      | converged at iteration 2 with an exactly zero residual. Both participants returned their initial guess: they are not reading `imports.json`, or they are reading it under the wrong partner name. THIS IS THE MOST CONVINCING WRONG RESULT THE TOOL CAN PRODUCE — it looks like an instant, perfect convergence. |
-| `non-finite export values at iter N` (a warning)    | your solve diverged; the run CONTINUES to max_iter, so look for this in `validation` rather than expecting it to stop. Usually a subdomain with no essential BC anywhere, which is singular. |
-| converged to a plausible but wrong answer           | check `n_points` from each side on iteration 1: an empty or wrongly located interface set gives a well-behaved solution of the wrong problem. Then check that both sides use the same units and the same interface coordinate. |
+''' + _failure_table() + '''
+
+Reach these from a SYMPTOM instead of reading the table:
+`knowledge(topic='coupling', signal='<what you actually saw>')` — describe the
+observation in your own words, no mechanism needed, e.g.
+`signal='it converged but the answer is wrong'`.
 
 FIRST THING TO DO WHEN A COUPLING FAILS: delete `imports.json` from each
 work_dir and run each participant script by hand there. That exercises the
@@ -642,10 +1347,10 @@ THERE IS NO SECOND COPY OF THIS SCRIPT. SPARTA is a DIRICHLET-side
    SPARTA's surface file describes, and make sure both sides agree on units —
    SPARTA works in SI with energy flux per unit area.
 
-   Read the stochasticity note below BEFORE you size `NRUN`/`NAVE`: this
-   coupling was run end to end here and `couple` reported FAILURE on the
-   residual even though the physics agreed, because a Monte-Carlo estimate has
-   a noise floor the residual cannot fall below.''')
+   Read the stochasticity note below BEFORE you size `NRUN`/`NAVE`: a
+   Monte-Carlo estimate has a noise floor the residual cannot fall below, so a
+   plain `tol` makes `couple` report FAILURE on a coupling whose physics agrees.
+   Set `SEED_MODE = "vary"` and pass `noise_replicates=5`.''')
 
 
 def _launch_py(interp: str = _INTERP_GENERIC, step2: str = "") -> str:
@@ -849,8 +1554,35 @@ _ALIAS_CANON = {"fenics": "fenics", "fenicsx": "fenics", "dolfinx": "fenics",
                 "febio": "febio", "kratos": "kratos", "sparta": "sparta"}
 
 
-def coupling_knowledge(solver: str = "") -> str:
-    """knowledge(topic='coupling', solver=...) — core payload, or one backend."""
+def coupling_knowledge(solver: str = "", signal: str = "") -> str:
+    """knowledge(topic='coupling', solver=..., signal=...) — the core payload,
+    one backend's participant script, or the failure entries matching a symptom.
+
+    `signal` is checked FIRST and on its own: someone arriving with a broken run
+    wants the two entries that explain it, not 40 kB with them somewhere inside.
+    """
+    sig = (signal or "").strip()
+    if sig:
+        hits = coupling_signal_search(sig)
+        if hits:
+            body = "\n\n".join(f"* {h}" for h in hits)
+            return (f"# Coupling failure entries matching {sig!r}\n\n{body}\n\n"
+                    f"---\nThese are the coupling failure modes whose symptom "
+                    f"matches what you described. The full contract, the "
+                    f"relaxation guidance and the whole failure table are in "
+                    f"`knowledge(topic='coupling')`; a complete runnable "
+                    f"participant script for one backend is "
+                    f"`knowledge(topic='coupling', solver='<name>')`.")
+        # Deliberately NOT followed by the whole core payload. Returning 40 kB
+        # on a miss makes a failed search indistinguishable from a hit for
+        # anything that only checks whether some word came back — which is
+        # exactly how a fixture asserting on this went green against a mutant
+        # that searched for nonsense.
+        return (f"# No coupling failure entry matches {sig!r}\n\n"
+                f"Nothing in the coupling failure table matches that symptom. "
+                f"Try describing it differently — what the RESULT looked like "
+                f"rather than what you think caused it. The whole table is "
+                f"section 7 of `knowledge(topic='coupling')`.")
     key = (solver or "").strip().lower()
     if not key:
         return coupling_core()
@@ -1356,23 +2088,36 @@ def _sparta() -> str:
         "below are the Dirichlet role.\n\n"
         "A full coupling to a thermal "
         "shell was run on this install: the physics agreed across the interface "
-        "and the interface energy balance closed, but `couple` still reported "
-        "FAILURE, because the residual cannot fall below the Monte-Carlo "
-        "sampling noise. Read the stochasticity note below before using it.",
+        "and the interface energy balance closed. With a plain `tol` it still "
+        "reported FAILURE, because the residual cannot fall below the "
+        "Monte-Carlo sampling noise; with `noise_replicates` set it converges "
+        "against the measured floor and reports that floor. Read the "
+        "stochasticity note below before using it.",
         "sparta", _launch_py(_interp_wrapper(
             "SPARTA", "SPARTA",
             extra="\n   Copy the surf / species / vss files into `work_dir` yourself:\n"
                   "   `couple` has no `data_files`, so nothing else puts them there."),
             _STEP2_SPARTA),
         '''\
-* STOCHASTICITY IS THE HEADLINE. DSMC output is a Monte-Carlo estimate. Its
-  sampling noise does NOT shrink as the coupling iterates, so the driver's
-  relative residual has a FLOOR at the noise level and `tol` below that floor
-  can never be met — the run ends as "did not converge", which is honest, not a
-  bug. Set `tol` above the noise, or accept an explicit non-iterated exchange,
-  and say which you did. With a FIXED seed the runs are bit-reproducible, which
-  makes an apparently converging residual possible even when the physics has
-  not settled; that is more dangerous than the noise, not less.
+* STOCHASTICITY IS THE HEADLINE, AND `couple` HAS A SWITCH FOR IT. DSMC output
+  is a Monte-Carlo estimate. Its sampling noise does NOT shrink as the coupling
+  iterates, so the driver's relative residual has a FLOOR at the noise level and
+  a `tol` below that floor can never be met — the run ends as "did not
+  converge", which is honest and useless.
+  PASS `noise_replicates=5` (four or more; the floor is itself an estimate and
+  three samples is a bad one). The driver then runs each participant that many
+  times on the same imports, MEASURES the residual across independent
+  replicates, and judges convergence against max(tol, that floor)
+  over a block mean. It returns `noise_floor`; every tolerance you or anyone
+  else later applies to the result must be at least that. Do NOT guess a `tol`
+  "above the noise" instead — a guessed threshold is a number you cannot defend
+  and it is the same act as tuning until it passes. Section 4a of
+  `knowledge(topic='coupling')` has the details and the limits.
+  SET `SEED_MODE = "vary"` FIRST. With a FIXED seed the runs are
+  bit-reproducible, the measured floor comes out exactly zero, and an apparently
+  converging residual is possible even when the physics has not settled — that
+  is more dangerous than the noise, not less. `noise_notes` in the result says
+  so when the floor measures zero.
 * YOU MUST STAGE THE DATA FILES. `couple` does not copy anything. Put the surf,
   species and vss files in `work_dir` yourself, or the deck dies with
   `Cannot open species file ...` from inside SPARTA.

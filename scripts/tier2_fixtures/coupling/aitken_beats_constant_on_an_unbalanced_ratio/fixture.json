@@ -1,0 +1,29 @@
+{
+  "_comment": "COUPLING tier-2. The comparative half of the accelerator advice — 'Measured across conductance ratios rho from 1/4 to 9 ... Aitken matched or beat a constant theta almost everywhere, and in a quarter of those settings it converged to the right interface value where the SAME constant theta diverged by tens of orders of magnitude'. Reproducing a sweep is not what a fixture is for; this takes ONE strongly unbalanced ratio and the one theta the knowledge itself hands an agent who cannot estimate rho ('first try, cannot estimate rho at all: theta=0.5, keep accelerator=aitken') and races the two accelerators against the closed form under an IDENTICAL max_iter and tol, read back from each run rather than assumed. rho = 6 and not 9 for two measured reasons: theta=0.5 has to sit above the constant stability limit 2/(1+rho), which needs rho > 3, and the ratio has to be one the default actually recovers — at rho = 9 with theta = 0.5 the default DIVERGES too on this driver, by many orders of magnitude, just far fewer than the constant arm's, which is exactly the knowledge's own caveat that no accelerator rescues a badly split interface and why the comparative claim is worded 'almost everywhere'. The fixture asserts its own premise first (the naive theta must be above the limit at this ratio, arithmetic on the knowledge's formula before anything runs), then requires the default to land on the analytic interface temperature AND flux from both sides with the conservation balance and an empty validation block, and requires the constant arm to have MISSED that same check — a single success would not be a comparison.",
+  "_mutation": {
+    "note": "Move the ratio to a balanced one, where theta=0.5 IS 1/(1+rho) and therefore already the optimum. The advantage vanishes and the fixture fails three ways: the premise assertion fires because 0.5 is now below the stability limit 2/(1+rho)=1.0, the constant arm reaches the closed form so constant_reached_closed_form prints True, and aitken_beat_constant prints False. This is the mutation that matters for a COMPARATIVE claim — it does not break either accelerator, it removes the imbalance the claim is about, and only a fixture that picked a ratio where the naive theta is genuinely bad notices.",
+    "file": "source.py",
+    "from": "RHO = 6.0",
+    "to": "RHO = 1.0"
+  },
+  "backend": "coupling",
+  "physics": "relaxation",
+  "pitfall_index": 41,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "naive_theta_above_the_constant_stability_limit=True",
+    "aitken_reached_closed_form=True",
+    "constant_reached_closed_form=False",
+    "aitken_beat_constant=True",
+    "arms_differed_only_in_the_accelerator=True",
+    "ratios_tested=1",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

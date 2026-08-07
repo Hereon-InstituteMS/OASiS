@@ -128,6 +128,10 @@ def body() -> None:
                 continue
         if control:
             break
+    # The verdict, not the path: "a binary that links preCICE was found" is what
+    # has to be true for the eight zeroes above to mean anything, and naming the
+    # path names only which binary happened to be picked.
+    print(f"positive_control_found={control is not None}")
     if control is None:
         raise L.Absent(
             "no binary on this host LINKS preCICE, so the probes cannot be "
@@ -138,10 +142,14 @@ def body() -> None:
         hits = probe(tool, args, control)
         name = "nm_D" if tool == "nm" else tool
         print(f"control_{name}_precice_hits={hits}")
-        L.check(hits > 0, f"control_{name}_found_nothing",
-                f"{tool} found no preCICE in {control}, so this probe cannot "
-                f"detect preCICE and its zero count on the solver binaries "
-                f"means nothing")
+        detects = L.check(hits > 0, f"control_{name}_found_nothing",
+                          f"{tool} found no preCICE in {control}, so this probe "
+                          f"cannot detect preCICE and its zero count on the "
+                          f"solver binaries means nothing")
+        # …and the same thing said as a verdict. `control_ldd_precice_hits=`
+        # names the counter; `control_ldd_detects_precice=True` names the
+        # property the counter exists to establish.
+        print(f"control_{name}_detects_precice={bool(detects)}")
 
     # A refusal that does not say what to do instead is how an agent concludes
     # the coupling is impossible. Both payloads must still redirect to `couple`.

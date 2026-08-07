@@ -1,0 +1,50 @@
+{
+  "_comment": "COUPLING tier-2, the fixture behind the driver's stochastic branch. Runs a REAL SPARTA (DSMC) participant against a lumped thermal shell through the registered `couple` tool, three ways. (1) With tol far under the Monte-Carlo sampling noise and no noise handling, the run ends as FAILURE with the residual stalled on its floor \u2014 the exact symptom the served SPARTA payload and the sides table's one starred capability row describe, and the reason FEniCSx-to-SPARTA could not be graded on convergence at all. (2) The SAME run with `noise_replicates` set: the driver runs each participant several times on the same imports, evaluates its OWN residual expression between independent replicates, judges convergence against max(tol, that floor) over a block mean, and REPORTS the floor so a grader cannot apply a tolerance tighter than the sampler allows. The physics of that arm is then checked against a fixed point computed independently HERE, by running SPARTA standalone at three uniform wall temperatures, fitting the flux response and solving the shell's own balance \u2014 a reference that never touches the driver and is served to nobody. (3) The ordinary deterministic two-code conduction coupling with the same switch on: its floor measures exactly zero, its verdict and its physics are unchanged, and it still matches both the closed form and an un-split monolithic re-solve. A branch that is not inert where there is no noise would be a way of passing failures.",
+  "_mutation": [
+    {
+      "note": "Turn the driver's stochastic branch off in the noise-aware arm, so it becomes the plain arm. The whole claim is that the branch is what changes the verdict, so with it gone the noise-aware arm must stop converging: noise_aware_arm_did_not_converge fires and arm_noise_aware_converged_at_floor=True never appears.",
+      "file": "source.py",
+      "from": "NOISE_REPLICATES = 5",
+      "to": "NOISE_REPLICATES = 0"
+    },
+    {
+      "note": "Fix the DSMC seed. SPARTA then returns bit-identical output for identical input, the sampling noise vanishes from the residual, and the plain arm converges to tol like a deterministic code \u2014 so plain_arm_converged_anyway fires. This is the second half of the SPARTA payload's warning made operational: a fixed seed does not remove the uncertainty, it removes the EVIDENCE of it, and a run that meets tol under one is not evidence it would meet it under another.",
+      "file": "source.py",
+      "from": "SEED_MODE = \"vary\"",
+      "to": "SEED_MODE = \"fixed\""
+    }
+  ],
+  "backend": "coupling",
+  "physics": "stochastic_convergence",
+  "pitfall_index": 30,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "sparta_binary_resolved=True",
+    "sparta_data_staged=3",
+    "seed_mode=vary",
+    "arm_plain_reports_failure=True",
+    "arm_plain_residual_stalled_above_tol=True",
+    "arm_noise_aware_converged_at_floor=True",
+    "floor_exceeds_requested_tol=True",
+    "result_names_the_floor_to_the_agent=True",
+    "coupled_matches_independent_reference=True",
+    "deterministic_floor_is_exactly_zero=True",
+    "deterministic_arm_unaffected=True",
+    "deterministic_validation_stayed_empty=True",
+    "fixed_seed_caveat_is_reported_out_of_band=True",
+    "deterministic_interface_T_matches_reference=True",
+    "deterministic_matches_monolithic=True",
+    "arms_compared=3",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "arm_plain_converged=True",
+    "arm_noise_aware_converged=False",
+    "deterministic_floor_is_exactly_zero=False"
+  ]
+}

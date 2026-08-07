@@ -13,11 +13,17 @@
   "timeout_seconds": 3000,
   "expect_in_output": [
     "dealii_solver_built=True",
-    "dune_D_dealii_N_iterations=",
-    "dune_D_dealii_N_left_T_err=",
-    "dune_D_dealii_N_flux_balance_rel=",
-    "dealii_D_dune_N_iterations=",
-    "dealii_D_dune_N_right_q_err=",
+    "dune_D_dealii_N_converged=True",
+    "dune_D_dealii_N_meshes_nonmatching=True",
+    "dune_D_dealii_N_interface_T_matches_reference=True",
+    "dune_D_dealii_N_interface_q_matches_reference=True",
+    "dune_D_dealii_N_flux_signs_are_opposite=True",
+    "dune_D_dealii_N_flux_balanced=True",
+    "dune_D_dealii_N_validation_empty=True",
+    "dune_D_dealii_N_matches_monolithic=True",
+    "dealii_D_dune_N_converged=True",
+    "dealii_D_dune_N_interface_q_matches_reference=True",
+    "dealii_D_dune_N_matches_monolithic=True",
     "pairs_run=2",
     "failures_count=0"
   ],
@@ -26,6 +32,13 @@
     "FAIL:",
     "TIMEOUT",
     "did_not_converge",
+    "_meshes_nonmatching=False",
+    "_interface_T_matches_reference=False",
+    "_interface_q_matches_reference=False",
+    "_flux_signs_are_opposite=False",
+    "_flux_balanced=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
     "failures_count=1"
   ]
 }

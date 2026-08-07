@@ -1,0 +1,38 @@
+{
+  "_comment": "COUPLING tier-2. Every pair fixture grades the converged interface state against an answer computed OUTSIDE the coupling, and that evidence holds only while those answers stay out of an agent's reach. `developer(action='files')` passed its `keyword` straight to Path.rglob, and pathlib treats '..' in a glob pattern as an ordinary path component, so a keyword of '../../../benchmarks/coupling_pairs/*/run_pair.py' walked out of the backend directory and enumerated the reference tree. This drives the REGISTERED developer tool: it first checks the reference tree is actually on disk so the fixture cannot pass vacuously, then that five different escapes are refused with a message that says why, that an ordinary relative pattern still lists the backend's own files, and that no answer to any of those calls names a reference file.",
+  "_mutation": [
+    {
+      "note": "Replace one traversal with a pattern that legitimately resolves inside the backend tree. It is not refused, traversal_was_not_refused fires and every_traversal_refused goes False — showing the pass depends on the refusal actually happening rather than on the tool returning the same message to everything.",
+      "file": "source.py",
+      "from": "\"../../*.py\",",
+      "to": "\"generators/*.py\","
+    },
+    {
+      "note": "Point the legitimate pattern at a traversal. The tool refuses it, guard_broke_the_tool fires, and ordinary_pattern_still_works goes False — the other half of the guard, that a refusal-of-everything is not a fix.",
+      "file": "source.py",
+      "from": "LEGITIMATE = \"*.py\"",
+      "to": "LEGITIMATE = \"../../*.py\""
+    }
+  ],
+  "backend": "coupling",
+  "physics": "reference_isolation",
+  "pitfall_index": 32,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "traversals_refused=5/5",
+    "every_traversal_refused=True",
+    "ordinary_pattern_still_works=True",
+    "no_reference_file_named_in_any_answer=True",
+    "claims_checked=4",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "every_traversal_refused=False",
+    "reference_pairs_on_disk=0"
+  ]
+}

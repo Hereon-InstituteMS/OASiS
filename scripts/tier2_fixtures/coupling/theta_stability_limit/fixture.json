@@ -12,7 +12,7 @@
   "mode": "python",
   "timeout_seconds": 3600,
   "expect_in_output": [
-    "predicted_stability_limit=",
+    "rho4_theta0.5_matched_the_amplification_prediction=True",
     "rho1_theta0.5_outcome=settled",
     "rho1_theta1.0_outcome=neither",
     "rho4_theta0.2_outcome=settled",
@@ -30,6 +30,7 @@
     "Traceback",
     "FAIL:",
     "TIMEOUT",
+    "_matched_the_amplification_prediction=False",
     "failures_count=1"
   ]
 }

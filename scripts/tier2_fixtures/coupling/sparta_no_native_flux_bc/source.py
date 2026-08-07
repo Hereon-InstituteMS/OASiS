@@ -138,15 +138,23 @@ def body() -> None:
     from tools.coupling_knowledge import coupling_knowledge, coupling_sides_table
     payload = coupling_knowledge("sparta")
     table = coupling_sides_table()
-    L.check("NO native flux boundary condition" in payload,
-            "payload_dropped_the_negative",
-            "the SPARTA payload no longer states that no native flux BC exists")
+    # Both of these already asserted; neither printed a verdict, so the only
+    # thing an expectation could name was a path or a count. Say what has to be
+    # TRUE instead — a payload that quietly loses the negative is precisely the
+    # rot this fixture exists to notice, and it should be nameable.
+    states_negative = L.check(
+        "NO native flux boundary condition" in payload,
+        "payload_dropped_the_negative",
+        "the SPARTA payload no longer states that no native flux BC exists")
+    print(f"sparta_payload_states_no_native_flux_bc={bool(states_negative)}")
     sparta_row = [r for r in table.splitlines() if r.startswith("| SPARTA")]
     print(f"sparta_table_rows={len(sparta_row)}")
-    L.check(len(sparta_row) == 1 and "not natively" in sparta_row[0],
-            "sides_table_lost_the_neumann_caveat",
-            f"expected SPARTA's Neumann column to read 'not natively', row is "
-            f"{sparta_row!r}")
+    keeps_caveat = L.check(
+        len(sparta_row) == 1 and "not natively" in sparta_row[0],
+        "sides_table_lost_the_neumann_caveat",
+        f"expected SPARTA's Neumann column to read 'not natively', row is "
+        f"{sparta_row!r}")
+    print(f"sides_table_says_sparta_neumann_not_natively={bool(keeps_caveat)}")
     print("claims_checked=7")
 
 
