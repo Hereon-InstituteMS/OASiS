@@ -1,7 +1,7 @@
 {
   "summary": {
-    "n_fixtures": 108,
-    "passed": 108,
+    "n_fixtures": 112,
+    "passed": 112,
     "failed": 0,
     "harness_pending": 0,
     "skipped": 0
@@ -464,7 +464,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "raviartThomas_camelcase_def_present=True\nraviartthomas_lowercase_def_present=False\nraviartthomas_hh_include_present_in_text=True\ncatalog_lowercase_count=0\n"
+      "captured_head": "spaces_py_source=~/miniconda3/envs/dune-fem-env/lib/python3.12/site-packages/dune/fem/space/_spaces.py\nraviartThomas_camelcase_def_present=True\nraviartthomas_lowercase_def_present=False\nraviartthomas_hh_include_present_in_text=True\ncatalog_lowercase_count=0\nInvalid MIT-MAGIC-COOKIE-1 key"
     },
     "febio::linear_elasticity::0": {
       "key": "febio::linear_elasticity::0",
@@ -2042,6 +2042,84 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "skfem_version=12.0.1\nP2_u_h32_l2err=1.399774e-04_tol=5e-04\nP1_p_h32_l2err=4.439802e-04_tol=2e-02\nP2_u_eoc_h16_to_h32=2.996_expected=3.0\nP1_p_eoc_h16_to_h32=2.636_expected=2.0\n"
+    },
+    "dune::poisson::7": {
+      "key": "dune::poisson::7",
+      "backend": "dune",
+      "physics": "poisson",
+      "pitfall_index": 7,
+      "fixture_id": "dirichletbc_not_in_scheme_list_silent",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "good_converged=True",
+        "omitted_converged=True",
+        "never_converged=True",
+        "dune_silent_bc_trap_reproduced=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "good_converged=True good_liniter=1 good_l2err=1.899705e-03 good_peak=1.003219e+00\nomitted_converged=True omitted_liniter=23935 omitted_l2err=7.510512e+14 omitted_peak=7.510512e+14\nnever_converged=True never_liniter=23935 never_l2err=7.510512e+14 never_peak=7.510512e+14\ndune_silent_bc_trap_reproduced=True\nInvalid MIT-MAGIC-COOKIE-1 key"
+    },
+    "dune::poisson::99": {
+      "key": "dune::poisson::99",
+      "backend": "dune",
+      "physics": "poisson",
+      "pitfall_index": 99,
+      "fixture_id": "poisson_mms_convergence",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "dune_fem_version=",
+        "P1_finest_l2err=",
+        "P2_finest_l2err=",
+        "P1_eoc_n16_to_n32=",
+        "P2_eoc_n16_to_n32=",
+        "dune_poisson_mms_gate=OK"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "dune_fem_version=2.12.0.2\nP1_n8_l2err=7.272000e-03 h1err=2.455262e-01 converged=True\nP1_n16_l2err=1.821609e-03 h1err=1.228885e-01 converged=True\nP1_n32_l2err=4.556318e-04 h1err=6.146035e-02 converged=True\nP1_finest_l2err=4.556318e-04_floor=6.0e-04\nP1_eoc_n8_to_n16=1.997_expected=2 h1=0.999_expected=1\nP1_eoc_n16_to_n32=1.999_expected=2 h1=1.000_expected=1\nP2_n8_l2err=2.451113e-04 h1err=1.276204e-02 converged=True\nP2_n16_l2err=3.074586e-05 h1err=3.191450e-03 converged=True\nP2_n32_l2err=3.846536e-06 h1err=7.979183e-04 converged=True\nP2_finest_l2err=3.846536e-06_floor=5.0e-06\nP2_eoc_n8_to_n16=2.995_expected=3 h1=2.000_expected=2\nP2_eoc_n16_to_n32=2.999_expected=3 h1=2.000_expected=2\ndune_poisson_mms_gate=OK\nInvalid MIT-MAGIC-COOKIE-1 key"
+    },
+    "dune::poisson::9": {
+      "key": "dune::poisson::9",
+      "backend": "dune",
+      "physics": "poisson",
+      "pitfall_index": 9,
+      "fixture_id": "solver_name_not_validated",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "bogus_solver_rejected=True",
+        "bogus_solver_names_the_parameter=True",
+        "solver_cg_converged=True",
+        "solver_gmres_converged=True",
+        "solver_bicgstab_converged=True",
+        "dune_solver_enumeration_verified=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "bogus_solver_rejected=True\nbogus_solver_error_class=RuntimeError\nbogus_solver_names_the_parameter=True\nbogus_solver_message=RuntimeError: ParameterInvalid [getEnumeration:~/miniconda3/envs/dune-fem-env/include/dune/fem/io/parameter/reader.hh:300]: Parameter 'fem.solver.linear.method' invalid. Valid values are: gmres, cg, bicgstab\nsolver_cg_converged=True\nsolver_gmres_converged=True\nsolver_bicgstab_converged=True\ndune_solver_enumeration_verified=True\nInvalid MIT-MAGIC-COOKIE-1 key"
+    },
+    "dune::poisson::11": {
+      "key": "dune::poisson::11",
+      "backend": "dune",
+      "physics": "poisson",
+      "pitfall_index": 11,
+      "fixture_id": "ufl_cell_reports_simplex_on_cube_grid",
+      "mode": "python",
+      "status": "passed",
+      "expect_matched": [
+        "grid2d_element_types=['quadrilateral']",
+        "space2d_ufl_cell=triangle",
+        "grid3d_element_types=['hexahedron']",
+        "space3d_ufl_cell=tetrahedron",
+        "alugrid_element_types=['triangle']",
+        "dune_ufl_cell_is_always_simplex=True"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "grid2d_element_types=['quadrilateral']\ngrid2d_n_elements=16\nspace2d_ufl_cell=triangle\nspace2d_ufl_element=<Lagrange1 on a triangle>\nspace2d_size=25 vertex_count=25\ngrid3d_element_types=['hexahedron']\nspace3d_ufl_cell=tetrahedron\nalugrid_element_types=['triangle']\nalugrid_n_elements=32\ndune_ufl_cell_is_always_simplex=True\nInvalid MIT-MAGIC-COOKIE-1 key"
     }
   }
 }

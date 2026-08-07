@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for dune::stokes#0, dune::mixed_methods#2 and dune::mixed_methods#4 — one fixture because all three are properties of the same two composite spaces and no weak form is built, so nothing JIT-compiles (wall time 8 s, 2026-08-06, dune-fem 2.12.0.2). Measured: hasattr(dune.fem.space,'product_space') is False and importing it raises ModuleNotFoundError, while product() and composite() over (lagrange(order=2,dimRange=2), lagrange(order=1)) both give dimRange 3 and size 187 — the same object for the same arguments. ufl.TrialFunctions(W) returns a 1-TUPLE whose single entry has shape (3,); the 1-tuple UNPACKS without error, which is why the mistake is silent, and the dolfinx two-name idiom fails with ValueError 'not enough values to unpack (expected 2, got 1)' — a message about counts, not about spaces. The documented workaround was executed: TrialFunction(W) sliced as as_vector([t[0], t[1]]) / t[2] gives shapes (2,) and ().",
+  "backend": "dune",
+  "physics": "stokes",
+  "pitfall_index": 0,
+  "covers": ["stokes:0", "mixed_methods:2", "mixed_methods:4"],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "has_product=True",
+    "has_composite=True",
+    "has_product_space=False",
+    "product_space_import_raises=ModuleNotFoundError",
+    "product_and_composite_agree=True",
+    "trialfunctions_len=1",
+    "trialfunctions_shapes=[(3,)]",
+    "one_tuple_unpacks_without_error=(3,)",
+    "two_name_unpack_rejected=ValueError",
+    "not enough values to unpack",
+    "sliced_velocity_shape=(2,)",
+    "sliced_pressure_shape=()",
+    "dune_composite_space_unpacking_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

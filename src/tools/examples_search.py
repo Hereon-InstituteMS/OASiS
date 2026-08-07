@@ -658,10 +658,22 @@ from ufl import *                            # UFL form language
 # Structured grid on [0,1]^2
 gridView = structuredGrid([0, 0], [1, 1], [N, N])
 
-# Unstructured from Gmsh
+# Unstructured from Gmsh — the reader MUST be named as a tuple.
+# aluConformGrid("mesh.msh", dimgrid=2) fails with
+#   RuntimeError: IOError [checkMacroGridFile:...]: Wrong file format!
+# because a bare string is read as ALUGrid's own DGF macro file.
+from dune.grid import reader
 from dune.alugrid import aluConformGrid
-gridView = aluConformGrid("mesh.msh", dimgrid=2)
+gridView = aluConformGrid((reader.gmsh, "mesh.msh"), dimgrid=2)
 ```
+
+NOTE: structuredGrid gives CUBE cells (quadrilateral / hexahedron).
+For simplices use dune.alugrid — aluConformGrid / aluSimplexGrid on a
+cartesianDomain give 2x the cells in 2D; aluSimplexGrid in 3D gives 6x
+(48 tets for a 2x2x2 domain). Do NOT infer the
+cell shape from the space: a dune-fem space always reports a SIMPLEX
+UFL cell ("<Lagrange1 on a triangle>") even on a cube grid. Read
+gridView.type instead.
 
 ## Scalar vs Vector Spaces
 ```python
@@ -688,12 +700,15 @@ scheme = galerkin([a == L, DirichletBC(space, 0)], solver="cg")
 u_h = space.interpolate(0, name="solution")
 scheme.solve(target=u_h)
 
-# Nonlinear: use galerkin with residual form
-# galerkin([F == 0]) triggers Newton's method automatically
-# F must be written with u_h (the solution function), NOT TrialFunction
-F = (inner(grad(u_h), grad(v)) - f * v) * dx
+# Nonlinear: galerkin([F == 0]) triggers Newton automatically, but the
+# form must be NONLINEAR IN THE TRIAL FUNCTION u — dune-fem
+# differentiates it symbolically to build the Jacobian and needs a form
+# with two arguments. Writing it with the discrete function u_h instead
+# raises
+#   ValueError: Integrands model requires form with at least two arguments.
+F = ((1 + u**2) * inner(grad(u), grad(v)) - f * v) * dx
 scheme = galerkin([F == 0, DirichletBC(space, 0)])
-scheme.solve(target=u_h)
+scheme.solve(target=u_h)      # info["iterations"] is the Newton count
 ```
 
 ## Time Stepping
@@ -737,21 +752,55 @@ for step in range(n_steps):
 
 ## Output
 ```python
-# VTK output
+# VTK output — writes filename.vtu
 gridView.writeVTK("filename", pointdata={"u": u_h, "v": v_h})
+
+# For order > 1, pass subsampling or the file is sampled at the grid
+# VERTICES only: a P2 field on a 4x4 grid wrote 25 points, and
+# subsampling=2 wrote 400. Nothing warns.
+gridView.writeVTK("filename", pointdata={"u": u_h}, subsampling=2)
 
 # Access DOF values as numpy array
 vals = u_h.as_numpy  # returns a numpy view (read/write)
 ```
 
 ## Key Pitfalls
-1. First run is slow (60-120s) due to JIT C++ compilation. Subsequent runs are fast.
+1. First run is slow due to JIT C++ compilation (measured: 439 s for a
+   cold-cache script that ended up building four ALUGrid
+   hierarchical grids on a loaded box; a fully warm 8x8 Poisson run
+   is 0.89 s). Watch for "DUNE-INFO: Compiling <X> (new)" on stderr.
 2. For coupled systems: dimRange=2 with Newton is possible but less documented.
    Safer approach: two scalar spaces with Gauss-Seidel coupling.
-3. `galerkin([F == 0])` triggers Newton automatically. `galerkin([a == L])` solves linear.
+3. `galerkin([F == 0])` triggers Newton automatically, but F must be
+   nonlinear in the TRIAL function; `galerkin([a == L])` solves linear.
 4. DOF ordering for dimRange>1: components are interleaved (u0,v0,u1,v1,...).
+   Verified by execution — slice `u_h.as_numpy[i::dimRange]`.
 5. No built-in time integrator — manual time loop required.
-6. Set timeout >= 600s for first run to allow JIT compilation.
+6. Set timeout >= 600s for first run to allow JIT compilation (>= 900s
+   if ALUGrid is involved).
+7. A DirichletBC is only applied if it is IN THE LIST given to
+   `galerkin([a == L, dbc])`. Omitting it, or giving it a subDomain
+   conditional that matches nothing, leaves a singular pure-Neumann
+   system that `scheme.solve()` still reports as
+   `{'converged': True}` — measured L2 error 7.5e+14 after 23935 CG
+   iterations. Check `info['converged']` AND a magnitude bound.
+8. `solver=` accepts only 'cg', 'gmres', 'bicgstab' for the default
+   storage; `('suitesparse', 'umfpack')` gives a direct solve (executed
+   here: `linear_iterations: 1`, same answer as CG, but the direct
+   solver is its own C++ type so it costs an extra ~60 s JIT build).
+   The string is not validated in Python — a wrong name fails at scheme
+   construction with a message about `'fem.solver.linear.method'`.
+9. `dune.fem.threading.use` defaults to 1 even when
+   `dune.fem.threading.max` reports every core; `threading.useMax()`
+   opts in to all of them.
+10. `dune.fem.globalRefine(level, uh)` is a SILENT NO-OP on a YaspGrid
+   (element count, space size and dof array all unchanged, no
+   exception). It only refines-and-prolongs on
+   `adaptiveLeafGridView(aluConformGrid(...))`. Refining via
+   `globalRefine(level, gridView.hierarchicalGrid)` works everywhere.
+11. Unrecognised entries in `parameters={...}` are silently ignored —
+   a typo like `'nonlinear.maxiter'` (the key is `maxiterations`)
+   leaves the default in place with no warning.
 """
 
 _FEBIO_INPUT_GUIDE = """\

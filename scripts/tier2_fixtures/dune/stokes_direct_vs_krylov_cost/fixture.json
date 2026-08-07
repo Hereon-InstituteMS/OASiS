@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for dune::stokes#1 and dune::navier_stokes#5. Taylor-Hood (P2 velocity, P1 pressure) Poiseuille flow on an 8x8 grid, 659 dofs, linear.tolerance 1e-12; wall time 269 s on 2026-08-06 (dune-fem 2.12.0.2), dominated by the composite-space builds. Measured: solver=('suitesparse','umfpack') reports linear_iterations 1; cg converges in 651, gmres in 25123, bicgstab in 9297 — ALL THREE CONVERGE, which is the retraction the catalog already carries, and their solutions sit 2.068e-12, 3.188e-10 and 9.375e-11 relative to the direct one. So the signal is cost and accuracy, not failure. The default preconditioner is 'none': passing it explicitly reproduced the default gmres count EXACTLY (25123 both ways), while 'ssor' cut it to 2027 and 'jacobi' to 8102. ASSERTION POLICY: iteration counts are asserted by ORDER OF MAGNITUDE only (direct == 1, worst Krylov > 1000x that). The catalog itself records that an earlier revision's six digits did not reproduce, and these numbers are grid- and tolerance-dependent — do not pin them.",
+  "backend": "dune",
+  "physics": "stokes",
+  "pitfall_index": 1,
+  "covers": [
+    "stokes:1",
+    "navier_stokes:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "taylor_hood_dimRange=3",
+    "umfpack_converged=True",
+    "umfpack_linear_iterations=1",
+    "cg_converged=True",
+    "gmres_converged=True",
+    "bicgstab_converged=True",
+    "direct_takes_one_iteration=True",
+    "krylov_costs_orders_of_magnitude_more=True",
+    "all_krylov_methods_do_converge=True",
+    "default_preconditioner_is_none=True",
+    "a_preconditioner_reduces_the_count=True",
+    "dune_saddle_point_solver_cost_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

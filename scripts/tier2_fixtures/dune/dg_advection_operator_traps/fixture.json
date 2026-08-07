@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for dune::dg_advection#0, #2, #4 and #5 on one compiled DG family (upwind order 1, upwind order 3, centred flux), with dt as a dune.ufl.Constant so the stability sweeps are free. Wall time 954 s on 2026-08-06 (dune-fem 2.12.0.2) under contention, nearly all of it C++ builds. Measured on a 16x16 P1 DG grid with b=(1,0) and dt = 0.2*h/((2k+1)|b|): the forward-Euler L2 norm rose MONOTONICALLY over 60 steps (1.000864 -> 1.032885) while SSP-RK2 decayed monotonically (0.999923 -> 0.982007) — the norm, not the peak, is the detector. A loop that bakes a changing float literal into the form printed one 'Compiling ... (new)' per step (2 over 2 steps) while the same loop updating a dune.ufl.Constant printed none. A centred flux grew at both 1.0x and 0.25x the step (1.067150 and 1.003466): smaller dt only slows it. At order 3 the order-1 step grew the norm to 1.059949 against 1.009794 for the step rescaled by (2k+1), so the admissible step really does shrink with the degree. TWO SUB-CLAIMS OF THIS PHYSICS ARE FALSIFIED AND DELIBERATELY LEFT UNCOVERED: (1) dg_advection#1 says solving into the function the right-hand side reads aliases input to output. Measured, it does not: scheme.solve(target=u_old) with u_old in the right-hand side gave a result identical to the clean two-function version to 0.000000e+00. dune-fem evaluates the right-hand side before writing the target. (2) dg_advection#3 says writing the jump over ds instead of dS 'silently drops all facet coupling' so 'the profile does not move at all'. Measured, the opposite: over 30 steps the ds variant moved the field by 1.186e+01 against 9.994e-01 for the correct dS version — it does not go quiet, it goes wrong and large. Both claims need rewriting before a fixture can defend them.",
+  "backend": "dune",
+  "physics": "dg_advection",
+  "pitfall_index": 0,
+  "covers": [
+    "dg_advection:0",
+    "dg_advection:2",
+    "dg_advection:4",
+    "dg_advection:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "forward_euler_l2_rises_monotonically=True",
+    "ssp_rk2_l2_decays_monotonically=True",
+    "l2_norm_is_the_detector=True",
+    "literal_in_the_loop_compiles_every_step=True",
+    "coefficient_in_the_loop_compiles_once_at_most=True",
+    "aliasing_claim_falsified_see_comment=True",
+    "ds_instead_of_dS_claim_falsified_see_comment=True",
+    "centred_flux_grows_at_any_dt=True",
+    "smaller_dt_only_slows_it=True",
+    "cfl_denominator_grows_with_order=True",
+    "dune_dg_advection_traps_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

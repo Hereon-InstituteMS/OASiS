@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for dune::hyperelasticity#0, #1 and #4, on an 8x8 dimRange=2 Neo-Hookean problem; wall time 56 s warm on 2026-08-06 (dune-fem 2.12.0.2). #0 and #1 are checked by INTEGRATING the energy density at the reference configuration, which needs no solve: the correct W = mu/2 (tr C - d) - mu ln J + lam/2 (ln J)^2 integrates to 0 at F = I, while dropping the -d leaves exactly mu/2*d; and det(grad(u)) at the reference is 0.000000e+00, so ln(J) is -inf — F = grad(u) really is singular there. #4 IS FALSIFIED AS WRITTEN and the fixture asserts the correction. The claim says to specify just the energy W and let scheme.solve() build the derivatives. Measured, dune-fem accepts neither energy route: derivative(Pi, uh, v) is a ONE-form and galerkin rejects it with ValueError 'Integrands model requires form with at least two arguments.', and taking P = dW/dF with ufl.variable + ufl.diff dies in dune's own code generator with TypeError 'RestrictionPropagator.variable() takes 3 positional arguments but 4 were given'. The first variation has to be written out (here P = mu(F - F^-T) + lam ln(J) F^-T); what IS automatic is the TANGENT, and the fixture shows that by solving with 3 Newton iterations and no hand-coded Jacobian. hyperelasticity#2 (load stepping) is NOT covered: at the load reachable here the one-shot solve converged in the same 3 Newton iterations as each of ten substeps, so the configuration does not distinguish them and claiming it would be false coverage.",
+  "backend": "dune",
+  "physics": "hyperelasticity",
+  "pitfall_index": 0,
+  "covers": [
+    "hyperelasticity:0",
+    "hyperelasticity:1",
+    "hyperelasticity:4"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1500,
+  "expect_in_output": [
+    "correct_energy_vanishes_at_F_equals_I=True",
+    "dropping_minus_d_leaves_residual_energy=True",
+    "detF_without_identity=0.000000e+00",
+    "F_without_identity_is_singular=True",
+    "ln_J_blows_up_to_minus_inf=True",
+    "energy_first_variation_arguments=1",
+    "energy_route_rejected=ValueError",
+    "Integrands model requires form with at least two arguments.",
+    "ufl_variable_diff_route_rejected=TypeError",
+    "pk1_had_to_be_written_out=True",
+    "only_the_tangent_is_automatic=True",
+    "residual_argument_count=2",
+    "newton_stays_small_per_substep=True",
+    "load_stepping_claim_not_exercised_at_this_load=True",
+    "dune_hyperelasticity_energy_traps_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

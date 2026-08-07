@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 Layer-C: DUNE-fem poisson numerical-correctness gate. Mirrors fenics + skfem + ngsolve. Runs the catalog-recommended DUNE-fem API surface (structuredGrid, lagrange(gridView, order=k), galerkin([a == b, DirichletBC(space, u_exact)], solver='cg'), scheme.solve(target=uh), dune.fem.integrate for the norms) end-to-end against the MMS u* = sin(pi x) sin(pi y) + 0.3 x^2 y on [0,1]^2 with f built symbolically as -div(grad(u*)). Asserts the finest-level (n=32) L2 error under a floor AND the observed L2/H1 orders inside tight bands for Lagrange order 1 and 2. Bands are tighter than the ngsolve fixture because structuredGrid refinement is Cartesian, so there is no mesh-topology jitter. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03: k=1 L2 EOCs 1.989/1.997/1.999 and H1 EOCs 0.995/0.999/1.000; k=2 L2 EOCs 2.979/2.995/2.999 and H1 EOCs 1.998/2.000/2.000; k=3 (measured, not gated to keep the fixture cheap) L2 EOCs 3.985/3.996/3.999. Finest L2 errors 4.556318e-04 (k=1), 3.846536e-06 (k=2), 2.180413e-08 (k=3).",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 99,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "dune_fem_version=",
+    "P1_finest_l2err=",
+    "P2_finest_l2err=",
+    "P1_eoc_n16_to_n32=",
+    "P2_eoc_n16_to_n32=",
+    "dune_poisson_mms_gate=OK"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

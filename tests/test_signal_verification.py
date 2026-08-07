@@ -65,7 +65,25 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 108  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 112  # cross-cutting (incl. synthetic indices).
+    # 2026-08-03 dune knowledge-extraction pass: +4 dune fixtures, all
+    # executed against the installed dune-fem 2.12.0.2 and merged into
+    # tier2_results.json without disturbing the other backends' rows.
+    #   +1 dune::poisson::7   (DirichletBC omitted from the scheme list
+    #                          -> singular pure-Neumann system that CG
+    #                          still reports as converged; measured L2
+    #                          error 7.5e+14 after 23935 iterations)
+    #   +1 dune::poisson::9   (solver= string is not validated in
+    #                          Python; the C++ parameter reader
+    #                          enumerates gmres/cg/bicgstab)
+    #   +1 dune::poisson::11  (space UFL cell reports a simplex on a
+    #                          cube grid)
+    #   +1 dune::poisson::99  (MMS numerical-correctness gate: L2/H1
+    #                          orders for Lagrange k=1,2 on
+    #                          structuredGrid)
+    # dune::mixed_methods::0 was already counted; its fixture was made
+    # machine-independent in the same pass (it previously hard-coded
+    # one developer's absolute paths and failed everywhere else).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)

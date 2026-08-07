@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for dune::linear_elasticity (roller BCs lose a constraint at the shared corner). Two component-wise dune.ufl.DirichletBCs — [0,None] on x=0 and [None,0] on y=0, the standard symmetry/roller pair — leave the dof at (0,0) with only ONE of the two masks on dune-fem 2.12.0.2. Nothing is raised and the solve converges; the resulting global error is O(h^2), which reads as discretisation error. The fixture asserts (a) the corner dof does NOT satisfy both constraints, (b) swapping the two BCs in the scheme list changes nothing, so it is not last-wins, and (c) the CONTROL: two component-wise BCs on the SAME edge do merge, both components zero, which rules out 'masks never merge'. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03: corner u_x = 1.910e-06 instead of 0 while u_y = 0, identical for both list orders, and the same-edge control gave max|u_x| = max|u_y| = 0.",
+  "backend": "dune",
+  "physics": "linear_elasticity",
+  "pitfall_index": 1,
+  "covers": [
+    "linear_elasticity:1",
+    "_general:natural_bc_measured.Signal_component_bc_corner"
+  ],
+  "mode": "python",
+  "timeout_seconds": 2400,
+  "expect_in_output": [
+    "corner_constraint_dropped=True",
+    "corner_result_independent_of_list_order=True",
+    "same_edge_masks_merge=True",
+    "dune_componentwise_bc_corner_trap_reproduced=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

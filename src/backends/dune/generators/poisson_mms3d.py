@@ -18,9 +18,12 @@ a machine-readable error line
 
     level <l> n <n> dofs <d> L2 <e_l2> H1 <e_h1>
 
-followed by observed EOC lines. Theoretical orders for Lagrange order k:
-L2 -> k+1, H1-seminorm -> k. The EOCs a given run actually attains are an
-OUTPUT of that run — read them off the emitted lines, do not assume them.
+followed by observed EOC lines. Expected orders for Lagrange order k:
+L2 -> k+1, H1-seminorm -> k. The template has been executed on this
+install and reaches those orders; the observed values are deliberately
+NOT recorded here or in KNOWLEDGE — an observed convergence order is
+the ANSWER to a study an agent may be asked to run, so it belongs in
+the Tier-2 gate that re-measures it, not in agent-reachable knowledge.
 
 DESIGN PRINCIPLE (project rule "no anchoring"): every problem dimension
 is a parameter with placeholder defaults — domain size, MMS frequencies
@@ -281,6 +284,7 @@ summary = {{
 with open("results_summary.json", "w") as fh:
     json.dump(summary, fh, indent=2)
 print("DUNE-fem 3D variable-coefficient Poisson MMS study complete.")
+print("DUNE_TEMPLATE_COMPLETE")
 '''
 
 

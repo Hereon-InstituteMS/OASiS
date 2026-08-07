@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for dune::poisson#13 and dune::adaptive_poisson#0, #2, #3, #4, #5 — six claims about the same four grid/view objects, so one fixture; wall time 75 s (2026-08-06, dune-fem 2.12.0.2). Measured: the ALUGrid factories are camelCase (aluConformGrid/aluCubeGrid/aluSimplexGrid present, alusimplexGrid/alucubeGrid/aluconformGrid absent). structuredGrid has NO .mark attribute, while adaptiveLeafGridView(yasp) and yasp.hierarchicalGrid both DO — so its presence proves nothing. hasattr(space,'update') is False. globalRefine(1, uh) on a YaspGrid left (cells, space.size, dofs) at (16, 25, 25) -> (16, 25, 25): a silent no-op, no exception, no warning; on adaptiveLeafGridView(aluConformGrid) the same call went (32, 25, 25) -> (64, 41, 41). globalRefine(1, hierarchicalGrid) took 16 -> 64 cells. dune.fem.mark(..., gridView=...) and markNeighbors(..., gridView=...) both raise AttributeError \"'GridMarker' object has no attribute 'gridView'\". dune.fem.mark returns a NON-callable tuple, (-1, -1) without statistics=True, and passing it to adapt raises AssertionError 'only one list of discrete functions can be passed into the adaptation method'. adapt([uh]) on a plain ALUGrid leaf view raises AssertionError 'the grid views for all discrete functions need to support adaptivity'. The control is the documented cycle: mark then adapt took 64 -> 100 cells and 41 -> 63 dofs with the space resized and the function prolonged. ONE EXTRA MEASUREMENT, recorded because it cost a debugging round: the hierarchical refine gets its OWN grid object here, because calling globalRefine(level, uh) first REGISTERS a discrete function on a non-adaptive space, and a later hierarchical refine of that same grid then dies with RuntimeError 'NotImplemented [numBlocks:...indexsetdofmapper.hh:228]: Method numBlocks() called on non-adaptive block mapper'. On a fresh grid, with or without a space, it refines fine.",
+  "backend": "dune",
+  "physics": "adaptive_poisson",
+  "pitfall_index": 3,
+  "covers": [
+    "poisson:13",
+    "adaptive_poisson:0",
+    "adaptive_poisson:2",
+    "adaptive_poisson:3",
+    "adaptive_poisson:4",
+    "adaptive_poisson:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "alugrid_has_aluConformGrid=True",
+    "alugrid_has_alusimplexGrid=False",
+    "yasp_has_mark=False",
+    "yasp_adaptive_has_mark=True",
+    "yasp_hierarchical_has_mark=True",
+    "alu_adaptive_canAdapt=True",
+    "space_has_update=False",
+    "yasp_globalRefine_is_a_silent_noop=True",
+    "hierarchical_refine_works=True",
+    "alu_adaptive_globalRefine_works=True",
+    "mark_gridView_kwarg_raises=AttributeError",
+    "'GridMarker' object has no attribute 'gridView'",
+    "markNeighbors_gridView_kwarg_raises=AttributeError",
+    "mark_returns_a_tuple_not_a_marker=True",
+    "mark_return_is_callable=False",
+    "adapt_with_marker_first_raises=AssertionError",
+    "only one list of discrete functions",
+    "adapt_on_plain_alu_raises=AssertionError",
+    "the grid views for all discrete functions need to support adaptivity",
+    "mark_then_adapt_refines=True",
+    "adapt_resized_the_space=True",
+    "dune_refinement_and_adaptivity_api_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

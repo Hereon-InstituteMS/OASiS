@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for dune::linear_elasticity#2 and _general.natural_bc_measured.Signal_pointwise_indicator. The elasticity form is character-for-character the one in componentwise_bc_corner_drops_a_constraint so the compiled module is shared; wall time 114 s on 2026-08-06 (dune-fem 2.12.0.2), of which one build is the extra-BC variant. Measured on a 4x4 dimRange=2 grid with u_x=0 on x=0 and u_y=0 on y=0: the corner dof reads 1.909986e-06, 0.0. Adding DirichletBC(space,[0,0], And(x[0]<tol, x[1]<tol)) to pin that node was ACCEPTED and changed the solution by EXACTLY 0.0 — the corner value is unchanged to every printed digit. Two controls make that null result mean something: an EDGE-sized BC (u_y=0 on the top edge, an edge the base does not already constrain in that component) moved the solution by 2.010541e-06, and walking the 16 boundary facets found ZERO whose centre satisfies both coordinate tests — which is the geometric reason. Note an edge-sized BC on an edge the base ALREADY constrains changes nothing either, because component-wise masks on the same edge merge; that is why the control uses a different edge. STRENGTHENED after mutation testing: the fixture originally asserted only that the point BC changes nothing, which an indicator REDUNDANT with an existing BC also satisfies — a mutation replacing the point test with the already-constrained bottom edge passed. It now also asserts that the corner dof is NOT zero, i.e. the constraint the caller wrote was not honoured.",
+  "backend": "dune",
+  "physics": "linear_elasticity",
+  "pitfall_index": 2,
+  "covers": [
+    "linear_elasticity:2",
+    "_general:natural_bc_measured.Signal_pointwise_indicator"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "corner_node_coordinates=[0.0, 0.0]",
+    "point_bc_was_accepted=True",
+    "point_bc_max_change=0.000000e+00",
+    "point_bc_changed_nothing=True",
+    "corner_is_not_zero_despite_the_bc=True",
+    "edge_bc_changed_the_solution=True",
+    "boundary_facets=16",
+    "facet_centres_satisfying_the_point_test=0",
+    "no_facet_centre_is_the_corner=True",
+    "dune_point_indicator_selects_nothing_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

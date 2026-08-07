@@ -1,0 +1,27 @@
+{
+  "_comment": "Tier-2 for dune::poisson pitfalls 0, 3 and 4 — one fixture because all three are the same observation from three angles and share one compiled Integrands module. Measured on dune-fem 2.12.0.2, 2026-08-06: `import dolfinx`, `from dolfinx.fem import dirichletbc`, `from dolfinx.fem import functionspace` and `from dolfinx.io import XDMFFile, VTXWriter` all raise ModuleNotFoundError in the DUNE env; lagrange(gridView, ('Lagrange', 1)) raises TypeError; dune.ufl.DirichletBC(space, 0, dofs, extra) raises TypeError while DirichletBC(space, 0) works; dune.grid has no XDMFFile / VTXWriter / VTKFile attribute and gridView.writeVTK wrote dolfinx_probe.vtu. The PORTABILITY half of poisson#0 is asserted inside the fixture by building the weak form from ufl types only (checked: type(obj).__module__ starts with 'ufl' for the trial and test functions and both forms) and solving it. The dolfinx counterpart was confirmed out of band in ~/miniconda3/envs/fenics (dolfinx 0.10.0, ufl 2025.2.1): the byte-identical form dot(grad(u), grad(v))*dx == 1.0*v*dx passed dolfinx.fem.form(), while the space there is fem.functionspace(domain, ('Lagrange', 1)) and the BC is fem.dirichletbc(value, dofs, V) — a different call in both cases. That cross-check is NOT part of expect_in_output, because a fixture must not fail on a host that has no FEniCSx.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 3,
+  "covers": ["poisson:0", "poisson:3", "poisson:4"],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "dolfinx_import_raises=ModuleNotFoundError",
+    "dolfinx_dirichletbc_import_raises=ModuleNotFoundError",
+    "dolfinx_io_import_raises=ModuleNotFoundError",
+    "weak_form_uses_only_ufl_types=True",
+    "dolfinx_functionspace_signature_rejected=TypeError",
+    "dolfinx_dirichletbc_triple_rejected=TypeError",
+    "pure_ufl_form_solves=True",
+    "dune_grid_has_XDMFFile=False",
+    "dune_grid_has_VTXWriter=False",
+    "gridview_has_writeVTK=True",
+    "writeVTK_produced=['dolfinx_probe.vtu']",
+    "dune_dolfinx_api_divergence_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

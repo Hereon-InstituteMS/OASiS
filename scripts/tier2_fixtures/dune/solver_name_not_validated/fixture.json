@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for dune::poisson (solver string not validated in Python). dune/fem/discretefunction/_solvers.py::femsolver forwards the `solver=` string unchecked as the C++ parameter 'linear.method'; the guard is DUNE's parameter reader, so a plausible name fails at scheme construction with an error naming a parameter the caller never wrote. The fixture harvests that message rather than trusting docs: it asserts the rejection, that the message still names 'fem.solver.linear.method', and that it still enumerates gmres/cg/bicgstab — then proves each advertised name actually solves. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03: solver='conjugate_gradient' -> RuntimeError \"ParameterInvalid [getEnumeration:.../dune/fem/io/parameter/reader.hh:300]: Parameter 'fem.solver.linear.method' invalid. Valid values are: gmres, cg, bicgstab\".",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 9,
+  "covers": [
+    "poisson:9"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "bogus_solver_rejected=True",
+    "bogus_solver_names_the_parameter=True",
+    "solver_cg_converged=True",
+    "solver_gmres_converged=True",
+    "solver_bicgstab_converged=True",
+    "dune_solver_enumeration_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

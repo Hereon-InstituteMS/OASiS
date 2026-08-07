@@ -803,17 +803,57 @@ class TestDuneFemAPIPaths(unittest.TestCase):
         cls.checked = (
             _collect_dune_path_mentions() | set(dune_gt.CATALOG_API_PATHS)
         )
+        # The catalog deliberately NAMES a handful of paths that do not
+        # exist — they are the phantom APIs a model would otherwise
+        # reach for (dune.fem.space.product_space, the lowercase
+        # raviartthomas, an importable dune.fem.solver). The exemption
+        # list lives with the documentation, in
+        # src/backends/dune/generators/verified_api.py, and
+        # test_known_absent_paths_really_are_absent below turns it into
+        # an extra positive check rather than a hole.
+        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+        from backends.dune.generators.verified_api import (  # noqa: E402
+            JIT_GENERATED_PATH_PREFIXES, KNOWN_ABSENT_DUNE_PATHS)
+        cls.known_absent = set(KNOWN_ABSENT_DUNE_PATHS)
+        cls.jit_prefixes = tuple(JIT_GENERATED_PATH_PREFIXES)
 
     def test_no_unresolved_dune_path(self):
         unresolved = [
             path for path in sorted(self.checked)
             if dune_gt.has_attr(path) is False
+            and path not in self.known_absent
+            and not path.startswith(self.jit_prefixes)
         ]
         self.assertFalse(
             unresolved,
             f"\nDUNE-fem catalog references dune paths that do not "
             f"resolve on the installed package: {unresolved}\n"
-            f"Likely an upstream rename or a build missing the module.",
+            f"Likely an upstream rename or a build missing the module.\n"
+            f"If the catalog names one of these BECAUSE it does not "
+            f"exist, add it to KNOWN_ABSENT_DUNE_PATHS in "
+            f"src/backends/dune/generators/verified_api.py — that list "
+            f"is itself asserted to stay unresolvable.",
+        )
+
+    def test_known_absent_paths_really_are_absent(self):
+        """The exemption list must never shelter a path that exists.
+
+        If upstream adds e.g. a real ``dune.fem.space.product_space``,
+        this fires and the corresponding "phantom API" claim in the
+        catalog has to be retired.
+        """
+        resurrected = [
+            path for path in sorted(self.known_absent)
+            if dune_gt.has_attr(path) is not False
+        ]
+        self.assertFalse(
+            resurrected,
+            f"\nPaths listed as KNOWN_ABSENT now RESOLVE on the "
+            f"installed dune: {resurrected}\n"
+            f"The catalog documents them as phantom APIs — that claim "
+            f"is no longer true for this version. Remove them from "
+            f"KNOWN_ABSENT_DUNE_PATHS and update "
+            f"verified_api.EXECUTED_API['phantom_apis_checked'].",
         )
 
 

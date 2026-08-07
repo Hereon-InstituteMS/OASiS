@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dune::poisson#18. Measured on dune-fem 2.12.0.2, 2026-08-06, wall time 43 s (one fresh Integrands module; the `a == 0` variant reused it): inner(as_vector([0, 0]), v)*dx raises ValueError 'This integral is missing an integration domain.' inside UFL, before dune-fem sees anything. Both advertised fixes were executed and converge — dune.ufl.Constant components (inner(as_vector([Constant(0.0,name='fx'), Constant(0.0,name='fy')]), v)*dx) and the bare `a == 0` spelling — and the reason the second one works is asserted directly: len(a.arguments()) == 2, so the left-hand side still carries a trial and a test function.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 18,
+  "covers": ["poisson:18"],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "python_zero_rhs_rejected=ValueError",
+    "This integral is missing an integration domain.",
+    "constant_zero_rhs_solves=True",
+    "a_equals_zero_solves=True",
+    "lhs_argument_count=2",
+    "dune_zero_rhs_domain_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

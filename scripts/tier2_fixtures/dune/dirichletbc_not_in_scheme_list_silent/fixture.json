@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for dune::poisson (silent Dirichlet trap). A dune.ufl.DirichletBC only takes effect if it is an ELEMENT OF THE LIST passed to galerkin([a == b, dbc]); building the object and then constructing galerkin(a == b, space=space) — the natural dolfinx transfer — silently drops it, leaving a singular pure-Neumann system that CG reports as converged. The same failure is reached a second way when the BC's subDomain conditional selects no facet. Fixture runs all three variants of one weak form and asserts (a) the correct pattern converges to the right answer, (b) both broken variants still report converged=True, (c) both blow up in L2 error, (d) both blow up in linear_iterations. Verified by execution against dune-fem 2.12.0.2 on 2026-08-03: good converged=True liniter=1 L2 1.899705e-03; omitted converged=True liniter=23935 L2 7.510512e+14; never-firing subdomain byte-identical to omitted. COVERS ADDED 2026-08-06: the 'never' variant of this fixture — DirichletBC(space, 0, conditional(x[0] < -1.0, 1, 0)) on [0,1]^2 — IS dune::poisson#8, the indicator whose threshold selects no facet and so degrades to no boundary condition at all. It is asserted to the same standard as the omitted-BC variant: converged=True, a catastrophic L2 error, and an iteration blow-up against the correctly constrained run. No second fixture was written for #8 because it would have re-solved the identical singular system.",
+  "backend": "dune",
+  "physics": "poisson",
+  "pitfall_index": 7,
+  "covers": [
+    "poisson:7",
+    "poisson:8"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "good_converged=True",
+    "omitted_converged=True",
+    "never_converged=True",
+    "dune_silent_bc_trap_reproduced=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for dune::time_dependent_heat#0, #2, #3 and #4 — one heat problem, u_t = kappa Laplace(u) on [0,1]^2 with u(x,0) = sin(pi x) sin(pi y) and u=0 on the boundary, and only TWO compiled forms (backward Euler and Crank-Nicolson) because dt and kappa are dune.ufl.Constants. Wall time 421 s on 2026-08-06, dune-fem 2.12.0.2, dominated by the two 640-step reference runs. Measured: marching with u_n updated takes max(u) from 1.000000 to 0.906890, while leaving u_n at the initial condition leaves it at 0.980644 — the run repeats its first step. Per-step cost over 40 steps varied by 1.08x around the tail mean, so the scheme reuses its assembled operator. Temporal orders: BE 4.323124e-04, 2.158010e-04, 1.065227e-04, 5.162473e-05 -> 1.045; CN 1.452362e-06, 3.628501e-07, 9.064549e-08, 2.259711e-08 -> 2.004. At 1000x the explicit CFL step (1.953125e+01 against 1.953125e-02) backward Euler stayed finite and decayed to 1.058414e-08. IMPORTANT METHOD NOTE: the orders are measured against a FULLY DISCRETE reference (the same scheme at dt/128), not against the analytic solution. Measured on this grid the analytic route puts a spatial error floor at about 2.8e-05 which Crank-Nicolson reaches by dt = T/5, and its observed order then came out 0.000 — the study was measuring the SPACE error. Anyone re-tuning this fixture should keep the discrete reference.",
+  "backend": "dune",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 3,
+  "covers": [
+    "time_dependent_heat:0",
+    "time_dependent_heat:2",
+    "time_dependent_heat:3",
+    "time_dependent_heat:4"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1500,
+  "expect_in_output": [
+    "updating_u_old_advances_the_solution=True",
+    "frozen_u_old_repeats_the_first_step=True",
+    "scheme_reuses_its_operator=True",
+    "backward_euler_is_first_order=True",
+    "crank_nicolson_is_second_order=True",
+    "implicit_euler_factor_costs_an_order=True",
+    "dt_over_cfl_limit=1000",
+    "be_result_is_finite=True",
+    "be_is_unconditionally_stable=True",
+    "dune_time_stepping_traps_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
