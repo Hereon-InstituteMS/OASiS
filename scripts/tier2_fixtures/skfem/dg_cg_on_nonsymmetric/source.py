@@ -33,8 +33,10 @@ Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
+import tempfile
 import warnings
 
 import numpy as np
@@ -55,6 +57,37 @@ MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 B = np.array([1.0, 0.5])
 CLAIMED_MSG = "matrix not positive definite"
+
+
+@contextlib.contextmanager
+def captured_streams():
+    """Everything the solve writes to fd 1 and fd 2, C level included.
+
+    `cg_claimed_message_emitted` used to be `CLAIMED_MSG in raised`, and
+    `raised` is "" exactly when the co-asserted `cg_raised_an_exception=False`
+    holds -- so the two expectations were one measurement and neither of them
+    looked at what the solver actually WROTE.  The claim being falsified is
+    that scipy EMITS the string, and a message can be emitted without an
+    exception, so the check has to read the output streams.  Redirecting the
+    file descriptors rather than sys.stdout catches a message printed from
+    compiled code as well as one printed from Python.
+    """
+    sink = tempfile.TemporaryFile(mode="w+b")
+    sys.stdout.flush()
+    sys.stderr.flush()
+    saved = (os.dup(1), os.dup(2))
+    try:
+        os.dup2(sink.fileno(), 1)
+        os.dup2(sink.fileno(), 2)
+        yield sink
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(saved[0], 1)
+        os.dup2(saved[1], 2)
+        os.close(saved[0])
+        os.close(saved[1])
+        sink.seek(0)
 
 
 @BilinearForm
@@ -124,17 +157,31 @@ def main() -> int:
         # Pathology: the non-symmetric DG operator is handed to cg.
         # Mutation: the documented fix -- run the same solve through gmres.
         solver = gmres if MUTATE else cg
-        try:
-            x_cg, info = solver(A, f, rtol=1e-10, maxiter=1000,
-                                callback=lambda xk: iters.__setitem__(0, iters[0] + 1))
-        except Exception as exc:           # noqa: BLE001 -- we are probing
-            raised = f"{type(exc).__name__}: {exc}"
-            x_cg, info = np.zeros_like(f), -1
+        with captured_streams() as sink:
+            try:
+                x_cg, info = solver(
+                    A, f, rtol=1e-10, maxiter=1000,
+                    callback=lambda xk: iters.__setitem__(0, iters[0] + 1))
+            except Exception as exc:       # noqa: BLE001 -- we are probing
+                raised = f"{type(exc).__name__}: {exc}"
+                x_cg, info = np.zeros_like(f), -1
+        solver_output = sink.read().decode("utf-8", "replace")
         cg_warnings = [str(c.message) for c in caught]
     res_cg = float(np.linalg.norm(A @ x_cg - f) / nrm_f)
+    # Every channel the message could come out of: the exception, the warning
+    # list, and the raw stdout/stderr of the solve.  Reading only the first
+    # made the answer False by construction on a run that did not raise.
+    emitted_in = sorted(
+        ch for ch, text in (("exception", raised),
+                            ("warnings", " ".join(cg_warnings)),
+                            ("stdout_stderr", solver_output))
+        if CLAIMED_MSG in text.lower())
     print(f"cg_raised_an_exception={bool(raised)}")
     print(f"cg_exception_text={raised!r}")
-    print(f"cg_claimed_message_emitted={CLAIMED_MSG in raised}")
+    print(f"cg_solver_output_bytes={len(solver_output)}")
+    print(f"cg_solver_output={solver_output.strip()[:200]!r}")
+    print(f"cg_claimed_message_channels={emitted_in}")
+    print(f"cg_claimed_message_emitted={bool(emitted_in)}")
     print(f"cg_warnings={cg_warnings!r}")
     print(f"cg_info_nonzero={info != 0}")
     print(f"cg_iterations={iters[0]}")
