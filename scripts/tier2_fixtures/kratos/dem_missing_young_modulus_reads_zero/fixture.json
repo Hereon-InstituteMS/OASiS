@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for kratos.dem::7: omitting YOUNG_MODULUS from MaterialsDEM gives zero contact stiffness silently. Executed 2026-08-07 on Kratos 10.4.3. Measured: Properties[YOUNG_MODULUS] reads back exactly 0.0 after a clean run whose materials omit it, the run completes with ANALYSIS COMPLETED and exit 0 and keeps all 4 particles, and the same deck with YOUNG_MODULUS present reads back 1e7. INTERPRETER: needs a Kratos build carrying DEMApplication; set KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (the 28-application source build). The repo venv wheel does not import at all on this host (GLIBC_2.32 against a 2.31 system) and /usr/bin/python3 carries no DEMApplication, so pointing this anywhere else SKIPS rather than passes. Every deck is written into a fresh TemporaryDirectory and driven through DEMAnalysisStage in a CHILD process: Kratos logs from C++ and buffers it, so an in-process capture would miss every DEM line, and a Finalize()d DEM stage cannot be probed from python without segfaulting. MUTATION CONTROL (T2_MUTATE=1, re-runnable): see the module docstring -- the mutation changes the INPUT only, never an assertion, so every deck is still really executed against Kratos. Verified 2026-08-07: unmutated PASSES (rc=0) with probe_mismatches=0; with T2_MUTATE=1 it FAILS (rc=1), the named probe lines flip and the trailing =ok line disappears. Re-verify: cd scripts/tier2_fixtures/kratos/dem_missing_young_modulus_reads_zero && $KRATOS_PYTHON source.py, then T2_MUTATE=1 $KRATOS_PYTHON source.py. NOTE ON forbid_in_output: the sentinel is FIXTURE_FAILED, not MISMATCH. The runner's matcher is case-insensitive substring, so forbidding 'MISMATCH' also matches the 'probe_mismatches=0' line this fixture prints on SUCCESS, and every passing run would be recorded as failed. Found by running these fixtures through scripts/run_tier2_fixtures.py rather than by hand.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 7,
+  "covers": [
+    "dem::7"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "probe[omitted_reads_exactly_zero]=0.0_expected=0.0",
+    "probe[omitted_raises_nothing]=None_expected=None",
+    "probe[omitted_completes]=True_expected=True",
+    "probe[present_reads_the_value]=10000000.0_expected=10000000.0",
+    "dem_missing_young_modulus_check=ok",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FIXTURE_FAILED"
+  ]
+}
