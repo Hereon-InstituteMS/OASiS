@@ -1,7 +1,7 @@
 {
   "schema": "oasis-blind-key-commitment/1",
   "campaign": "campaign3_blind",
-  "generated_utc": "2026-08-07T16:55:43Z",
+  "generated_utc": "2026-08-07T17:05:35Z",
   "keys_dir": "/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind/keys",
   "algorithm": "SHA-256 over the key file as stored",
   "encryption": "AES-256-GCM, scrypt(n=32768,r=8,p=1)",

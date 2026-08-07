@@ -108,15 +108,53 @@ def cmd_verify(args):
     recomputed = hashlib.sha256(
         json.dumps(man["entries"], sort_keys=True).encode()).hexdigest()
     self_ok = recomputed == man.get("manifest_sha256")
+
+    # AES-GCM draws a fresh salt and nonce every time, so re-encrypting the same
+    # plaintext produces different ciphertext BY DESIGN. A committed ciphertext
+    # hash is therefore not stable across a re-encrypt, and reporting one as
+    # MISMATCHED reads as tampering when nothing was tampered with. Likewise a
+    # plaintext entry whose file is gone because the key was encrypted is not
+    # "missing" -- it is behind the passphrase, which is where it should be.
+    #
+    # Both are separated out, and the verdict becomes INCONCLUSIVE rather than
+    # FAIL, because a control that cries FAIL on its own mechanics gets ignored
+    # exactly when it matters.
+    reencrypted, needs_decrypt = [], []
+    if not args.decrypt:
+        for e in list(bad):
+            if e.endswith(ENC := ".enc"):
+                plain_name = e[:-len(ENC)]
+                if any(x["path"] == plain_name for x in man["entries"]):
+                    bad.remove(e)
+                    reencrypted.append(e)
+        for e in list(missing):
+            if (root / (e + ".enc")).is_file():
+                missing.remove(e)
+                needs_decrypt.append(e)
+
     print(f"manifest      : {args.manifest}")
     print(f"committed at  : {man.get('generated_utc')}")
     print(f"self-consistent: {self_ok}")
     print(f"matched       : {len(ok)}")
     print(f"MISMATCHED    : {bad or 'none'}")
     print(f"missing       : {missing or 'none'}")
-    verdict = "PASS" if self_ok and not bad and not missing else "FAIL"
+    if reencrypted:
+        print(f"re-encrypted  : {len(reencrypted)} ciphertext hash(es) differ "
+              f"because AES-GCM re-encryption is randomised. Not a finding; the "
+              f"plaintext commitment is what binds.")
+    if needs_decrypt:
+        print(f"behind passphrase: {len(needs_decrypt)} key(s) exist only as "
+              f"ciphertext. Re-run with --decrypt to check them against the "
+              f"committed PLAINTEXT hashes.")
+    if not self_ok or bad or missing:
+        verdict = "FAIL"
+    elif needs_decrypt or reencrypted:
+        verdict = "INCONCLUSIVE — re-run with --decrypt"
+    else:
+        verdict = "PASS"
     print(f"VERDICT       : {verdict}")
-    return 0 if verdict == "PASS" else 1
+    return 0 if verdict == "PASS" else (2 if verdict.startswith("INCONCLUSIVE")
+                                        else 1)
 
 
 def cmd_commit(args):

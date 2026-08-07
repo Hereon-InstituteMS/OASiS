@@ -134,23 +134,54 @@ def unseal(keys_dir: Path, mode: int = 0o700) -> str:
     return stat.filemode(keys_dir.stat().st_mode)
 
 
+def seal_state(keys_dir: Path) -> str:
+    """``ABSENT`` | ``EMPTY`` | ``OPEN`` | ``PARTIAL`` | ``SEALED``.
+
+    ``PARTIAL`` is a real state and it used to be invisible.  :func:`seal` walks
+    the tree bottom-up, so between its first and last chmod the top directory is
+    still listable while the per-problem subdirectories are already ``000``.  A
+    seal running concurrently with an audit therefore leaves the audit reading a
+    listable directory full of unreadable keys.  ``is_sealed`` answered False —
+    correctly, nothing was protected yet — and every caller then walked in and
+    died on ``PermissionError`` from ``Path.is_file()``, which surfaced as a
+    failing leak-gate test rather than as "the keys are being sealed right now".
+    A gate has to fail on a finding, not on a race.
+    """
+    keys_dir = Path(keys_dir)
+    if not keys_dir.exists():
+        return "ABSENT"
+    try:
+        entries = list(os.scandir(keys_dir))
+    except PermissionError:
+        return "SEALED"
+    if not entries:
+        return "EMPTY"
+    reachable = unreachable = 0
+    for e in entries:
+        try:
+            if e.is_dir(follow_symlinks=False):
+                list(os.scandir(e.path))
+            else:
+                os.stat(e.path)
+            reachable += 1
+        except PermissionError:
+            unreachable += 1
+    if unreachable and reachable:
+        return "PARTIAL"
+    return "SEALED" if unreachable else "OPEN"
+
+
 def is_sealed(keys_dir: Path) -> bool:
-    """True only if the directory exists AND cannot be listed.
+    """True only if the directory exists AND nothing under it can be reached.
 
     The pre-existing ``keys_are_sealed()`` returned True when the directory was
     missing or empty, so a deleted keys tree read as "sealed" and the campaign
     would have started with nothing to grade against.  Absence is not a seal.
+
+    A PARTIAL tree is not a seal either: some keys are still readable.  The
+    runner therefore refuses, which is the safe direction.
     """
-    keys_dir = Path(keys_dir)
-    if not keys_dir.exists():
-        return False
-    try:
-        next(iter(os.scandir(keys_dir)))
-        return False
-    except PermissionError:
-        return True
-    except StopIteration:
-        return False          # empty directory is not a sealed directory
+    return seal_state(keys_dir) == "SEALED"
 
 
 def verify_unreadable(keys_dir: Path, timeout: int = 30) -> dict:

@@ -827,18 +827,77 @@ task now says it explicitly:
 * The seven non-D4 instances have no recorded throwaway run through their named
   path.
 
-## 5. A cost, not a defect: the leak gate is slow on polynomial instances
+## 5. A concurrent seal made the leak gate fail on a race, not on a finding
 
-`test_every_problem_passes_the_leak_gate` runs the full symbolic gate over every
-problem with a readable key. `embedded_multiple` compares each term of the
-source against each term of the hidden field with `sp.simplify`, which on the
-larger polynomial instances (D5's four cells, D8's transient sources) takes
-minutes each; on a loaded machine the test did not complete inside this session.
+An earlier draft of this section said the suite-level leak test was merely slow
+and had not finished. That was wrong, and the correction matters more than the
+original claim: the test **completed in 198 s and FAILED**, with a
+`PermissionError` on `keys/D8/key.json`.
 
-It is not weakened here, and nobody should weaken it in response to the runtime.
-The gate is enforced unconditionally at BUILD time — `build_coupled_v2.py`
-refuses to write any instance whose task text does not come back CLEAN, and all
-eight did on the shipped build — and a standalone audit over the eight rebuilt
-instances was run separately and returned `leaking: none`. The test is a second,
-independent check of the same property; it should be run deliberately as the
-pre-campaign audit rather than expected to finish inside a quick suite run.
+The cause is a state the harness could not see. `seal()` walks the tree
+bottom-up, so between its first and last `chmod` the top directory is still
+listable while the per-problem subdirectories are already `000`. `is_sealed`
+only tried to list the top directory, so it answered False — correctly, nothing
+was protected yet — and every caller then walked in and died on
+`Path.is_file()`. On a shared machine where something else can seal the keys
+while an audit runs, that surfaces as a **failing leak-gate test**, which is the
+worst possible way for a leak gate to be wrong: the operator sees red, looks for
+a disclosure, and finds a race.
+
+Fixed on both sides. `blind_eval.keyvault.seal_state` now reports
+`ABSENT | EMPTY | OPEN | PARTIAL | SEALED`, and `is_sealed` is True only for
+`SEALED` — a PARTIAL tree is not a seal, because some keys are still readable,
+so the runner still refuses, which is the safe direction. The leak-gate test
+counts unreachable keys instead of walking into them and skips with
+`seal_state` named, so a concurrent seal is reported as a concurrent seal.
+
+This is the same defect as the exposure sweep that died on `EOFError` with no
+TTY and as `is_sealed`'s original "missing means sealed": a control that fails on
+its own bug teaches the operator to disregard it.
+
+The gate's own verdict on the shipped instances is independently established and
+is unaffected: `build_coupled_v2.py` refuses to write any instance whose task
+text is not CLEAN, and all eight were on the shipped build; a standalone audit
+over the eight returned `leaking: none`. B1-B7 remain encrypted and unaudited
+here for want of the passphrase, and the test accounts for them rather than
+passing over them silently.
+
+The gate is also genuinely expensive — `embedded_multiple` compares each source
+term against each field term with `sp.simplify` — so it belongs in the
+pre-campaign audit rather than in a quick suite run. It is not weakened here and
+should not be weakened in response to its runtime.
+
+## 6. The campaign reached its encrypted state while this work was finishing
+
+Another process encrypted the eight rebuilt coupled keys at 19:05 (the B keys
+were already encrypted at 16:27). The lifecycle step §12 named as the required
+operator action has therefore happened, and `no_plaintext_keys` now passes for
+the right reason: 15 ciphertext keys on disk, none in plaintext.
+
+**Not verified here, and it matters:** whether the eight D keys were encrypted
+under the SAME passphrase as B1-B7. If they were not, grading opens seven keys
+and fails on eight. `scripts/blind_keys.py verify --decrypt` answers it in one
+command and needs the passphrase, so it is an operator check, not one this work
+could do.
+
+Two more controls were failing on their own mechanics and are fixed:
+
+* `verify` reported the eight D ciphertext hashes as **MISMATCHED** and the
+  eight plaintext entries as **missing**, verdict FAIL. Neither was a finding.
+  AES-GCM draws a fresh salt and nonce every time, so re-encrypting the same
+  plaintext gives different bytes by design, and a plaintext file that is gone
+  because the key was encrypted is behind the passphrase, which is where it
+  belongs. Both are now reported as what they are and the verdict is
+  INCONCLUSIVE — re-run with `--decrypt` — rather than FAIL.
+* `test_no_plaintext_keys_are_left_on_disk` would have **passed vacuously** in a
+  PARTIAL tree: `rglob` over an unreadable subtree yields nothing silently, so
+  it would have found no plaintext keys and reported PASS while every key on
+  disk was plaintext. It now refuses to run in a PARTIAL or empty tree and
+  asserts that at least one key directory was reachable.
+
+The remaining preflight failures are `keys_sealed` and
+`seal_verified_by_execution`: the keys are encrypted but not yet `chmod 000`.
+Sealing needs no secret, so this work could have done it — and deliberately did
+not. Another actor is mid-lifecycle on this tree, a concurrent seal is exactly
+what produced the PARTIAL-state race in §5, and re-creating it for whoever is
+working there would be worse than leaving one documented step undone.

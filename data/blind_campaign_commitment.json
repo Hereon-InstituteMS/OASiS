@@ -1,13 +1,13 @@
 {
   "schema": "oasis-blind-campaign-commitment/1",
   "campaign": "campaign3_blind",
-  "generated_utc": "2026-08-07T16:55:43Z",
+  "generated_utc": "2026-08-07T17:11:02Z",
   "note": "Committed BEFORE any evaluation run. Proves that the grader which graded is the grader that was designed, and that the task texts were not edited after results were seen.",
   "entries": [
     {
       "path": "DESIGN.md",
-      "bytes": 46256,
-      "sha256": "882ceb24f610f8d63c06eee8641f871d5310958f67980fff2216e07df3938d22",
+      "bytes": 50818,
+      "sha256": "3f94ce09a8c8c6cd5ac174ffd1699f889a733dee4eb4471e664d860bade1e730",
       "in_git": true
     },
     {
@@ -218,5 +218,5 @@
       "in_git": true
     }
   ],
-  "manifest_sha256": "be69a078fc8e4cfe1dc1d719bf2fcbf607a1077e461b2eb9b2738488d8c99750"
+  "manifest_sha256": "5e549cf7c3d2ccc2ebddc33a99c02a27ba833868d4848d552858e815ef2b2cc4"
 }

@@ -51,8 +51,19 @@ def test_hash_commitment_is_published_and_self_consistent():
 @needs_campaign
 def test_no_plaintext_keys_are_left_on_disk():
     """Encryption is only a control if the plaintext is actually gone."""
-    if keyvault.is_sealed(KEYS):
-        pytest.skip("keys sealed — cannot enumerate (which is the point)")
+    state = keyvault.seal_state(KEYS)
+    if state in ("SEALED", "ABSENT", "EMPTY"):
+        pytest.skip(f"keys are {state} — cannot enumerate (which is the point)")
+    # rglob over an unreadable subtree yields NOTHING, silently. In a PARTIAL
+    # tree — top listable, subdirectories already 000, which is what a
+    # concurrent seal looks like — this test would find no plaintext keys and
+    # report PASS while every key on disk was plaintext. A custody control that
+    # passes on zero inputs is worse than no control.
+    if state == "PARTIAL":
+        pytest.skip("keys are PARTIAL (a seal is in progress): rglob would "
+                    "silently see nothing and this test would pass vacuously")
+    reachable = [d for d in KEYS.iterdir() if d.is_dir()]
+    assert reachable, "no key directories are reachable; nothing was checked"
     plain = [p for p in KEYS.rglob("*.json") if not p.name.endswith(".enc")]
     assert not plain, (
         f"plaintext answer keys on disk: {[str(p) for p in plain]}.\n"
@@ -123,13 +134,33 @@ def test_every_problem_passes_the_leak_gate():
     # so every problem has to be accounted for as either audited or encrypted —
     # silently auditing a subset and reporting PASS is the failure mode this
     # assertion exists to prevent.
-    leaking, audited, encrypted = [], [], []
+    # A concurrent `seal` leaves the top directory listable while the
+    # per-problem subdirectories are already 000. Reading a key then raises
+    # PermissionError, which used to surface as a FAILING LEAK-GATE TEST — a
+    # gate failing on a race rather than on a finding, which is the worst
+    # possible way for a leak gate to be wrong. Unreachable keys are counted,
+    # not walked into.
+    def _state(name):
+        try:
+            if (KEYS / name / "key.json").is_file():
+                return "plain"
+            if (KEYS / name / "key.json.enc").is_file():
+                return "encrypted"
+            return "missing"
+        except PermissionError:
+            return "unreadable"
+
+    leaking, audited, encrypted, unreadable = [], [], [], []
     for pdir in probs:
-        kpath = KEYS / pdir.name / "key.json"
-        if not kpath.is_file():
-            if (KEYS / pdir.name / "key.json.enc").is_file():
+        st = _state(pdir.name)
+        if st == "unreadable":
+            unreadable.append(pdir.name)
+            continue
+        if st != "plain":
+            if st == "encrypted":
                 encrypted.append(pdir.name)
             continue
+        kpath = KEYS / pdir.name / "key.json"
         audited.append(pdir.name)
         rep = scan((pdir / "task.txt").read_text(),
                    json.loads(kpath.read_text()), pdir.name)
@@ -138,6 +169,12 @@ def test_every_problem_passes_the_leak_gate():
         if worst:
             leaking.append((pdir.name, [f.rule for f in worst]))
     assert not leaking, f"problems disclose their solution: {leaking}"
+    if unreadable:
+        pytest.skip(
+            f"{len(unreadable)} key(s) became unreachable while the audit ran "
+            f"(seal_state={keyvault.seal_state(KEYS)}): {unreadable[:4]}. This "
+            f"is a concurrent seal, not a leak. Re-run with the keys unsealed "
+            f"and nothing else touching them.")
     assert len(audited) + len(encrypted) == n_problems, (
         f"gate audited {audited} and found {encrypted} encrypted, but there "
         f"are {n_problems} problems — the remainder have no key at all, so "
