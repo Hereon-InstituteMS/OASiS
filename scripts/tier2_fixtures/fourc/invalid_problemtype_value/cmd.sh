@@ -18,9 +18,16 @@ done
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/opt/4C-dependencies/lib}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-cat > "$TMP/probe.yaml" <<'EOF'
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology: the deck names a REAL
+# problem type, so the input spec matches, no "Could not match this input" block
+# is printed, and the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+PT="TotallyMadeUpProblem"
+[ "$MUTATE" = "1" ] && PT="Structure"
+
+cat > "$TMP/probe.yaml" <<EOF
 PROBLEM TYPE:
-  PROBLEMTYPE: TotallyMadeUpProblem
+  PROBLEMTYPE: $PT
   RESTART: 0
 EOF
 stdbuf -oL -eL "$BIN" "$TMP/probe.yaml" "$TMP/out" 2>&1 | head -25

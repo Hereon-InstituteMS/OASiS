@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for 4C thermo#: MAT_Fourier.CONDUCT requires a 'constant:' wrapper (tensor-typed list), not a bare scalar. 'CONDUCT: 1.0' is rejected in MATERIALS section with 'Failed to match specification in section MATERIALS' from 4C_io_input_spec_builders.cpp:633, and the MAT_Fourier block is echoed as remains unused. Different code path from section-name validation (which uses 4C_io_input_file.cpp:546). Verified empirically 2026-06-01 — 'CONDUCT: 1.0' rejected; 'CONDUCT: {constant: [1.0]}' progresses to fill_complete.",
+  "_comment": "Tier-2 for 4C thermo#: MAT_Fourier.CONDUCT requires a 'constant:' wrapper (tensor-typed list), not a bare scalar. 'CONDUCT: 1.0' is rejected in MATERIALS section with 'Failed to match specification in section MATERIALS' from 4C_io_input_spec_builders.cpp:633, and the MAT_Fourier block is echoed as remains unused. Different code path from section-name validation (which uses 4C_io_input_file.cpp:546). Verified empirically 2026-06-01 — 'CONDUCT: 1.0' rejected; 'CONDUCT: {constant: [1.0]}' progresses to fill_complete. MUTATION CONTROL (T2_MUTATE=1, re-runnable): CONDUCT is emitted as 'constant: [1.0]' instead of the bare scalar 1.0. All three expectations - the MATERIALS match failure, 4C_io_input_spec_builders and 'Could not match this input' - disappear. Proved KILLED 2026-08-07.",
   "backend": "fourc",
   "physics": "thermo",
   "pitfall_index": 0,
@@ -9,5 +9,11 @@
     "4C_io_input_spec_builders",
     "Could not match this input"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "remove the pathology: write CONDUCT with the 'constant:' list wrapper the MAT_Fourier spec requires. The material matches, the MATERIALS rejection never fires, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
 }

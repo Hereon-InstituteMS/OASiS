@@ -17,10 +17,17 @@ done
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/opt/4C-dependencies/lib}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-cat > "$TMP/probe.yaml" <<'EOF'
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology: the section carries its
+# REAL name, 'SCALAR TRANSPORT DYNAMIC', so no section-name rejection is printed
+# and the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+SEC="SCATRA DYNAMIC"
+[ "$MUTATE" = "1" ] && SEC="SCALAR TRANSPORT DYNAMIC"
+
+cat > "$TMP/probe.yaml" <<EOF
 PROBLEM TYPE:
   PROBLEMTYPE: Scalar_Transport
-SCATRA DYNAMIC:
+$SEC:
   TIMEINTEGR: Stationary
 EOF
 stdbuf -oL -eL "$BIN" "$TMP/probe.yaml" "$TMP/out" 2>&1 | head -20

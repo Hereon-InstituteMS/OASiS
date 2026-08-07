@@ -17,11 +17,18 @@ done
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/opt/4C-dependencies/lib}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-cat > "$TMP/probe.yaml" <<'EOF'
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology: DYNAMICTYPE carries a
+# value that IS in the enum, the section matches its spec, no "Could not match
+# this input" block is echoed and the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+DT="TotallyMadeUpScheme"
+[ "$MUTATE" = "1" ] && DT="Statics"
+
+cat > "$TMP/probe.yaml" <<EOF
 PROBLEM TYPE:
   PROBLEMTYPE: Structure
 STRUCTURAL DYNAMIC:
-  DYNAMICTYPE: TotallyMadeUpScheme
+  DYNAMICTYPE: $DT
 EOF
 stdbuf -oL -eL "$BIN" "$TMP/probe.yaml" "$TMP/out" 2>&1 | head -25
 exit 0

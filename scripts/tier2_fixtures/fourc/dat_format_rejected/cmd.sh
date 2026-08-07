@@ -22,14 +22,32 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/opt/4C-dependencies/lib}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-cat > "$TMP/probe.dat" <<'EOF'
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology — the same content is
+# offered to 4C as a .yaml file with YAML syntax, i.e. the format the binary
+# does support.  4C then infers the format, gets past the file-read stage and
+# never prints "Cannot infer format of input file", so the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+
+if [ "$MUTATE" = "1" ]; then
+  PROBE="$TMP/probe.yaml"
+  cat > "$PROBE" <<'EOF'
+TITLE:
+  - "Probe — YAML input on YAML-only binary"
+PROBLEM TYPE:
+  PROBLEMTYPE: Structure
+  RESTART: 0
+EOF
+else
+  PROBE="$TMP/probe.dat"
+  cat > "$PROBE" <<'EOF'
 -------------------------------------------------------------------TITLE
 Probe — dat-style input on YAML-only binary
 ------------------------------------------------------------PROBLEM TYPE
 PROBLEMTYP                      Structure
 RESTART                         0
 EOF
+fi
 
 # Pipe output for the expect_in_output check.
-stdbuf -oL -eL "$BIN" "$TMP/probe.dat" "$TMP/out" 2>&1 | head -30
+stdbuf -oL -eL "$BIN" "$PROBE" "$TMP/out" 2>&1 | head -30
 exit 0
