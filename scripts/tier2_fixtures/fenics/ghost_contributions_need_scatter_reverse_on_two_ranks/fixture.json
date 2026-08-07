@@ -1,0 +1,27 @@
+{
+  "_comment": "CLAIM matrix_free_poisson::4: [API] `fem.assemble_vector(array, form)` only sums the cells owned by the calling rank; ghost contributions must be returned to their owner with `y.scatter_reverse(la.InsertMode.add)` after every in-place assembly, including inside the operator action. Signal: the serial run is unaffected; on 2 \u2026 WHAT THIS RUNS: `fem.assemble_vector(array, form)` only sums the cells owned by the calling rank; ghost contributions must be returned to their owner with `y.scatter_reverse(la.InsertMode.add)` after every in-place assembly, including inside the operator action. Wrong variant: an action_A that assembles in place and zeroes the Dirichlet rows but never scatters the ghost contributions back. Right variant: the same action with y.scatter_reverse(la.InsertMode.add) before the bc.set. This is an MPI-only failure, so the fixture is a driver: it writes one child script and runs it four times -- 1 rank and 2 ranks, with and without the reverse scatter -- through the mpirun that ships next to this interpreter, and compares. OBSERVED, copied from the run: two_rank_run_missed_rtol_within_the_iteration_cap=True; two_rank_field_max_differs_from_serial_by_over_ten_percent=True; serial_run_is_unaffected=True; two_rank_run_with_scatter_reverse_matches_serial=True; ranks=2 scatter=False child_RESULT=; \"ranks\": 2, \"scatter\": false, \"converged\": false; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "covers": [
+    "matrix_free_poisson::4"
+  ],
+  "expect_in_output": [
+    "two_rank_run_missed_rtol_within_the_iteration_cap=True",
+    "two_rank_field_max_differs_from_serial_by_over_ten_percent=True",
+    "serial_run_is_unaffected=True",
+    "two_rank_run_with_scatter_reverse_matches_serial=True",
+    "ranks=2 scatter=False child_RESULT=",
+    "\"ranks\": 2, \"scatter\": false, \"converged\": false",
+    "VERDICT=missing_scatter_reverse_breaks_only_the_parallel_run"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "mpirun_not_found=True",
+    "child_produced_no_result",
+    "VERDICT=children_did_not_run",
+    "VERDICT=missing_scatter_reverse_was_harmless_on_two_ranks"
+  ],
+  "timeout_seconds": 300
+}

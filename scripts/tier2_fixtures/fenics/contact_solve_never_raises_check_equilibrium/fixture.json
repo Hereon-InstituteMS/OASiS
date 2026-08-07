@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics contact#6: problem.solve() on a NonlinearProblem never raises on non-convergence, so an unchecked contact solve silently returns a body that has passed through the obstacle. Wrong variant: the identical script run twice, once with a sane penalty and once with a penalty stiff enough to break SNES, with nothing between the solve and the output but a print. Neither call raises. Both fields are finite, both have the shape a contact solution is expected to have (negative under the load, zero on the clamped boundary), and their magnitudes are within a factor of four of each other \u2014 nothing in the field itself says which one is the answer. What does distinguish them is measured here two ways, both of which the caller has to do on purpose: * problem.solver.getConvergedReason(): 2 (CONVERGED_FNORM_ABS) against -9 (DIVERGED_DTOL); * equilibrium. The discrete residual on the unconstrained dofs, normalised by the load vector, is ~1e-13 for the converged solve and ~1e12 for the diverged one; and the total penalty force integral(gamma*max(phi - u, 0)dx) against the applied load |integral(f dx)| is of order one when the solve is good and ten orders of magnitude too large when it is not. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "both_solves_raised_nothing=True",
+    "second_run_reason_is_negative=True",
+    "second_run_field_looks_plausible=True",
+    "equilibrium_holds_for_converged_run=True",
+    "equilibrium_fails_for_second_run=True",
+    "contact_force_balances_load_for_converged_run=True",
+    "contact_force_absurd_for_second_run=True",
+    "VERDICT=solve_is_silent_only_reason_and_equilibrium_tell_you"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=divergence_was_reported_by_solve"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#7: with a heterogeneous permeability K(x) the flux term of the mixed form must be weighted by K^-1, ufl.inner(Kinv * sigma, tau) * dx. Omitting the weight solves the homogeneous K = 1 problem instead, and nothing in the run says so. Geometry: unit square, two layers PARALLEL to the flow, K = 1 for y < 1/2 and K = 100 for y > 1/2, pressure 1 at x=0 and 0 at x=1 imposed naturally, sigma.n=0 on the top and bottom walls. The exact solution is p = 1 - x with sigma = K * (1, 0), so the flux must JUMP by the contrast of 100 across y = 1/2 and the total outflow is 0.5 * 1 + 0.5 * 100 = 50.5. Observed on dolfinx 0.10.0 (16x16, RT1 x DG0): with Kinv mean sigma_x = 1.000000 (bottom) / 100.000000 (top), outflow 50.5 without Kinv mean sigma_x = 1.000000 / 1.000000, outflow 1.0 so the computed flux is continuous across the layer interface instead of jumping, exactly as the claim says, and the total flow is 50x too small. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "kinv_flux_ratio_matches_the_contrast=True",
+    "kinv_outflow_matches_the_layer_average=True",
+    "no_kinv_flux_is_continuous_across_the_interface=True",
+    "no_kinv_outflow_is_the_homogeneous_value=True",
+    "mass_balance_residual_is_at_roundoff_in_both=True",
+    "post_processed_k_grad_p_from_dg0_pressure_is_identically_zero=True",
+    "VERDICT=omitting_kinv_erases_the_permeability_contrast"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=kinv_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

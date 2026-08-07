@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics poisson#3: pure-Neumann Poisson does not fail loudly, it returns a solution carrying an arbitrary constant. Wrong variant: no Dirichlet condition anywhere, source f = 1 on the unit square. The constant is in the kernel of the operator, so the solve reports success and hands back a field whose spread is negligible next to its own offset. The fixture measures the shape of the answer instead of quoting a number: it compares peak-to-peak spread against |mean|. A legitimate solution of this problem has spread comparable to its mean; a null-space artefact has an offset orders of magnitude larger than anything physical in the field. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "solver_raised=False",
+    "reason_is_negative=True",
+    "offset_dominates=True",
+    "VERDICT=no_raise_negative_reason_offset_dominates"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_nullspace_offset"
+  ]
+}

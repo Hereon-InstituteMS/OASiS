@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics eigenvalue#5: a complex-valued eigenproblem needs dolfinx + PETSc + SLEPc built with --with-scalar-type=complex. The default conda-forge fenics-dolfinx build is REAL, and the fixture shows the three places that shows up when you try to set up a complex Helmholtz / Maxwell eigenproblem anyway. Wrong variant: an imaginary coefficient (a complex damping term, a complex EPS target) fed to the real build. Right variant: keep every value real \u2014 dolfinx.default_scalar_type \u2014 and split into a (re, im) real-pair formulation if the physics really is complex. Observed on the conda-forge `fenics` env, dolfinx 0.10.0 / slepc4py 3.24.3: Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "eigenvalue",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "default_scalar_type=float64",
+    "real_build_reports_float64_not_complex=True",
+    "imaginary_coefficient_rejected_at_form_compilation=True",
+    "Unexpected complex value in real expression.",
+    "slepc_rejected_the_complex_target=True",
+    "must be real number, not complex",
+    "interpolate_silently_dropped_the_imaginary_part=True",
+    "VERDICT=real_build_rejects_complex_forms_but_silently_drops_interpolated_imaginary_parts"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=real_build_carried_the_complex_eigenproblem"
+  ],
+  "timeout_seconds": 300
+}

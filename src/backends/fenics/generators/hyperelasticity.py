@@ -5,6 +5,17 @@ Variants: 3d
 
 
 KNOWLEDGE = {
+    # ─────────────────────────────────────────────────────────────────
+    # _SERVING_STATUS (added 2026-08-03)
+    # This dict is SHADOWED and is NOT what an agent receives.
+    # fenics/backend.py:get_knowledge() returns
+    # src/tools/deep_knowledge.py::_FENICS_KNOWLEDGE['hyperelasticity'] for this
+    # physics and never falls through to here. Editing the pitfalls
+    # below changes nothing an agent can see. The claims here were NOT
+    # re-verified in the 2026-08-03 execution pass for exactly that
+    # reason — treat them as unverified history, and make corrections
+    # in deep_knowledge.py instead.
+    # ─────────────────────────────────────────────────────────────────
     "description": "Nonlinear hyperelasticity (Neo-Hookean) with large deformation",
     "weak_form": "δΠ(u;v) = 0, Π = ∫(μ/2)(I_C-3) - μ*ln(J) + (λ/2)(ln(J))² dx",
     "function_space": "Vector Lagrange order 1, geometry-nonlinear",

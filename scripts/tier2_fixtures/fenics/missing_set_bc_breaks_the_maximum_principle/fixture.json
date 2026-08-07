@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM time_dependent_heat::4: [Integration] Omitting `set_bc(b, bcs)` after the ghost update leaves the constrained rows carrying the assembled load instead of the prescribed values. Unlike the missing-apply_lifting case, this one IS visible in a min/max print. Signal: measured, T landed in [-1.0667, +0.9440] for boundary data \u2026 WHAT THIS RUNS: omitting `set_bc(b, bcs)` after the ghost update leaves the constrained rows carrying the assembled load instead of the prescribed values. Unlike the missing-apply_lifting case, this one IS visible in a min/max print. Unit square 32x32, T = 1 on the left wall, T = 0 on the right wall, T = 0 initially, no source, dt = 0.01, 20 backward-Euler steps, apply_lifting present throughout. Wrong variant: the loop never calls set_bc. Right variant: it does. Observed: with set_bc the range is exactly 'T in [0.0000, 1.0000]'; without it the temperature lands in [-1.0543, +0.9360] and the hot wall itself ends at -0.5169 - a negative temperature and a wall that never reaches its prescribed value, both impossible under the discrete maximum principle for a source-free problem with data in [0, 1]. Every KSP still reports converged reason 4 and the field stays finite. OBSERVED, copied from the run: with_set_bc_range_line=T in [0.0000, 1.0000]; with_set_bc_range_is_exactly_the_data_range=True; checked_ksp_reason_is_4_every_step=True; checked_min_is_negative=True; checked_hot_wall_never_reaches_its_prescribed_value=True; checked_violates_the_discrete_maximum_principle=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 4,
+  "covers": [
+    "time_dependent_heat::4"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "with_set_bc_range_line=T in [0.0000, 1.0000]",
+    "with_set_bc_range_is_exactly_the_data_range=True",
+    "checked_ksp_reason_is_4_every_step=True",
+    "checked_min_is_negative=True",
+    "checked_hot_wall_never_reaches_its_prescribed_value=True",
+    "checked_violates_the_discrete_maximum_principle=True",
+    "VERDICT=missing_set_bc_leaves_the_prescribed_rows_wrong"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=set_bc_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

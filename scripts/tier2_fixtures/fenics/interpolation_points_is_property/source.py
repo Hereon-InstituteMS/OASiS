@@ -32,11 +32,20 @@ catches: knowledge field says X, template field says not-X.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from dolfinx import fem
 from dolfinx import mesh as dmesh
 from mpi4py import MPI
+
+
+# Mutation control, added 2026-08-06 when this fixture was re-keyed onto the
+# claim it actually verifies (nonlinear_pde#8). T2_MUTATE=1 uses the PROPERTY
+# the way dolfinx 0.10 intends, so nothing is raised and the expectation
+# call_as_method_raises_typeerror=True is lost. Without this the fixture passed
+# whether or not the pathology existed, which is no evidence at all.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -56,7 +65,10 @@ def main() -> int:
     raised = False
     msg = ""
     try:
-        elem.interpolation_points()
+        if MUTATE:
+            _ = elem.interpolation_points          # the correct spelling
+        else:
+            elem.interpolation_points()            # the mistake
     except TypeError as exc:
         msg = str(exc)
         raised = "not callable" in msg

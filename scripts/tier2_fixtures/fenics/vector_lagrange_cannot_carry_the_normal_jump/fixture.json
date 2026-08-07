@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM maxwell::0: [Physics] MUST use H(curl) elements (Nedelec / N1curl) for Maxwell \u2014 standard Lagrange spaces lack the tangential continuity that the physical fields require. Signal: dolfinx.fem.form does NOT fail at form construction (ufl.curl is accepted on vector Lagrange and even on scalar Lagrange in 2D), so \u2026 WHAT THIS RUNS: Maxwell needs H(curl) elements. Lagrange spaces are silent at compile time -- ufl.curl is accepted on a vector Lagrange space and fem.form builds it without a word -- and the failure is numerical: a Lagrange field is continuous in ALL components, so it cannot carry the normal jump that a material interface puts into E, and its error stops going away. The test has an exact solution, so nothing has to be assumed. On the unit square with eps = 1 for x < 1/2 and eps = 100 for x > 1/2, the field E = (1/eps, 0) satisfies curl E = 0 exactly and (curl E, curl v) + (eps E, v) = (f, v) for the constant f = (1, 0) with the natural boundary condition, so it is the exact solution of the discretised problem's continuous counterpart. Its tangential component is continuous and its normal component jumps by a factor 100 at x = 1/2. Observed on dolfinx 0.10.0, meshes 8x8 / 16x16 / 32x32 with the interface on mesh lines: N1curl degree 1 reproduces the field to machine precision (relative L2 error ~1e-15, because the exact field lies in the space), while vector Lagrange degree 1 stalls at a relative L2 error of tens of percent that improves only at about half an order per refinement -- it is bridging a jump across one element, and no refinement fixes that. OBSERVED, copied from the run: form_compiles_on_the_space_under_test=True; n1curl_reproduces_the_exact_field_to_machine_precision=True; under_test_error_stays_above_5_percent=True; under_test_order_is_below_one=True; VERDICT=lagrange_cannot_carry_the_normal_jump_n1curl_is_exact. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "maxwell",
+  "pitfall_index": 0,
+  "mode": "python",
+  "covers": [
+    "maxwell::0"
+  ],
+  "expect_in_output": [
+    "form_compiles_on_the_space_under_test=True",
+    "n1curl_reproduces_the_exact_field_to_machine_precision=True",
+    "under_test_error_stays_above_5_percent=True",
+    "under_test_order_is_below_one=True",
+    "VERDICT=lagrange_cannot_carry_the_normal_jump_n1curl_is_exact"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=space_under_test_converged_like_hcurl"
+  ]
+}

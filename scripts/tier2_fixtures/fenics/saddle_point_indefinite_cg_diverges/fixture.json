@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#3. Tier-2 for fenics mixed_poisson#3: the mixed Poisson system is INDEFINITE. Conjugate gradients is only valid for a symmetric POSITIVE DEFINITE operator, so PETSc's CG bails out on it, and a plain preconditioned GMRES cannot reach a tight tolerance either \u2014 while the same matrix factorises fine under LU. Wrong variant: ksp_type=cg with a plain preconditioner. Right variant, and the mutation: a direct LU factorisation (here MUMPS). Well-posed RT1 x DG0 on a 16x16 unit square, flux prescribed on x = 0 and x = 1, natural pressure condition on y = 0 and y = 1, rtol 1e-8, at most 500 iterations. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_exited_with_an_indefinite_reason_code=True",
+    "cg_with_jacobi_also_exited_indefinite=True",
+    "gmres_with_the_default_restart_never_reached_the_tolerance=True",
+    "gmres_needed_more_than_a_hundred_iterations_even_with_restart_200=True",
+    "lu_factorised_the_same_matrix_and_gave_a_sane_pressure=True",
+    "VERDICT=mixed_poisson_saddle_point_is_indefinite_and_cg_refuses_it"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cg_handled_the_saddle_point"
+  ],
+  "timeout_seconds": 300
+}

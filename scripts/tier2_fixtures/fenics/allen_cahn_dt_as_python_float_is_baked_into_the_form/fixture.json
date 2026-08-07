@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM multiphase::8: [API] Every coefficient that you may want to change between steps (dt, eps, a mobility) must be a `fem.Constant`, updated in place with `dt.value = new_dt`. A bare Python float is baked into the compiled form. Signal: after rebinding a Python float the solve produces exactly the same numbers as \u2026 WHAT THIS RUNS: every coefficient you may want to change between steps (dt, eps, a mobility) has to be a `fem.Constant` updated in place with `dt.value = new_dt`. A bare Python float is baked into the compiled form, so rebinding the Python name does nothing at all - no error, no warning. Allen-Cahn droplet on a 32x32 unit square, 6 backward-Euler steps. Halfway through the loop the time step is \"changed\" from 1e-4 to 1e-2. Wrong variant: dt is a Python float and the change is a rebinding of that name. Right variant: dt is a `fem.Constant` and the change is `dt.value = 1e-2`. Each variant is run twice, once with the change and once without, and the two final fields are compared elementwise. Observed: the float variant's two fields are bit-identical (max difference exactly 0.0) while the Constant variant moves by O(1e-1); nothing is raised in either case and SNES converges in every step of all four runs. OBSERVED, copied from the run: float_rebind_changed_nothing=True; constant_update_changed_the_solution=True; nothing_was_raised_by_either_route=True; selected_dt_change_had_no_effect=True; selected_all_steps_converged=True; VERDICT=python_float_is_baked_in_only_a_constant_can_be_updated. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 8,
+  "covers": [
+    "multiphase::8"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "float_rebind_changed_nothing=True",
+    "constant_update_changed_the_solution=True",
+    "nothing_was_raised_by_either_route=True",
+    "selected_dt_change_had_no_effect=True",
+    "selected_all_steps_converged=True",
+    "VERDICT=python_float_is_baked_in_only_a_constant_can_be_updated"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=rebinding_the_float_did_change_the_solve"
+  ],
+  "timeout_seconds": 300
+}

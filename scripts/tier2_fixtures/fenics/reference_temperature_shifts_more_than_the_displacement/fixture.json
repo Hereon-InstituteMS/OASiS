@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#6: the reference temperature is real physics. The thermal strain is alpha*(T - T_ref), so leaving T_ref at 0 in an SI model sitting at room temperature adds a constant pre-strain of order alpha*300, and nothing warns about it. The same square (T = 300 + 50*x K, SI steel) is solved with T_ref = 0 and with T_ref = 300 K, twice: once held by a minimal constraint set and once with the left face clamped. Observed: * minimal constraints -- the deviatoric stress is the same to within round-off (relative difference below 1e-12; not literally bit-identical, the two linear solves differ in the last digits), and only the displacement changes, by about 7x: the extra pre-strain is a stress-free uniform expansion; * clamped face -- the displacement grows about 13x AND the deviatoric stress grows about 27x, so the error is not cosmetic; * the often-repeated \"the Newton iteration oscillates\" does not reproduce and cannot: the one-way thermo-elastic step is linear, so fem.petsc.NonlinearProblem/SNES converges in exactly 1 iteration for either T_ref, to a field bit-identical (np.array_equal) to the LinearProblem answer. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "minimal_constraints_dev_stress_is_unchanged_by_Tref=True",
+    "minimal_constraints_displacement_shifts=True",
+    "clamped_displacement_grows_several_fold=True",
+    "clamped_dev_stress_grows_several_fold=True",
+    "newton_converges_in_exactly_one_iteration=True",
+    "snes_answer_is_bit_identical_to_linearproblem=True",
+    "VERDICT=T_ref_zero_is_a_silent_pre_strain"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=T_ref_did_not_matter"
+  ]
+}

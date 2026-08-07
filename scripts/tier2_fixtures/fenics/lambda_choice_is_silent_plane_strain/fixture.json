@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics linear_elasticity#5: dolfinx has no plane-strain / plane-stress switch, so the lambda you type decides it and nothing tells you. Wrong variant: the 3D Lame lambda in a 2D form. The fixture builds and solves the same 2D problem with the 3D lambda and with the plane-stress lambda, captures Python warnings around BOTH runs, and checks that (a) not one warning was emitted by either, and (b) the two answers nevertheless differ well beyond solver noise. That pairing \u2014 different answer, zero diagnostics \u2014 is the claim. Mutation control: T2_MUTATE=1 uses the plane-stress lambda in both runs, so the answers agree and \"answers differ\" fails. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "linear_elasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "warnings_emitted=0",
+    "answers_differ=True",
+    "silent=True",
+    "VERDICT=lambda_choice_changes_answer_with_no_diagnostic"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=not_silent_or_no_difference"
+  ],
+  "timeout_seconds": 300
+}

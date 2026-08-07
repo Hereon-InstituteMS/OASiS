@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM time_dependent_heat::2: [Integration] `ksp.solve()` and `LinearProblem.solve()` never raise on solver failure; the dolfinx 0.10 docstring says outright that 'the user is responsible for asserting convergence of the KSP solver'. Assert `ksp.getConvergedReason() > 0` every step, or pass `\"ksp_error_if_not_converged\": \u2026 WHAT THIS RUNS: `ksp.solve()` and `LinearProblem.solve()` never raise on solver failure - the dolfinx 0.10 docstring says outright that the user is responsible for asserting convergence. Assert `getConvergedReason() > 0` every step, or pass `\"ksp_error_if_not_converged\": True`. One backward Euler heat step on a 16x16 unit square (T = 1 on the left wall). The crippled solve is Richardson with ksp_max_it = 1 and rtol = 1e-14: it returns normally, the returned Function is a Function, the converged reason is negative (DIVERGED_MAX_IT), and the script goes on to write an XDMF output file and would exit 0. For reference the same step is solved with 'preonly' (reason CONVERGED_ITS) and with CG (reason CONVERGED_RTOL), both positive. The remedy is checked too: with \"ksp_error_if_not_converged\": True the same crippled solve raises petsc4py.PETSc.Error carrying \"KSPSolve has not converged\". Mutation control: T2_MUTATE=1 selects a properly converging CG for the checked solve; the negative reason disappears. OBSERVED, copied from the run: The user is responsible for asserting convergence of the KSP solver; reason_name=DIVERGED_MAX_IT; solve_returned_a_function=True; solve_raised_nothing=True; selected_reason_is_negative=True; output_file_written_after_the_failed_solve=True; (+3 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "The user is responsible for asserting convergence of the KSP solver",
+    "reason_name=DIVERGED_MAX_IT",
+    "solve_returned_a_function=True",
+    "solve_raised_nothing=True",
+    "selected_reason_is_negative=True",
+    "output_file_written_after_the_failed_solve=True",
+    "preonly_reason_name=CONVERGED_ITS cg_reason_name=CONVERGED_RTOL",
+    "KSPSolve() has not converged, reason DIVERGED_ITS",
+    "VERDICT=ksp_failure_is_silent_and_the_script_completes"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=solver_failure_was_reported"
+  ],
+  "timeout_seconds": 300
+}

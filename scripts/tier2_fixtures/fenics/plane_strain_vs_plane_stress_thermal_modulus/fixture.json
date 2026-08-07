@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#4: plane strain and plane stress need a different lambda AND a different thermal modulus, and picking one of the two wrong pairings raises nothing at all. Free thermal expansion is measured on a body held by symmetry constraints only, so the answer is a pure expansion, and it is compared against 3D runs of the same material: a cube with u_z pinned on both z faces (plane strain) and the same cube with free z faces (plane stress). Observed at nu = 0.3 and 0.45, SI steel: * plane strain, lam = E*nu/((1+nu)*(1-2*nu)) with beta = (3*lam+2*mu)*alpha, reproduces the u_z-constrained 3D expansion; (3*lam+2*mu)*alpha equals E*alpha/(1-2*nu) to the last digit; * plane stress, lam_ps = 2*lam*mu/(lam+2*mu) with beta_ps = (2*lam_ps+2*mu)*alpha, reproduces the free-z 3D expansion, which is just alpha*dT; (2*lam_ps+2*mu)*alpha equals E*alpha/(1-nu) to the last digit; * plane strain gives the larger expansion and the larger deviatoric stress in a clamped bar, and both gaps widen as nu grows; * wrong recipe 1, lam_ps with the 3D modulus (3*lam_ps+2*mu)*alpha, overshoots the plane-stress expansion by about 23 % and matches neither 3D reference; * wrong recipe 2, E' = E/(1-nu**2) put into the plane-strain lambda, lands within about 1 % of plain plane strain at nu = 0.3 -- a silently wrong model, not an obvious one. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "plane_strain_2d_matches_3d_uz_constrained=True",
+    "plane_stress_2d_matches_3d_free_z=True",
+    "plane_strain_expands_and_stresses_more=True",
+    "both_gaps_widen_with_nu=True",
+    "plane_stress_lambda_with_three_lam_beta_overshoots=True",
+    "model_under_test_disagrees_with_3d_free_z_reference=True",
+    "Eprime_recipe_is_within_two_percent_of_plane_strain=True",
+    "VERDICT=plane_strain_and_plane_stress_need_different_beta"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_two_plane_models_agree"
+  ]
+}

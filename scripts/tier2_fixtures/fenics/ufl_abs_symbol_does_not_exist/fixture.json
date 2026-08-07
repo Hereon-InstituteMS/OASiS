@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#9: modern UFL has no ufl.Abs symbol \u2014 the DG upwind flux must be built with Python's builtin abs() (which UFL overloads for Expr operands) or with ufl.algebra.Abs as the explicit fallback. Wrong variant: writing the upwind trace as (bn('+') + ufl.Abs(bn('+')))/2 * u('+') + ... The failure happens at attribute-access time, before any assembly is attempted, with the literal text \"module 'ufl' has no attribute 'Abs'\". The fixture takes the absolute-value operator from a slot, builds the upwind flux with it, and reports what came back. It also checks the two documented replacements: ufl.algebra.Abs is a real class, and the builtin abs() applied to a UFL Expr returns an instance of exactly that class. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 9,
+  "mode": "python",
+  "expect_in_output": [
+    "ufl_Abs_raised_attributeerror=True",
+    "module 'ufl' has no attribute 'Abs'",
+    "upwind_flux_built=False",
+    "ufl_algebra_Abs_is_a_class=True",
+    "builtin_abs_returns_ufl_algebra_Abs=True",
+    "VERDICT=ufl_Abs_missing_use_builtin_abs"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=ufl_Abs_usable"
+  ]
+}

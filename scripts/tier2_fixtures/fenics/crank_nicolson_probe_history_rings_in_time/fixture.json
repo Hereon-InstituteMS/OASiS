@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM time_dependent_heat::5: [Numerical] Crank-Nicolson (theta = 0.5) rings in TIME when the initial condition is incompatible with the boundary data, and the ringing does not go away with mesh refinement. Backward Euler (theta = 1) is L-stable and does not. Signal: probe one interior point per step with \u2026 WHAT THIS RUNS: Crank-Nicolson (theta = 0.5) rings in TIME when the initial condition is incompatible with the boundary data, and the ringing does not go away with mesh refinement. Backward Euler (theta = 1) is L-stable and does not ring. Unit square, T = 0 initially, the left wall stepped from 0 to 1 at t = 0, no source, dt = 8*h^2 with h = 1/32 so that k*dt/h^2 = 8. One interior point, one cell from the wall, is probed every step with `dolfinx.fem.Function.eval` against a `dolfinx.geometry.bb_tree` cell candidate - exactly the detector the claim prescribes - and the same run is repeated on a 16x16 mesh to show refinement does not help. Observed on 32x32: Crank-Nicolson goes 0.6033, 0.9148, 0.8291, 0.9274, 0.8814 over the first five steps - ten sign changes in the increments over twelve steps - while backward Euler is monotone 0.7009, 0.8268, 0.8685, 0.8901, 0.9037 with zero sign changes. The oscillation stays inside [0, 1] (the measured field range is exactly [0.0000, 1.0000] for both schemes), so no bounds check and no min/max print can catch it; only the probe history shows it. The ringing is present on 16x16 as well as 32x32 at the same dt, so refinement does not remove it. OBSERVED, copied from the run: cn_probe_history_is_non_monotone=True; be_probe_history_is_monotone=True; cn_never_leaves_the_zero_one_range=True; cn_rings_on_both_meshes=True; be_monotone_on_both_meshes=True; selected_probe_history_is_non_monotone=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 5,
+  "covers": [
+    "time_dependent_heat::5"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "cn_probe_history_is_non_monotone=True",
+    "be_probe_history_is_monotone=True",
+    "cn_never_leaves_the_zero_one_range=True",
+    "cn_rings_on_both_meshes=True",
+    "be_monotone_on_both_meshes=True",
+    "selected_probe_history_is_non_monotone=True",
+    "VERDICT=crank_nicolson_rings_in_time_inside_the_physical_range"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_ringing_seen"
+  ],
+  "timeout_seconds": 300
+}

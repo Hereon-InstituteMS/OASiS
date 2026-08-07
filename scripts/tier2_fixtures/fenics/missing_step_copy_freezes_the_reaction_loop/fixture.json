@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#11: the time loop of a mixed reaction-diffusion system needs w_n.x.array[:] = w.x.array at the END of every step. Leave it out and every step re-solves the first one: nothing is raised, the SNES reports converged throughout, and the only visible tell is the Newton count collapsing. Initial condition per species with w_n.sub(i).interpolate(...), then w_n.x.scatter_forward(), then the Newton guess w.x.array[:] = w_n.x.array. Observed on dolfinx 0.10.0 (16x16 unit square, P1 x P1, 2A <-> B, 10 backward-Euler steps): with the copy min(w) walks 0.202966, 0.206283, 0.209852, ... and the Newton count is 3 (2 on the last two steps), reason 3 throughout without the copy min(w) is 0.202966 at all ten steps, the Newton count is 3, 1, 1, 1, 1, 1, 1, 1, 1, 1 and the converged reason switches from 3 (FNORM_RELATIVE) to 4 (SNORM_RELATIVE) from the second step on -- \"converged because the update was tiny\", which is exactly what re-solving a solved step does NOTE the claim's exact tell was a count of 0 from the third step on; here the floor is 1 with reason 4, so the collapse is real but not literally to zero. Nothing is raised and the reason stays positive in both runs. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 11,
+  "mode": "python",
+  "expect_in_output": [
+    "with_copy_solution_advances_every_step=True",
+    "with_copy_newton_count_is_steady=True",
+    "without_copy_solution_is_frozen=True",
+    "without_copy_newton_count_collapses_to_one_or_zero=True",
+    "without_copy_reason_switches_to_snorm_relative=True",
+    "snes_reported_converged_throughout=True",
+    "VERDICT=missing_step_copy_re_solves_the_same_step"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_loop_advanced_without_the_copy"
+  ],
+  "timeout_seconds": 300
+}

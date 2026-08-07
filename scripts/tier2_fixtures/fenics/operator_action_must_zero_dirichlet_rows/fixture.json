@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM matrix_free_poisson::2: [Numerical] Zero the Dirichlet entries of the output of EVERY operator application (`bc.set(y.array, alpha=0.0)` at the end of action_A). Without it the constrained rows feed the unconstrained ones and CG has no fixed point. Signal: rnorm/rnorm0 grows monotonically - 1.4e+12 at iteration 100, \u2026 WHAT THIS RUNS: zero the Dirichlet entries of the output of EVERY operator application (`bc.set(y.array, alpha=0.0)` at the end of action_A). Without it the constrained rows feed the unconstrained ones and CG has no fixed point. Wrong variant: action_A that assembles the action and returns without zeroing the constrained entries. Right variant: the same action_A with bc.set(y.array, alpha=0.0) as its last statement. Observed on dolfinx 0.10.0, ONE rank (this is a serial failure, it needs no MPI): with the zeroing removed, rnorm/rnorm0 grows monotonically at every logged iteration -- of order 1e0 at iteration 20, 1e1 at 60, 1e3 at 100, 1e8 at 160, 1e13 at 200 -- CG never reaches rtol inside 200 iterations, and the returned field reaches max(u) of order 1e27 while min(u) is still EXACTLY the prescribed boundary minimum, so a min-only sanity print looks innocent. The identical run with the zeroing converges in about 100 iterations and stays in the physical range. Magnitudes depend on mesh and degree (16x16, P2 here); only the monotone growth and the 1e10-plus overflow are asserted. OBSERVED, copied from the run: no_zeroing_rnorm_over_rnorm0_at_iter_100=; no_zeroing_converged=False; residual_ratio_grows_monotonically=True; diverging_run_reached_max_iter_without_rtol=True; max_u_exceeds_1e10=True; min_u_still_equals_the_prescribed_boundary_minimum=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": [
+    "matrix_free_poisson::2"
+  ],
+  "expect_in_output": [
+    "no_zeroing_rnorm_over_rnorm0_at_iter_100=",
+    "no_zeroing_converged=False",
+    "residual_ratio_grows_monotonically=True",
+    "diverging_run_reached_max_iter_without_rtol=True",
+    "max_u_exceeds_1e10=True",
+    "min_u_still_equals_the_prescribed_boundary_minimum=True",
+    "same_run_with_zeroing_converges=True",
+    "VERDICT=unzeroed_action_makes_cg_diverge_while_min_u_looks_innocent"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=unzeroed_action_converged_anyway"
+  ],
+  "timeout_seconds": 300
+}

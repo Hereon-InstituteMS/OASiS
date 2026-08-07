@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM maxwell::4: [API] Edge elements (basix.ElementFamily.N1E / 'Nedelec 1st kind H(curl)') have DOF ordering by edge, not by node. Setting tangential BCs requires interpolating onto the edge basis, not the nodal basis. Signal: dirichletbc on an HCurl space defined with a vector-valued function silently sets only \u2026 WHAT THIS RUNS: N1curl degrees of freedom are EDGE MOMENTS, not nodal components, so a tangential boundary condition has to be interpolated into the edge basis. Writing component values into the dof array instead leaves the tangential trace wrong with no complaint from anything. FINDING against the claim text: the claim says a dirichletbc \"defined with a vector-valued function silently sets only the first component on each edge\". That does NOT reproduce on dolfinx 0.10.0 -- the vector-CONSTANT spelling is rejected outright with RuntimeError: Creating a DirichletBC using a Constant is not supported when the Constant size is not equal to the block size of the constrained (sub-)space. Use a fem::Function to create the fem::DirichletBC. The silent version of the mistake is one level lower: filling the boundary dofs with the intended component value by hand. Wrong variant: f.x.array[boundary_dofs] = 1.0 for the intended uniform field E = (1, 0). Observed: the boundary tangential trace error is O(1) (the correct edge moments for that field are 0 and +-0.125 on an 8x8 mesh, never 1.0), and nothing raises. OBSERVED, copied from the run: constant_spelling_raised=True; Creating a DirichletBC using a Constant is not supported when the Constant size is not equal to the block size; dof_values_are_edge_moments_not_components=True; setting_boundary_values_raised=False; interpolated_bc_reproduces_the_tangential_trace=True; under_test_tangential_trace_is_wrong=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "maxwell",
+  "pitfall_index": 4,
+  "mode": "python",
+  "covers": [
+    "maxwell::4"
+  ],
+  "expect_in_output": [
+    "constant_spelling_raised=True",
+    "Creating a DirichletBC using a Constant is not supported when the Constant size is not equal to the block size",
+    "dof_values_are_edge_moments_not_components=True",
+    "setting_boundary_values_raised=False",
+    "interpolated_bc_reproduces_the_tangential_trace=True",
+    "under_test_tangential_trace_is_wrong=True",
+    "VERDICT=edge_moments_must_be_interpolated_handwritten_dofs_are_silently_wrong"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=handwritten_dof_values_were_fine"
+  ]
+}

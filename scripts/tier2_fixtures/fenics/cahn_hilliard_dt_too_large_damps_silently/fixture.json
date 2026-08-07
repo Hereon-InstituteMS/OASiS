@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM cahn_hilliard::0: [Numerical] The system is stiff and the time step must be small, but the failure at a wrong dt is NOT what is usually claimed. Executed on a unit square with lmbda = 1e-2, M = 1, theta = 0.5 and a 0.63 +/- 0.01 random initial concentration, the string 'DIVERGED_FNORM_NAN' never appeared at any dt. \u2026 WHAT THIS RUNS: the Cahn-Hilliard system is stiff and dt must be small, but a wrong dt does NOT announce itself as DIVERGED_FNORM_NAN. Unit square 24x24, P1 x P1 mixed, lmbda = 1e-2, M = 1, theta = 0.5, initial concentration 0.63 +/- 0.01 uniform noise (seeded). Wrong variant: a comfortable-looking dt = 1.0. Observed on dolfinx 0.10.0 it converges in 2-4 Newton iterations per step with no error of any kind, and the concentration is flattened onto the initial mean -- min and max agree with the initial mean to four significant figures after two steps -- so no phase separation can ever occur. An intermediate dt = 1e-4 instead makes Newton fail outright (DIVERGED_MAX_IT / DIVERGED_LINE_SEARCH). Only dt = 5e-6 both converges and keeps the perturbation alive. DIVERGED_FNORM_NAN is seen at no dt. OBSERVED, copied from the run: too_large_dt_converged_without_error=True; too_large_dt_field_is_the_initial_mean_to_4_digits=True; big_dt_converges_but_flattens=True; intermediate_dt_newton_fails=True; intermediate_dt_failure_is_max_it_or_line_search=True; small_dt_converges_and_keeps_the_perturbation=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 0,
+  "mode": "python",
+  "covers": [
+    "cahn_hilliard::0"
+  ],
+  "expect_in_output": [
+    "too_large_dt_converged_without_error=True",
+    "too_large_dt_field_is_the_initial_mean_to_4_digits=True",
+    "big_dt_converges_but_flattens=True",
+    "intermediate_dt_newton_fails=True",
+    "intermediate_dt_failure_is_max_it_or_line_search=True",
+    "small_dt_converges_and_keeps_the_perturbation=True",
+    "diverged_fnorm_nan_never_seen=True",
+    "VERDICT=too_large_dt_is_silent_watch_the_spread_not_the_reason"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=dt_was_fine"
+  ]
+}

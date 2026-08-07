@@ -1,0 +1,25 @@
+{
+  "_comment": "PLACEHOLDER COVERS TRIMMED 2026-08-06: it also named heat::10, which missing_apply_lifting_silently_wrong already owns. A claim may have only one owner or the coverage fraction double-counts it; this fixture keeps time_dependent_heat::0, where the transient min/max blindness is stated.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 0,
+  "covers": [
+    "time_dependent_heat::0"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "with_lifting_range_line_every_step=T in [0.0000, 1.0000]",
+    "checked_range_line_every_step=T in [0.0000, 1.0000]",
+    "checked_prints_the_same_reassuring_range_line_at_every_step=True",
+    "checked_ksp_reason_is_4_every_step=True",
+    "with_lifting_residual_at_machine_zero=True",
+    "checked_stored_heat_is_more_than_ten_times_too_small=True",
+    "checked_free_dof_residual_is_order_one=True",
+    "VERDICT=missing_apply_lifting_is_invisible_to_a_min_max_print"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=lifting_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#7: for pure advection (eps = 0) DROP the interior-penalty diffusion block entirely \u2014 do not just set eps small. Wrong variant: the SIPG block left in place with eps = 0, written the way it is usually written by hand, i.e. the consistency terms carrying eps but the penalty spelled alpha/h_avg * jump(u, n).jump(v, n) * dS without an eps factor. At eps = 0 the consistency terms vanish and that penalty does NOT: it stays in the operator as a large artificial coupling that annihilates the very jumps the DG space exists for. Measured on 16x16 triangles, DG1, b = (1, 0), inflow profile 16*y^2*(1-y)^2 so the exact solution is that same profile transported along x: * the assembled matrix with the eps-free penalty differs from the pure-advection matrix by a Frobenius-scale term of order 1e2, i.e. it did not go away; * the jump seminorm sqrt(assemble(jump(uh)**2 * dS)) collapses by more than three orders of magnitude \u2014 the solution is being forced continuous across element faces, which is exactly the over-stabilisation the claim describes; * the L2 error against the exact solution gets worse, not better. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "eps_free_penalty_survives_at_eps0=True",
+    "template_penalty_is_a_multiplicative_zero=True",
+    "jump_structure_crushed_by_penalty=True",
+    "l2_error_gets_worse_with_penalty=True",
+    "ksp_converged_in_every_run=True",
+    "VERDICT=eps_free_penalty_over_stabilises_pure_advection"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=penalty_block_vanished_by_itself"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics convection_diffusion#1: the SUPG tau must be computed PER CELL from ufl.CellDiameter inside the dolfinx fem.form. A single global fem.Constant tau, taken from the coarse mesh, does not shrink as h -> 0 and leaves a fixed streamline-diffusion floor. Wrong variant: tau = fem.Constant(msh, tau(h_coarse)) reused on every mesh. Right variant: tau built from ufl.CellDiameter so it tracks the local cell. MMS on the unit square, u = sin(pi x) sin(pi y), b = (1, 1), kappa = 0.01, P1, N = 8 / 16 / 32. Observed on dolfinx 0.10.0: CellDiameter tau gives L2 errors 9.7546e-03 -> 2.5916e-03 -> 8.7443e-04 (rates 1.91, 1.57); the frozen tau gives 9.7546e-03 -> 4.1174e-03 -> 3.9380e-03, i.e. rate 0.06 on the last refinement \u2014 the error stops moving, exactly the claim's correction that a constant tau does not halve the rate, it STALLS convergence. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "convection_diffusion",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "percell_tau_keeps_converging_above_rate_1p4=True",
+    "primary_tau_rate_collapses_below_0p3=True",
+    "primary_error_barely_moves_ratio_below_1p3=True",
+    "VERDICT=global_constant_tau_stalls_supg_convergence"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=constant_tau_converged_like_the_percell_one"
+  ],
+  "timeout_seconds": 300
+}

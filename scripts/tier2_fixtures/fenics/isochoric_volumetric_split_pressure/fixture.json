@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics hyperelasticity#5: the isochoric/volumetric split F = F_iso*F_vol with F_vol = J^(1/d)*I and W = W_iso(F_iso) + kappa/2*(J-1)^2 gives a clean, bounded post-processed pressure dU/dJ = kappa*(J-1) -- but the inherited signal for the OTHER half of the claim does NOT reproduce. Claimed: \"without the split, the discrete pressure Function at Gauss points oscillates wildly element-to-element\", implying the split removes the oscillation. Measured here on a nearly incompressible block (mu = 1, kappa = 1e4, 5 % stretch applied in 4 increments, every SNES solve converging with reason 3), reading the hydrostatic pressure -tr(sigma)/d into a DG0 space: * pure-displacement P1 WITH the split: the element pressures span about 43 times their mean; * the same P1 model with the split switched off (coupled mu/2*(tr C - d) - mu*ln J + lambda/2*(ln J)^2, same bulk modulus): the pressures are the same to better than 1 % in standard deviation -- the split changes nothing about the oscillation; * a mixed (u, p) P2/P1 space with the identical isochoric energy: the span drops to about 1.2 times the mean and the standard deviation falls by three orders of magnitude. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "hyperelasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "split_volumetric_pressure_dUdJ_is_bounded=True",
+    "every_solve_converged=True",
+    "pressure_under_test_oscillates_element_to_element=True",
+    "switching_the_split_off_changes_the_oscillation_by_under_one_percent=True",
+    "mixed_u_p_space_removes_the_oscillation=True",
+    "VERDICT=split_alone_does_not_smooth_the_pressure_mixed_space_does"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=pressure_field_was_smooth_without_a_mixed_space"
+  ]
+}

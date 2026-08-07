@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#10: dolfinx.fem.petsc.NonlinearProblem takes petsc_options_prefix as a keyword-ONLY argument, is driven by calling problem.solve() directly, and exposes a petsc4py SNES as problem.solver. Wrong variants: constructing it without the prefix, and wrapping it in the legacy dolfinx.nls.petsc.NewtonSolver. Steady reaction-diffusion -0.01*lap(u) + 5*u^2 = 1 on an 8x8 unit square with u = 1 on the whole boundary. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "NonlinearProblem.__init__() missing 1 required keyword-only argument: 'petsc_options_prefix'",
+    "petsc_options_prefix_is_required=True",
+    "'NonlinearProblem' object has no attribute 'a'",
+    "legacy_newtonsolver_cannot_wrap_it=True",
+    "problem_solver_is_a_petsc4py_snes=True",
+    "converged_reason_is_positive=True",
+    "iteration_count_is_reported=True",
+    "solution_is_finite=True",
+    "VERDICT=nonlinearproblem_needs_the_prefix_and_owns_a_snes"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=prefix_or_newtonsolver_was_accepted"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,26 @@
+{
+  "_comment": "CLAIM matrix_free_poisson::10: [Numerical] Do not use the difference against an interpolated manufactured field as a proxy for discretisation error in this template. For a polynomial reference field of degree <= the element degree, the Galerkin solution equals the interpolant to machine precision, so what such a check actually \u2026 WHAT THIS RUNS: do not use the difference against an interpolated manufactured field as a proxy for discretisation error in this template. For a polynomial reference field of degree <= the element degree the Galerkin solution equals the interpolant to machine precision, so what such a check actually measures is the CG stopping tolerance. Wrong variant: report max|u_h - I(u_exact)| as \"the error\" for the matrix-free CG solve. Right variant: a residual, a flux balance or an energy identity, none of which needs a reference solution. Reference fields (both harmonic, so f = 0 and both lie exactly in the space): degree 1 uses 0.5*x + 0.3*y + 0.2, degree 2 uses x**2 - y**2. OBSERVED, copied from the run: matrix_free_difference_is_at_the_krylov_tolerance_1em6=True; matrix_free_difference_did_not_fall_under_refinement=True; lu_minus_interpolant_is_machine_precision=True; cg_rtol=1e-06; lu_minus_interpolant=; matrix_free_minus_interpolant=; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 10,
+  "mode": "python",
+  "covers": [
+    "matrix_free_poisson::10"
+  ],
+  "expect_in_output": [
+    "matrix_free_difference_is_at_the_krylov_tolerance_1em6=True",
+    "matrix_free_difference_did_not_fall_under_refinement=True",
+    "lu_minus_interpolant_is_machine_precision=True",
+    "cg_rtol=1e-06",
+    "lu_minus_interpolant=",
+    "matrix_free_minus_interpolant=",
+    "reference_free_relative_galerkin_residual=",
+    "VERDICT=interpolant_difference_measures_the_krylov_tolerance"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "all_converged=False",
+    "VERDICT=interpolant_difference_behaved_like_a_discretisation_error"
+  ],
+  "timeout_seconds": 300
+}

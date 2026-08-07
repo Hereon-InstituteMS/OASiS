@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#1: the thermal term carries no trial function, so it is a linear functional and belongs in L, never in the bilinear form a. Wrong variant: a = inner(sigma_elastic(u) - beta*(T - T_ref)*Identity(d), eps(v))*dx. The subtraction mixes an expression with no form arguments into one that carries the test function, and UFL refuses it at form-compile time. Observed signal: ArityMismatch raised out of ufl/algorithms/check_arities.py, message \"Adding expressions with non-matching form arguments () vs ('v_1',).\" The fix is L = beta*(T - T_ref)*div(v)*dx, which uses inner(c*Identity(d), eps(v)) == c*div(v); the fixture also checks that identity numerically so the correction is not taken on faith. Mutation control: T2_MUTATE=1 keeps the thermal term out of a and puts it in L, so nothing raises. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "ufl.algorithms.check_arities.ArityMismatch: Adding expressions with non-matching form arguments () vs ('v_1',).",
+    "arity_mismatch_caught_by_except_Exception=False",
+    "div_v_identity_holds=True",
+    "thermal_term_in_a_is_an_arity_mismatch=True",
+    "VERDICT=thermal_term_belongs_in_L_not_in_a"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_arity_mismatch"
+  ]
+}

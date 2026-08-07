@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics biharmonic#0: the C0 interior-penalty rule of thumb alpha = 4*(k+1)^2 is a STABILITY floor, not an accuracy optimum, and an under-penalised scheme does not diverge under refinement \u2014 it converges from a blown-up constant. Wrong variant: taking alpha = 4*(k+1)^2 = 36 for P2 as \"the\" value. Right variant: alpha = 1, which on this problem is stable and roughly six times more accurate. C0-IP MMS on the unit square, u = sin(pi x) sin(pi y), simply supported, P2, N = 8 / 16 / 32, L2 error. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "biharmonic",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "rule_of_thumb_error_exceeds_alpha_one_by_more_than_3x=True",
+    "both_penalties_converge_at_the_same_order=True",
+    "tiny_alpha_coarse_mesh_error_exceeds_ten=True",
+    "tiny_alpha_still_converges_under_refinement=True",
+    "VERDICT=penalty_rule_of_thumb_is_a_stability_floor_not_an_accuracy_optimum"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=rule_of_thumb_penalty_was_the_best_choice"
+  ],
+  "timeout_seconds": 900
+}

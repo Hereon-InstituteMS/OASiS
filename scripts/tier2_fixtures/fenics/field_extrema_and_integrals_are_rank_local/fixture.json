@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for fenics magnetostatics#9: field extrema and integrals are per-rank quantities, and nothing tells you. The fixture itself is a single process: it writes a helper script and launches it with the interpreter's own mpiexec on 2 ranks, then parses the per-rank lines. The helper solves the 2D coil magnetostatics problem on a 24x24 rectangle with a small coil in the corner at (-0.35, -0.35), post-processes B = curl(Az) into DG0, and reports B.x.array max and fem.assemble_scalar(Jz*dx) exactly as they come. Observed on dolfinx 0.10.0: rank 0 reports max|B| = 3.642e-02 and total current 0.0 A, rank 1 reports 4.387e-02 and 1.5625e+04 A; the local arrays carry 25 ghost rows each, the two integrals sum to the true one, and there is no warning of any kind. FINDING against the claim text: the claim says 'none of them is the true global maximum'. That is too strong -- one rank's rank-local maximum IS the global maximum (rank 1 here, because that rank owns the peak), the other is 17 % below it; the fixture pins the measured version, that the ranks disagree and at least one is wrong. Mutation control: T2_MUTATE=1 makes the helper reduce first, comm.allreduce(owned_max, MPI.MAX) and comm.allreduce(assemble_scalar, MPI.SUM), and every rank then reports the same correct numbers. If mpiexec cannot be found or the two ranks do not report, the fixture prints VERDICT=could_not_launch_two_ranks and exits 1, and that verdict is in forbid_in_output so a missing MPI cannot be mistaken for a pass. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run.",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 9,
+  "mode": "python",
+  "covers": ["magnetostatics::9"],
+  "expect_in_output": [
+    "ranks_that_reported=2",
+    "array_includes_ghost_entries=True",
+    "ranks_report_different_maxima=True",
+    "ranks_report_different_integrals=True",
+    "at_least_one_rank_reports_a_wrong_max=True",
+    "per_rank_integrals_sum_to_the_global_one=True",
+    "child_returncode=0",
+    "VERDICT=extrema_and_integrals_are_rank_local_without_a_reduction"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=every_rank_reported_the_same_global_numbers",
+    "VERDICT=could_not_launch_two_ranks"
+  ],
+  "timeout_seconds": 300
+}

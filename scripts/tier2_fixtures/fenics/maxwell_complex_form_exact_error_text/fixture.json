@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics maxwell#1: the exact text a REAL build produces for a complex Maxwell form, and the denial of two strings that do not appear. Mutation control: T2_MUTATE=1 uses a real coefficient; the form builds. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "maxwell",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "form_raised=True",
+    "Unexpected complex value in real expression",
+    "array_assign_raised=True",
+    "old_string_cannot_convert_present=False",
+    "old_string_imaginary_discarded_present=False",
+    "VERDICT=real_build_rejects_complex_at_form_and_array"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=complex_accepted"
+  ]
+}

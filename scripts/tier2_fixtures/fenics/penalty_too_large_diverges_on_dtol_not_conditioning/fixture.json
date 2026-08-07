@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics contact#2: a penalty stiffness that is too large makes SNES diverge, and what it reports is a divergence-TOLERANCE trip, not any condition-number message. Wrong variant: the same penalty obstacle problem as contact#1 solved cold at gamma = 1e12. The run is executed as a child process with every monitor PETSc offers switched on (snes_monitor, ksp_monitor, snes_converged_reason, ksp_converged_reason), so the parent can inspect the complete set of lines the library emits rather than assert something about it. Observed. The only lines PETSc produces are SNES function norms, KSP residual norms, \"Residual norms for <prefix> solve.\", the linear converged-reason line and the nonlinear converged-reason line. There is no condition-number warning of any kind \u2014 the previously quoted \"PETSc condition-number warning > 1e14\" does not exist. What does appear is Nonlinear t2_dtol_ solve did not converge due to DIVERGED_DTOL iterations 1 with getConvergedReason() = -9, while in the very same run the inner linear solve reports Linear t2_dtol_ solve converged due to CONVERGED_ITS iterations 1 so the linear algebra is perfectly healthy. The mechanism is measured, not assumed: the SNES function norm after the first Newton step is 1.053800e+10 at gamma = 1e12 and 1.053800e+01 at gamma = 1e3 \u2014 it grows in direct proportion to the penalty, which is why it crosses the default snes_divergence_tolerance of 10000 relative to the initial residual long before conditioning matters. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "slot_reason_is_diverged_dtol=True",
+    "slot_diverged_after_one_iteration=True",
+    "solve did not converge due to DIVERGED_DTOL",
+    "inner_linear_solve_reported_healthy=True",
+    "no_condition_number_warning_anywhere=True",
+    "only_monitor_and_reason_lines_emitted=True",
+    "residual_grows_in_proportion_to_the_penalty=True",
+    "VERDICT=stiff_penalty_trips_dtol_no_conditioning_message"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=stiff_penalty_reported_conditioning"
+  ],
+  "timeout_seconds": 300
+}

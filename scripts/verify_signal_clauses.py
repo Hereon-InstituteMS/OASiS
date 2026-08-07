@@ -732,8 +732,16 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "mesh", "create_box", "create_rectangle",
             "create_unit_square", "create_unit_cube",
             "Mesh", "CellType", "cell_dim",
-            "PETScKrylovSolver", "PETScLUSolver",
-            "NonlinearProblem", "NewtonSolver",
+            # 2026-08-03: "PETScKrylovSolver" and "PETScLUSolver" were
+            # REMOVED from this allowlist. Neither exists anywhere in
+            # dolfinx 0.10 — hasattr is False on dolfinx, on
+            # dolfinx.fem.petsc and on dolfinx.nls.petsc. They are legacy
+            # DOLFIN names. Keeping them here let a Signal: clause that
+            # named a class the backend cannot emit pass the Tier-0
+            # code-symbol gate, i.e. the gate certified fabrication. Use
+            # LinearProblem(...).solver (a petsc4py KSP) or the SNES/KSP
+            # tokens below instead.
+            "LinearProblem", "NonlinearProblem", "NewtonSolver",
             "PETSc", "MPI",
             "grad", "div", "curl", "inner", "outer", "dot",
             "tr", "sym", "skew", "det", "Identity",

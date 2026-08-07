@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#6: the inflow value of a DG problem must be imposed WEAKLY through the boundary integral. A strong fem.dirichletbc on a DG space is a silent no-op. Wrong variant: locate the inflow facets, call fem.locate_dofs_topological on the DG1 space, build a fem.dirichletbc with value 1 and hand it to the assembler. Nothing complains at any stage. Observed on an 8x8 unit square with the x = 0 facets: locate_dofs_topological returns ZERO dofs on the DG1 space (the same call on a Lagrange1 space returns 9), fem.dirichletbc accepts that empty index array without raising, and the assembled system is completely unaware of it \u2014 the solution is identically zero whether the boundary value is 0 or 1. Imposing the same value weakly, through -(b.n - |b.n|)/2 * u_D * v * ds, changes the answer to max|u| = 1. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "dg1_locate_dofs_returns_empty=True",
+    "lagrange1_locate_dofs_returns_dofs=True",
+    "dirichletbc_on_dg_constructed_without_error=True",
+    "slot_boundary_value_has_no_effect=True",
+    "weak_imposition_does_impose_the_value=True",
+    "VERDICT=strong_dirichletbc_on_dg_is_a_silent_noop"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=strong_dirichletbc_on_dg_did_something"
+  ],
+  "timeout_seconds": 300
+}

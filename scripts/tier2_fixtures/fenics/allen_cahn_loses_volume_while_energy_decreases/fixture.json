@@ -1,0 +1,22 @@
+{
+  "_comment": "CLAIM multiphase::2: [Physics] Allen-Cahn does not conserve the phase volume: int(phi) dx drifts monotonically because the curvature flow shrinks the droplet. This is the physics of the model, not a bug, but it means int(phi) dx is NOT usable as a correctness check. Signal: measured with a resolved interface (eps = \u2026 WHAT THIS RUNS: Allen-Cahn does not conserve the phase volume. int(phi) dx drifts monotonically because the curvature flow shrinks the droplet, so int(phi) dx is NOT usable as a correctness check. The free energy E(phi) = int eps/2 |grad phi|^2 + (phi^2-1)^2/(4 eps) dx is the Lyapunov functional that IS usable, and it does hold at every step. Same droplet (r = 0.25, eps = 3h) on a 32x32 unit square, 25 backward Euler steps of dt = 1e-3, every step converged. Allen-Cahn moves int(phi) dx by several percent, monotonically, while the energy falls at every single step. The claim's remedy - \"if your application needs volume conservation, the model must change to Cahn-Hilliard\" - is the mutation: the same droplet under Cahn-Hilliard holds int(phi) dx to a relative 1e-13, because taking q = 1 in its first equation makes conservation an identity of the discrete form. Mutation control: T2_MUTATE=1 runs Cahn-Hilliard; the volume drift vanishes while the energy still decreases monotonically. OBSERVED, copied from the run: every_step_converged=True; volume_drift_exceeds_one_percent=True; volume_drift_is_monotone=True; energy_is_non_increasing_at_every_step=True; VERDICT=volume_drifts_while_the_energy_is_a_lyapunov_functional. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 2,
+  "covers": [
+    "multiphase::2"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "every_step_converged=True",
+    "volume_drift_exceeds_one_percent=True",
+    "volume_drift_is_monotone=True",
+    "energy_is_non_increasing_at_every_step=True",
+    "VERDICT=volume_drifts_while_the_energy_is_a_lyapunov_functional"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=volume_was_conserved"
+  ],
+  "timeout_seconds": 300
+}

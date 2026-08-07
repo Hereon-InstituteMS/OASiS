@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics heat#12: the space constructor is fem.functionspace with a lower-case s. fem.FunctionSpace exists but is the internal class, and fem.VectorFunctionSpace is gone entirely. Mutation control: T2_MUTATE=1 uses the factory; nothing raises. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 12,
+  "mode": "python",
+  "expect_in_output": [
+    "class_call_raised=True",
+    "VectorFunctionSpace_exists=False",
+    "factory_vector_ok=True",
+    "VERDICT=only_the_lowercase_factory_works"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=class_form_usable"
+  ]
+}

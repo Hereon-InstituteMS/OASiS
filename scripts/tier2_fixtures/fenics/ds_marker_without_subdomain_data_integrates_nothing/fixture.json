@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics heat#7: ufl.ds(marker) with no subdomain_data attached integrates over nothing and returns 0.0, with no error and no warning. Mutation control: T2_MUTATE=1 attaches the meshtags via ufl.Measure, and the same integral returns the real boundary length. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "bare_is_exactly_zero=True",
+    "tagged_is_boundary_length=True",
+    "VERDICT=untagged_ds_marker_silently_integrates_nothing"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=untagged_ds_marker_did_something"
+  ]
+}

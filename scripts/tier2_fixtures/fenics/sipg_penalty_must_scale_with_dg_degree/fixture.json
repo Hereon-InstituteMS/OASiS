@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#4: the SIPG penalty must scale with the DG degree \u2014 alpha = 4*(degree+1)**2, not a fixed number. Wrong variant: alpha = 10, a value that is perfectly safe at degree 1 and 2, on a degree-3 DG discretisation of the same advection-diffusion problem (eps = 0.005, b = (1, 0.5), f = 1, u_D = 0 on a 16x16 triangle mesh). alpha is a fem.Constant, so the two runs share one compiled form and differ in nothing else. Observed: at degree 3 with alpha = 10 the solution reaches max|u| of order 1e3 for data of size 1 on the unit square, and KSPConvergedReason is 4 \u2014 the solver reports success. Nothing in the solver output mentions it; only a magnitude check on uh.x.array does. Raising alpha to 4*(3+1)**2 = 64 brings the same case back to max|u| ~ 1.2. The degree-1 control run with the same fixed alpha = 10 stays at max|u| ~ 1.3, which is why a fixed penalty survives casual testing. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "deg3_fixed_penalty_blows_up=True",
+    "deg3_ksp_still_reports_converged=True",
+    "deg3_scaled_penalty_is_order_one=True",
+    "deg1_same_fixed_penalty_is_fine=True",
+    "VERDICT=sipg_penalty_must_scale_with_degree"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=fixed_penalty_is_safe_at_degree_3"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for fenics stokes_darcy#1. Tier-2 for fenics stokes_darcy#1: dolfinx.mesh.create_submesh has the signature create_submesh(msh, dim, entities) and returns FOUR objects in 0.10 - (Mesh, EntityMap, EntityMap, numpy int32 array), i.e. the sub mesh, the entity map, the vertex map and the geometry node map. Wrong variant: the three-value unpacking that older code and older tutorials use, `sub, cell_map, vertex_map = mesh.create_submesh(...)`. Right variant: unpack four. Observed on dolfinx 0.10.0: the three-value unpacking raises \"ValueError: too many values to unpack (expected 3)\". The two middle returns are dolfinx.mesh.EntityMap objects whose public members are dim, sub_topology, sub_topology_to_topology and topology; they are NOT index arrays, so `cell_map[0]` raises \"TypeError: 'EntityMap' object is not subscriptable\". The annotated return type reads tuple[Mesh, EntityMap, EntityMap, npt.NDArray[np.int32]]. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "ValueError: too many values to unpack (expected 3)",
+    "tuple[Mesh, EntityMap, EntityMap, npt.NDArray[np.int32]]",
+    "TypeError: 'EntityMap' object is not subscriptable",
+    "create_submesh_returns_four=True",
+    "return_types_are_mesh_entitymap_entitymap_ndarray=True",
+    "three_value_unpack_raised_valueerror=True",
+    "entity_maps_are_not_index_arrays=True",
+    "entity_map_members_are_the_documented_four=True",
+    "VERDICT=create_submesh_returns_four_and_three_unpack_fails"
+  ],
+  "forbid_in_output": [
+    "three_value_unpack_succeeded=True",
+    "VERDICT=create_submesh_still_returns_three"
+  ],
+  "timeout_seconds": 300
+}

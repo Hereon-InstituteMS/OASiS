@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics magnetostatics#1. Tier-2 for fenics magnetostatics#1: max|B| is NOT a convergence indicator for a problem with a permeability jump. The field is singular at the material corner and the jump follows the mesh, so refining the mesh makes the reported maximum GROW while the KSP reports converged every time. The mesh-independent check that does work is the boundary flux of nu*grad(Az), which equals minus the total current at every resolution. Coil disc (r = 0.2 m, Jz = 1e6 A/m^2) inside a square iron ring with mu_r = 1000, air elsewhere, Az = 0 on the outer boundary, solved at 8x8, 16x16 and 32x32 with MUMPS-LU. Mutation control: T2_MUTATE=1 removes the permeability jump (mu_r = 1 everywhere). max|B| then converges instead of growing, which is what a convergence indicator is supposed to do. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "every_ksp_reported_converged=True",
+    "max_B_grows_monotonically_under_refinement=True",
+    "flux_ratio_is_one_at_every_level=True",
+    "VERDICT=max_B_tracks_the_mesh_while_the_flux_check_is_invariant"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=max_B_is_a_usable_convergence_indicator_here"
+  ]
+}

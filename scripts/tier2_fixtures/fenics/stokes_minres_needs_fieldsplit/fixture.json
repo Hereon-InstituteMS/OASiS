@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics stokes#3. Tier-2 for fenics stokes#3: a block preconditioner is what makes an iterative Stokes solve scale. Without PCFIELDSPLIT the saddle-point spectrum makes the MinRes iteration count grow with every refinement; with a fieldsplit that puts an AMG solve on the velocity block and the pressure mass matrix on the pressure block, the count stops moving. Wrong variant: MinRes with a point Jacobi preconditioner on the monolithic Taylor-Hood matrix. Right variant: PCFIELDSPLIT over the velocity/pressure index sets, hypre BoomerAMG on the velocity block and the pressure mass matrix M_p on the other, both as an additive block-diagonal MinRes preconditioner and as a Schur-complement FGMRES preconditioner with PC.SchurPreType.USER = M_p. P2/P1 channel flow on the unit square, parabolic inflow at x = 0, no-slip on y = 0 and y = 1, natural outflow at x = 1, rtol 1e-8, N = 8 / 16 / 32. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "stokes",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_iterations_grow_by_more_than_1p6x_per_refinement=True",
+    "additive_fieldsplit_iterations_stay_within_30_percent=True",
+    "schur_fieldsplit_iterations_stay_within_30_percent=True",
+    "primary_needs_more_than_ten_times_the_schur_iterations=True",
+    "VERDICT=minres_without_fieldsplit_scales_with_the_mesh"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=minres_without_fieldsplit_already_scaled"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#3: in 2D the textbook shorthand sigma = C:(eps(u) - alpha*dT*I) is wrong when I is spelled ufl.Identity(2) and the Lame constants are plane strain, because tr(Identity(2)) is 2, not 3. The thermal modulus silently becomes (2*lam + 2*mu)*alpha instead of (3*lam + 2*mu)*alpha. The fixture measures the free thermal expansion of a body held only by symmetry constraints (u_k = 0 on the x_k = 0 face), so the answer is a pure expansion and can be read off the far corner. Observed: with plane-strain constants the 2D shorthand returns exactly alpha*dT -- the plane-STRESS free expansion -- while the stiffness in the same form is still plane strain; the explicit (3*lam + 2*mu)*alpha spelling returns the larger plane-strain value. The ratio is (2*lam + 2*mu)/(3*lam + 2*mu), 0.769 at nu = 0.3 and 0.690 at nu = 0.45, so the error grows with nu. The same comparison in 3D gives bit-identical fields, which is why the mistake survives a 3D test. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "ratio_is_two_lam_plus_two_mu_over_three_lam_plus_two_mu=True",
+    "error_grows_with_nu=True",
+    "two_d_shorthand_returns_the_plane_stress_expansion=True",
+    "in_3d_the_two_spellings_are_bit_identical=True",
+    "VERDICT=identity2_shorthand_loses_lam_times_alpha_in_2d"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=shorthand_and_explicit_agree_in_2d"
+  ]
+}

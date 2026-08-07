@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics convection_diffusion#3: SUPG in space needs IMPLICIT time stepping. The SUPG test function v + tau*b.grad(v) also weights the time derivative, so an explicit Euler step is unstable at time steps that satisfy the ordinary convective CFL condition. Wrong variant: M_supg u^{n+1} = M_supg u^n - dt*K_supg u^n (explicit Euler, lumped nowhere, the SUPG mass matrix on both sides). Right variant: the same spatial form with theta = 1, (M_supg + dt*K_supg) u^{n+1} = M_supg u^n. Rotating-hill test so nothing leaves the domain: unit square, 16x16 P1, b = 2*pi*(-(y-0.5), (x-0.5)), kappa = 1e-3, a Gaussian hill, u = 0 on the whole boundary, dt = 0.9 * h / max|b| \u2014 i.e. a convective CFL number of 0.9, below the classical limit of 1. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "convection_diffusion",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "time_step_is_below_the_convective_cfl_limit=True",
+    "primary_amplifies_by_more_than_1e6=True",
+    "implicit_supg_peak_never_grows=True",
+    "VERDICT=explicit_euler_with_supg_diverges_below_the_convective_cfl"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=explicit_supg_was_stable"
+  ],
+  "timeout_seconds": 400
+}

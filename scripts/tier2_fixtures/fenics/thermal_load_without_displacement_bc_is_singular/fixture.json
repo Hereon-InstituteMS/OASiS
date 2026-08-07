@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#5: a thermal load is self-equilibrated, so a model with no displacement Dirichlet condition has a singular stiffness matrix -- and the default direct solver does not say so. Measured here, on a thermally loaded square/cube with SI steel constants: * the dense spectrum of the assembled operator holds exactly 3 (2D) or 6 (3D) eigenvalues below 1e-8 times the largest, the rigid translations and rotations; adding a minimal constraint set (3 scalar constraints in 2D, 6 in 3D) removes all of them; * {\"ksp_type\": \"preonly\", \"pc_type\": \"lu\"} raises nothing, prints nothing, and getConvergedReason() returns 4 (CONVERGED_ITS) on the singular system; * for the self-equilibrated thermal load the returned field is finite and the true residual is at round-off, so nothing looks wrong; for a load with a net resultant (gravity) the same silent path returns max|u| of order 1e7 m with a relative true residual around 1e-4, eleven orders worse than the constrained solve; * an iterative solver is the one that complains: ksp_type cg with \"ksp_error_if_not_converged\": True raises petsc4py.PETSc.Error: error code 91. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "two_d_has_exactly_three_rigid_modes=True",
+    "three_d_has_exactly_six_rigid_modes=True",
+    "lu_returns_converged_its_and_says_nothing=True",
+    "net_load_gives_huge_displacement_and_bad_residual=True",
+    "petsc4py.PETSc.Error: error code 91",
+    "cg_with_error_if_not_converged_raises_petsc_error_91=True",
+    "VERDICT=unconstrained_thermal_model_is_singular_and_lu_is_quiet"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=stiffness_was_not_singular"
+  ]
+}

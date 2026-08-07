@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM time_dependent_heat::6: [API] In a theta-scheme, never multiply a form integrand by a bare Python float that can evaluate to exactly 0.0. UFL folds the product to Zero and the resulting integral has no domain. Signal: `ValueError: This integral is missing an integration domain.` raised at form-construction time for theta \u2026 WHAT THIS RUNS: in a theta-scheme, never multiply a form integrand by a bare Python float that can evaluate to exactly 0.0. UFL folds the product to Zero and the resulting integral has no domain. Wrong variant: `(1.0 - theta) * ufl.dot(ufl.grad(T_n), ufl.grad(v)) * ufl.dx` with theta = 1.0 (backward Euler), which raises `ValueError: This integral is missing an integration domain.` while the very same expression is fine for theta = 0.5. Right variant: wrap the weight as `fem.Constant(msh, 1.0 - theta)`. It builds for every theta including 1.0, it gives the same answer as an explicitly hand-written backward-Euler form, and theta can then be changed in place without rebuilding the form. Observed: the ValueError is raised at form-construction time (at the `* ufl.dx`, before `fem.form` is ever called), and the Constant-weighted theta = 1.0 form matches the hand-written backward-Euler solution to machine precision. OBSERVED, copied from the run: theta_1p0_bare_float_error=ValueError: This integral is missing an integration domain.; theta_0p5_bare_float_error=none; constant_weight_builds_and_matches_backward_euler=True; bare_float_theta_0p5_builds_fine=True; bare_float_theta_1p0_raised_value_error=True; VERDICT=bare_float_theta_1p0_has_no_integration_domain. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 6,
+  "covers": [
+    "time_dependent_heat::6"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "theta_1p0_bare_float_error=ValueError: This integral is missing an integration domain.",
+    "theta_0p5_bare_float_error=none",
+    "constant_weight_builds_and_matches_backward_euler=True",
+    "bare_float_theta_0p5_builds_fine=True",
+    "bare_float_theta_1p0_raised_value_error=True",
+    "VERDICT=bare_float_theta_1p0_has_no_integration_domain"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=bare_float_weight_was_accepted"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#7: stiff kinetics need an implicit treatment. An explicit (theta = 0) reaction term diverges at a step size that backward Euler (theta = 1) handles without effort -- and the SNES keeps reporting CONVERGED while it happens, because each step really is solved correctly; it is the SCHEME that is unstable. Two-species 2A <-> B on a 24x24 unit square, D = 0.01, forward rate 100, dt = 0.05, at most 12 steps, blow-up declared when max|c| exceeds 1e6. The reaction term is evaluated as theta*r(w) + (1 - theta)*r(w_n); diffusion stays implicit in both runs, so theta alone is under test. Observed on dolfinx 0.10.0: theta = 0 passes 1e6 at step 3 with the SNES returning a positive converged reason on every one of those steps, while theta = 1 completes all 12 steps with max|c| below 1.0. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "backward_euler_completes_every_step=True",
+    "backward_euler_stays_below_one=True",
+    "explicit_reaction_blows_up=True",
+    "explicit_reaction_blows_up_within_five_steps=True",
+    "snes_reported_converged_on_every_diverging_step=True",
+    "VERDICT=explicit_reaction_is_unstable_while_snes_says_converged"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=explicit_reaction_was_stable"
+  ],
+  "timeout_seconds": 300
+}

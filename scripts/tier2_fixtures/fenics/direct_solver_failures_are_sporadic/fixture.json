@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#2. Tier-2 for fenics mixed_poisson#2: no direct solver is robust across every (cell type, RT degree, mesh size) combination of this saddle point, the failures are SPORADIC rather than monotone in degree or mesh size, and the worst case is a solver that reports success and returns a wrong answer. That is why a mass-balance check is mandatory and why superlu_dist must not be used as a blind fallback. Wrong variant: pick one direct solver, trust KSPConvergedReason. Right variant, and the mutation: run every configuration through the sequential umfpack factoriser, which was clean on all of them, and check the mass balance anyway. Each configuration runs in its OWN process, re-executed from this file, because a failed factorisation leaves the PETSc objects in a state you do not want the next configuration to inherit. The mass-balance residual is the l2 norm of the assembled residual of (div(sigma_h) + f) * q * dx over the DG pressure space, which is exactly zero for a correct discrete solve. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "some_configuration_returned_a_negative_converged_reason=True",
+    "mumps_and_superlu_dist_failure_sets_do_not_overlap=True",
+    "mumps_workspace_option_fixed_exactly_the_failing_case=True",
+    "a_converged_solve_returned_a_broken_mass_balance=True",
+    "umfpack_was_clean_on_every_configuration_it_ran=True",
+    "VERDICT=direct_solver_failures_are_sporadic_so_the_mass_balance_check_is_mandatory"
+  ],
+  "forbid_in_output": [
+    "VERDICT=every_direct_solver_was_robust_here"
+  ],
+  "timeout_seconds": 900
+}

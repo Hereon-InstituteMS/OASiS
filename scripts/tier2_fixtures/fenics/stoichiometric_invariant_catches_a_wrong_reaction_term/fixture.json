@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#9: use the stoichiometric conservation law as the correctness check. For 2A <-> B with no-flux boundaries the combination A + 2B is conserved to round-off independently of mesh, degree and step size, because the constant test function (1, 2) lies in the mixed space and the reaction terms cancel identically in the discrete residual. Wrong variant here: the A equation carries r instead of 2r -- one wrong stoichiometric factor, nothing else. It still solves, the SNES still converges, and the species profiles still look plausible. Observed on dolfinx 0.10.0 (16x16 unit square, P1 x P1, 25 backward-Euler steps): with the correct factor the invariant assembled with dolfinx.fem.assemble_scalar(dolfinx.fem.form((A_h + 2*B_h)*ufl.dx)) drifts by about 1e-15 relative while the species ranges move a long way; with the wrong factor it drifts by O(10 percent) -- immediately, and with no other complaint from the solver. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 9,
+  "mode": "python",
+  "expect_in_output": [
+    "species_ranges_really_moved=True",
+    "correct_stoichiometry_holds_the_invariant_to_roundoff=True",
+    "wrong_factor_still_converged=True",
+    "wrong_factor_drifts_by_more_than_a_percent=True",
+    "VERDICT=the_invariant_catches_the_wrong_stoichiometric_factor"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_invariant_did_not_separate_them"
+  ],
+  "timeout_seconds": 300
+}

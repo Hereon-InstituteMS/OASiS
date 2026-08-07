@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics hyperelasticity#2: in the near-incompressible regime the pure-displacement formulation locks, and the fix is a mixed (u, p) space -- but the severity depends strongly on the polynomial degree, so the ratio has to be measured rather than assumed. The measurement is the linear analogue the claim itself points at: a 2D cantilever, 4 x 1, clamped at x = 0, shear traction on the tip, solved on two meshes at nu = 0.4999 and at nu = 0.3, with the tip deflection compared against a P2/P1 Taylor-Hood (u, p) reference on the same mesh. Observed on dolfinx 0.10.0: at nu = 0.4999 the pure-displacement P1 tip deflection is 12.6x (8x2 mesh) and 12.5x (16x4 mesh) below the Taylor-Hood answer, and refining does NOT close the gap -- that is locking. Pure-displacement P2 lands within 5.2 % and 1.8 % of Taylor-Hood on the same meshes, so the severe locking is a P1 phenomenon, not a P2 one. At nu = 0.3 the same P1 space is only 1.9x / 1.2x below the reference and improves with refinement, i.e. ordinary discretisation error rather than locking. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "hyperelasticity",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "under_test_is_many_times_too_stiff_at_nu_4999=True",
+    "refinement_does_not_cure_it=True",
+    "p2_is_within_six_percent_of_taylor_hood=True",
+    "at_nu_030_the_same_space_is_not_locked=True",
+    "VERDICT=p1_locks_at_nu_4999_p2_is_close_to_taylor_hood"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_locking_measured"
+  ]
+}

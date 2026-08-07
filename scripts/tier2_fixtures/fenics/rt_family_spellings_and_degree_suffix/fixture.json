@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#8: both spellings of Raviart-Thomas work and build the SAME space -- basix.ufl.element(\"RT\", domain.basix_cell(), k) and the tuple shorthand fem.functionspace(domain, (\"RT\", k)). The names that really do fail are the old DOLFIN degree-suffixed ones (\"RT1\", \"P1\"), which raise ValueError \"Unknown element family: ...\", and ufl.FiniteElement, which no longer exists on the ufl module at all. The wrong variant is therefore writing the degree into the family name and reaching for ufl.FiniteElement. The right one is the family name plus a separate degree argument. Observed on dolfinx 0.10.0 / basix 0.10.0: both RT spellings give 56 dofs on a 4x4 unit square and compare equal as elements; \"RT1\" raises ValueError: Unknown element family: RT1 with cell type triangle; ufl.FiniteElement raises AttributeError: module 'ufl' has no attribute 'FiniteElement'. Passing \"RT\" to fem.functionspace raises nothing at all, so the AttributeError about dolfinx.fem.FiniteElement quoted in older knowledge cannot be produced this way. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "rt_spellings_give_the_same_dof_count=True",
+    "rt_spellings_give_the_same_element=True",
+    "tuple_shorthand_raised_nothing=True",
+    "Unknown element family: RT1 with cell type triangle",
+    "degree_suffixed_family_rejected=True",
+    "module 'ufl' has no attribute 'FiniteElement'",
+    "ufl_finiteelement_is_gone=True",
+    "VERDICT=both_rt_spellings_agree_only_the_legacy_names_fail"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=legacy_spellings_were_accepted"
+  ],
+  "timeout_seconds": 300
+}

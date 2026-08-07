@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#6: species concentrations really do go negative, and the cause is the step size relative to h^2, not merely \"steep gradients\". Backward Euler -- the most stable integrator there is -- undershoots when dt drops below about h^2/(6D), because the consistent P1 mass matrix is not an M-matrix. Pure diffusion (D = 1) of a sharp blob of height 1.0 on a 32x32 unit square, all boundaries no-flux, 5 backward-Euler steps. h^2/(6D) = 1.628e-04 here. Observed on dolfinx 0.10.0: min(c) over the five computed states stays non-negative at dt = 1e-2 and reaches -1.939e-02 at dt = 1e-4, an undershoot of about two percent of the peak. The total mass is conserved to round-off in BOTH runs (0.06738281 -> 0.06738281), so a mass check will not catch it. Integrating the time-derivative term with ufl.dx(metadata={\"quadrature_rule\": \"vertex\", \"quadrature_degree\": 1}) lumps the mass matrix and removes the undershoot at the same dt. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "large_dt_stays_non_negative=True",
+    "small_dt_undershoots_below_minus_1e_3=True",
+    "undershoot_is_a_percent_of_the_peak=True",
+    "total_mass_is_conserved_anyway=True",
+    "vertex_lumping_removes_the_undershoot=True",
+    "VERDICT=small_dt_undershoots_and_mass_does_not_notice"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_undershoot_observed"
+  ],
+  "timeout_seconds": 300
+}

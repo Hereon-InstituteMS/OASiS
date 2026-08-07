@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for fenics stokes#: ufl.FiniteElement / VectorElement / MixedElement / TensorElement were REMOVED from UFL in 2024+; dolfinx 0.10 / ufl 2025.2 / basix 0.10 only ship basix.ufl.element(..., shape=(gdim,)) / mixed_element / blocked_element. The stokes generator used the removed forms — runs would fail with AttributeError on the first element construction. Catalog falsification #24, found via the new fenics_source_scanner.py introspection of all dolfinx/ufl/basix APIs that catalog generators name. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 SYNTHETIC (stokes::98, an index no pitfall occupies): ufl.FiniteElement, VectorElement, MixedElement and TensorElement are gone from ufl and basix.ufl replaces them. RE-KEYED 2026-08-06 off stokes::1, which is the enclosed-flow pressure-nullspace claim and has nothing to do with element classes. No pitfall in the current fenics inventory states the element-class removal \u2014 the nearest, reaction_diffusion::0, is about mixed_element's argument list and is covered elsewhere \u2014 so this fixture is real evidence for no listed claim and is keyed synthetically rather than parked on a live one.",
   "backend": "fenics",
   "physics": "stokes",
-  "pitfall_index": 1,
+  "pitfall_index": 98,
   "mode": "python",
   "expect_in_output": [
     "removed_in_ufl={'FiniteElement': False, 'VectorElement': False, 'MixedElement': False, 'TensorElement': False}",
@@ -13,5 +13,6 @@
     "Traceback",
     "FAIL:",
     "AttributeError"
-  ]
+  ],
+  "covers": []
 }

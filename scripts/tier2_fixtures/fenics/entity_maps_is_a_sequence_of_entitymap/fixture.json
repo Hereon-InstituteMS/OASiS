@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for fenics stokes_darcy#2. Tier-2 for fenics stokes_darcy#2: a form that mixes a submesh Function with a parent-mesh measure must be compiled with entity_maps, and in 0.10 that argument is a SEQUENCE of EntityMap objects. Wrong variants: (a) omit entity_maps entirely, (b) pass the older dict form entity_maps={submesh: index_array}. Right variant: entity_maps=[cell_map] with the EntityMap that create_submesh returned. Observed on dolfinx 0.10.0: omitting the argument raises \"RuntimeError: Incompatible mesh. argument entity_maps must be provided.\"; the dict form raises \"TypeError: __init__(): incompatible function arguments.\" whose printed overload list contains \"entity_maps: collections.abc.Sequence[dolfinx.cpp.mesh.EntityMap]\". With entity_maps=[cell_map] the form compiles and assembles, and so does the rectangular coupling block between a submesh trial function and a parent test function (81 x 45 on this 8x8 mesh). The silent trap reproduces too: integrating the same integrand over the WHOLE parent domain gives exactly the sub-region value, with no warning. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "RuntimeError: Incompatible mesh. argument entity_maps must be provided.",
+    "TypeError: __init__(): incompatible function arguments.",
+    "entity_maps: collections.abc.Sequence[dolfinx.cpp.mesh.EntityMap]",
+    "form_without_entity_maps_raised_runtimeerror=True",
+    "dict_entity_maps_raised_typeerror=True",
+    "typeerror_names_the_entitymap_sequence=True",
+    "sequence_entity_maps_compiles_and_assembles=True",
+    "rectangular_coupling_block_assembles=True",
+    "whole_domain_integral_silently_equals_sub_region=True",
+    "VERDICT=entity_maps_must_be_a_sequence_of_entitymap"
+  ],
+  "forbid_in_output": [
+    "form_without_entity_maps_compiled=True",
+    "form_with_dict_entity_maps_compiled=True",
+    "VERDICT=entity_maps_was_not_required_or_dict_still_accepted"
+  ],
+  "timeout_seconds": 300
+}

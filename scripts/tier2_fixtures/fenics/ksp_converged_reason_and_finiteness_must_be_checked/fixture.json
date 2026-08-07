@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#2: ALWAYS check ksp.getConvergedReason() and the finiteness of the solution array \u2014 a DG solve can fail completely and still leave the process looking healthy. Wrong variant: the script that solves and prints. It is reproduced literally: the fixture writes a small child script that assembles the DG advection operator with the boundary term written as the raw dot(b, n)*u*v*ds (the defect that makes the operator singular), solves with LU, prints the solution range and stops. The child is then executed as a separate process so its exit status is a real measurement and not an assertion. Observed: the child prints \"u: min=inf, max=inf\" and exits with status 0. The parent repeats the same solve in-process and finds KSPConvergedReason = -11 (KSP_DIVERGED_PC_FAILED) and every single dof non-finite. Nothing was raised, nothing was logged, the exit status is that of a successful run. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "solve_raised_nothing=True",
+    "reason_is_diverged_pc_failed=True",
+    "all_dofs_nonfinite=True",
+    "isfinite_check_would_catch_it=True",
+    "unchecked_script_exit_status_is_zero=True",
+    "unchecked_script_printed -> u: min=inf, max=inf",
+    "VERDICT=silent_inf_with_exit_status_zero"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=failure_was_not_silent"
+  ],
+  "timeout_seconds": 300
+}

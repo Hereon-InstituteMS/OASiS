@@ -1,0 +1,19 @@
+{
+  "_comment": "CLAIM nearly_incompressible_elasticity::1: [Numerical] Inf-sup (LBB) condition: pressure FunctionSpace must be STRICTLY SMALLER than the displacement FunctionSpace. Signal: [measured on the Stokes analogue 2026-08-03, dolfinx 0.10.0] SVD of the bc-applied saddle-point matrix on an 8x8 unit square gives numerical null dimension 1 for P2/P1 \u2026 WHAT THIS RUNS: the inf-sup (LBB) condition demands a pressure space STRICTLY SMALLER than the displacement space. The claim's signal is an SVD of the bc-applied saddle-point matrix on the Stokes analogue: numerical null dimension 1 for P2/P1 Taylor-Hood (the constant pressure alone) but 8 for equal-order P1/P1, and the extra kernel vectors are pressure modes. The fixture assembles the lid-driven Stokes operator on an 8x8 unit square with Dirichlet velocity on every boundary facet, converts it to dense, and counts the relative singular values below a tolerance for the tested pair and for Taylor-Hood. It then inspects the kernel vectors of the tested pair: what fraction of their norm sits on pressure dofs, and how much of that is NOT the constant mode. Mutation control: T2_MUTATE=1 tests the P2/P1 pair, whose kernel is the constant pressure and nothing else. OBSERVED, copied from the run: taylor_hood_null_dimension_is_one=True; tested_nullity_exceeds_taylor_hood=True; nullity_is_tolerance_robust=True; kernel_lives_on_the_pressure_block=True; kernel_contains_non_constant_pressure_modes=True; VERDICT=equal_order_pressure_space_adds_kernel_modes. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "nearly_incompressible_elasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "taylor_hood_null_dimension_is_one=True",
+    "tested_nullity_exceeds_taylor_hood=True",
+    "nullity_is_tolerance_robust=True",
+    "kernel_lives_on_the_pressure_block=True",
+    "kernel_contains_non_constant_pressure_modes=True",
+    "VERDICT=equal_order_pressure_space_adds_kernel_modes"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=tested_pair_has_only_the_constant_pressure_kernel"
+  ]
+}

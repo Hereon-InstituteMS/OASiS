@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics heat#10: in a manual assemble-once loop, omitting apply_lifting leaves the Dirichlet columns unaccounted for. The KSP still reports converged, the field is finite, and the answer is wrong. The detector the claim recommends is the one used here: assemble the step residual with the computed solution substituted and look at the NON-Dirichlet dofs. With apply_lifting they are at machine zero; without, they are O(1). Mutation control: T2_MUTATE=1 restores apply_lifting. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "with_lifting_residual_at_machine_zero=True",
+    "no_lifting_converged_anyway=True",
+    "no_lifting_field_is_finite=True",
+    "no_lifting_residual_is_order_one=True",
+    "VERDICT=missing_apply_lifting_is_a_converged_wrong_answer"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=lifting_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

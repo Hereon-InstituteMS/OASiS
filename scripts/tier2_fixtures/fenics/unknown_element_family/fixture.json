@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: FEniCSx (dolfinx) raises ValueError 'Unknown element family' when basix is asked for a family it doesn't have. Generic name-typo Signal family \u2014 pitfall index 96 reserved for cross-cutting FEniCSx element-family typos. [Re-linked to catalog: index 96 \u2192 8 after fenics linear_elasticity Table-1 promotion 2026-05-31.]",
+  "_comment": "Tier-2 SYNTHETIC (linear_elasticity::90, the sentinel range the coverage metric excludes): dolfinx.fem.functionspace rejects an element family basix does not register. RE-KEYED 2026-08-06 off linear_elasticity::8, an index past the end of that pitfall list \u2014 the list stops at 7, so the key named nothing. The claim it actually defends is linear_elasticity::6, and that is already owned by p1_family_name_rejected_cg_deprecated, which additionally pins that 'CG' still works with a deprecation warning. Crediting no claim is better than miscrediting one, so this moves to the sentinel range rather than onto a live slot.",
   "backend": "fenics",
   "physics": "linear_elasticity",
   "pitfall_index": 6,
@@ -12,5 +12,8 @@
     "Unknown element family"
   ],
   "forbid_in_output": [],
-  "_key_correction": "off-by-one drift: keyed 8 where the list ends at 7; the element-family claim IS index 6"
+  "_key_correction": "off-by-one drift: keyed 8 where the list ends at 7; the element-family claim IS index 6. Verified during consolidation: fenics/linear_elasticity has 8 pitfalls (0..7) and #6 is '[API] dolfinx.fem.functionspace rejects element family names that basix does not register' \u2014 the claim this fixture exercises. knowledge/fenics-verify had re-keyed it to the >=90 sentinel range, which would have credited no claim at all; kept at 6 and made explicit via covers.",
+  "covers": [
+    "linear_elasticity::6"
+  ]
 }

@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#5: FacetNormal is outward and the avg/jump operators live on a two-sided facet, so anything built from n inside a dS integral needs a '+'/'-' side. Wrong variant: bn = ufl.dot(b, n) used directly in a dS integrand, as in bn * avg(u) * jump(v) * dS. The UFL form object is built without a murmur; the failure comes later, out of fem.form, as ValueError: Discontinuous type Jacobian must be restricted. The same integrand with ufl.dot(b, n('+')) compiles. The fixture also checks the correction the claim makes to its own older text: the string \"side specifier required on '+' or '-' for restricted facet integrals\" does not appear anywhere in what UFL raises on this release, and jump(v, n) is fine unrestricted because the operator restricts n itself. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "ufl_form_object_built_without_error=True",
+    "fem_form_compiled=False",
+    "ValueError: Discontinuous type Jacobian must be restricted.",
+    "old_quoted_message_absent=True",
+    "restricted_normal_compiles=True",
+    "jump_v_n_needs_no_side_specifier=True",
+    "VERDICT=dS_integrand_needs_a_restricted_facet_normal"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=unrestricted_normal_accepted_in_dS"
+  ],
+  "timeout_seconds": 300
+}

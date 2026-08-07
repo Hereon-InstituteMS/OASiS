@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics eigenvalue#2: eps.setDimensions(nev, ncv) asks for nev eigenvalues out of an ncv-dimensional search space, and the way to find out whether you got them is the COUNT, not the reason code. Wrong variant: treating a non-zero eps.getConvergedReason() as an error, the way a return code from a C routine is usually read. Right variant: eps.getConverged() >= nev. Observed on dolfinx 0.10.0 / slepc4py 3.24.3, 16x16 P1 Dirichlet Laplacian (A assembled with bcs, B the mass matrix with bcs and diag=0.0, shift-and- invert): both (nev=4, ncv=8) and (nev=4, ncv=5) return nconv=4 with getConvergedReason() == 1, and they return the same four eigenvalues; the tight ncv only costs iterations (52 instead of 7). So \"reason != 0 means failure\" flags a perfectly good solve as a failure. The enum confirms the sign convention: CONVERGED_TOL is +1 while DIVERGED_ITS, DIVERGED_BREAKDOWN and DIVERGED_SYMMETRY_LOST are -1, -2, -3. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "eigenvalue",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "successful_solve_reports_reason_code_positive_one=True",
+    "every_documented_failure_code_is_negative=True",
+    "both_ncv_settings_returned_nconv_at_least_nev=True",
+    "tight_ncv_returned_the_same_eigenvalues=True",
+    "primary_health_check_calls_this_solve_a_failure=True",
+    "VERDICT=reason_code_is_positive_on_success_so_check_the_count"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=reason_code_test_behaved_as_a_c_error_code"
+  ],
+  "timeout_seconds": 300
+}

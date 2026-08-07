@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for fenics helmholtz#2: at high wavenumber an off-the-shelf preconditioner gives up on the Helmholtz operator and the shifted-Laplacian preconditioner is what makes GMRES work. The fixture solves k = 100 on a 32x32 unit square, P1, complex PETSc build, Gaussian source, un-restarted GMRES, rtol 1e-8, 1000 iterations, with three preconditioners: ILU, Jacobi, and a petsc4py python PC that applies the exact inverse of the same form assembled with the complex shift (1 + 0.5i)k^2. Observed on dolfinx 0.10.0 in the fenicsc (complex128) env: ILU returns reason -3 DIVERGED_MAX_IT with a relative residual of 8.685e+00, i.e. the residual is larger than the right-hand side after 1000 iterations; the shifted-Laplacian PC converges in 197 iterations, Jacobi in 509. TWO CORRECTIONS to the claim text are pinned as computed checks. First, the claim's '~10 iterations per convergence' for the shifted Laplacian is false: shifted_laplacian_converged_in_about_ten_iterations=False (197 iterations), and the count scales with k (82 at k = 50 on the same mesh), which is the known O(k) behaviour of a beta = O(1) shift. Second, the claim's 'ILU/Jacobi stagnates at residual ~1e-2' is true only of ILU here; Jacobi does converge on a problem this small. Mutation control: T2_MUTATE=1 puts the shifted-Laplacian PC under test in place of ILU, and the divergence signal disappears. Verified by execution 2026-08-06 with /home/alexander/miniconda3/envs/fenicsc/bin/python (dolfinx 0.10.0, complex128 PETSc); every expect_in_output string was copied from that run.",
+  "backend": "fenics",
+  "physics": "helmholtz",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": ["helmholtz::2"],
+  "env": {"FENICS_PYTHON": "/home/alexander/miniconda3/envs/fenicsc/bin/python"},
+  "expect_in_output": [
+    "scalar_type=complex128",
+    "under_test_pc_fails_to_converge=True",
+    "under_test_residual_exceeds_the_rhs=True",
+    "shifted_laplacian_converges=True",
+    "shifted_laplacian_beats_jacobi=True",
+    "shifted_laplacian_converged_in_about_ten_iterations=False",
+    "shifted_laplacian_iteration_count_grows_with_k=True",
+    "VERDICT=default_pc_diverges_and_the_shifted_laplacian_carries_the_solve"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=default_pc_was_good_enough",
+    "VERDICT=needs_the_complex_build"
+  ],
+  "timeout_seconds": 300
+}
