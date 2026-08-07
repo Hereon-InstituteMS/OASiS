@@ -74,10 +74,11 @@ BASELINE = {
     "skfem/elasticity_mms_convergence",
     "skfem/poisson_mms_convergence",
     "skfem/stokes_mms_convergence",
-    # Blames a missing gmsh package; gmsh 4.15.1 imports fine on this host and
-    # dolfinx 0.10 merely renamed the submodule to dolfinx.io.gmsh. All three
-    # asserted strings are labels the script prints unconditionally.
-    "fenics/gmshio_install_gap_diagnostic",
+    # fenics/gmshio_install_gap_diagnostic LEFT THIS LIST on 2026-08-07, which
+    # is what the list is for. It was here because all three of its asserted
+    # strings were labels the script printed unconditionally, so no environment
+    # answer could turn it red. It now asserts a VERDICT that discriminates a
+    # rename from an install gap, with a mutation control proved to kill.
 }
 
 
