@@ -372,9 +372,21 @@ def main() -> int:
                 row["discriminates"] = None
             elif kind == "env":
                 row["mutated"] = run_one(d, backend, True, args.timeout)
+                mst = row["mutated"]["status"]
                 # The verdict that matters: green unmutated AND red mutated.
-                row["discriminates"] = (row["unmutated"]["status"] == "PASS"
-                                        and row["mutated"]["status"] != "PASS")
+                #
+                # "Red" means FAIL — the fixture ran and its assertions did not
+                # hold. It does NOT mean TIMEOUT or ERROR. Crediting those was
+                # an overcount: a sweep found five rows whose entire claim to
+                # discriminating rested on the mutated run being killed by the
+                # clock, which says nothing about whether the mutation was
+                # detected. A fixture slow enough to time out under mutation
+                # would earn the same credit if its assertion were absent.
+                row["discriminates"] = (
+                    True if (row["unmutated"]["status"] == "PASS"
+                             and mst == "FAIL")
+                    else False if mst == "PASS"
+                    else None)
             else:
                 row["mutated"] = run_recipe_mutation(d, CHECK_ONE)
                 st = row["mutated"]["status"]
