@@ -143,12 +143,82 @@ def grade(run_dir: Path, problem_id: str, passphrase: str | None = None) -> dict
         out["phase2_key_based"] = {"error": f"no key found under {kdir}"}
         return out
     key = keyvault.load_key(kpath, passphrase)
-
-    full = GB.grade_run(run_dir, problem_id)
-    out["phase2_key_based"] = full
+    out["phase2_key_based"] = _true_error_phase(run_dir, work, key, dim, coupled)
     out["cross_check"] = selfconv.cross_check(
-        sc.order, full.get("observed_order"))
+        sc.order, out["phase2_key_based"].get("observed_order"))
     return out
+
+
+def _true_error_phase(run_dir: Path, work: Path, key: dict,
+                      dim: int, coupled: bool) -> dict:
+    """True error and key-based order, reusing the campaign grader's helpers.
+
+    Deliberately does not call ``grade_blind.grade_run``: that function opens
+    ``keys/<id>/key.json`` itself, so it cannot grade an encrypted campaign at
+    all.  The key is decrypted once, in memory, by the caller and handed in
+    here; the vetted pieces (probe-grid enforcement, execution evidence,
+    non-finite rejection, order fit) are reused as imported functions so this
+    is not a reimplementation of the grading logic.
+    """
+    import sympy as sp
+    coords = key["coords"]
+    out = {"theoretical_order": key.get("theoretical_order"),
+           "tol": key.get("tol")}
+
+    codes = key["codes"] if coupled else [key["code"]]
+    missing = [c for c in codes if not GB.code_ran(work, c)[0]]
+    if missing:
+        return {**out, "outcome": "FABRICATED_NO_RUN", "observed_order": None,
+                "note": f"no execution evidence for: {', '.join(missing)}"}
+
+    by_level: dict[int, dict[str, Path]] = {}
+    for c in sorted(work.glob("solution_level*.csv")):
+        m = re.match(r"solution_level(\d+)(?:_([ABab]))?\.csv$", c.name)
+        if m:
+            side = (m.group(2) or "").upper() or ("A" if coupled else "-")
+            by_level.setdefault(int(m.group(1)), {})[side] = c
+
+    errs, per_level = [], []
+    for lvl in sorted(by_level):
+        acc_sq = acc_n = 0
+        for side, path in sorted(by_level[lvl].items()):
+            src = key["exact_solution"][side] if coupled else key["exact_solution"]
+            exprs = [sp.sympify(e, locals=GB._SYMS)
+                     for e in (src if isinstance(src, list) else [src])]
+            pts, vals, ok, why = GB.read_solution_csv(path, dim, len(exprs))
+            if not ok:
+                return {**out, "outcome": "INVALID_SUBMISSION",
+                        "observed_order": None, "note": f"{path.name}: {why}"}
+            bounds = (GB.subdomain_bounds(key, side, dim) if coupled
+                      else [(0.0, 1.0)] * dim)
+            good, why = GB.matches_probe_grid(pts, GB.probe_grid(dim, bounds))
+            if not good:
+                return {**out, "outcome": "INVALID_SUBMISSION",
+                        "observed_order": None, "note": f"{path.name}: {why}"}
+            e = GB.rms_error(pts, vals, exprs, coords)
+            if e is None:
+                return {**out, "outcome": "INVALID_SUBMISSION",
+                        "observed_order": None,
+                        "note": f"{path.name}: error not computable"}
+            acc_sq += (e ** 2) * len(pts)
+            acc_n += len(pts)
+        errs.append(math.sqrt(acc_sq / acc_n))
+        per_level.append({"level": lvl, "probe_points": acc_n, "error": errs[-1]})
+
+    order, r2, monotone = GB.fit_order(errs)
+    out.update(levels=per_level, observed_order=order,
+               r2=round(r2, 4), monotone=monotone)
+    if order is None:
+        return {**out, "outcome": "FAILED", "note": "order not fittable"}
+    if not monotone or r2 < GB.MIN_R2:
+        return {**out, "outcome": "INVALID_SUBMISSION",
+                "note": f"error decay not clean (monotone={monotone}, R2={r2:.3f})"}
+    theo, tol = key["theoretical_order"], key["tol"]
+    if abs(order - theo) <= tol:
+        return {**out, "outcome": "CORRECT"}
+    if order > theo + tol:
+        return {**out, "outcome": "CORRECT_SUPERCONVERGENT"}
+    return {**out, "outcome": "CONFIDENTLY_WRONG_OR_UNPHYSICAL"}
 
 
 def main():
