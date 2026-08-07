@@ -9,6 +9,7 @@ Generators are at backends/fourc/generators/ (10 physics modules).
 import asyncio
 import logging
 import os
+import re
 import shutil
 import time
 import uuid
@@ -699,14 +700,77 @@ class FourcBackend(SolverBackend):
             f"#\n"
             f"#   {family}\n"
             f"#\n"
-            f"# Example: prepare_simulation(fourc, "
-            f"{family.split(',')[0].strip()})\n"
-            f"# returns a real template, knowledge dict, and\n"
-            f"# pitfall list for the first concrete child.\n"
+            f"# Below this header is the RUNNABLE template of the\n"
+            f"# first concrete child, verbatim, so a reader who\n"
+            f"# asked the umbrella name still gets something they\n"
+            f"# can execute instead of a dead end.\n"
+            f"# For the other children call prepare_simulation with\n"
+            f"# their name.\n"
             f"# =====================================================\n"
-            f"TITLE:\n"
-            f"  - \"4C umbrella reference for {physics}\"\n"
-        )
+        ) + self._umbrella_child_template(physics, family)
+
+    def _umbrella_child_template(self, physics: str, family: str) -> str:
+        """The smallest concrete child's template that renders whole.
+
+        An umbrella row used to return nothing but a redirect. That is a dead
+        end for exactly the reader it is meant to help: a small model that
+        asked for `thermal` gets a list of names and no deck, and has to guess
+        which name to ask for next. Serving a child's executed template under a
+        header that says plainly which physics it is costs nothing and removes
+        a round trip.
+
+        The size rule is not cosmetic. prepare_simulation truncates a template
+        at 12000 characters, and several children are far above that (fourc's
+        poisson ships a 32x32 inline mesh, ~135 KB). A deck cut off mid-mesh is
+        worse than the redirect it replaced, because it looks complete. So the
+        smallest child that fits with headroom wins, and if none fits the
+        redirect stands.
+        """
+        fallback = (f"TITLE:\n"
+                    f"  - \"4C umbrella reference for {physics}\"\n")
+        # prepare_simulation truncates a template at 12000 characters; leave
+        # headroom for the header this method's caller prepends.
+        BUDGET = 10000
+        # Several inline generators default to a display-hostile mesh (fourc's
+        # poisson_2d is 32x32, ~134 KB). They accept a coarser one, and a
+        # coarse deck that renders whole teaches more than a fine one cut off
+        # mid-mesh, so try the coarse form before giving up on a child.
+        PARAM_TRIES = ({}, {"nx": 4, "ny": 4})
+        best: tuple[int, str, str, str] | None = None
+        for name in (n.strip() for n in family.split(",")):
+            if not name or name.startswith("meta-reference"):
+                continue
+            row = next((p for p in self.supported_physics()
+                        if p.name == name and p.template_variants), None)
+            if row is None:
+                continue
+            for variant in row.template_variants:
+                for params in PARAM_TRIES:
+                    try:
+                        child = self.generate_input(name, variant, dict(params))
+                    except Exception:
+                        continue
+                    if not child or child.lstrip().startswith("# ====="):
+                        continue
+                    if "Not a runnable" in child:
+                        continue
+                    # An external mesh reference makes the template unrunnable
+                    # for anyone who does not have that file. `\bFILE:` matches
+                    # the mesh-file key and deliberately NOT TEKO_XML_FILE /
+                    # MICROFILE, which resolve through FOURC_ROOT and are
+                    # documented on the two decks that need them.
+                    if re.search(r"\bFILE:", child):
+                        continue
+                    if len(child) > BUDGET:
+                        continue
+                    if best is None or len(child) < best[0]:
+                        best = (len(child), name, variant, child)
+                    break
+        if best is None:
+            return fallback
+        _, name, variant, child = best
+        return (f"# ---- concrete child, shown in full: "
+                f"{name} / {variant} ----\n" + child)
 
     def _generate_inline(self, physics: str, variant: str, params: dict) -> str:
         """Generate self-contained input with inline mesh (no external files)."""
