@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fenics stokes#: confirms the catalog's basix.ufl element-construction strings work in dolfinx 0.10. Taylor-Hood (P2v + P1), MINI (P1v + Bubble degree gdim+1, enriched, mixed with P1), and equal-order P1/P1 all construct valid FunctionSpaces. Strict size ordering TH(187) > MINI(139) > P1/P1(75) on the 4x4 unit-square triangulation. Verified empirically 2026-06-01 (dolfinx 0.10.0, basix 0.10.0).",
+  "_comment": "Tier-2 for fenics stokes#: confirms the catalog's basix.ufl element-construction strings work in dolfinx 0.10. Taylor-Hood (P2v + P1), MINI (P1v + Bubble degree gdim+1, enriched, mixed with P1), and equal-order P1/P1 all construct valid FunctionSpaces. Strict size ordering TH(187) > MINI(139) > P1/P1(75) on the 4x4 unit-square triangulation. Verified empirically 2026-06-01 (dolfinx 0.10.0, basix 0.10.0). MUTATION CONTROL (T2_MUTATE=1, re-runnable): a degree-1 velocity space makes the mixed dimension measure 75 instead of 187 and breaks the strict ordering (75 > 139 is False), so 'taylor_hood_dim=187' and 'dim_ordering_th_gt_mini_gt_eq=True' go missing and the fixture's own ERROR line trips the forbid list. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "stokes",
   "pitfall_index": 0,
@@ -14,5 +14,11 @@
   "forbid_in_output": [
     "ERROR",
     "Traceback"
-  ]
+  ],
+  "_mutation": {
+    "note": "Antidote: build the 'Taylor-Hood' velocity space at degree 1 instead of 2 — the classic mistake of calling an equal-order P1/P1 pair Taylor-Hood. Every construction still succeeds and every dimension is still measured from a real FunctionSpace; the numbers simply change.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

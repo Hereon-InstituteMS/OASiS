@@ -27,14 +27,53 @@ Failure mode this gate prevents: someone deletes the
 generator code or reverts the dispatch entry, and the
 catalog reverts to advertising a phantom physics — running
 generate_input() would raise ValueError again.
+
+Mutation control: T2_MUTATE=1 asks the catalog for `poisson` where it
+should ask for `maxwell`. Nothing raises and every check below still
+greps real generator text — but it is now the poisson template, which
+carries no N1curl, so maxwell_uses_N1E / maxwell_uses_basix_family /
+maxwell_has_curl are measured False and `maxwell_chars=` is never
+printed at all. That is what proves these booleans are read out of
+generated text rather than printed as literals.
+
+NOTE on the staged (recipe) mutation arm: this fixture imports the
+catalog out of the checkout's src/, so a copy of the fixture on its
+own cannot find it. Set OASIS_REPO_ROOT to the checkout when running
+scripts/mutate_tier2_fixtures.py; an in-place run (the ledger's env
+arm) finds it by path and needs nothing.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+def _find_repo_root() -> Path:
+    """The checkout whose src/ holds the generators under test.
+
+    parents[4] is correct in place and wrong in every copy: the mutation
+    harness stages the fixture into a scratch tree where parents[4]
+    resolves to `/`, the catalog import then fails, and the mutation
+    verdict would be vacuous rather than informative. So the root is
+    SEARCHED for, and $OASIS_REPO_ROOT wins when set — that is how a
+    staged copy is told where the real checkout is.
+    """
+    marker = Path("src") / "core" / "registry.py"
+    override = os.environ.get("OASIS_REPO_ROOT", "")
+    cands = [Path(override)] if override else []
+    here = Path(__file__).resolve()
+    cands += list(here.parents) + list(Path.cwd().resolve().parents)
+    for cand in cands:
+        if (cand / marker).is_file():
+            return cand
+    print(f"FIXTURE_ABORT=repo_root_not_found searched_from={here}; "
+          f"set OASIS_REPO_ROOT to the checkout", file=sys.stderr)
+    raise SystemExit(3)
+
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+REPO_ROOT = _find_repo_root()
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 
@@ -45,7 +84,10 @@ def main() -> int:
     b = get_backend("fenics")
 
     results = {}
-    for phys in ("helmholtz", "maxwell",
+    # MUTATE: ask for `poisson` in maxwell's place — a real template
+    # that simply has no N1curl in it.
+    for phys in ("helmholtz",
+                 "poisson" if MUTATE else "maxwell",
                  "nearly_incompressible_elasticity",
                  "fracture", "stokes_darcy"):
         try:

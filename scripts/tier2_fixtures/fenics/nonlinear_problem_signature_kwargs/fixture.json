@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fenics nonlinear_pde / NonlinearProblem catalog: dolfinx 0.10 has bcs as keyword-only and petsc_options_prefix REQUIRED. Catalog L542 showed NonlinearProblem(F, u, bcs, petsc_options={...}) — wrong on both counts. Verified 2026-06-01. Note: Tier-2 runner forbid list excludes 'Traceback' here because NonlinearProblem.__del__ prints an Exception-ignored traceback to stderr at GC time on dolfinx 0.10 (separate issue, not a probe failure).",
+  "_comment": "Tier-2 for fenics nonlinear_pde / NonlinearProblem catalog: dolfinx 0.10 has bcs as keyword-only and petsc_options_prefix REQUIRED. Catalog L542 showed NonlinearProblem(F, u, bcs, petsc_options={...}) — wrong on both counts. Verified 2026-06-01. Note: Tier-2 runner forbid list excludes 'Traceback' here because NonlinearProblem.__del__ prints an Exception-ignored traceback to stderr at GC time on dolfinx 0.10 (separate issue, not a probe failure). MUTATION CONTROL (T2_MUTATE=1, re-runnable): calling NonlinearProblem and LinearProblem correctly (bcs keyword-only, petsc_options_prefix given) raises nothing, so positional_bcs_raises, no_prefix_raises, no_prefix_diag_has_prefix_name and linear_problem_no_prefix_raises are all measured False and four expectations go missing. correct_form_ok stays True in both arms. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "nonlinear_pde",
   "pitfall_index": 0,
@@ -11,5 +11,11 @@
     "correct_form_ok=True",
     "linear_problem_no_prefix_raises=True"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "Antidote: issue the three probe calls in their correct dolfinx 0.10 spelling — bcs as a keyword, petsc_options_prefix supplied. Nothing raises, so the three '..._raises' booleans are measured False and printed; no crash, a different and correct measurement.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

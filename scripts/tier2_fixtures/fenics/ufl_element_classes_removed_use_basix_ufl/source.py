@@ -22,9 +22,19 @@ This fixture asserts:
     all PRESENT.
   * Constructing a Taylor-Hood mixed element via basix.ufl
     succeeds at runtime.
+
+Mutation control: T2_MUTATE=1 puts the four legacy names BACK on the
+ufl module — the counterfactual this fixture denies, a UFL that still
+exposes the pre-2024 element classes. The hasattr probe is unchanged
+and still reads the live module; it simply now measures
+{'FiniteElement': True, ...}, so the expected
+"removed_in_ufl={'FiniteElement': False, ...}" line and the later
+"taylor_hood_dim=" line both disappear. Nothing raises; the fixture
+takes its own FAIL branch.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import basix.ufl
@@ -32,6 +42,8 @@ import dolfinx
 from dolfinx import fem, mesh
 from mpi4py import MPI
 import ufl
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 REMOVED_UFL_NAMES = (
@@ -48,6 +60,10 @@ REQUIRED_BASIX_UFL_NAMES = (
 
 
 def main() -> int:
+    if MUTATE:
+        # Counterfactual UFL: the legacy element classes are back.
+        for _n in REMOVED_UFL_NAMES:
+            setattr(ufl, _n, type(_n, (object,), {}))
     # (1) Removed-from-ufl assertions.
     removed = {n: hasattr(ufl, n) for n in REMOVED_UFL_NAMES}
     print(f"removed_in_ufl={removed}")

@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 SYNTHETIC (stokes::98, an index no pitfall occupies): ufl.FiniteElement, VectorElement, MixedElement and TensorElement are gone from ufl and basix.ufl replaces them. RE-KEYED 2026-08-06 off stokes::1, which is the enclosed-flow pressure-nullspace claim and has nothing to do with element classes. No pitfall in the current fenics inventory states the element-class removal \u2014 the nearest, reaction_diffusion::0, is about mixed_element's argument list and is covered elsewhere \u2014 so this fixture is real evidence for no listed claim and is keyed synthetically rather than parked on a live one.",
+  "_comment": "Tier-2 SYNTHETIC (stokes::98, an index no pitfall occupies): ufl.FiniteElement, VectorElement, MixedElement and TensorElement are gone from ufl and basix.ufl replaces them. RE-KEYED 2026-08-06 off stokes::1, which is the enclosed-flow pressure-nullspace claim and has nothing to do with element classes. No pitfall in the current fenics inventory states the element-class removal — the nearest, reaction_diffusion::0, is about mixed_element's argument list and is covered elsewhere — so this fixture is real evidence for no listed claim and is keyed synthetically rather than parked on a live one. MUTATION CONTROL (T2_MUTATE=1, re-runnable): restoring ufl.FiniteElement / VectorElement / MixedElement / TensorElement on the module makes the probe measure \"removed_in_ufl={'FiniteElement': True, ...}\", so the expected all-False line goes missing, the fixture takes its own FAIL branch (tripping the forbid on 'FAIL:') and never reaches 'taylor_hood_dim='. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "stokes",
   "pitfall_index": 98,
@@ -14,5 +14,11 @@
     "FAIL:",
     "AttributeError"
   ],
-  "covers": []
+  "covers": [],
+  "_mutation": {
+    "note": "Antidote: put the four legacy names back on the ufl module — the counterfactual this fixture denies, a UFL that still exposes the pre-2024 element classes. The hasattr probe is unchanged and still reads the live module; it simply measures True now. Nothing raises.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

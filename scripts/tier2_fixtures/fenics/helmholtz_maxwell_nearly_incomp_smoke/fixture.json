@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 SYNTHETIC (helmholtz::99, an index no pitfall occupies): a shape check over the helmholtz / maxwell / nearly_incompressible / fracture / stokes_darcy templates \u2014 do they use basix.ufl, N1curl, mixed_element, and none of the removed ufl element classes. RE-KEYED 2026-08-06 off helmholtz::0, which is a claim about k*h and mesh resolution that this fixture does not measure at all. A generator-shape check is worth having; it is not evidence for a numerical claim, and it must not occupy that claim's slot.",
+  "_comment": "Tier-2 SYNTHETIC (helmholtz::99, an index no pitfall occupies): a shape check over the helmholtz / maxwell / nearly_incompressible / fracture / stokes_darcy templates — do they use basix.ufl, N1curl, mixed_element, and none of the removed ufl element classes. RE-KEYED 2026-08-06 off helmholtz::0, which is a claim about k*h and mesh resolution that this fixture does not measure at all. A generator-shape check is worth having; it is not evidence for a numerical claim, and it must not occupy that claim's slot. MUTATION CONTROL (T2_MUTATE=1, re-runnable): substituting the `poisson` generator for the `maxwell` one makes 'maxwell_chars=' vanish (the line printed is 'poisson_chars=1650') and turns maxwell_uses_N1E, maxwell_uses_basix_family and maxwell_has_curl to False, so four expectations go missing and 'FAIL: phantom-closure regression' trips the forbid list — which is what proves those booleans are read out of generated text and not printed as literals. The repo-root lookup was made search-based at the same time: parents[4] is correct in place and resolves to '/' in a staged copy, which would have made the staged arm vacuous rather than informative; $OASIS_REPO_ROOT overrides it and a failed search now aborts with FIXTURE_ABORT instead of a bare ImportError. Proved KILLED 2026-08-07 with OASIS_REPO_ROOT=<checkout>.",
   "backend": "fenics",
   "physics": "helmholtz",
   "pitfall_index": 99,
@@ -36,5 +36,11 @@
     "FAIL:",
     "GEN_ERR"
   ],
-  "covers": []
+  "covers": [],
+  "_mutation": {
+    "note": "Antidote: ask the catalog for `poisson` where it should ask for `maxwell`. A real 1650-char template comes back, so nothing crashes, but it carries no N1curl — the maxwell greps then read text that genuinely lacks what they look for. Requires OASIS_REPO_ROOT to be set when the fixture is run from a STAGED copy (it imports the catalog out of the checkout's src/); an in-place run finds the checkout by path.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

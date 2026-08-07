@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: FEniCSx Function.x.array slice-assignment with wrong-length numpy array raises ValueError 'could not broadcast input array from shape (N,) into shape (M,)'. Common user error: hand-rolling a DoF vector with the wrong size after a refinement. [Re-linked to catalog: index 93 \u2192 1 after fenics linear_elasticity Table-1 promotion 2026-05-31.]",
+  "_comment": "Tier-2: FEniCSx Function.x.array slice-assignment with wrong-length numpy array raises ValueError 'could not broadcast input array from shape (N,) into shape (M,)'. Common user error: hand-rolling a DoF vector with the wrong size after a refinement. [Re-linked to catalog: index 93 → 1 after fenics linear_elasticity Table-1 promotion 2026-05-31.] MUTATION CONTROL (T2_MUTATE=1, re-runnable): sizing the source array n instead of 2n makes the slice assignment succeed and print 'assignment_accepted=True array_len=25 array_sum=300.0'; the expectations 'ValueError' and 'broadcast input array' both go missing. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "linear_elasticity",
   "pitfall_index": 1,
@@ -8,5 +8,11 @@
     "ValueError",
     "broadcast input array"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "Antidote: give the slice a correctly sized source array (n, not 2n). The assignment succeeds, nothing raises, and the probe prints the resulting length and checksum instead of a traceback.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

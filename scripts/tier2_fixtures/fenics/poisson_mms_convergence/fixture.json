@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 Layer-C: fenics poisson numerical-correctness gate. Runs the catalog-recommended API surface (basix.ufl.element, fem.functionspace, dirichletbc with locate_dofs_topological, LinearProblem with petsc_options ksp_type=preonly + pc_type=lu + mumps) end-to-end against a manufactured solution u = sin(π·x)·sin(π·y), f = 2π²·sin(π·x)·sin(π·y) on [0,1]². Asserts (a) P1 nx=32 L2 error <= 2e-3, (b) P2 nx=32 L2 error <= 1e-5, (c) P3 nx=32 L2 error <= 2e-7, (d) P1 estimated order of convergence h=1/16 → h=1/32 falls in [1.7, 2.3] (theoretical 2.0). This is Layer C: proves the catalog's output is NUMERICALLY CORRECT, not just well-formed. Counterpart to Layer A (symbol presence), Layer B (generators run), Layer E (MCP wrappers route correctly). Verified empirically against dolfinx 0.10.0 + PETSc + MUMPS on 2026-06-01: P1=1.320e-3, P2=7.142e-6, P3=1.009e-7, P1 EOC=1.993.",
+  "_comment": "Tier-2 Layer-C: fenics poisson numerical-correctness gate. Runs the catalog-recommended API surface (basix.ufl.element, fem.functionspace, dirichletbc with locate_dofs_topological, LinearProblem with petsc_options ksp_type=preonly + pc_type=lu + mumps) end-to-end against a manufactured solution u = sin(π·x)·sin(π·y), f = 2π²·sin(π·x)·sin(π·y) on [0,1]². Asserts (a) P1 nx=32 L2 error <= 2e-3, (b) P2 nx=32 L2 error <= 1e-5, (c) P3 nx=32 L2 error <= 2e-7, (d) P1 estimated order of convergence h=1/16 → h=1/32 falls in [1.7, 2.3] (theoretical 2.0). This is Layer C: proves the catalog's output is NUMERICALLY CORRECT, not just well-formed. Counterpart to Layer A (symbol presence), Layer B (generators run), Layer E (MCP wrappers route correctly). Verified empirically against dolfinx 0.10.0 + PETSc + MUMPS on 2026-06-01: P1=1.320e-3, P2=7.142e-6, P3=1.009e-7, P1 EOC=1.993. MUTATION CONTROL (T2_MUTATE=1, re-runnable): with f = pi^2 u_ex the run completes and prints P1=2.506017e-01, P2=2.500002e-01, P3=2.500000e-01, EOC=0.010 — the discrete solution is u_ex/2 — so all four checks fire and the forbidden token 'FAIL:' appears. Note the expect list is prefixes only ('P1_nx32_l2err=' etc.), which any value satisfies; the discrimination is carried entirely by the forbid on 'FAIL:'. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "poisson",
   "pitfall_index": 99,
@@ -13,5 +13,11 @@
   "forbid_in_output": [
     "Traceback",
     "FAIL:"
-  ]
+  ],
+  "_mutation": {
+    "note": "Antidote: halve the manufactured source (f = pi^2 u_ex instead of the consistent 2 pi^2 u_ex) so the load no longer matches -Laplace(u_ex). The solve still succeeds and prints real L2 errors; the discrete solution converges to u_ex/2, so the errors stop shrinking with h.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

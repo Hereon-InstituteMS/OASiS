@@ -28,14 +28,25 @@ Expected at h=1/32:
   P1 L2 ≲ 5e-3
   P2 L2 ≲ 1e-4
   P1 EOC h=1/16 → h=1/32 ∈ [1.7, 2.3]
+
+Mutation control: T2_MUTATE=1 drops the volumetric λ·tr(ε)·I part of
+the stress when building the LOAD only (f = -div(2 μ ε(u_ex)) instead
+of -div(σ(u_ex))), so the manufactured source no longer matches the
+operator that is solved. The solve still succeeds and still prints
+real L2 errors, but they converge to a different function: the errors
+stop shrinking with h, the EOC collapses to ~0, and the tolerance
+lines go red.
 """
 from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 logging.disable(logging.CRITICAL)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_elasticity_mms(nx: int, order: int) -> float:
@@ -75,7 +86,10 @@ def run_elasticity_mms(nx: int, order: int) -> float:
                 + lam_val * ufl.tr(eps(w))
                   * ufl.Identity(gdim))
 
-    f_expr = -ufl.div(sigma(u_ex_expr))
+    # MUTATE: load built from the deviatoric part only — inconsistent
+    # with sigma(), which is what the bilinear form uses.
+    f_expr = -ufl.div(2.0 * mu_val * eps(u_ex_expr) if MUTATE
+                      else sigma(u_ex_expr))
 
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)

@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 Layer-C: fenics linear_elasticity numerical-correctness gate. Mirrors fenics/poisson_mms_convergence but for a VECTOR-VALUED physics. Plane strain, E=1.0, ν=0.3. Manufactured u = (sin(π·x)·sin(π·y), sin(2π·x)·sin(2π·y)); f computed symbolically via UFL as -div(σ(u)) where σ = 2μ·ε + λ·tr(ε)·I. Exercises the catalog's vector-valued API: basix.ufl.element(Lagrange, cell, k, shape=(gdim,)), fem.dirichletbc on a Function-valued BC, σ/ε Lamé constitutive, LinearProblem with MUMPS. Asserts P1 nx=32 L2 error <= 1.2e-2 (the u_y component oscillates at 2π so resolution per wavelength is half — error doubles vs the unit-wavenumber Poisson case), P2 nx=32 L2 error <= 1e-4, P1 EOC h=1/16 → h=1/32 in [1.7, 2.3]. Verified empirically against dolfinx 0.10.0 + PETSc + MUMPS on 2026-06-01: P1=8.99e-3, P2=5.88e-5, P1 EOC=1.925.",
+  "_comment": "Tier-2 Layer-C: fenics linear_elasticity numerical-correctness gate. Mirrors fenics/poisson_mms_convergence but for a VECTOR-VALUED physics. Plane strain, E=1.0, ν=0.3. Manufactured u = (sin(π·x)·sin(π·y), sin(2π·x)·sin(2π·y)); f computed symbolically via UFL as -div(σ(u)) where σ = 2μ·ε + λ·tr(ε)·I. Exercises the catalog's vector-valued API: basix.ufl.element(Lagrange, cell, k, shape=(gdim,)), fem.dirichletbc on a Function-valued BC, σ/ε Lamé constitutive, LinearProblem with MUMPS. Asserts P1 nx=32 L2 error <= 1.2e-2 (the u_y component oscillates at 2π so resolution per wavelength is half — error doubles vs the unit-wavenumber Poisson case), P2 nx=32 L2 error <= 1e-4, P1 EOC h=1/16 → h=1/32 in [1.7, 2.3]. Verified empirically against dolfinx 0.10.0 + PETSc + MUMPS on 2026-06-01: P1=8.99e-3, P2=5.88e-5, P1 EOC=1.925. MUTATION CONTROL (T2_MUTATE=1, re-runnable): dropping the volumetric lambda*tr(eps)*I term from the LOAD makes the manufactured source inconsistent with the bilinear form. The run still completes and prints P1=1.709942e-01, P2=1.662969e-01, EOC=0.117, so all three checks fire and the forbidden token 'FAIL:' appears. Note the expect list is prefixes only ('P1_nx32_l2err=' etc.), which any value satisfies — the discrimination is carried entirely by the forbid on 'FAIL:'. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "linear_elasticity",
   "pitfall_index": 99,
@@ -12,5 +12,11 @@
   "forbid_in_output": [
     "Traceback",
     "FAIL:"
-  ]
+  ],
+  "_mutation": {
+    "note": "Antidote: build the manufactured load from the deviatoric part only, f = -div(2 mu eps(u_ex)) instead of -div(sigma(u_ex)), so the source no longer matches the operator that is assembled. The solve still succeeds and still prints real L2 errors; they stop converging.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

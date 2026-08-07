@@ -21,15 +21,27 @@ This fixture confirms all three constructions return valid
 FunctionSpace objects in dolfinx 0.10. The instability of P1/P1
 is a separate physics-level claim (not exercised here, only
 constructability is).
+
+Mutation control: T2_MUTATE=1 builds the "Taylor-Hood" velocity
+space at degree 1 instead of 2 — the classic mistake of calling an
+equal-order P1/P1 pair Taylor-Hood. Every construction still
+succeeds and every dimension is still measured from a real
+FunctionSpace, but taylor_hood_dim measures 75 rather than 187 and
+the strict ordering 187 > 139 > 75 no longer holds, so
+'taylor_hood_dim=187' and 'dim_ordering_th_gt_mini_gt_eq=True' both
+disappear (and the ERROR line trips the forbid list).
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import basix.ufl
 from dolfinx import fem
 from dolfinx import mesh as dmesh
 from mpi4py import MPI
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -39,8 +51,10 @@ def main() -> int:
     print(f"cell={cell}")
     print(f"gdim={gdim}")
 
-    # Taylor-Hood
-    P2v = basix.ufl.element("Lagrange", cell, 2, shape=(gdim,))
+    # Taylor-Hood.  MUTATE: degree-1 velocity, i.e. equal order.
+    vel_degree = 1 if MUTATE else 2
+    print(f"taylor_hood_velocity_degree={vel_degree}")
+    P2v = basix.ufl.element("Lagrange", cell, vel_degree, shape=(gdim,))
     P1 = basix.ufl.element("Lagrange", cell, 1)
     TH = basix.ufl.mixed_element([P2v, P1])
     W_th = fem.functionspace(msh, TH)
