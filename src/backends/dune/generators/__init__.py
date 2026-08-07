@@ -58,7 +58,7 @@ _WHERE_ELSE = {
     "adaptivity, VTK, JIT)": (
         "knowledge(topic='overview', solver='dune') — that call also "
         "carries the install fingerprint the measurements belong to"),
-    "every Signal: clause in one list": (
+    "every Signal clause in one list": (
         "knowledge(topic='pitfalls', solver='dune')"),
     "run it": (
         "run_with_generator(backend='dune', physics_variant=<the "
@@ -180,7 +180,7 @@ gridView.writeVTK("result", pointdata={"u": uh})
             "nonlinear, poisson, poisson_mms, reaction_diffusion, "
             "stokes, time_dependent_heat. "
             "knowledge(topic='pitfalls', solver='dune') returns every "
-            "Signal: clause. The rest of THIS entry is the measured API "
+            "Signal clause. The rest of THIS entry is the measured API "
             "reference — read it only when the script above is not "
             "enough."),
     },

@@ -62,9 +62,18 @@ _WALL_CLOCK = re.compile(
 # Things the pattern above would otherwise catch that are NOT about elapsed
 # time: convergence order in time, time-step choices, and a timing key merely
 # being present in a returned dict.
+#
+# `iterations_grow_faster` is the same kind of false positive, found when the
+# DUNE fixtures landed. "GMRES iterations grow faster than the problem" compares
+# an ITERATION COUNT against a DOF COUNT across a refinement — 10.4x iterations
+# for 3.7x dofs — which is exactly the structural, host-independent verdict this
+# gate's own remedy text asks authors to move to. Only the word "faster" is
+# shared with a wall-clock claim. Kept narrow to iteration counts on purpose: a
+# bare `grow.*faster` would also exempt `runtime_grows_faster_than_dofs`, which
+# IS a clock and must keep failing.
 _NOT_WALL_CLOCK = re.compile(
     r"second[_ ]order|second_third|time[_ ]step|timestep|time_dependent"
-    r"|crank|timing'|'timing",
+    r"|crank|timing'|'timing|iterations?_grow\w*_faster",
     re.IGNORECASE)
 
 BACKENDS = sorted(p.name for p in FIXTURES.iterdir() if p.is_dir()) \

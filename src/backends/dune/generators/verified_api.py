@@ -1114,7 +1114,7 @@ EXECUTED_API: dict = {
             "the stiffness matrix came back 625x625 with 5329 "
             "nonzeros."),
         "bc_argument_is_silently_ignored": (
-            "assemble(form, bc) ACCEPTS a dune.ufl.DirichletBC and "
+            "[API] assemble(form, bc) ACCEPTS a dune.ufl.DirichletBC and "
             "SILENTLY IGNORES it. Measured 2026-08-03 on a 16x16 P1 "
             "structuredGrid: assemble(form).as_numpy and "
             "assemble(form, DirichletBC(space,[0])).as_numpy both came "
