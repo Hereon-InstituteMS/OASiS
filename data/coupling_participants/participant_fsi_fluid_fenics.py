@@ -63,7 +63,8 @@ NX, NY     = 48, 10      # fluid mesh
 MU         = 1.0         # dynamic viscosity
 RHO_F      = 1.0         # fluid density
 U_MEAN     = 1.0         # mean inflow speed (parabolic profile)
-ALE_STIFF  = 1.0         # ALE Laplace stiffening exponent (1.0 = plain harmonic)
+ALE_STIFF  = 1.0         # Jacobian stiffening exponent for the ALE lift
+                         # (0.0 = plain harmonic; see the form below)
 DT         = 0.0         # 0.0 -> STEADY. >0 -> ONE backward-Euler step from rest:
                          # the unsteady term rho_f/dt * (u - 0) enters, and the
                          # interface is a MOVING wall with u = d/dt rather than a
@@ -182,9 +183,21 @@ def main():
     d_ale = fem.Function(V1, name="ale_displacement")
     if MOVE_MESH and np.any(np.abs(d_iface) > 0):
         u_, v_ = ufl.TrialFunction(V1), ufl.TestFunction(V1)
-        # Jacobian-based stiffening keeps small cells near the interface from
-        # inverting; ALE_STIFF = 1.0 is the plain harmonic extension.
-        a = ALE_STIFF * ufl.inner(ufl.grad(u_), ufl.grad(v_)) * ufl.dx
+        # JACOBIAN STIFFENING: weight the extension by 1/|cell| raised to
+        # ALE_STIFF, so SMALL cells are stiff and take less of the deformation
+        # than large ones. That is what keeps a graded mesh from inverting near
+        # the interface first, where the cells are smallest and the motion is
+        # largest. ALE_STIFF = 0 is the plain harmonic extension.
+        #
+        # On a UNIFORM mesh every cell has the same volume, so the weight is a
+        # single constant multiplying a bilinear form whose right-hand side is
+        # zero — it cannot change the answer there, by construction. This knob
+        # earns its place only on a graded mesh, and it is written this way
+        # rather than as a bare `ALE_STIFF *` factor because a bare factor is a
+        # NO-OP EVERYWHERE and would have read as a stiffening that was never
+        # applied.
+        a = ((1.0 / ufl.CellVolume(msh)) ** ALE_STIFF
+             * ufl.inner(ufl.grad(u_), ufl.grad(v_)) * ufl.dx)
         L = ufl.inner(fem.Constant(msh, np.zeros(gdim)), v_) * ufl.dx
         g_iface = fem.Function(V1)
         g_iface.x.array.reshape(-1, gdim)[iface_nodes] = d_iface

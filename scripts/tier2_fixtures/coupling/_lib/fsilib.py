@@ -351,4 +351,10 @@ def report_verdict(res: dict, tag: str) -> bool:
     print(f"{tag}_converged={bool(res.get('converged'))}")
     print(f"{tag}_iterations={res.get('iterations')}")
     print(f"{tag}_validation_empty={not val}")
+    # The verdict string itself, so the record shows what the TOOL said rather
+    # than only what the fixture concluded from its parts.
+    verdict = str(res.get("verification") or "")
+    print(f"{tag}_not_verified={'NOT VERIFIED' in verdict}")
+    ok &= L.check("NOT VERIFIED" not in verdict, f"{tag}_verdict",
+                  verdict[:200])
     return ok
