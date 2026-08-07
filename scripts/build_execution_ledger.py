@@ -301,6 +301,14 @@ def run_recipe_mutation(d: Path, check_one) -> dict:
         return {"status": "VACUOUS_BASELINE",
                 "reason": row.get("baseline_status", ""),
                 "notes": row.get("baseline_notes", [])}
+    if verdict == "NOT_MUTABLE_DECLARED":
+        # A `_mutation` block with a reason and no from/to: the author declared
+        # that no faithful mutation exists. It must NOT be credited as
+        # discriminating, and it must not be reported as having "survived its
+        # own antidote" either — it never had one, and the two are different
+        # facts about the fixture.
+        return {"status": "NOT_MUTABLE_DECLARED",
+                "reason": row.get("note", "")[:300]}
     stale = [r for r in row.get("results", [])
              if r.get("status") in ("FROM_NOT_FOUND", "TARGET_MISSING")]
     if stale:
