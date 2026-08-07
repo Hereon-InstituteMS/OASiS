@@ -13,9 +13,12 @@
     "scalar_max_u_between_seed_and_carrying_capacity=True",
     "block_ndofs_is_double=True",
     "block_nnz_ratio_eq_4=True",
-    "block_spsolve_slower_gt_1p3x=True",
     "redundant_block_matches_scalar=True",
     "contaminated_block_u_maxdev_gt_0p1=True"
   ],
-  "forbid_in_output": ["Traceback", "FAIL:"]
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "_wall_clock_note": "block_spsolve_slower_gt_1p3x is still PRINTED but is no longer a verdict: it compares spsolve wall-clock milliseconds, so its truth depends on host load. The cost claim is carried structurally by block_nnz_ratio_eq_4=True -- the block operator touches 4x the non-zeros -- which holds on any host."
 }

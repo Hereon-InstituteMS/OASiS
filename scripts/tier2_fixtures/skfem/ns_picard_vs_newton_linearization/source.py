@@ -31,7 +31,7 @@ Mutation control: T2_MUTATE=1 applies the documented fix at the pathology site
 Jacobian in _harness.iterate(), making it the full Newton linearisation.  The
 Picard column then converges quadratically like Newton, which removes
 'picard_needs_more_iterations_than_newton=True' and
-'picard_is_slower_than_stokes_jacobian=True' from the output.  Re-run:
+'picard_rate_is_slower_than_stokes_jacobian=True' from the output.  Re-run:
 T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
@@ -98,7 +98,7 @@ def main() -> int:
     print(f"picard_mean_ratio={mean_p:.4f}")
     print(f"stokes_mean_ratio={mean_s:.4f}")
     print(f"picard_and_stokes_rates_differ={abs(mean_p - mean_s) > 0.05}")
-    print(f"picard_is_slower_than_stokes_jacobian={mean_p > mean_s}")
+    print(f"picard_rate_is_slower_than_stokes_jacobian={mean_p > mean_s}")
     print(f"three_distinct_iterations="
           f"{len({len(h_n), len(h_p), len(h_s)}) >= 2
              and abs(mean_p - mean_s) > 0.05}")

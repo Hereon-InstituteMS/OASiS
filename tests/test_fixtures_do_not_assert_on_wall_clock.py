@@ -73,7 +73,14 @@ _WALL_CLOCK = re.compile(
 # IS a clock and must keep failing.
 _NOT_WALL_CLOCK = re.compile(
     r"second[_ ]order|second_third|time[_ ]step|timestep|time_dependent"
-    r"|crank|timing'|'timing|iterations?_grow\w*_faster",
+    r"|crank|timing'|'timing|iterations?_grow\w*_faster"
+    # A RESIDUAL drop rate per Newton iteration is a convergence property, not
+    # a clock: `continuum_drop_per_iter_faster_than_factor_2` is max(residual
+    # ratio) < 0.5, and `..._rate_is_slower_than_...` compares mean residual
+    # ratios. Both hold on any host. Anchored on the quantity's own name
+    # (drop_per_iter / _rate_is_) rather than on faster|slower, so a genuine
+    # `solve_is_slower_than` still fails.
+    r"|drop_per_iter|_rate_is_(?:slower|faster)",
     re.IGNORECASE)
 
 BACKENDS = sorted(p.name for p in FIXTURES.iterdir() if p.is_dir()) \
