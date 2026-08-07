@@ -38,6 +38,21 @@ _ABSENT_MARKER = re.compile(
     r"=\s*(skipped\w*|no_binary|not_available|unavailable|missing_\w+)\b",
     re.IGNORECASE)
 
+# The same defect wearing different clothes. The marker above only matches a
+# `key=value` shape, so a fixture that announces its skip as a bare sentence
+# walked straight through:
+#
+#     print("SKIP: no SPARTA binary found — generator execution not attempted")
+#
+# With no binary that fixture exits 0, its expectations (which assert unrelated
+# payload-hygiene facts) still match, `SKIP:` is in nobody's forbid list, and a
+# fixture whose NAME is "generators execute on installed build" is recorded as a
+# PASS having generated and run nothing. Found 2026-08-07 while auditing the
+# SPARTA fixtures; zero fixtures in this tree print such a line, so this pattern
+# costs nothing here and closes the shape before it arrives.
+_BARE_SKIP = re.compile(
+    r"""["'](\s*(?:SKIP|SKIPPED)\s*[:\-])""", re.IGNORECASE)
+
 
 def _fixture_dirs():
     if not FIXTURES.exists():
@@ -63,11 +78,20 @@ def _vacuous(d: pathlib.Path) -> list[str]:
     if not expect:
         return []
     # Does any forbidden string catch a skip? Then the fixture is guarded.
-    if any(re.search(r"skip|no_binary|unavailable|not_available", f)
+    # `fixture_abort` is the other accepted guard: a fixture that aborts with
+    # that marker and forbids it cannot report a pass on an absent backend.
+    if any(re.search(r"skip|no_binary|unavailable|not_available|fixture_abort", f)
            for f in forbid):
         return []
     bad = []
     for line in _sources(d).splitlines():
+        # A bare "SKIP: ..." announcement is unconditional evidence: unlike the
+        # key=value form there is no expectation to cross-check it against,
+        # because the fixture is declining to run while its expectations are
+        # satisfied by something else it printed.
+        if _BARE_SKIP.search(line):
+            bad.append(line.strip()[:120])
+            continue
         m = _ABSENT_MARKER.search(line)
         if not m:
             continue
@@ -115,3 +139,39 @@ def test_the_guard_itself_detects_the_known_case():
         "forbid_in_output": ["Traceback", "FAIL:", "skipped_no_binary"],
     }))
     assert not _vacuous(d), "the guard fires on a properly guarded fixture"
+
+
+def test_the_guard_detects_a_bare_skip_announcement():
+    """The same defect in prose form rather than key=value.
+
+    A fixture that prints `SKIP: no <backend> binary found` while its
+    expectations are satisfied by unrelated lines exits 0 and is recorded as a
+    pass on a host where nothing ran. Proven against the real shape rather than
+    trusting that a green run means anything.
+    """
+    import tempfile
+
+    d = pathlib.Path(tempfile.mkdtemp()) / "backend" / "fx"
+    d.mkdir(parents=True)
+    (d / "fixture.json").write_text(json.dumps({
+        "expect_in_output": ["knowledge_has_no_host_paths=True"],
+        "forbid_in_output": ["Traceback", "FAIL:", "UNEXPECTED:"],
+    }))
+    (d / "source.py").write_text(
+        'print("knowledge_has_no_host_paths=True")\n'
+        'print("SKIP: no SPARTA binary found - execution not attempted")\n')
+    assert _vacuous(d), (
+        "the guard misses a bare SKIP: announcement — the shape that let a "
+        "fixture named for executing on the installed build pass with no "
+        "binary present")
+
+    # An abort-and-fail fixture is the correct pattern and must stay green.
+    (d / "fixture.json").write_text(json.dumps({
+        "expect_in_output": ["knowledge_has_no_host_paths=True"],
+        "forbid_in_output": ["Traceback", "FAIL:", "FIXTURE_ABORT"],
+    }))
+    (d / "source.py").write_text(
+        'print("FIXTURE_ABORT=no_binary"); raise SystemExit(1)\n')
+    assert not _vacuous(d), (
+        "the guard must not punish a fixture that aborts loudly and forbids "
+        "its own abort marker")
