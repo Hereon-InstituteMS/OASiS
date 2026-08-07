@@ -149,16 +149,16 @@ class SSTIGenerator(BaseGenerator):
                 },
             },
             "time_integration": {
-                "SSTI_CONTROL": (
+                "SSTI CONTROL": (
                     "Controls the overall three-field coupling loop.  "
                     "NUMSTEP, TIMESTEP, MAXTIME define the global time "
                     "stepping.  COUPALGO selects the coupling strategy."
                 ),
-                "SSI_CONTROL": (
+                "SSI CONTROL": (
                     "Sub-coupling between structure and scalar transport "
                     "within each SSTI step."
                 ),
-                "TSI_DYNAMIC": (
+                "TSI DYNAMIC": (
                     "Sub-coupling between thermal and structural fields "
                     "within each SSTI step."
                 ),

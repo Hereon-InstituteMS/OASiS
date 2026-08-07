@@ -44,10 +44,16 @@ class MultiscaleGenerator(BaseGenerator):
                 "a micro-scale input file.  The dynamics section is "
                 "STRUCTURAL DYNAMIC.  The micro-scale input file is a "
                 "complete 4C input file describing the RVE (geometry, "
-                "materials, solver, boundary conditions).  The macro "
-                "material uses MAT_Struct_Multiscale which points to "
-                "the micro input file and specifies the microscale "
-                "solver ID."
+                "materials, its OWN SOLVER section, and a MICROSCALE "
+                "CONDITIONS section marking the RVE boundary surfaces).  "
+                "The macro material uses MAT_Struct_Multiscale with "
+                "exactly two keys that matter: MICROFILE (path to the "
+                "micro input file) and MICRODIS_NUM (which micro problem "
+                "instance this material belongs to).  There is no "
+                "macro-side solver id and no macro-side density: the "
+                "micro solver is picked up from the MICRO file's own "
+                "STRUCTURAL DYNAMIC/LINEAR_SOLVER, and the macroscopic "
+                "density is computed by the homogenisation procedure."
             ),
             "required_sections": [
                 "PROBLEM TYPE",
@@ -73,28 +79,57 @@ class MultiscaleGenerator(BaseGenerator):
                         "RVE problem defined in a separate input file."
                     ),
                     "parameters": {
-                        "MICRO_INPUT_FILE": {
+                        "MICROFILE": {
                             "description": (
                                 "Path to the micro-scale 4C input file "
-                                "that defines the RVE problem."
+                                "that defines the RVE problem.  Resolved "
+                                "relative to the MACRO input file's "
+                                "directory.  The key is MICROFILE -- "
+                                "there is no MICRO_INPUT_FILE."
                             ),
-                            "range": "valid file path",
+                            "range": "valid file path (default 'filename.dat')",
                         },
-                        "MICRO_SOLVER_ID": {
+                        "MICRODIS_NUM": {
                             "description": (
-                                "SOLVER N ID used for the micro-scale "
-                                "problem.  Must reference a valid SOLVER "
-                                "section in the MACRO input file."
+                                "Number of the micro-scale DISCRETISATION "
+                                "this material feeds, i.e. which "
+                                "Global::Problem instance the RVE is read "
+                                "into.  Two materials that name the same "
+                                "MICROFILE but different MICRODIS_NUM get "
+                                "two independent micro problems.  This is "
+                                "NOT a solver id -- the micro solver is "
+                                "the LINEAR_SOLVER of the MICRO file's own "
+                                "STRUCTURAL DYNAMIC section, looked up in "
+                                "the MICRO file's own SOLVER sections."
                             ),
-                            "range": ">= 1",
+                            "range": ">= 1 (upstream uses 1, 2, ...)",
                         },
-                        "DENS": {
+                        "INITVOL": {
                             "description": (
-                                "Homogenised macroscopic density [kg/m^3]."
+                                "Initial volume of the RVE.  Optional, "
+                                "default 0.0, in which case it is computed."
                             ),
-                            "range": "> 0",
+                            "range": ">= 0",
+                        },
+                        "RUNTIMEOUTPUT_GP": {
+                            "description": (
+                                "Which Gauss points of the macro element "
+                                "get micro-scale runtime output written. "
+                                "Upstream values: all, none."
+                            ),
+                            "range": "all | none",
                         },
                     },
+                    "not_parameters": (
+                        "MAT_Struct_Multiscale takes NO DENS.  The "
+                        "macroscopic density is produced by the "
+                        "homogenisation procedure "
+                        "(MultiScale::MicroStatic asserts 'Density "
+                        "determined from homogenization procedure must be "
+                        "larger than zero!'), so it comes from the MICRO "
+                        "materials.  Writing DENS here is a MATERIALS "
+                        "parse abort."
+                    ),
                 },
                 "Micro-scale materials": {
                     "description": (
@@ -119,22 +154,41 @@ class MultiscaleGenerator(BaseGenerator):
                     "notes": (
                         "Micro-scale RVE solver.  Direct solver is "
                         "recommended since each RVE is typically small.  "
-                        "Must be defined in the MACRO input file via "
-                        "SOLVER N (referenced by MICRO_SOLVER_ID)."
+                        "It is defined in the MICRO input file, NOT the "
+                        "macro one: MultiScale::MicroStatic reads "
+                        "LINEAR_SOLVER from the micro file's STRUCTURAL "
+                        "DYNAMIC and resolves it against the micro file's "
+                        "own SOLVER sections "
+                        "(stru_multi/4C_stru_multi_microstatic.cpp).  "
+                        "MAXITER, TOLRES, TOLDISP, PREDICT, NORM_DISP, "
+                        "NORM_RESF, NORMCOMBI_RESFDISP, ITERNORM, "
+                        "ADAPTCONV and ADAPTCONV_BETTER are likewise taken "
+                        "from the MICRO file; only TIMESTEP, NUMSTEP and "
+                        "RESTARTEVERY are taken from the MACRO file, so "
+                        "those three must agree."
                     ),
                 },
             },
             "rve_setup": {
                 "geometry": (
                     "The RVE is typically a unit cell of the "
-                    "microstructure.  It must be a cube/rectangle with "
-                    "periodic boundary conditions (PBC) to ensure "
-                    "proper homogenisation."
+                    "microstructure, a cube or rectangular box whose "
+                    "outer surfaces are all listed in MICROSCALE "
+                    "CONDITIONS."
                 ),
                 "boundary_conditions": (
-                    "Periodic boundary conditions (PBC) are standard "
-                    "for RVEs.  The macro deformation gradient is "
-                    "imposed via tied DOFs on opposite faces."
+                    "4C's RVE boundary is the MICROSCALE CONDITIONS "
+                    "section of the MICRO input file -- a surface "
+                    "condition whose only field is E, listing every "
+                    "boundary surface (upstream lists all six faces of "
+                    "the cube).  4C then toggles EVERY dof of those "
+                    "nodes to Dirichlet "
+                    "(MultiScale::MicroStatic::determine_toggle) and "
+                    "prescribes them from the macro deformation "
+                    "gradient.  That is the linear-displacement "
+                    "(Taylor/Dirichlet) RVE boundary condition, not a "
+                    "periodic one; there is no PBC route for FE^2 in 4C "
+                    "and no tied-DOF setup to build."
                 ),
                 "size": (
                     "The RVE must be statistically representative of "
@@ -161,34 +215,80 @@ class MultiscaleGenerator(BaseGenerator):
                 (
                     "[Input] The micro input file must be a complete, "
                     "valid 4C input file with its own geometry, "
-                    "materials, and boundary conditions.  It is NOT "
-                    "merged with the macro input file. Signal: 4C "
-                    "aborts during multiscale-init with `failed to "
-                    "load micro input file X` or `micro input file "
-                    "missing MATERIALS section`. (Audit 2026-06-02.)"
+                    "materials, SOLVER and STRUCTURAL DYNAMIC "
+                    "sections.  It is NOT merged with the macro input "
+                    "file, and its path is resolved relative to the "
+                    "MACRO file's directory. Signal: a missing file is "
+                    "reported plainly, \"Input file '<name>' does not "
+                    "exist.\" from core/io/src/4C_io_input_file.cpp, "
+                    "raised inside Global::read_micro_fields -- so the "
+                    "stack trace is the only thing that tells you it "
+                    "was the MICRO file and not the macro one. "
+                    "(Verified by execution 2026-08-07.  An earlier "
+                    "version quoted `failed to load micro input file "
+                    "X` and `micro input file missing MATERIALS "
+                    "section`; NEITHER STRING IS IN THE 4C BINARY.)"
                 ),
                 (
-                    "[Input] MICRO_SOLVER_ID in MAT_Struct_Multiscale "
-                    "must reference a SOLVER N section defined in "
-                    "the MACRO input file (not the micro file).  "
-                    "This solver is used for all micro RVE solves. "
-                    "Signal: parser warns `MICRO_SOLVER_ID X not "
-                    "found among macro SOLVER definitions` or runtime "
-                    "abort `null pointer to micro Belos solver`. "
-                    "(Audit 2026-06-02.)"
+                    "[Input] There is no macro-side micro-solver key. "
+                    "MAT_Struct_Multiscale's second parameter is "
+                    "MICRODIS_NUM, the micro DISCRETISATION number, "
+                    "and the micro solver is the LINEAR_SOLVER of the "
+                    "MICRO file's own STRUCTURAL DYNAMIC section, "
+                    "resolved against the MICRO file's own SOLVER "
+                    "sections.  Signal: writing MICRO_SOLVER_ID (or "
+                    "MICRO_INPUT_FILE, or DENS) in "
+                    "MAT_Struct_Multiscale is a hard parse abort, "
+                    "\"Failed to match specification in section "
+                    "'MATERIALS'.\" from "
+                    "global_data/4C_global_data_read.cpp followed by "
+                    "'Could not match this input' and the echoed "
+                    "material block.  The whole legal key set is "
+                    "MICROFILE, MICRODIS_NUM, INITVOL, "
+                    "RUNTIMEOUTPUT_GP. (Verified by execution "
+                    "2026-08-07 on sohex8_multiscale_macro; the "
+                    "earlier `MICRO_SOLVER_ID X not found among macro "
+                    "SOLVER definitions` and `null pointer to micro "
+                    "Belos solver` strings are not in the binary.)"
                 ),
                 (
-                    "[Numerical] The RVE boundary conditions must be "
-                    "periodic for standard computational "
-                    "homogenisation.  Non-periodic BCs (Dirichlet or "
-                    "Neumann) lead to over-stiff or over-compliant "
-                    "homogenised response. Signal: homogenised "
-                    "tangent C* differs from a reference simulation "
-                    "with periodic BCs by ~10-20% in the off-"
-                    "diagonal entries; uniaxial-tension homogenised "
-                    "stress/strain curve sits ~10-30% above a "
-                    "periodic reference (Dirichlet RVE over-"
-                    "constrains). (Audit 2026-06-02.)"
+                    "[Input] Every RVE boundary surface must be listed "
+                    "in a MICROSCALE CONDITIONS section of the MICRO "
+                    "file -- that section IS the homogenisation "
+                    "boundary, and 4C prescribes all its dofs from the "
+                    "macro deformation gradient. Signal: omitting it "
+                    "does not warn and does not abort cleanly.  The "
+                    "run parses, builds both scales, and takes a "
+                    "SEGMENTATION FAULT (signal 11, exit 139) inside "
+                    "Solid::ModelEvaluator::Structure::"
+                    "initialize_inertia_and_damping -> "
+                    "Core::FE::Discretization::evaluate, with no PROC "
+                    "0 ERROR banner and no mention of microscale, "
+                    "boundary or homogenisation anywhere in the "
+                    "output. (Verified by execution 2026-08-07 by "
+                    "deleting MICROSCALE CONDITIONS from "
+                    "sohex8_multiscale_micro.mat.4C.yaml.)"
+                ),
+                (
+                    "[Numerical] 4C's RVE boundary is "
+                    "linear-displacement, not periodic: MICROSCALE "
+                    "CONDITIONS toggles every dof on the listed "
+                    "surfaces to Dirichlet.  A Taylor/Dirichlet RVE "
+                    "is known to OVER-constrain and gives a stiffer "
+                    "homogenised response than a periodic one, so "
+                    "treat the FE^2 answer as an upper bound on "
+                    "stiffness and check RVE-size convergence rather "
+                    "than reaching for a PBC option. Signal: none "
+                    "from 4C -- there is no periodic-BC route for "
+                    "FE^2 to compare against and nothing warns.  "
+                    "Measure it by enlarging the RVE: a "
+                    "Dirichlet-bounded homogenised stiffness falls "
+                    "monotonically with RVE size, which is the "
+                    "diagnostic. (Source-verified 2026-08-07 in "
+                    "stru_multi/4C_stru_multi_microstatic_service.cpp; "
+                    "the earlier claim that 'the RVE boundary "
+                    "conditions must be periodic' described an option "
+                    "4C does not have.)"
                 ),
                 (
                     "[Input] Macro PROBLEM TYPE is "
@@ -220,31 +320,62 @@ class MultiscaleGenerator(BaseGenerator):
                 ),
                 (
                     "[Numerical] Convergence at the macro level "
-                    "depends on the quality of the micro tangent.  "
-                    "Numerical differentiation of the micro response "
-                    "can produce inaccurate tangents; algorithmic "
-                    "tangent from the micro solver is preferred. "
-                    "Signal: macro NOX residual halves slowly "
-                    "(linear-rate, not quadratic Newton) and "
-                    "MAXITER is hit on every macro step; switching "
-                    "MICRO_TANGENT to ALGORITHMIC restores quadratic "
-                    "convergence. (Audit 2026-06-02.)"
+                    "depends on the quality of the micro tangent -- "
+                    "but there is NO INPUT KEY for it.  4C has exactly "
+                    "one route: MicroStatic::static_homogenization "
+                    "condenses the micro stiffness onto the RVE "
+                    "boundary and returns the consistent (algorithmic) "
+                    "cmat.  You cannot select it, degrade it or "
+                    "replace it with numerical differentiation.  So if "
+                    "macro Newton converges at a linear rate, the "
+                    "tangent is not the knob: look at the MICRO file's "
+                    "own MAXITER / TOLRES / TOLDISP (an under-"
+                    "converged RVE returns a cmat that is not the "
+                    "tangent of what it actually solved) and at the "
+                    "macro NORMCOMBI_RESFDISP. Signal: the micro "
+                    "convergence settings live in the MICRO file, so a "
+                    "loosened tolerance there is invisible in the "
+                    "macro deck. (Corrected 2026-08-07: an earlier "
+                    "version told you to switch 'MICRO_TANGENT to "
+                    "ALGORITHMIC'.  THERE IS NO MICRO_TANGENT KEY -- "
+                    "it is absent from 4C's own --parameters grammar "
+                    "dump and from every file in src/ and "
+                    "tests/input_files/.  MAT_Struct_Multiscale's "
+                    "whole key set is MICROFILE, MICRODIS_NUM, "
+                    "INITVOL, RUNTIMEOUTPUT_GP.)"
                 ),
                 (
                     "[Output] Macro-scale results show "
                     "HOMOGENISED stress/strain. Micro-scale "
                     "fields (damage, plasticity) are NOT "
-                    "automatically output. Signal: opening "
+                    "visible there. Signal: opening "
                     "the macro IO/RUNTIME VTK OUTPUT "
                     "STRUCTURE VTU in ParaView shows "
                     "smooth homogenised stress from "
-                    "MAT_Multiscale; the micro-scale "
+                    "MAT_Struct_Multiscale; the micro-scale "
                     "fluctuations (e.g. damage localisation "
                     "in one RVE) are invisible in the macro "
-                    "output. Use the MULTISCALE micro-"
-                    "output writer (separate VTU per Gauss "
-                    "point) or post-process selected RVEs "
-                    "manually. (Audit 2026-06-02.)"
+                    "output. The micro output is a separate, "
+                    "REAL mechanism with two knobs: "
+                    "RUNTIMEOUTPUT_GP on the "
+                    "MAT_Struct_Multiscale material chooses "
+                    "which Gauss points write (all / none), "
+                    "and the cadence and field selection come "
+                    "from the MICRO file's own IO/RUNTIME VTK "
+                    "OUTPUT (INTERVAL_STEPS) and IO/RUNTIME "
+                    "VTK OUTPUT/STRUCTURE (DISPLACEMENT, "
+                    "STRESS_STRAIN, ELEMENT_OWNER, "
+                    "ELEMENT_MAT_ID) -- not from the macro "
+                    "file's. GAUSS_POINT_DATA_OUTPUT_TYPE must "
+                    "stay 'none' there; anything else asserts "
+                    "'Gauss point output not yet implemented "
+                    "on micro scale.' The micro writer also "
+                    "emits the homogenised tangent as a field "
+                    "named tangent_stiffness_tensor_cmat. "
+                    "(Source-verified 2026-08-07 in "
+                    "stru_multi/4C_stru_multi_microstatic.cpp; "
+                    "the earlier 'MULTISCALE micro-output "
+                    "writer' named no real setting.)"
                 ),
             ],
             "typical_experiments": [
@@ -340,35 +471,39 @@ class MultiscaleGenerator(BaseGenerator):
               TOLDISP: <macro_displacement_tolerance>
               RESULTSEVERY: <results_output_interval>
 
-            # == Solvers (both macro AND micro solvers in this file) ===========
+            # == Solver (MACRO only) ===========================================
+            # The MICRO solver is NOT declared here.  It is the
+            # LINEAR_SOLVER of the MICRO file's own STRUCTURAL DYNAMIC
+            # section, resolved against the MICRO file's own SOLVER
+            # sections.  There is no MICRO_SOLVER_ID anywhere in 4C.
             SOLVER 1:
               SOLVER: "UMFPACK"
               NAME: "macro_solver"
-            SOLVER 2:
-              SOLVER: "UMFPACK"
-              NAME: "micro_rve_solver"
 
             # == Materials =====================================================
             MATERIALS:
-              # Multiscale material: triggers FE^2
+              # Multiscale material: triggers FE^2.
+              # The complete key set is MICROFILE, MICRODIS_NUM, INITVOL,
+              # RUNTIMEOUTPUT_GP.  No DENS -- the macroscopic density is
+              # produced by homogenisation from the MICRO materials.
               - MAT: 1
                 MAT_Struct_Multiscale:
-                  MICRO_INPUT_FILE: "<micro_input_file_path>"
-                  MICRO_SOLVER_ID: <micro_solver_id>
-                  DENS: <homogenised_density>
+                  MICROFILE: "<micro_input_file_path>"
+                  MICRODIS_NUM: 1
+                  RUNTIMEOUTPUT_GP: all
 
             # == Boundary Conditions ===========================================
-
-            # Fixed face
+            # ONE block per section name: a section repeated at top level is
+            # a hard parse abort, "Section '<name>' is defined more than
+            # once." Put every Dirichlet surface in this single list.
             DESIGN SURF DIRICH CONDITIONS:
+              # Fixed face
               - E: <fixed_face_id>
                 NUMDOF: 3
                 ONOFF: [1, 1, 1]
                 VAL: [0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0]
-
-            # Load: prescribed displacement on loaded face
-            DESIGN SURF DIRICH CONDITIONS:
+              # Load: prescribed displacement on loaded face
               - E: <loaded_face_id>
                 NUMDOF: 3
                 ONOFF: [<dof1_fix>, <dof2_fix>, <dof3_fix>]

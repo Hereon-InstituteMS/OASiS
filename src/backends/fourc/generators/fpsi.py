@@ -37,11 +37,12 @@ class FPSIGenerator(BaseGenerator):
                 "skeleton deforms and ALE mesh motion tracks the fluid "
                 "domain boundary.  The PROBLEM TYPE is "
                 "'Fluid_Porous_Structure_Interaction'.  The problem "
-                "requires FLUID DYNAMIC, POROUS DYNAMIC (or "
-                "POROELASTICITY DYNAMIC), ALE DYNAMIC, and "
-                "FPSI DYNAMIC sections.  Materials include MAT_fluid "
-                "for the free fluid, MAT_StructPoro for the porous "
-                "skeleton, and MAT_FluidPoro for the pore fluid."
+                "requires FLUID DYNAMIC, POROELASTICITY DYNAMIC, "
+                "ALE DYNAMIC, and FPSI DYNAMIC sections.  Materials "
+                "include MAT_fluid for the free fluid, MAT_StructPoro "
+                "for the porous skeleton (which references a separate "
+                "MAT_PoroLaw* material by id), and MAT_FluidPoro for "
+                "the pore fluid."
             ),
             "required_sections": [
                 "PROBLEM TYPE",
@@ -57,6 +58,7 @@ class FPSIGenerator(BaseGenerator):
                 "CLONING MATERIAL MAP",
             ],
             "optional_sections": [
+                "FLUID DYNAMIC/POROUS-FLOW STABILIZATION",
                 "FLUID DYNAMIC/RESIDUAL-BASED STABILIZATION",
                 "FLUID DYNAMIC/NONLINEAR SOLVER TOLERANCES",
                 "IO/RUNTIME VTK OUTPUT",
@@ -67,8 +69,12 @@ class FPSIGenerator(BaseGenerator):
                 "MAT_StructPoro": {
                     "description": (
                         "Porous solid skeleton material.  Wraps an "
-                        "underlying elastic material and adds porosity "
-                        "and permeability for the porous medium."
+                        "underlying elastic material and adds the "
+                        "porosity of the porous medium.  It accepts "
+                        "exactly MATID, POROLAWID and INITPOROSITY; "
+                        "there is no POROSITYLAW key.  The porosity "
+                        "law is a SEPARATE material (MAT_PoroLaw*) "
+                        "referenced by id through POROLAWID."
                     ),
                     "parameters": {
                         "MATID": {
@@ -78,16 +84,37 @@ class FPSIGenerator(BaseGenerator):
                             ),
                             "range": "valid MAT ID",
                         },
-                        "POROSITYLAW": {
+                        "POROLAWID": {
                             "description": (
-                                "Porosity evolution law (e.g. 'constant', "
-                                "'linear')"
+                                "ID of the porosity-law material, e.g. a "
+                                "MAT_PoroLawNeoHooke / MAT_PoroLawLinear / "
+                                "MAT_PoroLawConstant entry defined "
+                                "separately in MATERIALS"
                             ),
-                            "range": "string",
+                            "range": "valid MAT ID",
                         },
                         "INITPOROSITY": {
                             "description": "Initial porosity (volume fraction of pores)",
                             "range": "(0, 1)",
+                        },
+                    },
+                },
+                "MAT_PoroLawNeoHooke": {
+                    "description": (
+                        "Porosity law referenced by MAT_StructPoro's "
+                        "POROLAWID.  It is its own MATERIALS entry, not "
+                        "a parameter of MAT_StructPoro."
+                    ),
+                    "parameters": {
+                        "BULKMODULUS": {
+                            "description": "Bulk modulus of the porous skeleton",
+                            "range": "> 0",
+                        },
+                        "PENALTYPARAMETER": {
+                            "description": (
+                                "Penalty parameter of the porosity law"
+                            ),
+                            "range": ">= 0",
                         },
                     },
                 },
@@ -151,7 +178,20 @@ class FPSIGenerator(BaseGenerator):
                 "FPSI_COUPLING": (
                     "Coupling conditions are applied on the fluid-porous "
                     "interface surfaces.  Both sides must be defined "
-                    "in DESIGN SURF FPSI COUPLING CONDITIONS."
+                    "in DESIGN FPSI COUPLING SURF CONDITIONS (that is "
+                    "the exact section name -- the geometry word SURF "
+                    "sits between COUPLING and CONDITIONS, not after "
+                    "DESIGN).  The 2-D form is DESIGN FPSI COUPLING "
+                    "LINE CONDITIONS."
+                ),
+                "POROCOUPLING": (
+                    "The porous sub-volume of the structure "
+                    "discretisation must be declared with DESIGN VOLUME "
+                    "POROCOUPLING CONDITION (3-D) or DESIGN SURFACE "
+                    "POROCOUPLING CONDITION (2-D).  Omitting it aborts "
+                    "in poroelast/4C_poroelast_base.cpp with 'no Poro "
+                    "Coupling Condition defined for porous media "
+                    "problem. Fix your input file!'."
                 ),
             },
             "pitfalls": [
@@ -363,7 +403,10 @@ class FPSIGenerator(BaseGenerator):
             #     node_set 2 = outlet
             #     node_set 3 = walls
             #     node_set 4 = FPSI interface (fluid side)
-            #   Poro mesh: "poro.e"
+            #   Poro mesh: "poro.e"  -- read through STRUCTURE GEOMETRY;
+            #   the porous domain lives in the *structure* discretisation
+            #   (there is no PORO GEOMETRY section in 4C) and the pore
+            #   fluid field is created by cloning structure -> porofluid.
             #     element_block 1 = porous domain (HEX8)
             #     node_set 1 = FPSI interface (poro side)
             #     node_set 2 = poro bottom (fixed)
@@ -411,7 +454,7 @@ class FPSIGenerator(BaseGenerator):
               TIMESTEP: <poro_timestep>
               NUMSTEP: <poro_num_steps>
               MAXTIME: <poro_max_time>
-              COUPALGO: "poro_monolithic"
+              COUPALGO: "Monolithic"
               LINEAR_SOLVER: 1
 
             # == ALE mesh motion ===============================================
@@ -426,7 +469,8 @@ class FPSIGenerator(BaseGenerator):
               NUMSTEP: <number_of_steps>
               MAXTIME: <end_time>
               RESULTSEVERY: <results_output_interval>
-              COUPALGO: "fpsi_monolithic"
+              COUPALGO: "fpsi_monolithic_plain"
+              ALPHABJ: <beavers_joseph_coefficient>
 
             # == Solvers =======================================================
             SOLVER 1:
@@ -443,12 +487,18 @@ class FPSIGenerator(BaseGenerator):
                 MAT_fluid:
                   DYNVISCOSITY: <fluid_dynamic_viscosity>
                   DENSITY: <fluid_density>
-              # Porous skeleton (wraps elastic sub-material)
+              # Porous skeleton (wraps elastic sub-material; the porosity
+              # law is a SEPARATE material referenced by POROLAWID)
               - MAT: 2
                 MAT_StructPoro:
                   MATID: 3
-                  POROSITYLAW: "<porosity_law>"
+                  POROLAWID: 7
                   INITPOROSITY: <initial_porosity>
+              # Porosity law referenced by MAT_StructPoro/POROLAWID
+              - MAT: 7
+                MAT_PoroLawNeoHooke:
+                  BULKMODULUS: <porosity_law_bulk_modulus>
+                  PENALTYPARAMETER: <porosity_law_penalty_parameter>
               # Elastic sub-material for skeleton
               - MAT: 3
                 MAT_ElastHyper:
@@ -471,14 +521,23 @@ class FPSIGenerator(BaseGenerator):
                   NUE: <ale_Poisson_ratio>
                   DENS: <ale_density>
 
-            # Clone fluid mesh -> ALE mesh
+            # Clone structure -> porofluid (pore fluid field) and
+            # fluid -> ALE (mesh motion of the free fluid)
             CLONING MATERIAL MAP:
+              - SRC_FIELD: "structure"
+                SRC_MAT: 2
+                TAR_FIELD: "porofluid"
+                TAR_MAT: 5
               - SRC_FIELD: "fluid"
                 SRC_MAT: 1
                 TAR_FIELD: "ale"
                 TAR_MAT: 6
 
             # == Boundary Conditions ===========================================
+
+            # 4C has no fluid-specific Dirichlet section: DESIGN SURF DIRICH
+            # CONDITIONS is used for the free fluid too (NUMDOF 4 = vx vy vz p),
+            # while the porous skeleton uses DESIGN SURF PORO DIRICH CONDITIONS.
 
             # Porous skeleton: fixed bottom
             DESIGN SURF DIRICH CONDITIONS:
@@ -487,9 +546,7 @@ class FPSIGenerator(BaseGenerator):
                 ONOFF: [1, 1, 1]
                 VAL: [0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0]
-
-            # Fluid: inlet
-            DESIGN SURF FLUID DIRICH CONDITIONS:
+              # Fluid: inlet
               - E: <inlet_face_id>
                 NUMDOF: 4
                 ONOFF: [1, 1, 1, 0]
@@ -510,14 +567,20 @@ class FPSIGenerator(BaseGenerator):
                 VAL: [0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0]
 
-            # FPSI coupling interface
-            DESIGN SURF FPSI COUPLING CONDITIONS:
+            # FPSI coupling interface.  The section name is
+            # "DESIGN FPSI COUPLING SURF CONDITIONS" and it accepts only
+            # E / ENTITY_TYPE / NODE_SET_NAME / coupling_id -- the two sides
+            # are distinguished by which discretisation owns the surface,
+            # not by an INTERFACE_SIDE key.
+            DESIGN FPSI COUPLING SURF CONDITIONS:
               - E: <fpsi_interface_fluid_id>
                 coupling_id: 1
-                INTERFACE_SIDE: "fluid"
               - E: <fpsi_interface_poro_id>
                 coupling_id: 1
-                INTERFACE_SIDE: "poro"
+
+            # Declares which part of the structure discretisation is porous
+            DESIGN VOLUME POROCOUPLING CONDITION:
+              - E: <poro_volume_id>
 
             # Inlet ramp function
             FUNCT<inlet_ramp_function>:
@@ -533,15 +596,18 @@ class FPSIGenerator(BaseGenerator):
                       MAT: 1
                       NA: ALE
 
-            PORO GEOMETRY:
+            # The porous domain is part of the STRUCTURE discretisation.
+            # Its pore-fluid material (MAT 5) is attached by the
+            # structure -> porofluid entry of CLONING MATERIAL MAP,
+            # not by an element-block key.
+            STRUCTURE GEOMETRY:
               FILE: "<poro_mesh_file>"
               ELEMENT_BLOCKS:
                 - ID: 1
-                  SOLIDPORO:
+                  SOLIDPORO_PRESSURE_VELOCITY_BASED:
                     HEX8:
                       MAT: 2
                       KINEM: <kinematics>
-                      POROFLUIDMAT: 5
 
             RESULT DESCRIPTION:
               - FLUID:
@@ -640,8 +706,19 @@ class FPSIGenerator(BaseGenerator):
         has_cloning = params.get("has_cloning_material_map")
         if has_cloning is not None and not has_cloning:
             issues.append(
-                "CLONING MATERIAL MAP is required for FPSI.  "
-                "It maps fluid material to the ALE pseudo-material."
+                "CLONING MATERIAL MAP is required for FPSI.  It needs "
+                "TWO entries: structure -> porofluid (creates the pore "
+                "fluid field from the porous skeleton) and fluid -> ale "
+                "(creates the ALE field for the free fluid)."
+            )
+
+        # POROSITYLAW does not exist; MAT_StructPoro takes POROLAWID,
+        # which must point at a separate MAT_PoroLaw* material.
+        if params.get("POROSITYLAW") is not None:
+            issues.append(
+                "MAT_StructPoro has no POROSITYLAW parameter.  Use "
+                "POROLAWID and point it at a separate MAT_PoroLaw* "
+                "material entry (e.g. MAT_PoroLawNeoHooke)."
             )
 
         return issues

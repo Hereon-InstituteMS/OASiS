@@ -235,6 +235,22 @@ class PorousMediaGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
+                    "[Input] The POROFLUIDMULTIPHASE element line takes MAT "
+                    "and nothing else. 4C's own element spec for it is a "
+                    "single required int MAT; there is no TYPE token, and "
+                    "'TYPE PoroFluidMultiPhase' appears in none of the 2171 "
+                    "upstream decks. Signal: a leftover token on an element "
+                    "line is NOT ignored - 4C aborts with \"After parsing, "
+                    "the line still contains 'TYPE PoroFluidMultiPhase'. "
+                    "Parsed parameters: MAT : 1\" from "
+                    "core/io/src/4C_io_input_spec.cpp. The message quotes "
+                    "the surplus text back at you, so it is one of the "
+                    "easier 4C errors to act on. (Audit 2026-08-07, "
+                    "verified by execution: the same deck runs to "
+                    "'processor 0 finished normally' with the token "
+                    "removed.)"
+                ),
+                (
                     "[Input] CRITICAL: Section names are LOWERCASE in "
                     "porous media.  Use 'porofluid_dynamic' NOT "
                     "'POROFLUID DYNAMIC'.  Using uppercase does NOT "
@@ -523,8 +539,8 @@ NODE COORDS:
   - "NODE 11 COORD 1.0 1.0 2.0"
   - "NODE 12 COORD 0.0 1.0 2.0"
 TRANSPORT ELEMENTS:
-  - "1 POROFLUIDMULTIPHASE HEX8 1 2 3 4 5 6 7 8 MAT 1 TYPE PoroFluidMultiPhase"
-  - "2 POROFLUIDMULTIPHASE HEX8 5 6 7 8 9 10 11 12 MAT 1 TYPE PoroFluidMultiPhase"
+  - "1 POROFLUIDMULTIPHASE HEX8 1 2 3 4 5 6 7 8 MAT 1"
+  - "2 POROFLUIDMULTIPHASE HEX8 5 6 7 8 9 10 11 12 MAT 1"
 
 # -- Design surface topology for BCs ----------------------------
 DSURF-NODE TOPOLOGY:

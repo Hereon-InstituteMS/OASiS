@@ -158,17 +158,17 @@ class TSIGenerator(BaseGenerator):
                 },
             },
             "time_integration": {
-                "STRUCTURAL_DYNAMIC": (
+                "STRUCTURAL DYNAMIC": (
                     "DYNAMICTYPE: 'Statics' for quasi-static thermo-mechanical "
                     "problems.  'GenAlpha' for transient dynamics with thermal "
                     "coupling."
                 ),
-                "THERMAL_DYNAMIC": (
+                "THERMAL DYNAMIC": (
                     "DYNAMICTYPE: 'Statics' for steady-state thermal field "
                     "within each TSI step.  'OneStepTheta' or 'GenAlpha' for "
                     "transient thermal analysis."
                 ),
-                "TSI_DYNAMIC": (
+                "TSI DYNAMIC": (
                     "Controls the overall coupled TSI time stepping.  "
                     "TIMESTEP, NUMSTEP, MAXTIME define the global time loop.  "
                     "ITEMAX sets max coupling iterations per step."
@@ -191,14 +191,17 @@ class TSIGenerator(BaseGenerator):
                     "'Invalid type of material law for wall element' "
                     "(4C_w1_mat.cpp), and on current builds SOLID QUAD4 "
                     "aborts with \"Element 'SOLID' does not seem to know "
-                    "cell type 'quad4'\".  For a 2D plane-strain problem use "
-                    "the 'plane_strain_2d' variant: a one-element-thick 3D "
-                    "SOLIDSCATRA HEX8 slab with u_z fixed on all nodes "
-                    "(exact plane strain) and the temperature field imposed "
-                    "volume-wide via DESIGN VOL THERMO DIRICH + a symbolic "
-                    "FUNCT (pass temp_expr) — verified against the 4C "
-                    "binary 2026-08-01, tip displacement within 0.5% of the "
-                    "analytic plane-strain thermal-expansion value."
+                    "cell type 'quad4'\".  For a 2D plane-strain problem "
+                    "build a pseudo-2D deck from the 'monolithic_3d' "
+                    "template: a one-element-thick 3D SOLIDSCATRA HEX8 "
+                    "slab with u_z fixed on all nodes (exact plane strain) "
+                    "and the temperature field imposed volume-wide via "
+                    "DESIGN VOL THERMO DIRICH + a symbolic FUNCT — this "
+                    "recipe was verified against the 4C binary 2026-08-01, "
+                    "tip displacement within 0.5% of the analytic "
+                    "plane-strain thermal-expansion value.  (There is no "
+                    "ready-made 'plane_strain_2d' template variant; "
+                    "requesting one raises ValueError.)"
                 ),
                 (
                     "One-way thermo->structure TSI REQUIRES 'TSI DYNAMIC/"
@@ -272,27 +275,21 @@ class TSIGenerator(BaseGenerator):
                     "Belos/Teko solver."
                 ),
             },
-            {
-                "name": "oneway_3d",
-                "description": (
-                    "3-D one-way TSI (thermo -> structure): heated beam, "
-                    "SOLIDSCATRA HEX8, COUPALGO tsi_oneway with "
-                    "COUPVARIABLE Temperature.  For cross-solver coupling "
-                    "where a partner supplies the thermal boundary data."
-                ),
-            },
-            {
-                "name": "plane_strain_2d",
-                "description": (
-                    "2-D plane-strain thermo-elasticity via a pseudo-2D "
-                    "thin slab: one SOLIDSCATRA HEX8 layer, u_z fixed on "
-                    "all nodes, temperature field imposed volume-wide via "
-                    "a symbolic FUNCT (param temp_expr).  THE route for 2D "
-                    "thermo-mechanics — 4C has no 2D TSI elements and "
-                    "WALL/SOLID QUAD4 both fail with the thermo material."
-                ),
-            },
         ]
+
+    # NOTE: 'oneway_3d' and 'plane_strain_2d' were advertised here but no
+    # template was ever wired into get_template(), so asking for either
+    # raised ValueError.  Both recipes are fully documented in the pitfalls
+    # above and are derived from 'monolithic_3d':
+    #   oneway_3d      - TSI DYNAMIC: COUPALGO tsi_oneway, plus
+    #                    TSI DYNAMIC/PARTITIONED: COUPVARIABLE: Temperature
+    #                    (the default Displacement silently gives zero
+    #                    displacement).
+    #   plane_strain_2d - one-element-thick SOLIDSCATRA HEX8 slab, u_z
+    #                    fixed on all nodes, temperature imposed volume-wide
+    #                    via DESIGN VOL THERMO DIRICH + a symbolic FUNCT.
+    # They are not listed until a template exists and has been verified by
+    # execution; advertising a variant that raises is worse than omitting it.
 
     # -- Templates ---------------------------------------------------------
 
@@ -564,9 +561,10 @@ class TSIGenerator(BaseGenerator):
                     f"TSI cannot use 2D elements ({elem_type}): 4C has no "
                     f"2D TSI elements, and MAT_Struct_ThermoStVenantK is "
                     f"rejected by WALL ('Invalid type of material law for "
-                    f"wall element').  Use the 'plane_strain_2d' variant "
-                    f"(one-element-thick SOLIDSCATRA HEX8 slab, u_z fixed "
-                    f"everywhere) for 2D plane-strain thermo-mechanics."
+                    f"wall element').  For 2D plane-strain "
+                    f"thermo-mechanics build a pseudo-2D deck from the "
+                    f"'monolithic_3d' template: a one-element-thick "
+                    f"SOLIDSCATRA HEX8 slab with u_z fixed everywhere."
                 )
             else:
                 issues.append(
