@@ -201,9 +201,19 @@ def eval_expr(e, x):
     statement about the string that went into the deck and not about the arrays
     it was built from."""
     x = np.asarray(x, float)
-    return eval(e.replace("^", "**"), {"__builtins__": {}},
-                {"x": x, "heaviside": lambda a: np.where(np.asarray(a) >= 0.0, 1.0, 0.0),
-                 "y": np.zeros_like(x), "z": np.zeros_like(x), "t": 0.0})
+    v = eval(e.replace("^", "**"), {"__builtins__": {}},
+             {"x": x, "heaviside": lambda a: np.where(np.asarray(a) >= 0.0, 1.0, 0.0),
+              "y": np.zeros_like(x), "z": np.zeros_like(x), "t": 0.0})
+    # BROADCAST. A CONSTANT expression — which is exactly what the iteration-1
+    # fallback traction produces — contains no `x`, so `eval` returns a SCALAR
+    # and every caller silently gets one value instead of len(x) of them. That
+    # collapsed the exported `normal_fluxes` to a single point on iteration 1
+    # and to len(x) points on iteration 2, and the coupling died at iteration 2
+    # with "participant solid changed its export length from 84 to 164". The
+    # driver caught it; a standalone run of this script could not, because the
+    # export it produces is well-formed and its DISPLACEMENT array is the right
+    # length either way.
+    return np.broadcast_to(np.asarray(v, float), x.shape).copy()
 
 
 def build_deck(exprs, monitor):
