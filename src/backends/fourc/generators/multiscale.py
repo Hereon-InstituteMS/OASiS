@@ -534,13 +534,34 @@ class MultiscaleGenerator(BaseGenerator):
 
             # ---------------------------------------------------------------
             # NOTE: The micro-scale RVE input file is SEPARATE.
-            # It should define:
-            #   - PROBLEM TYPE: Structure
-            #   - RVE geometry (unit cell with periodic mesh)
-            #   - Micro-scale materials (e.g. fiber + matrix)
-            #   - Periodic boundary conditions
-            #   - Its own SOLVER section
-            # The micro file path is specified in MICRO_INPUT_FILE above.
+            # It MUST define:
+            #   - PROBLEM TYPE: PROBLEMTYPE: "Structure"
+            #   - RVE geometry (NODE COORDS + STRUCTURE ELEMENTS, or a
+            #     STRUCTURE GEOMETRY block) plus its D*-NODE TOPOLOGY
+            #   - Micro-scale materials (e.g. fiber + matrix) -- these are
+            #     what supply the density, since the macro material has none
+            #   - MICROSCALE CONDITIONS listing EVERY RVE boundary surface,
+            #     e.g. for a cube:
+            #         MICROSCALE CONDITIONS:
+            #           - E: 1
+            #           - E: 2
+            #           - E: 3
+            #           - E: 4
+            #           - E: 5
+            #           - E: 6
+            #     4C prescribes all dofs of those nodes from the macro
+            #     deformation gradient.  Omitting the section SEGFAULTS with
+            #     no message.  Do NOT try to write periodic BCs instead --
+            #     4C's FE^2 RVE boundary is linear-displacement only.
+            #   - Its OWN SOLVER section and its own STRUCTURAL DYNAMIC with
+            #     LINEAR_SOLVER pointing at it.  TIMESTEP, NUMSTEP and
+            #     RESTARTEVERY are taken from the MACRO file, so keep them
+            #     consistent.
+            #   - Its own IO/RUNTIME VTK OUTPUT (INTERVAL_STEPS) and
+            #     IO/RUNTIME VTK OUTPUT/STRUCTURE: these control the MICRO
+            #     output, and GAUSS_POINT_DATA_OUTPUT_TYPE must stay 'none'.
+            # The micro file path is specified in MICROFILE above and is
+            # resolved relative to THIS file's directory.
             # ---------------------------------------------------------------
         """)
 
@@ -550,42 +571,65 @@ class MultiscaleGenerator(BaseGenerator):
         issues: list[str] = []
 
         # Check micro input file
-        micro_file = params.get("MICRO_INPUT_FILE")
+        micro_file = params.get("MICROFILE")
         if micro_file is not None:
             if not micro_file or micro_file == "":
                 issues.append(
-                    "MICRO_INPUT_FILE must be a non-empty file path."
+                    "MICROFILE must be a non-empty file path."
                 )
+        if params.get("MICRO_INPUT_FILE") is not None:
+            issues.append(
+                "MICRO_INPUT_FILE is not a 4C key.  MAT_Struct_Multiscale "
+                "names the micro input file with MICROFILE."
+            )
 
-        # Check micro solver ID
-        micro_solver = params.get("MICRO_SOLVER_ID")
-        if micro_solver is not None:
+        # Check micro discretisation number
+        microdis = params.get("MICRODIS_NUM")
+        if microdis is not None:
             try:
-                sid = int(micro_solver)
-                if sid < 1:
+                num = int(microdis)
+                if num < 1:
                     issues.append(
-                        f"MICRO_SOLVER_ID must be >= 1, got {sid}."
+                        f"MICRODIS_NUM must be >= 1, got {num}."
                     )
             except (TypeError, ValueError):
                 issues.append(
-                    f"MICRO_SOLVER_ID must be a positive integer, "
-                    f"got {micro_solver!r}."
+                    f"MICRODIS_NUM must be a positive integer, "
+                    f"got {microdis!r}."
+                )
+        if params.get("MICRO_SOLVER_ID") is not None:
+            issues.append(
+                "MICRO_SOLVER_ID is not a 4C key.  There is no macro-side "
+                "micro-solver id: the micro solver is the LINEAR_SOLVER of "
+                "the MICRO input file's own STRUCTURAL DYNAMIC section.  "
+                "MAT_Struct_Multiscale's second parameter is MICRODIS_NUM, "
+                "the micro discretisation number."
+            )
+
+        # Check RVE initial volume
+        initvol = params.get("INITVOL")
+        if initvol is not None:
+            try:
+                vol = float(initvol)
+                if vol < 0:
+                    issues.append(
+                        f"INITVOL must be >= 0, got {vol}."
+                    )
+            except (TypeError, ValueError):
+                issues.append(
+                    f"INITVOL must be a non-negative number, "
+                    f"got {initvol!r}."
                 )
 
-        # Check density
+        # Density is not a macro-material parameter at all
         density = params.get("DENS") or params.get("homogenised_density")
         if density is not None:
-            try:
-                rho = float(density)
-                if rho <= 0:
-                    issues.append(
-                        f"DENS (homogenised density) must be > 0, "
-                        f"got {rho}."
-                    )
-            except (TypeError, ValueError):
-                issues.append(
-                    f"DENS must be a positive number, got {density!r}."
-                )
+            issues.append(
+                "MAT_Struct_Multiscale takes no DENS.  The macroscopic "
+                "density is computed by the homogenisation procedure from "
+                "the MICRO materials; writing DENS here aborts the "
+                "MATERIALS section at parse."
+            )
 
         # Check tolerances
         for tol_key in ("TOLRES", "TOLDISP",

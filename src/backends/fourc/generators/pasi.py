@@ -49,14 +49,23 @@ class PASIGenerator(BaseGenerator):
                 "MATERIALS",
             ],
             "optional_sections": [
-                "PARTICLE DYNAMIC/INITIAL AND BOUNDARY CONDITIONS",
+                "PARTICLE DYNAMIC/DEM",
                 "PARTICLE DYNAMIC/SPH",
+                "PARTICLE DYNAMIC/PD",
+                "PARTICLE DYNAMIC/INITIAL AND BOUNDARY CONDITIONS",
                 "IO",
                 "IO/RUNTIME VTK OUTPUT",
                 "IO/RUNTIME VTK OUTPUT/STRUCTURE",
                 # NOTE: there is no IO/RUNTIME VTK OUTPUT/PARTICLES
                 # section in 4C. Writing one is a hard parse error.
-                # Particle output is unconditional at RESULTSEVERY.
+                # There is also no WRITE_PARTICLE_RUNTIME_VTK key
+                # anywhere: particle runtime output is unconditional,
+                # written on every step for which the result flag is set.
+                # The only WRITE_PARTICLE_* keys that exist are
+                # WRITE_PARTICLE_ENERGY (PARTICLE DYNAMIC/DEM) and
+                # WRITE_PARTICLE_WALL_INTERACTION (PARTICLE DYNAMIC/DEM
+                # and PARTICLE DYNAMIC/SPH), and both are content
+                # switches, not cadence switches.
             ],
             "materials": {
                 "MAT_ParticleDEM": {
@@ -162,17 +171,24 @@ class PASIGenerator(BaseGenerator):
                 },
             },
             "time_integration": {
-                "PASI_DYNAMIC": (
+                "PASI DYNAMIC": (
                     "Controls the coupled time stepping.  TIMESTEP, "
-                    "NUMSTEP, MAXTIME define the time loop.  The "
-                    "particle and structure fields are advanced together."
+                    "NUMSTEP, MAXTIME define the time loop, and they are "
+                    "the ONLY ones that act: the particle and structure "
+                    "fields are advanced together on this step.  COUPLING "
+                    "also lives here and defaults to "
+                    "partitioned_onewaycoup."
                 ),
-                "PARTICLE_DYNAMIC": (
-                    "Controls particle-specific settings: time integrator "
-                    "(e.g. VelocityVerlet), particle type, interaction "
-                    "model."
+                "PARTICLE DYNAMIC": (
+                    "Controls particle-specific settings: DYNAMICTYPE "
+                    "(e.g. VelocityVerlet), INTERACTION, "
+                    "PHASE_TO_MATERIAL_ID, GRAVITY_ACCELERATION and the "
+                    "PARTICLE_WALL_* keys.  It DOES accept TIMESTEP, "
+                    "NUMSTEP, RESULTSEVERY and RESTARTEVERY, but under "
+                    "PASI those four are dead: PASI DYNAMIC's values win. "
+                    "Upstream PASI decks leave them out entirely."
                 ),
-                "STRUCTURAL_DYNAMIC": (
+                "STRUCTURAL DYNAMIC": (
                     "Standard structural time integration.  For impact "
                     "problems, use explicit dynamics (GenAlpha with "
                     "appropriate spectral radius)."
@@ -450,8 +466,10 @@ class PASIGenerator(BaseGenerator):
               OUTPUT_STRUCTURE: true
               DISPLACEMENT: true
             # No IO/RUNTIME VTK OUTPUT/PARTICLES section exists — writing
-            # one is a hard parse error. Particle output is written
-            # unconditionally at the PASI DYNAMIC RESULTSEVERY interval.
+            # one is a hard parse error — and there is no
+            # WRITE_PARTICLE_RUNTIME_VTK key either. Particle output is
+            # written unconditionally at the PASI DYNAMIC RESULTSEVERY
+            # interval.
 
             # == Structure (deformable plate) ==================================
             STRUCTURAL DYNAMIC:
@@ -466,26 +484,48 @@ class PASIGenerator(BaseGenerator):
               RHO_INF: <genalpha_rho_inf>
 
             # == Particle ======================================================
+            # NO TIMESTEP / NUMSTEP / RESULTSEVERY / RESTARTEVERY here: they
+            # are legal keys but PASI DYNAMIC's values win and these are
+            # silently ignored. There is also no WRITE_PARTICLE_RUNTIME_VTK
+            # key in 4C — particle runtime output is unconditional.
             PARTICLE DYNAMIC:
               INTERACTION: "DEM"
-              TIMESTEP: <particle_timestep>
-              NUMSTEP: <particle_num_steps>
-              RESULTSEVERY: <particle_results_interval>
-              RESTARTEVERY: <particle_restart_interval>
-              WRITE_PARTICLE_RUNTIME_VTK: true
+              GRAVITY_ACCELERATION: "<gx> <gy> <gz>"
+              PHASE_TO_MATERIAL_ID: "phase1 1"
+              PARTICLE_WALL_SOURCE: "DiscretCondition"
+              PARTICLE_WALL_MOVING: true
+              PARTICLE_WALL_LOADED: true
+            # Contact properties live HERE, not in MAT_ParticleDEM.
+            PARTICLE DYNAMIC/DEM:
+              MAX_RADIUS: <max_particle_radius>
+              MAX_VELOCITY: <max_expected_particle_velocity>
+              REL_PENETRATION: <relative_penetration>
+              COEFF_RESTITUTION: <coefficient_of_restitution>
+              POISSON_RATIO: <particle_poisson_ratio>
 
             # == PASI coupling =================================================
+            # COUPLING defaults to partitioned_onewaycoup, i.e. a deck that
+            # omits it is a ONE-WAY run. The two-way schemes need at least
+            # one CONVTOL* set, since those default to -1.0.
             PASI DYNAMIC:
               TIMESTEP: <timestep>
               NUMSTEP: <number_of_steps>
               MAXTIME: <end_time>
               RESULTSEVERY: <results_output_interval>
+              RESTARTEVERY: <restart_interval>
+              COUPLING: partitioned_twowaycoup
+              CONVTOLSCALEDDISP: <scaled_displacement_tolerance>
+              CONVTOLRELATIVEDISP: <relative_displacement_tolerance>
+              CONVTOLSCALEDFORCE: <scaled_force_tolerance>
+              CONVTOLRELATIVEFORCE: <relative_force_tolerance>
 
             # == Binning strategy (spatial search) =============================
+            # ONE key, DOMAINBOUNDINGBOX, and it is a whitespace-separated
+            # STRING of six numbers "xmin ymin zmin xmax ymax zmax" — not a
+            # YAML list and not a LOWER/UPPER pair.
             BINNING STRATEGY:
               BIN_SIZE_LOWER_BOUND: <bin_size_lower_bound>
-              DOMAINBOUNDINGBOX_LOWER: [<domain_lower_x>, <domain_lower_y>, <domain_lower_z>]
-              DOMAINBOUNDINGBOX_UPPER: [<domain_upper_x>, <domain_upper_y>, <domain_upper_z>]
+              DOMAINBOUNDINGBOX: "<xmin> <ymin> <zmin> <xmax> <ymax> <zmax>"
 
             # == Solver ========================================================
             SOLVER 1:
@@ -525,6 +565,14 @@ class PASIGenerator(BaseGenerator):
                 ONOFF: [1, 1, 1]
                 VAL: [0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0]
+
+            # The coupling surface itself. Required because
+            # PARTICLE_WALL_SOURCE is "DiscretCondition". MAT points at the
+            # MAT_ParticleWallDEM entry; MAT: -1 (no wall material) is legal
+            # as long as no tangential, rolling or adhesion law is on.
+            DESIGN SURFACE PARTICLE WALL:
+              - E: <coupling_surface_id>
+                MAT: 4
 
             # == Particles =====================================================
             # PARTICLES is a YAML list of whitespace-delimited STRINGS, not

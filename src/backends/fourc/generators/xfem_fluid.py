@@ -324,8 +324,12 @@ class XFEMFluidGenerator(BaseGenerator):
             #   node_set 2 = outlet
             #   node_set 3 = walls (no-slip)
             #
-            # Cutter/level-set: a separate boundary mesh or level-set
-            #   function defining the interface geometry.
+            # Cutter mesh: a SECOND file holding the boundary mesh, read as
+            #   the structure discretisation, with
+            #   element_block 1 = cutter body (HEX8)
+            #   node_set 1 = the cutting surface
+            #   (or drop it entirely and describe the interface with a
+            #   level-set FUNCT instead -- see the note at STRUCTURE GEOMETRY)
             # ---------------------------------------------------------------
             TITLE:
               - "3-D XFEM fluid -- generated template"
