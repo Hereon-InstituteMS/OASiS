@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -51,6 +52,43 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
+
+# A `key=value` expectation must match the WHOLE value, not a prefix of it.
+#
+# The matcher is plain case-insensitive substring, so `same_name_files=1` stayed
+# matched when the fixture's own mutation turned the value into `10`. A DUNE pass
+# found that live and named two more of the same shape
+# (`umfpack_linear_iterations=1`, `k10_linear_iterations=1`); both survive only
+# because a boolean guard happens to sit beside the number. Measured across the
+# corpus, 2931 expectations have the `key=<int>` form and are prefixes of any
+# longer value.
+#
+# Fixing 2931 strings would be the wrong repair — the defect is in the matcher.
+# So for a needle that looks like an assertion (`key=value`, no spaces), the
+# character following the match must not continue the value: end of output, a
+# newline, a space, or punctuation is fine; another digit or letter is not.
+# Everything else — prose fragments, quoted diagnostics, multi-word phrases —
+# keeps plain substring matching, which is what those need.
+_ASSERTION = re.compile(r"^[A-Za-z_][\w.\[\]]*=\S+$")
+
+
+def _needle_present(needle: str, low_out: str) -> bool:
+    """True if `needle` appears in `low_out` without being truncated."""
+    low = needle.lower()
+    if not _ASSERTION.match(needle.strip()):
+        return low in low_out
+    start = 0
+    while True:
+        i = low_out.find(low, start)
+        if i == -1:
+            return False
+        j = i + len(low)
+        # A value continues only through word characters, a dot, or a sign;
+        # anything else (newline, space, comma, quote, EOF) ends it.
+        if j >= len(low_out) or not (low_out[j].isalnum()
+                                     or low_out[j] in "._-+"):
+            return True
+        start = i + 1
 
 def fixture_inventory_fingerprint() -> str:
     """Identity of the fixture set: which fixtures exist and what they contain.
@@ -523,9 +561,12 @@ def _eval_fixture(fixture_dir: Path,
     # Match expectations on captured output.
     low_out = out.lower()
     for needle in expect:
-        if needle.lower() in low_out:
+        if _needle_present(needle, low_out):
             result.expect_matched.append(needle)
     for needle in forbid:
+        # Forbidden strings keep PLAIN substring matching, deliberately. A
+        # forbid is a tripwire, and a tripwire should fire on the widest
+        # reading — if "Traceback" appears in any form we want the failure.
         if needle.lower() in low_out:
             result.forbid_violated.append(needle)
 

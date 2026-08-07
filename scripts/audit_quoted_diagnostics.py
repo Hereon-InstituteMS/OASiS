@@ -287,6 +287,31 @@ def _py_package_paths(module_names: list[str]) -> list[Path]:
                 p = Path(proc.stdout.strip())
                 if p.is_dir():
                     paths.append(p)
+                    continue
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+        # A failed import is not an absent package. Kratos is INSTALLED on this
+        # host and unimportable — `import KratosMultiphysics` dies on
+        # "libc.so.6: version GLIBC_2.32 not found", which is itself one of the
+        # warnings in the corpus. Requiring a working import therefore hid the
+        # entire Kratos source tree from every audit, and the fallback roots
+        # (scipy, numpy) made real Kratos variables look invented.
+        #
+        # For grepping a corpus we need the FILES, not a live module, and
+        # find_spec locates them without executing any of the package.
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-c",
+                 "import importlib.util as u,sys;"
+                 f"s=u.find_spec({name!r});"
+                 "print(next(iter(getattr(s,'submodule_search_locations',[]) "
+                 "or []), '') if s else '')"],
+                capture_output=True, text=True, timeout=60,
+                stdin=subprocess.DEVNULL)
+            if proc.returncode == 0 and proc.stdout.strip():
+                p = Path(proc.stdout.strip())
+                if p.is_dir():
+                    paths.append(p)
         except (subprocess.TimeoutExpired, OSError):
             continue
     return paths
