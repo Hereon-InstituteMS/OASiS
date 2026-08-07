@@ -944,3 +944,42 @@ is what the coverage note now says. The half that must not weaken does not: a
 participant whose export does not move at all is still a finding, floor or no
 floor. That took a second pass, because signal = 0 also satisfies
 `signal <= noise * margin` and the first guard routed it to coverage.
+
+### And the fourth, which the real coupling caught after the synthetic one passed
+
+Handing `check_residual_blocks` the effective tolerance instead of `tol` looked
+like the same fix as the one beside it, passed on a synthetic noisy pair, and
+was wrong. The real SPARTA coupling said so:
+
+    block(s) gas.normal_fluxes=1.00e+00 are still changing by more than
+    6.9e-01 relative, while the global norm reports convergence
+
+The driver measures the floor of ONE statistic — the global L2 residual over the
+stacked export vector. A block residual is the WORST ENTRY-WISE relative change
+of one block. A DSMC surface flux has entries near zero whose relative change
+between samples is order 1, so the second floor is far larger than the first and
+nothing relates them. **A measured floor belongs to the statistic it was
+measured on and transfers to no other**, which is easy to write down afterwards
+and was not obvious while fixing four instances of "judged against the wrong
+tolerance" in a row.
+
+There is therefore no threshold that means anything here under a floor, and
+choosing one to make a fixture pass would be the softening the branch exists to
+refuse. The check reports coverage instead: scale masking has NOT been ruled out
+on this run, it would take a per-block floor nothing measures, the per-block
+numbers are returned for the reader, and the decisive check remains an
+independent reference.
+
+Twice now the honest answer has been "say what could not be decided" rather than
+"decide it anyway". Both times the alternative was a number chosen to make a
+fixture pass, and both times the coverage note is more informative than the
+verdict would have been.
+
+WHAT WAS DELIBERATELY NOT TOUCHED. `check_interface_balance`,
+`check_interface_flux_profile`, `check_monolithic_consistency` and
+`check_interfaces_are_the_same_surface` also take tolerances, and none of them
+was changed. They judge conservation, geometry and agreement with a reference —
+quantities the residual criterion says nothing about. The rule is about
+consumers of the RESIDUAL, and the enumeration of those is complete:
+`check_convergence`, `check_residual_blocks`, `check_interface_sensitivity`, and
+the criterion notice itself.
