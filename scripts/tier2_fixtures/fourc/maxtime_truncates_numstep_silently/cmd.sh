@@ -77,7 +77,18 @@ probe() {  # $1 label, $2 dt, $3 numstep, $4 maxtime
   grep -o "Finalised step [0-9]* / [0-9]*" "$log" | tail -1 || true
 }
 
-probe maxtime_clips   0.1 100 0.3
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology: MAXTIME is no longer the
+# binding constraint in either arm that demonstrates truncation.  The first arm
+# gets MAXTIME 10.0 and runs all 100 requested steps — `maxtime_clips: EXIT=0
+# STEPS_RUN=3` disappears and the forbidden `Finalised step 100 / 100` appears —
+# and the zero arm gets MAXTIME 0.5 and runs its 5 steps, so
+# `maxtime_zero: EXIT=0 STEPS_RUN=0` disappears too.  The fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+MT_CLIP=0.3
+MT_ZERO=0
+if [ "$MUTATE" = "1" ]; then MT_CLIP=10.0; MT_ZERO=0.5; fi
+
+probe maxtime_clips   0.1 100 "$MT_CLIP"
 probe numstep_clips   0.1 3   100
-probe maxtime_zero    0.1 5   0
+probe maxtime_zero    0.1 5   "$MT_ZERO"
 exit 0

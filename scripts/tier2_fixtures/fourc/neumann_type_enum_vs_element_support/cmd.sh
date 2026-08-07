@@ -89,7 +89,17 @@ probe() {  # $1 = label, $2 = TYPE, $3 = needle
   grep -m1 -o "$3" "$TMP/$1.log" || echo "$1: NEEDLE_MISSING"
 }
 
-probe live      Live       "Finalised step 1 / 1"
-probe dead      Dead       "Unknown type of SurfaceNeumann condition"
-probe bogus     Follower   "possible values: Dead|Live|PressureGrad|orthopressure|pseudo_orthopressure"
+# MUTATION CONTROL.  T2_MUTATE=1 removes the pathology from both bad arms: they
+# carry TYPE "Live", which the parser accepts AND the 3D SOLID element
+# implements.  Both then run to completion, `dead: EXIT=1` becomes `dead: EXIT=0`
+# (a forbidden token), and neither the element-evaluation abort nor the parser's
+# possible-values list is printed — so the fixture must go red.
+MUTATE="${T2_MUTATE:-0}"
+DEAD_TYPE=Dead
+BOGUS_TYPE=Follower
+if [ "$MUTATE" = "1" ]; then DEAD_TYPE=Live; BOGUS_TYPE=Live; fi
+
+probe live      Live           "Finalised step 1 / 1"
+probe dead      "$DEAD_TYPE"   "Unknown type of SurfaceNeumann condition"
+probe bogus     "$BOGUS_TYPE"  "possible values: Dead|Live|PressureGrad|orthopressure|pseudo_orthopressure"
 exit 0

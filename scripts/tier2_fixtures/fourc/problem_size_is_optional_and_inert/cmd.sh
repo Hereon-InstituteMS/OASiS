@@ -25,7 +25,22 @@ trap 'rm -rf "$TMP"' EXIT
 # itself pitfall input_format#18.
 run4c() { stdbuf -oL -eL "$BIN" "$1" "$2" 2>&1; }
 
-mk() {  # $1 = PROBLEM SIZE block (may be empty), $2 = file
+# MUTATION CONTROL — a POSITIVE one, because this fixture asserts an ABSENCE of
+# effect and no removal of its "pathology" can make it red.  Making the absurd
+# counts correct just turns the third arm into a copy of the second, which
+# passes a fortiori; the claim is exactly that the two decks behave identically.
+# So the control instead proves the EXIT probe is a live measurement: T2_MUTATE=1
+# perturbs the pinned RESULT DESCRIPTION displacement in the absurd_counts arm by
+# 1%, well outside its 1e-12 tolerance.  4C's own result test then fails, the arm
+# exits 1, `absurd_counts: EXIT=0` disappears and the forbidden `absurd_counts:
+# EXIT=1` appears.  What that rules out is the case that would make this fixture
+# worthless — three arms whose exit codes are 0 no matter what the solver did.
+MUTATE="${T2_MUTATE:-0}"
+DISPY_GOOD=4.47909266337460053e-03
+DISPY_ABSURD_ARM="$DISPY_GOOD"
+[ "$MUTATE" = "1" ] && DISPY_ABSURD_ARM=4.52388359000834654e-03
+
+mk() {  # $1 = PROBLEM SIZE block (may be empty), $2 = file, $3 = pinned dispy
 cat > "$2" <<YAML
 $1
 PROBLEM TYPE:
@@ -86,24 +101,24 @@ RESULT DESCRIPTION:
       DIS: "structure"
       NODE: 3
       QUANTITY: "dispy"
-      VALUE: 4.47909266337460053e-03
+      VALUE: $3
       TOLERANCE: 1e-12
 YAML
 }
 
-probe() {  # $1 = label, $2 = PROBLEM SIZE block
-  mk "$2" "$TMP/$1.4C.yaml"
+probe() {  # $1 = label, $2 = PROBLEM SIZE block, $3 = pinned dispy
+  mk "$2" "$TMP/$1.4C.yaml" "$3"
   run4c "$TMP/$1.4C.yaml" "$TMP/o_$1" > "$TMP/$1.log" 2>&1
   echo "$1: EXIT=$?"
 }
 
-probe absent ""
+probe absent "" "$DISPY_GOOD"
 probe correct_counts "PROBLEM SIZE:
   ELEMENTS: 1
   NODES: 8
-  MATERIALS: 1"
+  MATERIALS: 1" "$DISPY_GOOD"
 probe absurd_counts "PROBLEM SIZE:
   ELEMENTS: 999
   NODES: 7
-  MATERIALS: 42"
+  MATERIALS: 42" "$DISPY_ABSURD_ARM"
 exit 0
