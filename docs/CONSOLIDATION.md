@@ -1001,3 +1001,53 @@ the point of all four fixes: `noise_aware_validation_stayed_empty=True`. A
 correct coupling judged at its measured floor must leave the findings block
 empty, because a non-empty one is a NOT VERIFIED verdict, and that verdict on a
 correct stochastic coupling is precisely what the branch was written to remove.
+
+---
+
+# What is NOT done, stated exactly
+
+## The consolidation is not finished — four branch tips are not ancestors
+
+Checked with `git merge-base --is-ancestor <branch> HEAD` after this merge:
+
+    merged:      coupling-revision, coupling-robustness, 4c-extraction,
+                 ngsolve-skfem-verify, kratos-sparta, dune-extraction,
+                 setup-and-portability, purge-eval-contamination
+    NOT merged:  knowledge/fenics-verify        1 commit  (execution ledger)
+                 knowledge/dealii-verify        1 commit  (execution ledger)
+                 knowledge/febio-extraction     1 commit  (execution ledger)
+                 feature/anti-fabrication      10 commits
+
+The three ledger commits are the same additive shape as the one already taken
+from coupling-revision. `feature/anti-fabrication` is real outstanding work,
+and one of its commits adds a GATE — `tests/test_fixtures_carry_a_mutation_
+control.py`, which does not exist in this tree — that would judge every fixture
+in the merged corpus, including the six coupling fixtures this merge brings.
+That gate should land before anyone reports a corpus-wide mutation figure.
+
+Two of its ten commits also edit `docs/CONSOLIDATION.md` (one adds 114 lines),
+so they will conflict with this file. Resolve by keeping both sections: they
+describe different findings and neither supersedes the other.
+
+## The Aitken comparative claim is not backed on this driver
+
+`aitken_beats_constant_on_an_unbalanced_ratio` FAILS against the merged tree
+(`aitken_reached_closed_form` and `aitken_beat_constant` both missing), for the
+same reason as the rho=4 stall recorded above: at rho=6 with theta=0.5 the ONE
+global theta no longer rescues the split that the per-participant theta did.
+The fixture is left failing rather than retuned, because retuning it would be
+choosing a ratio that makes the served sentence true instead of measuring
+whether it is.
+
+What the served knowledge still claims, and what is now behind it:
+
+    "Measured across conductance ratios rho from 1/4 to 9 and theta from 0.1
+     to 1.0 on this driver, Aitken matched or beat a constant theta almost
+     everywhere, and in a quarter of those settings it converged to the right
+     interface value where the SAME constant theta diverged"
+
+That 40-cell sweep was run on the PER-PARTICIPANT accelerator, which no longer
+exists. Two cells have been re-measured on the merged one and neither
+reproduces. The sentence should not be trusted until the sweep is re-run, and
+re-running it is the outstanding work — not editing the sentence to match two
+cells, which would be the same mistake in the other direction.
