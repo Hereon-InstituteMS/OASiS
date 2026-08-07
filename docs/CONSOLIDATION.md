@@ -837,3 +837,26 @@ taken from coupling-robustness unchanged. It is recorded here because the served
 sweep ("Aitken matched or beat a constant theta almost everywhere, measured
 across rho from 1/4 to 9") was measured on the OTHER driver, and one cell of it
 does not reproduce. The sweep has not been re-run.
+
+## Where this merge left the numbers
+
+The ten coupling / verification / participant test files, run serially with the
+suite's own interpreter, before (`ffb5d1c6`) and after:
+
+    before   3 failed, 282 passed, 3 skipped, 22 subtests passed
+    after    3 failed, 286 passed, 3 skipped, 22 subtests passed
+
+The failure SET is byte-identical and all three are pre-existing: they are
+`test_signal_verification.py`'s checks against `scan_results/tier2_results.json`,
+which carries no `fixture_fingerprint` and is therefore treated as stale — which
+is that gate working, not a regression. The +4 are the stochastic-branch tests
+`knowledge/coupling-revision` adds to `test_coupling_driver.py`, all passing.
+
+Fixtures re-run individually after the merge, each passing:
+`driver_invariants_the_contract_asserts` (mutations 3/3 KILLED),
+`aitken_clamp_bounds_theta`, `failure_table_reachable_from_a_symptom`,
+`reference_solutions_unreachable_through_the_tools`,
+`sparta_no_native_flux_bc`, `precice_absent_in_fourc_and_febio`,
+`sides_table_backed_by_runs`. Plus the four static fixture-hygiene gates
+(1349 passed, 1 skipped) over the whole fixture tree including the six new
+coupling fixtures.
