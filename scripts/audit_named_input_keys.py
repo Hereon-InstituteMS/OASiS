@@ -79,6 +79,12 @@ _STOPWORDS = {
     # formats, tools, protocols
     "XML", "YAML", "JSON", "HDF5", "VTK", "VTU", "VTP", "CSV", "TXT", "PVD",
     "MPI", "OPENMP", "CUDA", "GPU", "CPU", "RAM", "OS", "CLI", "API", "URL",
+    # Symbols from MPI, libc and reference BLAS. They appear in warning text
+    # because they are what the process dies inside, and they are identifier-
+    # shaped, so shape alone cannot separate them from an input key. None of
+    # them is a key of any backend here.
+    "MPI_ABORT", "MPI_COMM_WORLD", "SIGABRT", "SIGFPE", "SIGSEGV", "SIGKILL",
+    "DGEMM", "DGESV", "XERBLA",
     "UFL", "PETSC", "MUMPS", "UMFPACK", "SUPERLU", "BLAS", "LAPACK", "GMSH",
     # physics and numerics in caps
     "CFL", "PDE", "ODE", "FEM", "DEM", "SPH", "MPM", "PFEM", "DSMC", "DOF",
@@ -117,13 +123,60 @@ _ABSENCE_AFTER = re.compile(
     r"|was\s+invented"
     r"|appears\s+in\s+(?:zero|no)\b)", re.I)
 
+# A rejection IS an absence claim. "adding AREA0 to the material fails to match
+# section 'MATERIALS'" and "writing OUTPUT_SCATRA under IO/RUNTIME VTK OUTPUT is
+# a hard abort" are the CORRECTED form of exactly the fabrication this gate
+# exists for, and both were being reported as fresh fabrications.
+#
+# Kept as its own regex, anchored at ^, rather than as one more alternative
+# inside _ABSENCE_AFTER: that pattern opens with an unguarded `[^.;]{0,40}?`,
+# and a rejection branch nested under it can step straight over the and/or
+# guard below. The guard is what stops "`max_elems` is an EROSION parameter and
+# is not accepted by hex_refine" from silencing EROSION, a token that sentence
+# says nothing about — measured, not assumed: without it EROSION disappeared
+# from febio's list.
+_ABSENCE_AFTER_REJECT = re.compile(
+    r"^(?:(?!\band\b|\bor\b|[,;.])[^.;]){0,32}?"
+    r"(?:fails\s+to\s+match"
+    r"|is\s+(?:a\s+)?(?:hard\s+)?(?:parse\s+)?abort"
+    r"|is\s+rejected"
+    r"|are\s+rejected"
+    r"|is\s+not\s+accepted"
+    r"|is\s+refused)", re.I)
+
+# "... is NOT a SLIP_COEFF component of ...", "never takes THICKNESS or
+# PLANE_ASSUMPTION", "writing OUTPUT_SCATRA ... is a hard abort" put the denial
+# BEFORE the token, in shapes the general _ABSENCE_BEFORE does not cover.
+#
+# "the spelling" and "the earlier" have to sit IMMEDIATELY before the token.
+# Loose, they silenced ngsolve's "the spelling the shipped IMEX template itself
+# uses — DELETES ..." and dune's "the earlier 'cg cannot solve it' wording was
+# REFUTED ...", neither of which says anything about the token beside it.
+_ABSENCE_BEFORE_EXTRA = re.compile(
+    r"(?:\bnot\s+a\b"
+    r"|\bnever\s+takes\b"
+    r"|\bnever\s+accepts\b"
+    r"|\bno\s+\w+\s+called\b"
+    # The solver's own "Unknown type 'X'" / "Unknown celltype X" is the
+    # strongest statement possible that X does not exist, and quoting it is the
+    # right way to record an absence.
+    r"|\bunknown\s+celltype\b"
+    r"|\bunknown\s+type\b"
+    r"|\bthe\s+spelling\s+(?=$)"
+    r"|\bthe\s+earlier\s+[\x60'\"]?(?=$)"
+    r"|\bwriting\b"
+    r"|\badding\b)"
+    r"[^.;]{0,60}$", re.I)
+
 
 def _absence_asserted(text: str, start: int, end: int) -> bool:
     """True when the surrounding prose says this identifier does NOT exist."""
     back = text[max(0, start - 120):start]
-    if _ABSENCE_BEFORE.search(back):
+    if _ABSENCE_BEFORE.search(back) or _ABSENCE_BEFORE_EXTRA.search(back):
         return True
-    return bool(_ABSENCE_AFTER.search(text[end:end + 120]))
+    fwd = text[end:end + 180]
+    return bool(_ABSENCE_AFTER.search(fwd)
+                or _ABSENCE_AFTER_REJECT.search(fwd))
 
 
 # Words that mark the token beside them as an input key rather than emphasis.
@@ -237,6 +290,9 @@ def template_keys(backend: str) -> list[tuple[Path, str]]:
     arterial-network template; a key that appeared solely in a template would
     have passed silently.
 
+    Covers both shapes: keys emitted from a multi-line Python string, and keys
+    written in a deck file that ships beside the backend.
+
     That is the same mistake `test_assembled_payload_is_clean` was written to
     correct one level up — an audit can be rigorous and still be pointed at the
     wrong surface. A wrong key in prose misleads a reader who can push back. A
@@ -246,6 +302,19 @@ def template_keys(backend: str) -> list[tuple[Path, str]]:
     out: list[tuple[Path, str]] = []
     if not be_dir.is_dir():
         return out
+
+    # Decks that ship as FILES, not as Python string literals. 4C's templates
+    # moved out of .py into src/backends/fourc/decks/*.4C.yaml so the exact
+    # bytes that were executed are the exact bytes that ship — which is right,
+    # and which silently moved the single most dangerous surface in the corpus
+    # out from under this gate. A key invented in a file is written into the
+    # user's input deck exactly as surely as one invented in a string literal.
+    for deck in sorted(be_dir.rglob("*.yaml")) + sorted(be_dir.rglob("*.yml")):
+        text = deck.read_text(errors="ignore")
+        for k in _TEMPLATE_KEY.findall(text):
+            if k not in _STOPWORDS:
+                out.append((deck, k))
+
     for py in sorted(be_dir.rglob("*.py")):
         try:
             tree = ast.parse(py.read_text(errors="ignore"))

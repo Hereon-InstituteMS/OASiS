@@ -32,7 +32,7 @@ class PorousMediaGenerator(BaseGenerator):
             "description": (
                 "The porous media module in 4C solves single-phase or multiphase "
                 "flow through porous media using a pressure-based formulation.  "
-                "CRITICAL: this module uses LOWERCASE section names "
+                "CRITICAL: this module uses lowercase section names "
                 "(porofluid_dynamic, NOT POROFLUID DYNAMIC).  The PROBLEM TYPE is "
                 "'porofluid_pressure_based' (for rigid skeleton) or "
                 "'porofluid_pressure_based_elasticity' (for deformable skeleton "
@@ -59,7 +59,7 @@ class PorousMediaGenerator(BaseGenerator):
             ],
             "section_naming": {
                 "CRITICAL": (
-                    "Porous media sections use LOWERCASE names unlike most "
+                    "Porous media sections use lowercase names unlike most "
                     "other 4C modules.  Use 'porofluid_dynamic' NOT "
                     "'POROFLUID DYNAMIC'.  Sub-sections also lowercase: "
                     "'porofluid_dynamic/time_integration', etc."
@@ -251,7 +251,7 @@ class PorousMediaGenerator(BaseGenerator):
                     "removed.)"
                 ),
                 (
-                    "[Input] CRITICAL: Section names are LOWERCASE in "
+                    "[Input] CRITICAL: Section names are lowercase in "
                     "porous media.  Use 'porofluid_dynamic' NOT "
                     "'POROFLUID DYNAMIC'.  Using uppercase does NOT "
                     "silently fall back to defaults -- it is a hard abort "
@@ -276,7 +276,7 @@ class PorousMediaGenerator(BaseGenerator):
                     "MATERIALS section is being read.  The stack names "
                     "the sub-factory (e.g. "
                     "Mat::PAR::PoroDensityLaw::create_density_law), so "
-                    "the abort surfaces LEVELS BELOW the entry you "
+                    "the abort surfaces levels below the entry you "
                     "edited. (Verified by execution 2026-08-06; an "
                     "earlier version quoted `referenced material ID X "
                     "not found in MATERIALS`, which is not in the "

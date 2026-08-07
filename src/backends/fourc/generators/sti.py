@@ -187,7 +187,7 @@ class STIGenerator(BaseGenerator):
                     "DIFF_COEF_TEMP_SCALE_FUNCT and "
                     "COND_TEMP_SCALE_FUNCT at 0 and are still "
                     "two-way. Signal: set SORET to 0 and the "
-                    "SPECIES field moves, not just the "
+                    "species field moves, not just the "
                     "temperature -- that is the test for "
                     "whether your coupling is live.  Use the "
                     "temperature-scaling functions for "
@@ -226,8 +226,8 @@ class STIGenerator(BaseGenerator):
                     "cannot occur.)"
                 ),
                 (
-                    "[Input] The thermo field is a CLONED "
-                    "SCATRA discretisation, so its result "
+                    "[Input] The thermo field is a cloned "
+                    "scatra discretisation, so its result "
                     "checks are SCATRA entries with DIS: "
                     "'thermo' and QUANTITY: 'phi' -- never "
                     "THERMAL entries and never QUANTITY: "
@@ -284,7 +284,7 @@ class STIGenerator(BaseGenerator):
                     "4C_scatra_ele_parameter_elch.cpp, exit 1. "
                     "With SCATRATIMINTTYPE left at its default "
                     "'Standard', the run parses, builds both "
-                    "fields, writes its t=0 output and THEN "
+                    "fields, writes its t=0 output and then "
                     "dies on a raw 'Signal: Floating point "
                     "exception (8)' while constructing "
                     "ScaTraEleCalcElchElectrodeSTIThermo -- no "

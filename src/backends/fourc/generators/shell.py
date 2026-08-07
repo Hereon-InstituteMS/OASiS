@@ -107,7 +107,7 @@ class ShellGenerator(BaseGenerator):
                 ),
                 (
                     "[Input] The SHELL7P director is computed by the element "
-                    "and CANNOT be given in the input: there is no director "
+                    "and cannot be given in the input: there is no director "
                     "key. Do not spend time looking for one. Signal: any "
                     "attempt (e.g. 'DIR 0 0 1' on the element line) is "
                     "rejected with \"After parsing, the line still contains "

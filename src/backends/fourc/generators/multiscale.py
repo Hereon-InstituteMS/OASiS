@@ -227,7 +227,7 @@ class MultiscaleGenerator(BaseGenerator):
                     "(Verified by execution 2026-08-07.  An earlier "
                     "version quoted `failed to load micro input file "
                     "X` and `micro input file missing MATERIALS "
-                    "section`; NEITHER STRING IS IN THE 4C BINARY.)"
+                    "section`; neither string is in the 4C binary.)"
                 ),
                 (
                     "[Input] There is no macro-side micro-solver key. "
@@ -342,7 +342,7 @@ class MultiscaleGenerator(BaseGenerator):
                     "symptom is the macro NOX residual falling "
                     "linearly. (Corrected 2026-08-07: an earlier "
                     "version told you to switch 'MICRO_TANGENT to "
-                    "ALGORITHMIC'.  THERE IS NO MICRO_TANGENT KEY -- "
+                    "ALGORITHMIC'.  there is no MICRO_TANGENT key -- "
                     "it is absent from 4C's own --parameters grammar "
                     "dump and from every file in src/ and "
                     "tests/input_files/.  MAT_Struct_Multiscale's "
@@ -351,7 +351,7 @@ class MultiscaleGenerator(BaseGenerator):
                 ),
                 (
                     "[Output] Macro-scale results show "
-                    "HOMOGENISED stress/strain. Micro-scale "
+                    "homogenised stress/strain. Micro-scale "
                     "fields (damage, plasticity) are NOT "
                     "visible there. Signal: opening "
                     "the macro IO/RUNTIME VTK OUTPUT "

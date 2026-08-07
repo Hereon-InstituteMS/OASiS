@@ -72,7 +72,7 @@ class FluidTurbulenceGenerator(BaseGenerator):
                     'offers Af_Gen_Alpha, BDF2, Np_Gen_Alpha, One_Step_Theta and '
                     'Stationary, all implicit, and asking for an explicit scheme is '
                     'rejected with that list. Signal: an oversized step is '
-                    'therefore STABLE and silent. The run completes, produces no '
+                    'therefore accepted and silent. The run completes, produces no '
                     'NaN, and prints no CFL or Courant warning of any kind, while '
                     'the results drift. Only a reference solution or a step-size '
                     'study will catch it. (Audit 2026-06-02; corrected by execution '

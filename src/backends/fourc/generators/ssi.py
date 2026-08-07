@@ -343,7 +343,7 @@ class SSIGenerator(BaseGenerator):
                 ),
                 (
                     "[Input] The S2I condition sections put the "
-                    "GEOMETRY WORD LAST -- DESIGN S2I KINETICS "
+                    "geometry word last -- DESIGN S2I KINETICS "
                     "SURF CONDITIONS, DESIGN S2I MESHTYING SURF "
                     "CONDITIONS -- and there is no 'S2I "
                     "COUPLING' condition section at all.  "

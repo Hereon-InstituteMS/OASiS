@@ -216,7 +216,7 @@ class SSTIGenerator(BaseGenerator):
                     "across the STRUCTURAL, SCALAR TRANSPORT "
                     "and THERMAL sections: SSTI has ONE time "
                     "step, SSTI CONTROL's, and it overrides "
-                    "the per-field values SILENTLY. Signal: "
+                    "the per-field values silently. Signal: "
                     "deliberately inconsistent per-field "
                     "TIMESTEP and NUMSTEP values are accepted, "
                     "produce no warning, and leave the result "
