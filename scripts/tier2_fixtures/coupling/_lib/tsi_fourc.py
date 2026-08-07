@@ -105,12 +105,26 @@ from tsi_monolithic import TsiProblem
 #   Measured, on exactly this problem. Those entries carry no information: a
 #   relative change of 1e-06 on an entry that is 1e-08 of the largest is an
 #   absolute change of 1e-14 of the field. The check is not wrong to be
-#   conservative, and the answer is not to loosen it but to exchange fields that
-#   are bounded away from zero, which an offset does.
+#   conservative, and the answer is not to loosen it but to exchange fields
+#   whose DYNAMIC RANGE is narrow, which an offset gives.
+#
+#   HOW BIG THE OFFSET HAS TO BE WAS MEASURED, and the first guess was too
+#   small. At t_old = t_ref + 0.3 the reverse direction — which on an
+#   unstrained start releases the pre-strain and therefore COOLS the body —
+#   pulls the far field down to theta = 0.16 against a boundary value of 0.9,
+#   a dynamic range of 5.6, and the worst block landed at 1.09e-11 against a
+#   limit of 1.0e-11. Nine percent of margin is a coin flip, and tightening
+#   `tol` does not help: the limit is 10*tol, so the ratio of block to limit is
+#   unchanged by it. Only narrowing the range does.
 FOURC_NATIVE = TsiProblem(alpha=1.2e-4, t_ref=293.0, t_old=293.0,
                           t_hot=293.3, t_hot_dy=0.0, t_cold=293.0)
-FOURC_COUPLED = TsiProblem(alpha=1.2e-4, t_ref=293.0, t_old=293.3,
-                           t_hot=293.9, t_hot_dy=0.0, t_cold=293.6,
+#   The offset also cannot be made arbitrarily large: it raises T/T_ref - 1,
+#   which is exactly the modelling difference against 4C's reverse term. At
+#   theta ~ 2 the bound is 8e-03 and the difference it allows in the answer
+#   (~25% of which is the reverse direction) reaches the 2e-03 the comparison
+#   is held to. theta ~ 1 keeps the bound at 5e-03 and the range at ~2.6.
+FOURC_COUPLED = TsiProblem(alpha=1.2e-4, t_ref=293.0, t_old=294.0,
+                           t_hot=294.4, t_hot_dy=0.0, t_cold=294.0,
                            unstrained_start=True)
 
 
