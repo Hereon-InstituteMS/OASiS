@@ -1,5 +1,5 @@
 {
-  "commit": "8552c4f9093a",
+  "commit": "05a53a44f09b",
   "tree_dirty": false,
   "rows": [
     {
@@ -7,9 +7,9 @@
       "fixture": "aux_dem_is_3d_only_spheric_particle",
       "claim": "auxiliary_overview::4",
       "claim_text_sha": "afe6274674628f6c",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:45:57+00:00",
+      "recorded": "2026-08-07T16:13:16+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -35,9 +35,9 @@
       "fixture": "beam_requires_rotation_variable",
       "claim": "linear_elasticity:4",
       "claim_text_sha": "a1822e4e28f39d34",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:45:57+00:00",
+      "recorded": "2026-08-07T16:13:17+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -63,20 +63,20 @@
       "fixture": "cablenet_check_before_initialize_segfaults",
       "claim": "cable_net:0",
       "claim_text_sha": "9a47fe15bdb8f4c6",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:45:58+00:00",
+      "recorded": "2026-08-07T16:13:17+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.8,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.5,
+        "seconds": 0.6,
         "missing": [
           "check_first_returncode=-11",
           "check_first_survived=False",
@@ -91,9 +91,9 @@
       "fixture": "cablenet_empirical_spring_polynomial_variable",
       "claim": "cable_net:4",
       "claim_text_sha": "48306a1603f173d2",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:45:59+00:00",
+      "recorded": "2026-08-07T16:13:18+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -104,7 +104,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "probe[CN.SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL]=True_expected=True",
           "probe[KM.SPRING_DEFORMATION_EMPIRICAL_POLYNOMIAL]=False_expected=False",
@@ -119,13 +119,13 @@
       "fixture": "cablenet_empirical_spring_rhs_aliasing",
       "claim": "cable_net::2",
       "claim_text_sha": "f4aee5bfb1ff97ab",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:45:59+00:00",
+      "recorded": "2026-08-07T16:13:19+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -147,9 +147,9 @@
       "fixture": "cablenet_line3dn_stub_geometry",
       "claim": "cable_net::10",
       "claim_text_sha": "318310d941cbf438",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:00+00:00",
+      "recorded": "2026-08-07T16:13:19+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -160,7 +160,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "domain_size_raised=True",
           "domain_size_message_has_source_typo=True",
@@ -175,20 +175,20 @@
       "fixture": "cablenet_process_wrappers_fail",
       "claim": "cable_net:12",
       "claim_text_sha": "0faaaa573f679e3b",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:00+00:00",
+      "recorded": "2026-08-07T16:13:20+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.3,
+        "seconds": 0.4,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.3,
+        "seconds": 0.4,
         "missing": [
           "mismatched_arrays_raised=True",
           "raiser=TypeError",
@@ -203,9 +203,9 @@
       "fixture": "cablenet_registry_split_vs_structural",
       "claim": "cable_net:3",
       "claim_text_sha": "112387c806593719",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:01+00:00",
+      "recorded": "2026-08-07T16:13:21+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -231,9 +231,9 @@
       "fixture": "cablenet_ring_check_ignores_properties",
       "claim": "cable_net:7",
       "claim_text_sha": "0ce9e93b1610d597",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:02+00:00",
+      "recorded": "2026-08-07T16:13:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -258,9 +258,9 @@
       "fixture": "cablenet_sliding_cable_requires_constitutive_law",
       "claim": "cable_net:6",
       "claim_text_sha": "e79cac5074048de1",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:02+00:00",
+      "recorded": "2026-08-07T16:13:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -286,9 +286,9 @@
       "fixture": "cablenet_sliding_edge_process_paths",
       "claim": "cable_net::13",
       "claim_text_sha": "7739e7d094db9d12",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:03+00:00",
+      "recorded": "2026-08-07T16:13:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -299,7 +299,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.3,
+        "seconds": 0.2,
         "missing": [
           "wrapper_partial_input_error=RuntimeError",
           "wrapper_validates_defaults_against_user_input=True",
@@ -314,9 +314,9 @@
       "fixture": "cablenet_spring_mass_matrix_always_lumped",
       "claim": "cable_net:5",
       "claim_text_sha": "1c710949d19c0694",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:03+00:00",
+      "recorded": "2026-08-07T16:13:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -342,9 +342,9 @@
       "fixture": "cablenet_vtkoutput_rejects_line3dn",
       "claim": "cable_net:1",
       "claim_text_sha": "c572b6a5968949a6",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:03+00:00",
+      "recorded": "2026-08-07T16:13:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -370,9 +370,9 @@
       "fixture": "cda_conductivity_is_nodal",
       "claim": "poisson:4",
       "claim_text_sha": "1a7de2eff46c70a9",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:04+00:00",
+      "recorded": "2026-08-07T16:13:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -397,9 +397,9 @@
       "fixture": "cda_element_diffusion_vs_mass",
       "claim": "poisson:2",
       "claim_text_sha": "9e68a4a2319b75e7",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:04+00:00",
+      "recorded": "2026-08-07T16:13:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -423,13 +423,13 @@
       "fixture": "chimera_requires_fluiddynamics",
       "claim": "chimera:0",
       "claim_text_sha": "2b01b965f03a9c39",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:04+00:00",
+      "recorded": "2026-08-07T16:13:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -451,9 +451,9 @@
       "fixture": "chimera_wheel_installs_but_import_fails",
       "claim": "chimera:1",
       "claim_text_sha": "a1ea7bf107d5e698",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:05+00:00",
+      "recorded": "2026-08-07T16:13:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -479,20 +479,20 @@
       "fixture": "constitutive_law_class_not_instance",
       "claim": "linear_elasticity:8",
       "claim_text_sha": "8cce49f4d2c444fd",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:05+00:00",
+      "recorded": "2026-08-07T16:13:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "TypeError",
           "incompatible function arguments"
@@ -505,20 +505,20 @@
       "fixture": "constitutive_law_registry_names",
       "claim": "constitutive_laws:0",
       "claim_text_sha": "babe84b980e32ff6",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:06+00:00",
+      "recorded": "2026-08-07T16:13:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "all_stale_names_unresolvable=True",
           "FORBIDDEN:FAIL:"
@@ -531,20 +531,20 @@
       "fixture": "contact_application_is_on_pypi_after_all",
       "claim": "auxiliary_overview::5",
       "claim_text_sha": "35a07730139f89a5",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:06+00:00",
+      "recorded": "2026-08-07T16:13:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "importable[ContactStructuralMechanicsApplication]=True_expected=True",
           "importable[ContactMechanicsApplication]=False_expected=False",
@@ -559,20 +559,20 @@
       "fixture": "contact_condition_naming_with_shape_suffix",
       "claim": "contact:0",
       "claim_text_sha": "635ffbd9c977948e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:06+00:00",
+      "recorded": "2026-08-07T16:13:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "all_base_names_rejected=True"
         ]
@@ -584,13 +584,13 @@
       "fixture": "contact_mortar_entities_are_conditions",
       "claim": "contact:1",
       "claim_text_sha": "e5d20d767c60b663",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:07+00:00",
+      "recorded": "2026-08-07T16:13:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -612,20 +612,20 @@
       "fixture": "cosimulation_accelerator_mapper_names",
       "claim": "cosimulation:0",
       "claim_text_sha": "fd2c7b4cb4aef57e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:07+00:00",
+      "recorded": "2026-08-07T16:13:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.4,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.3,
+        "seconds": 0.4,
         "missing": [
           "ibqn_literal_present=False",
           "empire_anywhere_in_mapping_binary=False"
@@ -638,9 +638,9 @@
       "fixture": "cpf_freestream_variable_names",
       "claim": "compressible_potential:1",
       "claim_text_sha": "c810b21dc41b8ab8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:08+00:00",
+      "recorded": "2026-08-07T16:13:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -666,9 +666,9 @@
       "fixture": "cpf_potentialwall_needs_shape_suffix",
       "claim": "compressible_potential:0",
       "claim_text_sha": "d7f6b84c18b5c77d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:08+00:00",
+      "recorded": "2026-08-07T16:13:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -694,20 +694,20 @@
       "fixture": "curved_mms_conductivity_is_nodal_not_property",
       "claim": "curved_mms:1",
       "claim_text_sha": "c386cb4dc3a62c8a",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:09+00:00",
+      "recorded": "2026-08-07T16:13:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[KM.CONDUCTIVITY]=True_expected=True",
           "probe[CDA.CONDUCTIVITY]=False_expected=False",
@@ -722,9 +722,9 @@
       "fixture": "dam_hydro_condition_load_process_surface",
       "claim": "dam:1",
       "claim_text_sha": "3850aed4333aa667",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:09+00:00",
+      "recorded": "2026-08-07T16:13:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -750,20 +750,20 @@
       "fixture": "dam_needs_sma_line_load_condition",
       "claim": "dam:2",
       "claim_text_sha": "8cf62e9935399e5d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:09+00:00",
+      "recorded": "2026-08-07T16:13:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "registered[LineLoadCondition2D2N]=True_expected=True",
           "registered[DamLineLoadCondition2D2N]=False_expected=False",
@@ -778,9 +778,9 @@
       "fixture": "dam_smoothing_scheme_nodal_set",
       "claim": "dam:4",
       "claim_text_sha": "b6c1b43f8bb3db7a",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:10+00:00",
+      "recorded": "2026-08-07T16:13:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -806,9 +806,9 @@
       "fixture": "dam_thermal_law_class_vs_registered_string",
       "claim": "dam:0",
       "claim_text_sha": "005e1e585091b6a7",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:10+00:00",
+      "recorded": "2026-08-07T16:13:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -834,9 +834,9 @@
       "fixture": "dam_thermomech_element_variables",
       "claim": "dam:3",
       "claim_text_sha": "e0c7f02deedb1fa4",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:10+00:00",
+      "recorded": "2026-08-07T16:13:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -862,20 +862,20 @@
       "fixture": "dem_constitutive_law_names_exact",
       "claim": "constitutive_laws:1",
       "claim_text_sha": "ad99aeae89fd9531",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:11+00:00",
+      "recorded": "2026-08-07T16:13:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[DEM.DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
           "probe[DEM.DEM_D_Linear_viscous_Coulomb]=True_expected=True",
@@ -890,9 +890,9 @@
       "fixture": "dem_density_spelling_erases_every_particle",
       "claim": "dem::6",
       "claim_text_sha": "5cbbbf8c9ae82a2b",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:11+00:00",
+      "recorded": "2026-08-07T16:13:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -903,7 +903,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.8,
+        "seconds": 1.9,
         "missing": [
           "probe[wrong_key_particle_density_is_zero]=0.0_expected=0.0",
           "probe[wrong_key_density_holds_the_value]=2650.0_expected=2650.0",
@@ -917,14 +917,14 @@
       "backend": "kratos",
       "fixture": "dem_every_entity_submodelpart_needs_an_assignation_row",
       "claim": "dem::10",
-      "claim_text_sha": "71f536ab3296c9fb",
-      "commit": "8552c4f9093a",
+      "claim_text_sha": "06224025b2a93fed",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:15+00:00",
+      "recorded": "2026-08-07T16:13:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.3,
+        "seconds": 0.4,
         "missing": []
       },
       "control": "env",
@@ -946,20 +946,20 @@
       "fixture": "dem_finaltime_overrides_problem_data_end_time",
       "claim": "dem::9",
       "claim_text_sha": "9ef47cbd7fb1b3f2",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:16+00:00",
+      "recorded": "2026-08-07T16:13:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.7,
+        "seconds": 1.9,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.3,
+        "seconds": 0.5,
         "missing": [
           "probe[stopped_at_the_FinalTime_default]=True_expected=True",
           "stop_time_rounded=0.05",
@@ -974,13 +974,13 @@
       "fixture": "dem_has_real_2d_cylinder_particles",
       "claim": "dem:13",
       "claim_text_sha": "2b5ea9331561efcd",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:17+00:00",
+      "recorded": "2026-08-07T16:13:39+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -1002,9 +1002,9 @@
       "fixture": "dem_input_filename_key_is_inert",
       "claim": "dem::3",
       "claim_text_sha": "b2053394495d0521",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:18+00:00",
+      "recorded": "2026-08-07T16:13:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1030,9 +1030,9 @@
       "fixture": "dem_materials_law_name_must_match",
       "claim": "dem::12",
       "claim_text_sha": "dd8ec70ea72bf723",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:19+00:00",
+      "recorded": "2026-08-07T16:13:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1043,7 +1043,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
           "probe[DEM_D_Linear_viscous_Coulomb]=True_expected=True",
@@ -1058,20 +1058,20 @@
       "fixture": "dem_materials_needs_three_top_level_keys",
       "claim": "dem:4",
       "claim_text_sha": "3e844dc68634d66e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:19+00:00",
+      "recorded": "2026-08-07T16:13:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "fem_shaped_materials_rejected=True_expected=True",
           "entry string : materials",
@@ -1086,20 +1086,20 @@
       "fixture": "dem_maxtimestep_is_used_verbatim",
       "claim": "dem::8",
       "claim_text_sha": "ad2a183450ce7d88",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:19+00:00",
+      "recorded": "2026-08-07T16:13:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.6,
+        "seconds": 0.7,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 3.6,
+        "seconds": 4.0,
         "missing": [
           "probe[delta_time_is_the_value_asked_for]=1.0_expected=1.0",
           "probe[zero_steps_expected]=True_expected=True",
@@ -1114,9 +1114,9 @@
       "fixture": "dem_mdpa_filename_is_problem_name_plus_tag",
       "claim": "dem::1",
       "claim_text_sha": "9ccdaacddd5ed6db",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:23+00:00",
+      "recorded": "2026-08-07T16:13:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1127,7 +1127,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 0.7,
         "missing": [
           "probe[wrong_name_zero_elements]=0_expected=0",
           "probe[wrong_name_zero_nodes]=0_expected=0",
@@ -1142,9 +1142,9 @@
       "fixture": "dem_missing_young_modulus_reads_zero",
       "claim": "dem::7",
       "claim_text_sha": "d8c5b7133aa63467",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:25+00:00",
+      "recorded": "2026-08-07T16:13:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1155,7 +1155,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.9,
         "missing": [
           "probe[omitted_reads_exactly_zero]=0.0_expected=0.0",
           "dem_missing_young_modulus_check=ok",
@@ -1170,9 +1170,9 @@
       "fixture": "dem_particle_friction_is_not_a_variable",
       "claim": "dem:5",
       "claim_text_sha": "b36ce957fb8cbba0",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:27+00:00",
+      "recorded": "2026-08-07T16:13:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1198,9 +1198,9 @@
       "fixture": "dem_project_parameters_is_a_flat_schema",
       "claim": "dem:0",
       "claim_text_sha": "e8e84b452823010d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:27+00:00",
+      "recorded": "2026-08-07T16:13:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1226,9 +1226,9 @@
       "fixture": "dem_radius_is_a_core_variable",
       "claim": "dem::15",
       "claim_text_sha": "b2053394495d0521",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:27+00:00",
+      "recorded": "2026-08-07T16:13:50+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1254,9 +1254,9 @@
       "fixture": "dem_spheric_particle_2d_rejected",
       "claim": "dem::13",
       "claim_text_sha": "9ccdaacddd5ed6db",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:28+00:00",
+      "recorded": "2026-08-07T16:13:50+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
@@ -1267,7 +1267,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "RuntimeError",
           "is not registered"
@@ -1280,9 +1280,9 @@
       "fixture": "dem_structures_compute_fem_results_option",
       "claim": "dem_structures_coupling:3",
       "claim_text_sha": "0038960a2942a6be",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:28+00:00",
+      "recorded": "2026-08-07T16:13:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1293,7 +1293,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.3,
+        "seconds": 0.2,
         "missing": [
           "probe[DEM.COMPUTE_FEM_RESULTS_OPTION]=True_expected=True",
           "probe[KM.COMPUTE_FEM_RESULTS_OPTION]=False_expected=False",
@@ -1308,9 +1308,9 @@
       "fixture": "dem_structures_nodal_variables_split_three_ways",
       "claim": "dem_structures_coupling:5",
       "claim_text_sha": "4e57237591bc9a9b",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:28+00:00",
+      "recorded": "2026-08-07T16:13:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1336,9 +1336,9 @@
       "fixture": "dem_structures_properties_id_on_wall_part",
       "claim": "dem_structures_coupling:1",
       "claim_text_sha": "4102f15ae8869a79",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:29+00:00",
+      "recorded": "2026-08-07T16:13:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1364,13 +1364,13 @@
       "fixture": "dem_structures_requires_dem_and_structural",
       "claim": "dem_structures_coupling:0",
       "claim_text_sha": "bc6ab5e3cd374ff8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:29+00:00",
+      "recorded": "2026-08-07T16:13:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -1392,20 +1392,20 @@
       "fixture": "dem_structures_surfaceload_no_quad_skin",
       "claim": "dem_structures_coupling:2",
       "claim_text_sha": "de5fb20ad25aea01",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:30+00:00",
+      "recorded": "2026-08-07T16:13:53+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "registered[SurfaceLoadFromDEMCondition3D3N]=True_expected=True",
           "registered[LineLoadFromDEMCondition2D2N]=True_expected=True",
@@ -1420,20 +1420,20 @@
       "fixture": "dem_total_forces_lives_in_core",
       "claim": "dem_structures_coupling:4",
       "claim_text_sha": "e2c7502a3e1678da",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:30+00:00",
+      "recorded": "2026-08-07T16:13:53+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[DEM.TOTAL_FORCES_Z]=False_expected=False",
           "probe[KM.TOTAL_FORCES_Z]=True_expected=True",
@@ -1448,20 +1448,20 @@
       "fixture": "dem_unknown_keys_rejected_but_only_at_the_top",
       "claim": "dem::11",
       "claim_text_sha": "882c903e8aade621",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:31+00:00",
+      "recorded": "2026-08-07T16:13:54+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 1.0,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 1.0,
+        "seconds": 2.2,
         "missing": [
           "probe[toplevel_typo_raises]=RuntimeError_expected=RuntimeError",
           "probe[toplevel_typo_names_the_key]=True_expected=True",
@@ -1475,26 +1475,26 @@
       "backend": "kratos",
       "fixture": "dem_vtk_output_process_cannot_attach_to_spherespart",
       "claim": "dem::16",
-      "claim_text_sha": "744e4a5d3f43a216",
-      "commit": "8552c4f9093a",
+      "claim_text_sha": "0698aeddaf316ab3",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:32+00:00",
+      "recorded": "2026-08-07T16:13:57+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.9,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.9,
+        "seconds": 1.2,
         "missing": [
+          "probe[dem_2d_particle_has_no_vtk_cell_type]=True_expected=True",
+          "probe[dem_3d_particle_has_no_vtk_cell_type]=True_expected=True",
           "probe[step_control_raises]=RuntimeError_expected=RuntimeError",
-          "probe[step_control_names_STEP_on_spherespart]=True_expected=True",
-          "probe[time_control_raises]=RuntimeError_expected=RuntimeError",
-          "probe[time_control_names_TIME_on_spherespart]=True_expected=True"
+          "probe[step_control_names_STEP_on_spherespart]=True_expected=True"
         ]
       },
       "discriminates": true
@@ -1504,20 +1504,20 @@
       "fixture": "dem_wall_file_is_silently_optional",
       "claim": "dem::2",
       "claim_text_sha": "9d9b6fb5571391ab",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:34+00:00",
+      "recorded": "2026-08-07T16:13:59+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.8,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.6,
+        "seconds": 0.7,
         "missing": [
           "probe[wall_absent_zero_conditions]=0_expected=0",
           "probe[wall_absent_keeps_particles]=4_expected=4",
@@ -1532,13 +1532,13 @@
       "fixture": "dem_wall_rigidface_is_3d_only",
       "claim": "dem::14",
       "claim_text_sha": "9d9b6fb5571391ab",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:35+00:00",
+      "recorded": "2026-08-07T16:14:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -1560,9 +1560,9 @@
       "fixture": "droplet_dynamics_has_no_template",
       "claim": "droplet_dynamics:0",
       "claim_text_sha": "fdf8f8a9295ef458",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:36+00:00",
+      "recorded": "2026-08-07T16:14:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1588,9 +1588,9 @@
       "fixture": "echo_level_missing",
       "claim": "linear_elasticity:7",
       "claim_text_sha": "9095dc5c8b66df31",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:36+00:00",
+      "recorded": "2026-08-07T16:14:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
@@ -1601,7 +1601,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "RuntimeError",
           "Getting a value that does not exist",
@@ -1615,13 +1615,13 @@
       "fixture": "elasticity_mms_convergence",
       "claim": "linear_elasticity:98",
       "claim_text_sha": "",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:36+00:00",
+      "recorded": "2026-08-07T16:14:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.9,
+        "seconds": 2.4,
         "missing": []
       },
       "control": "env",
@@ -1640,13 +1640,13 @@
       "fixture": "element_name_missing_node_count",
       "claim": "linear_elasticity:0",
       "claim_text_sha": "7f55d52f1e22388d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:38+00:00",
+      "recorded": "2026-08-07T16:14:05+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.2,
+        "seconds": 0.1,
         "missing": []
       },
       "control": "env",
@@ -1663,9 +1663,9 @@
       "fixture": "element_no_constitutive_law",
       "claim": "linear_elasticity:1",
       "claim_text_sha": "4fe45afc65697719",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:39+00:00",
+      "recorded": "2026-08-07T16:14:05+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
@@ -1690,9 +1690,9 @@
       "fixture": "fem_to_dem_application_absent",
       "claim": "fem_to_dem:0",
       "claim_text_sha": "9b07f6783767e1e5",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:39+00:00",
+      "recorded": "2026-08-07T16:14:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1718,13 +1718,13 @@
       "fixture": "fluid_biomedical_has_no_template",
       "claim": "fluid_biomedical:0",
       "claim_text_sha": "84df4df1cf5f8c29",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:39+00:00",
+      "recorded": "2026-08-07T16:14:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -1746,9 +1746,9 @@
       "fixture": "fluid_hydraulics_has_no_template",
       "claim": "fluid_hydraulics:0",
       "claim_text_sha": "7a5c636d40ca934d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:40+00:00",
+      "recorded": "2026-08-07T16:14:06+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1774,9 +1774,9 @@
       "fixture": "fluid_inlet_velocity_outlet_pressure_variables",
       "claim": "fluid:3",
       "claim_text_sha": "db5bc7ea0166e82d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:40+00:00",
+      "recorded": "2026-08-07T16:14:07+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1802,9 +1802,9 @@
       "fixture": "fluid_material_variables_live_in_core",
       "claim": "fluid:1",
       "claim_text_sha": "34f49e235c241d3a",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:40+00:00",
+      "recorded": "2026-08-07T16:14:07+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1815,7 +1815,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[KM.DENSITY]=True_expected=True",
           "probe[FDA.DENSITY]=False_expected=False",
@@ -1830,9 +1830,9 @@
       "fixture": "fluid_twofluid_distance_variable",
       "claim": "fluid:4",
       "claim_text_sha": "3fafdbdaa6ca2297",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:41+00:00",
+      "recorded": "2026-08-07T16:14:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1858,13 +1858,13 @@
       "fixture": "free_surface_has_no_template",
       "claim": "free_surface:0",
       "claim_text_sha": "6160630078154c69",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:41+00:00",
+      "recorded": "2026-08-07T16:14:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -1886,20 +1886,20 @@
       "fixture": "friction_angle_wrong_module",
       "claim": "plasticity:5",
       "claim_text_sha": "3c0c19d64199ffe2",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:41+00:00",
+      "recorded": "2026-08-07T16:14:08+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.2,
+        "seconds": 0.1,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.3,
+        "seconds": 0.2,
         "missing": [
           "AttributeError"
         ]
@@ -1911,20 +1911,20 @@
       "fixture": "fsi_application_accelerator_classes",
       "claim": "fsi:0",
       "claim_text_sha": "4fcf663b773706dd",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:42+00:00",
+      "recorded": "2026-08-07T16:14:09+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.3,
+        "seconds": 0.1,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "accel_classes_missing=[]"
         ]
@@ -1936,13 +1936,13 @@
       "fixture": "fsi_needs_four_applications",
       "claim": "fsi:1",
       "claim_text_sha": "3346adfdfe5ee9b5",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:42+00:00",
+      "recorded": "2026-08-07T16:14:09+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -1964,9 +1964,9 @@
       "fixture": "fsi_requires_mapping_and_meshmoving",
       "claim": "auxiliary_overview::1",
       "claim_text_sha": "72652445f8da1f17",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:43+00:00",
+      "recorded": "2026-08-07T16:14:09+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -1992,20 +1992,20 @@
       "fixture": "geomechanics_and_poromechanics_coexist",
       "claim": "geomechanics:1",
       "claim_text_sha": "dd5497e1c31ef6a8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:43+00:00",
+      "recorded": "2026-08-07T16:14:10+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "importable[GeoMechanicsApplication]=True_expected=True",
           "importable[PoromechanicsApplication]=True_expected=True",
@@ -2020,20 +2020,20 @@
       "fixture": "geomechanics_cl_naming",
       "claim": "geomechanics:0",
       "claim_text_sha": "7aaca70aa658cb08",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:43+00:00",
+      "recorded": "2026-08-07T16:14:10+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.5,
+        "seconds": 1.6,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 1.2,
+        "seconds": 1.5,
         "missing": [
           "catalog_present_count=2/7",
           "all_5_wrong_catalog_names_missing=True"
@@ -2046,13 +2046,13 @@
       "fixture": "heat_dirichlet_constrained_flag_fixes_dof",
       "claim": "heat:1",
       "claim_text_sha": "8bbd3e7a788d37a8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:46+00:00",
+      "recorded": "2026-08-07T16:14:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -2073,20 +2073,20 @@
       "fixture": "heat_neumann_targets_face_heat_flux",
       "claim": "heat:2",
       "claim_text_sha": "d3be0d7ea2176ec8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:46+00:00",
+      "recorded": "2026-08-07T16:14:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[KM.FACE_HEAT_FLUX]=True_expected=True",
           "probe[CDA.FACE_HEAT_FLUX]=False_expected=False",
@@ -2101,20 +2101,20 @@
       "fixture": "heat_transient_consistent_mass_beats_lumped",
       "claim": "heat_transient:2",
       "claim_text_sha": "5f289467f504b6f2",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:47+00:00",
+      "recorded": "2026-08-07T16:14:14+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.8,
+        "seconds": 1.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.8,
+        "seconds": 1.0,
         "missing": [
           "consistent_has_offdiagonal=True",
           "consistent_more_accurate=True",
@@ -2129,20 +2129,20 @@
       "fixture": "heat_transient_crank_nicolson_is_second_order",
       "claim": "heat_transient:1",
       "claim_text_sha": "813d37068d0221c2",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:48+00:00",
+      "recorded": "2026-08-07T16:14:16+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 1.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.7,
+        "seconds": 1.1,
         "missing": [
           "cn_order_near_2=True",
           "cn_beats_be_at_same_dt=True",
@@ -2157,20 +2157,20 @@
       "fixture": "heat_transient_template_violates_maximum_principle",
       "claim": "heat_transient:0",
       "claim_text_sha": "e9b3d4da430bf347",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:50+00:00",
+      "recorded": "2026-08-07T16:14:19+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 0.9,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.7,
+        "seconds": 0.9,
         "missing": [
           "loop_under_test=shipped",
           "maxT_grows_under_refinement=True",
@@ -2185,20 +2185,20 @@
       "fixture": "iga_nurbs_geometry_classes_are_core",
       "claim": "iga:1",
       "claim_text_sha": "8d1cfe850fb81f8e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:51+00:00",
+      "recorded": "2026-08-07T16:14:21+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "probe[KM.NurbsSurfaceGeometry3D]=True_expected=True",
           "probe[IGA.NurbsSurfaceGeometry3D]=False_expected=False",
@@ -2213,9 +2213,9 @@
       "fixture": "iga_surface_condition_naming",
       "claim": "iga:0",
       "claim_text_sha": "8cee7a564ce918c1",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:51+00:00",
+      "recorded": "2026-08-07T16:14:21+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2226,7 +2226,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "base_name_as_condition_rejected=True",
           "surface_load_3D3N_condition_ok=True"
@@ -2239,9 +2239,9 @@
       "fixture": "iga_surfaceload_vs_surface_condition",
       "claim": "iga:90",
       "claim_text_sha": "",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:52+00:00",
+      "recorded": "2026-08-07T16:14:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2267,9 +2267,9 @@
       "fixture": "kratos_knowledge_source_of_truth",
       "claim": "auxiliary_overview::6",
       "claim_text_sha": "7648e862856bd6b6",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:52+00:00",
+      "recorded": "2026-08-07T16:14:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2294,9 +2294,9 @@
       "fixture": "kratos_runs_in_a_venv_not_only_system_python",
       "claim": "curved_mms:0",
       "claim_text_sha": "a6dfbdee22909761",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:53+00:00",
+      "recorded": "2026-08-07T16:14:22+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2322,9 +2322,9 @@
       "fixture": "linear_elasticity_max_iteration_is_positional",
       "claim": "linear_elasticity:3",
       "claim_text_sha": "70243ca3b02599da",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:53+00:00",
+      "recorded": "2026-08-07T16:14:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2350,9 +2350,9 @@
       "fixture": "linear_elasticity_point_load_direction_process",
       "claim": "linear_elasticity:6",
       "claim_text_sha": "a0514fd49b2b6939",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:53+00:00",
+      "recorded": "2026-08-07T16:14:23+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2363,7 +2363,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "probe[SMA.AssignVectorByDirectionProcess]=False_expected=False",
           "probe[core_assign_vector_by_direction_process]=True_expected=True",
@@ -2378,13 +2378,13 @@
       "fixture": "mapperfactory_moved_to_core",
       "claim": "auxiliary_overview::3",
       "claim_text_sha": "dafd74ad1ff681dd",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:54+00:00",
+      "recorded": "2026-08-07T16:14:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -2406,9 +2406,9 @@
       "fixture": "mpm_boundary_conditions_live_on_the_grid",
       "claim": "mpm:6",
       "claim_text_sha": "cb0531b9da39776c",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:54+00:00",
+      "recorded": "2026-08-07T16:14:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2419,7 +2419,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "initialises[Background_Grid]=True_expected=True",
           "initialises[MPM_Material]=False_expected=False",
@@ -2434,9 +2434,9 @@
       "fixture": "mpm_constitutive_law_names_are_fully_qualified",
       "claim": "mpm::9",
       "claim_text_sha": "48842de49fd8306b",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:54+00:00",
+      "recorded": "2026-08-07T16:14:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2447,7 +2447,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.2,
+        "seconds": 0.1,
         "missing": [
           "probe[registered_name_is_known]=True_expected=True",
           "probe[short_name_is_not_known]=False_expected=False",
@@ -2462,9 +2462,9 @@
       "fixture": "mpm_element_naming_mpm_prefix",
       "claim": "mpm:0",
       "claim_text_sha": "7ca06c7bff4da459",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:54+00:00",
+      "recorded": "2026-08-07T16:14:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2475,7 +2475,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "all_base_names_rejected=True"
         ]
@@ -2487,20 +2487,20 @@
       "fixture": "mpm_material_points_per_element_is_required",
       "claim": "mpm:2",
       "claim_text_sha": "908e37274d6ec96f",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:55+00:00",
+      "recorded": "2026-08-07T16:14:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "accepted[mpp=1]=True_expected=True",
           "accepted[mpp=omitted]=False_expected=False",
@@ -2515,9 +2515,9 @@
       "fixture": "mpm_points_leaving_the_grid_are_erased",
       "claim": "mpm:10",
       "claim_text_sha": "e7f8350217f1898e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:55+00:00",
+      "recorded": "2026-08-07T16:14:25+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2543,20 +2543,20 @@
       "fixture": "mpm_scheme_type_is_partitioned_by_solver",
       "claim": "mpm::8",
       "claim_text_sha": "abffddaacaf3c5eb",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:55+00:00",
+      "recorded": "2026-08-07T16:14:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[implicit_rejects_the_explicit_scheme]=scheme_expected=scheme",
           "probe[implicit_lists_newmark_and_bossak]=True_expected=True",
@@ -2571,9 +2571,9 @@
       "fixture": "mpm_solver_type_is_a_label_not_a_class",
       "claim": "mpm:7",
       "claim_text_sha": "ec30db46961b38f6",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:56+00:00",
+      "recorded": "2026-08-07T16:14:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2584,7 +2584,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "accepted[static]=True_expected=True",
           "accepted[quasi_static]=True_expected=True",
@@ -2599,9 +2599,9 @@
       "fixture": "optimization_point_load_not_in_core",
       "claim": "optimization:3",
       "claim_text_sha": "9d4cfbf3d5c7f30e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:56+00:00",
+      "recorded": "2026-08-07T16:14:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2627,9 +2627,9 @@
       "fixture": "optimization_response_utils_are_compiled_statics",
       "claim": "optimization:4",
       "claim_text_sha": "4fa69fc83db71b3d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:56+00:00",
+      "recorded": "2026-08-07T16:14:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2640,7 +2640,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "probe[KOA.ResponseUtils]=True_expected=True",
           "probe[KOA.ResponseUtils.MassResponseUtils]=True_expected=True",
@@ -2655,13 +2655,13 @@
       "fixture": "optimization_tensor_adaptors_not_on_core",
       "claim": "optimization:1",
       "claim_text_sha": "236e557f45f253d4",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:57+00:00",
+      "recorded": "2026-08-07T16:14:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -2683,9 +2683,9 @@
       "fixture": "optimization_thickness_needs_plane_stress_law",
       "claim": "optimization:2",
       "claim_text_sha": "14ee64ef1983109f",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:57+00:00",
+      "recorded": "2026-08-07T16:14:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2711,9 +2711,9 @@
       "fixture": "parameters_unknown_key_raises",
       "claim": "structural_dynamics:1",
       "claim_text_sha": "9d6b64cfcfb57488",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:57+00:00",
+      "recorded": "2026-08-07T16:14:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2739,9 +2739,9 @@
       "fixture": "pfem2_has_no_template",
       "claim": "pfem2:0",
       "claim_text_sha": "cbc66cec92b30a37",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:58+00:00",
+      "recorded": "2026-08-07T16:14:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2767,9 +2767,9 @@
       "fixture": "pfem_applications_absent",
       "claim": "pfem_fluid:0",
       "claim_text_sha": "5c830b844a01f332",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:58+00:00",
+      "recorded": "2026-08-07T16:14:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2795,9 +2795,9 @@
       "fixture": "pfem_requires_delaunay_meshing",
       "claim": "pfem_fluid:1",
       "claim_text_sha": "69a4b422ddef8936",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:59+00:00",
+      "recorded": "2026-08-07T16:14:29+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2823,20 +2823,20 @@
       "fixture": "pfem_solid_has_no_template",
       "claim": "pfem_solid:0",
       "claim_text_sha": "8b28a1f24f7feef9",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:59+00:00",
+      "recorded": "2026-08-07T16:14:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "in_knowledge[pfem_solid]=True",
           "generators_for[pfem_solid]=[]",
@@ -2851,9 +2851,9 @@
       "fixture": "plasticity_all_dirichlet_cell_is_vacuous",
       "claim": "plasticity::8",
       "claim_text_sha": "5ba062f77316d5c4",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:46:59+00:00",
+      "recorded": "2026-08-07T16:14:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2879,9 +2879,9 @@
       "fixture": "plasticity_factory_takes_no_args",
       "claim": "plasticity:6",
       "claim_text_sha": "0e44fded30fd5b3c",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:00+00:00",
+      "recorded": "2026-08-07T16:14:30+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
@@ -2906,9 +2906,9 @@
       "fixture": "plasticity_hardening_curve_not_range_checked",
       "claim": "constitutive_laws:6",
       "claim_text_sha": "883eae27b776c2bb",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:00+00:00",
+      "recorded": "2026-08-07T16:14:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2934,9 +2934,9 @@
       "fixture": "plasticity_j2_planestrain_strain_size_4",
       "claim": "constitutive_laws:2",
       "claim_text_sha": "1b653a48016248ca",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:00+00:00",
+      "recorded": "2026-08-07T16:14:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2962,9 +2962,9 @@
       "fixture": "plasticity_law_check_required_properties",
       "claim": "constitutive_laws:4",
       "claim_text_sha": "8a435a0918d7645c",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:01+00:00",
+      "recorded": "2026-08-07T16:14:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -2990,20 +2990,20 @@
       "fixture": "plasticity_mohr_coulomb_two_parameterisations",
       "claim": "plasticity::3",
       "claim_text_sha": "6a3261737124cadd",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:01+00:00",
+      "recorded": "2026-08-07T16:14:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "each_law_accepts_its_own_parameterisation=True",
           "modified_rejects_classical_style_on_dilatancy=True",
@@ -3018,13 +3018,13 @@
       "fixture": "plasticity_outputs_read_from_element",
       "claim": "constitutive_laws:8",
       "claim_text_sha": "eb5999b2e7162250",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:01+00:00",
+      "recorded": "2026-08-07T16:14:33+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -3046,20 +3046,20 @@
       "fixture": "plasticity_perfect_plasticity_needs_curve_three",
       "claim": "plasticity::4",
       "claim_text_sha": "373eb19530d98023",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:02+00:00",
+      "recorded": "2026-08-07T16:14:33+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "curve0_gf1e+10_slope_is_negative=True",
           "curve0_droops_at_every_fracture_energy=True",
@@ -3074,9 +3074,9 @@
       "fixture": "plasticity_rankine_simoju_are_damage_only",
       "claim": "plasticity:0",
       "claim_text_sha": "9d84cbf727c31bff",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:02+00:00",
+      "recorded": "2026-08-07T16:14:34+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3099,9 +3099,9 @@
       "fixture": "plasticity_tangent_operator_estimation_knob",
       "claim": "constitutive_laws:3",
       "claim_text_sha": "ac7725b8dd708991",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:03+00:00",
+      "recorded": "2026-08-07T16:14:34+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3127,9 +3127,9 @@
       "fixture": "plasticity_two_registry_holes",
       "claim": "constitutive_laws:5",
       "claim_text_sha": "b8b61116b0035ec7",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:03+00:00",
+      "recorded": "2026-08-07T16:14:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3155,9 +3155,9 @@
       "fixture": "point_load_direction_process_rejects",
       "claim": "structural_dynamics:6",
       "claim_text_sha": "8e4cc1fa89b85b27",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:03+00:00",
+      "recorded": "2026-08-07T16:14:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3182,9 +3182,9 @@
       "fixture": "poisson_cda_element_string_factory",
       "claim": "poisson:0",
       "claim_text_sha": "2dd1535243c0943b",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:04+00:00",
+      "recorded": "2026-08-07T16:14:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3195,7 +3195,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "wrong_name_rejected=True",
           "FORBIDDEN:ERROR"
@@ -3208,20 +3208,20 @@
       "fixture": "poisson_convectiondiffusionsettings_on_processinfo",
       "claim": "poisson:3",
       "claim_text_sha": "638ddc1eee5ad701",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:04+00:00",
+      "recorded": "2026-08-07T16:14:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[KM.ConvectionDiffusionSettings]=True_expected=True",
           "probe[CDA.ConvectionDiffusionSettings]=False_expected=False",
@@ -3236,20 +3236,20 @@
       "fixture": "poisson_laplacian_element_assembles_heat_flux",
       "claim": "poisson:1",
       "claim_text_sha": "3992ffdc5b395277",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:04+00:00",
+      "recorded": "2026-08-07T16:14:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "rhs10_node0=1.666667",
           "rhs10_node1=1.666667",
@@ -3264,20 +3264,20 @@
       "fixture": "poisson_mms_convergence",
       "claim": "poisson:99",
       "claim_text_sha": "",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:05+00:00",
+      "recorded": "2026-08-07T16:14:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.6,
+        "seconds": 0.8,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.6,
+        "seconds": 0.9,
         "missing": [
           "FORBIDDEN:FAIL:"
         ]
@@ -3289,9 +3289,9 @@
       "fixture": "poisson_vtk_output_process_surface",
       "claim": "poisson:6",
       "claim_text_sha": "b4acad28c17e4a44",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:06+00:00",
+      "recorded": "2026-08-07T16:14:38+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3302,7 +3302,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[vtk_output_process_Factory]=True_expected=True",
           "probe[KM.VtkOutput]=True_expected=True",
@@ -3317,9 +3317,9 @@
       "fixture": "poromechanics_biot_coefficient_is_required",
       "claim": "poromechanics:3",
       "claim_text_sha": "a25dc2d59ffb0a91",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:06+00:00",
+      "recorded": "2026-08-07T16:14:39+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3345,20 +3345,20 @@
       "fixture": "poromechanics_newmark_scheme_signature",
       "claim": "poromechanics:5",
       "claim_text_sha": "e54cc02e275094d8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:07+00:00",
+      "recorded": "2026-08-07T16:14:39+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": [
           "probe[ctor_four_args]=True_expected=True",
           "probe[ctor_three_args]=False_expected=False",
@@ -3373,9 +3373,9 @@
       "fixture": "poromechanics_upl_exotic_nodal_variables",
       "claim": "poromechanics:4",
       "claim_text_sha": "d432f9f2f9724714",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:07+00:00",
+      "recorded": "2026-08-07T16:14:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3401,9 +3401,9 @@
       "fixture": "poromechanics_upl_not_upw",
       "claim": "poromechanics:1",
       "claim_text_sha": "6e1253f5f41a7545",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:07+00:00",
+      "recorded": "2026-08-07T16:14:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3428,9 +3428,9 @@
       "fixture": "poromechanics_variables_cpp_registered_only",
       "claim": "poromechanics:2",
       "claim_text_sha": "31756f61699ed245",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:08+00:00",
+      "recorded": "2026-08-07T16:14:40+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3441,7 +3441,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[KM.DENSITY_SOLID]=False_expected=False",
           "probe[PORO.DENSITY_SOLID]=False_expected=False",
@@ -3456,13 +3456,13 @@
       "fixture": "prefer_modern_over_legacy_solid_apps",
       "claim": "auxiliary_overview::2",
       "claim_text_sha": "41fd38a8b4778620",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:08+00:00",
+      "recorded": "2026-08-07T16:14:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.2,
+        "seconds": 0.3,
         "missing": []
       },
       "control": "env",
@@ -3484,20 +3484,20 @@
       "fixture": "quad4_shear_locking_vs_quad8",
       "claim": "structural_dynamics:5",
       "claim_text_sha": "ca839a7894cba994",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:08+00:00",
+      "recorded": "2026-08-07T16:14:41+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 1.0,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 1,
-        "seconds": 0.8,
+        "seconds": 0.9,
         "missing": [
           "quad4_locks_20_to_40_percent=True",
           "FORBIDDEN:FAIL:"
@@ -3510,9 +3510,9 @@
       "fixture": "rans_requires_fluiddynamics",
       "claim": "rans:1",
       "claim_text_sha": "0bdf12b1d1b8992d",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:10+00:00",
+      "recorded": "2026-08-07T16:14:43+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3538,9 +3538,9 @@
       "fixture": "rans_shallowwater_element_naming",
       "claim": "rans:0",
       "claim_text_sha": "b88444a8a2083d9e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:10+00:00",
+      "recorded": "2026-08-07T16:14:43+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3563,9 +3563,9 @@
       "fixture": "rom_works_with_structural_and_fluid",
       "claim": "rom:0",
       "claim_text_sha": "eb9312d11769cdb3",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:11+00:00",
+      "recorded": "2026-08-07T16:14:44+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3591,9 +3591,9 @@
       "fixture": "shallowwater_bdf2_scheme_exists",
       "claim": "shallow_water:3",
       "claim_text_sha": "6ec8a2bab7e48640",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:11+00:00",
+      "recorded": "2026-08-07T16:14:44+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3604,7 +3604,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[SW.ShallowWaterResidualBasedBDFScheme]=True_expected=True",
           "probe[KM.ShallowWaterResidualBasedBDFScheme]=False_expected=False",
@@ -3619,13 +3619,13 @@
       "fixture": "shallowwater_element_is_boussinesq_stem",
       "claim": "shallow_water:0",
       "claim_text_sha": "413c3086278574cd",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:12+00:00",
+      "recorded": "2026-08-07T16:14:45+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -3646,20 +3646,20 @@
       "fixture": "shallowwater_free_surface_elevation_is_derived",
       "claim": "shallow_water:4",
       "claim_text_sha": "e3d570ce017d9c63",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:12+00:00",
+      "recorded": "2026-08-07T16:14:45+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[SW.FREE_SURFACE_ELEVATION]=True_expected=True",
           "probe[KM.FREE_SURFACE_ELEVATION]=False_expected=False",
@@ -3674,20 +3674,20 @@
       "fixture": "shallowwater_gravity_is_scalar_processinfo",
       "claim": "shallow_water:2",
       "claim_text_sha": "9762538aa0806931",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:12+00:00",
+      "recorded": "2026-08-07T16:14:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "probe[GRAVITY_Z_resolves]=True_expected=True",
           "probe[GRAVITY_Z_is_a_component_of_GRAVITY]=True_expected=True",
@@ -3702,20 +3702,20 @@
       "fixture": "shallowwater_is_2d_only",
       "claim": "shallow_water:1",
       "claim_text_sha": "e584aaef51b94345",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:12+00:00",
+      "recorded": "2026-08-07T16:14:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "registered[BoussinesqElement2D3N]=True_expected=True",
           "registered[BoussinesqElement2D4N]=True_expected=True",
@@ -3730,9 +3730,9 @@
       "fixture": "structural_dynamics_echo_level_missing",
       "claim": "structural_dynamics:7",
       "claim_text_sha": "6d8fa2ce21c75366",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:13+00:00",
+      "recorded": "2026-08-07T16:14:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3758,9 +3758,9 @@
       "fixture": "structural_dynamics_lumped_mass_flag",
       "claim": "structural_dynamics:2",
       "claim_text_sha": "37ccbdec4294b12f",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:13+00:00",
+      "recorded": "2026-08-07T16:14:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3786,9 +3786,9 @@
       "fixture": "structural_dynamics_schemes_live_on_core",
       "claim": "structural_dynamics:0",
       "claim_text_sha": "839447c4a4dd6ce1",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:13+00:00",
+      "recorded": "2026-08-07T16:14:47+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3814,20 +3814,20 @@
       "fixture": "submodelpart_case_sensitive",
       "claim": "linear_elasticity:2",
       "claim_text_sha": "e64391c19d1c79ad",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:14+00:00",
+      "recorded": "2026-08-07T16:14:48+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "RuntimeError",
           "no sub model part with name",
@@ -3841,9 +3841,9 @@
       "fixture": "swimming_dem_requires_fluid_and_dem",
       "claim": "swimming_dem:0",
       "claim_text_sha": "b26447525ff872d8",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:14+00:00",
+      "recorded": "2026-08-07T16:14:48+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3869,9 +3869,9 @@
       "fixture": "swimming_dem_wheel_pins_older_core",
       "claim": "swimming_dem:1",
       "claim_text_sha": "edd2013532c1095b",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:14+00:00",
+      "recorded": "2026-08-07T16:14:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3897,13 +3897,13 @@
       "fixture": "temperature_variable_not_added",
       "claim": "heat:0",
       "claim_text_sha": "e5a9ac36d089bcdf",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:15+00:00",
+      "recorded": "2026-08-07T16:14:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.2,
+        "seconds": 0.1,
         "missing": []
       },
       "control": "env",
@@ -3924,13 +3924,13 @@
       "fixture": "thermal_dem_application_absent",
       "claim": "thermal_dem:1",
       "claim_text_sha": "634ada6a7f24627c",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:15+00:00",
+      "recorded": "2026-08-07T16:14:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -3952,9 +3952,9 @@
       "fixture": "thermal_dem_requires_dem_base",
       "claim": "thermal_dem:0",
       "claim_text_sha": "449ed5685dbd82b9",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:15+00:00",
+      "recorded": "2026-08-07T16:14:50+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -3965,7 +3965,7 @@
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "importable[DEMApplication]=True_expected=True",
           "importable[ThermalDEMApplication]=False_expected=False",
@@ -3980,9 +3980,9 @@
       "fixture": "topology_optimization_requires_structural",
       "claim": "topology_optimization:0",
       "claim_text_sha": "c6dedc01157743ef",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:16+00:00",
+      "recorded": "2026-08-07T16:14:50+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -4008,20 +4008,20 @@
       "fixture": "trilinos_absent_metis_present",
       "claim": "auxiliary_overview::0",
       "claim_text_sha": "377262b7952fb1b5",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:16+00:00",
+      "recorded": "2026-08-07T16:14:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "importable[TrilinosApplication]=False_expected=False",
           "importable[MetisApplication]=True_expected=True",
@@ -4036,13 +4036,13 @@
       "fixture": "variable_not_added_before_access",
       "claim": "linear_elasticity:9",
       "claim_text_sha": "655d38c14cd5d301",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:16+00:00",
+      "recorded": "2026-08-07T16:14:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
@@ -4062,20 +4062,20 @@
       "fixture": "velocity_variable_not_added",
       "claim": "fluid:0",
       "claim_text_sha": "190e1e98634a3cc7",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:17+00:00",
+      "recorded": "2026-08-07T16:14:51+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 1,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": []
       },
       "control": "env",
       "mutated": {
         "status": "FAIL",
         "rc": 2,
-        "seconds": 0.1,
+        "seconds": 0.2,
         "missing": [
           "RuntimeError",
           "variables list",
@@ -4089,9 +4089,9 @@
       "fixture": "wind_engineering_application_absent",
       "claim": "wind_engineering:1",
       "claim_text_sha": "343709ae7dca989e",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:17+00:00",
+      "recorded": "2026-08-07T16:14:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -4117,9 +4117,9 @@
       "fixture": "wind_engineering_requires_fluid_and_rans",
       "claim": "wind_engineering:0",
       "claim_text_sha": "a73151bf76dad28a",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:17+00:00",
+      "recorded": "2026-08-07T16:14:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
@@ -4145,9 +4145,9 @@
       "fixture": "yield_surface_tags_are_not_laws",
       "claim": "constitutive_laws:7",
       "claim_text_sha": "01c8ec81cedfada7",
-      "commit": "8552c4f9093a",
+      "commit": "05a53a44f09b",
       "tree_dirty": false,
-      "recorded": "2026-08-07T14:47:18+00:00",
+      "recorded": "2026-08-07T16:14:52+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
