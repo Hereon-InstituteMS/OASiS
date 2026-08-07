@@ -351,10 +351,16 @@ def report_verdict(res: dict, tag: str) -> bool:
     print(f"{tag}_converged={bool(res.get('converged'))}")
     print(f"{tag}_iterations={res.get('iterations')}")
     print(f"{tag}_validation_empty={not val}")
-    # The verdict string itself, so the record shows what the TOOL said rather
-    # than only what the fixture concluded from its parts.
-    verdict = str(res.get("verification") or "")
-    print(f"{tag}_not_verified={'NOT VERIFIED' in verdict}")
-    ok &= L.check("NOT VERIFIED" not in verdict, f"{tag}_verdict",
-                  verdict[:200])
+    # The verdict string itself, printed and NOT asserted on. Measured on a
+    # clean, fully converged, validation-empty FSI run: the verdict still reads
+    # "NOT VERIFIED - the automated checks passed, but OASiS's MANDATORY
+    # independent critic has not reviewed this setup". The critic gate wants a
+    # RECORDED review, which a fixture process does not have and should not
+    # fake, so "NOT VERIFIED" appears on correct runs and broken ones alike and
+    # cannot discriminate between them. An assertion on it would pass or fail
+    # for a reason that has nothing to do with the physics. What discriminates
+    # is `validation`, which is empty exactly when every silent-wrong check
+    # passed, and that is what is asserted above.
+    print(f"{tag}_verdict_not_verified="
+          f"{'NOT VERIFIED' in str(res.get('verification') or '')}")
     return ok

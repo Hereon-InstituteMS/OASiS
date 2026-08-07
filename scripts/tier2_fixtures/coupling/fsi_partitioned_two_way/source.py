@@ -112,9 +112,12 @@ def body() -> None:
     L.check(bool(r.get("validation")), "rigid_suppression_detected",
             "couple reported NO finding on a run whose fluid ignores the "
             "structure entirely — the one-way detector is not working")
-    L.check("NOT VERIFIED" in (r.get("verification") or ""),
-            "rigid_not_verified",
-            f"verdict was {str(r.get('verification'))[:160]}")
+    #     NOT asserted on the verdict STRING. "NOT VERIFIED" is on the clean
+    #     two-way run too, because the critic gate wants a recorded review that
+    #     a fixture has not got — so the string is the same on a correct
+    #     coupling and a suppressed one and separates nothing. The
+    #     discriminating evidence is `validation` above and the sensitivity
+    #     number below.
     for name, res_ in (("cross", x), ("rigid", r)):
         for who in ("fluid", "solid"):
             sv = ((res_.get("interface_sensitivity") or {}).get(who) or {})
