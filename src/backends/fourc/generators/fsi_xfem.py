@@ -38,34 +38,50 @@ class FSIXFEMGenerator(BaseGenerator):
                 "Nitsche's method enforces the interface kinematic and "
                 "traction conditions weakly.  The PROBLEM TYPE is "
                 "'Fluid_Structure_Interaction_XFEM'.  Required dynamics "
-                "sections include STRUCTURAL DYNAMIC, XFLUID DYNAMIC, "
-                "and FSI DYNAMIC.  No ALE DYNAMIC section is needed "
-                "(this is a key advantage over standard FSI).  Ghost-"
-                "penalty stabilisation prevents ill-conditioning from "
-                "small cut elements."
+                "sections are STRUCTURAL DYNAMIC, FLUID DYNAMIC and FSI "
+                "DYNAMIC (with COUPALGO: iter_xfem_monolithic), plus the "
+                "XFEM settings.  There is NO section called 'XFLUID "
+                "DYNAMIC': the XFEM settings are split over 'XFEM GENERAL' "
+                "(cut and integration scheme) and 'XFLUID "
+                "DYNAMIC/STABILIZATION' (coupling method, Nitsche penalty, "
+                "ghost penalty).  Those slash-joined names are single "
+                "literal top-level YAML keys, not nested maps.  The "
+                "interface itself is declared by DESIGN XFEM FSI MONOLITHIC "
+                "SURF CONDITIONS (or DESIGN XFEM FSI PARTITIONED SURF "
+                "CONDITIONS) on the structure surface, keyed by COUPLINGID; "
+                "without it there is no fluid-structure interface.  No ALE "
+                "DYNAMIC section is needed (this is a key advantage over "
+                "standard FSI).  Ghost-penalty stabilisation prevents "
+                "ill-conditioning from small cut elements.  Result tests "
+                "on the fluid field are named XFLUID, not FLUID."
             ),
             "required_sections": [
                 "PROBLEM TYPE",
                 "PROBLEM SIZE",
                 "STRUCTURAL DYNAMIC",
                 "FLUID DYNAMIC",
-                "XFLUID DYNAMIC",
+                "XFEM GENERAL",
+                "XFLUID DYNAMIC/STABILIZATION",
                 "FSI DYNAMIC",
+                "FSI DYNAMIC/MONOLITHIC SOLVER",
                 "SOLVER 1",
                 "SOLVER 2",
                 "MATERIALS",
                 "STRUCTURE GEOMETRY",
                 "FLUID GEOMETRY",
+                "DESIGN XFEM FSI MONOLITHIC SURF CONDITIONS",
             ],
             "optional_sections": [
-                "XFLUID DYNAMIC/GHOST PENALTY",
-                "XFLUID DYNAMIC/STABILIZATION",
+                "XFLUID DYNAMIC/GENERAL",
+                "CUT GENERAL",
                 "FLUID DYNAMIC/RESIDUAL-BASED STABILIZATION",
+                "FLUID DYNAMIC/EDGE-BASED STABILIZATION",
                 "FLUID DYNAMIC/NONLINEAR SOLVER TOLERANCES",
+                "FSI DYNAMIC/PARTITIONED SOLVER",
                 "STRUCTURAL DYNAMIC/GENALPHA",
-                "IO/RUNTIME VTK OUTPUT",
-                "IO/RUNTIME VTK OUTPUT/STRUCTURE",
-                "IO/RUNTIME VTK OUTPUT/FLUID",
+                "DESIGN FSI COUPLING SURF CONDITIONS",
+                # NOTE: IO/RUNTIME VTK OUTPUT is NOT usable here -- it aborts
+                # this problem type before the first step.  See pitfalls.
             ],
             "materials": {
                 "MAT_fluid": {
@@ -140,19 +156,35 @@ class FSIXFEMGenerator(BaseGenerator):
             },
             "xfem_fsi_parameters": {
                 "COUPLING_METHOD": (
-                    "Nitsche (recommended) for weak enforcement of "
-                    "velocity continuity and traction equilibrium at "
-                    "the FSI interface."
+                    "In XFLUID DYNAMIC/STABILIZATION.  'Nitsche' (default, "
+                    "recommended) for weak enforcement of velocity "
+                    "continuity and traction equilibrium at the FSI "
+                    "interface.  The only other accepted values are "
+                    "'Hybrid_LM_Cauchy_stress' and "
+                    "'Hybrid_LM_viscous_stress'; there is no 'penalty'."
+                ),
+                "NIT_STAB_FAC": (
+                    "In XFLUID DYNAMIC/STABILIZATION.  The Nitsche penalty "
+                    "factor (default 35), with NIT_STAB_FAC_TANG for the "
+                    "tangential term.  There is no NITSCHE_PENALTY_PARAMETER "
+                    "key in 4C."
                 ),
                 "GHOST_PENALTY": (
                     "Stabilisation for small cut elements.  Essential "
                     "for robustness when the structural mesh passes "
-                    "close to fluid element boundaries."
+                    "close to fluid element boundaries.  All of its keys "
+                    "live in XFLUID DYNAMIC/STABILIZATION -- there is no "
+                    "'XFLUID DYNAMIC/GHOST PENALTY' section.  Switch it on "
+                    "with GHOST_PENALTY_STAB (default false) and scale it "
+                    "with GHOST_PENALTY_FAC; the transient counterparts are "
+                    "GHOST_PENALTY_TRANSIENT_STAB (note the _STAB suffix) "
+                    "and GHOST_PENALTY_TRANSIENT_FAC."
                 ),
-                "XFEM_FSI_COUPALGO": (
-                    "Coupling algorithm: 'xfem_monolithic' for full "
-                    "monolithic coupling or 'xfem_partitioned' for "
-                    "partitioned (staggered) approach."
+                "COUPALGO": (
+                    "In FSI DYNAMIC.  Use 'iter_xfem_monolithic' -- that is "
+                    "the only XFEM entry in 4C's COUPALGO enum.  There is no "
+                    "XFEM_FSI_COUPALGO key, and no 'xfem_monolithic' or "
+                    "'xfem_partitioned' value."
                 ),
             },
             "pitfalls": [
@@ -324,15 +356,14 @@ class FSIXFEMGenerator(BaseGenerator):
               PROBLEMTYPE: "Fluid_Structure_Interaction_XFEM"
             IO:
               STDOUTEVERY: <stdout_interval>
-            IO/RUNTIME VTK OUTPUT:
-              INTERVAL_STEPS: <output_interval_steps>
-            IO/RUNTIME VTK OUTPUT/STRUCTURE:
-              OUTPUT_STRUCTURE: true
-              DISPLACEMENT: true
-            IO/RUNTIME VTK OUTPUT/FLUID:
-              OUTPUT_FLUID: true
-              VELOCITY: true
-              PRESSURE: true
+            # Do NOT add IO/RUNTIME VTK OUTPUT here.  On this problem type it
+            # aborts before the first step with "Runtime output is not
+            # available in the old structure time integration! You need to
+            # take the new one, i.e. set `INT_STRATEGY: Standard`!" -- and
+            # setting INT_STRATEGY: Standard does not help, because the XFSI
+            # adapter builds the legacy integrator regardless.  Read results
+            # from the Ensight .result files, or set OUTPUT_GMSH in IO plus
+            # GMSH_SOL_OUT in XFEM GENERAL and read the Gmsh .pos files.
 
             # == Structure =====================================================
             STRUCTURAL DYNAMIC:
@@ -362,16 +393,27 @@ class FSIXFEMGenerator(BaseGenerator):
               CHARELELENGTH_PC: "root_of_volume"
 
             # == XFEM settings =================================================
-            XFLUID DYNAMIC:
-              COUPLING_METHOD: "<coupling_method>"
+            # 'XFLUID DYNAMIC' is NOT a section on its own -- 4C aborts with
+            # "Section 'XFLUID DYNAMIC' is not a valid section name."  The real
+            # top-level keys are the slash-joined literals below, written as
+            # ONE key each (not nested maps).  Cut/integration settings live in
+            # the separate 'XFEM GENERAL' section.  There is no
+            # 'XFLUID DYNAMIC/GHOST PENALTY' section either: the ghost-penalty
+            # keys are part of XFLUID DYNAMIC/STABILIZATION.
+            XFEM GENERAL:
+              # Tessellation | DirectDivergence  (MomentFitting segfaults)
               VOLUME_GAUSS_POINTS_BY: "<volume_integration_scheme>"
               BOUNDARY_GAUSS_POINTS_BY: "<boundary_integration_scheme>"
-              NITSCHE_PENALTY_PARAMETER: <nitsche_penalty_parameter>
-              MAXITER_XFEM: <xfem_max_iterations>
-            XFLUID DYNAMIC/GHOST PENALTY:
+            XFLUID DYNAMIC/STABILIZATION:
+              # Nitsche | Hybrid_LM_Cauchy_stress | Hybrid_LM_viscous_stress
+              COUPLING_METHOD: "<coupling_method>"
+              # Nitsche penalty factor (default 35).  There is no
+              # NITSCHE_PENALTY_PARAMETER key in 4C.
+              NIT_STAB_FAC: <nitsche_penalty_factor>
+              NIT_STAB_FAC_TANG: <nitsche_penalty_factor_tangential>
               GHOST_PENALTY_STAB: true
               GHOST_PENALTY_FAC: <ghost_penalty_factor>
-              GHOST_PENALTY_TRANSIENT: true
+              GHOST_PENALTY_TRANSIENT_STAB: true
               GHOST_PENALTY_TRANSIENT_FAC: <ghost_penalty_transient_factor>
 
             # == FSI coupling ==================================================
@@ -379,8 +421,14 @@ class FSIXFEMGenerator(BaseGenerator):
               MAXTIME: <end_time>
               TIMESTEP: <timestep>
               NUMSTEP: <number_of_steps>
-              COUPALGO: "<xfem_fsi_coupling_algorithm>"
+              # iter_xfem_monolithic is the ONLY XFEM value of COUPALGO
+              COUPALGO: "iter_xfem_monolithic"
               RESULTSEVERY: <results_output_interval>
+            FSI DYNAMIC/MONOLITHIC SOLVER:
+              ITEMAX: <fsi_max_newton_iterations>
+              INFNORMSCALING: false
+              TOL_DIS_RES_L2: <fsi_displacement_residual_tolerance>
+              TOL_VEL_RES_L2: <fsi_velocity_residual_tolerance>
 
             # == Solvers =======================================================
             SOLVER 1:
@@ -409,27 +457,50 @@ class FSIXFEMGenerator(BaseGenerator):
 
             # == Boundary Conditions ===========================================
 
-            # Fluid: inlet
+            # There is no 'DESIGN SURF STRUCT DIRICH CONDITIONS' section -- 4C
+            # aborts with "Section 'DESIGN SURF STRUCT DIRICH CONDITIONS' is
+            # not a valid section name."  Structure and fluid surface
+            # Dirichlets share the ONE section 'DESIGN SURF DIRICH CONDITIONS';
+            # each entry is routed by the node set it names, and NUMDOF tells
+            # 4C which field it belongs to (3 for the structure, dim+1 = 4 for
+            # the fluid).  The field-specific variants that do exist are
+            # DESIGN SURF ALE / PORO / THERMO / TRANSPORT DIRICH CONDITIONS --
+            # there is no STRUCT variant, because plain DIRICH is the
+            # structural one.
+            #
+            # ENTITY_TYPE is REQUIRED whenever the geometry comes from a mesh
+            # FILE: without it 4C aborts with "legacy_id condition N uses
+            # legacy_id entity type but no legacy entities were defined".
             DESIGN SURF DIRICH CONDITIONS:
-              - E: <inlet_face_id>
+              # Fluid: inlet
+              - E: <inlet_node_set_id>
+                ENTITY_TYPE: "node_set_id"
                 NUMDOF: 4
                 ONOFF: [1, 1, 1, 0]
                 VAL: [<inlet_velocity_x>, <inlet_velocity_y>, <inlet_velocity_z>, 0.0]
                 FUNCT: [<inlet_ramp_function>, 0, 0, 0]
               # Fluid: no-slip walls
-              - E: <wall_face_id>
+              - E: <wall_node_set_id>
+                ENTITY_TYPE: "node_set_id"
                 NUMDOF: 4
                 ONOFF: [1, 1, 1, 0]
                 VAL: [0.0, 0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0, 0]
-
-            # Structure Dirichlet (optional: constrain motion)
-            DESIGN SURF STRUCT DIRICH CONDITIONS:
-              - E: <structure_dirichlet_face_id>
+              # Structure Dirichlet (optional: constrain motion)
+              - E: <structure_dirichlet_node_set_id>
+                ENTITY_TYPE: "node_set_id"
                 NUMDOF: 3
                 ONOFF: [<dof1_fix>, <dof2_fix>, <dof3_fix>]
                 VAL: [<dof1_val>, <dof2_val>, <dof3_val>]
                 FUNCT: [<dof1_funct>, <dof2_funct>, <dof3_funct>]
+
+            # The fluid-structure interface: the structure surface that cuts
+            # the background fluid mesh.  Without this condition there is no
+            # XFEM interface at all.
+            DESIGN XFEM FSI MONOLITHIC SURF CONDITIONS:
+              - E: <fsi_interface_node_set_id>
+                ENTITY_TYPE: "node_set_id"
+                COUPLINGID: 1
 
             # Inlet ramp function
             FUNCT<inlet_ramp_function>:
@@ -454,8 +525,11 @@ class FSIXFEMGenerator(BaseGenerator):
                       MAT: 2
                       KINEM: <kinematics>
 
+            # The fluid result field is named XFLUID, not FLUID.  A 'FLUID'
+            # entry parses but is never run: 4C then aborts with
+            # "expected N tests but performed 0".
             RESULT DESCRIPTION:
-              - FLUID:
+              - XFLUID:
                   DIS: "fluid"
                   NODE: <result_fluid_node_id>
                   QUANTITY: "velx"
@@ -531,20 +605,54 @@ class FSIXFEMGenerator(BaseGenerator):
                     f"DENS must be a positive number, got {dens!r}."
                 )
 
-        # Check Nitsche penalty
-        nitsche = params.get("NITSCHE_PENALTY_PARAMETER")
-        if nitsche is not None:
+        # Reject the fabricated Nitsche key outright: 4C has no such
+        # parameter and would abort with "Could not match this input".
+        if params.get("NITSCHE_PENALTY_PARAMETER") is not None:
+            issues.append(
+                "NITSCHE_PENALTY_PARAMETER does not exist in 4C.  The "
+                "Nitsche penalty factor is NIT_STAB_FAC (default 35) in "
+                "XFLUID DYNAMIC/STABILIZATION, with NIT_STAB_FAC_TANG for "
+                "the tangential term."
+            )
+
+        # Check the real Nitsche penalty keys
+        for key in ("NIT_STAB_FAC", "NIT_STAB_FAC_TANG"):
+            nitsche = params.get(key)
+            if nitsche is None:
+                continue
             try:
                 n = float(nitsche)
                 if n <= 0:
-                    issues.append(
-                        f"NITSCHE_PENALTY_PARAMETER must be > 0, got {n}."
-                    )
+                    issues.append(f"{key} must be > 0, got {n}.")
             except (TypeError, ValueError):
                 issues.append(
-                    f"NITSCHE_PENALTY_PARAMETER must be a positive number, "
-                    f"got {nitsche!r}."
+                    f"{key} must be a positive number, got {nitsche!r}."
                 )
+
+        # Check coupling method against 4C's actual enum
+        coupling = params.get("COUPLING_METHOD")
+        if coupling is not None and coupling not in (
+            "Nitsche", "Hybrid_LM_Cauchy_stress", "Hybrid_LM_viscous_stress",
+        ):
+            issues.append(
+                f"COUPLING_METHOD must be one of 'Nitsche', "
+                f"'Hybrid_LM_Cauchy_stress', 'Hybrid_LM_viscous_stress', "
+                f"got {coupling!r}.  ('penalty' is not a 4C value.)"
+            )
+
+        # Check the FSI coupling algorithm
+        coupalgo = params.get("COUPALGO")
+        if coupalgo is not None and coupalgo != "iter_xfem_monolithic":
+            issues.append(
+                f"COUPALGO must be 'iter_xfem_monolithic' for XFEM FSI -- "
+                f"that is the only XFEM entry in 4C's COUPALGO enum -- "
+                f"got {coupalgo!r}."
+            )
+        if params.get("XFEM_FSI_COUPALGO") is not None:
+            issues.append(
+                "XFEM_FSI_COUPALGO does not exist in 4C.  Set COUPALGO: "
+                "iter_xfem_monolithic in FSI DYNAMIC instead."
+            )
 
         # Warn about ALE sections
         has_ale = params.get("has_ale_dynamic")

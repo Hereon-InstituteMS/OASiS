@@ -52,11 +52,26 @@ class SSIGenerator(BaseGenerator):
             "optional_sections": [
                 "ELCH CONTROL",
                 "SSI CONTROL/ELCH",
+                "SSI CONTROL/PARTITIONED",
                 "SCALAR TRANSPORT DYNAMIC/S2I COUPLING",
                 "SCALAR TRANSPORT DYNAMIC/STABILIZATION",
                 "SCALAR TRANSPORT DYNAMIC/NONLINEAR",
                 "IO/RUNTIME VTK OUTPUT",
                 "IO/RUNTIME VTK OUTPUT/STRUCTURE",
+                # The S2I interface condition sections. The geometry word
+                # comes LAST; there is no "DESIGN SURF S2I ..." spelling and
+                # no "S2I COUPLING" condition section at all.
+                "DESIGN S2I KINETICS SURF CONDITIONS",
+                "DESIGN S2I KINETICS LINE CONDITIONS",
+                "DESIGN S2I KINETICS POINT CONDITIONS",
+                "DESIGN S2I KINETICS GROWTH SURF CONDITIONS",
+                "DESIGN S2I KINETICS GROWTH LINE CONDITIONS",
+                "DESIGN S2I MESHTYING SURF CONDITIONS",
+                "DESIGN S2I MESHTYING LINE CONDITIONS",
+                "DESIGN S2I SCL COUPLING SURF CONDITIONS",
+                # SSI's own interface conditions (structure side):
+                "DESIGN SSI INTERFACE MESHTYING SURF CONDITIONS",
+                "DESIGN SSI INTERFACE CONTACT SURF CONDITIONS",
             ],
             "materials": {
                 "MAT_MultiplicativeSplitDefgradElastHyper": {
@@ -142,7 +157,28 @@ class SSIGenerator(BaseGenerator):
                             ),
                             "range": "> 0",
                         },
+                        "OCP_MODEL": {
+                            "description": (
+                                "Open-circuit-potential model.  A nested "
+                                "group, not a scalar.  It takes exactly one "
+                                "sub-group -- Function (OCP_FUNCT_NUM), "
+                                "Redlich-Kister (OCP_PARA_NUM + OCP_PARA) or "
+                                "Taralov -- PLUS both X_MIN and X_MAX at its "
+                                "own level.  X_MAX is not optional: writing "
+                                "X_MIN alone fails the whole MATERIALS "
+                                "section with 'Could not match this input'.  "
+                                "-1 / -1 switches the range check off."
+                            ),
+                        },
                     },
+                    "also_required_by_the_spec": (
+                        "DIFF_COEF_CONC_DEP_FUNCT, "
+                        "DIFF_COEF_TEMP_SCALE_FUNCT, COND_CONC_DEP_FUNCT "
+                        "and COND_TEMP_SCALE_FUNCT.  Upstream writes -1 for "
+                        "the two _CONC_DEP_ ones (use the DIFF_PARA / "
+                        "COND_PARA polynomial instead) and 0 for the two "
+                        "_TEMP_SCALE_ ones (no temperature scaling)."
+                    ),
                 },
                 "ELAST_CoupSVK": {
                     "description": (
@@ -181,6 +217,9 @@ class SSIGenerator(BaseGenerator):
                     ),
                 },
             },
+            # The complete value set of SSI CONTROL's COUPALGO.  Note the
+            # spelling: no underscore between "IterStagg" and
+            # "FixedRel"/"Aitken".
             "coupling_algorithms": {
                 "ssi_Monolithic": (
                     "Fully coupled monolithic solve.  Both fields are "
@@ -191,7 +230,33 @@ class SSIGenerator(BaseGenerator):
                     "Iterative staggered (partitioned) approach.  Fields "
                     "are solved alternately with relaxation until "
                     "convergence.  Cheaper per iteration but may need "
-                    "more iterations for strongly coupled problems."
+                    "more iterations for strongly coupled problems.  "
+                    "This is the DEFAULT, so a deck that omits COUPALGO "
+                    "is partitioned, not monolithic."
+                ),
+                "ssi_IterStaggFixedRel_ScatraToSolid": (
+                    "Iterative staggered with fixed relaxation, scatra "
+                    "solved first.  Relaxation set in SSI "
+                    "CONTROL/PARTITIONED (STARTOMEGA)."
+                ),
+                "ssi_IterStaggFixedRel_SolidToScatra": (
+                    "As above with the solid solved first."
+                ),
+                "ssi_IterStaggAitken_ScatraToSolid": (
+                    "Iterative staggered with Aitken relaxation, scatra "
+                    "first.  MINOMEGA / MAXOMEGA in SSI "
+                    "CONTROL/PARTITIONED bound the relaxation factor."
+                ),
+                "ssi_IterStaggAitken_SolidToScatra": (
+                    "As above with the solid solved first."
+                ),
+                "ssi_OneWay_ScatraToSolid": (
+                    "One-way: the scalar field drives the solid and gets "
+                    "no feedback."
+                ),
+                "ssi_OneWay_SolidToScatra": (
+                    "One-way: the solid drives the scalar field and gets "
+                    "no feedback."
                 ),
             },
             "electrochemistry_settings": {
@@ -275,6 +340,48 @@ class SSIGenerator(BaseGenerator):
                     "deleting it looks harmless on some decks. "
                     "(Verified by execution 2026-08-06; there "
                     "is no silently decoupled run.)"
+                ),
+                (
+                    "[Input] The S2I condition sections put the "
+                    "GEOMETRY WORD LAST -- DESIGN S2I KINETICS "
+                    "SURF CONDITIONS, DESIGN S2I MESHTYING SURF "
+                    "CONDITIONS -- and there is no 'S2I "
+                    "COUPLING' condition section at all.  "
+                    "Writing DESIGN SURF S2I COUPLING "
+                    "CONDITIONS, which reads like every other "
+                    "DESIGN SURF ... block, is a parse abort at "
+                    "line 546 of core/io/src/4C_io_input_file"
+                    ".cpp: \"Section 'DESIGN SURF S2I COUPLING "
+                    "CONDITIONS' is not a valid section name.\" "
+                    "And the KINETICS conditions never stand "
+                    "alone: each one needs a matching meshtying "
+                    "condition, DESIGN SSI INTERFACE MESHTYING "
+                    "SURF CONDITIONS for an SSI problem or "
+                    "DESIGN S2I MESHTYING SURF CONDITIONS for a "
+                    "plain scatra/elch one, paired by a shared "
+                    "ConditionID.  Signal: that second mistake "
+                    "surfaces much later and does not mention "
+                    "the section you forgot to write -- 'For each "
+                    "\"S2IKinetics\" or \"S2ISCLCoupling\" "
+                    "condition a corresponding \"S2IMeshtying\" "
+                    "or \"S2INoEvaluation\" condition has to be "
+                    "defined!' from scatra/4C_scatra_utils.cpp "
+                    "at ScaTraUtils::check_consistency_of_s2_i_"
+                    "conditions, raised during "
+                    "ScaTraTimIntImpl::init().  The SSI-"
+                    "specific section satisfies that check "
+                    "because SSI's clone strategy renames it: "
+                    "ssi/4C_ssi_clonestrategy.cpp maps "
+                    "'ssi_interface_meshtying' -> 'S2IMeshtying' "
+                    "onto the cloned scatra discretisation, so "
+                    "it only works under PROBLEMTYPE "
+                    "Structure_Scalar_Interaction. Note also that "
+                    "INTERFACE_SIDE is capitalised, \"Slave\" / "
+                    "\"Master\", and that the master side of a "
+                    "kinetics pair carries only E, ConditionID "
+                    "and INTERFACE_SIDE -- no KINETIC_MODEL and "
+                    "no kinetic parameters. (Verified by "
+                    "execution 2026-08-07.)"
                 ),
                 (
                     "[Input] VELOCITYFIELD must be set to "
@@ -503,10 +610,16 @@ class SSIGenerator(BaseGenerator):
                   COND_PARA: [<electronic_conductivity>]
                   C_MAX: <max_lithium_concentration>
                   CHI_MAX: <max_stoichiometry>
+                  # OCP_MODEL requires BOTH X_MIN and X_MAX -- omitting
+                  # X_MAX fails the whole MATERIALS section at parse.
+                  # Use -1 for both to switch the range check off.
+                  # The sub-group is one of Function, Redlich-Kister or
+                  # Taralov.
                   OCP_MODEL:
                     Function:
                       OCP_FUNCT_NUM: <ocp_function_id>
                     X_MIN: <ocp_x_min>
+                    X_MAX: <ocp_x_max>
 
             # == Boundary Conditions ===========================================
 
@@ -532,14 +645,53 @@ class SSIGenerator(BaseGenerator):
                 VAL: [<potential_values>]
                 FUNCT: [<potential_time_functions>]
 
-            # S2I interface conditions
-            DESIGN SURF S2I COUPLING CONDITIONS:
+            # S2I interface conditions.
+            # There is NO "DESIGN SURF S2I COUPLING CONDITIONS" section in
+            # 4C. The real S2I family is DESIGN S2I KINETICS <GEOM>
+            # CONDITIONS (the physics) and DESIGN S2I MESHTYING <GEOM>
+            # CONDITIONS (the slave/master pairing), with the geometry word
+            # LAST: SURF, LINE or POINT. INTERFACE_SIDE is capitalised
+            # "Slave" / "Master".
+            #
+            # Butler-Volmer kinetics on the two interface faces. The slave
+            # side carries the whole model; the master side is just E,
+            # ConditionID and INTERFACE_SIDE, with no KINETIC_MODEL and no
+            # kinetic parameters at all. The two sides are paired by their
+            # shared ConditionID.
+            DESIGN S2I KINETICS SURF CONDITIONS:
               - E: <s2i_face_left>
-                S2I_KINETICS_ID: <kinetics_condition_id>
-                INTERFACE_SIDE: "slave"
+                ConditionID: 0
+                INTERFACE_SIDE: "Slave"
+                KINETIC_MODEL: "Butler-Volmer"
+                NUMSCAL: <num_scalars>
+                STOICHIOMETRIES: [<stoichiometry>]
+                E-: 1
+                K_R: <butler_volmer_rate_constant>
+                ALPHA_A: <anodic_transfer_coefficient>
+                ALPHA_C: <cathodic_transfer_coefficient>
+                IS_PSEUDO_CONTACT: false
               - E: <s2i_face_right>
-                S2I_KINETICS_ID: <kinetics_condition_id>
-                INTERFACE_SIDE: "master"
+                ConditionID: 0
+                INTERFACE_SIDE: "Master"
+
+            # NOT optional: every S2I kinetics condition needs a matching
+            # meshtying condition, or 4C aborts in ScaTraUtils::
+            # check_consistency_of_s2_i_conditions with "For each
+            # 'S2IKinetics' or 'S2ISCLCoupling' condition a corresponding
+            # 'S2IMeshtying' or 'S2INoEvaluation' condition has to be
+            # defined!". For an SSI problem use the SSI-specific section
+            # below (it meshties the structure side too); plain scatra/elch
+            # decks use DESIGN S2I MESHTYING SURF CONDITIONS instead. The
+            # pairing is by the shared ConditionID / S2I_KINETICS_ID.
+            DESIGN SSI INTERFACE MESHTYING SURF CONDITIONS:
+              - E: <s2i_face_left>
+                ConditionID: 0
+                INTERFACE_SIDE: "Slave"
+                S2I_KINETICS_ID: 0
+              - E: <s2i_face_right>
+                ConditionID: 0
+                INTERFACE_SIDE: "Master"
+                S2I_KINETICS_ID: 0
 
             # OCP function
             FUNCT<ocp_function_id>:
@@ -622,24 +774,34 @@ class SSIGenerator(BaseGenerator):
                     f"C_MAX must be a positive number, got {c_max!r}."
                 )
 
-        # Check coupling algorithm
+        # Check coupling algorithm.  These are the eight values 4C's
+        # SSI::SolutionSchemeOverFields enum actually accepts -- note there
+        # is NO underscore between "IterStagg" and "FixedRel"/"Aitken".
+        coupalgo_values = (
+            "ssi_OneWay_ScatraToSolid",
+            "ssi_OneWay_SolidToScatra",
+            "ssi_IterStagg",
+            "ssi_IterStaggFixedRel_ScatraToSolid",
+            "ssi_IterStaggFixedRel_SolidToScatra",
+            "ssi_IterStaggAitken_ScatraToSolid",
+            "ssi_IterStaggAitken_SolidToScatra",
+            "ssi_Monolithic",
+        )
         coupalgo = params.get("COUPALGO")
-        if coupalgo is not None and coupalgo not in (
-            "ssi_Monolithic", "ssi_IterStagg",
-            "ssi_IterStagg_FixedRel_ScatraToSolid",
-            "ssi_IterStagg_FixedRel_SolidToScatra",
-        ):
+        if coupalgo is not None and coupalgo not in coupalgo_values:
             issues.append(
-                f"COUPALGO should be 'ssi_Monolithic' or 'ssi_IterStagg' "
-                f"(or a variant), got {coupalgo!r}."
+                f"COUPALGO must be one of {', '.join(coupalgo_values)}; "
+                f"got {coupalgo!r}."
             )
 
         # Check SCATRATIMINTTYPE
         scatra_type = params.get("SCATRATIMINTTYPE")
-        if scatra_type is not None and scatra_type not in ("Elch", "Standard"):
+        if scatra_type is not None and scatra_type not in (
+            "Standard", "Elch", "Cardiac_Monodomain",
+        ):
             issues.append(
-                f"SCATRATIMINTTYPE must be 'Elch' or 'Standard', "
-                f"got {scatra_type!r}."
+                f"SCATRATIMINTTYPE must be 'Standard', 'Elch' or "
+                f"'Cardiac_Monodomain', got {scatra_type!r}."
             )
 
         # Check density

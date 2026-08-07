@@ -39,10 +39,16 @@ class FS3IGenerator(BaseGenerator):
                 "(or flux balance) are enforced.  The PROBLEM TYPE is "
                 "'Fluid_Porous_Structure_Scalar_Scalar_Interaction'.  "
                 "Required dynamics sections include FSI DYNAMIC, "
-                "SCALAR TRANSPORT DYNAMIC (for the fluid-side scalar), "
-                "SCALAR TRANSPORT DYNAMIC 2 or equivalent structure-side "
-                "scalar config, and FS3I DYNAMIC for overall coupling "
-                "parameters.  Typical applications include drug elution "
+                "SCALAR TRANSPORT DYNAMIC (for the fluid-side scalar) "
+                "and FS3I DYNAMIC for overall coupling parameters.  "
+                "There is NO second scalar-transport section: 4C has "
+                "no 'SCALAR TRANSPORT DYNAMIC 2'.  The structure-side "
+                "scalar reuses SCALAR TRANSPORT DYNAMIC and is "
+                "configured through the STRUCTSCAL_* keys of FS3I "
+                "DYNAMIC (STRUCTSCAL_CONVFORM, STRUCTSCAL_INITIALFIELD, "
+                "STRUCTSCAL_INITFUNCNO, STRUCTSCAL_FIELDCOUPLING) plus "
+                "the FS3I DYNAMIC/STRUCTURE SCALAR STABILIZATION "
+                "subsection.  Typical applications include drug elution "
                 "from stents, oxygen transport through vessel walls, and "
                 "mass transfer in filtration membranes."
             ),
@@ -64,6 +70,8 @@ class FS3IGenerator(BaseGenerator):
                 "FLUID GEOMETRY",
             ],
             "optional_sections": [
+                "FS3I DYNAMIC/PARTITIONED",
+                "FS3I DYNAMIC/STRUCTURE SCALAR STABILIZATION",
                 "FSI DYNAMIC/MONOLITHIC SOLVER",
                 "FLUID DYNAMIC/RESIDUAL-BASED STABILIZATION",
                 "FLUID DYNAMIC/NONLINEAR SOLVER TOLERANCES",
@@ -89,37 +97,68 @@ class FS3IGenerator(BaseGenerator):
                 },
                 "MAT_scatra": {
                     "description": (
-                        "Scalar transport material for the fluid-side "
-                        "concentration field.  Defines diffusivity."
+                        "Scalar transport material.  Used for BOTH the "
+                        "fluid-side and the structure-side concentration "
+                        "field -- the two differ only in the value of "
+                        "DIFFUSIVITY, not in the material name."
                     ),
                     "parameters": {
                         "DIFFUSIVITY": {
                             "description": (
-                                "Molecular diffusion coefficient [m^2/s]"
-                            ),
-                            "range": "> 0",
-                        },
-                    },
-                },
-                "MAT_scatra_reaction": {
-                    "description": (
-                        "Scalar transport material for the structure-side "
-                        "concentration field.  May include reaction terms "
-                        "for drug metabolism or nutrient consumption."
-                    ),
-                    "parameters": {
-                        "DIFFUSIVITY": {
-                            "description": (
-                                "Effective diffusion coefficient in "
-                                "structure/porous domain [m^2/s]"
+                                "Molecular diffusion coefficient [m^2/s].  "
+                                "In the structure/porous domain this is "
+                                "the effective diffusivity."
                             ),
                             "range": "> 0",
                         },
                         "REACOEFF": {
                             "description": (
-                                "First-order reaction rate coefficient [1/s]"
+                                "First-order reaction rate coefficient "
+                                "[1/s].  Note the spelling: MAT_scatra "
+                                "uses REACOEFF (one C), MAT_scatra_"
+                                "reaction uses REACCOEFF (two C)."
                             ),
                             "range": ">= 0",
+                        },
+                    },
+                },
+                "MAT_scatra_reaction": {
+                    "description": (
+                        "Reaction term for drug metabolism or nutrient "
+                        "consumption.  It is NOT a stand-alone scalar "
+                        "material and carries no DIFFUSIVITY: it is "
+                        "referenced through the REACIDS list of a "
+                        "MAT_matlist_reactions entry, which also lists "
+                        "the MAT_scatra species in MATIDS."
+                    ),
+                    "parameters": {
+                        "NUMSCAL": {
+                            "description": "Number of participating scalars",
+                            "range": ">= 1",
+                        },
+                        "STOICH": {
+                            "description": (
+                                "Stoichiometric coefficients, one per scalar"
+                            ),
+                            "range": "list of int",
+                        },
+                        "REACCOEFF": {
+                            "description": "Reaction rate coefficient [1/s]",
+                            "range": ">= 0",
+                        },
+                        "COUPLING": {
+                            "description": (
+                                "Reaction coupling model, e.g. "
+                                "'simple_multiplicative' or "
+                                "'michaelis_menten'"
+                            ),
+                            "range": "string",
+                        },
+                        "ROLE": {
+                            "description": (
+                                "Role of each scalar in the reaction"
+                            ),
+                            "range": "list",
                         },
                     },
                 },
@@ -164,17 +203,37 @@ class FS3IGenerator(BaseGenerator):
                 },
             },
             "coupling_parameters": {
-                "FS3I_APPROACH": (
-                    "Overall FS3I coupling approach: 'sequential' "
-                    "(solve FSI first, then scalar transport) or "
-                    "'fully_coupled' (monolithic or iterative coupling "
-                    "of all 5 fields)."
+                "COUPALGO (in section 'FS3I DYNAMIC/PARTITIONED')": (
+                    "Overall FS3I coupling approach.  Accepts "
+                    "'fs3i_SequStagg' (one pass per step) or "
+                    "'fs3i_IterStagg' (iterate the outer loop to "
+                    "convergence; the default).  It lives in the "
+                    "FS3I DYNAMIC/PARTITIONED subsection together with "
+                    "CONVTOL and ITEMAX -- FS3I DYNAMIC itself has "
+                    "none of these three.  There is no FS3I_APPROACH "
+                    "key anywhere in 4C."
                 ),
-                "SCATRA_COUPLING": (
-                    "Interface condition for the scalar: 'Dirichlet-"
-                    "Neumann' (concentration match on one side, flux on "
-                    "the other) or 'Dirichlet-Dirichlet' (concentration "
-                    "continuity on both sides)."
+                "INF_PERM (in section 'FS3I DYNAMIC')": (
+                    "Boolean flag for infinite interface permeability.  "
+                    "true means the scalar is simply continuous across "
+                    "the FSI interface; false means the interface "
+                    "transfer is governed by the finite permeability "
+                    "given per surface in DESIGN SCATRA COUPLING SURF "
+                    "CONDITIONS."
+                ),
+                "DESIGN SCATRA COUPLING SURF CONDITIONS": (
+                    "The scalar interface condition is a CONDITION, not "
+                    "a key: one entry per side of the FSI interface, "
+                    "sharing a COUPID, with NUMSCAL / ONOFF / PERMCOEF "
+                    "/ CONDUCT / FILTR / WSSON / WSSCOEFFS.  There is "
+                    "no SCATRA_COUPLING key anywhere in 4C."
+                ),
+                "STRUCTSCAL_FIELDCOUPLING / FLUIDSCAL_FIELDCOUPLING "
+                "(in section 'FS3I DYNAMIC')": (
+                    "Volume coupling between each carrier field and its "
+                    "scalar field: 'volume_matching' (identical meshes, "
+                    "the usual case for a cloned scalar field) or "
+                    "'volume_nonmatching'."
                 ),
             },
             "pitfalls": [
@@ -444,7 +503,10 @@ class FS3IGenerator(BaseGenerator):
             # == Scalar transport ==============================================
             SCALAR TRANSPORT DYNAMIC:
               SOLVERTYPE: "nonlinear"
-              TIMEINTEGR: "OneStepTheta"
+              # SCALAR TRANSPORT DYNAMIC/TIMEINTEGR spells the scheme with
+              # underscores: BDF2 | Gen_Alpha | One_Step_Theta | Stationary.
+              # ("OneStepTheta", the STRUCTURAL DYNAMIC spelling, is rejected.)
+              TIMEINTEGR: "One_Step_Theta"
               THETA: <scatra_theta>
               TIMESTEP: <scatra_timestep>
               NUMSTEP: <scatra_num_steps>
@@ -452,15 +514,29 @@ class FS3IGenerator(BaseGenerator):
               VELOCITYFIELD: "Navier_Stokes"
 
             # == FS3I coupling =================================================
+            # FS3I DYNAMIC holds only the outer time loop and the
+            # structure-scalar configuration.  The outer ITERATION loop
+            # (COUPALGO / CONVTOL / ITEMAX) lives in the separate
+            # top-level key "FS3I DYNAMIC/PARTITIONED" -- writing any of
+            # those three in FS3I DYNAMIC aborts at parse time.
             FS3I DYNAMIC:
               TIMESTEP: <timestep>
               NUMSTEP: <number_of_steps>
               MAXTIME: <end_time>
-              FS3I_APPROACH: "<fs3i_approach>"
-              SCATRA_COUPLING: "<scatra_coupling_type>"
-              ITEMAX: <fs3i_max_coupling_iterations>
-              CONVTOL: <fs3i_convergence_tolerance>
               RESULTSEVERY: <results_output_interval>
+              SCATRA_SOLVERTYPE: "nonlinear"
+              INF_PERM: <infinite_interface_permeability>
+              COUPLED_LINEAR_SOLVER: 3
+              LINEAR_SOLVER1: 3
+              LINEAR_SOLVER2: 3
+            FS3I DYNAMIC/PARTITIONED:
+              COUPALGO: "fs3i_IterStagg"
+              CONVTOL: <fs3i_convergence_tolerance>
+              ITEMAX: <fs3i_max_coupling_iterations>
+            FS3I DYNAMIC/STRUCTURE SCALAR STABILIZATION:
+              STABTYPE: "<structure_scalar_stabilization_type>"
+              EVALUATION_TAU: "integration_point"
+              EVALUATION_MAT: "integration_point"
 
             # == Solvers =======================================================
             SOLVER 1:
@@ -504,29 +580,39 @@ class FS3IGenerator(BaseGenerator):
                 MAT_scatra:
                   DIFFUSIVITY: <structure_scalar_diffusivity>
 
-            # Clone fluid -> ALE, fluid-scatra -> structure-scatra
+            # Three entries are required: each scalar field is cloned from
+            # the field that carries it (fluid -> scatra1, structure ->
+            # scatra2) and the ALE mesh is cloned from the fluid.  There is
+            # no scatra1 -> scatra2 clone; writing one kills the process
+            # with an uncaught std::out_of_range and no 4C diagnostic.
             CLONING MATERIAL MAP:
+              - SRC_FIELD: "fluid"
+                SRC_MAT: 1
+                TAR_FIELD: "scatra1"
+                TAR_MAT: 5
+              - SRC_FIELD: "structure"
+                SRC_MAT: 2
+                TAR_FIELD: "scatra2"
+                TAR_MAT: 6
               - SRC_FIELD: "fluid"
                 SRC_MAT: 1
                 TAR_FIELD: "ale"
                 TAR_MAT: 4
-              - SRC_FIELD: "scatra1"
-                SRC_MAT: 5
-                TAR_FIELD: "scatra2"
-                TAR_MAT: 6
 
             # == Boundary Conditions ===========================================
 
-            # Structure: fixed support
+            # 4C has no fluid-specific Dirichlet section: DESIGN SURF DIRICH
+            # CONDITIONS carries structure (NUMDOF 3) and fluid
+            # (NUMDOF 4 = vx vy vz p) entries alike.  Only ALE, TRANSPORT,
+            # PORO and THERMO have their own DESIGN SURF ... DIRICH sections.
             DESIGN SURF DIRICH CONDITIONS:
+              # Structure: fixed support
               - E: <structure_fixed_face_id>
                 NUMDOF: 3
                 ONOFF: [1, 1, 1]
                 VAL: [0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0]
-
-            # Fluid: inlet velocity
-            DESIGN SURF FLUID DIRICH CONDITIONS:
+              # Fluid: inlet velocity
               - E: <inlet_face_id>
                 NUMDOF: 4
                 ONOFF: [1, 1, 1, 0]
@@ -561,6 +647,29 @@ class FS3IGenerator(BaseGenerator):
                 coupling_id: 1
               - E: <fsi_interface_fluid_id>
                 coupling_id: 1
+
+            # Scalar interface coupling.  This CONDITION -- not a key in
+            # FS3I DYNAMIC -- is what couples the two scalar fields across
+            # the FSI interface.  One entry per side, sharing a COUPID.
+            DESIGN SCATRA COUPLING SURF CONDITIONS:
+              - E: <fsi_interface_structure_id>
+                NUMSCAL: 1
+                ONOFF: [1]
+                COUPID: 1
+                PERMCOEF: <interface_permeability_coefficient>
+                CONDUCT: <interface_conductivity>
+                FILTR: <interface_filtration_coefficient>
+                WSSON: false
+                WSSCOEFFS: [0, 0]
+              - E: <fsi_interface_fluid_id>
+                NUMSCAL: 1
+                ONOFF: [1]
+                COUPID: 1
+                PERMCOEF: <interface_permeability_coefficient>
+                CONDUCT: <interface_conductivity>
+                FILTR: <interface_filtration_coefficient>
+                WSSON: false
+                WSSCOEFFS: [0, 0]
 
             # Inlet ramp function
             FUNCT<inlet_ramp_function>:
@@ -672,10 +781,23 @@ class FS3IGenerator(BaseGenerator):
         has_cloning = params.get("has_cloning_material_map")
         if has_cloning is not None and not has_cloning:
             issues.append(
-                "CLONING MATERIAL MAP is required for FS3I.  "
-                "It maps fluid -> ALE and fluid-scatra -> "
-                "structure-scatra."
+                "CLONING MATERIAL MAP is required for FS3I.  It needs "
+                "THREE entries: fluid -> scatra1, structure -> scatra2 "
+                "and fluid -> ale.  There is no scatra1 -> scatra2 "
+                "entry."
             )
+
+        # FS3I_APPROACH / SCATRA_COUPLING do not exist in 4C, and
+        # CONVTOL / ITEMAX belong to FS3I DYNAMIC/PARTITIONED.
+        for bogus in ("FS3I_APPROACH", "SCATRA_COUPLING"):
+            if params.get(bogus) is not None:
+                issues.append(
+                    f"{bogus} is not a 4C input parameter.  Use "
+                    f"FS3I DYNAMIC/PARTITIONED COUPALGO for the "
+                    f"coupling scheme and DESIGN SCATRA COUPLING SURF "
+                    f"CONDITIONS (plus FS3I DYNAMIC INF_PERM) for the "
+                    f"scalar interface condition."
+                )
 
         # Check fluid NA mode
         fluid_na = params.get("fluid_NA") or params.get("NA")

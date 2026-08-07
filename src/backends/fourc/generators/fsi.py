@@ -131,9 +131,14 @@ class FSIGenerator(BaseGenerator):
                 "alternatives": [
                     "iter_monolithicfluidsplit",
                     "iter_monolithicstructuresplit",
-                    "iter_stagg_AITKEN_rel_force",
-                    "iter_stagg_fixed_rel_force",
+                    "iter_mortar_monolithicstructuresplit",
+                    "iter_stagg_AITKEN_rel_param",
+                    "iter_stagg_fixed_rel_param",
                 ],
+                "not_valid": (
+                    "iter_stagg_AITKEN_rel_force and iter_stagg_fixed_rel_force "
+                    "do NOT exist; the staggered schemes are named ..._rel_param."
+                ),
                 "key_settings": {
                     "COUPALGO": "Coupling algorithm selector in FSI DYNAMIC",
                     "SHAPEDERIVATIVES": "Must be true for monolithic FSI",
@@ -218,12 +223,21 @@ class FSIGenerator(BaseGenerator):
                 ),
             },
             "valid_2d_elements": {
-                "FLUID": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
-                "SOLID (structure)": ["QUAD4", "QUAD9", "TRI3", "TRI6"],
+                "FLUID": ["QUAD4", "QUAD8", "QUAD9", "TRI3", "TRI6"],
+                "WALL (2-D structure)": ["QUAD4", "QUAD8", "QUAD9", "TRI3", "TRI6"],
                 "notes": (
+                    "The 2-D structural element type is WALL, NOT SOLID.  "
+                    "SOLID is 3-D only (HEX8/HEX18/HEX20/HEX27, TET4/TET10, "
+                    "WEDGE6, PYRAMID5, NURBS27); asking for 'SOLID: QUAD4' "
+                    "is rejected with 'Could not match this input'.  A WALL "
+                    "QUAD4 element block requires all six of MAT, KINEM, EAS, "
+                    "THICK, STRESS_STRAIN and GP -- the token is THICK, not "
+                    "THICKNESS, and GP is a 2-vector such as [2, 2].  "
                     "QUAD4 is most commonly used and best validated for FSI.  "
                     "TRI3 works but is less accurate for pressure.  "
-                    "For 3-D FSI: FLUID HEX8/TET4, SOLID HEX8/TET4."
+                    "For 3-D FSI: FLUID HEX8/TET4, SOLID HEX8/TET4 (SOLID "
+                    "takes MAT and KINEM, and optionally TECH, PRESTRESS_TECH, "
+                    "FIBER1..3, RAD/AXI/CIR and an INTEGRATION sub-group)."
                 ),
             },
             "typical_experiments": [
@@ -384,15 +398,24 @@ class FSIGenerator(BaseGenerator):
                 TAR_MAT: 4
 
             # == Geometry ==================================================
+            # ELEMENT_BLOCKS entries are ID -> <ELEMENT_TYPE> -> <CELL_TYPE> ->
+            # tokens, and the element type must match the dimension.  SOLID is
+            # 3-D ONLY: its legal cell types are HEX8/HEX18/HEX20/HEX27/TET4/
+            # TET10/WEDGE6/PYRAMID5/NURBS27, so 'SOLID: QUAD4:' is rejected
+            # with "Could not match this input".  The 2-D structural element
+            # type is WALL, and its QUAD4 block requires ALL SIX of MAT, KINEM,
+            # EAS, THICK, STRESS_STRAIN and GP.  Note THICK, not THICKNESS --
+            # THICKNESS is not an element token anywhere in 4C.
             STRUCTURE GEOMETRY:
               FILE: "fsi_2d.e"
               ELEMENT_BLOCKS:
                 - ID: 1
-                  SOLID:
+                  WALL:
                     QUAD4:
                       MAT: 2
                       KINEM: nonlinear
-                      THICKNESS: <wall_thickness>
+                      EAS: none
+                      THICK: <wall_thickness>
                       STRESS_STRAIN: plane_strain
                       GP: [2, 2]
 

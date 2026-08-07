@@ -800,7 +800,8 @@ class FourcBackend(SolverBackend):
                           "elastic body whose contact surface "
                           "receives the film pressure",
                           "STRUCTURAL DYNAMIC + LUBRICATION DYNAMIC "
-                          "+ EHL DYNAMIC coupling sections",
+                          "+ ELASTO HYDRO DYNAMIC coupling sections "
+                          "(there is no 'EHL DYNAMIC' section)",
                           "MAT_lubrication + a structural material"],
                 "pitfalls": ["The film-to-surface projection "
                              "(matching or mortar) must be set up "
@@ -815,9 +816,10 @@ class FourcBackend(SolverBackend):
                             "coupled by a penalty drag term."),
                 "needs": ["TWO meshes: a fluid HEX8 channel + a "
                           "separate beam LINE2 mesh embedded in it",
-                          "FBI DYNAMIC (penalty parameter) + "
-                          "STRUCTURAL + FLUID DYNAMIC + a BINNING "
-                          "STRATEGY for the beam-fluid search",
+                          "FLUID BEAM INTERACTION (penalty "
+                          "parameter; there is no 'FBI DYNAMIC' "
+                          "section) + STRUCTURAL + FLUID DYNAMIC + a "
+                          "BINNING STRATEGY for the beam-fluid search",
                           "MAT_BeamReissnerElastHyper + MAT_fluid"],
                 "pitfalls": ["Penalty parameter trades coupling "
                              "accuracy against conditioning",
@@ -943,20 +945,23 @@ class FourcBackend(SolverBackend):
                 "problemtype": "ArterialNetwork",
                 "summary": ("1-D arterial pulse-wave propagation: a "
                             "compliant artery with a prescribed "
-                            "inlet flow and a 3-element Windkessel "
-                            "(RCR) outlet."),
+                            "inlet flow and a reflective terminal "
+                            "(4C has no Windkessel outlet here)."),
                 "needs": ["A 1-D ARTERY line mesh (NODE COORDS + "
                           "ARTERY LINE2 elements) — the network "
                           "topology is case-specific",
                           "ARTERIAL DYNAMIC + an inflow waveform "
-                          "FUNCT + DESIGN POINT WINDKESSEL "
-                          "CONDITIONS at the outlet",
-                          "MAT_cnst_art (wall Young, thickness, "
-                          "reference area, blood density/"
-                          "viscosity)"],
-                "pitfalls": ["Windkessel R/C values set the "
-                             "reflection coefficient — wrong values "
-                             "give nonphysical pressure",
+                          "FUNCT + DESIGN NODE 1D ARTERY PRESCRIBED "
+                          "CONDITIONS at the inlet and DESIGN NODE 1D "
+                          "ARTERY REFLECTIVE CONDITIONS at the outlet",
+                          "MAT_CNST_ART, upper case (YOUNG, NUE, TH, "
+                          "DENS, VISCOSITY, PEXT1, PEXT2). The "
+                          "reference area is NOT a material input - it "
+                          "comes from DIAM on the ART element line"],
+                "pitfalls": ["There is no Windkessel (R/C) outlet: "
+                             "terminal behaviour is the single "
+                             "coefficient in DESIGN NODE 1D ARTERY "
+                             "REFLECTIVE CONDITIONS",
                              "Time step must resolve the pulse "
                              "wave-speed CFL along the segment"],
             },
@@ -971,11 +976,13 @@ class FourcBackend(SolverBackend):
                           "LINE2 elements) with physiologically "
                           "ordered branching — derived per patient, "
                           "not generic",
-                          "REDUCED DIMENSIONAL AIRWAYS DYNAMIC + "
-                          "ACINUS sub-section + a tracheal pressure "
-                          "(breathing) waveform",
-                          "MAT_redairway_material (proximal + "
-                          "distal) + MAT_redairway_acinus_material"],
+                          "REDUCED DIMENSIONAL AIRWAYS DYNAMIC + a "
+                          "tracheal pressure (breathing) waveform "
+                          "(there is no ACINUS sub-section)",
+                          "MAT_fluid for the airways + a "
+                          "MAT_0D_MAXWELL_ACINUS_* material for the "
+                          "acini; MAT_redairway_material and "
+                          "MAT_redairway_acinus_material do not exist"],
                 "pitfalls": ["Tree topology must follow a Horsfield/"
                              "Strahler ordering or the resistance "
                              "network is unphysical",
@@ -1009,7 +1016,8 @@ class FourcBackend(SolverBackend):
                             "problem."),
                 "needs": ["TWO input files: this MACRO file PLUS a "
                           "separate MICRO RVE input file referenced "
-                          "by MICRO_INPUT_FILE",
+                          "by MICROFILE (there is no "
+                          "MICRO_INPUT_FILE key)",
                           "MAT_Struct_Multiscale on the macro mesh "
                           "(points to the micro file + micro solver "
                           "id)",

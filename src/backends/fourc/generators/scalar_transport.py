@@ -191,7 +191,28 @@ class ScalarTransportGenerator(BaseGenerator):
                     "were tried and both aborted; the automatic .vtu output "
                     "was confirmed on a deck containing no IO section. This "
                     "corrects an earlier entry that recommended the first "
-                    "section name and claimed the failure was silent.)"
+                    "section name and claimed the failure was silent. "
+                    "Re-verified 2026-08-07 at line 546 of the same file.)"
+                ),
+                (
+                    "[Output] There is no key for it either, so do not go "
+                    "looking for one to relocate into a valid section. "
+                    "OUTPUT_SCATRA and PHI do not exist anywhere in 4C, and "
+                    "the scatra .vtu cadence cannot be throttled from the "
+                    "input file at all: IO/RUNTIME VTK OUTPUT is a valid "
+                    "section, but neither its INTERVAL_STEPS nor SCALAR "
+                    "TRANSPORT DYNAMIC's RESULTSEVERY changes how many "
+                    "scatra files are written. Signal: writing "
+                    "OUTPUT_SCATRA under IO/RUNTIME VTK OUTPUT is a hard "
+                    "abort, 'Could not match this input' from "
+                    "core/io/src/4C_io_input_spec_builders.cpp with the IO "
+                    "block echoed; whereas INTERVAL_STEPS is accepted "
+                    "silently and does nothing. A 6-step run produced the "
+                    "same 7 scatra-*.vtu (+7 .pvtu) with no IO section, "
+                    "with INTERVAL_STEPS 1, with INTERVAL_STEPS 3, with "
+                    "RESULTSEVERY 2 and with RESULTSEVERY 3. If you need "
+                    "fewer files, sub-sample the .pvd afterwards. "
+                    "(Verified by execution 2026-08-07.)"
                 ),
                 (
                     "[Input] For Exodus-based meshes the geometry section "
@@ -448,11 +469,13 @@ SCALAR TRANSPORT DYNAMIC:
   MAXTIME: <end_time>
   NUMSTEP: <number_of_steps>
   LINEAR_SOLVER: 1
-IO/RUNTIME VTK OUTPUT:
-  INTERVAL_STEPS: <output_interval_steps>
-SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT:
-  OUTPUT_SCATRA: true
-  PHI: true
+# NO output section. Scalar transport has no runtime-VTK section and no
+# runtime-VTK switch: there is no SCALAR TRANSPORT DYNAMIC/RUNTIME VTK
+# OUTPUT section, no IO/RUNTIME VTK OUTPUT/SCATRA sub-section, and no
+# OUTPUT_SCATRA or PHI key anywhere in 4C. The run writes
+# <prefix>-vtk-files/scatra-*.vtu and <prefix>-scatra.pvd by itself, one
+# file set per step. IO/RUNTIME VTK OUTPUT is a valid section but its
+# INTERVAL_STEPS does not throttle scatra output.
 SOLVER 1:
   SOLVER: "UMFPACK"
   NAME: "direct_solver"

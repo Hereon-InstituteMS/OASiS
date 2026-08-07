@@ -127,7 +127,7 @@ class LowMachGenerator(BaseGenerator):
                 },
             },
             "time_integration": {
-                "FLUID_DYNAMIC": {
+                "FLUID DYNAMIC": {
                     "PHYSICAL_TYPE": (
                         "Must be set to 'Loma' (Low Mach number) to enable "
                         "variable-density treatment."
@@ -137,7 +137,7 @@ class LowMachGenerator(BaseGenerator):
                         "fluid field."
                     ),
                 },
-                "SCALAR_TRANSPORT": {
+                "SCALAR TRANSPORT DYNAMIC": {
                     "TIMEINTEGR": (
                         "'Gen_Alpha' (recommended) to match the fluid "
                         "time integration order."
@@ -147,7 +147,7 @@ class LowMachGenerator(BaseGenerator):
                         "velocity."
                     ),
                 },
-                "LOMA_CONTROL": {
+                "LOMA CONTROL": {
                     "MONOLITHIC": (
                         "Set to true for monolithic fluid-scalar coupling "
                         "(recommended for accuracy).  False for partitioned."

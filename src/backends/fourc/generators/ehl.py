@@ -40,12 +40,24 @@ class EHLGenerator(BaseGenerator):
                 "surfaces (e.g. rolling element bearings, gear tooth "
                 "contacts, bio-tribology).  The PROBLEM TYPE is "
                 "'Elastohydrodynamic_Lubrication'.  The dynamics "
-                "sections include LUBRICATION DYNAMIC, STRUCTURAL "
-                "DYNAMIC, and EHL DYNAMIC for the coupling parameters.  "
-                "The lubrication mesh represents the 2-D film domain "
-                "and the structural mesh represents the 3-D elastic "
-                "bodies.  Materials include MAT_lubrication for the "
-                "lubricant and a structural material (e.g. "
+                "sections are LUBRICATION DYNAMIC, STRUCTURAL DYNAMIC "
+                "and ELASTO HYDRO DYNAMIC -- there is no section called "
+                "'EHL DYNAMIC'.  The coupling solver settings live one "
+                "level down, in the slash-joined top-level sections "
+                "ELASTO HYDRO DYNAMIC/MONOLITHIC and ELASTO HYDRO "
+                "DYNAMIC/PARTITIONED.  The two fields are tied together "
+                "by mortar contact: CONTACT DYNAMIC/STRATEGY must be "
+                "'Ehl', a MORTAR COUPLING section must be present, and "
+                "the film interface is declared with a Slave/Master pair "
+                "in DESIGN SURF EHL MORTAR COUPLING CONDITIONS 3D (or "
+                "DESIGN LINE EHL MORTAR COUPLING CONDITIONS 2D).  The "
+                "lubrication mesh represents the 2-D film surface and "
+                "the structural mesh represents the 3-D elastic bodies; "
+                "both live in a 3-D discretisation.  Materials include "
+                "MAT_lubrication for the lubricant -- which carries only "
+                "DENSITY and LUBRICATIONLAWID, the viscosity coming from "
+                "the separate lubrication-law material it points to -- "
+                "and a structural material (e.g. "
                 "MAT_Struct_StVenantKirchhoff) for the elastic bodies."
             ),
             "required_sections": [
@@ -53,7 +65,11 @@ class EHLGenerator(BaseGenerator):
                 "PROBLEM SIZE",
                 "STRUCTURAL DYNAMIC",
                 "LUBRICATION DYNAMIC",
-                "EHL DYNAMIC",
+                "ELASTO HYDRO DYNAMIC",
+                "ELASTO HYDRO DYNAMIC/MONOLITHIC",
+                "CONTACT DYNAMIC",
+                "MORTAR COUPLING",
+                "DESIGN SURF EHL MORTAR COUPLING CONDITIONS 3D",
                 "SOLVER 1",
                 "SOLVER 2",
                 "MATERIALS",
@@ -61,27 +77,86 @@ class EHLGenerator(BaseGenerator):
             "optional_sections": [
                 "IO",
                 "IO/RUNTIME VTK OUTPUT",
-                "IO/RUNTIME VTK OUTPUT/STRUCTURE",
+                "ELASTO HYDRO DYNAMIC/PARTITIONED",
+                "MORTAR COUPLING/PARALLEL REDISTRIBUTION",
                 "CLONING MATERIAL MAP",
                 "RESULT DESCRIPTION",
             ],
             "materials": {
                 "MAT_lubrication": {
                     "description": (
-                        "Lubricant material for the Reynolds equation.  "
-                        "May include pressure-dependent viscosity "
-                        "(piezoviscous) for EHL."
+                        "Lubricant material for the Reynolds equation.  It "
+                        "holds ONLY the density and a pointer to a "
+                        "lubrication-law material; the viscosity (constant "
+                        "or piezoviscous) lives in that law material."
                     ),
                     "parameters": {
-                        "DYNVISCOSITY": {
+                        "LUBRICATIONLAWID": {
                             "description": (
-                                "Dynamic viscosity of lubricant at "
-                                "reference pressure [Pa s]"
+                                "MAT id of the lubrication-law material: "
+                                "MAT_lubrication_law_constant for constant "
+                                "viscosity, MAT_lubrication_law_barus or "
+                                "MAT_lubrication_law_roeland for the "
+                                "piezoviscous EHL cases"
                             ),
-                            "range": "> 0",
+                            "range": "existing MAT id",
                         },
                         "DENSITY": {
                             "description": "Lubricant density [kg/m^3]",
+                            "range": "> 0",
+                        },
+                    },
+                },
+                "MAT_lubrication_law_constant": {
+                    "description": (
+                        "Constant-viscosity lubrication law.  Start here to "
+                        "verify an EHL setup before turning on piezoviscosity."
+                    ),
+                    "parameters": {
+                        "VISCOSITY": {
+                            "description": "Dynamic viscosity [Pa s]",
+                            "range": "> 0",
+                        },
+                    },
+                },
+                "MAT_lubrication_law_barus": {
+                    "description": (
+                        "Barus piezoviscous law, mu = mu_0 * exp(alpha*p)."
+                    ),
+                    "parameters": {
+                        "ABSViscosity": {
+                            "description": "Reference viscosity mu_0 [Pa s]",
+                            "range": "> 0",
+                        },
+                        "PreVisCoeff": {
+                            "description": (
+                                "Pressure-viscosity coefficient alpha [1/Pa]"
+                            ),
+                            "range": ">= 0",
+                        },
+                    },
+                },
+                "MAT_lubrication_law_roeland": {
+                    "description": "Roelands piezoviscous law.",
+                    "parameters": {
+                        "ABSViscosity": {
+                            "description": "Reference viscosity mu_0 [Pa s]",
+                            "range": "> 0",
+                        },
+                        "PreVisCoeff": {
+                            "description": (
+                                "Pressure-viscosity coefficient alpha [1/Pa]"
+                            ),
+                            "range": ">= 0",
+                        },
+                        "RefPress": {
+                            "description": "Roelands reference pressure [Pa]",
+                            "range": "> 0",
+                        },
+                        "RefVisc": {
+                            "description": (
+                                "Roelands reference viscosity [Pa s]"
+                            ),
                             "range": "> 0",
                         },
                     },
@@ -125,15 +200,46 @@ class EHLGenerator(BaseGenerator):
                 },
             },
             "coupling_parameters": {
-                "COUPALGO": (
-                    "EHL coupling algorithm: 'ehl_monolithic' for "
-                    "simultaneous solution of lubrication + structure, "
-                    "or 'ehl_partitioned' for staggered iteration."
+                "ELASTO HYDRO DYNAMIC/COUPALGO": (
+                    "EHL coupling algorithm.  Exactly two spellings are "
+                    "accepted, and they are case sensitive: "
+                    "'ehl_Monolithic' (the default) for simultaneous "
+                    "solution of lubrication + structure, or "
+                    "'ehl_IterStagg' for staggered iteration.  Anything "
+                    "else, including the lower-case 'ehl_monolithic', is "
+                    "rejected at parse time."
                 ),
-                "FILM_HEIGHT_FROM": (
-                    "How the film height is computed: 'structure' "
-                    "(from structural deformation, standard for EHL) "
-                    "or 'function' (prescribed, for testing)."
+                "ELASTO HYDRO DYNAMIC/ITEMAX, ITEMIN": (
+                    "Maximum / minimum number of coupling iterations over "
+                    "the two fields."
+                ),
+                "ELASTO HYDRO DYNAMIC/UNPROJ_ZERO_DBC": (
+                    "Pin film nodes that do not project onto the structure "
+                    "to zero pressure with a Dirichlet condition.  Every "
+                    "upstream EHL test deck sets this true."
+                ),
+                "ELASTO HYDRO DYNAMIC/DIFFTIMESTEPSIZE": (
+                    "Allow a different step size for the lubrication and "
+                    "the solid field."
+                ),
+                "ELASTO HYDRO DYNAMIC/MONOLITHIC": (
+                    "CONVTOL, TOLINC, NORM_RESF, NORM_INC, "
+                    "NORMCOMBI_RESFINC, ITERNORM, PTCDT, LINEAR_SOLVER, "
+                    "INFNORMSCALING live HERE, not at ELASTO HYDRO "
+                    "DYNAMIC.  Putting CONVTOL one level up is rejected."
+                ),
+                "ELASTO HYDRO DYNAMIC/PARTITIONED": (
+                    "CONVTOL, MAXOMEGA, MINOMEGA, STARTOMEGA; only "
+                    "consulted when COUPALGO is ehl_IterStagg."
+                ),
+                "film_height": (
+                    "There is no FILM_HEIGHT_FROM key.  In an EHL run the "
+                    "film height is the mortar contact gap, delivered "
+                    "through the DESIGN ... EHL MORTAR COUPLING CONDITIONS "
+                    "Slave/Master pair; LUBRICATION DYNAMIC/PURE_LUB stays "
+                    "false and HEIGHTFEILD/HFUNCNO are not used.  Only a "
+                    "stand-alone Lubrication problem prescribes the height "
+                    "from a FUNCT."
                 ),
             },
             "pitfalls": [
@@ -280,6 +386,27 @@ class EHLGenerator(BaseGenerator):
                     "half-width is the real remedy. "
                     "(Corrected by execution 2026-08-06.)"
                 ),
+                (
+                    "[Input] Do NOT put IO/RUNTIME VTK "
+                    "OUTPUT/STRUCTURE: OUTPUT_STRUCTURE: true "
+                    "in an EHL deck. Signal: it is not a "
+                    "silent no-op — the run aborts during "
+                    "setup with 'Runtime output is not "
+                    "available in the old structure time "
+                    "integration! You need to take the new "
+                    "one, i.e. set `INT_STRATEGY: Standard`!' "
+                    "from structure/4C_structure_timint.cpp, "
+                    "raised out of EHL::Base::Base. The advice "
+                    "in that message does NOT work here: EHL "
+                    "constructs Solid::TimIntStatics directly, "
+                    "so adding INT_STRATEGY: Standard to "
+                    "STRUCTURAL DYNAMIC changes nothing and "
+                    "the identical abort repeats. Drop the "
+                    "IO/RUNTIME VTK OUTPUT/STRUCTURE section; "
+                    "the plain IO/RUNTIME VTK OUTPUT section "
+                    "is fine. (Verified by execution "
+                    "2026-08-07.)"
+                ),
             ],
             "typical_experiments": [
                 {
@@ -339,7 +466,8 @@ class EHLGenerator(BaseGenerator):
             #
             # Mesh: requires:
             #   Lubrication mesh: "lub.e" with
-            #     element_block 1 = lubrication film (QUAD4, 2-D)
+            #     element_block 1 = lubrication film, a QUAD4 SURFACE in
+            #                       3-D space (the discretisation is 3-D)
             #     node_set 1 = inlet boundary (pressure Dirichlet)
             #     node_set 2 = outlet boundary (pressure Dirichlet)
             #   Structure mesh: "structure.e" with
@@ -357,9 +485,9 @@ class EHLGenerator(BaseGenerator):
               STDOUTEVERY: <stdout_interval>
             IO/RUNTIME VTK OUTPUT:
               INTERVAL_STEPS: <output_interval_steps>
-            IO/RUNTIME VTK OUTPUT/STRUCTURE:
-              OUTPUT_STRUCTURE: true
-              DISPLACEMENT: true
+            # Do NOT add IO/RUNTIME VTK OUTPUT/STRUCTURE here: EHL runs on
+            # the old structure time integrator and OUTPUT_STRUCTURE: true
+            # aborts the run during setup (INT_STRATEGY does not help).
 
             # == Structure =====================================================
             STRUCTURAL DYNAMIC:
@@ -370,26 +498,56 @@ class EHLGenerator(BaseGenerator):
               LINEAR_SOLVER: 1
               TOLRES: <structure_residual_tolerance>
               TOLDISP: <structure_displacement_tolerance>
+              DIVERCONT: "continue"
+
+            # == Contact / mortar coupling of the two fields ===================
+            # EHL is driven through mortar contact.  Without STRATEGY "Ehl"
+            # and a MORTAR COUPLING section the two fields are not tied.
+            CONTACT DYNAMIC:
+              LINEAR_SOLVER: 1
+              STRATEGY: "Ehl"
+            MORTAR COUPLING:
+              SEARCH_PARAM: <mortar_search_parameter>
+              INTTYPE: "Elements"
+              NUMGP_PER_DIM: <mortar_gauss_points_per_dim>
+              TRIANGULATION: "Center"
+            MORTAR COUPLING/PARALLEL REDISTRIBUTION:
+              PARALLEL_REDIST: "None"
 
             # == Lubrication ===================================================
+            # No SOLVERTYPE key exists here, and the sliding velocity is NOT
+            # a key either: in EHL the height and the velocity both come
+            # from the mortar coupling (PURE_LUB stays at its default false).
             LUBRICATION DYNAMIC:
               TIMESTEP: <lubrication_timestep>
               NUMSTEP: <lubrication_num_steps>
               MAXTIME: <lubrication_max_time>
-              SOLVERTYPE: "<lubrication_solver_type>"
               LINEAR_SOLVER: 2
               RESULTSEVERY: <results_output_interval>
-              SURFACE_VELOCITY: <surface_velocity>
+              CONVTOL: <lubrication_newton_tolerance>
+              PENALTY_CAVITATION: <cavitation_penalty>
+              GAP_OFFSET: <minimum_film_height>
+              ADD_SQUEEZE_TERM: true
 
             # == EHL coupling ==================================================
-            EHL DYNAMIC:
+            # The section is "ELASTO HYDRO DYNAMIC"; "EHL DYNAMIC" does not
+            # exist.  COUPALGO takes exactly ehl_Monolithic or ehl_IterStagg.
+            ELASTO HYDRO DYNAMIC:
               TIMESTEP: <timestep>
               NUMSTEP: <number_of_steps>
               MAXTIME: <end_time>
-              COUPALGO: "<ehl_coupling_algorithm>"
+              COUPALGO: "ehl_Monolithic"
               ITEMAX: <ehl_max_coupling_iterations>
-              CONVTOL: <ehl_convergence_tolerance>
+              ITEMIN: <ehl_min_coupling_iterations>
               RESULTSEVERY: <results_output_interval>
+              UNPROJ_ZERO_DBC: true
+            # Convergence control of the monolithic EHL solve lives in the
+            # sub-section, not in ELASTO HYDRO DYNAMIC itself.
+            ELASTO HYDRO DYNAMIC/MONOLITHIC:
+              CONVTOL: <ehl_residual_tolerance>
+              TOLINC: <ehl_increment_tolerance>
+              NORMCOMBI_RESFINC: "And"
+              LINEAR_SOLVER: 1
 
             # == Solvers =======================================================
             SOLVER 1:
@@ -407,34 +565,59 @@ class EHLGenerator(BaseGenerator):
                   YOUNG: <Young_modulus>
                   NUE: <Poisson_ratio>
                   DENS: <density>
-              # Lubricant material
+              # Lubricant material.  MAT_lubrication carries only DENSITY
+              # and LUBRICATIONLAWID; the viscosity is in the law material.
+              # Swap MAT 3 for MAT_lubrication_law_barus (ABSViscosity,
+              # PreVisCoeff) or ..._roeland for a piezoviscous EHL run.
               - MAT: 2
                 MAT_lubrication:
-                  DYNVISCOSITY: <lubricant_dynamic_viscosity>
+                  LUBRICATIONLAWID: 3
                   DENSITY: <lubricant_density>
+              - MAT: 3
+                MAT_lubrication_law_constant:
+                  VISCOSITY: <lubricant_dynamic_viscosity>
 
             # == Boundary Conditions ===========================================
 
             # Structure: fixed bottom
             DESIGN SURF DIRICH CONDITIONS:
               - E: <structure_fixed_face_id>
+                ENTITY_TYPE: node_set_id
                 NUMDOF: 3
                 ONOFF: [1, 1, 1]
                 VAL: [0.0, 0.0, 0.0]
                 FUNCT: [0, 0, 0]
 
-            # Lubrication: pressure BCs
-            DESIGN LINE LUBRICATION DIRICH CONDITIONS:
+            # Lubrication: pressure BCs.  There is no lubrication-specific
+            # Dirichlet section -- the film uses the generic DESIGN ...
+            # DIRICH CONDITIONS with NUMDOF 1 (the single pressure dof).
+            DESIGN LINE DIRICH CONDITIONS:
               - E: <lub_inlet_boundary_id>
+                ENTITY_TYPE: node_set_id
                 NUMDOF: 1
                 ONOFF: [1]
                 VAL: [<inlet_pressure>]
                 FUNCT: [0]
               - E: <lub_outlet_boundary_id>
+                ENTITY_TYPE: node_set_id
                 NUMDOF: 1
                 ONOFF: [1]
                 VAL: [<outlet_pressure>]
                 FUNCT: [0]
+
+            # Film interface: the Slave/Master pair is what actually ties
+            # the lubrication field to the structure.  BOTH entries must be
+            # present; a missing Master runs to completion and silently
+            # produces ~0 coupling.
+            DESIGN SURF EHL MORTAR COUPLING CONDITIONS 3D:
+              - E: <lubrication_contact_surface_id>
+                ENTITY_TYPE: node_set_id
+                InterfaceID: 1
+                Side: "Slave"
+              - E: <structure_contact_surface_id>
+                ENTITY_TYPE: node_set_id
+                InterfaceID: 1
+                Side: "Master"
 
             # == Geometry ======================================================
             STRUCTURE GEOMETRY:
@@ -474,20 +657,28 @@ class EHLGenerator(BaseGenerator):
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         issues: list[str] = []
 
-        # Check lubricant viscosity
-        viscosity = params.get("DYNVISCOSITY")
-        if viscosity is not None:
-            try:
-                mu = float(viscosity)
-                if mu <= 0:
+        # Check lubricant viscosity.  It belongs to the lubrication-law
+        # material (VISCOSITY / ABSViscosity), NOT to MAT_lubrication.
+        if params.get("DYNVISCOSITY") is not None:
+            issues.append(
+                "DYNVISCOSITY is not a lubrication parameter. Put the "
+                "viscosity on MAT_lubrication_law_constant as VISCOSITY "
+                "(or on MAT_lubrication_law_barus/_roeland as "
+                "ABSViscosity) and point MAT_lubrication/LUBRICATIONLAWID "
+                "at it."
+            )
+        for key in ("VISCOSITY", "ABSViscosity"):
+            viscosity = params.get(key)
+            if viscosity is not None:
+                try:
+                    mu = float(viscosity)
+                    if mu <= 0:
+                        issues.append(f"{key} must be > 0, got {mu}.")
+                except (TypeError, ValueError):
                     issues.append(
-                        f"DYNVISCOSITY must be > 0, got {mu}."
+                        f"{key} must be a positive number, "
+                        f"got {viscosity!r}."
                     )
-            except (TypeError, ValueError):
-                issues.append(
-                    f"DYNVISCOSITY must be a positive number, "
-                    f"got {viscosity!r}."
-                )
 
         # Check lubricant density
         density = params.get("DENSITY") or params.get("lubricant_density")
@@ -529,25 +720,34 @@ class EHLGenerator(BaseGenerator):
                     f"NUE must be a number in [0, 0.5), got {nue!r}."
                 )
 
-        # Check surface velocity
-        velocity = params.get("SURFACE_VELOCITY")
-        if velocity is not None:
-            try:
-                float(velocity)
-            except (TypeError, ValueError):
-                issues.append(
-                    f"SURFACE_VELOCITY must be a number, "
-                    f"got {velocity!r}."
-                )
+        # Keys that do not exist in LUBRICATION DYNAMIC
+        if params.get("SURFACE_VELOCITY") is not None:
+            issues.append(
+                "SURFACE_VELOCITY is not a LUBRICATION DYNAMIC key. In an "
+                "EHL run the sliding velocity comes from the mortar "
+                "coupling, not from an input key."
+            )
+        if params.get("SOLVERTYPE") is not None:
+            issues.append(
+                "SOLVERTYPE is not a LUBRICATION DYNAMIC key. The Reynolds "
+                "problem always uses the implicit Newton loop; tune it with "
+                "CONVTOL / ITEMAX."
+            )
+        if params.get("FILM_HEIGHT_FROM") is not None:
+            issues.append(
+                "FILM_HEIGHT_FROM does not exist. The EHL film height is "
+                "the mortar contact gap, declared with the Slave/Master "
+                "pair in DESIGN SURF EHL MORTAR COUPLING CONDITIONS 3D."
+            )
 
-        # Check coupling algorithm
+        # Check coupling algorithm (case sensitive, exactly two values)
         coupalgo = params.get("COUPALGO")
         if coupalgo is not None and coupalgo not in (
-            "ehl_monolithic", "ehl_partitioned",
+            "ehl_Monolithic", "ehl_IterStagg",
         ):
             issues.append(
-                f"EHL COUPALGO should be 'ehl_monolithic' or "
-                f"'ehl_partitioned', got {coupalgo!r}."
+                f"EHL COUPALGO must be 'ehl_Monolithic' or "
+                f"'ehl_IterStagg' (case sensitive), got {coupalgo!r}."
             )
 
         return issues
