@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii navier_stokes#3. Taylor-Green vortex on the unit square, nu = 0.05, T = 0.5, Taylor-Hood Q2/Q1 on 32x32. Taylor-Green is an exact solution of the incompressible Navier-Stokes equations, so the L2 velocity error at T is measured against the analytic answer and no reference run is needed. Both schemes are run at dt = 0.125 and dt = 0.0625 in every invocation. Measured: backward Euler gives 1.05e-3 and 5.32e-4, an observed temporal order of 0.98; Crank-Nicolson gives 2.26e-5 and 6.68e-6, order 1.76. At the same dt backward Euler is 80 times less accurate. The mesh matters for this measurement and is documented in the source: at 16x16 the SPATIAL error swamps the Crank-Nicolson error and both schemes read as flat, which is why the probe uses 32x32. The claim's framing in terms of Reynolds-stress statistics against a Schaefer-Turek reference is not reproduced here -- that is a turbulence statistic, out of reach of a two-minute probe; what is pinned is the underlying order of accuracy. T2_MUTATE=1 puts Crank-Nicolson under test. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "navier_stokes",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "scheme_under_test=backward_euler_theta_one",
+    "all_time_steps_converged=true",
+    "observed_order_is_first=true",
+    "observed_order_is_second=false",
+    "scheme_under_test_is_the_less_accurate_one=true",
+    "VERDICT=backward_euler_is_only_first_order_in_time"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=scheme_under_test_is_second_order_in_time"
+  ],
+  "timeout_seconds": 900
+}

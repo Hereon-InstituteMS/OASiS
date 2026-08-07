@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii hp_adaptive#6. Tier-2 for dealii hp_adaptive#6 \u2014 probe \"raw_copy_across_p_change\" of the shared hp translation unit _shared/hp_family.cc, compiled once and cached so seven fixtures share one build. A field with real content (sin(3 pi x) sin(3 pi y)) interpolated onto an all-FE_Q(3) hp DoFHandler, then p-refined to FE_Q(4) on every cell via set_future_fe_index + execute_coarsening_and_refinement. The correct path is SolutionTransfer; the mistake is writing the old dof values into the new vector by index. The L2 error against the original field, measured on the new space, is the observable: it goes from O(1e-4) to O(1e-1). The entry's stated Signal does NOT reproduce: it promises linfty_norm() dropping by 10-50%, and here the raw copy leaves linfty EXACTLY unchanged \u2014 the same values, attached to the wrong degrees of freedom. Reading the norm would have shown nothing at all. The fixture pins that as false. Mutation control: T2_MUTATE=1 uses SolutionTransfer, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "expect_in_output": [
+    "transferred_field_lost_the_original_content=true",
+    "used_solution_transfer=false",
+    "linfty_drop_in_the_claimed_10_to_50_percent_band=false",
+    "VERDICT=writing_dof_values_across_a_p_change_destroys_them"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=field_survived_the_p_change"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": "CLAIM multigrid::0: [API] Forgetting dof_handler.distribute_mg_dofs() is the single most common multigrid bug, and what you see depends entirely on the build type. On a DEBUG build each of the three usual next calls aborts with an explicit diagnosis, verified one by one: dof_handler.n_dofs(level) gives 'n_dofs(level) \u2026 WHAT THIS RUNS: -- probe \"mg_no_level_dofs\" of the shared multigrid translation unit _shared/multigrid_family.cc, compiled once and cached so five fixture directories share ONE C++ build. distribute_dofs() is called and distribute_mg_dofs() is NOT, and then exactly ONE mg_ API call is made -- nothing else touches an mg_ API first, so the crash is attributable to that call and no other. All three of the entry's calls are run, in both builds, in six separate processes: dof_handler.n_dofs(level)              Debug 134 / Release 139 MGTransferPrebuilt::build(dof_handler) Debug 134 / Release 139 MGConstrainedDoFs::initialize(dof)     Debug 134 / Release 139 The Release half of the entry reproduces exactly: SIGSEGV with no message at all. THE DEBUG HALF DOES NOT. The entry promises three DIFFERENT diagnoses. On this build all three produce the SAME one, and it does not come from any of the three named entry points -- it comes from DoFHandler::locally_owned_mg_dofs in dofs/dof_handler.h: \"The level dofs are not set up properly! Did you call distribute_mg_dofs()?\". The grep below shows why the transfer one cannot appear: the string \"prerequisite for multigrid transfers\" is in no file of this tree. (\"n_dofs(level) can only be called after distribute_mg_dofs\" does exist, in one file -- it is simply not the assert that fires first.) The entry's actual ADVICE holds: has_level_dofs() is false here, cheaply, in both builds, before anything crashes. Mutation control: T2_MUTATE=1 calls distribute_mg_dofs() first and every one of the six runs returns rc=0, so the fixture fails its own expectations. OBSERVED, copied from the run: message_files[prerequisite for multigrid transfers]=0; cheap_guard_has_level_dofs_is_true=false; summary_release_n_dofs_rc=139; summary_release_transfer_rc=139; summary_release_constrained_rc=139; summary_debug_n_dofs_rc=134; (+4 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "multigrid",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "message_files[prerequisite for multigrid transfers]=0",
+    "cheap_guard_has_level_dofs_is_true=false",
+    "summary_release_n_dofs_rc=139",
+    "summary_release_transfer_rc=139",
+    "summary_release_constrained_rc=139",
+    "summary_debug_n_dofs_rc=134",
+    "summary_debug_transfer_rc=134",
+    "summary_debug_constrained_rc=134",
+    "The level dofs are not set up properly! Did you call",
+    "distribute_mg_dofs()?"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "summary_release_n_dofs_rc=0",
+    "summary_debug_n_dofs_rc=0"
+  ],
+  "timeout_seconds": 1800
+}

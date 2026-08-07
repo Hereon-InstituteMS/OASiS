@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii linear_elasticity#8. Tier-2 for dealii linear_elasticity#8 \u2014 probe \"symmetry_measure\" of the shared elasticity translation unit. One compile serves every fixture that names a probe of _shared/elasticity_family.cc; deal.II fixtures cost a C++ build, so the build count must not grow with the claim count. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "linear_elasticity",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "expect_in_output": [
+    "symmetry_broken=true",
+    "cg_outcome=NoConvergence",
+    "VERDICT=symmetry_defect_is_the_reliable_diagnostic"
+  ],
+  "forbid_in_output": [
+    "breakdown",
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=matrix_symmetric"
+  ],
+  "timeout_seconds": 600
+}

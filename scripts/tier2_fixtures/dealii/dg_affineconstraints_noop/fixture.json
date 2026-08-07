@@ -1,12 +1,15 @@
 {
-  "_comment": "Tier-2 cheap fixture for dg_transport#5: AffineConstraints::distribute on a DG solution is a no-op. The catalog Signal explicitly mentions both branches (no-op via empty AffineConstraints, OR ExcMessage). In deal.II 9.1.1 the no-op branch is taken: DoFTools::make_hanging_node_constraints on a DG DoFHandler produces an AffineConstraints with n_constraints()==0 even when hanging nodes are present in the triangulation. Numerical comparison: assert n_constraints == 0 on a refined mesh.",
+  "_comment": "Tier-2 for dealii dg_transport#6: DoFTools::make_hanging_node_constraints on an FE_DGQ DoFHandler does not raise and does not complain \u2014 it returns normally with an EMPTY constraint set, which is why a DG run that thinks it is constraining hanging nodes is constraining nothing. RE-KEYED 2026-08-06: this fixture was committed against dg_transport::5, a claim about FE_DGQHermite matrix-free wall-time that it does not measure at all. dg_transport::5 is now correctly recorded as uncovered.",
   "backend": "dealii",
   "physics": "dg_transport",
-  "pitfall_index": 5,
+  "pitfall_index": 6,
   "mode": "compile_and_run",
   "expect_in_output": [
     "make_hanging_node_constraints_on_DG",
     "n_constraints=0"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "covers": [
+    "dg_transport::6"
+  ]
 }

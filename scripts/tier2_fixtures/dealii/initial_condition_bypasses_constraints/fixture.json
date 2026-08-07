@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for dealii heat#3. Tier-2 for dealii heat#3 \u2014 probe \"ic_bypasses_constraints\" of the shared transient-heat translation unit _shared/heat_family.cc, compiled once and cached so several fixtures share one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "heat",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "ic_violates_the_boundary_condition=true",
+    "VERDICT=direct_node_write_gives_an_ic_that_violates_the_bc"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=ic_consistent_with_bc"
+  ],
+  "timeout_seconds": 600
+}

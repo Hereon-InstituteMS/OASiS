@@ -1,0 +1,30 @@
+{
+  "_comment": "CLAIM mixed_laplacian::0: [API] H(div) elements (FE_RaviartThomas) have a DIFFERENT DOF structure from H1 \u2014 DoFs live on faces, not vertices. Signal: post-processing treating RT DoFs as nodal (e.g. DataOut::add_data_vector(..., DataOutBase::vertex_data)) raises an `ExcInternalError` or produces a per-vertex flux field that \u2026 WHAT THIS RUNS: -- probes \"rt_dof_structure\", \"rt_map_support_points\" and \"rt_vertex_dof_index\" of the shared mixed-Laplacian translation unit _shared/mixed_family.cc, compiled once and cached so both fixtures of this topic share ONE C++ build. Where an H(div) dof lives is COUNTED, not asserted: FE_RaviartThomas(0) and (1) report n_dofs_per_vertex() == 0 and one resp. two dofs per FACE, while FESystem(FE_Q(1), dim) reports two per vertex. A known flux field (x, 2y) is interpolated, and the value of the face dof turns out to be EXACTLY the face flux integral, to the last bit -- so the dofs are face functionals, and a post-processor that gathers dofs at the vertices of a face collects none and returns zero. The two nodal calls a user reaches for are each fatal, so they run in their own processes here and the exit codes are the observable: DoFTools::map_dofs_to_support_points  Release 139 (SIGSEGV), Debug 134 with \"You are trying to access the support points of a finite element that either has no support points at all, or for which the corresponding tables have not been implemented.\" cell->vertex_dof_index(0, 0)          139 in BOTH builds -- there is no Assert for this one, so the Debug library does not help. Neither of the entry's own promises holds: DataOutBase::vertex_data is not an enumerator anywhere in this tree (the DataVectorType values are type_dof_data, type_cell_data and type_automatic), and DataOut::add_data_vector with type_dof_data on an FE_RaviartThomas field does not raise ExcInternalError -- it returns normally and writes a valid vtu. Mutation control: T2_MUTATE=1 reads the FACE dof instead of gathering at the vertices, the flux integral is reproduced exactly, and the fixture fails its own expectations. OBSERVED, copied from the run: phantom_vertex_data_enumerator_files=0; raviart_thomas_has_no_vertex_dofs=true; h1_vector_element_has_vertex_dofs=true; dofs_found_at_the_face_vertices=0; the_face_dof_is_exactly_the_face_flux_integral=true; post_processing_under_test_reproduces_the_face_flux_integral=false; (+8 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "mixed_laplacian",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "phantom_vertex_data_enumerator_files=0",
+    "raviart_thomas_has_no_vertex_dofs=true",
+    "h1_vector_element_has_vertex_dofs=true",
+    "dofs_found_at_the_face_vertices=0",
+    "the_face_dof_is_exactly_the_face_flux_integral=true",
+    "post_processing_under_test_reproduces_the_face_flux_integral=false",
+    "data_out_with_type_dof_data_on_raviart_thomas_returned_normally=true",
+    "summary_release_rt_map_support_points_rc=139",
+    "summary_debug_rt_map_support_points_rc=134",
+    "summary_release_rt_vertex_dof_index_rc=139",
+    "summary_debug_rt_vertex_dof_index_rc=139",
+    "You are trying to access the support points of a finite",
+    "element that",
+    "VERDICT=nodal_post_processing_of_an_hdiv_field_returns_nothing"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=post_processing_under_test_matches_the_flux_integral"
+  ],
+  "timeout_seconds": 1200
+}

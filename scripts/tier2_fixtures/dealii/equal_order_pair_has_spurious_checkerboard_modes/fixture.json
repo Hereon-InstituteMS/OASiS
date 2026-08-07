@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii stokes#4. Tier-2 for dealii stokes#4 -- probe \"equal_order_infsup\" of the shared translation unit _shared/stokes_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. The inf-sup constant is measured, not guessed: beta^2 is the smallest eigenvalue of the pressure Schur complement B A^{-1} B^T with respect to the pressure mass matrix, above the numerically null cluster. The checkerboard vector from the claim's own Signal is built explicitly from the pressure support points and its Rayleigh quotient in that Schur complement is reported. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "stokes",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "expect_in_output": [
+    "pair=equal_order_Q1_Q1",
+    "checkerboard_pressure_is_a_spurious_mode=true",
+    "more_null_modes_than_the_constant=true",
+    "beta_halves_under_refinement=true",
+    "VERDICT=pair_is_not_inf_sup_stable"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=pair_is_inf_sup_stable"
+  ],
+  "timeout_seconds": 900
+}

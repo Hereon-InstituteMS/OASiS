@@ -75,20 +75,59 @@ def fixture_inventory_fingerprint() -> str:
 #
 # Prefer a DEBUG build wherever one exists, because Assert is compiled out in
 # Release and the Assert-gated Signal families (ExcDimensionMismatch,
-# ExcIndexRange, ExcDivideByZero, …) simply cannot be produced by a Release
+# ExcInvalidFEIndex, ExcDivideByZero, …) simply cannot be produced by a Release
 # library. A fixture asserting such a Signal against a Release deal.II is not
 # testing anything.
 #
-# This used to be two hardcoded paths from one developer's machine
+# This used to be two hard-coded paths from one developer's machine
 # (~/Schreibtisch/dealii-debug and ~/miniconda3/envs/ofa-dealii). Neither
-# exists on this host, and neither would exist on a stranger's, so the runner
-# silently pointed every deal.II fixture at a directory that was not there.
-# Now: honour an explicit override, then ask the deal.II backend's own
-# discovery — the same code path the MCP server uses, so the fixtures and the
-# server cannot disagree about which install is in play — and only then fall
-# back to the historical guesses.
-_DEBUG_PREFIX = Path.home() / "Schreibtisch" / "dealii-debug"
-_RELEASE_PREFIX = Path.home() / "miniconda3" / "envs" / "ofa-dealii"
+# exists on this host, and the consequence was not an error but a SKIP: every
+# deal.II fixture reported "install root not present", which reads identically
+# to "no deal.II here" on a machine that has two working builds.
+#
+# TWO BRANCHES FIXED THIS INDEPENDENTLY AND BOTH FIXES ARE KEPT:
+#   knowledge/dealii-verify        replaced each single path with a CANDIDATE
+#                                  LIST probed by the library file itself, and
+#                                  found the real build locations on this host.
+#   knowledge/setup-and-portability delegated to the deal.II BACKEND's own
+#                                  discovery — the same code path the MCP
+#                                  server uses, so the fixtures and the server
+#                                  cannot disagree about which install is in
+#                                  play.
+# Order: explicit env override, then a Debug build from the candidate list,
+# then the backend's own discovery, then the Release candidates, then the
+# historical guesses.
+def _first_existing(cands, marker) -> Optional[Path]:
+    for c in cands:
+        try:
+            if (Path(c) / marker).is_file():
+                return Path(c)
+        except OSError:
+            continue
+    return None
+
+
+_DEBUG_CANDIDATES = [
+    os.environ.get("DEAL_II_DEBUG_DIR", ""),
+    Path.home() / "Schreibtisch" / "dealii-debug",
+    Path("/media/alexander/PortableSSD/dealii-verify-r2/dbgbuild"),
+    Path.home() / "dealii" / "dbgbuild",
+]
+_RELEASE_CANDIDATES = [
+    os.environ.get("DEAL_II_DIR", ""),
+    Path.home() / "dealii" / "build",
+    Path.home() / "dealii" / "install",
+    Path.home() / "miniconda3" / "envs" / "ofa-dealii",
+]
+# A build tree keeps its package config under cmake/config/, an install tree
+# under lib/cmake/deal.II/ — accept either, and key the Debug probe on the
+# debug library itself since that is what Assert needs.
+_DEBUG_PREFIX = (_first_existing(_DEBUG_CANDIDATES, "lib/libdeal_II.g.so")
+                 or Path.home() / "Schreibtisch" / "dealii-debug")
+_RELEASE_PREFIX = (
+    _first_existing(_RELEASE_CANDIDATES, "lib/libdeal_II.so")
+    or _first_existing(_RELEASE_CANDIDATES, "cmake/config/deal.IIConfig.cmake")
+    or Path.home() / "miniconda3" / "envs" / "ofa-dealii")
 
 
 def _has_debug_library(p: Path) -> bool:
@@ -190,11 +229,17 @@ def _eval_fixture(fixture_dir: Path,
     if requires_debug and not has_debug_lib and backend == "dealii":
         result.status = "skipped"
         result.notes.append(
-            "fixture requires Debug-built deal.II at "
-            "~/Schreibtisch/dealii-debug (Assert macros enabled); "
-            "current install is Release-only — skip until rebuilt "
-            "(task #30)")
+            f"fixture requires a Debug-built deal.II (Assert macros live); "
+            f"none of {[str(c) for c in _DEBUG_CANDIDATES if c]} has "
+            f"lib/libdeal_II.g.so — set DEAL_II_DEBUG_DIR to one")
         return result
+    # Point the build at the Debug tree when the fixture asked for it, so
+    # `requires_debug` actually changes which library gets linked instead of
+    # merely gating the run. Without this the flag was a no-op whenever a
+    # Release install happened to be found first.
+    if requires_debug and has_debug_lib and backend == "dealii":
+        env.setdefault("DEAL_II_DIR", str(_DEBUG_PREFIX))
+        env["DEAL_II_DIR"] = str(_DEBUG_PREFIX)
 
     if mode == "compile_only" and backend == "dealii":
         prefix = Path(env.get("DEAL_II_DIR",
@@ -489,30 +534,67 @@ def _eval_fixture(fixture_dir: Path,
                 f"{probe_module or 'the package'}; set {env_var} to one")
             return None
 
+        def _conda_python(env_var: str, env_names: list[str], label: str,
+                          probe_module: str) -> str | None:
+            """Find an interpreter for a conda-hosted backend.
+
+            The hard-coded env name (`ofa-fenicsx`, `ofa-dune`) is a GUESS,
+            and on this host it is wrong: the dolfinx env is called `fenics`
+            (plus `fenicsc` for the complex build). A wrong guess made every
+            fenics fixture report `skipped` — which a reader cannot tell apart
+            from "dolfinx is not installed". So: try the override, then each
+            known env name, then the running interpreter, and in every case
+            CHECK the candidate can import the package rather than inferring
+            that from the path.
+            """
+            cands = [env.get(env_var)]
+            for name in env_names:
+                cands.append(str(Path.home() / "miniconda3" / "envs" / name
+                                 / "bin" / "python"))
+                cands.append(str(Path.home() / "anaconda3" / "envs" / name
+                                 / "bin" / "python"))
+                cands.append(str(Path.home() / "mambaforge" / "envs" / name
+                                 / "bin" / "python"))
+            cands.append(sys.executable)
+            tried = []
+            for c in cands:
+                if not c:
+                    continue
+                try:
+                    if not Path(c).is_file():
+                        continue
+                except OSError:
+                    continue
+                tried.append(c)
+                try:
+                    probe = subprocess.run(
+                        [c, "-c", f"import {probe_module}"],
+                        capture_output=True, timeout=180,
+                        stdin=subprocess.DEVNULL)
+                except (OSError, subprocess.SubprocessError):
+                    continue
+                if probe.returncode == 0:
+                    return c
+            result.status = "skipped"
+            result.notes.append(
+                f"{label}: no interpreter found that can import "
+                f"{probe_module}; tried {tried or cands}; set {env_var}")
+            return None
+
         if backend == "fenics":
-            cand = (env.get("FENICS_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-fenicsx" / "bin" / "python"))
-            if Path(cand).is_file():
-                python = cand
-            else:
-                result.status = "skipped"
-                result.notes.append(
-                    "FEniCSx env python not found; set "
-                    "FENICS_PYTHON or install ofa-fenicsx conda env")
+            cand = _conda_python("FENICS_PYTHON",
+                                 ["fenics", "ofa-fenicsx", "fenicsx",
+                                  "dolfinx"], "FEniCSx", "dolfinx")
+            if cand is None:
                 return result
+            python = cand
         elif backend == "dune":
-            cand = (env.get("DUNE_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-dune" / "bin" / "python"))
-            if Path(cand).is_file():
-                python = cand
-            else:
-                result.status = "skipped"
-                result.notes.append(
-                    "DUNE-fem env python not found; set "
-                    "DUNE_PYTHON or install ofa-dune conda env")
+            cand = _conda_python("DUNE_PYTHON",
+                                 ["ofa-dune", "dune-fem-env", "dune311"],
+                                 "DUNE-fem", "dune.fem")
+            if cand is None:
                 return result
+            python = cand
         elif backend == "kratos":
             cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos", "KratosMultiphysics")
             if cand is None:

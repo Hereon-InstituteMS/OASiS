@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii hp_adaptive#3. Tier-2 for dealii hp_adaptive#3 \u2014 probe \"no_smoothness_estimator\" of the shared hp translation unit _shared/hp_family.cc, compiled once and cached so seven fixtures share one build. Eight adaptive cycles on a SMOOTH manufactured solution (u = sin(pi x) sin(pi y), zero Dirichlet), run twice in one process: once with the FESeries::Legendre object driving p-adaptivity, once without it. Without it there is no p-decision to make, every cell stays at FE_Q(1), and the L2 error against the analytic solution falls with the plain h-rate. The entry names a function \"p_adaptivity_from_smoothness\" that silently falls back to uniform refinement. No such symbol exists in this library \u2014 the grep below lists what hp::Refinement actually offers \u2014 so the pitfall is the absence of the estimator, not a fallback inside it. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "run_under_test_kept_every_cell_at_the_lowest_degree=true",
+    "run_under_test_is_at_least_ten_times_less_accurate=true",
+    "run_under_test_used_a_smoothness_estimator=false",
+    "hp_refinement_symbol=p_adaptivity_from_relative_threshold",
+    "p_adaptivity_from_smoothness_occurrences_in_headers=0",
+    "VERDICT=without_a_smoothness_estimator_the_run_is_h_only"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=p_adaptivity_raised_the_polynomial_degree"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "CLAIM multigrid::1: [Numerical] MGConstrainedDoFs must be told about the Dirichlet boundary, otherwise the coarse-level operators are singular and the V-cycle is not a valid preconditioner. Signal: after make_zero_boundary_constraints, MGConstrainedDoFs::have_boundary_indices() must be TRUE and \u2026 WHAT THIS RUNS: -- probe \"mg_boundary_indices\" of the shared multigrid translation unit _shared/multigrid_family.cc, compiled once and cached so five fixture directories share ONE C++ build. A step-16 FE_Q(2) Laplace V-cycle over five levels with ONLY MGConstrainedDoFs::make_zero_boundary_constraints omitted. have_boundary_indices() comes back false and get_boundary_indices(level) is empty on every one of the five levels, printed level by level with the level dof counts beside them so \"on EVERY level, not just the finest\" is read off the run rather than assumed. The V-cycle still runs -- it is not a valid preconditioner, but it does not raise -- and CG needs 145 iterations where the correctly constrained hierarchy needs single digits. The adaptive half of the entry is checked in the same run on a second mesh with one corner refined: get_refinement_edge_indices(level) is EMPTY on the four fully refined levels and NON-EMPTY (17 indices) exactly on the level carrying the refinement edge, which is what the entry says to look for. Mutation control: T2_MUTATE=1 calls make_zero_boundary_constraints, every level carries its own boundary index set, and the fixture fails its expectations. OBSERVED, copied from the run: make_zero_boundary_constraints_called=false; have_boundary_indices=false; every_level_carries_its_own_boundary_index_set=false; v_cycle_is_a_usable_preconditioner=false; refinement_edge_indices_are_nonempty_on_some_level=true; refinement_edge_indices_are_empty_on_some_level=true; (+1 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "multigrid",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "make_zero_boundary_constraints_called=false",
+    "have_boundary_indices=false",
+    "every_level_carries_its_own_boundary_index_set=false",
+    "v_cycle_is_a_usable_preconditioner=false",
+    "refinement_edge_indices_are_nonempty_on_some_level=true",
+    "refinement_edge_indices_are_empty_on_some_level=true",
+    "VERDICT=mg_constrained_dofs_was_never_told_about_the_boundary"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=mg_constrained_dofs_knows_the_dirichlet_boundary"
+  ],
+  "timeout_seconds": 1200
+}

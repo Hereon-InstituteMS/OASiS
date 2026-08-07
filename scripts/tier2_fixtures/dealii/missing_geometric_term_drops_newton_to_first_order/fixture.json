@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for dealii nonlinear_elasticity#2. The AD half of this claim cannot be exercised here: config.h has neither DEAL_II_WITH_ADOLC nor DEAL_II_TRILINOS_WITH_SACADO, so Differentiation::AD::ResidualLinearization has no body on this install and the probe reports ad_backend_available=false. The claim's SIGNAL, however, is a convergence RATE, and that is measured directly. A unit block is stretched 160% in four increments, 6x6 Q1, Neo-Hookean, with backtracking in BOTH runs -- without it the inconsistent tangent does not converge slowly, it diverges outright, and the claim is about a rate. The observed order is taken as log(r3/r2)/log(r2/r1) over the last strictly decreasing triple above the round-off floor, since residuals at the floor flatten the apparent rate. Measured: the consistent hand-coded tangent converges at observed order 1.993 in 16 Newton steps, its residuals squaring down 5175 -> 69.6 -> 0.995 -> 2.1e-4 -> 1.2e-11. Dropping the geometric term -- one missing term, exactly the mistake the claim describes -- gives observed order 0.9996, first order to four digits, 29 Newton steps, with the residual contracting by a near-constant factor near the solution (3.1e-5, 1.5e-5, 7.2e-6, 3.5e-6, 1.7e-6, ...). Both land on the SAME displacement, 2.8e-13 apart in relative L2. So the missing term costs the convergence rate and nothing else -- the answer is right, it just takes 29 steps instead of 16. This is the complement to the hyperelasticity#7 result on the same instrument, where a wrong STRESS converged quadratically to a wrong answer in FEWER steps: rate and accuracy fail independently, and which one moves tells you which half of the code is wrong. T2_MUTATE=1 puts the consistent tangent under test. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "ad_backend_available=false",
+    "tangent_under_test=hand_coded_tangent_missing_the_geometric_term",
+    "under_test_converged=true",
+    "under_test_converges_at_first_order=true",
+    "under_test_converges_at_second_order=false",
+    "under_test_costs_extra_newton_steps=true",
+    "missing_term_reaches_the_same_answer=true",
+    "VERDICT=a_missing_tangent_term_costs_the_convergence_rate"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=tangent_under_test_converges_at_second_order"
+  ],
+  "timeout_seconds": 900
+}

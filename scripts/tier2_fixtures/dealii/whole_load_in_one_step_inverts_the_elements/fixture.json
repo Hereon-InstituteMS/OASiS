@@ -1,0 +1,26 @@
+{
+  "_comment": "CLAIM hyperelasticity::0: [Numerical] Must use load stepping for large deformations \u2014 cold-start Newton diverges. Signal: SolverControl reports Newton residual.l2_norm() > 1e3 on iteration 1, growing to NaN by iteration 3; deal.II has NO Newton solver, so nothing in the library will announce this \u2014 the only message you get \u2026 WHAT THIS RUNS: -- probe \"load_stepping\" of the shared translation unit _shared/hyperelastic_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Total-Lagrangian compressible Neo-Hookean cantilever (12x3 Q1, 104 dofs), body force 400 in -y. The SAME total load is applied (a) all at once from the undeformed cold start and (b) in twenty increments, each starting from the previous converged state. Nothing in deal.II owns the Newton loop, so the residual history printed here is the probe's own. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: load_application=whole_load_in_one_step; residual_exceeds_1e3=true; residual_becomes_nan=true; elements_inverted=true; one_shot_inner_solver_message=SolverControl::NoConvergence Iterative method reported convergence failure in step 0. The residual in the last step was -nan.; twenty_load_steps_newton_steps=91 converged=true; (+1 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 0,
+  "covers": [
+    "hyperelasticity::0"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "load_application=whole_load_in_one_step",
+    "residual_exceeds_1e3=true",
+    "residual_becomes_nan=true",
+    "elements_inverted=true",
+    "one_shot_inner_solver_message=SolverControl::NoConvergence Iterative method reported convergence failure in step 0. The residual in the last step was -nan.",
+    "twenty_load_steps_newton_steps=91 converged=true",
+    "VERDICT=cold_start_single_step_newton_fails"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "iterative method failed to converge",
+    "VERDICT=load_path_converges"
+  ],
+  "timeout_seconds": 600
+}

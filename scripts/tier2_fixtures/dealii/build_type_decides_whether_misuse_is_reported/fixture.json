@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for dealii poisson#7. Tier-2 for dealii poisson#7: the SAME misuse produces a full diagnostic on a Debug build and silence or a segfault on a Release build. Three verified pairs, run here against both libraries on this host: SparseMatrix::add() outside the sparsity pattern  Debug abort / Release drop active_fe_index beyond the hp::FECollection       Debug abort / Release SEGV get_function_gradients, scalar container on a     Debug abort / Release vector-valued FESystem                            returns a wrong mixture Assert ABORTS (rc=134); it does not throw, so the exit code is the observable and a try/catch would see nothing. rc=139 is the segfault. Mutation control: T2_MUTATE=1 makes every probe use the CORRECT index / shape, so no build aborts and the Debug/Release split disappears. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "poisson",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "release_tree_CMAKE_BUILD_TYPE:STRING=Release",
+    "debug_tree_CMAKE_BUILD_TYPE:STRING=Debug",
+    "debug_library_present=true",
+    "summary_sparse_add_outside_pattern_release_rc=0",
+    "value_was_stored=false",
+    "does not exist in the sparsity pattern of this matrix",
+    "summary_sparse_add_outside_pattern_debug_rc=134",
+    "summary_hp_active_fe_index_release_rc=139",
+    "summary_hp_active_fe_index_debug_rc=134",
+    "summary_vector_valued_gradients_release_rc=0",
+    "summary_vector_valued_gradients_debug_rc=134"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE"
+  ],
+  "timeout_seconds": 600
+}

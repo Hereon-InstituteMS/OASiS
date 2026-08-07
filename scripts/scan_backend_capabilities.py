@@ -689,26 +689,66 @@ def scan_dealii() -> BackendCapabilities:
 
     cap = BackendCapabilities(backend="dealii")
 
+    # Install-root discovery. A deal.II install can be any of:
+    #   * a package prefix (conda / distro): <prefix>/include/deal.II
+    #   * a CMake *build tree* of a source checkout: the generated
+    #     headers live under <build>/include/deal.II but MOST headers
+    #     stay in the SOURCE tree at <src>/include/deal.II.
+    # The second case is what a `git clone && cmake -Bbuild` install
+    # looks like, and it used to be invisible to this scanner: it only
+    # looked at ~/miniconda3/envs/ofa-dealii, so on a machine whose
+    # only deal.II was a source build the scan silently reported a
+    # years-old package (or nothing), and the catalog-vs-scan diff then
+    # flagged every post-9.1 class (FE_SimplexP, FE_WedgeP,
+    # FE_PyramidP, FE_Hermite, ...) as catalog drift.
+    def _header_roots(root: Path) -> list[Path]:
+        """Return every include/deal.II dir belonging to this root."""
+        roots = []
+        direct = root / "include" / "deal.II"
+        if direct.is_dir():
+            roots.append(direct)
+        # A build tree keeps the bulk of the headers in its source dir.
+        cache = root / "CMakeCache.txt"
+        if cache.is_file():
+            m = re.search(r"^(?:deal\.II|CMAKE_HOME_DIRECTORY)"
+                          r"_SOURCE_DIR:\w+=(.+)$|"
+                          r"^CMAKE_HOME_DIRECTORY:\w+=(.+)$",
+                          cache.read_text(errors="replace"),
+                          re.MULTILINE)
+            if m:
+                src = Path((m.group(1) or m.group(2)).strip())
+                extra = src / "include" / "deal.II"
+                if extra.is_dir() and extra not in roots:
+                    roots.append(extra)
+        return roots
+
     root_candidates = [
         os.environ.get("DEAL_II_DIR", ""),
         os.environ.get("DEALII_ROOT", ""),
-        str(Path.home() / "miniconda3/envs/ofa-dealii"),
+        os.environ.get("CONDA_PREFIX", ""),
     ]
-    install_root = next(
-        (Path(r) for r in root_candidates if r and Path(r).is_dir()),
-        None,
-    )
+    # Anything under $HOME that looks like a deal.II source build.
+    for guess in ("dealii/build", "deal.II/build", "src/dealii/build",
+                  "miniconda3/envs/ofa-dealii"):
+        root_candidates.append(str(Path.home() / guess))
+
+    install_root = None
+    header_roots: list[Path] = []
+    for r in root_candidates:
+        if not r or not Path(r).is_dir():
+            continue
+        hr = _header_roots(Path(r))
+        if hr:
+            install_root, header_roots = Path(r), hr
+            break
     if install_root is None:
         cap.notes.append(
-            "deal.II install root not found; set DEAL_II_DIR or "
-            "install into ~/miniconda3/envs/ofa-dealii")
+            "deal.II install root not found; set DEAL_II_DIR to a "
+            "package prefix or to a CMake build tree of a source "
+            "checkout")
         return cap
 
-    inc = install_root / "include" / "deal.II"
-    if not inc.is_dir():
-        cap.notes.append(
-            f"include/deal.II not under {_redact_path(install_root)}")
-        return cap
+    inc = header_roots[0]
 
     # Version
     ver_file = (install_root / "lib" / "cmake" / "deal.II"
@@ -720,16 +760,21 @@ def scan_dealii() -> BackendCapabilities:
         if m:
             cap.version = m.group(1)
 
-    # Element families: walk fe_*.h
-    fe_dir = inc / "fe"
-    if fe_dir.is_dir():
+    # Element families: walk fe_*.h in EVERY header root (a source
+    # build has two: the generated one and the source one).
+    fe_dirs = [hr / "fe" for hr in header_roots if (hr / "fe").is_dir()]
+    if fe_dirs:
         skip_substrings = (
             "_values", "_tools", "_update", "_collection",
             "_dgvector", "_face_q",  # face elements handled as fe_face.h
         )
         elements: list[str] = []
-        for header in sorted(fe_dir.glob("fe_*.h")):
+        seen_headers: set[str] = set()
+        for header in sorted(h for d in fe_dirs for h in d.glob("fe_*.h")):
             name = header.stem
+            if name in seen_headers:
+                continue
+            seen_headers.add(name)
             if name.endswith(".templates") or any(s in name for s in skip_substrings):
                 continue
             # Read the header and pick the first `class FE_<Name>`
@@ -757,25 +802,25 @@ def scan_dealii() -> BackendCapabilities:
                 r"(?=[\s:])",
                 text, re.MULTILINE,
             )
-            if matches:
-                elements.extend(matches)
-            else:
-                # Fallback: derive from filename when the header
-                # has no parseable `class FE_*` declaration (e.g.
-                # template-only headers). Note: `for-else` (the
-                # previous form) was wrong here — it fires after
-                # EVERY iteration, polluting the list with the
-                # title-cased fallback even when matches existed,
-                # and the loop variable `name` was shadowed by the
-                # match so the fallback produced garbage names
-                # like `FE_Ystem` (from "FESystem"[3:].title()).
-                elements.append("FE_" + name[3:].title().replace("_", ""))
+            elements.extend(matches)
+            # NO filename fallback. A header that declares no
+            # `class FE_*` simply contributes no element. The
+            # previous fallback INVENTED class names from the file
+            # name, so fe_base.h (which declares FiniteElementData)
+            # became "FE_Base" and fe_series.h (which declares the
+            # FESeries *namespace*) became "FE_Series". Neither
+            # class exists in deal.II, so the catalog-vs-scan diff
+            # reported two permanent phantom gaps that no catalog
+            # entry could ever close. A scanner must report what the
+            # library actually declares; guessing is what created the
+            # gap in the first place.
         # De-dup while preserving order.
         seen = set()
         cap.elements = [x for x in elements if not (x in seen or seen.add(x))]
 
     # Mesh generators: GridGenerator namespace in grid_generator.h
-    gg = inc / "grid" / "grid_generator.h"
+    gg = next((hr / "grid" / "grid_generator.h" for hr in header_roots
+               if (hr / "grid" / "grid_generator.h").is_file()), inc)
     if gg.is_file():
         try:
             text = gg.read_text(errors="replace")
@@ -792,7 +837,8 @@ def scan_dealii() -> BackendCapabilities:
         cap.mesh_generators = gen_names
 
     # Solvers + preconditioners
-    lac = inc / "lac"
+    lac = next((hr / "lac" for hr in header_roots
+                if (hr / "lac").is_dir()), inc / "lac")
     if lac.is_dir():
         solver_names: list[str] = []
         for header in sorted(lac.glob("solver_*.h")):
@@ -832,9 +878,31 @@ def scan_dealii() -> BackendCapabilities:
         "constitutive_laws: deal.II ships no central material/law "
         "registry; user-written. Catalog diff should treat empty "
         "list as 'no information'.")
-    cap.notes.append(
-        "tutorials: 97 step-* tutorials live in the upstream source "
-        "tree, not in this conda install. Tutorial harvest pending.")
+    # Tutorials ship as examples/step-*/ in a SOURCE checkout only; a
+    # package prefix has none. Count them when the source tree is
+    # reachable instead of asserting a number (the numbering runs past
+    # step-90 but has gaps, so "the highest number" is not the count).
+    ex_dirs = [install_root / "examples"]
+    cache = install_root / "CMakeCache.txt"
+    if cache.is_file():
+        m = re.search(r"^CMAKE_HOME_DIRECTORY:\w+=(.+)$",
+                      cache.read_text(errors="replace"), re.MULTILINE)
+        if m:
+            ex_dirs.append(Path(m.group(1).strip()) / "examples")
+    steps = sorted({p.name for d in ex_dirs if d.is_dir()
+                    for p in d.glob("step-*") if p.is_dir()})
+    if steps:
+        nums = sorted(int(s.split("-")[1]) for s in steps
+                      if s.split("-")[1].isdigit())
+        cap.other["tutorials"] = steps
+        cap.notes.append(
+            f"tutorials: {len(steps)} step-* directories present, "
+            f"highest number step-{nums[-1]} — the numbering has gaps, "
+            f"so the count and the highest number differ.")
+    else:
+        cap.notes.append(
+            "tutorials: step-*/ examples ship only with a SOURCE "
+            "checkout; none reachable from this install root.")
     cap.notes.append(
         f"install_root={_redact_path(install_root)}")
     return cap

@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM matrix_free::3: [Performance] No matrix assembly \u2014 operator is applied on-the-fly. Signal: profiling shows zero time in SparseMatrix::add() (no global matrix); the bulk of wall-clock should be in MatrixFree::cell_loop and FEEvaluation::evaluate / integrate. If matrix-related calls appear, the code accidentally \u2026 WHAT THIS RUNS: -- probe \"mf_no_global_matrix\" of the shared MatrixFree translation unit _shared/matrixfree_family.cc, compiled once and cached so four fixture directories share ONE C++ build. The entry states the observable as a PROFILE (\"zero time in SparseMatrix::add\", \"the bulk of wall-clock in cell_loop\"). Wall-clock is not a safe thing to assert on a shared machine, so what this fixture pins is STRUCTURAL and the timings are printed for information only: on a 4913-dof 3D FE_Q(2) problem the assembled path allocates a 1343472-byte SparseMatrix over a 167913-entry sparsity pattern, and the matrix-free path allocates neither -- MatrixFree stores no sparsity pattern at all. The two operators are checked against each other on the same vector and agree to 4.5e-16, so \"no matrix\" is not bought with a different answer. Mutation control: T2_MUTATE=1 puts the matrix-free path under test, no global matrix is allocated, and the fixture fails its own expectations. OBSERVED, copied from the run: operator_under_test=assembled_sparse_matrix; operator_under_test_stores_a_global_matrix=true; operator_under_test_builds_a_sparsity_pattern=true; matrix_free_object_stores_no_sparsity_pattern=true; the_two_paths_agree_to_roundoff=true; VERDICT=operator_under_test_fell_back_to_a_global_sparse_matrix. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "matrix_free",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "operator_under_test=assembled_sparse_matrix",
+    "operator_under_test_stores_a_global_matrix=true",
+    "operator_under_test_builds_a_sparsity_pattern=true",
+    "matrix_free_object_stores_no_sparsity_pattern=true",
+    "the_two_paths_agree_to_roundoff=true",
+    "VERDICT=operator_under_test_fell_back_to_a_global_sparse_matrix"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=operator_under_test_holds_no_global_matrix"
+  ],
+  "timeout_seconds": 900
+}

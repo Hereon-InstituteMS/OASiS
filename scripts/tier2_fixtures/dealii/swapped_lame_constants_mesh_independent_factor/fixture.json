@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii linear_elasticity#1. Tier-2 for dealii linear_elasticity#1 \u2014 probe \"lame_swap\" of the shared elasticity translation unit. One compile serves every fixture that names a probe of _shared/elasticity_family.cc; deal.II fixtures cost a C++ build, so the build count must not grow with the claim count. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "linear_elasticity",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "ratio_is_mesh_independent=true",
+    "ratio_differs_from_one=true",
+    "VERDICT=swapped_lame_is_a_mesh_independent_factor"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=no_constant_factor"
+  ],
+  "timeout_seconds": 600
+}

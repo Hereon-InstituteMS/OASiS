@@ -1,0 +1,28 @@
+{
+  "_comment": "CLAIM dg_transport::4: [API] PreconditionBlock* (BlockSSOR / BlockSOR / BlockJacobi) with block_size = fe.n_dofs_per_cell() assumes each cell's DoFs are CONTIGUOUS in the global numbering. Most renumberings preserve that; DoF-WISE ones do not. DoFRenumbering::downstream(dof_handler, direction, dof_wise_renumbering) \u2026 WHAT THIS RUNS: -- probe \"dof_wise_renumbering\" of the shared DG translation unit _shared/dg_family.cc, compiled once per build type and cached so every fixture that names a probe of that unit shares ONE C++ build. DoFRenumbering::downstream(dof, direction, dof_wise_renumbering) on an upwind FE_DGQ(1) transport operator, then PreconditionBlockSSOR with block_size = fe.dofs_per_cell. The entry's premise is measured directly: with dof_wise_renumbering=TRUE not one of the 256 cells has contiguous dof indices any more, so the \"blocks\" the preconditioner inverts are not cells; with FALSE all 256 are contiguous. The consequence is measured by the entry's own diagnostic, one application of the preconditioner to the rhs: dof_wise=true   ||b - A*P(b)||/||b|| = 1.07e+27 dof_wise=false  ||b - A*P(b)||/||b|| = 2.5e-15  (an exact block solve) Nothing is raised for it. The claim's \"silent in every build\" is why this fixture runs BOTH build types: the Debug library reproduces the release numbers digit for digit and exits 0, so there is no Assert to switch on here. Two clauses of the entry do NOT reproduce on this problem and the fixture pins them as measured: the residual is astronomical but NOT NaN, and GMRES does not report NoConvergence at step 0-1 with a NaN value -- it converges, in 4 steps with last_value 0 against 2 steps for the cell-wise numbering. The broken preconditioner is a silently wrong preconditioner, not a solver failure. Mutation control: T2_MUTATE=1 makes the probe pass dof_wise_renumbering=false, and the fixture then fails its own expectations. OBSERVED, copied from the run: dof_wise_renumbering=true; block_structure_still_matches_the_cells=false; summary_release_rc=0; summary_debug_rc=0; summary_release_block_preconditioner_is_broken=true; summary_debug_block_preconditioner_is_broken=true; (+3 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "dg_transport",
+  "pitfall_index": 4,
+  "covers": [
+    "dg_transport::4"
+  ],
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "dof_wise_renumbering=true",
+    "block_structure_still_matches_the_cells=false",
+    "summary_release_rc=0",
+    "summary_debug_rc=0",
+    "summary_release_block_preconditioner_is_broken=true",
+    "summary_debug_block_preconditioner_is_broken=true",
+    "gmres_last_value_is_nan=false",
+    "gmres_gave_up_at_step_0_or_1=false",
+    "VERDICT=dof_wise_renumbering_silently_destroys_the_block_preconditioner"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=block_preconditioner_survives_the_renumbering"
+  ],
+  "timeout_seconds": 900
+}

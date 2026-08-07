@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii linear_elasticity#2. Tier-2 for dealii linear_elasticity#2 \u2014 probe \"plane_stress\" of the shared elasticity translation unit. One compile serves every fixture that names a probe of _shared/elasticity_family.cc; deal.II fixtures cost a C++ build, so the build count must not grow with the claim count. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "linear_elasticity",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "plane_strain_is_stiffer=true",
+    "bias_persists_under_refinement=true",
+    "ratio_matches_one_minus_nu_squared=true",
+    "VERDICT=plane_strain_is_a_persistent_stiffness_bias"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=no_persistent_bias"
+  ],
+  "timeout_seconds": 600
+}

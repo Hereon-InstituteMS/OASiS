@@ -1,0 +1,19 @@
+{
+  "_comment": "CLAIM time_dependent_heat::0: [API] Adaptive mesh refinement requires solution transfer between meshes. Signal: refining the mesh between time steps without SolutionTransfer<dim>::interpolate produces a zero-vector or random-noise solution on the new mesh \u2014 the previous solution lives on the OLD DoFHandler and is invalidated \u2026 WHAT THIS RUNS: -- probe \"no_solution_transfer\" of the shared transient-heat translation unit _shared/heat_family.cc, which is compiled once and cached, so this fixture adds no build of its own. Three backward-Euler steps on a 16x16 mesh, then every cell flagged for refinement and execute_coarsening_and_refinement() called. Without SolutionTransfer the state does NOT survive: the new DoFHandler has a different number of dofs and the reinit'ed vector is exactly zero, so the l2 norm drops from O(1) to 0. It is the ZERO-VECTOR branch of the entry's Signal that happens, not the \"random noise\" one -- the old vector is not reinterpreted, it is replaced. T2_MUTATE=1 runs the canonical step-26 sequence (prepare_for_coarsening_and_refinement -> refine -> interpolate) and the state is carried across, so the fixture fails its own expectations. OBSERVED, copied from the run: norm_before_refinement=; used_solution_transfer=false; solution_lost_across_mesh_change=true; VERDICT=skipping_solution_transfer_zeroes_the_state. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "norm_before_refinement=",
+    "used_solution_transfer=false",
+    "solution_lost_across_mesh_change=true",
+    "VERDICT=skipping_solution_transfer_zeroes_the_state"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=state_carried_across"
+  ],
+  "timeout_seconds": 600
+}

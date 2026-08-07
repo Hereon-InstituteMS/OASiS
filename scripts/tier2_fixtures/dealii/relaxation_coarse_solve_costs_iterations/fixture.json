@@ -1,0 +1,19 @@
+{
+  "_comment": "CLAIM multigrid::3: [Numerical] Coarse-grid solver: solve the coarsest level EXACTLY. A direct solve (MGCoarseGridHouseholder on the dense coarse matrix, or SparseDirectUMFPACK) keeps the iteration count h-independent; leaving a relaxation smoother there makes the V-cycle only as good as that smoother on the coarse \u2026 WHAT THIS RUNS: -- probe \"mg_coarse_solver\" of the shared multigrid translation unit _shared/multigrid_family.cc, compiled once and cached so five fixture directories share ONE C++ build. The FINE level is held fixed at 16641 dofs and the COARSEST level of the V-cycle is walked up (9, 25, 81, 289 dofs), which is exactly the experiment the entry's signal describes -- \"an iteration count that grows with the COARSE-level DoF count while the fine level is unchanged\". Both coarse solvers run at every setting, in the same program: relaxation sweep as the coarse solve   7, 8, 11, 18 CG iterations dense direct (MGCoarseGridHouseholder) 7, 7, 7, 7 Mutation control: T2_MUTATE=1 puts the direct coarse solve under test, the count stops growing, and the fixture fails its own expectations. OBSERVED, copied from the run: coarse_solver_under_test=relaxation_smoother; iteration_count_under_test_grows_with_the_coarse_level_size=true; direct_coarse_solve_keeps_the_count_flat=true; VERDICT=coarse_solver_under_test_costs_iterations_as_the_coarse_level_grows. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "multigrid",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "coarse_solver_under_test=relaxation_smoother",
+    "iteration_count_under_test_grows_with_the_coarse_level_size=true",
+    "direct_coarse_solve_keeps_the_count_flat=true",
+    "VERDICT=coarse_solver_under_test_costs_iterations_as_the_coarse_level_grows"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=coarse_solver_under_test_keeps_the_count_flat"
+  ],
+  "timeout_seconds": 2400
+}

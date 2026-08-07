@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii nonlinear#1. Tier-2 for dealii nonlinear#1 -- probe \"line_search\" of the shared translation unit _shared/nonlinear_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Same minimal surface problem at boundary amplitude 4, and the SAME initial guess in both variants (zero interior with the boundary values interpolated), so the only difference is whether the step length is backtracked. The full-step run prints its residual history and the inner SolverCG failure text, which is the only library-side message in the whole loop -- deal.II has no Newton solver. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "nonlinear",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "step_length=full_newton_step_alpha_1",
+    "diverged=true",
+    "residual_decreased_monotonically=false",
+    "Iterative method reported convergence failure in step",
+    "VERDICT=full_step_newton_does_not_converge"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=line_search_keeps_the_residual_decreasing"
+  ],
+  "timeout_seconds": 900
+}

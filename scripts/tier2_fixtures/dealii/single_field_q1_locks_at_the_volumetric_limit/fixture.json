@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM hyperelasticity::4: [Numerical] For nearly incompressible: use mixed formulation (step-44) or F-bar. Single-field FE_Q(1) displacement locks at the volumetric limit. Signal: tip deflection on a Cook membrane differs from reference by 30-50% as nu approaches 0.5; switching to the three-field FESystem(FE_Q(2), dim, \u2026 WHAT THIS RUNS: -- probe \"volumetric_locking\" of the shared translation unit _shared/hyperelastic_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Bending-dominated Neo-Hookean cantilever (1 x 0.1, 16x2 Q1, end shear traction), plane strain, nu swept 0.3 / 0.45 / 0.49 / 0.4999. Every nu is solved twice: single-field Q1 with full integration, and Q1 with the volumetric term integrated at the cell centre only, which is the Malkus-Hughes equivalent of the Q1/P0 mixed element. A 64x8 Q2 run at nu = 0.4999 is the independent reference. The step-44 three-field element itself is NOT built here. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: element_under_test=single_field_Q1_full_integration; element_under_test_is_off_by_more_than_30_percent=true; mixed_is_within_5_percent=true; fine_Q2_64x8_reference_tip=-0.03711673283 converged=true; VERDICT=single_field_q1_locks_at_the_volumetric_limit. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 4,
+  "covers": [
+    "hyperelasticity::4"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "element_under_test=single_field_Q1_full_integration",
+    "element_under_test_is_off_by_more_than_30_percent=true",
+    "mixed_is_within_5_percent=true",
+    "fine_Q2_64x8_reference_tip=-0.03711673283 converged=true",
+    "VERDICT=single_field_q1_locks_at_the_volumetric_limit"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "converged=false",
+    "VERDICT=element_does_not_lock"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii navier_stokes#1. Lid-driven cavity at nu = 0.02 on a UNIFORM 16x16 mesh; BOTH pairs, equal-order Q1/Q1 and Taylor-Hood Q2/Q1, are solved in every invocation so the comparison is visible whichever is under test. The load-bearing measurement is structural and deterministic: an explicit unit checkerboard pressure vector is applied to the assembled operator and the velocity response is compared with the response to a unit SMOOTH pressure vector. Q1/Q1 answers a checkerboard with 0.030 of the response it gives a smooth field; Taylor-Hood answers with 4.13 -- a factor of 136 between them. That is the inf-sup deficiency itself: the equal-order pair barely sees the mode, so nothing in the discretisation controls its amplitude. The consequence is measured too: the Q1/Q1 pressure comes back 738 times larger than the Taylor-Hood pressure on the same problem. FINDING against the claim: on a uniform mesh the equal-order solve CONVERGES in 5 Newton steps and its cell-centre pressure does NOT alternate in sign the way the claim describes -- the checkerboard projection is 0.078 against Taylor-Hood's 0.073, effectively the same. The literal picture the claim paints, adjacent centroids alternating with O(1) magnitude, was reproduced only on a randomly distorted mesh, where the system is singular, the direct solve returns an arbitrary multiple of the near-null mode at 1e16-1e17, and the amplitude moved between two builds of the same source. That measurement was therefore dropped: it is printed as cell_centre_pressure_alternates_as_the_claim_says and never asserted on. T2_MUTATE=1 puts Taylor-Hood under test, which responds to the checkerboard normally and keeps an O(1) pressure. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "navier_stokes",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "pair_under_test=equal_order_Q1_Q1",
+    "checkerboard_is_nearly_invisible_to_the_pair=true",
+    "pressure_magnitude_far_exceeds_the_stable_pair=true",
+    "VERDICT=equal_order_pair_cannot_control_the_checkerboard_mode"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=pair_controls_the_checkerboard_mode"
+  ],
+  "timeout_seconds": 900
+}

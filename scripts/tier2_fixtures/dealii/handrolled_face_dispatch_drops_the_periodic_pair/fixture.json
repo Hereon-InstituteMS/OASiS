@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM dg_transport::2: [API] MeshWorker::mesh_loop simplifies cell / face / boundary assembly \u2014 without it, the user re-implements the dispatch logic and typically forgets the periodic-face case. Signal: assembly compiles and runs but the global system is non-symmetric AND inconsistent on periodic boundaries (if any); \u2026 WHAT THIS RUNS: -- probe \"handrolled_forgets_periodic\" of the shared DG translation unit _shared/dg_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Upwind DG transport with b = (1, 0.5) on a unit square whose y = 0 and y = 1 faces are matched by GridTools::collect_periodic_faces + Triangulation::add_periodicity, so the profile entering at x = 0 leaves through the top and must re-enter at the bottom. Two assemblies of that same problem run in one invocation: handrolled  a cell/face loop that dispatches on cell->face(f)->at_boundary() and never asks cell->has_periodic_neighbor(f). A periodic face still reports at_boundary() == true, so the pair is assembled as a physical boundary: 0 matrix couplings across it, the answer is O(1) wrong (max difference 0.99971 on a field of amplitude ~2), and the mean |u(x,1) - u(x,0)| mismatch is 0.37 against 0.016 for the correct assembly -- the entry's \"kinks at periodic-face nodes\", measured. Nothing is raised: DoFTools:: make_flux_sparsity_pattern DOES provide the periodic entries (64 of them), the hand-rolled loop simply never writes them. mesh_loop   MeshWorker::mesh_loop with the same three workers gets the periodic faces for free -- its dispatch tests has_periodic_neighbor() and routes the pair to the face worker. The entry's other clause, that the hand-rolled system is distinguishable by being \"non-symmetric\", is measured and is false: upwind transport is non-symmetric either way and the relative asymmetry of the two matrices agrees to three digits (1.31015 against 1.31075). Mutation control: T2_MUTATE=1 makes the probe assemble with MeshWorker::mesh_loop, and the fixture then fails its own expectations. OBSERVED, copied from the run: assembly_driver=handrolled_at_boundary_dispatch; periodic_interface_matrix_couplings=0; periodic_pair_is_coupled=false; solution_is_discontinuous_across_the_periodic_pair=true; non_symmetry_distinguishes_the_two_assemblies=false; VERDICT=handrolled_dispatch_drops_the_periodic_faces_silently. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "dg_transport",
+  "pitfall_index": 2,
+  "covers": [
+    "dg_transport::2"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "assembly_driver=handrolled_at_boundary_dispatch",
+    "periodic_interface_matrix_couplings=0",
+    "periodic_pair_is_coupled=false",
+    "solution_is_discontinuous_across_the_periodic_pair=true",
+    "non_symmetry_distinguishes_the_two_assemblies=false",
+    "VERDICT=handrolled_dispatch_drops_the_periodic_faces_silently"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=dispatch_covers_the_periodic_faces"
+  ],
+  "timeout_seconds": 900
+}
