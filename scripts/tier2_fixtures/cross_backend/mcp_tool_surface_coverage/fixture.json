@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 Layer-E: cross-backend MCP-tool surface coverage. Instantiates FastMCP in-process, registers the consolidated tools (the same registration the live server uses), and calls knowledge / discover / prepare_simulation across 18 (backend, physics) probes covering all 6 available backends. Asserts: discover('list') mentions every available backend; discover('physics', solver=X) returns >=100 char text containing every probe physics + no 'Unknown' / 'Traceback' tokens; prepare_simulation returns >=200 char text containing the physics name (underscored, space-separated, OR a non-trivial token); knowledge(topic='physics', solver=X, physics=Y) returns >=100 char text mentioning the physics. Filed as kratos / auxiliary_overview / pitfall_index=100 in fixture.json for runner-routing purposes (the test is backend-agnostic; routing through the repo .venv via the kratos slot lets it import the full MCP stack).",
+  "_comment": "Tier-2 Layer-E: cross-backend MCP-tool surface coverage. Instantiates FastMCP in-process, registers the consolidated tools (the same registration the live server uses), and calls knowledge / discover / prepare_simulation across 18 (backend, physics) probes covering all 6 available backends. Asserts: discover('list') mentions every available backend; discover('physics', solver=X) returns >=100 char text containing every probe physics + no 'Unknown' / 'Traceback' tokens; prepare_simulation returns >=200 char text containing the physics name (underscored, space-separated, OR a non-trivial token); knowledge(topic='physics', solver=X, physics=Y) returns >=100 char text mentioning the physics. Filed as kratos / auxiliary_overview / pitfall_index=100 in fixture.json for runner-routing purposes (the test is backend-agnostic; routing through the repo .venv via the kratos slot lets it import the full MCP stack). MUTATION CONTROL (T2_MUTATE=1, re-runnable) - a POSITIVE control: one physics per backend that the registry does not advertise is added to the probe list, failures_count goes 0 -> 12, 'failures_count=0' disappears and the forbidden 'FAIL:' appears. Note 'total_probes=18' is UNCHANGED under the mutation (successes only counts probes that reach the end of the loop body), so that expectation carries no discriminating weight. Proved KILLED 2026-08-07. TWO FINDINGS while adding this. (1) The fixture was RED before this change and its recorded 'passed' in tier2_results.json is stale: its kratos probe list still named 'fluid', which the 2026-06-26 honesty audit removed from KratosBackend.supported_physics() because FluidDynamicsApplication is not importable and the generator was an availability-probe stub. That is a stale reference in the probe list, not a regression in the tool surface; the probe is now 'dem', which the registry does advertise. (2) '<backend>_ok' is printed at the end of each backend's loop regardless of whether that backend produced failures - the real run that found the kratos drift printed 'kratos_ok' alongside 'failures_count=1'. Only failures_count=0 gates the fixture.",
   "backend": "kratos",
   "physics": "auxiliary_overview",
   "pitfall_index": 100,
@@ -18,5 +18,11 @@
   "forbid_in_output": [
     "Traceback",
     "FAIL:"
-  ]
+  ],
+  "_mutation": {
+    "note": "POSITIVE control: a green-state coverage gate with no injected pathology. The mutation adds one physics per backend that the live registry does NOT advertise - exactly the situation that arose for real when the 2026-06-26 honesty audit removed kratos::fluid. discover('physics') does not list it and knowledge() returns a sub-100-character stub, so failures_count goes 0 -> 12, 'failures_count=0' disappears and the forbidden 'FAIL:' appears.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

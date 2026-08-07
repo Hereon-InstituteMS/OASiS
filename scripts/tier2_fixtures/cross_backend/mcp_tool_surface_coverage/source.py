@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -48,14 +49,42 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 # (backend, physics) pairs; that's too slow when each call
 # subprocess-spawns a backend env. Pick ~3 physics per
 # available backend.
+#
+# 2026-08-07: kratos's third probe was `fluid`, which the 2026-06-26 honesty
+# audit REMOVED from KratosBackend.supported_physics() — FluidDynamicsApplication
+# is not importable in the installed stack, so the generator was an
+# availability-probe stub with no solver run (see
+# src/backends/kratos/generators/fluid.py). The MCP surface therefore stopped
+# advertising it and this fixture reported
+# `discover_phys_missing=kratos::fluid` — a stale reference in the probe list,
+# not a regression in the tool surface. Replaced with `dem`, which the registry
+# does advertise. The fixture's recorded `passed` in tier2_results.json predates
+# the removal.
 PROBE_PHYSICS: dict[str, list[str]] = {
     "fenics":  ["poisson", "linear_elasticity", "helmholtz"],
     "fourc":   ["poisson", "linear_elasticity", "fluid"],
     "dealii":  ["poisson", "linear_elasticity", "stokes"],
     "ngsolve": ["poisson", "linear_elasticity", "helmholtz"],
     "skfem":   ["poisson", "linear_elasticity", "heat"],
-    "kratos":  ["poisson", "linear_elasticity", "fluid"],
+    "kratos":  ["poisson", "linear_elasticity", "dem"],
 }
+
+# MUTATION CONTROL — a POSITIVE one, because this fixture is a green-state
+# coverage gate: it asserts that the MCP surface names the right things
+# everywhere, so it contains no pathology to remove. T2_MUTATE=1 adds one
+# physics per backend that the live registry does NOT advertise, which is
+# exactly the situation that arose for real above. Two of the fixture's own
+# checks then catch it in all six backends: discover('physics') does not list
+# it, and knowledge() returns a stub under 100 chars. failures_count goes 0 -> 12,
+# so `failures_count=0` disappears and the forbidden `FAIL:` appears.
+# `total_probes=18` is UNCHANGED under the mutation — `successes` only counts
+# probes that survive to the end of the loop body — so that expectation carries
+# no discriminating weight here and is not what kills the fixture.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+ABSENT_PHYSICS = "__mutation_probe_physics__"
+if MUTATE:
+    PROBE_PHYSICS = {b: list(p) + [ABSENT_PHYSICS]
+                     for b, p in PROBE_PHYSICS.items()}
 
 
 def _setup_mcp():
@@ -129,10 +158,19 @@ async def main_async() -> int:
                     f"discover_phys_error_tok="
                     f"{backend}::{tok!r}")
         for phys in physics_list:
-            # prepare_simulation
-            prep = _text(await tm.call_tool(
-                "prepare_simulation",
-                {"solver": backend, "physics": phys}))
+            # prepare_simulation. A raising tool is a FAILURE of the surface,
+            # not of the harness: without this guard the exception escaped and
+            # the fixture died with a Traceback, which is red but says nothing
+            # about which probe broke.
+            try:
+                prep = _text(await tm.call_tool(
+                    "prepare_simulation",
+                    {"solver": backend, "physics": phys}))
+            except Exception as e:
+                failures.append(
+                    f"prep_raised={backend}::{phys}::"
+                    f"{type(e).__name__}")
+                continue
             if not prep or len(prep) < 200:
                 failures.append(
                     f"prep_thin={backend}::{phys}::"
@@ -167,10 +205,16 @@ async def main_async() -> int:
             # documented dispatch route for per-physics
             # catalog lookups (NOT topic=<physics_name>;
             # topic is a category enum).
-            kn = _text(await tm.call_tool(
-                "knowledge",
-                {"topic": "physics", "solver": backend,
-                 "physics": phys}))
+            try:
+                kn = _text(await tm.call_tool(
+                    "knowledge",
+                    {"topic": "physics", "solver": backend,
+                     "physics": phys}))
+            except Exception as e:
+                failures.append(
+                    f"kn_raised={backend}::{phys}::"
+                    f"{type(e).__name__}")
+                continue
             if not kn or len(kn) < 100:
                 failures.append(
                     f"kn_thin={backend}::{phys}::"

@@ -25,6 +25,7 @@ seconds per backend — keep this gate fast.
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import sys
 import tempfile
@@ -34,6 +35,19 @@ logging.disable(logging.CRITICAL)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+
+
+# MUTATION CONTROL — a POSITIVE one, because this is a green-state gate: it
+# asserts that every catalog template runs, so it holds no pathology to remove.
+# T2_MUTATE=1 injects into ONE template exactly the regression class this
+# fixture exists to catch, and which its own _comment names first: a template
+# that is well-formed Python (so the Layer-B and Layer-E gates still pass) and
+# raises at run time on a missing import. `skfem::poisson::2d_rc=0` and
+# `failures=0` then disappear, and the forbidden `Traceback` and `FAIL:` both
+# appear. Nothing else in the matrix is touched, so a reader can see the single
+# row that moved.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+MUTATION_TARGET = ("skfem", "poisson", "2d")
 
 
 def run_template_in_subprocess(
@@ -48,6 +62,9 @@ def run_template_in_subprocess(
     load_all_backends()
     b = get_backend(backend_name)
     template = b.generate_input(physics, variant, {})
+    if MUTATE and (backend_name, physics, variant) == MUTATION_TARGET:
+        template = ("import __oasis_mutation_absent_module__  # noqa\n"
+                    + template)
 
     with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False,
@@ -73,20 +90,84 @@ def run_template_in_subprocess(
             pass
 
 
+# Which interpreter runs which backend's template.
+#
+# 2026-08-07: this used to be two hard-coded assumptions, and both had gone
+# stale in the way that produces a SKIP rather than an error — the least
+# visible failure this fixture can have, because a skipped row is not a
+# failure and a reader cannot tell it from "that backend is not installed".
+#
+#   * fenics was looked for at ~/miniconda3/envs/ofa-fenicsx. On this host the
+#     dolfinx env is called `fenics` (plus `fenicsc` for complex scalars), so
+#     ALL 35 fenics rows printed "SKIPPED (no env)" and the fixture certified
+#     nothing about a third of the catalog it claims to cover.
+#   * skfem, kratos and ngsolve were all handed sys.executable on the comment
+#     "Repo .venv has scikit-fem 12 + KratosMultiphysics + NGSolve installed".
+#     The Kratos half is no longer true: the wheel fails to import with
+#     `GLIBC_2.32 not found`, so every kratos row that needs a real solve fails
+#     for an environmental reason.
+#
+# Same repair the runner already carries in `_conda_python`: try an env
+# override, then each known env name, and in every case CHECK the candidate can
+# import the package instead of inferring that from the path.
+_PROBE_CACHE: dict[str, str | None] = {}
+
+_CANDIDATES: dict[str, tuple[str, str, tuple[str, ...]]] = {
+    # backend: (env-var override, module to import, conda env names to try)
+    "fenics": ("FENICS_PYTHON", "dolfinx",
+               ("fenics", "fenicsc", "ofa-fenicsx", "fenicsx", "dolfinx")),
+    "kratos": ("KRATOS_PYTHON", "KratosMultiphysics", ()),
+    "skfem": ("SKFEM_PYTHON", "skfem", ()),
+    "ngsolve": ("NGSOLVE_PYTHON", "ngsolve", ()),
+}
+
+
+def _can_import(python: str, module: str) -> bool:
+    try:
+        r = subprocess.run([python, "-c", f"import {module}"],
+                           capture_output=True, timeout=300,
+                           stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
 def _resolve_python(backend_name: str) -> str | None:
-    """Return the absolute path to the Python interpreter
-    that has THIS backend's runtime available, OR None
-    when the env is missing (caller will skip this row)."""
-    repo_venv = sys.executable
-    fenicsx_env = (Path.home() / "miniconda3" / "envs"
-                    / "ofa-fenicsx" / "bin" / "python")
-    if backend_name in ("skfem", "kratos", "ngsolve"):
-        # Repo .venv has scikit-fem 12 + KratosMultiphysics
-        # + NGSolve installed.
-        return repo_venv
-    if backend_name == "fenics":
-        return (str(fenicsx_env) if fenicsx_env.is_file()
-                else None)
+    """The interpreter that has THIS backend's runtime, or None.
+
+    None makes the caller skip the row, so it is returned only after every
+    candidate has been PROBED and none could import the package.
+    """
+    if backend_name in _PROBE_CACHE:
+        return _PROBE_CACHE[backend_name]
+    spec = _CANDIDATES.get(backend_name)
+    if spec is None:
+        _PROBE_CACHE[backend_name] = None
+        return None
+    env_var, module, env_names = spec
+
+    cands: list[str] = []
+    if os.environ.get(env_var):
+        cands.append(os.environ[env_var])
+    for name in env_names:
+        for root in ("miniconda3", "anaconda3", "mambaforge"):
+            cands.append(str(Path.home() / root / "envs" / name
+                             / "bin" / "python"))
+    if backend_name == "kratos":
+        # The only interpreter on this host with the full application set.
+        cands.append("/mnt/kratos-tier2/kv/bin/python")
+    cands.append(sys.executable)
+
+    for c in cands:
+        try:
+            if not Path(c).is_file():
+                continue
+        except OSError:
+            continue
+        if _can_import(c, module):
+            _PROBE_CACHE[backend_name] = c
+            return c
+    _PROBE_CACHE[backend_name] = None
     return None
 
 

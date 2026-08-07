@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 import numpy as np
@@ -46,6 +47,27 @@ from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 
 logging.disable(logging.CRITICAL)
+
+
+# MUTATION CONTROL — a POSITIVE one, because this fixture asserts AGREEMENT
+# between two independent assemblies and there is no pathology in it to take
+# away.  What the control removes is the possibility that the agreement is
+# assumed rather than measured: T2_MUTATE=1 injects into the scipy arm exactly
+# the bug class the docstring above says this gate exists to catch — a wrong
+# manufactured source term, π² instead of 2π², which is what -Δ(sin πx sin πy)
+# produces if one of the two second derivatives is dropped.  The scipy solution
+# then has half the amplitude, max_skfem_minus_scipy jumps from 5e-4 to ~2.5e-1,
+# and the forbidden `FAIL:` appears.
+#
+# Worth recording where the discriminating power actually sits.  Three of the
+# four expectations — max_skfem_minus_scipy=, max_skfem_minus_exact=,
+# max_scipy_minus_exact= — are bare key prefixes and match ANY value, nan and
+# 1e+30 included.  Only poisson_eval_pts_count=9 pins a number, and it is a
+# property of the fixture's own input, not of either solve.  So the entire
+# numerical claim of this fixture rests on the forbidden `FAIL:` token, which is
+# what the mutation trips.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+SOURCE_FACTOR = 1.0 if MUTATE else 2.0
 
 
 def skfem_poisson_at(eval_pts: np.ndarray) -> np.ndarray:
@@ -121,7 +143,7 @@ def scipy_poisson_at(eval_pts: np.ndarray,
                                      + np.outer(c, c))
         xc = float(np.mean(x))
         yc = float(np.mean(y))
-        f_val = (2.0 * np.pi ** 2
+        f_val = (SOURCE_FACTOR * np.pi ** 2
                  * np.sin(np.pi * xc)
                  * np.sin(np.pi * yc))
         fe = f_val * area / 3.0 * np.ones(3)

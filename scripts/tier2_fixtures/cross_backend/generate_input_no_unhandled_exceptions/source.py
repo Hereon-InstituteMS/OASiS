@@ -27,12 +27,46 @@ templates, the floor tightens automatically.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+
+
+# MUTATION CONTROL — a POSITIVE one, because this fixture is a green-state
+# regression gate: it asserts that NO generator raises, so there is no pathology
+# in it to remove.  What can be removed is the assumption that its two counters
+# count.  T2_MUTATE=1 adds ONE extra participant to the sweep — a stand-in
+# generator carrying exactly the bug class the gate exists to catch, an f-string
+# naming a variable the function never binds (this is the ngsolve
+# n_load_steps/n_steps defect, reproduced verbatim in shape).  Under the
+# mutation generate_input_nameerrors becomes 1, so `generate_input_nameerrors=0`
+# disappears, the forbidden `NameError-bug:` line is printed, and the floor is
+# exceeded so `FAIL:` is printed too.  If the gate could not see a NameError,
+# none of that would happen and the fixture would pass unchanged.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+
+class _NameErrorGeneratorStandIn:
+    """A backend-shaped object whose generator has the ngsolve f-string bug."""
+
+    name = "_mutation_probe"
+
+    class _Cap:
+        name = "poisson"
+        template_variants = ("2d",)
+
+    def supported_physics(self):
+        return [self._Cap()]
+
+    def generate_input(self, physics, variant, params):
+        # The defect verbatim in shape: the template interpolates a name the
+        # function never binds. Python raises NameError at format time.
+        n_steps = 10                                          # noqa: F841
+        return f"# steps = {n_load_steps}\n"  # noqa: F821
 
 
 # Maximum allowed generate_input failures. Lower than 26
@@ -56,11 +90,13 @@ def main() -> int:
     nameerrors = []
     other_errors = []
     successes = 0
-    for entry in list_backends():
-        if entry["status"] != "available":
-            continue
-        b_name = entry["name"]
-        b = get_backend(b_name)
+    participants = [(e["name"], get_backend(e["name"]))
+                    for e in list_backends()
+                    if e["status"] == "available"]
+    if MUTATE:
+        participants.append(("_mutation_probe",
+                             _NameErrorGeneratorStandIn()))
+    for b_name, b in participants:
         for cap in b.supported_physics():
             for v in cap.template_variants:
                 try:
