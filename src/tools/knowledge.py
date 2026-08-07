@@ -262,6 +262,32 @@ def _find_reference_test_files(solver: str, physics: str) -> str:
     return "\n".join(parts)
 
 
+def _coupling_failure_modes() -> str:
+    """The indexed failure-mode block appended to the coupling guide.
+
+    ADDED, NOT SUBSTITUTED. Everything above it in the payload stays prose:
+    the theory, the sign convention, the per-solver notes and the problem
+    tables are reference material and cutting them into fields would help
+    nobody. What is added underneath is the SAME failure modes written in the
+    corpus format the retrieval layer indexes — `[Coupling][Axis]` plus a
+    `Signal:` clause — because reading a guide top to bottom and pasting an
+    error message are two different acts, and the coupling knowledge could
+    only serve the first. An agent whose run has just failed is doing the
+    second.
+
+    Imported lazily and defensively: this module is imported at server start,
+    and a coupling knowledge payload that raised on import would take the
+    whole knowledge surface down with it.
+    """
+    try:
+        from backends.coupling import coupling_failure_index
+    except Exception as exc:                             # pragma: no cover
+        return (f"\n\n## Failure modes, indexed by symptom\n\n"
+                f"UNAVAILABLE on this install: {type(exc).__name__}: {exc}. "
+                f"The prose above is unaffected.\n")
+    return "\n\n" + coupling_failure_index()
+
+
 def register_knowledge_tools(mcp: FastMCP):
 
     @mcp.tool()

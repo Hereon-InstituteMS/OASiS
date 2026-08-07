@@ -486,16 +486,268 @@ def _fit_json_payload(payload: dict, limit: int) -> tuple[str, list[str]]:
     # reads the way its author wrote it rather than in size order.
     kept = {k: v for k, v in payload.items() if k in kept}
     return json.dumps(kept, indent=2, default=str), dropped
+def _file_fingerprint(path: Path) -> str:
+    """Content hash of one file, or size+mtime when it is too big to hash cheaply.
+
+    Either way a change is visible, which is all the digest needs.
+    """
+    import hashlib
+    try:
+        st = path.stat()
+        if st.st_size > 4 << 20:
+            return f"size:{st.st_size}:mtime:{st.st_mtime_ns}"
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as e:
+        return f"unreadable:{type(e).__name__}"
+
+
+def _participant_fingerprints(participants_json: str, monolithic_json: str = "") -> dict:
+    """Fingerprint the FILES a coupling actually executes.
+
+    THE BYPASS THIS CLOSES. A participant spec names a command
+    (["python", "run.py"]) and a work_dir; the physics lives entirely in
+    run.py, which the digest never saw. So a review of one coupling approved
+    any other coupling that reused the same file names: reviewing a correct
+    setup and then rewriting the participant script produced a completely
+    different answer, stamped VERIFIED, with the note "submitted review matches
+    this setup". Demonstrated with a 225x change in the coupled result.
+
+    Every command token that resolves to an existing file (absolute, or
+    relative to that participant's work_dir) is fingerprinted, as are its
+    declared data_files and the monolithic reference command. A file that does
+    not exist yet is recorded as absent, so creating it afterwards changes the
+    digest — a participant whose script does not exist cannot have been
+    reviewed.
+
+    WHAT THIS STILL DOES NOT COVER, established by running it. The fingerprint
+    reaches exactly the paths the SPEC NAMES. Anything a script opens at RUNTIME
+    is invisible, and rewriting it leaves the digest identical while the coupled
+    answer changes completely. Four routes were demonstrated, each taking a
+    reviewed x=2.666667 to x=334.666665 with the verdict still reading VERIFIED,
+    "an independent critic reviewed this exact setup":
+
+      * `from model import step` — an ordinary helper module beside run.py. No
+        trickery at all, and the most likely shape of real code;
+      * `exec(open("physics.py").read())`;
+      * a path built from an environment variable, or by `os.path.join`;
+      * a path found by `glob`.
+
+    A symlink repointed at different content IS caught (the hash follows the
+    link), as is a rewritten `data_files` entry and a rewritten monolithic
+    reference. Closing the rest needs the participants' whole working trees
+    fingerprinted, or an import trace; neither is done here. So `couple` states
+    the scope in its served coverage (`_DIGEST_SCOPE_LIMIT`) rather than letting
+    VERIFIED imply more than the digest supports, and declaring such a file in
+    `data_files` is the supported way to bring it inside.
+    """
+    out: dict = {}
+    try:
+        specs = json.loads(participants_json) if participants_json else []
+    except (json.JSONDecodeError, TypeError):
+        return out
+    if monolithic_json:
+        try:
+            m = json.loads(monolithic_json)
+            if isinstance(m, dict):
+                specs = list(specs) + [dict(m, name="__monolithic__")]
+        except (json.JSONDecodeError, TypeError):
+            pass
+    if not isinstance(specs, list):
+        return out
+    for s in specs:
+        if not isinstance(s, dict):
+            continue
+        name = str(s.get("name", "?"))
+        wd = Path(str(s.get("work_dir", "."))).expanduser()
+        seen: dict = {}
+        for token in list(s.get("command") or []) + list(s.get("data_files") or []):
+            tok = str(token)
+            for cand in (Path(tok).expanduser(), wd / tok):
+                try:
+                    if cand.is_file():
+                        seen[tok] = _file_fingerprint(cand)
+                        break
+                except OSError:
+                    continue
+            else:
+                # Only record a miss for tokens that LOOK like files, so option
+                # flags do not turn into noise that changes with argv order.
+                if "/" in tok or "." in tok:
+                    seen[tok] = "absent"
+        if seen:
+            out[name] = seen
+    return out
 
 
 def _coupling_setup_text(**kwargs) -> str:
     """Canonical text a coupling review is bound to.
 
-    One definition, used by the coupling tools and reproduced by
-    `submit_critic_review`, so the digest a review is issued for and the digest
-    a run is checked against cannot drift apart.
+    ONE definition, used by the coupling tools and by `submit_critic_review`, so
+    the digest a review is issued for and the digest a run is checked against
+    cannot drift apart. Every argument that changes what is solved belongs in
+    here — including the CONTENTS of the participant scripts, which is what the
+    coupling tools actually execute and what the spec only names.
     """
-    return json.dumps(kwargs, sort_keys=True)
+    payload = dict(kwargs)
+    if payload.get("participants") or payload.get("monolithic"):
+        fp = _participant_fingerprints(str(payload.get("participants") or ""),
+                                       str(payload.get("monolithic") or ""))
+        if fp:
+            payload["__participant_files__"] = fp
+    return json.dumps(payload, sort_keys=True)
+
+
+_DIGEST_SCOPE_LIMIT = (
+    "review-to-run binding SCOPE: the review is bound to the participant spec "
+    "and to the CONTENTS of every file the spec names (each command token that "
+    "is a file, every `data_files` entry, the monolithic reference). It is NOT "
+    "bound to files a script opens at runtime — a helper module it imports, a "
+    "path built from an environment variable or by os.path.join, a file found by "
+    "glob. Rewriting one of those changes the coupled answer and leaves this "
+    "verdict's digest identical, so VERIFIED here does not certify that part of "
+    "the setup was reviewed. Declare such files in `data_files` to bring them "
+    "inside the digest.")
+
+
+_MONOLITHIC_NOT_SUPPLIED = (
+    "monolithic consistency: NOT CHECKED — no un-split reference solve was "
+    "supplied. Every other check here is internal to the coupling: it can tell "
+    "you the iteration converged, conserved and stayed finite, and all of that "
+    "is true of a coupling in which both sides consistently use the wrong units "
+    "or apply the interface condition with the wrong sign. If this problem can "
+    "be solved un-split in ONE code, pass `monolithic` and OASiS will compare "
+    "the two answers; that is the strongest verification available here and it "
+    "needs no external benchmark.")
+
+
+def _run_monolithic_check(monolithic: str, exports: dict,
+                          rtol: float = 0.05) -> tuple[dict, list[str], list[str]]:
+    """Re-solve the coupled problem un-split, in one code, and compare.
+
+    `monolithic` is a JSON {"command":[argv...], "work_dir":str, "timeout":int}.
+    The command must write <work_dir>/monolithic.json in InterfaceData shape,
+    sampled on the same interface the participants export. Every participant's
+    exported `values` is then compared against the monolithic field interpolated
+    onto that participant's own interface coordinates.
+
+    Returns (report, findings, checks_not_run). A monolithic solve that itself
+    fails is reported as NOT CHECKED, never as agreement: the coupling is not
+    guilty because its reference could not be produced, and it is not innocent
+    either.
+    """
+    import subprocess
+    import numpy as _np
+    from core.quality_checks import check_monolithic_consistency
+
+    if not (monolithic or "").strip():
+        return {"status": "not supplied"}, [], [_MONOLITHIC_NOT_SUPPLIED]
+    try:
+        spec = json.loads(monolithic)
+        cmd = list(spec["command"])
+        wd = Path(spec["work_dir"])
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        return ({"status": "bad spec", "detail": str(e)}, [],
+                [f"monolithic consistency: NOT CHECKED — the `monolithic` spec "
+                 f"could not be read ({e}); expected JSON with `command` and "
+                 "`work_dir`."])
+    wd.mkdir(parents=True, exist_ok=True)
+    out = wd / "monolithic.json"
+    if out.exists():
+        out.unlink()
+    try:
+        p = subprocess.run(cmd, cwd=str(wd), capture_output=True, text=True,
+                           timeout=int(spec.get("timeout", 3600)))
+    except (subprocess.TimeoutExpired, OSError, ValueError) as e:
+        return ({"status": "reference solve failed", "detail": str(e)[:200]}, [],
+                [f"monolithic consistency: NOT CHECKED — the un-split reference "
+                 f"solve did not complete ({type(e).__name__}: {str(e)[:120]})."])
+    if p.returncode != 0 or not out.exists():
+        return ({"status": "reference solve failed",
+                 "returncode": p.returncode,
+                 "detail": (p.stderr or p.stdout or "")[-300:]}, [],
+                [f"monolithic consistency: NOT CHECKED — the un-split reference "
+                 f"solve exited {p.returncode} / wrote no monolithic.json, so "
+                 "there is nothing to compare the coupled answer against."])
+    try:
+        ref = json.loads(out.read_text())
+        ref_vals = _np.asarray(ref["values"], float).ravel()
+        ref_co = _np.atleast_2d(_np.asarray(ref.get("coordinates", []), float))
+    except Exception as e:
+        return ({"status": "reference unreadable", "detail": str(e)[:200]}, [],
+                [f"monolithic consistency: NOT CHECKED — monolithic.json could "
+                 f"not be read as InterfaceData ({e})."])
+    if ref_vals.size == 0 or not _np.all(_np.isfinite(ref_vals)):
+        return ({"status": "reference invalid"}, [],
+                ["monolithic consistency: NOT CHECKED — the reference solve's "
+                 "values are empty or non-finite."])
+
+    ref_field = str(ref.get("field_name", "") or "")
+    report: dict = {"status": "checked", "reference_points": int(ref_vals.size),
+                    "reference_field": ref_field}
+    findings: list[str] = []
+    # Nothing here can tell an independent un-split solve from a script that
+    # echoes the coupled answer back: both write the same file. Agreement is
+    # therefore only as good as the reference, and that has to be said, because
+    # a reference that is wrong in the same way as the coupling turns the
+    # strongest check in this tool into a rubber stamp.
+    not_run: list[str] = [
+        "monolithic reference INDEPENDENCE: OASiS ran the command it was given "
+        "and compared the numbers; it cannot tell a genuine un-split solve from "
+        "one that re-reads or reproduces the coupled answer. Agreement below is "
+        "evidence only if the reference solves the problem on its own."]
+    for name, ex in exports.items():
+        vals = _np.asarray(ex.get("values", []), float).ravel()
+        if vals.size == 0:
+            not_run.append(f"monolithic consistency for {name}: it exported no values")
+            continue
+        # Compare like with like. Participants on the two sides of an interface
+        # do not always export the same quantity (a Dirichlet-Neumann pair
+        # exports the same temperature; a force/displacement pair does not), and
+        # comparing a displacement against a temperature reference would report
+        # a large, entirely meaningless disagreement.
+        got_field = str(ex.get("field_name", "") or "")
+        if ref_field and got_field and got_field != ref_field:
+            not_run.append(
+                f"monolithic consistency for {name}: it exports {got_field!r} "
+                f"while the reference solve provides {ref_field!r}, so there is "
+                "nothing to compare. Have the reference write the field this "
+                "participant exports if you want it covered.")
+            continue
+        target = vals
+        if ref_vals.size == vals.size:
+            ref_at = ref_vals
+        else:
+            co = _np.atleast_2d(_np.asarray(ex.get("coordinates", []), float))
+            if ref_co.size == 0 or co.size == 0 or len(ref_co) != ref_vals.size:
+                not_run.append(
+                    f"monolithic consistency for {name}: the reference has "
+                    f"{ref_vals.size} point(s) and this participant exports "
+                    f"{vals.size}, and there are not enough coordinates to map "
+                    "one onto the other")
+                continue
+            from core.field_transfer import InterfaceData, interpolate_to_points
+            ref_at = _np.asarray(interpolate_to_points(
+                InterfaceData(coordinates=ref_co, values=ref_vals,
+                              field_name=str(ref.get("field_name", "ref"))),
+                co), float).ravel()
+        if ref_at.size != target.size:
+            not_run.append(f"monolithic consistency for {name}: shapes did not align")
+            continue
+        denom = float(_np.linalg.norm(ref_at)) or 1e-30
+        rel_l2 = float(_np.linalg.norm(target - ref_at)) / denom
+        report[name] = {"coupled_mean": float(_np.mean(target)),
+                        "monolithic_mean": float(_np.mean(ref_at)),
+                        "relative_l2": rel_l2}
+        findings += check_monolithic_consistency(
+            float(_np.mean(target)), float(_np.mean(ref_at)), rtol,
+            qoi=f"{name} interface mean")
+        if rel_l2 > rtol:
+            findings.append(
+                f"{name}: coupled interface field differs from the un-split "
+                f"monolithic re-solve by {rel_l2:.1%} in relative L2 > {rtol:.0%} "
+                "— the coupled result is likely WRONG even though the iteration "
+                "converged.")
+    return report, findings, not_run
 
 
 def _stamp_verification(result: dict, *, evidence_ok: bool, reason: str = "",
@@ -1371,6 +1623,139 @@ def _list_alternative_solvers(current_solver: str, physics: str) -> str:
     return "Other solvers that support this physics:\n" + "\n".join(alternatives)
 
 
+def _narrow_coupling_by_signal(groups: dict, signal: str) -> dict:
+    """Keep the coupling entries whose recorded symptom matches an observed one.
+
+    DELEGATES to `core.pitfall_index` whenever that module is importable. That
+    is the canonical matcher for the whole corpus — it folds quoting,
+    whitespace and case, stems inflections, and carries a domain synonym table
+    — and a second implementation of the same thing that drifted would be worse
+    than none, because a symptom query that quietly matches differently for
+    coupling than for every backend is a trap rather than a feature.
+
+    The local fallback below exists only for trees where that module is not
+    present yet. It mirrors the canonical matcher's TIERS — verbatim in the
+    recorded symptom, verbatim anywhere in the entry, every distinctive query
+    word present, and a labelled-weak majority overlap — because a fallback
+    that is quietly STRICTER is the more dangerous kind of wrong. Measured
+    here: a first version tested only for a full token subset, so paraphrased
+    queries the canonical matcher surfaces as weak leads ("the interface flux
+    balances to roundoff but the result is wrong") came back as "no recorded
+    failure mode matches", and for a silent-wrong mode an authoritative-sounding
+    absence is exactly the answer that gets an agent to trust a converged run.
+    It carries no synonym table, so it can still never claim a match the
+    canonical matcher would not.
+
+    RESULTS ARE RANKED, and ties break towards the SHORTER entry. Unranked
+    output meant the first entry of the first group won every tie, and the
+    longest, most-general entry collects the most token matches — so the one
+    entry that mentions everything was answering queries that belonged to its
+    neighbours. Preferring the entry with the smaller vocabulary is a
+    specificity tie-break, and the canonical matcher has the same tie problem
+    (measured: a query of three generic words returned 19 candidates ranked by
+    corpus order).
+
+    Never returns an empty result silently: a query that matches nothing comes
+    back with a note saying so, because an empty answer reads as "nothing is
+    known about that", which is a different and much more dangerous claim.
+    """
+    try:                                       # canonical path
+        from core import pitfall_index
+    except ImportError:
+        pitfall_index = None
+
+    if pitfall_index is not None:
+        result = pitfall_index.narrow(groups, signal=signal)
+        kept = {}
+        for e in result["entries"]:
+            kept.setdefault(e["physics"], []).append(
+                f"{e['text']}  <- match: {e.get('match', '?')}")
+        if not kept:
+            return {"no_match": [
+                f"No recorded coupling failure mode matches {signal!r}. That is "
+                "informative but not conclusive: it means this symptom is not "
+                "catalogued, NOT that your coupling is right. "
+                "knowledge(topic='pitfalls', solver='coupling') returns all "
+                f"{result['total_available']} entries."]}
+        modes = result.get("match_modes") or {}
+        note = (f"signal={signal!r}: {result['shown']} of "
+                f"{result['total_available']} entries, best match first. For "
+                f"the complete set: knowledge(topic='pitfalls', "
+                f"solver='coupling')")
+        if modes and set(modes) <= {"some_tokens"}:
+            note += (". EVERY match below is a partial word overlap, not a "
+                     "match on a recorded symptom — treat them as leads to "
+                     "read, not as an identification of your failure.")
+        kept["_filter"] = [note]
+        return kept
+
+    import re as _re
+
+    def _norm(s: str) -> str:
+        s = s.lower().replace("’", "'").replace("‘", "'")
+        s = s.replace("“", '"').replace("”", '"')
+        s = _re.sub(r"[\\'\"`]+", "", s)
+        return _re.sub(r"\s+", " ", s).strip()
+
+    _STOP = set("a an the and or but if of in on at to for from with by is are "
+                "was were be it its this that these those as not no so than "
+                "then there when where which what how why all any both each "
+                "more most other some such only same too very can will just "
+                "should now use used using you your we our error warning "
+                "message output file files line lines code".split())
+    def _toks(s: str) -> set[str]:
+        return {w for w in _re.findall(r"[a-z_][a-z0-9_]{2,}", s)
+                if w not in _STOP}
+
+    q = _norm(signal)
+    qt = _toks(q)
+    scored: list[tuple[float, int, str, str, str]] = []
+    for group, entries in groups.items():
+        for text in entries:
+            whole = _norm(text)
+            sig = whole.split("signal:", 1)[1] if "signal:" in whole else ""
+            wt = _toks(whole)
+            hit = qt & wt
+            frac = len(hit) / len(qt) if qt else 0.0
+            if sig and q in sig:
+                score, mode = 1.0, "matches recorded symptom"
+            elif q in whole:
+                score, mode = 0.85, "matches entry text"
+            elif qt and frac >= 1.0:
+                score, mode = 0.7, "all query terms present"
+            elif frac >= 0.6 and len(hit) >= 2:
+                # Labelled WEAK, never presented as an identification. Below
+                # 0.6, or on a single word, an overlap is a coincidence.
+                score, mode = 0.3 + 0.3 * frac, "WEAK: partial term overlap"
+            else:
+                continue
+            # Tie-break on entry vocabulary size: the shorter entry is the more
+            # specific one, and without this the longest entry wins every tie.
+            scored.append((score, len(wt), group, text, mode))
+    scored.sort(key=lambda t: (-t[0], t[1]))
+    kept: dict[str, list[str]] = {}
+    for _score, _n, group, text, mode in scored:
+        kept.setdefault(group, []).append(f"{text}  <- match: {mode}")
+    total = sum(len(v) for v in groups.values())
+    if not kept:
+        return {"no_match": [
+            f"No recorded coupling failure mode matches {signal!r}. That is "
+            "informative but not conclusive: it means this symptom is not "
+            "catalogued, NOT that your coupling is right. "
+            f"knowledge(topic='pitfalls', solver='coupling') returns all "
+            f"{total} entries."]}
+    shown = sum(len(v) for v in kept.values())
+    note = (f"signal={signal!r}: {shown} of {total} entries, best match first. "
+            f"For the complete set: knowledge(topic='pitfalls', "
+            f"solver='coupling')")
+    if all(m.startswith("WEAK") for *_ , m in scored):
+        note += (". EVERY match below is a partial word overlap, not a match on "
+                 "a recorded symptom — treat them as leads to read, not as an "
+                 "identification of your failure.")
+    kept["_filter"] = [note]
+    return kept
+
+
 def _load_matching_postmortems(solver: str = "", physics: str = "",
                                signal: str = "") -> list[dict]:
     """Load post-mortem JSONs from data/postmortems/, filtered.
@@ -1635,6 +2020,22 @@ def register_consolidated_tools(mcp: FastMCP):
             # pitfalls so the agent has no shortcut to known-bug knowledge.
             if _ABLATE_PITFALLS:
                 return f"No pitfalls available for {solver}"
+            # COUPLING IS NOT A BACKEND, and that is exactly why it had no
+            # pitfalls surface: `get_backend('coupling')` returns None, so this
+            # branch fell straight through to "No pitfalls found for coupling"
+            # while ~145 kB of coupling knowledge sat behind topic='coupling'
+            # with no [Category] tag and no Signal: clause anywhere in it. An
+            # agent whose coupling had just failed could not look its symptom
+            # up — at the exact moment it most needed the knowledge, symptom
+            # lookup returned nothing. Served here in the same shape every
+            # backend uses ({group: [entry, ...]}), so the narrowing layer
+            # applies to it unchanged when it lands.
+            if solver.strip().lower() in ("coupling", "couple", "coupled"):
+                from backends.coupling import get_coupling_pitfalls
+                entries = get_coupling_pitfalls(physics or None)
+                if signal:
+                    entries = _narrow_coupling_by_signal(entries, signal)
+                return json.dumps(entries, indent=2)
             # Backend is the source of truth for pitfalls (Table-1
             # promoted, post-execution-critic-actionable). The
             # deep_knowledge fallback was inverted historically —
@@ -2420,8 +2821,15 @@ def register_consolidated_tools(mcp: FastMCP):
                 object of the arguments you will pass. Keys per tool:
                 coupled_solve: problem, solver_a, solver_b, nx, ny, max_iter,
                 tol, relaxation, params; couple: participants, max_iter, tol,
-                accelerator, theta; couple_precice: participants, data,
-                exchanges, scheme, dimensions, max_time, time_window.
+                accelerator, theta, monolithic, probe; couple_precice:
+                participants, data, exchanges, scheme, dimensions, max_time,
+                time_window, max_iterations, convergence_tol, relaxation,
+                mapping. Pass EVERY key for the tool you will call, with the
+                values you will call it with — a missing or different key is a
+                different setup and the run will come back NOT VERIFIED. For
+                `couple` the CONTENTS of each participant's script are part of
+                the setup too, so the scripts must already be written when the
+                review is submitted, and editing one afterwards invalidates it.
             ttl_s: how long the review stays valid (default 1 hour).
 
         Returns: JSON with a `critic_token`. Passing it to run_simulation or
@@ -2442,7 +2850,14 @@ def register_consolidated_tools(mcp: FastMCP):
                 return json.dumps({"accepted": False,
                                    "error": f"coupling_args is not JSON: {exc}"},
                                   indent=2)
-            setup_text = json.dumps(parsed, sort_keys=True)
+            if not isinstance(parsed, dict):
+                return json.dumps({
+                    "accepted": False,
+                    "error": "coupling_args must be a JSON OBJECT of the "
+                             "arguments you will pass."}, indent=2)
+            # Through the same single definition the run tools use, so the
+            # participant-script fingerprints are part of both digests.
+            setup_text = _coupling_setup_text(**parsed)
         else:
             setup_text = setup
         try:
@@ -3168,6 +3583,7 @@ def register_consolidated_tools(mcp: FastMCP):
     @mcp.tool()
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
                      accelerator: str = "aitken", theta: float = 0.5,
+                     monolithic: str = "", probe: bool = True,
                      critic_approved: bool = False) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
 
@@ -3177,9 +3593,26 @@ def register_consolidated_tools(mcp: FastMCP):
 
         Unlike coupled_solve (legacy, fixed toy geometries), this is physics-agnostic:
         you write one self-contained solver script per subdomain/participant and OASiS
-        runs the fixed-point iteration, Aitken relaxation, convergence-or-fail, AND
-        silent-wrong validation (interface flux balance + finiteness). No fixed geometry
-        or physics is assumed.
+        runs the fixed-point iteration, relaxation, convergence-or-fail, AND the
+        silent-wrong validation a partitioned coupling needs, because a partitioned
+        coupling's characteristic failure is not a crash — it is a clean, converged,
+        confidently wrong number. OASiS checks, and reports in the verdict:
+          * convergence, and per-block convergence (a large settled block, e.g. force,
+            cannot hide a small moving one, e.g. displacement, inside one global norm);
+          * finiteness of every exchanged array, including coordinates and fluxes;
+          * interface flux balance, naming SIGN-CONVENTION and UNIT-MISMATCH signatures;
+          * that every participant exited 0 — a diverged solver often writes its last
+            iterate and then aborts;
+          * that every participant's output actually MOVED when its imports moved —
+            the test for a participant that exits 0 having done nothing, or re-serves
+            a cached answer; such a run "converges" at iteration 2 with residual 0;
+          * that the coupling graph is wired as declared — an `imports_from` name that
+            matches no participant is REFUSED, not silently dropped into a one-way run;
+          * whether the two interface discretisations match;
+          * and, when you pass `monolithic`, that the coupled answer equals an
+            independent un-split solve of the same problem. That last one is the only
+            check that can catch a consistent unit error or a wrongly applied interface
+            sign, so when it is not supplied the verdict SAYS it was not run.
 
         PARTICIPANT CONTRACT — each iteration the driver, per participant:
           1. writes <work_dir>/imports.json = {partner_name: InterfaceData} (boundary
@@ -3201,22 +3634,50 @@ def register_consolidated_tools(mcp: FastMCP):
         finish in one step even for a linear problem. theta=1.0 (no relaxation)
         oscillates forever on a balanced interface; start at theta=0.5.
 
+        FLUX SIGN: export `normal_fluxes` with respect to YOUR OWN outward normal.
+        The two normals are anti-parallel, so the two participants' fluxes carry
+        OPPOSITE signs and their sums cancel. The Dirichlet value you APPLY is the
+        same number on both sides — the opposite rule. Getting this wrong is the
+        single most common cause of the flux-balance finding.
+
         Args:
             participants: JSON list of {"name", "command":[argv...], "work_dir",
-              "imports_from":[partner names], "timeout": seconds}.
+              "imports_from":[partner names], "timeout": seconds}. Every name in
+              `imports_from` must be another participant's name.
             max_iter, tol: iteration controls.
-            accelerator: "constant" (fixed theta) or "aitken" (theta adapts per
-              participant, starting from theta).
-            theta: relaxation factor, 0 < theta <= 1. Full weight on the new
-              export at 1.0, half-and-half at 0.5. Reduce it when the residual
-              stops falling or oscillates.
+            accelerator: "aitken" (theta recomputed each iteration from the residual
+              history, starting at `theta`) or "constant" (theta held at `theta` for
+              the whole run). There is no per-field or per-participant theta.
+            theta: the relaxation factor. Under-relaxation (theta < 1) is what makes
+              a Dirichlet-Neumann or FSI coupling converge at all when the physical
+              stiffness/density ratio makes the un-relaxed iteration diverge; 0.5 is
+              a neutral default, not a recommendation for your problem.
+            probe: after the iteration settles, spend ONE extra solve per
+              participant perturbing its final imports and measuring how far its
+              answer moves. This is the only check here that can tell a solver
+              which reads its boundary data from one that merely looks as if it
+              does; turn it off only if that solve is genuinely unaffordable, and
+              the verdict will then record that the question was not asked.
+            monolithic: OPTIONAL JSON {"command":[argv...], "work_dir": str,
+              "timeout": int} — a solve of the SAME problem un-split, in ONE code,
+              which writes <work_dir>/monolithic.json in InterfaceData shape on the
+              same interface. Supplying it is the strongest verification available
+              here and needs no external benchmark.
 
-        Returns: JSON with converged, iterations, residual, exports, and a
-            `validation` block (interface-balance + finiteness). A non-converged or
-            unbalanced coupling is reported as a FAILURE, never as a trustworthy result.
+        Returns: JSON with converged, iterations, residual, per-block residuals,
+            exports, the coupling graph, per-participant responsiveness and exit
+            codes, a `validation` block, a `checks_not_run` block, and the verdict.
+            A coupling that failed any check is reported as NOT VERIFIED, never as a
+            trustworthy result — and one that could not be fully checked says so.
         """
         from core.coupling_driver import Participant, run_coupling
-        from core.quality_checks import check_interface_balance, check_finite, check_convergence
+        from core.quality_checks import (
+            check_interface_balance, check_finite, check_convergence,
+            check_coupling_directionality, check_participant_responsiveness,
+            check_interface_meshes, check_residual_blocks, check_returncodes,
+            check_interface_flux_profile, check_interfaces_are_the_same_surface,
+            check_interface_sensitivity,
+        )
         _get_journal().record("tool_call", "couple", solver="general", physics="coupling")
         try:
             specs = json.loads(participants)
@@ -3239,7 +3700,8 @@ def register_consolidated_tools(mcp: FastMCP):
                 wd.mkdir(parents=True, exist_ok=True)
                 parts.append(Participant(name=s["name"], command=list(s["command"]),
                                          work_dir=wd, imports_from=s.get("imports_from", []),
-                                         timeout=int(s.get("timeout", 3600))))
+                                         timeout=int(s.get("timeout", 3600)),
+                                         data_files=list(s.get("data_files", []))))
             except (KeyError, TypeError) as e:
                 return json.dumps({"error": f"bad participant spec {s!r}: {e}"})
         if not (0.0 < theta <= 1.0):
@@ -3253,20 +3715,79 @@ def register_consolidated_tools(mcp: FastMCP):
                                         f"'constant', got {accelerator!r}"})
         try:
             r = run_coupling(parts, max_iter=max_iter, tol=tol,
-                             accelerator=accelerator, theta0=theta)
+                             accelerator=accelerator, theta0=theta, probe=probe)
         except Exception as exc:                      # never raise out of a tool
             return json.dumps({"converged": False,
                                "error": f"coupling driver failed: "
                                         f"{type(exc).__name__}: {exc}"}, indent=2)
-        # CP-2: wire the silent-wrong validators into the coupling result
+
+        # ── silent-wrong validators ─────────────────────────────────
+        # `val` holds findings (they flip the verdict); `not_run` holds checks
+        # that could not look at anything (they never flip the verdict, and they
+        # are printed in it, so "not checked" is never read as "checked and fine").
         val = list(r.warnings)
+        not_run: list[str] = [_DIGEST_SCOPE_LIMIT]
         val += check_convergence(r.converged, r.residual, tol)
         for nm, ex in r.exports.items():
             val += check_finite(ex.get("values", []), label=f"{nm}.values")
+            if ex.get("normal_fluxes") is not None:
+                val += check_finite(ex["normal_fluxes"], label=f"{nm}.normal_fluxes")
+            val += check_finite(ex.get("coordinates", []), label=f"{nm}.coordinates")
+        f, n = check_returncodes(r.returncodes); val += f; not_run += n
+        f, n = check_coupling_directionality(r.graph, max_iter); val += f; not_run += n
+        f, n = check_participant_responsiveness(r.responsiveness); val += f; not_run += n
+        if probe:
+            f, n = check_interface_sensitivity(r.sensitivity); val += f; not_run += n
+        else:
+            not_run.append(
+                "interface sensitivity: NOT probed (probe=False). The one solve "
+                "that would have established whether each participant's answer "
+                "depends on its imports was skipped, so a solver that ignores "
+                "imports.json is indistinguishable here from one that reads it.")
+        # Only interesting when the GLOBAL norm claims convergence: that is the
+        # case where a still-moving small block is invisible. When the global
+        # residual already says NOT CONVERGED it says everything, and repeating
+        # it per block just buries the findings that are specific.
+        if r.converged:
+            f, n = check_residual_blocks(r.block_residuals, tol); val += f; not_run += n
         names = list(r.exports)
         if len(names) == 2:
-            val += check_interface_balance(r.exports[names[0]], r.exports[names[1]],
-                                           names[0], names[1])
+            a, b = r.exports[names[0]], r.exports[names[1]]
+            f, n = check_interfaces_are_the_same_surface(a, b, names[0], names[1])
+            val += f; not_run += n
+            f, n = check_interface_meshes(a, b, names[0], names[1]); val += f; not_run += n
+            f, n = check_interface_flux_profile(a, b, names[0], names[1])
+            val += f; not_run += n
+            if a.get("normal_fluxes") is None or b.get("normal_fluxes") is None:
+                not_run.append(
+                    "interface flux balance: at least one participant exported no "
+                    "`normal_fluxes`, so conservation across the interface was NOT "
+                    "checked. Export the normal flux from both sides (each w.r.t. "
+                    "its own outward normal) to enable the only conservation "
+                    "evidence available here.")
+            else:
+                val += check_interface_balance(a, b, names[0], names[1])
+        elif len(names) > 2:
+            not_run.append(
+                f"interface flux balance: {len(names)} participants — the pairwise "
+                "conservation check only applies to a 2-participant interface, so "
+                "conservation was NOT checked.")
+
+        # ── monolithic consistency: the decisive silent-wrong detector ────────
+        mono_block, f, n = _run_monolithic_check(monolithic, r.exports)
+        val += f; not_run += n
+
+        # `val` is the FINDINGS channel and `not_run` the COVERAGE channel, and
+        # every check above puts its output in exactly one of them. So any
+        # finding at all means the coupling cannot be trusted — no substring
+        # matching on message text, which would silently stop working the moment
+        # a message was reworded, and could equally raise a false alarm on a
+        # benign sentence that happened to contain one of the keywords.
+        # A non-matching interface is deliberately a coverage note rather than a
+        # finding: it is a legitimate configuration whose consequence (unchecked
+        # conservation) belongs in the coverage list, and whose failure mode is
+        # caught by the flux balance.
+        checks_ok = r.converged and not val
         # A coupling in which nothing is exchanged converges instantly with a
         # zero residual and passes every other check — the most convincing
         # silent-wrong result this tool can produce. Name it.
@@ -3295,16 +3816,29 @@ def register_consolidated_tools(mcp: FastMCP):
              or "NOT COUPLED" in w) for w in val)
         result = {"converged": r.converged, "iterations": r.iterations,
                   "residual": r.residual, "history": r.history,
-                  "exports": r.exports, "error": r.error, "validation": val}
+                  "block_residuals": r.block_residuals,
+                  "returncodes": r.returncodes,
+                  "responsiveness": r.responsiveness,
+                  "graph": r.graph, "relaxation": r.theta,
+                  "interface_sensitivity": r.sensitivity,
+                  "monolithic_check": mono_block,
+                  "exports": r.exports, "error": r.error,
+                  "validation": val, "checks_not_run": not_run}
         reason = ("" if checks_ok else
-                  "the coupling did not converge, exchanged nothing, or failed "
-                  "a finiteness / interface-balance check")
+                  "the coupling did not converge, or failed one of OASiS's "
+                  "silent-wrong checks (see `validation`)")
         _stamp_verification(result, evidence_ok=checks_ok, reason=reason,
                             critic_approved=critic_approved,
                             solver="couple",
                             setup_text=_coupling_setup_text(
                                 participants=participants, max_iter=max_iter,
-                                tol=tol, accelerator=accelerator, theta=theta))
+                                tol=tol, accelerator=accelerator, theta=theta,
+                                monolithic=monolithic, probe=probe))
+        if not_run:
+            result["verification"] += (
+                " COVERAGE — these checks could NOT run on this coupling, so the "
+                "verdict above does not cover what they would have caught: "
+                + " | ".join(not_run))
         return json.dumps(result, indent=2)
 
     @mcp.tool()
@@ -3312,6 +3846,10 @@ def register_consolidated_tools(mcp: FastMCP):
                              work_dir: str, scheme: str = "serial-explicit",
                              dimensions: int = 2, max_time: float = 10.0,
                              time_window: float = 1.0, timeout: int = 1800,
+                             max_iterations: int = 20,
+                             convergence_tol: float = 1e-6,
+                             relaxation: float = 0.5,
+                             mapping: str = "nearest-neighbor",
                              extra_env: str = "",
                              critic_approved: bool = False) -> str:
         """GENERAL preCICE coupling of ARBITRARY codes/paradigms, end-to-end.
@@ -3333,12 +3871,29 @@ def register_consolidated_tools(mcp: FastMCP):
             exchanges: list of {"data","from","to"} — one per coupled field.
             work_dir:  directory to run in (config + participant cwd).
             scheme:    serial-explicit|serial-implicit|parallel-explicit|parallel-implicit.
+                       An EXPLICIT scheme takes one pass per time window and measures
+                       no convergence at all — it cannot establish a coupled fixed
+                       point, and the verdict here says so rather than implying one.
             dimensions, max_time, time_window, timeout: coupling controls.
+            max_iterations, convergence_tol, relaxation: implicit-scheme controls
+                       (ignored for explicit). These were previously not forwarded
+                       at all, so every implicit coupling ran on the defaults
+                       whatever the caller asked for.
+            mapping:   nearest-neighbor|nearest-projection. Mapped with
+                       constraint="consistent", which preserves nodal values and
+                       NOT integrals — a flux/force field on a non-matching
+                       interface is therefore not conserved, and the tool says so.
             extra_env: optional JSON dict of extra env (e.g. {"LD_LIBRARY_PATH":...,
                        "PYTHONPATH":...}) for the participant processes.
 
-        Returns: JSON {converged, returncodes, config, logs}. A non-zero participant
-            return code is reported as a failed coupling, never as a trustworthy result.
+        Returns: JSON {exit_codes_ok, exchanged, coupling_converged, returncodes,
+            config, logs, evidence, validation, checks_not_run}. Every participant
+            exiting 0 is NOT by itself a coupling: an implicit scheme that exhausts
+            max-iterations without meeting its convergence measure logs that and
+            exits 0, and two scripts that never call preCICE at all exit 0 too. The
+            verdict is built from preCICE's own per-window record, and an explicit
+            scheme — which measures no convergence — is reported as unmeasured
+            rather than as converged.
         """
         from core.precice_config import run_precice_coupling, check_precice_available
         _get_journal().record("tool_call", "couple_precice", solver="general", physics="coupling")
@@ -3355,33 +3910,81 @@ def register_consolidated_tools(mcp: FastMCP):
         try:
             r = run_precice_coupling(parts, ds, exs, Path(work_dir), scheme=scheme,
                                      dimensions=dimensions, max_time=max_time,
-                                     time_window=time_window, timeout=timeout, extra_env=env)
+                                     time_window=time_window, timeout=timeout,
+                                     extra_env=env, max_iterations=max_iterations,
+                                     convergence_tol=convergence_tol,
+                                     mapping=mapping,
+                                     initial_relaxation=relaxation)
+        except ValueError as e:
+            return json.dumps({"error": f"preCICE configuration refused: {e}"})
         except Exception as e:
             return json.dumps({"error": f"coupling failed: {e}"})
-        conv = bool(r.get("converged"))
-        # The preCICE orchestrator returns only exit codes + log tails (not the
-        # exchanged field values), so we cannot run check_finite on the data.
-        # Best-effort: a whole-word NaN/Inf in any participant log is a broken
-        # exchange. This only ever DOWNGRADES the verdict (fails safe toward "not
-        # verified"), never upgrades it — the anti-fabrication direction.
+        # The orchestrator returns exit codes, preCICE's own per-window record and
+        # log tails — not the exchanged field values, so check_finite cannot run on
+        # the data. Best-effort: a whole-word NaN/Inf in any participant log is a
+        # broken exchange. This only ever DOWNGRADES the verdict (fails safe toward
+        # "not verified"), never upgrades it — the anti-fabrication direction.
         import re as _re
         _logs = " ".join(str(v) for v in (r.get("logs") or {}).values())
         nonfinite = bool(_re.search(r"\b(nan|-?inf|-?infinity)\b", _logs, _re.I))
+        val: list[str] = []
+        not_run: list[str] = []
         if nonfinite:
-            r["validation"] = ["participant logs report non-finite (NaN/Inf) "
-                               "values — the exchanged fields are invalid."]
+            val.append("participant logs report non-finite (NaN/Inf) "
+                       "values — the exchanged fields are invalid.")
+        if not r.get("exit_codes_ok"):
+            val.append(f"participant exit codes: {r.get('returncodes')} — a "
+                       "non-zero (or unknown) exit is a failed participant.")
+        if not r.get("exchanged"):
+            val.append("NO EXCHANGE: preCICE's own record shows no completed "
+                       "coupling time window for every participant. Exiting 0 is "
+                       "not evidence of a coupling — a script that never calls "
+                       "preCICE exits 0 too.")
+        conv = r.get("coupling_converged")
+        if conv is False:
+            val.append("NOT CONVERGED: preCICE recorded a time window in which the "
+                       "implicit scheme hit max-iterations without meeting its "
+                       "convergence measure. preCICE logs that and exits 0.")
+        elif conv is None:
+            not_run.append(
+                "coupling convergence: preCICE recorded no convergence measure"
+                + (" — an EXPLICIT scheme takes one pass per time window by "
+                   "construction, so nothing here established that the coupled "
+                   "state settled. Use serial-implicit / parallel-implicit if you "
+                   "need that." if "explicit" in scheme else
+                   " for this implicit scheme, so whether it converged is unknown."))
+        for d in (r.get("evidence") or []):
+            (not_run if "NOT established" in d else val).append(
+                f"preCICE record: {d}" if "NOT established" in d else d)
+        for note in (r.get("config_notes") or []):
+            not_run.append(f"config: {note}")
+        if val:
+            r["validation"] = val
+        r["checks_not_run"] = not_run
+        evidence_ok = (bool(r.get("exit_codes_ok")) and bool(r.get("exchanged"))
+                       and conv is not False and not nonfinite and not r.get("error"))
         _stamp_verification(
-            r, evidence_ok=conv and not nonfinite, critic_approved=critic_approved,
+            r, evidence_ok=evidence_ok, critic_approved=critic_approved,
             solver="couple_precice",
+            # Every argument that changes what preCICE computes. max_iterations,
+            # convergence_tol, relaxation and mapping were absent, so a review of
+            # one coupling silently approved the same coupling run to a
+            # convergence tolerance five orders of magnitude looser.
             setup_text=_coupling_setup_text(
                 participants=participants, data=data, exchanges=exchanges,
                 scheme=scheme, dimensions=dimensions, max_time=max_time,
-                time_window=time_window),
-            reason="" if (conv and not nonfinite) else
+                time_window=time_window, max_iterations=max_iterations,
+                convergence_tol=convergence_tol, relaxation=relaxation,
+                mapping=mapping),
+            reason="" if evidence_ok else
                    ("participant logs report non-finite (NaN/Inf) values"
                     if nonfinite else
-                    "a participant returned non-zero or the coupling did not "
-                    "converge, so no result is backed by a valid run"))
+                    "preCICE's own record does not show a completed, converged "
+                    "exchange between all participants (see `validation`)"))
+        if not_run:
+            r["verification"] += (
+                " COVERAGE — these checks could NOT run, so the verdict above does "
+                "not cover what they would have caught: " + " | ".join(not_run))
         return json.dumps(r, indent=2)
 
     # ═══════════════════════════════════════════════════════════
