@@ -740,13 +740,18 @@ def get_coupling_pitfalls(topic: str | None = None) -> dict[str, list[str]]:
 
 
 def coupling_failure_index() -> str:
-    """The block appended to `knowledge(topic='coupling')`.
+    """These entries as one readable block, headed by the queries that reach
+    them.
 
-    The prose payload keeps every word it had; this is added underneath it so
-    the same failure modes are reachable BOTH by reading the guide top to
-    bottom and by pasting an error message into a symptom query. An agent whose
-    run has just failed is in the second situation, and it is the one the prose
-    alone could not serve.
+    NOT APPENDED TO ANY PAYLOAD, and it is worth saying so because it was, and
+    the call site was lost when the coupling guide moved from
+    src/tools/knowledge.py into src/tools/coupling_knowledge.py. Restoring it
+    is the wrong repair: this block is 38 kB against a 35 kB guide, so
+    `knowledge(topic='coupling')` would more than double and would then carry
+    TWO symptom corpora — these entries and the 17-row failure table — for an
+    agent that has one error message and wants one answer. The guide instead
+    carries a cross-reference to the query below, and each corpus stays in one
+    place. This function remains the way to read the whole set at once.
     """
     n = sum(len(v) for v in COUPLING_PITFALLS.values())
     lines = [

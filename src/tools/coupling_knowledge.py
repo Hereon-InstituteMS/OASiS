@@ -1146,6 +1146,20 @@ Reach these from a SYMPTOM instead of reading the table:
 observation in your own words, no mechanism needed, e.g.
 `signal='it converged but the answer is wrong'`.
 
+AND THERE IS A SECOND INDEX, which you want when there is NOTHING to paste.
+The table above is what this tool PRINTS. The failures that cost the most print
+nothing at all — a unit mismatch, a wrongly applied interface sign, a
+participant that never reads its imports, a lossy mapping — and those live as
+corpus entries whose Signal clauses say outright that you would see nothing,
+rather than inventing a symptom you would not:
+
+    knowledge(topic='pitfalls', solver='coupling', signal='<what you saw>')
+    knowledge(topic='pitfalls', solver='coupling', physics='silent_wrong')
+
+The groups are silent_wrong, participant_contract, verification_limits and
+capability_limits. They are also the entries the project's own coverage
+criterion counts for coupling, so they are the ones with fixtures behind them.
+
 FIRST THING TO DO WHEN A COUPLING FAILS: delete `imports.json` from each
 work_dir and run each participant script by hand there. That exercises the
 iteration-1 fallback path and tells you whether the failure is in the physics
