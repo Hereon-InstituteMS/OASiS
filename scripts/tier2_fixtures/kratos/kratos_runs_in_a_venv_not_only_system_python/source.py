@@ -8,6 +8,15 @@ libraries require GLIBC 2.32.
 That was true of the 10.4.2 wheel. It is NOT a property of the
 host. This fixture runs under a venv interpreter, on the same
 glibc, and imports Kratos successfully.
+
+Mutation control: the pathology is the stale operational advice "use
+/usr/bin/python3", and the way to remove it from this fixture is to OBEY it.
+T2_MUTATE=1 re-execs this same file under /usr/bin/python3, the interpreter
+the claim prescribes. Kratos loads there too, so every probe still runs for
+real and reports a correct measurement -- it simply stops being able to
+falsify anything: python_major_minor=3.12, running_in_venv=True and
+interpreter_is_system_python3=False all disappear and env_claim_mismatches
+rises from 0 to 2.
 """
 from __future__ import annotations
 
@@ -16,6 +25,21 @@ import sys
 import sysconfig
 
 os.environ.setdefault("OMP_NUM_THREADS", "2")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+_SYSTEM_PYTHON = "/usr/bin/python3"
+if MUTATE and os.environ.get("T2_MUTATE_REEXEC") != "1":
+    # Re-exec before importing Kratos, so the child does the import itself and
+    # the measurement really belongs to the prescribed interpreter. The guard
+    # variable is what stops the child re-execing again.
+    if not os.path.exists(_SYSTEM_PYTHON):
+        print(f"mutation_unavailable={_SYSTEM_PYTHON}_absent", flush=True)
+    else:
+        print("mutation=reexec_under_the_system_python3_the_claim_prescribes",
+              flush=True)
+        os.environ["T2_MUTATE_REEXEC"] = "1"
+        os.execv(_SYSTEM_PYTHON,
+                 [_SYSTEM_PYTHON, os.path.abspath(__file__)])
 
 import KratosMultiphysics as KM
 

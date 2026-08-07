@@ -5,6 +5,17 @@ ONLY per-physics catalog the backend uses, and that
 data/kratos_knowledge does not export a unified
 KRATOS_KNOWLEDGE dict, so importing it by that name fails
 silently inside a try/except.
+
+Mutation control: the dead `from data.kratos_knowledge import
+KRATOS_KNOWLEDGE` branch this claim describes was already removed, so it
+cannot be removed again. T2_MUTATE=1 REINSTATES it -- it appends that exact
+import line to the backend source text the AST scan parses, i.e. it puts the
+backend back into the state the claim describes. The scan is untouched and
+still walks a real ast.parse of the real backend module; it must then report
+backend_imports_data_kratos_knowledge=True and source_of_truth_mismatches=1.
+That is what proves the printed False is a measurement of the backend's
+import graph rather than a constant, and that a reintroduced dead branch is
+actually caught.
 """
 from __future__ import annotations
 
@@ -18,9 +29,39 @@ import KratosMultiphysics as KM
 from pathlib import Path
 
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# Mutation control: the source line the AST scan must be able to see. Empty
+# unless mutating, so the unmutated run parses the backend module verbatim.
+_REINSTATED_DEAD_IMPORT = ""
+if MUTATE:
+    print("mutation=dead_data_kratos_knowledge_import_reinstated_in_scanned_source")
+    _REINSTATED_DEAD_IMPORT = (
+        "\nfrom data.kratos_knowledge import KRATOS_KNOWLEDGE\n")
+
 _HERE = Path(__file__).resolve()
-_REPO = _HERE.parents[4]
+# In place the checkout is four levels up. The mutation harness stages a copy
+# of this fixture into a scratch tree that has no such ancestor, so the search
+# walks up looking for the catalog itself and only then falls back to
+# $OASIS_REPO. If neither resolves, abort loudly: a fixture that cannot find
+# the catalog it audits must never report a pass.
+_REPO = next((p for p in _HERE.parents
+              if (p / "src" / "backends" / "kratos" / "generators").is_dir()),
+             None)
+if _REPO is None:
+    _REPO = Path(os.environ.get("OASIS_REPO") or "/nonexistent")
+    if not (_REPO / "src" / "backends" / "kratos" / "generators").is_dir():
+        print("FIXTURE_ABORT=no_oasis_checkout: set OASIS_REPO to the checkout "
+              "whose Kratos catalog is under audit", file=sys.stderr)
+        raise SystemExit(2)
 sys.path.insert(0, str(_REPO / "src"))
+# `data/` sits at the repo ROOT, not under src/. Without this the
+# `import data.kratos_knowledge` below always landed in its except branch for
+# a sys.path reason, so the half of the claim that is ABOUT what that module
+# exports was never actually exercised: the fixture printed
+# data_kratos_knowledge_importable=False and skipped the export check
+# entirely. Appended rather than inserted, so repo-root directories cannot
+# shadow site-packages.
+sys.path.append(str(_REPO))
 
 
 def main() -> int:
@@ -60,7 +101,7 @@ def main() -> int:
     from backends.kratos import backend as kb
     import ast
 
-    tree = ast.parse(Path(kb.__file__).read_text())
+    tree = ast.parse(Path(kb.__file__).read_text() + _REINSTATED_DEAD_IMPORT)
     imported = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:

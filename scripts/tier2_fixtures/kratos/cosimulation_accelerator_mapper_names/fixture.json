@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for kratos cosimulation#: catalog had 'ibqn' as a convergence accelerator file/key — real file is block_ibqnls.py (or iqnils.py); 'ibqn' alone is unregistered. Catalog also had 'empire_mapping' as a data_transfer option — 'empire' does NOT appear anywhere in libKratosMappingCore.so. Real mapper type names visible in the binary: nearest_neighbor, nearest_element, barycentric, coupling_geometry, radial_basis_function. The 5 catalog accelerator names (constant_relaxation, aitken, mvqn, ibqn, anderson) reduce to 4 real files (ibqn → block_ibqnls/iqnils). Also: KratosCoSimulationApplication was missing from the .venv until pip installed during this probe. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for kratos cosimulation#: catalog had 'ibqn' as a convergence accelerator file/key — real file is block_ibqnls.py (or iqnils.py); 'ibqn' alone is unregistered. Catalog also had 'empire_mapping' as a data_transfer option — 'empire' does NOT appear anywhere in libKratosMappingCore.so. Real mapper type names visible in the binary: nearest_neighbor, nearest_element, barycentric, coupling_geometry, radial_basis_function. The 5 catalog accelerator names (constant_relaxation, aitken, mvqn, ibqn, anderson) reduce to 4 real files (ibqn → block_ibqnls/iqnils). Also: KratosCoSimulationApplication was missing from the .venv until pip installed during this probe. Verified empirically 2026-06-01. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the pathology is the catalog's two imprecise names, so the antidote is to audit the CORRECTED catalog — the mutation replaces the audited accelerator name 'ibqn' with the real file 'block_ibqnls' and the audited mapper family 'empire' with the real 'nearest_element', then re-runs the same directory listing and the same whole-word `strings` scan of libKratosMappingCore.so. Both names are really present, so the mutant prints block_ibqnls_literal_present=True and nearest_element_anywhere_in_mapping_binary=True and these expect_in_output strings disappear: ibqn_literal_present=False, empire_anywhere_in_mapping_binary=False. REPAIRED in the same pass: the binary was addressed by an absolute path into ~/Schreibtisch/Open-FEM-agent/.venv, a checkout that no longer exists under that name, so the fixture aborted with 'not found' and measured nothing; it now scans the .libs of the Kratos install it has just imported. Proof environment: KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (28 applications; the repo-venv Kratos wheel does not load on this glibc and /usr/bin/python3 cannot import this repo). Proved KILLED 2026-08-07.",
   "backend": "kratos",
   "physics": "cosimulation",
   "pitfall_index": 0,
@@ -13,5 +13,11 @@
   ],
   "forbid_in_output": [
     "Traceback"
-  ]
+  ],
+  "_mutation": {
+    "note": "The pathology is the CATALOG's two imprecise names — 'ibqn' (the real accelerator file is block_ibqnls.py / iqnils.py) and the 'empire' mapper family (registered nowhere in libKratosMappingCore.so). Removing it means auditing the CORRECTED catalog, so the mutation re-runs the same directory listing and the same whole-word `strings` scan against block_ibqnls and nearest_element, both of which really are there.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

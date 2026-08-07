@@ -2,6 +2,16 @@
 
 Documented physics with no generator. Nothing is emitted, so
 the Signal the claim gives cannot occur.
+
+Mutation control: the pathology is a fact about the shipped catalog -- free_surface is
+documented but has no generator -- so it cannot be removed by editing a physics
+row. T2_MUTATE=1 therefore changes what the fixture ASKS about: it repoints the
+same two probes at linear_elasticity, which is documented AND ships
+linear_elasticity_2d plus linear_elasticity_2d_nonlinear. Both probes still run
+for real against backends.kratos.generators; the output becomes
+in_knowledge[linear_elasticity]=True with a NON-empty generators_for list, so
+in_knowledge[free_surface]=True, generators_for[free_surface]=[] and
+stub_template_mismatches=0 all disappear and the fixture goes red.
 """
 from __future__ import annotations
 
@@ -17,13 +27,37 @@ import KratosMultiphysics as KM
 
 print(f"kratos_version_present={bool(KM.__file__)}")
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 _HERE = Path(__file__).resolve()
-_REPO = _HERE.parents[4]
+# In place the checkout is four levels up. The mutation harness stages a copy
+# of this fixture into a scratch tree that has no such ancestor, so the search
+# walks up looking for the catalog itself and only then falls back to
+# $OASIS_REPO. If neither resolves, abort loudly: a fixture that cannot find
+# the catalog it audits must never report a pass.
+_REPO = next((p for p in _HERE.parents
+              if (p / "src" / "backends" / "kratos" / "generators").is_dir()),
+             None)
+if _REPO is None:
+    _REPO = Path(os.environ.get("OASIS_REPO") or "/nonexistent")
+    if not (_REPO / "src" / "backends" / "kratos" / "generators").is_dir():
+        print("FIXTURE_ABORT=no_oasis_checkout: set OASIS_REPO to the checkout "
+              "whose Kratos catalog is under audit", file=sys.stderr)
+        raise SystemExit(2)
 sys.path.insert(0, str(_REPO / "src"))
 
 from backends.kratos.generators import GENERATORS, KNOWLEDGE  # noqa: E402
 
+# Mutation control. The pathology is a fact about the SHIPPED catalog — this
+# physics is documented but has no generator — so it cannot be removed by
+# editing a physics row from outside. The honest antidote is to change what
+# the fixture ASKS about: T2_MUTATE=1 repoints the same two probes at
+# linear_elasticity, which is documented AND ships two working generators, so
+# the whole "documented but no template" assertion has to disappear.
 PHYSICS = "free_surface"
+if MUTATE:
+    print("mutation=probe_repointed_to_a_physics_that_has_generators")
+    PHYSICS = "linear_elasticity"
 
 
 def main() -> int:

@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: pitfall (kratos.fluid_biomedical #0) describes an availability-probe STUB template. STALE: the stub generators were removed in the 2026-06-26 honesty audit. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). 'fluid_biomedical' remains a KNOWLEDGE key with no generator; no KratosFluidDynamicsBiomedicalApplication wheel exists at any version, while its stated prerequisite FluidDynamicsApplication does import. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX SHIFTED by the guidance reclassification; the claim this fixture verifies is unchanged and every #index quoted above is the current one.",
+  "_comment": "Tier-2: pitfall (kratos.fluid_biomedical #0) describes an availability-probe STUB template. STALE: the stub generators were removed in the 2026-06-26 honesty audit. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). 'fluid_biomedical' remains a KNOWLEDGE key with no generator; no KratosFluidDynamicsBiomedicalApplication wheel exists at any version, while its stated prerequisite FluidDynamicsApplication does import. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX SHIFTED by the guidance reclassification; the claim this fixture verifies is unchanged and every #index quoted above is the current one. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the pathology is a fact about the shipped catalog — fluid_biomedical is documented but has no generator — so it cannot be removed by editing a physics row; the mutation instead changes what the fixture ASKS about, repointing the same two probes at linear_elasticity, which is documented AND ships linear_elasticity_2d plus linear_elasticity_2d_nonlinear. Both probes still run for real against backends.kratos.generators. These expect_in_output strings disappear: in_knowledge[fluid_biomedical]=True, generators_for[fluid_biomedical]=[], stub_template_mismatches=0 — the mutant prints in_knowledge[linear_elasticity]=True, a non-empty generators_for[linear_elasticity] list and stub_template_mismatches=1, and also trips the forbidden token FAIL:. Repo-root lookup hardened in the same pass: parents[4] does not exist inside the mutation harness's scratch tree, so the fixture now searches upward for src/backends/kratos/generators and falls back to $OASIS_REPO, aborting with FIXTURE_ABORT=no_oasis_checkout rather than reporting a pass if neither resolves; the proof therefore also sets OASIS_REPO=/home/alexander/Schreibtisch/ofa-consolidate. Proof environment: KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (28 applications; the repo-venv Kratos wheel does not load on this glibc and /usr/bin/python3 cannot import this repo). Proved KILLED 2026-08-07.",
   "backend": "kratos",
   "physics": "fluid_biomedical",
   "pitfall_index": 0,
@@ -14,5 +14,11 @@
     "Traceback",
     "FAIL:"
   ],
-  "timeout_seconds": 240
+  "timeout_seconds": 240,
+  "_mutation": {
+    "note": "The pathology is a fact about the shipped catalog — fluid_biomedical is documented but has no generator — so it cannot be removed by editing a physics row. The mutation changes what the fixture ASKS about instead: it repoints the same two probes at linear_elasticity, which is documented AND ships linear_elasticity_2d plus linear_elasticity_2d_nonlinear, so the 'documented but no template' assertion has to disappear.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }
