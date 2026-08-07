@@ -294,29 +294,70 @@ def scan(task_text: str, key: dict, task_id: str = "?",
     return rep
 
 
-def printed_subsum(f, u, max_terms: int = 4, max_scan: int = 24):
-    """Smallest subset of ``f``'s terms **as printed** summing to ``c*u``.
+def printed_subsum(f, u, max_scan: int = 60):
+    """Subset of ``f``'s terms **as printed** summing to ``c*u``.
 
     Recovery difficulty is what severity should track, and that depends on the
     form the agent actually reads.  ``B1`` publishes ``12*pi**2*x*y*(x-1)*(y-1)*
     cos(2*pi*x)`` as one printed term — the solution is right there.  ``D3``
     needs two or three terms collected.  Both are inspection-level.  An
-    embedding that only surfaces after ``expand()`` is a different, lesser
-    exposure and is graded lower.
+    embedding that only surfaces after ``expand()`` is a lesser exposure and is
+    graded lower.
+
+    Enumerating subsets is exponential and was far too slow to run routinely, so
+    the search is driven by monomials instead: a subset summing to ``c*u`` must
+    reproduce every monomial of ``u``, so pick one monomial of ``u``, and only
+    the printed terms containing it can be in the subset.  That fixes ``c``, and
+    the candidate subset is then read off directly.  Linear in the number of
+    terms, and exact whenever each monomial of ``u`` is contributed by a single
+    printed term — which is the case for every real instance encountered.
 
     Returns ``(terms, coefficient)`` or ``(None, None)``.
     """
-    import itertools
     terms = list(sp.Add.make_args(f))
     if not terms or len(terms) > max_scan:
         return None, None
-    for r in range(1, min(max_terms, len(terms)) + 1):
-        for comb in itertools.combinations(range(len(terms)), r):
-            sub = sum(terms[i] for i in comb)
-            try:
-                ratio = sp.simplify(sp.cancel(sp.together(sub / u)))
-            except Exception:
-                continue
-            if not ratio.free_symbols and ratio != 0:
-                return [terms[i] for i in comb], ratio
+
+    # cheap exact hit first: a single printed term proportional to u (B1)
+    for t in terms:
+        try:
+            ratio = sp.simplify(sp.cancel(sp.together(t / u)))
+        except Exception:
+            continue
+        if not ratio.free_symbols and ratio != 0:
+            return [t], ratio
+
+    U = sp.expand(u)
+    u_terms = sp.Add.make_args(U)
+    if len(u_terms) < 2:
+        return None, None
+    expanded = [sp.expand(t) for t in terms]
+
+    # pick the monomial of u that the fewest printed terms could supply
+    def parts(e):
+        return {sp.Mul(*[a for a in sp.Mul.make_args(m) if a.free_symbols]):
+                sp.Mul(*[a for a in sp.Mul.make_args(m) if not a.free_symbols])
+                for m in sp.Add.make_args(e)}
+
+    u_parts = parts(U)
+    term_parts = [parts(e) for e in expanded]
+    best_key, best_hits = None, None
+    for mono in u_parts:
+        hits = [i for i, tp in enumerate(term_parts) if mono in tp]
+        if hits and (best_hits is None or len(hits) < len(best_hits)):
+            best_key, best_hits = mono, hits
+    if best_key is None:
+        return None, None
+
+    for i in best_hits:
+        c = sp.simplify(term_parts[i][best_key] / u_parts[best_key])
+        if c.free_symbols or c == 0:
+            continue
+        target = parts(sp.expand(c * U))
+        subset = [j for j, tp in enumerate(term_parts)
+                  if any(m in target for m in tp)]
+        if not subset:
+            continue
+        if sp.simplify(sp.expand(sum(terms[j] for j in subset) - c * u)) == 0:
+            return [terms[j] for j in subset], c
     return None, None
