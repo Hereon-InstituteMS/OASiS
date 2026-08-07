@@ -39,6 +39,23 @@ SOLID_SCRIPT = {"skfem": "participant_fsi_solid_skfem.py",
                 "fourc": "participant_fsi_solid_fourc.py"}
 REFERENCE_SCRIPT = "fsi_reference_newtonkrylov.py"
 
+# A WHOLE-CONVENTION SIGN FLIP, applied from outside a correct participant.
+# Appended to the staged fluid script, it rewrites the export after the solve so
+# that BOTH the traction the structure applies and the flux the conservation
+# check sees change sign together. That is what a participant written with the
+# normal the other way round produces, and it is the case in which every
+# internal check agrees with itself. Used deliberately by the fixture, not as
+# part of a correct run.
+WHOLE_CONVENTION_FLIP = '''
+import json as _j
+from pathlib import Path as _P
+_d = _j.loads(_P("exports.json").read_text())
+_d["values"] = [[-c for c in row] for row in _d["values"]]
+_d["normal_fluxes"] = [[-c for c in row] for row in _d["normal_fluxes"]]
+_d["meta"]["net_force"] = [-v for v in _d["meta"]["net_force"]]
+_P("exports.json").write_text(_j.dumps(_d))
+'''
+
 
 @dataclass
 class FsiCase:

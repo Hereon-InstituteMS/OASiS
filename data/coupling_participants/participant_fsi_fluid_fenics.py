@@ -110,6 +110,18 @@ def sample_vec(imp, x_targets, fallback, ncomp=2):
     return out
 
 
+def _signed_areas(msh) -> np.ndarray:
+    """Twice the signed area of every (P1, triangular) cell, from the geometry
+    as it stands. Sign is per-cell and arbitrary — dolfinx does not orient all
+    cells the same way — so it is only ever compared with the SAME cell's value
+    on the undeformed mesh."""
+    cells = np.asarray(msh.geometry.dofmap).reshape(-1, 3)
+    px = msh.geometry.x[:, :2]
+    v0 = px[cells[:, 1]] - px[cells[:, 0]]
+    v1 = px[cells[:, 2]] - px[cells[:, 0]]
+    return v0[:, 0] * v1[:, 1] - v0[:, 1] * v1[:, 0]
+
+
 def main():
     comm = MPI.COMM_SELF
     msh = dmesh.create_rectangle(
@@ -166,6 +178,7 @@ def main():
     ft = dmesh.meshtags(msh, fdim, facets[srt], marks[srt])
 
     # ── ALE lift: harmonic extension of the interface displacement ─────────
+    area0 = _signed_areas(msh)          # undeformed reference for the guard
     d_ale = fem.Function(V1, name="ale_displacement")
     if MOVE_MESH and np.any(np.abs(d_iface) > 0):
         u_, v_ = ufl.TrialFunction(V1), ufl.TestFunction(V1)
@@ -185,6 +198,34 @@ def main():
                            petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         pr.solve()
         msh.geometry.x[:, :gdim] += d_ale.x.array.reshape(-1, gdim)
+
+        # ── REFUSE AN INVERTED MESH. A partitioned FSI that is diverging hands
+        # over a displacement larger than the domain within a few iterations;
+        # the ALE lift then folds cells over and the flow solve that follows is
+        # on a mesh with negative volumes. What that produced before this guard
+        # was not an error but a HANG: the Newton solve on a folded mesh neither
+        # converges nor fails, the participant sits inside its timeout, and the
+        # coupling looks like a slow run rather than a divergence. Exiting here
+        # turns it into the finding it is.
+        moved = _signed_areas(msh)
+        # Each cell against ITS OWN undeformed area, not against a global sign:
+        # dolfinx does not give every triangle the same node orientation, so
+        # half the cells have negative signed area on a perfectly good mesh.
+        # The first version of this guard compared against the median sign and
+        # reported exactly half the cells as inverted on an undeformed mesh —
+        # a guard that fires on every correct run is worse than none.
+        bad = int(np.sum(moved * area0 <= 0.0))
+        shrunk = float(np.min(np.abs(moved) / np.maximum(np.abs(area0), 1e-300)))
+        if bad or shrunk < 1e-6:
+            raise RuntimeError(
+                f"ALE mesh INVERTED or DEGENERATE: {bad} of {len(moved)} cells "
+                f"changed orientation and the smallest cell retained "
+                f"{shrunk:.2e} of its undeformed area, after applying an "
+                f"interface displacement of max |d| = "
+                f"{np.max(np.abs(d_iface)):.3e} against a domain height of "
+                f"{HY:.3e}. The coupling iteration is DIVERGING (added mass, "
+                f"too large a theta, or a sign error) — it is not converging "
+                f"slowly.")
 
     # ── Navier-Stokes, Taylor-Hood P2/P1, monolithic Newton ────────────────
     Ve = basix.ufl.element("Lagrange", msh.basix_cell(), 2, shape=(gdim,))

@@ -172,7 +172,47 @@ def body() -> None:
             "couple reported NO finding on a run whose structure ignores the "
             "fluid entirely")
 
-    print("configurations_run=5")
+    # ── 5. THE MODE NOTHING HERE CATCHES, run so that the limit is measured
+    #     rather than argued. Flip the WHOLE traction convention in the fluid —
+    #     both the load the structure applies and the flux the conservation
+    #     check sees — which is what a participant written with the other
+    #     normal produces. Every internal check then agrees with itself: the
+    #     iteration converges, the interface force balances exactly, and the
+    #     Newton-Krylov reference agrees to solver tolerance because it drives
+    #     THE SAME flipped scripts. Only an answer from outside separates it,
+    #     and here that is the closed form on the undeformed configuration.
+    b = F.run_pair("signflip", "skfem", case, with_reference=True,
+                   fluid_extra=F.WHOLE_CONVENTION_FLIP)
+    print(f"signflip_converged={bool(b.get('converged'))}")
+    eq_ok = F.interface_equilibrium(b, "signflip")
+    mb = b.get("monolithic_check") or {}
+    relb = float((mb.get("solid") or {}).get("relative_l2", float("nan")))
+    print(f"signflip_reference_rel_l2={relb:.3e}")
+    d_flip = F.max_dy(b)
+    fyb = b["_raw_fluid"]["meta"]["net_force"][1]
+    print(f"signflip_max_dy={d_flip:.9e} signflip_net_force_y={fyb:.6f}")
+    dy_flip = np.asarray(b["exports"]["solid"]["values"], float)[:, 1]
+    print(f"signflip_deflects_the_other_way={bool(dy_flip.max() <= 0)}")
+    L.check(bool(b.get("converged")), "signflip_still_converges",
+            "the flipped run did not converge, so it does not demonstrate the "
+            "silent case")
+    L.check(eq_ok, "signflip_still_balances",
+            "the force balance caught the whole-convention flip after all — "
+            "then this limit no longer holds and the note must be rewritten")
+    L.check(relb == relb and relb < 1e-5, "signflip_reference_still_agrees",
+            f"the shared-script reference disagreed by {relb:.3e} on the "
+            f"flipped run; if it can see this, say so instead")
+    L.check(bool(dy_flip.max() <= 0), "signflip_deflection_reverses",
+            "the deflection did not reverse, so the flip did not take")
+    L.check(abs(fyb + case.rigid_wall_normal_force)
+            < 0.5 * case.rigid_wall_normal_force,
+            "signflip_caught_by_closed_form",
+            f"the closed-form handle did not separate the flipped run "
+            f"(net normal force {fyb:.4g} against an expected "
+            f"+{case.rigid_wall_normal_force:.4g})")
+    print("signflip_caught_only_by_closed_form=True")
+
+    print("configurations_run=6")
 
 
 L.main(body)
