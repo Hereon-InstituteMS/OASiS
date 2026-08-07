@@ -371,7 +371,31 @@ def run_precice_coupling(
         return {"converged": False, "returncodes": rcs, "config": str(cfg_path),
                 "error": f"coupling timed out after {timeout}s", "logs": logs}
     converged = all(rc == 0 for rc in rcs.values())
-    return {"converged": converged, "returncodes": rcs, "config": str(cfg_path), "logs": logs}
+    # Exit codes alone are NOT convergence. An implicit scheme that exhausts
+    # max-iterations still exits 0: a measured parallel-implicit run drifted to
+    # ~1e131 and every process returned 0, so this function reported
+    # converged=True for a blown-up coupling. preCICE records the verdict per
+    # time window in precice-<Participant>-iterations.log, whose Convergence
+    # column is 1 only when the window actually converged. Read it.
+    unconverged = []
+    for f in sorted(work_dir.glob("precice-*-iterations.log")):
+        try:
+            rows = [ln.split() for ln in f.read_text().splitlines() if ln.strip()]
+        except OSError:
+            continue
+        if len(rows) < 2 or "Convergence" not in rows[0]:
+            continue
+        col = rows[0].index("Convergence")
+        bad = sum(1 for r in rows[1:] if len(r) > col and r[col].strip() not in ("1", "1.0"))
+        if bad:
+            unconverged.append(f"{f.name}: {bad} time window(s) hit max-iterations")
+    out = {"converged": converged and not unconverged, "returncodes": rcs,
+           "config": str(cfg_path), "logs": logs}
+    if unconverged:
+        out["error"] = ("preCICE reports time windows that did NOT converge — "
+                        "every participant exited 0, but the coupling did not "
+                        "reach its convergence measure: " + "; ".join(unconverged))
+    return out
 
 
 def verify_precice_coupling(work_dir: Path = None, timeout: int = 60) -> tuple[bool, str]:

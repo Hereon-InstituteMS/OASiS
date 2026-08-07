@@ -352,193 +352,17 @@ def register_knowledge_tools(mcp: FastMCP):
         return "Validation errors:\n" + "\n".join(f"- {e}" for e in errors)
 
     @mcp.tool()
-    def get_coupling_knowledge() -> str:
-        """Get complete knowledge for cross-solver domain decomposition coupling.
+    def get_coupling_knowledge(solver: str = "") -> str:
+        """Complete knowledge for partitioned multi-code coupling via `couple`.
 
-        Returns theory, implementation patterns, pitfalls, and best practices
-        for Dirichlet-Neumann domain decomposition across independent FEM codes.
-        This is essential reading before using coupled_solve or transfer_field.
+        With no solver: the participant contract, the InterfaceData shapes, how
+        the driver iterates and relaxes, the interface-flux sign convention,
+        which side each backend can take, and the failure modes.
+        With a solver name: a COMPLETE runnable participant script for that
+        backend plus the traps specific to it.
         """
-        return '''\
-# Cross-Solver Coupling via Dirichlet-Neumann Domain Decomposition
-
-## Theory
-
-Dirichlet-Neumann (DN) domain decomposition splits a PDE domain at an interface.
-Two independent solvers handle the subdomains, exchanging boundary data iteratively:
-
-```
-Initialize: guess T_interface (e.g. linear interpolation of BCs)
-
-for iteration in range(max_iter):
-    1. Solve subdomain A (Dirichlet at interface): u_A = solve(BC: T_interface)
-    2. Extract flux: q = -k * du_A/dn at interface
-    3. Solve subdomain B (Neumann at interface): u_B = solve(BC: flux = q)
-    4. Extract temperature: T_new = u_B at interface
-    5. Update: T_interface = θ * T_new + (1-θ) * T_interface
-    6. Check convergence: |T_new - T_old| / |T_new| < tolerance
-```
-
-## Relaxation Parameter θ
-
-θ is the under-relaxation factor in step 5 of the loop above.
-
-- **θ = 1.0** is the plain (un-relaxed) fixed-point iteration. Whether it
-  converges is a property of the problem, not a setting you can assume:
-  the DN iteration operator has a spectral radius that depends on the
-  ratio of the two subdomains' stiffness/conductivity and on where the
-  interface sits. If that radius exceeds 1, θ = 1.0 diverges or oscillates
-  forever.
-- **θ < 1** under-relaxes and shrinks the effective spectral radius, which
-  is what makes an otherwise divergent partition converge. Smaller θ buys
-  robustness at the cost of more iterations.
-- **Determine θ for YOUR problem empirically** — run a short relaxation
-  sweep (`poisson_dd_study`) and read the iteration counts. Do not carry a
-  θ over from a different geometry, material contrast or physics.
-- **Aitken / IQN acceleration** adapts the factor per iteration from the
-  observed residuals and removes the manual choice; prefer it when the
-  right θ is unknown.
-- **Diagnostic**: a residual that stalls or alternates in sign between
-  iterations (rather than decreasing monotonically) is the signature of
-  too large a θ, not of a bug in the field transfer.
-
-## Interface flux: TWO different quantities, two different signs
-
-Read this before writing any coupling. Confusing these two is the mistake that
-produces a converged coupling which OASiS then refuses to verify, with nothing
-in the output explaining why.
-
-**(1) The BC VALUE you APPLY in the receiving code — same sign.**
-- Domain A solves with a Dirichlet BC at the interface.
-- The flux out of A is q = -k * ∂u_A/∂n_A, with n_A the outward normal from A.
-- Domain B applies that as its Neumann BC. B's outward normal points away from
-  B, i.e. back toward A, and this second sign flip cancels the first.
-- So the number you hand to B is the number A computed: q_B = q_A.
-- In 4C, `DESIGN LINE NEUMANN VAL` takes that value directly (4C's Neumann
-  value is k * ∂u/∂n on the boundary).
-
-**(2) The `normal_fluxes` array you EXPORT for checking — opposite signs.**
-- Each participant exports the flux through the interface with respect to ITS
-  OWN outward normal.
-- The two outward normals at a shared interface are anti-parallel, so on a
-  conservative interface `sum(normal_fluxes_A) + sum(normal_fluxes_B) ≈ 0`.
-- This is exactly what OASiS's `check_interface_balance` tests. Exporting both
-  sides with the same sign makes a CORRECT coupling fail the balance check:
-  you will get `Interface flux NOT balanced ... imbalance 200%` and a
-  NOT VERIFIED verdict on a coupling that actually converged.
-
-In one line: **apply the same number, export opposite numbers.** (1) is about
-the boundary condition; (2) is about the conservation diagnostic.
-
-## Solver-Specific Details
-
-### FEniCS (Dirichlet subdomain — typically Domain A)
-- Use `mesh.create_rectangle()` for subdomain mesh
-- Apply interface Dirichlet via per-DOF interpolation from coupled values
-- Compute flux via finite difference from neighboring interior nodes
-- Write interface data to `interface_data.json` for transfer
-
-### 4C (Neumann subdomain — typically Domain B)
-- Use TRANSP QUAD4 elements for scalar transport (heat/Poisson)
-- DESIGN LINE NEUMANN CONDITIONS for interface flux
-- Node coordinates must be offset to match subdomain position
-- No IO/RUNTIME VTK OUTPUT section for scatra — use post_vtu conversion
-- Field name in VTU output is `phi_1` (not `temperature`)
-- Always use the LAST VTU file (scatra-00001-0.vtu), not the initial condition
-
-### Field Transfer Between Solvers
-- 4C uses duplicate nodes per element (QUAD4 = 4 nodes per cell → more points)
-- FEniCS uses shared nodes → fewer points
-- Use `extract_interface_from_vtu()` to get interface values from either
-- Use `interpolate_to_points()` for non-matching mesh interpolation
-- Sort interface nodes by tangential coordinate for consistent ordering
-
-## What Has Been Exercised
-
-This block used to carry a worked example WITH ITS ANSWER — an exact solution
-written out in closed form, plus per-pair tables of iteration counts, final
-residuals and errors from our own runs. All of it was readable by an agent
-being asked to solve that very problem, so the agent could report the answer
-instead of computing it, and the pair tables told it how many iterations to
-expect. Removed 2026-08-06 by the contamination merge gate.
-
-What is worth knowing here is structural, and survives without any of it:
-
-- **Domain decomposition with no source converges in very few iterations.**
-  The interface value is determined by flux continuity alone, so a
-  Dirichlet-Neumann sweep essentially lands on it immediately. Do not read a
-  fast convergence as evidence the coupling is correct — a no-op participant
-  converges just as fast. Check the physics, not the iteration count.
-- **With a source term, the same scheme needs relaxation.** At theta = 1 the
-  iteration oscillates and does not settle. This is the single most common
-  reason a coupled run "never converges", and it is a property of the scheme,
-  not of the codes involved.
-- **Judge a coupled result against a monolithic solve of the same problem**,
-  not against the partitioned scheme's own residual. The residual measures
-  agreement between the two participants; it says nothing about whether they
-  agree on the right thing. A unit mismatch converges cleanly and balances
-  perfectly while being badly wrong, and only the monolithic comparison
-  catches it.
-
-### Supported Backend Combinations
-- FEniCS (Dirichlet) ↔ 4C (Neumann): fully tested, production ready
-- FEniCS (Dirichlet) ↔ FEniCS (Neumann): fully tested, proves solver-agnosticism
-- Any combination works if `_generate_domain_b_input()` supports the backend
-
-## Common Pitfalls
-
-1. **Missing relaxation**: a partitioned DN iteration is not unconditionally
-   convergent. If it oscillates, under-relax (θ<1) or switch on Aitken —
-   and always check convergence rather than assuming θ=1 works.
-2. **Wrong VTU timestep**: 4C writes initial condition + solution. Use LAST file.
-3. **Field name mismatch**: 4C=phi_1, FEniCS=temperature. Handle in extraction.
-4. **Node duplication**: 4C VTU has 4× more nodes than expected. Still works with
-   extract_interface but interpolation target must match.
-5. **IO/RUNTIME VTK OUTPUT/SCATRA**: May crash 4C. Omit — use post_vtu instead.
-6. **Neumann sign**: Easy to get wrong. Test with linear solution first where
-   exact answer is known.
-
-## Extending to New Problems
-
-The same DN pattern works for:
-- **Elasticity**: Replace temperature with displacement, flux with traction
-- **Coupled thermal-structural**: One-way coupling (heat→stress)
-- **Different physics per subdomain**: e.g. fluid (FEniCS) + structure (4C)
-
-Key changes needed for new physics:
-1. New subdomain script generator (analogous to `_fenics_heat_subdomain_script`)
-2. New 4C input generator (analogous to `_fourc_heat_subdomain_input`)
-3. Appropriate relaxation parameter
-4. Correct field names and transfer format
-
-## Available Coupling Problem Types
-
-| Problem | Description | Solvers |
-|---------|-------------|---------|
-| `heat_dd` | Heat conduction, DN domain decomposition | FEniCS↔4C, FEniCS↔FEniCS |
-| `poisson_dd` | Poisson with source, DN decomposition | FEniCS↔4C, FEniCS↔FEniCS |
-| `one_way` | FEniCS thermal → 4C structural (TSI) | FEniCS + 4C |
-| `tsi_dd` | Two-way iterative TSI coupling | FEniCS + 4C |
-| `poisson_dd_study` | Relaxation parameter comparison | Any backend pair |
-| `l_bracket_tsi` | L-bracket thermal stress concentration | FEniCS + 4C |
-| `heat_dd_precice` | Our DN vs preCICE comparison | Any + preCICE config |
-
-## Relaxation Parameter Selection Guide
-
-There is no θ that is correct across problems — it depends on the
-subdomain stiffness/conductivity contrast and on the interface position,
-so it must be established for the case at hand.
-
-| Situation | What to do |
-|-----------|------------|
-| θ unknown | Use Aitken/IQN acceleration and let it adapt per iteration |
-| Residual oscillates or stalls | Reduce θ and retry; the iteration is over-relaxed |
-| Residual decreases but slowly | Increase θ or switch on acceleration |
-| Need the θ that is right here | Run `poisson_dd_study` and compare iteration counts |
-
-A run that has not converged is a FAILURE, never a result — report it as
-such rather than quoting the last iterate.
-'''
+        from tools.coupling_knowledge import coupling_knowledge
+        return coupling_knowledge(solver)
 
     @mcp.tool()
     def get_tsi_knowledge() -> str:
@@ -640,145 +464,24 @@ FUNCT1:
 '''
 
     @mcp.tool()
-    def get_precice_knowledge() -> str:
-        """Get knowledge about preCICE coupling and comparison with MCP approach.
+    def get_precice_knowledge(solver: str = "") -> str:
+        """Complete knowledge for preCICE coupling via `couple_precice`.
 
-        Returns preCICE XML config patterns, adapter ecosystem status, and
-        comparison between preCICE and our MCP-orchestrated coupling.
+        With no solver: when to use preCICE instead of `couple`, what you supply
+        versus what OASiS generates, the HARD LIMITS of the generated config,
+        the participant loop, and the launch traps.
+        With a solver name: whether that backend CAN be a preCICE participant on
+        this install, and its backend-specific traps.
+
+        `solver` must be accepted here. This function is reached through
+        `knowledge(topic='precice', solver=...)`, whose wrapper passes the
+        argument positionally; a zero-argument signature made every such call
+        return the string "⚠ `get_precice_knowledge()` raised: `TypeError: ...
+        takes 0 positional arguments but 1 was given`" instead of any payload —
+        the whole preCICE surface, core included, served as an error message.
         """
-        return '''\
-# preCICE Coupling Knowledge
-
-## What is preCICE?
-
-preCICE is an open-source coupling library for partitioned multi-physics.
-It provides mesh mapping, data communication, and coupling schemes between
-independent solvers via adapters.
-
-## preCICE vs MCP-Orchestrated Coupling
-
-| Aspect | preCICE | MCP Agent (ours) |
-|--------|---------|------------------|
-| Architecture | Library linked into each solver | External orchestrator (no code changes) |
-| Config | XML + adapter code per solver | Python (auto-generated) |
-| Mesh mapping | Built-in (RBF, nearest-neighbor) | scipy.griddata + numpy.interp |
-| Coupling schemes | Parallel/serial implicit, explicit | DN iteration (MCP-controlled) |
-| Performance | Optimized C++ | Python loop (sufficient for demos) |
-| 4C support | No adapter exists | Built-in (YAML generation) |
-| FEniCS support | fenicsprecice adapter | Built-in (script generation) |
-| deal.II support | No official adapter | Built-in (template generation) |
-| Setup complexity | Install C++ lib + adapters | pip install (pure Python) |
-| Novelty | Established (2016+) | First MCP-based coupling |
-
-## preCICE XML Configuration Pattern
-
-```xml
-<precice-configuration>
-  <data:scalar name="Temperature" />
-  <data:scalar name="Heat-Flux" />
-
-  <mesh name="Mesh-A" dimensions="2">
-    <use-data name="Temperature" />
-    <use-data name="Heat-Flux" />
-  </mesh>
-
-  <participant name="Dirichlet">
-    <provide-mesh name="Mesh-A" />
-    <write-data name="Temperature" mesh="Mesh-A" />
-    <read-data name="Heat-Flux" mesh="Mesh-A" />
-  </participant>
-
-  <coupling-scheme:serial-implicit>
-    <acceleration:aitken>
-      <initial-relaxation value="0.5" />
-    </acceleration:aitken>
-  </coupling-scheme:serial-implicit>
-</precice-configuration>
-```
-
-## Participant Adapter Pattern (generic — every coupled code follows this)
-
-Each participant is a small script wrapping ONE solver that exchanges the coupling
-fields every time window. Fill in the `<SOLVER>` specifics yourself:
-
-```python
-import precice, numpy as np
-p = precice.Participant("<PARTICIPANT_NAME>", "precice-config.xml", 0, 1)
-# coordinates of YOUR coupling-interface points (the surface/edge shared with the partner):
-coords = np.array([[x0, y0], ...])
-vid = p.set_mesh_vertices("<MESH_NAME>", coords)
-if p.requires_initial_data():
-    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, initial_outgoing)
-p.initialize()
-while p.is_coupling_ongoing():
-    # --- IMPLICIT coupling: save state at the start of a window so the window can be redone ---
-    if p.requires_writing_checkpoint():
-        saved_state = your_solver.save_state()        # deep-copy solver state (fields, time)
-    dt = p.get_max_time_step_size()
-    incoming = p.read_data("<MESH_NAME>", "<READ_FIELD>", vid, dt)   # field FROM the partner
-    # --- advance YOUR solver by dt, using `incoming` as a boundary condition ---
-    outgoing = ...                                                   # field YOUR solver produces
-    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, outgoing)
-    p.advance(dt)
-    # --- IMPLICIT coupling: if not yet converged, REDO the window from the checkpoint ---
-    if p.requires_reading_checkpoint():
-        your_solver.restore_state(saved_state)
-    # else: window converged -> commit and move to the next time window
-p.finalize()
-```
-
-CHECKPOINTS ARE MANDATORY FOR IMPLICIT SCHEMES. With `serial-implicit`/`parallel-implicit`
-(needed when explicit Dirichlet–Neumann diverges — values blow up to infinity), preCICE
-SUB-ITERATES each time window to convergence, so each participant MUST handle the checkpoint
-calls above: `requires_writing_checkpoint()` (save state) and `requires_reading_checkpoint()`
-(restore state and redo the window). If you ignore these, an implicit run never advances and
-preCICE reports the window unconverged. For `*-explicit` schemes these calls always return
-False, so the same loop works unchanged. Add convergence acceleration
-(`<acceleration:aitken>` or IQN) under the coupling-scheme to make implicit converge fast.
-
-CRITICAL LAUNCH: both participant scripts must run AT THE SAME TIME — they handshake through
-preCICE and each blocks at `initialize()` until the other connects. Start each as its own
-concurrent process (NOT one after the other, and NOT a single `mpirun` over both files), or
-let the `couple_precice` tool launch every participant for you. Set `LD_LIBRARY_PATH` to the
-preCICE lib and match the `pyprecice` version to `libprecice`.
-
-## Adapter Ecosystem
-
-| Solver | preCICE Adapter | Status |
-|--------|----------------|--------|
-| FEniCS | fenicsprecice | Official, maintained |
-| OpenFOAM | openfoam-adapter | Official, widely used |
-| deal.II | No official | Community experiments only |
-| 4C | None | No adapter available |
-| CalculiX | calculix-adapter | Official |
-| SU2 | su2-adapter | Official |
-
-## Key Advantage of MCP Approach
-
-Our coupling does NOT require solver-specific adapters. Any solver that
-produces VTU output can be coupled. The MCP agent handles:
-1. Input generation for each solver
-2. Running solvers independently
-3. Extracting results from VTU
-4. Transferring data between non-matching meshes
-5. Controlling the iteration loop
-6. Checking convergence
-
-This is fundamentally different from preCICE: we treat solvers as black
-boxes orchestrated by an intelligent agent, rather than requiring
-library-level integration.
-
-## Installation (if needed)
-
-```bash
-# Requires C++ library first
-sudo apt install libprecice-dev  # Ubuntu
-# Then Python bindings
-pip install pyprecice
-# FEniCS adapter
-pip install fenicsprecice
-```
-'''
+        from tools.coupling_knowledge import precice_knowledge
+        return precice_knowledge(solver)
 
     @mcp.tool()
     def list_physics(solver: str = "") -> str:

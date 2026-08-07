@@ -1,0 +1,31 @@
+{
+  "_comment": "COUPLING tier-2. Verifies the sentence under the sides table \u2014 'Every UNSTARRED yes means a real two-code coupling was run in that role on THIS install and CONVERGED; it is not copied from a tool docstring' \u2014 by parsing the table AS SERVED and, for each unstarred yes, locating the sibling coupling fixture that puts that backend on that side. The mapping is derived by ast-parsing the arrangement calls in the other fixtures, not from a list kept in step by hand, so deleting a pair fixture or adding a table row turns this red. It deliberately does NOT read a recorded results snapshot: that would make the fixture green or red according to a file rather than according to the code, and a stale snapshot is the kind of evidence the table already had too much of. Also records which cells are starred (the claim is weaker there and says so) and which are negative.",
+  "_mutation": {
+    "note": "Stop recognising elastic arrangements, so the scan no longer sees the runs backing FEBio's two cells and both report fixtures=NONE. A coverage check is only worth anything if it goes red when the coverage disappears, and losing sight of one KIND of run is the quiet way that happens. Equivalent by-hand mutation, verified: removing pair_febio_febio from the tree entirely produced the same two failures naming the unbacked cells.",
+    "file": "source.py",
+    "from": "ARRANGERS = (\"heat_arrangement\", \"elastic_arrangement\")",
+    "to": "ARRANGERS = (\"heat_arrangement\",)"
+  },
+  "backend": "coupling",
+  "physics": "sides_table_coverage",
+  "pitfall_index": 10,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "sides_table_rows=9",
+    "unstarred_cell=fourc/dirichlet fixtures=",
+    "unstarred_cell=febio/neumann fixtures=",
+    "starred_cell=kratos/dirichlet",
+    "negative_cell=sparta/neumann=not natively",
+    "unstarred_yes_cells=14",
+    "starred_yes_cells=3",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "fixtures=NONE",
+    "failures_count=1"
+  ]
+}

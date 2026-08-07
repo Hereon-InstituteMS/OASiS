@@ -1,0 +1,35 @@
+{
+  "_comment": "COUPLING tier-2. The one quantitative rule in the coupling knowledge, and the most exposed: the amplification factor sqrt((1-theta)^2 + rho*theta^2), theta=1.0 never converging at rho=1 and diverging above it, and theta=0.5 diverging at rho=4 while theta=0.2 converges. An amplification formula is a prediction, so this uses it as one: for each ratio and theta it evaluates the formula BEFORE running, then asserts the real coupling did what the formula said \u2014 below 1 must settle, above 1 must run away, at exactly 1 must do neither. That fails if the formula stops describing the driver, which is what a change from Jacobi to Gauss-Seidel or from per-participant to per-cycle relaxation would do, and either would leave every pair fixture green. WHAT IS MEASURED matters and neither obvious choice works: the residual is normalised by the export magnitude, so a diverging run SATURATES it near a constant of order one (a run that had blown up by twelve orders of magnitude reported a residual of 0.70), and the raw interface value sits near 310 K so a fiftyfold amplified error still leaves it within a factor of two of the answer. The DEVIATION from the exact interface temperature grows as the amplification factor to the power of the iteration count with nothing to hide behind. rho is set by moving one constant, the left conductivity.",
+  "_mutation": {
+    "note": "Halve the theta inside the amplification factor, so the formula the fixture predicts with no longer describes the driver the fixture runs. This is the in-copy mirror of the by-hand mutation that halved the relaxation `_relax` actually applies in src/core/coupling_driver.py (not stageable): either way the formula and the loop disagree. At rho=4, theta=0.5 the mutated formula gives 0.901 and therefore predicts settling, while the real coupling runs away, so predicted_settling_but_it_did_not fires. A fixture that merely listed observed thetas would survive this; that is the point of checking the formula as a prediction.",
+    "file": "../_lib/couplinglib.py",
+    "from": "return ((1.0 - theta) ** 2 + r * theta ** 2) ** 0.5",
+    "to": "return ((1.0 - 0.5 * theta) ** 2 + r * (0.5 * theta) ** 2) ** 0.5"
+  },
+  "backend": "coupling",
+  "physics": "relaxation",
+  "pitfall_index": 11,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "predicted_stability_limit=",
+    "rho1_theta0.5_outcome=settled",
+    "rho1_theta1.0_outcome=neither",
+    "rho4_theta0.2_outcome=settled",
+    "rho4_theta0.5_outcome=ran_away",
+    "rho4_theta1.0_outcome=ran_away",
+    "rho9_theta0.1_outcome=settled",
+    "rho9_theta0.2_outcome=neither",
+    "rho9_theta1.0_outcome=ran_away",
+    "ratios_tested=3",
+    "thetas_per_ratio=4",
+    "runs=12",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

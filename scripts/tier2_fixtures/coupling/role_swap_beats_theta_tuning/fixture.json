@@ -1,0 +1,36 @@
+{
+  "_comment": "COUPLING tier-2. 'If a coupling converges too slowly to be practical, SWAP WHICH SIDE IS DIRICHLET before doing anything else \u2014 that replaces rho by 1/rho and is usually a bigger win than any theta', and the observation that one asymmetric split failed to converge inside the iteration budget with the stiff subdomain on the Dirichlet side and converged comfortably once the roles were swapped. This is the only tuning advice in the knowledge that claims to beat a SEARCH, so the fixture sweeps six thetas in the stiff orientation rather than testing one: a claim that role-swapping beats theta tuning is only tested if theta tuning was attempted and lost. The swapped orientation gets no search at all \u2014 just the theta the 1/(1+rho) rule prescribes for the new ratio \u2014 and still wins. THE BUDGET IS NOT TUNED: max_iter=60 with tol=1e-8 is the iteration budget in the knowledge's own example couple(...) call, used unchanged, so the fixture cannot be accused of picking the one budget that makes the claim true. The swapped run's physics is checked against the closed form too, so a fast arrival at the wrong fixed point cannot win.",
+  "_mutation": {
+    "note": "Give the swapped orientation an arbitrary theta instead of the 1/(1+rho) the rule prescribes for its new ratio. The swap then fails to converge inside the same budget the stiff orientation failed in, and swap_did_not_converge fires. This isolates the part of the claim that is easy to lose: swapping the roles is not by itself the win \u2014 swapping AND recomputing theta for the new rho is. A fixture that only swapped would pass either way.",
+    "file": "source.py",
+    "from": "th_soft = p.theta_opt(\"right\")",
+    "to": "th_soft = 0.05"
+  },
+  "backend": "coupling",
+  "physics": "relaxation",
+  "pitfall_index": 13,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "rho_dirichlet_on_stiff_side=9.000000",
+    "rho_dirichlet_on_soft_side=0.111111",
+    "theta_opt_soft=0.900000",
+    "budget_max_iter=60",
+    "swapped_theta=",
+    "swapped_headroom_factor=",
+    "stiff_orientation_thetas_that_converged=0",
+    "stiff_orientation_best_theta=none_converged_within_budget",
+    "swapped_T_err=",
+    "swapped_q_err=",
+    "orientations_compared=2",
+    "thetas_swept_in_the_bad_orientation=6",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "swapped_theta=0.900000 converged=False"
+  ]
+}

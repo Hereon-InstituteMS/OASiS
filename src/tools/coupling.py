@@ -992,6 +992,22 @@ def _stage_sparta_deck_refs(work_dir: Path, spec: dict) -> list[str]:
 
 
 def register_coupling_tools(mcp: FastMCP):
+    """NOT CALLED BY THE SERVER — read this before trusting anything below.
+
+    `src/server.py` registers only `tools.consolidated.register_consolidated_tools`,
+    and that module defines its OWN `transfer_field`, `coupled_solve`, `couple` and
+    `couple_precice`. The only reference to this function anywhere is an unused
+    import inside consolidated's `coupled_solve`, so the tools defined here are
+    never exposed to an agent.
+
+    That matters because the `couple` below documents `data_files` and `data_dir`
+    (SPARTA deck auto-staging) which the REGISTERED `couple` does not implement:
+    an agent that read this docstring would pass `data_files` and have it silently
+    ignored. The served coupling knowledge therefore tells agents to stage their
+    own files. The legacy `coupled_solve` helpers in this module ARE live — they
+    are imported by name — so do not delete the file; just do not treat the tool
+    docstrings here as the contract.
+    """
 
     @mcp.tool()
     async def transfer_field(
