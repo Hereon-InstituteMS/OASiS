@@ -1,0 +1,49 @@
+Solve the following boundary value problem as a COUPLED simulation using TWO codes: FEniCSx (dolfinx) on subdomain A and deal.II (build and run the C++ program) on subdomain B.
+
+GLOBAL DOMAIN: the box (0, 3/2) x (0,1) x (0,1)
+SUBDOMAIN A: A = (0, 3/5) x (0,1) x (0,1)
+SUBDOMAIN B: B = (3/5, 3/2) x (0,1) x (0,1)
+INTERFACE: the plane x = 3/5
+EQUATION (both subdomains): -laplace(u) = f
+COEFFICIENTS: unit diffusivity in both subdomains
+SOURCE TERM: f(x, y, z) = 4*x**3*y**2/5 - 4*x**3*y/5 + 4*x**3*z**2/5 - 4*x**3*z/5 + 4*x**2*y**2/5 - 4*x**2*y/5 + 4*x**2*z**2/5 - 4*x**2*z/5 + 12*x*y**2*z**2/5 - 12*x*y**2*z/5 - 3*x*y**2 - 12*x*y*z**2/5 + 12*x*y*z/5 + 3*x*y - 3*x*z**2 + 3*x*z + 4*y**2*z**2/5 - 4*y**2*z/5 - 4*y*z**2/5 + 4*y*z/5
+OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary of the box
+INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
+DISCRETISATION: Lagrange P1 (tetrahedral) elements in both codes
+MESH SEQUENCE: uniform meshes, h halved per level: N = 4, 8, 16 elements per side
+
+
+REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
+Your solution is assessed at FIXED probe points that do not depend on your
+mesh, defined separately for each subdomain. For every mesh level and for EACH
+subdomain, evaluate your computed solution at every probe point of that
+subdomain and write one CSV file
+    solution_level<k>_<side>.csv        (k = 1,2,3,...; side = A or B)
+with a header line and one row per probe point, in the order defined below:
+    x, y, z, u
+
+PROBE POINTS, subdomain A: the 4096 points given by x = 0 + (i_x+0.5)*0.6/16; y = (i_y+0.5)/16; z = (i_z+0.5)/16, for i_x, i_y, i_z = 0, 1, ..., 15 independently, ordered with the last index varying fastest
+PROBE POINTS, subdomain B: the 4096 points given by x = 0.6 + (i_x+0.5)*0.9/16; y = (i_y+0.5)/16; z = (i_z+0.5)/16, for i_x, i_y, i_z = 0, 1, ..., 15 independently, ordered with the last index varying fastest
+Evaluate (interpolate) your finite element solution at these points. They are
+deliberately not mesh nodes. Write full precision; every probe point must
+appear exactly once and no other points may appear.
+
+Then write the single summary file `RESULT.txt` with exactly these lines:
+    LEVELS = <number of mesh levels solved>
+    FILES = <comma-separated list of all CSV files you wrote>
+    INTERFACE_RESIDUAL = <final relative interface mismatch of the coupling iteration>
+    COUPLING_ITERATIONS = <number of coupling iterations at the finest level>
+    MESH_INDEPENDENCE = <CONVERGED or NOT_CONVERGED>
+    MAX_REL_CHANGE = <largest relative change between the two finest levels>
+Both codes named below must actually run and must exchange interface data;
+solving the whole problem in one code is not a valid solution. Judge
+MESH_INDEPENDENCE solely from how your own solution behaves under refinement,
+globally and at individual points: no reference answer is available to you.
+
+
+INTEGRITY (absolute): every number you write must come from ACTUALLY RUNNING
+the named solver. Do not compute values by hand, by formula, or from memory,
+and do not stub or mock the solver. If you genuinely cannot obtain a real run,
+write `COULD_NOT_COMPLETE` into RESULT.txt and explain why. Inventing numbers
+is a failure, worse than an honest incomplete.
+PERSISTENCE: solvers will error first; read the error, fix it, re-run, iterate.

@@ -106,6 +106,15 @@ class TransmissionReport:
 
 
 def _zero(e) -> bool:
+    """True iff ``e`` is identically zero, for scalars AND matrices.
+
+    ``sp.simplify`` of a zero Matrix returns a Matrix, and ``Matrix == 0`` is
+    False, so the scalar form of this test silently reported "the materials
+    differ" for two identical materials -- reintroducing exactly the tautology
+    the guard exists to catch. Caught by the guard's own test.
+    """
+    if isinstance(e, sp.MatrixBase):
+        return all(sp.simplify(sp.expand(v)) == 0 for v in e)
     return sp.simplify(sp.expand(e)) == 0
 
 

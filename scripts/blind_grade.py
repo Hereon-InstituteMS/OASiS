@@ -42,7 +42,71 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(CAMPAIGN))
 
 from blind_eval import keyvault, selfconv                       # noqa: E402
+from blind_eval import evidence as EV                           # noqa: E402
+from blind_eval import interface as IF                          # noqa: E402
 import grade_blind as GB                                        # noqa: E402
+
+# The three grades of evidence are NOT interchangeable and must never be pooled
+# into one aggregate number.
+EVIDENCE_GRADES = {
+    1: "exact manufactured solution — proves the answer is CORRECT",
+    2: "monolithic reference — proves the SPLIT did not change the answer; a "
+       "discretisation bug shared by both solves makes them agree while both "
+       "are wrong",
+    3: "mesh-halving order only — proves the scheme CONVERGES, not that it "
+       "converges to the right thing. Never sufficient alone for a coupled cell.",
+}
+
+
+def _interface_phase(work: Path, spec: dict) -> dict:
+    """Reference-free interface quantities: the two-sided jumps.
+
+    This is the part of phase 1 that can fail a coupling the observed order
+    cannot. The correct limit of the flux jump is known to be zero without any
+    reference solution, which is precisely what mesh halving does not give.
+    """
+    dim = spec.get("dim", 2)
+    ncomp = len(spec.get("components", ["u"]))
+    per_level, notes = [], []
+    lvls: dict = {}
+    for c in sorted(work.glob("interface_level*.csv")):
+        m = re.match(r"interface_level(\d+)_([ABab])\.csv$", c.name)
+        if m:
+            lvls.setdefault(int(m.group(1)), {})[m.group(2).upper()] = c
+    if not lvls:
+        return {"verdict": "NOT_SUBMITTED",
+                "note": "no interface_level<k>_<side>.csv files. The interface "
+                        "flux is the only reference-free quantity that can "
+                        "detect convergence to the wrong transmission "
+                        "condition; without it the cell is graded on order "
+                        "alone, which cannot."}
+    for lvl in sorted(lvls):
+        sides = lvls[lvl]
+        if set(sides) != {"A", "B"}:
+            notes.append(f"level {lvl}: only side(s) {sorted(sides)} submitted")
+            continue
+        parsed = {}
+        for s, p in sides.items():
+            got, why = IF.read_interface_csv(p, dim, ncomp, ncomp)
+            if got is None:
+                notes.append(f"{p.name}: {why}")
+                break
+            parsed[s] = got
+        if len(parsed) != 2:
+            continue
+        d, why = IF.two_sided_jumps(parsed["A"], parsed["B"])
+        if d is None:
+            notes.append(f"level {lvl}: {why}")
+            continue
+        per_level.append(d)
+    rep = IF.assess(per_level)
+    return {"verdict": rep.verdict, "levels": len(per_level),
+            "jump_u_rel": rep.jump_u_rel, "jump_q_rel": rep.jump_q_rel,
+            "flux_jump_falls_under_refinement": (
+                all(rep.jump_q_rel[i] >= rep.jump_q_rel[i + 1]
+                    for i in range(len(rep.jump_q_rel) - 1))
+                if len(rep.jump_q_rel) > 1 else None),
+            "notes": rep.notes + notes}
 
 
 def _levels_from_run(work: Path, dim: int, coupled: bool):
@@ -129,7 +193,40 @@ def grade(run_dir: Path, problem_id: str, passphrase: str | None = None) -> dict
     out["agent_claim"] = {
         "MESH_INDEPENDENCE": GB._field(result_txt, "MESH_INDEPENDENCE"),
         "MAX_REL_CHANGE": GB._field(result_txt, "MAX_REL_CHANGE"),
+        "COUPLING_ITERATIONS": GB._field(result_txt, "COUPLING_ITERATIONS"),
     }
+
+    # ── evidence: did the named codes run, and did they couple? ───────
+    claimed = out["agent_claim"]["COUPLING_ITERATIONS"]
+    try:
+        claimed = int(float(claimed)) if claimed is not None else None
+    except (TypeError, ValueError):
+        claimed = None
+    ev = EV.assess(work, spec.get("codes", [spec.get("code", "")]),
+                   coupled=coupled, claimed_iterations=claimed)
+    out["execution_evidence"] = {
+        "verdict": ev.verdict,
+        "per_code": [{"code": e.code, "verdict": e.verdict,
+                      "files": e.files[:4], "detail": e.detail[:300]}
+                     for e in ev.per_code],
+        "coupling": ev.coupling, "notes": ev.notes,
+    }
+
+    # ── interface: the reference-free quantity order cannot replace ───
+    if coupled:
+        out["phase1_interface"] = _interface_phase(work, spec)
+
+    # ── how strong is the evidence this cell can carry? ───────────────
+    grade = spec.get("evidence_grade", 3)
+    out["evidence_grade"] = {
+        "grade": grade, "meaning": EVIDENCE_GRADES.get(grade, "unknown"),
+        "must_not_be_pooled_with": [g for g in EVIDENCE_GRADES if g != grade],
+    }
+    if coupled and grade == 3:
+        out["evidence_grade"]["warning"] = (
+            "order-only grading of a COUPLED cell: self-convergence to a wrong "
+            "solution is cleanly second order, so this cell cannot show the "
+            "answer is right. Report it separately, never in a pooled number.")
 
     # ── PHASE 2: sealed key, in memory only ───────────────────────────
     if passphrase is None:

@@ -234,6 +234,7 @@ class Side:
     f: object
     iface_face: str            # which face of THIS grid is the interface
     outer_faces: tuple         # faces carrying the outer Dirichlet datum
+    reaction: float = 0.0      # c in  -div(K grad u) + c u = f
 
 
 @dataclass
@@ -283,9 +284,15 @@ def dn_couple(A_side: Side, B_side: Side, *, theta: float = 0.5,
         def g_outer(x, y):
             return np.zeros_like(x)
 
-    gA, bA = A_side.grid, None
     KA_mat, fA_vec = assemble(A_side.grid, A_side.K, A_side.f)
     KB_mat, fB_vec = assemble(B_side.grid, B_side.K, B_side.f)
+    # A reaction term is part of the operator, not of the transmission
+    # condition, which is exactly why the differing-operators instance can be
+    # constructed at all.
+    if A_side.reaction:
+        KA_mat = (KA_mat + mass_matrix(A_side.grid, A_side.reaction)).tocsr()
+    if B_side.reaction:
+        KB_mat = (KB_mat + mass_matrix(B_side.grid, B_side.reaction)).tocsr()
 
     ifA = A_side.grid.face_nodes(A_side.iface_face)
     ifB = B_side.grid.face_nodes(B_side.iface_face)
@@ -359,3 +366,80 @@ def probe_grid_2d(bx, by, m: int) -> np.ndarray:
     ys = probe_grid_1d(by[0], by[1], m)
     XX, YY = np.meshgrid(xs, ys, indexing="ij")
     return np.column_stack([XX.ravel(), YY.ravel()])
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Extensions needed to verify the redesigned family
+# ──────────────────────────────────────────────────────────────────────
+def mass_matrix(grid: Grid, c) -> sps.csr_matrix:
+    """``c * (u, v)`` — the reaction term of the differing-operators instance."""
+    p, tr = grid.pts, grid.tris
+    v0, v1, v2 = p[tr[:, 0]], p[tr[:, 1]], p[tr[:, 2]]
+    e0, e1 = v1 - v0, v2 - v0
+    area = 0.5 * np.abs(e0[:, 0] * e1[:, 1] - e0[:, 1] * e1[:, 0])
+    loc = np.array([[2.0, 1.0, 1.0], [1.0, 2.0, 1.0], [1.0, 1.0, 2.0]]) / 12.0
+    me = (c * area)[:, None, None] * loc[None, :, :]
+    rows = np.repeat(tr, 3, axis=1).ravel()
+    cols = np.tile(tr, (1, 3)).ravel()
+    return sps.csr_matrix((me.ravel(), (rows, cols)),
+                          shape=(grid.n, grid.n)).tocsr()
+
+
+def assemble_elasticity(grid: Grid, lam, mu, f):
+    """P1 vector plane-strain elasticity.
+
+    Present because the coupled set now contains a VECTOR interface and, of
+    thirty coupling fixtures, two contain any vector construct at all.  A path
+    that has never executed a vector interface should not execute its first one
+    inside a paid, graded campaign, and a tool bug there would read as agent
+    failure and be charged to the arm under test.
+    """
+    p, tr = grid.pts, grid.tris
+    v0, v1, v2 = p[tr[:, 0]], p[tr[:, 1]], p[tr[:, 2]]
+    e0, e1 = v1 - v0, v2 - v0
+    det = e0[:, 0] * e1[:, 1] - e0[:, 1] * e1[:, 0]
+    area = 0.5 * np.abs(det)
+    g = np.empty((tr.shape[0], 3, 2))
+    g[:, 0, 0], g[:, 0, 1] = v1[:, 1] - v2[:, 1], v2[:, 0] - v1[:, 0]
+    g[:, 1, 0], g[:, 1, 1] = v2[:, 1] - v0[:, 1], v0[:, 0] - v2[:, 0]
+    g[:, 2, 0], g[:, 2, 1] = v0[:, 1] - v1[:, 1], v1[:, 0] - v0[:, 0]
+    g /= det[:, None, None]
+
+    lam = np.asarray(lam, float) * np.ones(tr.shape[0])
+    mu = np.asarray(mu, float) * np.ones(tr.shape[0])
+    # B is 3 x 6 per element (Voigt: exx, eyy, gxy)
+    ne = tr.shape[0]
+    B = np.zeros((ne, 3, 6))
+    for a in range(3):
+        B[:, 0, 2 * a] = g[:, a, 0]
+        B[:, 1, 2 * a + 1] = g[:, a, 1]
+        B[:, 2, 2 * a] = g[:, a, 1]
+        B[:, 2, 2 * a + 1] = g[:, a, 0]
+    D = np.zeros((ne, 3, 3))
+    D[:, 0, 0] = D[:, 1, 1] = lam + 2 * mu
+    D[:, 0, 1] = D[:, 1, 0] = lam
+    D[:, 2, 2] = mu
+    ke = area[:, None, None] * np.einsum("eki,ekl,elj->eij", B, D, B)
+
+    dofs = np.empty((ne, 6), dtype=np.int64)
+    dofs[:, 0::2] = 2 * tr
+    dofs[:, 1::2] = 2 * tr + 1
+    rows = np.repeat(dofs, 6, axis=1).ravel()
+    cols = np.tile(dofs, (1, 6)).ravel()
+    n = 2 * grid.n
+    A = sps.csr_matrix((ke.ravel(), (rows, cols)), shape=(n, n))
+
+    b = np.zeros(n)
+    for w, bary in zip(_Q_W, _Q_BARY):
+        xq = bary[0] * v0 + bary[1] * v1 + bary[2] * v2
+        fx, fy = f(xq[:, 0], xq[:, 1])
+        for a in range(3):
+            np.add.at(b, 2 * tr[:, a], w * area * bary[a] * fx)
+            np.add.at(b, 2 * tr[:, a] + 1, w * area * bary[a] * fy)
+    return A.tocsr(), b
+
+
+def evaluate_vector(grid: Grid, u: np.ndarray, pts: np.ndarray):
+    """Evaluate a 2-component P1 field, component by component."""
+    return np.column_stack([evaluate(grid, u[0::2], pts),
+                            evaluate(grid, u[1::2], pts)])

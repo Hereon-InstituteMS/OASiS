@@ -1,0 +1,24 @@
+{
+  "id": "B2",
+  "code": "dealii",
+  "code_label": "deal.II (build and run the C++ program)",
+  "physics": "variable-coefficient diffusion",
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "domain": "the unit square (0,1) x (0,1)",
+  "equation": "-div(a(x,y) grad u) = f",
+  "coefficients": "a(x,y) = 2 + exp(-x)*sin(pi*y)",
+  "element": "Q1 elements",
+  "mesh_text": "uniform meshes with N = 8, 16, 32, 64 elements per side",
+  "bc_text": "u = 0 on the entire boundary",
+  "mesh_N": [
+    8,
+    16,
+    32,
+    64
+  ],
+  "qoi": "convergence order of the L2 error"
+}

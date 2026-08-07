@@ -1,0 +1,126 @@
+{
+  "D1": {
+    "phase1_order_mesh_halving": 1.889812372427716,
+    "phase2_order_true_error": 1.9009604684532673,
+    "true_errors": [
+      0.0011075059782816442,
+      0.0002990806895763369,
+      7.940609446337166e-05
+    ],
+    "flux_jump": [
+      1.3855099744968098e-15,
+      2.162706117547589e-15,
+      5.547804454839046e-15
+    ],
+    "coupling_iterations": [
+      15,
+      14,
+      14
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "K11 1:3, K22 2:5"
+  },
+  "D2": {
+    "solver": "not solved here",
+    "note": "3D; the verification solver in blind_eval.femdd is 2D. Verified symbolically to exact zero and numerically by finite differences; its 2D analogue D3 is solved and graded here and shares the construction exactly.",
+    "evidence_grade": 1,
+    "contrast": "1:6"
+  },
+  "D3": {
+    "phase1_order_mesh_halving": 1.9402019634570589,
+    "phase2_order_true_error": 1.9546256362512577,
+    "true_errors": [
+      0.0008036145294958406,
+      0.00020910719009018265,
+      5.3486710204400405e-05
+    ],
+    "flux_jump": [
+      7.49860134945749e-16,
+      1.843373954335801e-15,
+      4.8351892146264654e-15
+    ],
+    "coupling_iterations": [
+      12,
+      12,
+      12
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "1:4"
+  },
+  "D4": {
+    "phase1_order_mesh_halving": 1.8723014327381833,
+    "phase2_order_true_error": 1.9312370871464437,
+    "true_errors": [
+      0.002035953924994369,
+      0.0005467914022730802,
+      0.00013997399612007984
+    ],
+    "solver": "monolithic reference (vector)",
+    "evidence_grade": 1,
+    "contrast": "mu 1:3, lambda shared"
+  },
+  "D5": {
+    "phase1_order_mesh_halving": 1.8753400091626866,
+    "phase2_order_true_error": 1.9351214546542006,
+    "true_errors": [
+      4.619229886653223e-05,
+      1.236898564614311e-05,
+      3.1587144724847264e-06
+    ],
+    "solver": "monolithic reference",
+    "evidence_grade": 1,
+    "contrast": "1:5/2 on leg 1, 1:2 on leg 2"
+  },
+  "D6": {
+    "phase1_order_mesh_halving": 1.9575735298800687,
+    "phase2_order_true_error": 1.9760211419404619,
+    "true_errors": [
+      0.0005884487399361423,
+      0.00015101267008269366,
+      3.8021160251549587e-05
+    ],
+    "flux_jump": [
+      1.899873688353007e-15,
+      4.4043650603542075e-15,
+      6.075950596845496e-15
+    ],
+    "coupling_iterations": [
+      5,
+      5,
+      5
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "1:1000"
+  },
+  "D7": {
+    "phase1_order_mesh_halving": 1.9289215471099714,
+    "phase2_order_true_error": 1.943847359005266,
+    "true_errors": [
+      0.0008998142793537944,
+      0.00023602653322875617,
+      6.079112166663438e-05
+    ],
+    "flux_jump": [
+      1.576439378781999e-15,
+      3.2107491168903988e-15,
+      4.827422825715081e-15
+    ],
+    "coupling_iterations": [
+      15,
+      14,
+      14
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "1:3"
+  },
+  "D8": {
+    "solver": "not solved here",
+    "note": "transient; the verification solver is steady. Verified symbolically and by finite differences including the time derivative; its steady analogue D3 is solved and graded here.",
+    "evidence_grade": 1,
+    "contrast": "1:4"
+  }
+}
