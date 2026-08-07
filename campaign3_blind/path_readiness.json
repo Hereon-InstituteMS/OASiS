@@ -1,14 +1,12 @@
 {
   "schema": "oasis-blind-path-readiness/1",
-  "why": "A coupled task whose intended execution path has never run measures the path, not the agent, and a tool bug in it reads as agent failure and is charged to the arm under test. Each coupled instance must have had ONE throwaway, non-blind run through the path it names, with the result discarded, before it may be graded.",
+  "why": "A coupled task whose intended execution path has never run measures the path, not the agent, and a tool bug in it reads as agent failure and is charged to the arm under test. Each coupled instance must have had a throwaway, non-blind run through the path it names, with the result discarded, before it may be graded.",
   "measured_2026_08_07": {
+    "note": "Superseded by the vector participants landed on feature/vector-coupling. Kept for the record of what the gap was.",
     "shipped_coupling_participants": 10,
     "with_a_vector_interface": 1,
-    "vector_participant": "participant_febio.py",
-    "conduction_only": ["fenics", "dealii", "ngsolve", "kratos", "skfem", "dune", "fourc"],
     "coupling_fixtures": 29,
-    "fixtures_with_any_vector_construct": 2,
-    "fixtures_using_the_same_split_conduction_problem": 14
+    "fixtures_with_any_vector_construct": 2
   },
   "arrangement_solvable": {
     "note": "Established here with the harness's own partitioned solver: the ARRANGEMENT each task describes is solvable by exactly the scheme the task prescribes. This does NOT establish that OASiS's shipped participants can serve it.",
@@ -20,8 +18,67 @@
     "D7": "partitioned DN with different operators either side, order 1.929/1.944"
   },
   "path_verified": {
-    "D1": false, "D2": false, "D3": false, "D4": false,
-    "D5": false, "D6": false, "D7": false, "D8": false
+    "D1": false,
+    "D2": false,
+    "D3": false,
+    "D4": true,
+    "D5": false,
+    "D6": false,
+    "D7": false,
+    "D8": false
   },
-  "blocking": "D4 names FEniCSx and deal.II and neither has a vector participant. Seven of nine codes are conduction-only. This must be closed on the vector-coupling branch before D4 is graded."
+  "blocking": "D4 is UNBLOCKED. The remaining seven have no recorded throwaway run through their named path; run_blind.py's preflight refuses them until path_verified says otherwise.",
+  "remeasured_after_vector_coupling_branch": {
+    "source": "/home/alexander/Schreibtisch/ofa-vector-coupling @ 64f7af2b, clean tree; counted and RUN here, not taken from a report",
+    "vector_participants": [
+      "participant_fenics_elastic.py",
+      "participant_skfem_elastic.py",
+      "participant_ngsolve_elastic.py",
+      "participant_dealii_elastic.py + elast_iface_dealii.cc",
+      "participant_febio.py (pre-existing)"
+    ],
+    "backends_with_a_vector_participant": [
+      "fenics",
+      "skfem",
+      "ngsolve",
+      "dealii",
+      "febio"
+    ],
+    "backends_without_one": [
+      "4C",
+      "dune",
+      "kratos",
+      "sparta"
+    ],
+    "absence_of_evidence_not_inability": true,
+    "vector_fixtures": [
+      "vector_pair_fenics_dealii",
+      "vector_pair_fenics_skfem",
+      "vector_pair_ngsolve_skfem",
+      "vector_conservation_needs_a_surface_integral",
+      "vector_relaxation_needs_the_worst_component",
+      "vector_traction_recovery_at_the_interface_ends"
+    ],
+    "fixtures_i_executed_myself": {
+      "vector_pair_fenics_dealii": "PASSED \u2014 D4's exact pair. Two arrangements, vector exchange through the registered `couple` tool, NON-MATCHING interface meshes, displacement continuity and traction equilibrium on the interface interior, agreement with an un-split monolithic solve, failures_count=0.",
+      "vector_traction_recovery_at_the_interface_ends": "PASSED \u2014 over a 4x refinement the displacement converges (1.22e-02 -> 2.34e-03) while the exported traction at the interface END gets WORSE (2.11x -> 2.51x the true value). This is why every coupled instance is now graded on the interface INTERIOR only.",
+      "vector_relaxation_needs_the_worst_component": "PASSED \u2014 the measurement behind theta = 1/(1 + max_c rho_c). rho_x = 3.328 against rho_y = 0.311, a 10.7x spread; the smaller-rho theta diverges in the stiff component while the larger converges in 121 iterations."
+    },
+    "what_i_did_not_verify_myself": [
+      "vector_pair_fenics_skfem and vector_pair_ngsolve_skfem (the other two pairs) \u2014 not run here; D4 does not name them",
+      "vector_conservation_needs_a_surface_integral \u2014 not run here",
+      "the 3-D surface quadrature, which has unit tests but no coupled solver run"
+    ]
+  },
+  "path_verified_detail": {
+    "D4": "FEniCSx <-> deal.II vector exchange through `couple` executed here and passed, both arrangements. This is the pair D4 names.",
+    "D2": "3D. NO 3-D COUPLED SOLVER RUN EXISTS: the surface quadrature is verified arithmetically and by unit tests, but every vector participant is 2-D. D2 is a SCALAR instance, so the vector work does not bear on it either way, and its path remains unproven.",
+    "scalar_instances": "D1, D3, D5, D6, D7 are scalar and their path is the pre-existing conduction exchange, which has fixtures but no throwaway run recorded against these instances."
+  },
+  "d4_measured_here": {
+    "rho_normal": 0.6532,
+    "rho_shear": 0.4667,
+    "spread": "1.40x",
+    "note": "D4's own component spread is mild, so the worst-component theta coincides with the normal-component one and the instance is not in the regime the relaxation fixture warns about. Recorded as a measurement, not a reassurance."
+  }
 }

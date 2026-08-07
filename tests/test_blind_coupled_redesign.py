@@ -528,3 +528,79 @@ def test_grader_order_is_blind_to_a_broken_coupling_and_the_interface_is_not(
     assert min(bad["phase1_interface"]["jump_q_rel"]) > 1.0
     assert bad["phase1_interface"]["flux_jump_falls_under_refinement"] in (
         True, False)
+
+
+# ── group 6: the interface ENDS are not gradeable ─────────────────────
+def test_interface_probes_stay_clear_of_the_interface_ends():
+    """Where the interface meets a constrained boundary the split problem has a
+    Dirichlet-Neumann corner, and the recovered flux there gets WORSE under
+    refinement (measured 2.11x -> 2.51x the true value over a 4x refinement).
+    Grading those points fails a correct submission."""
+    sys.path.insert(0, str(REPO / "campaign3_blind"))
+    import build_coupled_v2 as BV
+    for fn in BV.BUILDERS:
+        spec = fn(BV.Draw(DEMO_SEED))[0]
+        band = spec.get("iface_graded_band")
+        assert band, f"{spec['id']} has no graded interface band"
+        lo, hi = band
+        assert lo > 0.0 and hi < 1.0, f"{spec['id']} grades an interface end"
+        assert hi - lo >= 0.2, f"{spec['id']}'s band is too narrow to grade"
+
+
+def test_task_states_that_interface_corners_belong_to_the_outer_boundary():
+    """Getting this wrong converges, balances to 1e-10, and is 4.7% wrong in
+    displacement and 28% wrong in traction — a silent wrong answer."""
+    probs = REPO / "campaign3_blind" / "problems"
+    seen = 0
+    for d in sorted(probs.glob("D*")):
+        t = d / "task.txt"
+        if not t.is_file():
+            continue
+        seen += 1
+        txt = t.read_text()
+        assert "INTERFACE CORNERS" in txt, f"{d.name} does not state corner ownership"
+        assert "BOTH" in txt.split("INTERFACE CORNERS")[1][:400]
+    assert seen >= 8
+
+
+def test_vector_relaxation_uses_the_worst_component():
+    """theta = 1/(1 + max_c rho_c). A single scalar rho can diverge in the
+    stiff component while converging in the other — measured spread 10.7x."""
+    from blind_eval import femdd as F
+    lam, muA, muB, wA, wB = 577.0, 385.0, 1155.0, 0.625, 0.875
+    rho_n = ((lam + 2 * muA) / wA) / ((lam + 2 * muB) / wB)
+    rho_s = (muA / wA) / (muB / wB)
+    got = F.vector_theta(lam, muA, lam, muB, wA, wB)
+    assert abs(got - 1.0 / (1.0 + max(rho_n, rho_s))) < 1e-12
+    assert got <= 1.0 / (1.0 + min(rho_n, rho_s)), \
+        "must be the WORST component, not the friendlier one"
+
+
+def test_grader_refuses_interface_points_outside_the_graded_band(tmp_path):
+    """Excluding the ends must not become a way to choose where you are graded."""
+    spec_path = REPO / "campaign3_blind" / "problems" / "D3" / "spec_public.json"
+    if not spec_path.is_file():
+        pytest.skip("D3 has not been built on this machine")
+    spec = json.loads(spec_path.read_text())
+    if not spec.get("iface_graded_band"):
+        pytest.skip("instance predates the graded band")
+    sys.path.insert(0, str(REPO / "scripts"))
+    import blind_grade as BG
+    import csv as _csv
+    run = _synthetic_submission(tmp_path / "ok", spec)
+    good = BG.grade(run, "D3")
+    assert good["phase1_interface"]["verdict"] in (
+        "INTERFACE_SATISFIED", "INTERFACE_NOT_SATISFIED")
+    # now move the interface probes out to the ends
+    for lvl in (1, 2, 3):
+        for side in ("A", "B"):
+            p = run / "work" / f"interface_level{lvl}_{side}.csv"
+            rows = list(_csv.reader(open(p)))
+            with open(p, "w", newline="") as f:
+                wr = _csv.writer(f)
+                wr.writerow(rows[0])
+                for i, r in enumerate(rows[1:]):
+                    wr.writerow([r[0], 0.001 + i * 1e-6, r[2], r[3]])
+    bad = BG.grade(run, "D3")
+    assert bad["phase1_interface"]["verdict"] == "NOT_ASSESSED" or \
+        any("graded band" in n for n in bad["phase1_interface"]["notes"])

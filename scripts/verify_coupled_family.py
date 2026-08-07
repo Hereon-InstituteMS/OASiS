@@ -164,7 +164,7 @@ def verify_d4(spec, fields, sources, mats):
     errs, vals = [], []
     for n in LEVELS:
         g = F.Grid(0.0, lx, 0.0, 1.0, int(round(lx * n)), n)
-        cen = g.pts[g.tris].mean(axis=1)
+        cen = g.pts[g.tris].mean(axis=1)  # monolithic: no relaxation involved
         mu = np.where(cen[:, 0] < xi, muA_f, muB_f)
         A, b = F.assemble_elasticity(g, lam_f, mu, load)
         bn = g.boundary_nodes()

@@ -243,12 +243,18 @@ def build_task(spec: dict, f_text: str) -> str:
         f"COEFFICIENTS: {spec['coefficients']}",
         f"SOURCE TERM: {f_text}",
     ]
+    if spec.get("notes_public"):
+        lines.append(f"NOTE: {spec['notes_public']}")
     if spec.get("initial_condition"):
         lines.append(f"INITIAL CONDITION: {spec['initial_condition']}")
     if spec.get("time_grid"):
         lines.append(f"TIME DISCRETISATION: {spec['time_grid']}")
     lines += [
         f"OUTER BOUNDARY CONDITIONS: {spec['bc_text']}",
+        "INTERFACE CORNERS: at the points where the interface meets the outer "
+        "boundary, the outer boundary condition above applies on BOTH "
+        "subdomains. Those points belong to the outer boundary, not to the "
+        "interface, on either side.",
         f"INTERFACE CONDITIONS: {spec['interface_condition']} must be "
         f"continuous across the interface. Achieve this by exchanging interface "
         f"data between the two codes and iterating until the interface mismatch "
@@ -412,14 +418,49 @@ def _extents(dim):
     return ([(0.0, float(XI))] + rest, [(float(XI), float(LX))] + rest)
 
 
+# Where a Dirichlet-Neumann interface MEETS a constrained outer boundary, the
+# Neumann subproblem has a corner the monolithic problem does not: a
+# Dirichlet-Neumann corner, which in both the scalar and the vector case carries
+# a flux/stress singularity. Measured on the vector coupling fixtures over a 4x
+# refinement, the displacement converges (1.22e-02 -> 2.34e-03) while the
+# exported traction at the interface END gets WORSE (2.11x -> 2.51x the true
+# value). Refinement does not fix it, because it is a singularity of the split
+# problem rather than a discretisation error.
+#
+# So the interface quantities are graded on the interior of the interface only.
+# Grading the ends would fail a CORRECT submission for a property of the
+# decomposition -- the same class of false CONFIDENTLY_WRONG as the interface
+# that lay on no mesh line. The clearance is a quarter of the interface length
+# at each end: two elements at the coarsest prescribed level and eight at the
+# finest, and a fixed fraction rather than a multiple of h because the corner is
+# a property of the continuum problem.
+IFACE_CLEAR = sp.Rational(1, 4)
+
+
+def _iface_band(lo, hi):
+    """The graded interior of an interface running from ``lo`` to ``hi``."""
+    span = sp.nsimplify(hi) - sp.nsimplify(lo)
+    return (sp.nsimplify(lo) + IFACE_CLEAR * span,
+            sp.nsimplify(hi) - IFACE_CLEAR * span)
+
+
 def _straight_iface_probe(dim):
     M = PROBE_M[dim]
     xi = f"{XI}"
+    a, b = _iface_band(0, 1)
+    w = b - a
     if dim == 2:
-        return (f"the {M} points (x, y) = ({xi}, (i+0.5)/{M}) for "
-                f"i = 0, 1, ..., {M - 1}")
-    return (f"the {M * M} points (x, y, z) = ({xi}, (i+0.5)/{M}, (j+0.5)/{M}) "
-            f"for i, j = 0, 1, ..., {M - 1}, ordered with j varying fastest")
+        return (f"the {M} points (x, y) = ({xi}, {a} + (i+0.5)*{w}/{M}) for "
+                f"i = 0, 1, ..., {M - 1}. These cover the INTERIOR of the "
+                f"interface only: the two points where the interface meets the "
+                f"outer boundary are corners of the split problem and the "
+                f"recovered flux there does not converge, so they are not "
+                f"graded")
+    return (f"the {M * M} points (x, y, z) = ({xi}, {a} + (i+0.5)*{w}/{M}, "
+            f"{a} + (j+0.5)*{w}/{M}) for i, j = 0, 1, ..., {M - 1}, ordered "
+            f"with j varying fastest. These cover the INTERIOR of the interface "
+            f"only: where the interface meets the outer boundary the recovered "
+            f"flux does not converge, so the edges are not graded")
 
 
 def _scalar_spec(pid, codes, labels, dim, kA_txt, kB_txt, eq, contrast):
@@ -449,6 +490,11 @@ def _scalar_spec(pid, codes, labels, dim, kA_txt, kB_txt, eq, contrast):
         probe_iface=_straight_iface_probe(dim),
         mesh_N=MESH_N, theoretical_order=2.0, tol=0.4, band=[0.8, 3.2],
         extent_a=ea, extent_b=eb, probe_M=PROBE_M[dim],
+        iface_graded_band=[float(v) for v in _iface_band(0, 1)],
+        iface_clearance_reason=(
+            "the interface ends are Dirichlet-Neumann corners of the split "
+            "problem; the recovered flux there does not converge under "
+            "refinement, so grading them would fail a correct submission"),
         material_contrast=contrast,
         evidence_grade=1, evidence_grade_reason=GRADE[1],
         qoi="convergence order of the coupled field, plus the two-sided "
@@ -572,6 +618,27 @@ def instance_D4(d):
         probe_iface=_straight_iface_probe(2),
         mesh_N=MESH_N, theoretical_order=2.0, tol=0.4, band=[0.8, 3.2],
         extent_a=ea, extent_b=eb, probe_M=PROBE_M[2],
+        iface_graded_band=[float(v) for v in _iface_band(0, 1)],
+        iface_clearance_reason=(
+            "the interface ends are Dirichlet-Neumann corners of the split "
+            "problem and carry a stress singularity the monolithic problem does "
+            "not have; the exported traction there gets WORSE under refinement "
+            "(measured 2.11x -> 2.51x the true value over a 4x refinement), so "
+            "grading them would fail a correct submission"),
+        # Stated because it is DERIVABLE FROM THE PUBLISHED DATA and costs a
+        # correct agent a wasted run otherwise: the two components have very
+        # different interface stiffness ratios, and a scalar relaxation factor
+        # chosen for one diverges in the other. Measured on the vector coupling
+        # fixtures: rho_x = 3.328 against rho_y = 0.311, a 10.7x spread; the
+        # smaller-rho theta diverges in the stiff component specifically. This
+        # discloses nothing -- both ratios follow from the Lame parameters and
+        # the subdomain widths printed in the task.
+        notes_public=(
+            "the normal and shear interface stiffness ratios of this material "
+            "pair differ by an order of magnitude (both follow from the Lame "
+            "parameters and subdomain widths above). A single scalar relaxation "
+            "factor chosen for one component can diverge in the other; a "
+            "componentwise or worst-component choice is safer."),
         material_contrast="mu 1:3, lambda shared",
         evidence_grade=1, evidence_grade_reason=GRADE[1],
         qoi="convergence order of the coupled displacement, plus the two-sided "
@@ -621,10 +688,14 @@ def instance_D5(d):
         iface_header="x, y, u, qn",
         qn_name="qn", qn_desc="conductive flux qn = -(k grad u) . n_out",
         probe_iface=(
-            f"{M} points on each leg: leg 1 is (x, y) = (1/2, (i+0.5)/(2*{M})) "
-            f"and leg 2 is (x, y) = (1/2 + (i+0.5)/(2*{M}), 1/2), for "
+            f"{M} points on each leg, covering the INTERIOR of that leg only. "
+            f"Leg 1 is (x, y) = (1/2, 1/8 + (i+0.5)*(1/4)/{M}) and leg 2 is "
+            f"(x, y) = (5/8 + (i+0.5)*(1/4)/{M}, 1/2), for "
             f"i = 0, 1, ..., {M - 1}. Write leg 1 first, then leg 2, "
-            f"{2 * M} rows in total"),
+            f"{2 * M} rows in total. The ends of each leg are excluded: one end "
+            f"of each meets the outer boundary and the other meets the corner "
+            f"where the two legs join, and the recovered flux does not converge "
+            f"at either"),
         mesh_N=MESH_N, theoretical_order=2.0, tol=0.4, band=[0.8, 3.2],
         # Subdomain A is NOT a rectangle, so it cannot be assessed on a
         # rectangular probe grid: a box over the left half would miss the whole
@@ -635,6 +706,11 @@ def instance_D5(d):
         extent_a=[(0.0, 1.0), (0.0, 1.0)],
         probe_a_exclude=[[(0.5, 1.0), (0.0, 0.5)], [(0.75, 1.0), (0.75, 1.0)]],
         extent_b=[(0.5, 1.0), (0.0, 0.5)],
+        iface_graded_band=[0.125, 0.375],
+        iface_clearance_reason=(
+            "each leg is graded on its interior: one end meets the outer "
+            "boundary and the other the corner where the legs join, and the "
+            "recovered flux converges at neither"),
         probe_M=M, material_contrast="1:5/2 on leg 1, 1:2 on leg 2",
         evidence_grade=1, evidence_grade_reason=GRADE[1],
         qoi="convergence order of the coupled field, plus the two-sided "

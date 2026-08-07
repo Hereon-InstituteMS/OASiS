@@ -58,6 +58,13 @@ EVIDENCE_GRADES = {
 }
 
 
+def _normal_axis(spec: dict) -> int:
+    """Which coordinate the interface is a level set of. Straight interfaces
+    in this family are all x = const; D5's legs alternate, so its band is
+    checked against both tangential coordinates and the axis is irrelevant."""
+    return 0
+
+
 def _interface_phase(work: Path, spec: dict) -> dict:
     """Reference-free interface quantities: the two-sided jumps.
 
@@ -94,6 +101,31 @@ def _interface_phase(work: Path, spec: dict) -> dict:
             parsed[s] = got
         if len(parsed) != 2:
             continue
+        # The grader owns the interface evaluation set exactly as it owns the
+        # field probe grid. The band excludes the interface ENDS, where the
+        # split problem has a Dirichlet-Neumann corner and the recovered flux
+        # gets WORSE under refinement (measured 2.11x -> 2.51x the true value
+        # over a 4x refinement on the vector coupling fixtures). Grading those
+        # points would fail a correct submission; accepting points from there
+        # would let an agent choose where it is measured. Both are refused.
+        band = spec.get("iface_graded_band")
+        if band:
+            lo, hi = float(band[0]) - 1e-9, float(band[1]) + 1e-9
+            stray = []
+            for side, (pts, _v, _q) in parsed.items():
+                for p in pts:
+                    tang = [c for i, c in enumerate(p)
+                            if i != _normal_axis(spec)]
+                    if any(not (lo <= c <= hi) for c in tang):
+                        stray.append((side, p))
+                        break
+            if stray:
+                notes.append(
+                    f"level {lvl}: interface points outside the graded band "
+                    f"{band}: {stray[:2]}. The interface ends are corners of "
+                    f"the split problem and are deliberately not graded.")
+                continue
+
         d, why = IF.two_sided_jumps(parsed["A"], parsed["B"])
         if d is None:
             notes.append(f"level {lvl}: {why}")

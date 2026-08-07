@@ -455,6 +455,25 @@ class VecSide:
     outer_faces: tuple
 
 
+def vector_theta(lamA, muA, lamB, muB, wA, wB) -> float:
+    """Relaxation from the WORST component, not from one scalar ratio.
+
+    A vector interface has one interface-stiffness ratio per component: the
+    P-wave modulus ``lambda + 2 mu`` governs the normal direction and ``mu`` the
+    shear. They are not close. Measured on the vector coupling fixtures,
+    ``rho_x = 3.328`` against ``rho_y = 0.311`` -- a 10.7x spread -- and the
+    theta chosen from the smaller ratio DIVERGES in the stiff component while
+    the one chosen from the larger converges in 121 iterations.
+
+    So ``theta = 1 / (1 + max_c rho_c)``. A reference run that uses a single
+    scalar rho may not converge at all, and that would be read as an agent
+    failure when it is the reference's fault.
+    """
+    rho_n = ((lamA + 2 * muA) / wA) / ((lamB + 2 * muB) / wB)
+    rho_s = (muA / wA) / (muB / wB)
+    return 1.0 / (1.0 + max(rho_n, rho_s))
+
+
 def dn_couple_vector(A_side: VecSide, B_side: VecSide, *, theta=0.5,
                      max_iter=400, tol=1e-11):
     """Partitioned Dirichlet-Neumann for a VECTOR interface.

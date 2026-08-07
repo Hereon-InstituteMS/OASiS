@@ -733,3 +733,94 @@ The problem set is BUILT, not yet sealed. In order:
    not surviving an executed read, plaintext keys present, builder sources
    readable, missing commitment, a non-empty exposure sweep, or a coupled task
    whose intended path has no recorded throwaway run (§10).
+
+---
+
+# Amendment 3 — 2026-08-07. The vector path exists; three of its findings change D4
+
+The vector coupling participants landed on `feature/vector-coupling`, which
+closes the blocker §10 recorded. Verified by execution here rather than taken
+from a report: `vector_pair_fenics_dealii` — **D4's exact pair** — was run in
+this session and passed, covering both arrangements, vector exchange through the
+registered `couple` tool, non-matching interface meshes, displacement continuity
+and traction equilibrium on the interface interior, agreement with an un-split
+monolithic solve, and `failures_count=0`.
+`vector_traction_recovery_at_the_interface_ends` was also run here and passed.
+
+`path_readiness.json` records **D4 verified**, from those runs. The other seven
+stay false: their paths have no throwaway run recorded, and the preflight refuses
+them.
+
+## 1. The interface ENDS are not gradeable, and now are not graded
+
+Where a Dirichlet-Neumann interface meets a constrained outer boundary, the
+Neumann subproblem acquires a corner the monolithic problem does not have — a
+Dirichlet-Neumann corner, which carries a flux (scalar) or stress (vector)
+singularity. Measured over a 4x refinement: the displacement converges
+(1.22e-02 -> 2.34e-03) while the exported traction at the interface END gets
+**worse** (2.11x -> 2.51x the true value). Refinement does not fix it, because
+it is a property of the split rather than a discretisation error.
+
+Grading those points would have failed a **correct** submission — the same class
+of false `CONFIDENTLY_WRONG` as the interface that lay on no mesh line, and for
+the same reason: a defect of the instance charged to the agent. Every coupled
+instance's interface probes now cover the interface **interior** only, with a
+clearance of a quarter of the interface length at each end (two elements at the
+coarsest prescribed level, eight at the finest). D5's two legs each get the same
+treatment, since one end of each meets the outer boundary and the other meets
+the corner where the legs join. The band is recorded in each `spec_public.json`
+as `iface_graded_band`, and the grader refuses interface points outside it —
+excluding the ends must not become a way for an agent to choose where it is
+measured.
+
+The clearance is a fixed fraction of the interface, not a multiple of `h`,
+because the corner is a property of the continuum problem.
+
+## 2. Relaxation from the worst component
+
+A vector interface has one interface-stiffness ratio per component: the P-wave
+modulus governs the normal direction and `mu` the shear. Measured on the
+fixtures, `rho_x = 3.328` against `rho_y = 0.311` — a 10.7x spread — and the
+theta chosen from the smaller ratio diverges in the stiff component
+specifically. So `theta = 1 / (1 + max_c rho_c)`, which is now what
+`blind_eval.femdd.vector_theta` computes and what the verification uses.
+
+For D4 as specified the spread is 1.40x (`rho_normal = 0.653`,
+`rho_shear = 0.467`), so the instance is not itself in the dangerous regime and
+the worst-component choice coincides with the normal-component one — which is
+what the earlier D4 verification happened to use. Stated because it is a
+measurement, not a reassurance: a different material pair would not be so
+forgiving.
+
+The task now carries a NOTE that the two components' interface stiffness ratios
+differ and a single scalar relaxation factor can diverge in the other component.
+That discloses nothing: both ratios follow from the Lame parameters and
+subdomain widths already printed in the task. It goes in the TASK, not the
+served knowledge, so both arms get it — a correct agent should not lose a run to
+a property of the problem it was not told about.
+
+## 3. Interface corners belong to the outer boundary on both sides
+
+Getting this wrong produces a run that converges, balances the interface to
+1e-10, and is still 4.7% off in displacement and 28% off in traction — a
+silently wrong answer that passes every internal check, which is precisely the
+failure mode this campaign exists to detect rather than to inflict. It is a
+statement about the stated boundary value problem, not a hint, so every coupled
+task now says it explicitly:
+
+> INTERFACE CORNERS: at the points where the interface meets the outer boundary,
+> the outer boundary condition above applies on BOTH subdomains. Those points
+> belong to the outer boundary, not to the interface, on either side.
+
+## 4. What is still unproven, taken from the fixture evidence
+
+* **Only four backends have a vector participant** — FEniCSx, scikit-fem,
+  NGSolve, deal.II (plus FEBio, pre-existing). 4C, DUNE-fem, Kratos and SPARTA
+  have none. That is absence of evidence, not demonstrated inability, and is
+  recorded as such. D4 names FEniCSx and deal.II, both covered.
+* **There is no 3-D coupled solver run.** The surface quadrature is verified
+  arithmetically and by unit tests, but every vector participant is 2-D. D2 is
+  a *scalar* 3-D instance, so the vector work does not bear on it either way;
+  its path remains unproven and the preflight still refuses it.
+* The seven non-D4 instances have no recorded throwaway run through their named
+  path.
