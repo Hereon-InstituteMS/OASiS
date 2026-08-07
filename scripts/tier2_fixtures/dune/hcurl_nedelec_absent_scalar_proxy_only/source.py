@@ -10,10 +10,16 @@ quietly stay true.
 Nothing here builds a weak form, so nothing JIT-compiles.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 installs a `nedelec` attribute on
+dune.fem.space — the world in which dune-fem HAS grown an edge-element
+factory. space_has_nedelec then reads True, the expectation
+'space_has_nedelec=False' disappears and a FAIL: line appears.
 """
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 import warnings
 
@@ -22,6 +28,8 @@ warnings.filterwarnings("ignore")
 from dune.grid import structuredGrid                           # noqa: E402
 import dune.fem.space as dspace                                # noqa: E402
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 # Names an agent reaching for vector Maxwell would try.
 _HCURL_SPELLINGS = ("nedelec", "Nedelec", "hcurl", "hCurl", "HCurl",
                     "curl", "edge", "whitney")
@@ -29,6 +37,15 @@ _HCURL_SPELLINGS = ("nedelec", "Nedelec", "hcurl", "hCurl", "HCurl",
 
 def main() -> int:
     fail: list[str] = []
+
+    if MUTATE:
+        print("mutation=dune_fem_space_gains_a_nedelec_factory")
+        # Both spellings, because the runner matches expect strings
+        # CASE-INSENSITIVELY: with only `nedelec` installed the line
+        # `space_has_Nedelec=False` still satisfies the expectation
+        # `space_has_nedelec=False`.
+        dspace.nedelec = dspace.lagrange
+        dspace.Nedelec = dspace.lagrange
 
     for name in _HCURL_SPELLINGS:
         present = hasattr(dspace, name)

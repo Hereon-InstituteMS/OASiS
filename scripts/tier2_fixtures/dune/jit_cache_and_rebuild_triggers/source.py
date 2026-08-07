@@ -29,6 +29,14 @@ one C++ build (~22 s measured) and one extra .so in the cache per run.
 Everything else is warm.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 puts a never-before-seen FLOAT LITERAL
+into the form that the base run rebuilds identically — the pathology
+(re-using a cached module) removed. That rebuild then mints a new .so
+and takes tens of seconds, so 'identical_form_is_free=True' is no
+longer printed and a FAIL: line appears. It is the same trigger this
+fixture measures in its cold run, applied to the warm one; it costs one
+extra C++ build under mutation and leaves the unmutated run untouched.
 """
 from __future__ import annotations
 
@@ -41,6 +49,8 @@ import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -186,7 +196,18 @@ def main() -> int:
                     "converge")
 
     t = time.time()
-    scheme_again = galerkin([a == c * v * dx, dbc], solver="cg")
+    if MUTATE:
+        # The pathology removed: the "identical" rebuild is not
+        # identical any more — a fresh float literal is part of
+        # the generated code, so the cache cannot serve it.
+        print("mutation=the_identical_rebuild_carries_a_fresh_"
+              "float_literal")
+        _lit = 1.0 + (time.time() % 997) * 1e-7
+        scheme_again = galerkin([a == _lit * c * v * dx, dbc],
+                                solver="cg")
+    else:
+        scheme_again = galerkin([a == c * v * dx, dbc],
+                                solver="cg")
     scheme_again.solve(target=uh)
     identical_rebuild = time.time() - t
     n3 = _n_so(cache)

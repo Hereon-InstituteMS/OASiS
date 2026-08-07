@@ -1,11 +1,14 @@
 {
-  "_comment": "Tier-2 for dune::eigenvalue#0, dune::eigenvalue#2 and the two Signal keys of _general.assemble_measured — one assembled matrix answers all four, wall time 2 s on a warm cache (2026-08-06, dune-fem 2.12.0.2). Measured: dune.fem has no eig / eigs / eigsh / eigenvalue / eigenvalues / eigenSolver attribute and `import dune.fem.solver` raises ModuleNotFoundError; assemble(form) returns a LinearOperator whose only conversion attribute is ['as_numpy']; .as_numpy is a scipy csr_matrix with format 'csr' and .tocsr() is the same object, so fancy-indexing it directly gave a (144,144) csr_matrix identical to the .tocsr() route (max|diff| 0.0) — the retracted COO claim stays retracted. assemble(a, DirichletBC(space,[0])) was ACCEPTED and changed nothing: nnz 2401 both ways, max|A1-A2| exactly 0.0. The control that makes that meaningful is in the same run: the galerkin scheme's own matrix DOES differ from the raw one (max|diff| 0.333333), so 'ignored' is distinguishable from 'this bc happens to be a no-op'.",
+  "_comment": "Tier-2 for dune::eigenvalue#0, dune::eigenvalue#2 and the two Signal keys of _general.assemble_measured \u2014 one assembled matrix answers all four, wall time 2 s on a warm cache (2026-08-06, dune-fem 2.12.0.2). Measured: dune.fem has no eig / eigs / eigsh / eigenvalue / eigenvalues / eigenSolver attribute and `import dune.fem.solver` raises ModuleNotFoundError; assemble(form) returns a LinearOperator whose only conversion attribute is ['as_numpy']; .as_numpy is a scipy csr_matrix with format 'csr' and .tocsr() is the same object, so fancy-indexing it directly gave a (144,144) csr_matrix identical to the .tocsr() route (max|diff| 0.0) \u2014 the retracted COO claim stays retracted. assemble(a, DirichletBC(space,[0])) was ACCEPTED and changed nothing: nnz 2401 both ways, max|A1-A2| exactly 0.0. The control that makes that meaningful is in the same run: the galerkin scheme's own matrix DOES differ from the raw one (max|diff| 0.333333), so 'ignored' is distinguishable from 'this bc happens to be a no-op'. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 takes the \"with bc\" matrix from the SCHEME's linear operator, which really does apply the constraint, instead of from assemble(a, bc). Unmutated the fixture still PASSES; mutated it FAILS because the expectations 'assemble_with_bc_maxdiff=0.0', 'bc_argument_silently_ignored=True', 'dune_assemble_semantics_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
   "backend": "dune",
   "physics": "eigenvalue",
   "pitfall_index": 0,
-  "covers": ["eigenvalue:0", "eigenvalue:2",
-             "_general:assemble_measured.Signal",
-             "_general:assemble_measured.bc_argument_is_silently_ignored"],
+  "covers": [
+    "eigenvalue:0",
+    "eigenvalue:2",
+    "_general:assemble_measured.Signal",
+    "_general:assemble_measured.bc_argument_is_silently_ignored"
+  ],
   "mode": "python",
   "timeout_seconds": 600,
   "expect_in_output": [

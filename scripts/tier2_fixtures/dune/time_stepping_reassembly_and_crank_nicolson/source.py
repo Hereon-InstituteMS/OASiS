@@ -23,9 +23,18 @@ costs no rebuild — only two forms are compiled, backward Euler and
 Crank-Nicolson.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 measures the "CN" column with the
+BACKWARD-EULER scheme, which is exactly pitfall time_dependent_heat#3 —
+Crank-Nicolson written with the implicit-Euler factor. The observed
+order drops to one, so 'crank_nicolson_is_second_order=True' and
+'implicit_euler_factor_costs_an_order=True' are no longer printed and
+FAIL: lines appear. Both schemes are already compiled, so the mutation
+costs no rebuild.
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 import warnings
@@ -33,6 +42,8 @@ import warnings
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -134,7 +145,12 @@ def main() -> int:
 
     # ── time_dependent_heat#3: the order of the two schemes ────────
     orders = {}
-    for label, scheme in (("BE", scheme_be), ("CN", scheme_cn)):
+    if MUTATE:
+        print("mutation=the_cn_column_is_measured_with_the_"
+              "implicit_euler_form")
+    for label, scheme in (("BE", scheme_be),
+                          ("CN", scheme_be if MUTATE
+                           else scheme_cn)):
         march(scheme, 640, T_END / 640)
         u_ref.assign(uh)
         errs = []

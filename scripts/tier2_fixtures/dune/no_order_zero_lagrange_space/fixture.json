@@ -1,9 +1,11 @@
 {
-  "_comment": "Tier-2 for dune::poisson#12. Measured on dune-fem 2.12.0.2, 2026-08-06, wall time 2 s: lagrange(gridView, order=0) raises KeyError 'Parameter error in LagrangeSpace with order=0: order has to be greater or equal to 1' — a parameter-validation sentence, not a Python one, which is why it is easy to misread as a bug in the caller. dglagrange(gridView, order=0).size == 16 and finiteVolume(gridView).size == 16 on a 4x4 grid, i.e. exactly one dof per cell, which is what the FEniCS ('DG', 0) habit was asking for.",
+  "_comment": "Tier-2 for dune::poisson#12. Measured on dune-fem 2.12.0.2, 2026-08-06, wall time 2 s: lagrange(gridView, order=0) raises KeyError 'Parameter error in LagrangeSpace with order=0: order has to be greater or equal to 1' \u2014 a parameter-validation sentence, not a Python one, which is why it is easy to misread as a bug in the caller. dglagrange(gridView, order=0).size == 16 and finiteVolume(gridView).size == 16 on a 4x4 grid, i.e. exactly one dof per cell, which is what the FEniCS ('DG', 0) habit was asking for. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 asks for order=1 in the slot where the base run asks for order=0, i.e. inside the guard. Unmutated the fixture still PASSES; mutated it FAILS because the expectations 'lagrange_order0_rejected=KeyError', 'order has to be greater or equal to 1', 'dune_no_order_zero_lagrange_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
   "backend": "dune",
   "physics": "poisson",
   "pitfall_index": 12,
-  "covers": ["poisson:12"],
+  "covers": [
+    "poisson:12"
+  ],
   "mode": "python",
   "timeout_seconds": 300,
   "expect_in_output": [

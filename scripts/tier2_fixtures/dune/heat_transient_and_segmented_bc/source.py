@@ -12,15 +12,26 @@ Two compiled forms serve both: a steady one and a transient one. dt is
 a dune.ufl.Constant, so changing it is free.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 puts the mass term back into the
+"stiffness only" loop — i.e. it marches the TRANSIENT scheme there.
+That is the pathology (heat#1) removed: the field then changes from
+step to step, stiffness_only_is_steady_at_every_step reads False, the
+expectation 'stiffness_only_is_steady_at_every_step=True' disappears
+and a FAIL: line appears. The transient scheme is one the fixture
+already builds, so nothing extra is compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -117,9 +128,17 @@ def main() -> int:
 
     # the same loop with the mass term dropped
     uh_s = space.interpolate(0, name="uh_s")
+    if MUTATE:
+        print("mutation=the_stiffness_only_loop_gets_its_mass_term_back")
+        stiffness_only = scheme_trans
+        u_old.interpolate(0)
+    else:
+        stiffness_only = scheme_seg
     hist_steady = []
     for _ in range(5):
-        scheme_seg.solve(target=uh_s)
+        stiffness_only.solve(target=uh_s)
+        if MUTATE:
+            u_old.assign(uh_s)
         hist_steady.append(float(np.array(uh_s.as_numpy).mean()))
     print("stiffness_only_mean_history="
           + ",".join(f"{h:.4f}" for h in hist_steady))

@@ -21,6 +21,26 @@ enumeration at all and is rejected at scheme construction. The fixture
 asserts that rejection.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+NOT MUTABLE — recorded deliberately, no T2_MUTATE hook (2026-08-06).
+Every other fixture in this tree carries an in-source mutation control:
+a T2_MUTATE=1 branch that removes the pathology and makes the fixture
+go red. This one cannot have a faithful one. Its claim is that
+dune-fem's report is UNINFORMATIVE — that the info dict is the same
+(True, 0, 1) for a definite CG solve, an indefinite CG solve and an
+indefinite direct solve, and that no warning and no exception is
+emitted. Removing that pathology would mean dune-fem EMITTING a
+diagnostic, which no change to this script can bring about: lowering k
+back into the definite range leaves the report byte-identical, which is
+the very thing being asserted, so such a "mutation" would still pass
+and would be evidence of nothing.
+
+The subsidiary assertions here ARE falsifiable by construction and are
+already written that way — 'matrix not positive definite' is COUNTED
+across both dune namespace roots (0 occurrences), and the ilu/amg
+rejection is an exception that is caught and inspected. What has no
+mutation is the headline: an absence of output cannot be removed from
+the outside.
 """
 from __future__ import annotations
 

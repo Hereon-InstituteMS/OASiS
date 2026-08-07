@@ -13,12 +13,22 @@ dune.fem.integrate takes (expr, gridView, order). Both return the same
 number.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 calls the REPLACEMENT dune.fem.integrate
+in the slot where the deprecated dune.fem.function.integrate is called
+— the pathology removed, since the replacement is not deprecated. No
+warning is emitted, so 'call_warning_count=1' and
+'call_warns_deprecated=True' are no longer printed and a FAIL: line
+appears.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import warnings
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -65,9 +75,15 @@ def main() -> int:
     uh = space.interpolate(x[0] * x[0], name="uh")
 
     import dune.fem.function as dfunc
+    if MUTATE:
+        print("mutation=the_deprecated_slot_calls_the_replacement_"
+              "dune_fem_integrate")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        old_value = dfunc.integrate(gridView, uh, order=3)
+        if MUTATE:
+            old_value = dfem.integrate(uh, gridView=gridView, order=3)
+        else:
+            old_value = dfunc.integrate(gridView, uh, order=3)
         texts = [" ".join(str(w.message).split()) for w in caught]
     blob = " || ".join(texts)
     print(f"call_warning_count={len(texts)}")

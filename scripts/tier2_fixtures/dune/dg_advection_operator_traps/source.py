@@ -24,6 +24,13 @@ The compiled modules are: upwind order 1, upwind order 3, centred flux,
 and the ds-instead-of-dS variant.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 marches the forward-Euler slot with the
+SSP-RK2 stepper instead — the pathology (a linearly unstable explicit
+step) removed. The L2 norm then decays rather than rising, so
+'forward_euler_l2_rises_monotonically=True' and
+'l2_norm_is_the_detector=True' are no longer printed and a FAIL: line
+appears. Same compiled scheme, so nothing extra is built.
 """
 from __future__ import annotations
 
@@ -35,6 +42,8 @@ import warnings
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import dglagrange                           # noqa: E402
@@ -148,7 +157,15 @@ def main() -> int:
             norms.append(l2(uh) / n0)
         return norms
 
-    fe = forward_euler(60)
+    if MUTATE:
+        # The pathology removed: the 'forward Euler' slot is
+        # marched with the SSP-RK2 stepper, which is stable at
+        # this step.
+        print("mutation=the_forward_euler_slot_is_marched_with_"
+              "ssp_rk2")
+        fe = ssp_rk2(60)
+    else:
+        fe = forward_euler(60)
     rk = ssp_rk2(60)
     print(f"forward_euler_norms_first_last={fe[0]:.6f},{fe[-1]:.6f}")
     print(f"ssp_rk2_norms_first_last={rk[0]:.6f},{rk[-1]:.6f}")

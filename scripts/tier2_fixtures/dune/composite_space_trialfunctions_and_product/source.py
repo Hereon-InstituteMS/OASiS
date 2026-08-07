@@ -14,14 +14,24 @@ silently binds the wrong thing.
 No weak form is built, so nothing here compiles a scheme.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 replaces the TrialFunctions(W) result
+with the per-leg split a caller expects — (velocity vector, pressure
+scalar) — i.e. the world in which TrialFunctions really does split a
+composite space. trialfunctions_len then reads 2 and the expectations
+'trialfunctions_len=1', 'trialfunctions_shapes=[(3,)]' and
+'one_tuple_unpacks_without_error=(3,)' all disappear.
 """
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 import dune.fem.space as dspace                                # noqa: E402
@@ -63,7 +73,19 @@ def main() -> int:
 
     # ── stokes#0 / mixed_methods#2: the unpacking trap ───────────────
     W = W_comp
-    trials = TrialFunctions(W)
+
+    def trial_functions(space):
+        if MUTATE:
+            # The pathology removed: a TrialFunctions that really does
+            # split the composite space into its legs.
+            t = TrialFunction(space)
+            return (as_vector([t[0], t[1]]), t[2])
+        return TrialFunctions(space)
+
+    if MUTATE:
+        print("mutation=trialfunctions_splits_the_composite_space_"
+              "into_its_legs")
+    trials = trial_functions(W)
     tests = TestFunctions(W)
     print(f"trialfunctions_len={len(trials)}")
     print(f"trialfunctions_shapes={[t.ufl_shape for t in trials]}")
@@ -79,7 +101,7 @@ def main() -> int:
     # This is the silent part: the unpacking SUCCEEDS for a 1-tuple
     # target, so nothing complains at the point of the mistake.
     try:
-        (whole,) = TrialFunctions(W)
+        (whole,) = trial_functions(W)
         print(f"one_tuple_unpacks_without_error={whole.ufl_shape}")
     except Exception as exc:                                 # noqa: BLE001
         print(f"one_tuple_unpacks_without_error=ERROR:"
@@ -89,7 +111,7 @@ def main() -> int:
     # …and the two-name unpacking the dolfinx idiom asks for fails with
     # a ValueError about counts, not about spaces.
     try:
-        (u_bad, p_bad) = TrialFunctions(W)
+        (u_bad, p_bad) = trial_functions(W)
         print("two_name_unpack_rejected=False")
         fail.append("(u, p) = TrialFunctions(W) succeeded; the claim is "
                     "that the tuple has only one entry")

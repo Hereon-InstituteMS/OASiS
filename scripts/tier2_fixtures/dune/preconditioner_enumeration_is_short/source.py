@@ -16,13 +16,23 @@ This fixture harvests that message rather than trusting documentation,
 then proves each advertised name really does build and solve.
 
 Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.
+
+MUTATION CONTROL. T2_MUTATE=1 puts three names the enumeration DOES
+accept — jacobi, sor, ssor — in the slot where the base run puts ilu,
+amg and fieldsplit. That is the pathology removed: nothing is rejected,
+so 'bogus_ilu_rejected=True', 'bogus_amg_rejected=True' and
+'bogus_fieldsplit_rejected=True' are no longer printed and a FAIL: line
+appears. Same form, so no new module is compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                       # noqa: E402
 from dune.fem.space import lagrange                        # noqa: E402
@@ -46,7 +56,11 @@ def main() -> int:
 
     # 1. the names an LLM reaches for must all be REJECTED, and the
     #    message must name the parameter and enumerate the alternatives.
-    for name in BOGUS:
+    bogus_names = ("jacobi", "sor", "ssor") if MUTATE else BOGUS
+    if MUTATE:
+        print("mutation=the_bogus_slot_uses_three_accepted_"
+              "preconditioner_names")
+    for name in bogus_names:
         try:
             galerkin(eqn, solver="cg",
                      parameters={"linear.preconditioning.method": name})

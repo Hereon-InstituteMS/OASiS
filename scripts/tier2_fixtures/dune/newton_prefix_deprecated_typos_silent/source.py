@@ -17,11 +17,20 @@ One scheme's worth of compiled code answers all three, because every
 assertion is about the parameter dictionary, not about the form.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 passes the CURRENT spelling
+'nonlinear.tolerance' where the base run passes the deprecated
+'newton.tolerance' — the pathology removed. Nothing is rewritten and
+nothing warns, so 'newton_prefix_warned=True' is no longer printed and
+a FAIL: line appears. Same form, so no new module is compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -49,7 +58,10 @@ def main() -> int:
     fail: list[str] = []
 
     # 1. newton.* is rewritten to nonlinear.*, with a warning.
-    space, scheme, texts = _build({"newton.tolerance": 1e-10})
+    tolerance_key = "nonlinear.tolerance" if MUTATE else "newton.tolerance"
+    if MUTATE:
+        print("mutation=the_caller_uses_the_current_nonlinear_prefix")
+    space, scheme, texts = _build({tolerance_key: 1e-10})
     blob = " || ".join(texts)
     print(f"newton_prefix_warned="
           f"{any('newton' in t and 'deprecated' in t for t in texts)}")

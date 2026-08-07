@@ -47,12 +47,22 @@ Executed against dune-fem 2.12.0.2 on 2026-08-03:
 camelCase def present, lowercase def absent,
 'raviartthomas.hh' present at _spaces.py:922,
 catalog_lowercase_count=0.
+
+MUTATION CONTROL. T2_MUTATE=1 appends a synthetic
+`def raviartthomas(` line to the _spaces.py text being scanned — the
+pathology removed, i.e. the world in which dune-fem ships a lowercase
+alias after all. raviartthomas_lowercase_def_present then reads True,
+that expectation disappears and a FAIL: line appears. The file on disk
+is never touched; only the in-memory copy is.
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def _find_spaces_py():
@@ -93,6 +103,10 @@ def main() -> int:
         return 2
     print(f"spaces_py_source={spaces_py}")
     text = spaces_py.read_text()
+    if MUTATE:
+        print("mutation=the_scanned_spaces_py_text_gains_a_lowercase_"
+              "raviartthomas_alias")
+        text = text + "\ndef raviartthomas(gridView, order=0):\n    pass\n"
     camel = re.search(r"^def\s+raviartThomas\s*\(", text, re.MULTILINE)
     lowercase = re.search(r"^def\s+raviartthomas\s*\(", text,
                           re.MULTILINE)

@@ -25,14 +25,26 @@ The optimistic direction is the dangerous one: an error norm that is
 too small by two orders of magnitude, with an order that looks better
 than theory, is exactly what a convergence gate is supposed to catch
 and exactly what it would wave through.
+
+MUTATION CONTROL. T2_MUTATE=1 raises the LOWEST quadrature order under
+test from 0 to GOOD+2, i.e. the under-integration is removed while
+everything else stays. That column then sits on theory instead of
+above it, so 'lowest_order_norm_reports_better_than_theory=True',
+'lowest_order_norm_under_reports_the_error=True' and
+'lowest_order_under_report_worsens_with_refinement=True' are no longer
+printed and a FAIL: line appears. Only the quadrature degree of an
+integrate() call changes, so no new module is compiled.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem import integrate                                  # noqa: E402
@@ -45,7 +57,7 @@ from ufl import (TrialFunction, TestFunction, SpatialCoordinate,  # noqa: E402
 ORDER = 2                       # Lagrange degree; theory gives L2 order 3
 LEVELS = (4, 8, 16, 32)
 GOOD = 2 * ORDER + 4            # what the catalog template uses
-QUADS = (0, 2, GOOD)
+QUADS = (GOOD + 2, 2, GOOD) if MUTATE else (0, 2, GOOD)
 
 
 def solve_and_measure(n):
@@ -77,6 +89,9 @@ def eocs(series):
 
 def main() -> int:
     fail: list[str] = []
+    if MUTATE:
+        print(f"mutation=the_lowest_quadrature_column_is_well_"
+              f"integrated_at_order_{GOOD + 2}")
     table = {}
     for n in LEVELS:
         norms, converged = solve_and_measure(n)

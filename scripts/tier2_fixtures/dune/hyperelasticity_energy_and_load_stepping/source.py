@@ -19,15 +19,25 @@ and #1 are checked by INTEGRATING the energy density at the reference
 configuration, which needs no solve at all.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 puts the CORRECT Neo-Hookean energy in
+the slot where the base run drops the -d term — the pathology removed.
+The reference energy then vanishes there too, so
+'dropping_minus_d_leaves_residual_energy=True' is no longer printed and
+a FAIL: line appears. Only an integrate() call changes, so nothing
+extra compiles.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -61,7 +71,11 @@ def main() -> int:
     J_ok = det(F_ok)
     W_ok = (MU / 2 * (tr(C_ok) - d) - MU * ln(J_ok)
             + LAM / 2 * ln(J_ok) ** 2)
-    W_no_d = MU / 2 * tr(C_ok)          # the -d dropped
+    if MUTATE:
+        print("mutation=the_minus_d_slot_uses_the_correct_energy")
+        W_no_d = W_ok
+    else:
+        W_no_d = MU / 2 * tr(C_ok)      # the -d dropped
     e_ok = float(dfem.integrate(W_ok, gridView=gridView, order=4))
     e_no_d = float(dfem.integrate(W_no_d, gridView=gridView, order=4))
     print(f"detF_at_reference={float(dfem.integrate(J_ok, gridView=gridView, order=2)):.6f}")

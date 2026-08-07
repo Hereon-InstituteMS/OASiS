@@ -12,14 +12,22 @@ what is importable and what is not, so the claim cannot drift back in
 without the gate turning red.
 
 Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.
+
+MUTATION CONTROL. T2_MUTATE=1 probes 'dune.grid' in the slot where
+'dune.femdg' is probed — i.e. the world in which dune-fem-dg IS
+installed. dune_femdg_importable then reads True, the expectation
+'dune_femdg_importable=False' disappears and a FAIL: line appears.
 """
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def importable(name: str) -> bool:
@@ -47,7 +55,10 @@ def main() -> int:
             fail.append(f"{mod} unexpectedly absent")
 
     # absent
-    for mod, key in (("dune.femdg", "dune_femdg"),
+    femdg = "dune.grid" if MUTATE else "dune.femdg"
+    if MUTATE:
+        print("mutation=the_dune_femdg_probe_targets_an_installed_module")
+    for mod, key in ((femdg, "dune_femdg"),
                      ("dune.fem.dg", "dune_fem_dg"),
                      ("dune.vem", "dune_vem"),
                      ("dune.fem.solver", "dune_fem_solver"),

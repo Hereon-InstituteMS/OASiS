@@ -12,14 +12,26 @@ The fixture still imports dune-fem and generates the script, so it
 cannot pass on a machine without the backend.
 
 Verified against the shipped generator and dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 feeds the guard a POSITIVE kappa where
+the base run feeds it an indefinite one — the pathology removed. The
+guard then correctly stays silent and emits code, so
+'indefinite_kappa_min=-0.500000', 'indefinite_rejected=True',
+'message_names_ellipticity=True' and 'generator_refused=ValueError' are
+no longer printed and a FAIL: line appears. This is what makes the
+rejection attributable to kmin <= 0 rather than to the guard firing on
+everything.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 # Fails loudly without dune-fem, the same as every other fixture here.
 import dune.fem                                                 # noqa: E402,F401
@@ -67,7 +79,11 @@ def main() -> int:
                         f"but the sampled minimum is {sampled}")
 
     # ── the guard fires on an indefinite field ─────────────────────
-    bad = {"k0": 1.0, "kx": -1.5}
+    if MUTATE:
+        print("mutation=the_indefinite_slot_is_fed_a_positive_kappa")
+        bad = {"k0": 1.0, "kx": 1.5}
+    else:
+        bad = {"k0": 1.0, "kx": -1.5}
     kmin = gen.kappa_min({**gen._DEFAULTS, **bad})
     problems = gen.validate_parameters(bad)
     joined = " | ".join(problems)

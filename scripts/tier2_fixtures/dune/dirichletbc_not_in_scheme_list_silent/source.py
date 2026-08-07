@@ -31,14 +31,25 @@ Verified by execution against dune-fem 2.12.0.2 on 2026-08-03:
   good    converged=True  linear_iterations=1      L2 err 1.899705e-03
   omitted converged=True  linear_iterations=23935  L2 err 7.510512e+14
   never   converged=True  linear_iterations=23935  L2 err 7.510512e+14
+
+MUTATION CONTROL. T2_MUTATE=1 puts the DirichletBC back into the list
+of the 'omitted' scheme, i.e. the pathology removed. That variant then
+solves correctly, the fixture's own gate ("expected a catastrophic L2
+error") fires, a FAIL: line appears and the verdict token
+'dune_silent_bc_trap_reproduced=True' is no longer printed. No new
+module is compiled — the corrected scheme is the same one the 'good'
+variant already builds.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np                                        # noqa: E402
 from dune.grid import structuredGrid                      # noqa: E402
@@ -74,8 +85,13 @@ def main() -> int:
 
     good_conv, good_it, good_err = run(
         "good", galerkin([a == b, DirichletBC(space, 0)], solver="cg"))
-    om_conv, om_it, om_err = run(
-        "omitted", galerkin(a == b, space=space, solver="cg"))
+    if MUTATE:
+        print("mutation=the_omitted_variant_gets_its_dirichletbc_back")
+        omitted_scheme = galerkin([a == b, DirichletBC(space, 0)],
+                                  solver="cg")
+    else:
+        omitted_scheme = galerkin(a == b, space=space, solver="cg")
+    om_conv, om_it, om_err = run("omitted", omitted_scheme)
     nv_conv, nv_it, nv_err = run(
         "never",
         galerkin([a == b,

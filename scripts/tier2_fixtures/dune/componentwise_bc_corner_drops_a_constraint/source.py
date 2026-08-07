@@ -13,13 +13,23 @@ asserted here as the control: it rules out "component masks never
 merge" as the explanation and pins the failure to the shared corner.
 
 Verified by execution against dune-fem 2.12.0.2 on 2026-08-03.
+
+MUTATION CONTROL. T2_MUTATE=1 replaces the two component-wise masks
+[0, None] / [None, 0] with FULL masks [0, 0] on the same two edges, so
+nothing is left for the merge rule to drop at the shared corner. That
+is the pathology removed: corner_constraint_dropped reads False, the
+expectation 'corner_constraint_dropped=True' disappears and a FAIL:
+line appears. The form is unchanged, so no new module is compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 import numpy as np                                         # noqa: E402
 from dune.grid import structuredGrid                       # noqa: E402
@@ -69,10 +79,19 @@ def main() -> int:
 
     fail = []
 
+    # The two masks under test. Component-wise in the base run — which
+    # is what makes the shared corner lose one of them. Under mutation
+    # both edges carry a FULL mask, so there is nothing to drop.
+    mask_left = [0, 0] if MUTATE else [0, None]
+    mask_bottom = [0, 0] if MUTATE else [None, 0]
+    if MUTATE:
+        print("mutation=both_edges_carry_a_full_mask_so_no_component_"
+              "is_left_to_drop")
+
     # A. two component-wise BCs on edges that MEET
     vals = solve(space, a, L,
-                 [DirichletBC(space, [0, None], left),
-                  DirichletBC(space, [None, 0], bottom)], "meet")
+                 [DirichletBC(space, mask_left, left),
+                  DirichletBC(space, mask_bottom, bottom)], "meet")
     ux00, uy00 = float(vals[i00, 0]), float(vals[i00, 1])
     print(f"corner_ux_should_be_zero={ux00:.3e}")
     print(f"corner_uy_should_be_zero={uy00:.3e}")
@@ -85,8 +104,8 @@ def main() -> int:
 
     # A'. the list order must NOT matter (rules out "last wins")
     vals_rev = solve(space, a, L,
-                     [DirichletBC(space, [None, 0], bottom),
-                      DirichletBC(space, [0, None], left)], "meet_rev")
+                     [DirichletBC(space, mask_bottom, bottom),
+                      DirichletBC(space, mask_left, left)], "meet_rev")
     same = bool(np.allclose(vals, vals_rev, rtol=0, atol=1e-18))
     print(f"corner_result_independent_of_list_order={same}")
     if not same:

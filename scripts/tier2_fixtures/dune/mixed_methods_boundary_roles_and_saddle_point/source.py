@@ -20,15 +20,25 @@ Raviart-Thomas cannot be a leg of product()/composite() on this install
 Lagrange-on-Lagrange, exactly as that pitfall's own advice says.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the GMRES probe with the direct
+UMFPACK solver — the pathology (an unpreconditioned Krylov method on
+the saddle-point system) removed. The iteration count collapses to the
+direct solver's, so 'gmres_costs_more_iterations=True' is no longer
+printed and a FAIL: line appears. The direct scheme is one the fixture
+already builds.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange, composite                  # noqa: E402
@@ -148,7 +158,11 @@ def main() -> int:
     print("equal_order_claim_not_reproduced_here=True")
 
     # ── mixed_methods#6: direct vs GMRES on the saddle system ──────
-    scheme_gmres = galerkin([a == L], solver="gmres",
+    if MUTATE:
+        print("mutation=the_gmres_probe_uses_the_direct_solver")
+    scheme_gmres = galerkin(
+        [a == L],
+        solver=("suitesparse", "umfpack") if MUTATE else "gmres",
                             parameters={"linear.tolerance": 1e-12,
                                         "linear.maxiterations": 200000})
     wh_g = W.interpolate([0, 0, 0], name="wh_g")

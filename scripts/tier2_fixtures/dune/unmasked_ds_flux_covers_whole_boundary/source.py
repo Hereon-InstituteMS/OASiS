@@ -18,15 +18,25 @@ system, and repeating it cost this fixture a 764 s run that had to be
 killed.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 puts the MASKED flux form in the slot
+where the base run puts the unmasked one — the pathology removed. The
+two runs then agree, the ratio is 1.0, so 'unmasked_max=2.163782' and
+'unmasked_is_a_small_multiple_of_the_answer=True' are no longer printed
+and a FAIL: line appears. The masked scheme is one the fixture already
+builds, so nothing extra compiles.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange                             # noqa: E402
@@ -70,7 +80,12 @@ def main() -> int:
                     f"reproduce u = x (L2 error {err:.3e}); without "
                     f"that control the unmasked number means nothing")
 
-    scheme_bad = galerkin([a == 1.0 * v * ds, clamp],
+    if MUTATE:
+        print("mutation=the_unmasked_slot_uses_the_correctly_masked_flux")
+        bad_flux = 1.0 * mask * v * ds
+    else:
+        bad_flux = 1.0 * v * ds
+    scheme_bad = galerkin([a == bad_flux, clamp],
                           solver="cg", parameters=PARAMS)
     uh_bad = space.interpolate(0, name="uh_bad")
     info_bad = scheme_bad.solve(target=uh_bad)

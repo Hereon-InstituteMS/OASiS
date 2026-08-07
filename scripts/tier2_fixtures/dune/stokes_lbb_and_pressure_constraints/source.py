@@ -13,15 +13,26 @@
              boundary and over-constrains the system.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 runs the "equal order" sweep on the
+inf-sup STABLE P2/P1 pair — the pathology removed. This is the mutation
+that the earlier round found did NOT discriminate, which is why the
+stable-pair control was added; with that control in place the
+oscillation ratio against the stable pair collapses to 1, so
+'equal_order_is_orders_of_magnitude_worse=True' is no longer printed
+and a FAIL: line appears. Both pairs are already compiled.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                            # noqa: E402
 from dune.fem.space import lagrange, composite                  # noqa: E402
@@ -67,10 +78,14 @@ def main() -> int:
     fail: list[str] = []
 
     # ── stokes#3: equal order, checkerboard that does not shrink ───
+    if MUTATE:
+        print("mutation=the_equal_order_sweep_uses_the_stable_"
+              "p2_p1_pair")
     osc, vel_scale = {}, {}
     for nx in (8, 16):
         gv = structuredGrid([0, 0], [1, 1], [nx, nx])
-        W, a, L, x = stokes_pieces(gv, 1, 1)
+        W, a, L, x = stokes_pieces(gv, 2, 1) if MUTATE \
+            else stokes_pieces(gv, 1, 1)
         inlet = lt(x[0], TOL)
         walls = Or(lt(x[1], TOL), gt(x[1], 1 - TOL))
         bcs = [DirichletBC(W, [x[1] * (1 - x[1]), 0, None], inlet),

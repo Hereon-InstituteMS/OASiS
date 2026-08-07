@@ -19,15 +19,27 @@ even/odd de-interleaving is checked against those values, and the
 half/half reading is shown to disagree with them.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 re-orders the flat dof array into the
+BLOCKED layout [all u_x | all u_y] before the layout tests run — the
+pathology (interleaving) removed. reshape(-1, 2) then no longer
+recovers (x, 2y) and the entries above 1 are no longer at odd indices,
+so 'interleaved_reshape_is_correct=True',
+'entries_above_one_are_all_at_odd_indices=True' and
+'half_split_disagrees=True' are no longer printed and a FAIL: line
+appears. Pure numpy; nothing extra compiles.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -85,6 +97,12 @@ def main() -> int:
     x = SpatialCoordinate(vec)
     uh = vec.interpolate(as_vector([x[0], 2 * x[1]]), name="uh")
     vals = np.array(uh.as_numpy)
+    if MUTATE:
+        # The pathology removed: hand the layout tests a BLOCKED array
+        # [all u_x | all u_y] instead of the interleaved one.
+        print("mutation=the_dof_array_is_re_ordered_into_a_blocked_"
+              "layout")
+        vals = np.concatenate([vals[0::2], vals[1::2]])
     n_nodes = 17 * 17
     print(f"as_numpy_len={len(vals)}")
     print(f"as_numpy_is_one_flat_array={vals.ndim == 1}")

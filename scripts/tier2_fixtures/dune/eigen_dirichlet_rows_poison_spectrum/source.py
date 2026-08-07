@@ -24,17 +24,29 @@ are computed densely, because the whole point is to COUNT modes and
 locate them, which a Krylov method cannot do.
 
 Verified by execution against dune-fem 2.12.0.2.
+
+MUTATION CONTROL. T2_MUTATE=1 replaces the scheme's constrained matrix
+with a SYMMETRICALLY eliminated one — boundary rows AND columns zeroed,
+unit diagonal — which is the pathology removed: the elimination is no
+longer one-sided. constrained_matrix_asymmetry falls to 0, so
+'constrained_matrix_is_not_symmetric=True' is no longer printed, a
+FAIL: line appears and the verdict token disappears. Pure scipy, no new
+DUNE module.
 """
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 
 import numpy as np
 import scipy.linalg as sla
+import scipy.sparse as spsp
 from scipy.sparse.linalg import eigsh
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                           # noqa: E402
 from dune.fem.space import lagrange                            # noqa: E402
@@ -78,6 +90,19 @@ def main() -> int:
     scheme = galerkin([stiff == 1.0 * v * dx, DirichletBC(space, 0)],
                       solver="cg")
     Ac = dfem.operator.linear(scheme).as_numpy
+    if MUTATE:
+        # The pathology removed: eliminate the constrained dofs
+        # SYMMETRICALLY (rows and columns), which is what a caller who
+        # knew about the trap would do before handing the matrix to
+        # eigsh. The rows are still identity rows; the asymmetry is gone.
+        print("mutation=the_constrained_matrix_is_eliminated_"
+              "symmetrically_rows_and_columns")
+        idx = np.where(bnd)[0]
+        dense = A.toarray().copy()
+        dense[idx, :] = 0.0
+        dense[:, idx] = 0.0
+        dense[idx, idx] = 1.0
+        Ac = spsp.csr_matrix(dense)
     diag = Ac.diagonal()
     row_sums = np.array(abs(Ac).sum(axis=1)).ravel()
     identity_rows = bool(np.allclose(diag[bnd], 1.0)

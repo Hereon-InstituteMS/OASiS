@@ -40,14 +40,26 @@ absolute error floor or the observed order band is missed. The bands
 are deliberately tight — this is a Cartesian grid, so unlike the
 Netgen-meshed ngsolve fixture there is no mesh-topology jitter and the
 orders land on theory to three digits.
+
+MUTATION CONTROL. This fixture is a correctness GATE, not a pitfall
+reproduction, so the control has to show the gate can fail rather than
+that a pathology can be removed. T2_MUTATE=1 loosens the linear
+tolerance from 1e-12 to 1e-2, which is exactly the defect the gate
+exists to catch: the algebraic error then swamps the discretisation
+error, the observed orders leave their bands, and 'dune_poisson_mms_
+gate=OK' is no longer printed while FAIL: lines appear. Only a solver
+parameter changes, so no new module is compiled.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 from dune.grid import structuredGrid                       # noqa: E402
 from dune.fem import integrate                             # noqa: E402
@@ -76,7 +88,8 @@ def solve_level(n: int, order: int) -> tuple[float, float, bool]:
     a = dot(grad(u), grad(v)) * dx
     b = f * v * dx
     scheme = galerkin([a == b, DirichletBC(space, u_ex)], solver="cg",
-                      parameters={"linear.tolerance": 1e-12,
+                      parameters={"linear.tolerance":
+                                  1e-2 if MUTATE else 1e-12,
                                   "linear.maxiterations": 20000})
     uh = space.interpolate(0, name="uh")
     info = scheme.solve(target=uh)
@@ -95,6 +108,8 @@ def main() -> int:
     except Exception:                                    # pragma: no cover
         print("dune_fem_version=unknown")
 
+    if MUTATE:
+        print("mutation=the_linear_tolerance_is_loosened_to_1e-2")
     fail: list[str] = []
     for k in sorted(L2_FLOOR):
         l2, h1 = [], []
