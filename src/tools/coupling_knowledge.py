@@ -567,11 +567,17 @@ the second is mesh-independent. Estimate rho, then verify by running.
 
 ### What has been established, and by which fixture
 
-| Pair                | Roles/positions | Evidence |
-|---------------------|-----------------|----------|
-| FEniCSx <-> scikit-fem | all four     | fixture coupling/vector_pair_fenics_skfem |
-| FEniCSx <-> deal.II    | both, both positions | fixture coupling/vector_pair_fenics_dealii |
-| NGSolve <-> scikit-fem | all four     | fixture coupling/vector_pair_ngsolve_skfem |
+| Pair                   | What was run | Evidence |
+|------------------------|--------------|----------|
+| FEniCSx <-> scikit-fem | 3 arrangements covering all four (role, position) combinations | fixture coupling/vector_pair_fenics_skfem |
+| FEniCSx <-> deal.II    | 2 arrangements; each code in both positions and both roles | fixture coupling/vector_pair_fenics_dealii |
+| NGSolve <-> scikit-fem | 3 arrangements covering all four (role, position) combinations | fixture coupling/vector_pair_ngsolve_skfem |
+
+Read that column literally. "All four combinations" means the four
+(role, position) pairs were each exercised across the arrangements — NOT that
+every backend was run in all four on its own. Each backend in each pair is
+proven in three of the four; the fourth for that backend is covered by its
+partner.
 
 Each runs plane-strain elasticity split by a straight interface, exchanging a
 2-component displacement and a 2-component traction on non-matching interface
