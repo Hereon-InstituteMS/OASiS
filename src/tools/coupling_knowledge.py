@@ -507,7 +507,92 @@ structural code is a THERMO-STRUCTURAL problem and needs a real transfer
 relation in the participant scripts (see `knowledge(topic='tsi')`).
 '''
 
-_SIDES = _SIDES_TABLE.replace("## WHICH SIDE", "## 6. WHICH SIDE", 1)
+_VECTOR = '''\
+## 6a. VECTOR INTERFACES — displacement/traction, velocity/force, any n_comp
+
+Everything above exchanges ONE SCALAR. A vector interface is the primitive
+under TSI, FSI and contact, and the driver already carries it: `values` and
+`normal_fluxes` may be (N,) OR (N, n_comp), the residual is taken per
+component, and the conservation check balances each component on its own.
+Five things change on your side, and four of them converge beautifully to the
+wrong answer if you get them wrong.
+
+**1. MAP EACH COMPONENT SEPARATELY.** The driver does no interpolation — the
+non-matching interface is the participant's job — and `np.interp` takes only a
+1-D `fp`. One call over a flattened (N, 2) array interleaves the components:
+right length, clean convergence, every number wrong. Loop over components.
+
+**2. THE TRACTION SIGN.** Export
+
+        q_out = -(sigma . n_own)                  n_own = your outward normal
+
+the SAME convention the scalar participants use for heat (q_out = -k dT/dn).
+The two sides' exports then CANCEL componentwise — which is what makes the
+balance check a conservation statement — and the NEUMANN side applies the
+partner's numbers UNCHANGED (`L += inner(g, v) * ds`), because the natural
+boundary term of the elasticity weak form is +(sigma . n_own) . v. Exporting
+the raw traction instead flips the sign the Neumann side applies.
+
+**3. THE INTERFACE CORNERS BELONG TO THE OUTER BOUNDARY, ON BOTH SIDES.** A
+node where the interface meets a constrained outer face is a constrained node
+in the un-split problem, so it must stay constrained in BOTH subproblems.
+Handing it to the interface leaves it free on the Neumann side: that
+subproblem is still well posed, still converges, and lands a few percent off.
+Measured on the shipped participants — 4.7% in the interface displacement and
+28% in the interface traction, on a run whose residual reached 1e-10 and whose
+interface balanced.
+
+**4. theta = 1/(1 + MAX_c rho_c), not 1/(1 + rho).** rho is a ratio PER
+COMPONENT, and the two differ unless the subdomains share a Poisson ratio
+(M/mu = 2(1-nu)/(1-2nu) depends on nu alone). The driver's Jacobi amplification
+for component c is sqrt((1-theta)^2 + rho_c theta^2), below one only while
+theta < 2/(1+rho_c), so the LARGEST rho binds. Whenever rho_max > 1 + 2 rho_min,
+theta from the smaller one DIVERGES on the other component while the first
+settles — and the global residual reports only "did not converge".
+
+**5. A FREE (traction) BOUNDARY NEXT TO THE INTERFACE OPENS THE SPECTRUM.**
+Bending compliance scales as L^3 against L^1 for the axial one, so a subdomain
+with free faces is far softer in some interface modes than a 1-D conductance
+estimate suggests. Measured: the same split had a Steklov spectrum of
+[0.049, 2.07] with free faces and [0.25, 0.64] with constrained ones, and only
+the second is mesh-independent. Estimate rho, then verify by running.
+
+### What has been established, and by which fixture
+
+| Pair                | Roles/positions | Evidence |
+|---------------------|-----------------|----------|
+| FEniCSx <-> scikit-fem | all four     | fixture coupling/vector_pair_fenics_skfem |
+| FEniCSx <-> deal.II    | both, both positions | fixture coupling/vector_pair_fenics_dealii |
+| NGSolve <-> scikit-fem | all four     | fixture coupling/vector_pair_ngsolve_skfem |
+
+Each runs plane-strain elasticity split by a straight interface, exchanging a
+2-component displacement and a 2-component traction on non-matching interface
+meshes, and asserts componentwise: continuity of both displacement components,
+equilibrium of both traction components, per-component conservation, and
+agreement with BOTH a closed form and an un-split monolithic solve. Shipped
+participant scripts: `participant_{fenics,skfem,ngsolve,dealii}_elastic.py`
+(the deal.II one needs `elast_iface_dealii` built from the same CMake tree).
+No other backend has a vector participant yet — 4C, DUNE-fem, FEBio, Kratos
+and SPARTA are scalar-only here, and that is an absence of evidence rather
+than a demonstrated inability.
+
+### The one thing that does NOT hold
+
+**The exported TRACTION is not trustworthy near the ends of the interface**
+when the interface meets a constrained boundary. That corner is a
+Dirichlet-Neumann corner for the Neumann subproblem, which carries a stress
+singularity the monolithic problem does not have. Measured over a 4x
+refinement: the coupled displacement converges (1.22e-02 -> 2.34e-03 against
+the monolithic solve) while the exported traction at the interface end gets
+WORSE (2.11x -> 2.51x the true value). Refinement does not fix it, because it
+is not a discretisation error. Use the displacement channel for the answer,
+check traction equilibrium on the interface INTERIOR, and do not read the
+end-node traction as a result. Fixture:
+coupling/vector_traction_recovery_at_the_interface_ends.
+'''
+
+_SIDES = (_SIDES_TABLE.replace("## WHICH SIDE", "## 6. WHICH SIDE", 1)
+          + "\n" + _VECTOR)
 
 
 def coupling_sides_table() -> str:
