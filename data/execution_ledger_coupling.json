@@ -1,0 +1,500 @@
+{
+  "commit": "61a72566e723",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "coupling",
+      "fixture": "aitken_beats_constant_on_an_unbalanced_ratio",
+      "claim": "relaxation:41",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:04:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 623.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "aitken_clamp_bounds_theta",
+      "claim": "relaxation:42",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:15:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 376.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "aitken_survives_where_constant_theta_diverges",
+      "claim": "relaxation:40",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:21:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 440.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "balance_check_both_directions",
+      "claim": "silent_wrong:14",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:28:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "failure_table_reachable_from_a_symptom",
+      "claim": "failure_routing:31",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:28:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_dune_dealii",
+      "claim": "pair_dune_dealii:6",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:28:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 229.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_febio_febio",
+      "claim": "pair_febio_febio:7",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:32:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 256.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_fenics_dealii",
+      "claim": "pair_fenics_dealii:5",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:37:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 66.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_fenics_dune",
+      "claim": "pair_fenics_dune:4",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:38:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 224.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_fenics_fourc",
+      "claim": "pair_fenics_fourc:3",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:41:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 313.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_fenics_ngsolve",
+      "claim": "pair_fenics_ngsolve:2",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:47:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 244.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_fenics_skfem",
+      "claim": "pair_fenics_skfem:0",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:51:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 163.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_kratos_skfem",
+      "claim": "pair_kratos_skfem:33",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:53:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 26.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "pair_ngsolve_skfem",
+      "claim": "pair_ngsolve_skfem:1",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:54:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 278.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "precice_absent_in_fourc_and_febio",
+      "claim": "precice_availability:9",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:59:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "precice_can_verdicts_proven_by_a_real_run",
+      "claim": "precice_coupled_run:18",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:59:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 11.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "reference_solutions_unreachable_through_the_tools",
+      "claim": "reference_isolation:32",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:59:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "role_swap_beats_theta_tuning",
+      "claim": "relaxation:13",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:59:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 313.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "served_participant_scripts_run",
+      "claim": "participant_scripts:16",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:04:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 9.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "sides_table_backed_by_runs",
+      "claim": "sides_table_coverage:10",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:04:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "sparta_no_native_flux_bc",
+      "claim": "sides_capabilities:8",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:04:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "stochastic_noise_floor_makes_dsmc_gradable",
+      "claim": "stochastic_convergence:30",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:04:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 72.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "theta_converging_set_matches_the_limit",
+      "claim": "relaxation:17",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:05:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 397.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "theta_one_over_one_plus_rho_is_fastest",
+      "claim": "relaxation:12",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:12:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 847.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "theta_stability_limit",
+      "claim": "relaxation:11",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:26:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 494.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "unit_mismatch_survives_every_internal_check",
+      "claim": "silent_wrong:15",
+      "claim_text_sha": "",
+      "commit": "61a72566e723",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T01:34:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 50.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    }
+  ]
+}
