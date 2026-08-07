@@ -1,0 +1,3027 @@
+{
+  "commit": "bbefc6597cbe",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "dealii",
+      "fixture": "ad_helpers_absent_is_a_config_h_question",
+      "claim": "nonlinear:3",
+      "claim_text_sha": "f98997d14eed99f3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:54:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.7,
+        "missing": [
+          "names_an_ad_class=true",
+          "compiles=false",
+          "is not a member of"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "backward_euler_is_first_order_in_time",
+      "claim": "navier_stokes:3",
+      "claim_text_sha": "6bde05a5d6c6104b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:54:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 47.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 42.8,
+        "missing": [
+          "scheme_under_test=backward_euler_theta_one",
+          "observed_order_is_first=true",
+          "observed_order_is_second=false",
+          "scheme_under_test_is_the_less_accurate_one=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "bare_supg_tau_is_not_nodally_exact",
+      "claim": "convection_diffusion:0",
+      "claim_text_sha": "05a8fce70795a7e6",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:52+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "tau_under_test=bare_h_over_2b",
+          "tau_under_test_is_nodally_exact=false",
+          "VERDICT=bare_tau_misses_the_exact_solution_at_the_nodes",
+          "FORBIDDEN:VERDICT=doubly_asymptotic_tau_is_nodally_exact_at_every_peclet"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "block_matrix_needs_component_wise_renumbering",
+      "claim": "stokes:1",
+      "claim_text_sha": "b3c3cfdd3390e302",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "pressure_pressure_block_is_nonzero=true",
+          "VERDICT=block_indexing_is_wrong_without_component_wise",
+          "FORBIDDEN:VERDICT=block_indexing_is_correct"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "block_sweep_ratio_is_a_property_of_the_numbering",
+      "claim": "dg_transport::3",
+      "claim_text_sha": "0c516101da15a0b8",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": [
+          "field_under_test=constant_beta_1_1",
+          "block_sweep_is_an_exact_solve=true",
+          "block_iteration_count_is_mesh_independent=true",
+          "speedup_ratio_grows_by_more_than_3x_across_refinements=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "build_type_decides_whether_misuse_is_reported",
+      "claim": "poisson:7",
+      "claim_text_sha": "57542f3bfbfb9b77",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:55:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.5,
+        "missing": [
+          "value_was_stored=false",
+          "does not exist in the sparsity pattern of this matrix",
+          "summary_sparse_add_outside_pattern_debug_rc=134",
+          "summary_hp_active_fe_index_release_rc=139"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "catalog_symbols_vs_headers",
+      "claim": "dg_transport:96",
+      "claim_text_sha": "",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:01+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no interpreter configured for dealii \u2014 set DEALII_PYTHON. A missing interpreter is NOT a pass."
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "cell_only_sparsity_drops_every_dg_face_entry",
+      "claim": "advection_dg::0,dg_transport::0",
+      "claim_text_sha": "8b4e6210b7b6bdfb",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "sparsity_builder=make_sparsity_pattern",
+          "face_coupling_entries_are_missing=true",
+          "summary_debug_rc=134",
+          "summary_debug_reached_after_face_assembly=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "central_flux_is_stable_but_undamped",
+      "claim": "dg_advection_reaction:0",
+      "claim_text_sha": "1b82317c1ef1d0a3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 19.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 18.2,
+        "missing": [
+          "damping_of_the_rightmost_mode_under_test_halves_under_refinement=true",
+          "residue_under_test_is_more_than_ten_times_the_upwind_residue=true",
+          "VERDICT=flux_under_test_is_stable_but_leaves_a_residue_upwind_removes",
+          "FORBIDDEN:VERDICT=flux_under_test_behaves_like_upwind"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "cg_breaks_down_on_the_mixed_saddle_point",
+      "claim": "mixed_laplacian:1",
+      "claim_text_sha": "8f4249b465f48bec",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "solver_under_test_converged=false",
+          "VERDICT=cg_cannot_solve_the_indefinite_mixed_system",
+          "FORBIDDEN:VERDICT=solver_under_test_handled_the_saddle_point_system"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "clamped_corner_concentrates_the_stress",
+      "claim": "hyperelasticity:6",
+      "claim_text_sha": "57b8f4aef0761cd7",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "boundary_condition_under_test=fully_clamped",
+          "worst_point_under_test_sits_at_a_corner=true",
+          "under_test_reaches_the_lower_det_F=true",
+          "peak_stress_exceeds_the_other_by_a_quarter=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "closed_cavity_pressure_level_is_arbitrary",
+      "claim": "stokes:2",
+      "claim_text_sha": "962a175eb1ec301b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "constant_pressure_is_in_the_kernel=true",
+          "same_flow_different_pressure_level=true",
+          "VERDICT=pressure_is_undetermined_up_to_a_constant",
+          "FORBIDDEN:VERDICT=pressure_is_determined"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "coefficient_contrast_ssor_iteration_growth",
+      "claim": "poisson:6",
+      "claim_text_sha": "4bf74d93ab0e3da5",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": [
+          "iterations_grow_with_contrast=true",
+          "VERDICT=contrast_growth_is_marginal_not_linear",
+          "FORBIDDEN:VERDICT=iteration_count_is_flat"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "cold_start_never_picks_up_the_boundary_data",
+      "claim": "nonlinear:0",
+      "claim_text_sha": "69858c8fab0c38cc",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.6,
+        "missing": [
+          "initial_guess_under_test=all_zero_vector_no_boundary_values",
+          "boundary_condition_satisfied=false",
+          "VERDICT=cold_start_reports_convergence_without_the_boundary_data",
+          "FORBIDDEN:VERDICT=guess_leads_to_the_boundary_data"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "cold_start_newton_needs_reynolds_continuation",
+      "claim": "navier_stokes:2",
+      "claim_text_sha": "a13e116fe8cc47d3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:56:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 25.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 18.6,
+        "missing": [
+          "start_under_test=cold_start_from_a_zero_initial_guess",
+          "newton_converged=false",
+          "VERDICT=cold_start_newton_fails_at_the_target_reynolds_number",
+          "FORBIDDEN:VERDICT=the_starting_guess_reaches_the_target_reynolds_number"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "complex_split_missing_imaginary_coupling",
+      "claim": "helmholtz:1",
+      "claim_text_sha": "64da73f6450299cf",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "imaginary_coupling_assembled=false",
+          "components_are_proportional_to_the_source_split=true",
+          "VERDICT=no_coupling_leaves_the_two_blocks_independent",
+          "FORBIDDEN:VERDICT=blocks_are_coupled"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "contact_penalty_rule_of_thumb_still_penetrates",
+      "claim": "contact:1",
+      "claim_text_sha": "acb0852f793a03e2",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:57:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 21.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 21.7,
+        "missing": [
+          "penetration_under_test_exceeds_five_percent_of_an_element_edge=true",
+          "VERDICT=penalty_under_test_lets_the_body_penetrate",
+          "FORBIDDEN:VERDICT=penalty_under_test_holds_the_constraint"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dataout_without_mapping_q_eulerian_writes_the_reference",
+      "claim": "hyperelasticity:8",
+      "claim_text_sha": "eae2111bb7a74c47",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "build_patches_called_with=the_default_mapping",
+          "written_geometry_is_the_reference_configuration=true",
+          "written_geometry_is_the_deformed_configuration=false",
+          "VERDICT=default_dataout_writes_the_undeformed_geometry"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "degenerate_5pi2_pair_must_agree",
+      "claim": "eigenvalue:9",
+      "claim_text_sha": "2473e7a0a0d3f687",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 6.0,
+        "missing": [
+          "degenerate_pair_recovered=true",
+          "VERDICT=degenerate_5pi2_pair_agrees_to_machine_precision",
+          "FORBIDDEN:VERDICT=degenerate_pair_split"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dg_affineconstraints_noop",
+      "claim": "dg_transport::6",
+      "claim_text_sha": "295d733972c74057",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:31+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dg_interpolate_boundary_silent",
+      "claim": "dg_transport:97",
+      "claim_text_sha": "",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:31+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dg_iteration_count_without_the_block_sweep_grows",
+      "claim": "dg_advection_reaction:1",
+      "claim_text_sha": "da02d42b278a507b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "iteration_count_under_test_grows_with_refinement=true",
+          "VERDICT=iteration_count_under_test_is_not_mesh_independent",
+          "FORBIDDEN:VERDICT=iteration_count_under_test_is_mesh_independent"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dg_without_feinterfacevalues_leaves_cells_uncoupled",
+      "claim": "convection_diffusion:1",
+      "claim_text_sha": "4f4cdf8a46f05ad1",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "interior_face_terms=none_FEValues_only",
+          "cells_are_coupled=false",
+          "direct_solve=threw",
+          "UMFPACK reports that the matrix is singular"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "direct_solve_beats_cg_on_the_indefinite_tangent",
+      "claim": "hyperelasticity:12",
+      "claim_text_sha": "d7c94beee7035e36",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "solver_under_test=cg_with_ssor",
+          "relative_residual_under_test_below_1e-13=false",
+          "VERDICT=iterative_solve_stops_far_above_machine_precision",
+          "FORBIDDEN:VERDICT=direct_solve_returns_machine_precision_on_the_indefinite_tangent"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dirichlet_mass_diagonal_spurious_modes",
+      "claim": "eigenvalue:2",
+      "claim_text_sha": "8d788b157392e2d1",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 4.3,
+        "missing": [
+          "smallest_mode_below_physical_range=true",
+          "VERDICT=mirrored_unit_mass_diagonal_puts_a_mode_below_the_physical_range",
+          "FORBIDDEN:VERDICT=spectrum_starts_at_the_physical_mode"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dof_handler_zero_cells",
+      "claim": "poisson:0",
+      "claim_text_sha": "bd2579513ee894f4",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:41+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dof_wise_downstream_breaks_the_cell_blocks",
+      "claim": "dg_transport::4",
+      "claim_text_sha": "ad6658316ca2684b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": [
+          "dof_wise_renumbering=true",
+          "block_structure_still_matches_the_cells=false",
+          "summary_release_block_preconditioner_is_broken=true",
+          "summary_debug_block_preconditioner_is_broken=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dropped_theta_stiffness_term_is_inconsistent",
+      "claim": "heat:1",
+      "claim_text_sha": "43bee698002842bd",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.3,
+        "missing": [
+          "gap_to_reference_does_not_close=true",
+          "answers_converge_to_each_other=true",
+          "VERDICT=inconsistent_scheme_converges_to_the_wrong_answer",
+          "FORBIDDEN:VERDICT=scheme_is_consistent"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "dropping_k_geo_costs_consistency_not_symmetry",
+      "claim": "hyperelasticity::3",
+      "claim_text_sha": "f06c90b9c4a52643",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 5.2,
+        "missing": [
+          "tangent_under_test=K_mat_only",
+          "tangent_under_test_is_inconsistent=true",
+          "VERDICT=dropping_k_geo_costs_consistency_not_symmetry",
+          "FORBIDDEN:VERDICT=tangent_is_consistent_with_the_residual"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "empty_constraints_never_reach_the_matrix_free_operator",
+      "claim": "matrix_free:2",
+      "claim_text_sha": "f5d9b7e56067acaa",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "constraints_handed_to_reinit=an_empty_object",
+          "matrixfree_knows_about_constrained_dofs=false",
+          "cg_converged=false",
+          "solution_is_zero_on_the_dirichlet_boundary=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "equal_order_pair_has_spurious_checkerboard_modes",
+      "claim": "stokes:4",
+      "claim_text_sha": "cd885ea6f2017566",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:58:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 3.4,
+        "missing": [
+          "pair=equal_order_Q1_Q1",
+          "checkerboard_pressure_is_a_spurious_mode=true",
+          "more_null_modes_than_the_constant=true",
+          "beta_halves_under_refinement=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "equal_order_pressure_checkerboards_at_cell_centres",
+      "claim": "navier_stokes:1",
+      "claim_text_sha": "fa2b41b819fb8c89",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": [
+          "pair_under_test=equal_order_Q1_Q1",
+          "checkerboard_is_nearly_invisible_to_the_pair=true",
+          "pressure_magnitude_far_exceeds_the_stable_pair=true",
+          "VERDICT=equal_order_pair_cannot_control_the_checkerboard_mode"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "euclidean_deflation_reconverges",
+      "claim": "eigenvalue:1",
+      "claim_text_sha": "f40cde7cfbd51671",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 3.3,
+        "missing": [
+          "second_mode_repeats_the_first=true",
+          "second_mode_is_5pi2=false",
+          "VERDICT=euclidean_deflation_reconverges_to_the_same_mode",
+          "FORBIDDEN:VERDICT=deflation_found_a_new_mode"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "explicit_euler_limit_is_below_the_h_squared_bound",
+      "claim": "time_dependent_heat:1",
+      "claim_text_sha": "a87a293abff453e7",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 3.1,
+        "missing": [
+          "fd_bound_is_not_the_fe_limit=true",
+          "bounded_at_every_dt_tried=false",
+          "VERDICT=conditionally_stable_bisection_found_the_limit",
+          "FORBIDDEN:VERDICT=unconditionally_stable_over_the_range_tried"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "explicit_newmark_above_the_cfl_limit",
+      "claim": "wave:2",
+      "claim_text_sha": "6e588ccfa37e613b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 3.7,
+        "missing": [
+          "explicit_run_diverged=true",
+          "energy_growth_per_step_factor_above_ten=true",
+          "VERDICT=explicit_newmark_above_the_cfl_limit_diverges",
+          "FORBIDDEN:VERDICT=explicit_run_stayed_bounded"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "fe_index_past_the_collection",
+      "claim": "hp_adaptive:1",
+      "claim_text_sha": "d7d52417d9b521f6",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:24+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": [
+          "summary_release_rc=139",
+          "summary_debug_rc=134",
+          "summary_release_distribute_dofs_returned=false",
+          "summary_debug_distribute_dofs_returned=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "feevaluation_template_mismatch_is_silent_in_release",
+      "claim": "matrix_free:1",
+      "claim_text_sha": "1161e931d609dfea",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": [
+          "summary_debug_mf_bad_template_rc=134",
+          "Illegal arguments in constructor/wrong template arguments!",
+          "Called -->   FEEvaluation<dim,3,4,1,Number>(data, 0, 0, 0)",
+          "a_mismatched_template_produced_a_wrong_answer_without_error=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "fixed_supg_tau_over_stabilises_the_resolved_regime",
+      "claim": "phase_field:1",
+      "claim_text_sha": "9b9538b8482ef0d0",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "tau_under_test_is_worse_than_plain_galerkin_in_the_diffusive_regime=true",
+          "smearing_reaches_twenty_percent_at_cell_peclet_one_half=true",
+          "smearing_exceeds_one_percent_at_cell_peclet_one_twentieth=true",
+          "VERDICT=fixed_tau_over_stabilises_where_the_mesh_already_resolves"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "flipped_upwind_flux_does_not_advect_backwards",
+      "claim": "convection_diffusion:2",
+      "claim_text_sha": "06b011e25b2a9fe0",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "flux_takes=downstream_value",
+          "pure_advection_direct_solve=threw",
+          "UMFPACK reports that the matrix is singular",
+          "inflow_datum_is_carried_with_the_flow=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "forward_euler_conditional_stability",
+      "claim": "heat:4",
+      "claim_text_sha": "6b8edbce8d9ce827",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.9,
+        "missing": [
+          "bounded_at_every_dt_tried=false",
+          "fd_bound_is_not_the_fe_limit=true",
+          "VERDICT=conditionally_stable_bisection_found_the_limit"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "full_newton_step_without_line_search_diverges",
+      "claim": "nonlinear:1",
+      "claim_text_sha": "2c7cc4bfc0827ad3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.6,
+        "missing": [
+          "step_length=full_newton_step_alpha_1",
+          "diverged=true",
+          "residual_decreased_monotonically=false",
+          "Iterative method reported convergence failure in step"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "galerkin_wiggles_vanish_once_cell_peclet_drops_below_one",
+      "claim": "phase_field:0",
+      "claim_text_sha": "6deab165a3fbce43",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "oscillation_under_test_while_cell_peclet_exceeds_one=true",
+          "oscillation_under_test_survives_several_refinements_above_peclet_one=true",
+          "VERDICT=scheme_under_test_oscillates_until_the_cell_peclet_drops_below_one",
+          "FORBIDDEN:VERDICT=scheme_under_test_stays_inside_the_data_range"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "gap_only_active_set_cycles_forever",
+      "claim": "obstacle_problem:0",
+      "claim_text_sha": "5c7634ddeeb5356c",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "active_set_criterion=gap_only",
+          "two_consecutive_active_sets_became_identical=false",
+          "active_set_repeats_an_earlier_state=true",
+          "active_set_cycles_with_period_two=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "generalized_form_needs_the_mass_matrix",
+      "claim": "eigenvalue:3",
+      "claim_text_sha": "97b811c35e19a15d",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 3.2,
+        "missing": [
+          "standard_form_scales_with_mesh=true",
+          "VERDICT=omitting_the_mass_matrix_gives_mesh_dependent_numbers",
+          "FORBIDDEN:VERDICT=both_forms_agree"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "gmres_converges_on_the_uncoupled_dg_system",
+      "claim": "dg_transport::1",
+      "claim_text_sha": "d36e1fa6876bfcaf",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "interior_face_terms=none_FEValues_only",
+          "cells_are_coupled=false",
+          "amplitude_exceeds_the_reference_by_an_order_of_magnitude=true",
+          "cells_uncoupled_and_jumps_are_not_small=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "gmsh_second_order_rejected",
+      "claim": "linear_elasticity:5",
+      "claim_text_sha": "0f6706cfee20450d",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:42+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "grid_in_malformed_format",
+      "claim": "linear_elasticity:92",
+      "claim_text_sha": "",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:42+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "grid_in_unsupported_cell_type",
+      "claim": "linear_elasticity:4",
+      "claim_text_sha": "165a53aafdf2a570",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:42+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "hand_modified_contact_rows_break_the_symmetry",
+      "claim": "contact:2",
+      "claim_text_sha": "89a7c786ce823e4e",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "enforcement_under_test=hand_modified_rows",
+          "operator_under_test_is_symmetric=false",
+          "cg_converged=false",
+          "VERDICT=hand_modified_rows_destroy_the_symmetry"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "handrolled_face_dispatch_drops_the_periodic_pair",
+      "claim": "dg_transport::2",
+      "claim_text_sha": "87af0c1c56155ad3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "assembly_driver=handrolled_at_boundary_dispatch",
+          "periodic_interface_matrix_couplings=0",
+          "periodic_pair_is_coupled=false",
+          "solution_is_discontinuous_across_the_periodic_pair=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "hdiv_dofs_are_face_functionals_not_nodal",
+      "claim": "mixed_laplacian:0",
+      "claim_text_sha": "0a8f6838065607f5",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.7,
+        "missing": [
+          "post_processing_under_test_reproduces_the_face_flux_integral=false",
+          "VERDICT=nodal_post_processing_of_an_hdiv_field_returns_nothing",
+          "FORBIDDEN:VERDICT=post_processing_under_test_matches_the_flux_integral"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "helmholtz_cg_resonant_breakdown",
+      "claim": "helmholtz:0",
+      "claim_text_sha": "3a6dfa8ad1fc1143",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:49+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "hp_quadrature_collection_size_one",
+      "claim": "hp_adaptive:2",
+      "claim_text_sha": "8e230f7977242dd2",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "run_under_test_threw_noconvergence=true",
+          "run_under_test_residual_grew_above_the_initial_residual=true",
+          "run_under_test_rule=single_qgauss2",
+          "run_under_test_q_collection_matches_fe_collection=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "hp_without_smoothness_estimator_stays_h_only",
+      "claim": "hp_adaptive:3",
+      "claim_text_sha": "b42129245e5a1ac6",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "hyper_cube_single_boundary_id",
+      "claim": "poisson:1",
+      "claim_text_sha": "3061494059b9a787",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:51+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "implicit_euler_dissipates_the_wave_energy",
+      "claim": "time_dependent_wave:0",
+      "claim_text_sha": "07bca39c1b252ce9",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": [
+          "integrator_under_test=implicit_euler",
+          "energy_under_test_decays_monotonically=true",
+          "energy_under_test_lost_more_than_a_tenth=true",
+          "energy_under_test_is_conserved_to_ten_significant_figures=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "initial_condition_bypasses_constraints",
+      "claim": "heat:3",
+      "claim_text_sha": "9d94213476392db3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "ic_violates_the_boundary_condition=true",
+          "VERDICT=direct_node_write_gives_an_ic_that_violates_the_bc",
+          "FORBIDDEN:VERDICT=ic_consistent_with_bc"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "install_feature_flags_visible",
+      "claim": "parallel_poisson:90",
+      "claim_text_sha": "",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:53+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no interpreter configured for dealii \u2014 set DEALII_PYTHON. A missing interpreter is NOT a pass."
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "isotropic_refinement_wastes_cells_on_a_boundary_layer",
+      "claim": "convection_diffusion:4",
+      "claim_text_sha": "767e181e79e09e93",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "strategy_under_test=isotropic",
+          "strategy_under_test_wastes_cells=true",
+          "VERDICT=isotropic_refinement_costs_multiples_of_the_cells",
+          "FORBIDDEN:VERDICT=strategy_is_not_wasteful"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "iterative_method_failed_to_converge",
+      "claim": "linear_elasticity:98",
+      "claim_text_sha": "",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:54+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "leapfrog_at_dt_below_h_over_c_still_diverges",
+      "claim": "time_dependent_wave:1",
+      "claim_text_sha": "b371a76fbcdec59f",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-06T23:59:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 4.5,
+        "missing": [
+          "energy_growth_per_step_factor_above_ten=true",
+          "explicit_run_diverged=true",
+          "VERDICT=explicit_newmark_above_the_cfl_limit_diverges",
+          "FORBIDDEN:VERDICT=explicit_run_stayed_bounded"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "linear_solve_returns_the_stokes_answer",
+      "claim": "navier_stokes:0",
+      "claim_text_sha": "3e3b493b7b7a5b2b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.8,
+        "missing": [
+          "formulation_under_test=one_linear_solve_without_the_convective_term",
+          "matches_the_stokes_answer=true",
+          "differs_from_the_navier_stokes_answer=true",
+          "answer_under_test_is_reflection_symmetric=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "matrix_free_path_holds_no_global_matrix",
+      "claim": "matrix_free:3",
+      "claim_text_sha": "d971d94361af0021",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "operator_under_test=assembled_sparse_matrix",
+          "operator_under_test_stores_a_global_matrix=true",
+          "operator_under_test_builds_a_sparsity_pattern=true",
+          "the_two_paths_agree_to_roundoff=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "matrixfree_accepts_mixed_p_dofhandler",
+      "claim": "hp_adaptive:5",
+      "claim_text_sha": "628cac2447211a50",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "under_test_cell_batches_carry_two_fe_indices=true",
+          "under_test_mesh_is_mixed_p=true",
+          "VERDICT=matrixfree_accepted_a_mixed_p_dofhandler",
+          "FORBIDDEN:VERDICT=matrixfree_saw_a_single_fe_index"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "matrixfree_reinit_aborts_on_raviart_thomas",
+      "claim": "matrix_free:0",
+      "claim_text_sha": "872354a54f1054cb",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "summary_release_mf_rt_reinit_rc=134",
+          "summary_debug_mf_rt_reinit_rc=134",
+          "You are trying to use functionality in deal.II that is currently not",
+          "get_element_type_specific_information"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "measure_symmetry_yourself_cg_never_says_breakdown",
+      "claim": "linear_elasticity:8",
+      "claim_text_sha": "411daa0e37d20f75",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "symmetry_broken=true",
+          "cg_outcome=NoConvergence",
+          "VERDICT=symmetry_defect_is_the_reliable_diagnostic",
+          "FORBIDDEN:VERDICT=matrix_symmetric"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "mg_api_without_distribute_mg_dofs",
+      "claim": "multigrid:0",
+      "claim_text_sha": "a1dce2d24ea2f21e",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.7,
+        "missing": [
+          "cheap_guard_has_level_dofs_is_true=false",
+          "summary_release_n_dofs_rc=139",
+          "summary_release_transfer_rc=139",
+          "summary_release_constrained_rc=139"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "mg_constrained_dofs_never_told_about_the_boundary",
+      "claim": "multigrid:1",
+      "claim_text_sha": "3167104f1847631d",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "make_zero_boundary_constraints_called=false",
+          "have_boundary_indices=false",
+          "every_level_carries_its_own_boundary_index_set=false",
+          "v_cycle_is_a_usable_preconditioner=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "missing_geometric_term_drops_newton_to_first_order",
+      "claim": "nonlinear_elasticity:2",
+      "claim_text_sha": "eb5b8497969ca83a",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "tangent_under_test=hand_coded_tangent_missing_the_geometric_term",
+          "under_test_converges_at_first_order=true",
+          "under_test_converges_at_second_order=false",
+          "under_test_costs_extra_newton_steps=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "missing_hanging_node_constraints_is_silent",
+      "claim": "poisson:4",
+      "claim_text_sha": "9481458717096dfe",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": [
+          "max_abs_distinguishes=true",
+          "error_without_constraints_stalls=true",
+          "VERDICT=missing_hanging_nodes_is_silent_except_in_the_error_trend",
+          "FORBIDDEN:VERDICT=not_reproduced"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "momentum_without_buoyancy_gives_no_flow",
+      "claim": "time_dependent_ns:1",
+      "claim_text_sha": "c472f5112d093f39",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "buoyancy_term_in_momentum=false",
+          "first_solve_max_speed=0",
+          "velocity_under_test_is_identically_zero=true",
+          "temperature_stayed_coupled_to_nothing=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "newmark_beta_below_gamma_half_diverges",
+      "claim": "wave:0",
+      "claim_text_sha": "6275c47dd864d5a3",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 5.0,
+        "missing": [
+          "run_amplitude_diverged=true",
+          "beta_below_gamma_over_two=true",
+          "left_bounded_range_within_50_steps=true",
+          "VERDICT=beta_below_gamma_over_two_diverges_at_this_dt"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "newton_pressure_level_follows_the_initial_guess",
+      "claim": "navier_stokes:4",
+      "claim_text_sha": "a1b9a67e84155b56",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 10.3,
+        "missing": [
+          "pressure_constraint=none",
+          "pressure_level_differs=true",
+          "VERDICT=the_pressure_level_is_undetermined_without_a_constraint",
+          "FORBIDDEN:VERDICT=the_pressure_level_is_determined"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "no_absorbing_term_traps_the_energy",
+      "claim": "wave:4",
+      "claim_text_sha": "3ab94d1966d4b0d7",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.7,
+        "missing": [
+          "energy_stays_in_the_domain=true",
+          "absorbing_boundary_term=false",
+          "amplitude_rises_again_after_falling=true",
+          "VERDICT=reflecting_boundary_keeps_all_the_energy"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "no_det_f_check_lets_the_step_invert_elements",
+      "claim": "hyperelasticity::1",
+      "claim_text_sha": "2a9c05e3b013dfeb",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "step_length=full_newton_step_alpha_1",
+          "det_F_went_non_positive=true",
+          "tangent_filled_with_nan=true",
+          "bending_inner_solver_message=SolverControl::NoConvergence Iterative method reported convergence failure in step 0. The residual in the last step was -nan."
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "one_vtu_per_step_multiplies_wall_time",
+      "claim": "wave:5",
+      "claim_text_sha": "e3f9267e96167078",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:00:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.6,
+        "missing": [
+          "per_step_output_multiplies_the_wall_time=true",
+          "output_every_n_steps=1",
+          "output_section_is_over_half_the_wall_time_with_factorisation=true",
+          "output_section_is_the_top_entry_with_factorisation=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "ordering_only_helps_through_the_preconditioner",
+      "claim": "advection_dg:3",
+      "claim_text_sha": "77c2eabe26569570",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "ordering_under_test_is_the_slower_one=true",
+          "FORBIDDEN:ordering_under_test_is_the_slower_one=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "plane_strain_lambda_is_a_persistent_stiffness_bias",
+      "claim": "linear_elasticity:2",
+      "claim_text_sha": "2fbbcfa378a283d2",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "plane_strain_is_stiffer=true",
+          "ratio_matches_one_minus_nu_squared=true",
+          "VERDICT=plane_strain_is_a_persistent_stiffness_bias",
+          "FORBIDDEN:VERDICT=no_persistent_bias"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "point_jacobi_divides_by_the_zero_pressure_diagonal",
+      "claim": "stokes:3",
+      "claim_text_sha": "165f6d9b60c1ec7a",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": [
+          "preconditioner=jacobi",
+          "outcome=NoConvergence",
+          "residual_is_finite=false",
+          "VERDICT=point_relaxation_fails_on_the_zero_pressure_diagonal"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "poisson_hyper_rectangle_colorize",
+      "claim": "poisson:2",
+      "claim_text_sha": "14a765b34e199a71",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:05+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "primal_only_estimator_misses_the_goal_by_two_orders",
+      "claim": "error_estimation:0",
+      "claim_text_sha": "abb3980754389fa5",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": [
+          "effectivity_under_test_is_within_a_factor_ten_of_one=false",
+          "criterion_under_test_puts_more_than_fifteen_percent_of_cells_in_the_goal_region=false",
+          "VERDICT=estimator_under_test_does_not_estimate_the_goal_error",
+          "FORBIDDEN:VERDICT=estimator_under_test_tracks_the_goal_error"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "raviart_thomas_is_pointwise_divergence_free",
+      "claim": "stokes:5",
+      "claim_text_sha": "98110af1d7dad599",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "space_under_test=FE_RaviartThomas_1_FE_DGQ_1",
+          "divergence_at_machine_epsilon=true",
+          "VERDICT=hdiv_pair_is_pointwise_divergence_free",
+          "FORBIDDEN:VERDICT=divergence_is_only_weakly_zero"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "raw_dof_copy_across_a_p_change",
+      "claim": "hp_adaptive:6",
+      "claim_text_sha": "00a9fdcb25c693b0",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "transferred_field_lost_the_original_content=true",
+          "used_solution_transfer=false",
+          "VERDICT=writing_dof_values_across_a_p_change_destroys_them",
+          "FORBIDDEN:VERDICT=field_survived_the_p_change"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "reapplied_increment_overshoots_the_prescribed_displacement",
+      "claim": "hyperelasticity:10",
+      "claim_text_sha": "9343e8e5bbfe5a0b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "boundary_update=increment_reapplied_on_every_iteration",
+          "every_load_step_converged=false",
+          "boundary_displacement_matches_the_target=false",
+          "VERDICT=reapplied_increment_misses_the_prescribed_value"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "reassembling_mass_and_stiffness_every_step",
+      "claim": "heat:0",
+      "claim_text_sha": "e9ef73c3196819ee",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.9,
+        "missing": []
+      },
+      "mutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "discriminates": false
+    },
+    {
+      "backend": "dealii",
+      "fixture": "reassembling_the_wave_system_every_step",
+      "claim": "wave:1",
+      "claim_text_sha": "24f426ca31acd725",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 8.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 4.2,
+        "missing": [
+          "reassembling_is_measurably_slower=true",
+          "VERDICT=reassembling_every_step_costs_multiples_for_the_same_answer",
+          "FORBIDDEN:VERDICT=no_measurable_cost"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "refining_after_the_final_solve_kills_data_out",
+      "claim": "hp_adaptive:0",
+      "claim_text_sha": "ddff2064a90fc80e",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "summary_release_rc=139",
+          "summary_debug_rc=134",
+          "summary_release_data_out_completed=false",
+          "summary_debug_data_out_completed=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "refining_between_time_steps_without_solution_transfer",
+      "claim": "time_dependent_heat:0",
+      "claim_text_sha": "cdc89595ded702cc",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "used_solution_transfer=false",
+          "solution_lost_across_mesh_change=true",
+          "VERDICT=skipping_solution_transfer_zeroes_the_state",
+          "FORBIDDEN:VERDICT=state_carried_across"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "relaxation_coarse_solve_costs_iterations",
+      "claim": "multigrid:3",
+      "claim_text_sha": "80760017521cfd55",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": [
+          "coarse_solver_under_test=relaxation_smoother",
+          "iteration_count_under_test_grows_with_the_coarse_level_size=true",
+          "VERDICT=coarse_solver_under_test_costs_iterations_as_the_coarse_level_grows",
+          "FORBIDDEN:VERDICT=coarse_solver_under_test_keeps_the_count_flat"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "same_space_dual_gives_an_identically_zero_estimator",
+      "claim": "error_estimation:1",
+      "claim_text_sha": "9a11f485494c49fa",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": [
+          "primal_degree=1 dual_degree=1",
+          "estimator_under_test_is_zero_to_machine_precision=true",
+          "effectivity_index_under_test_is_zero=true",
+          "effectivity_index_under_test_is_one=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "scalar_shape_value_body_force",
+      "claim": "linear_elasticity:3",
+      "claim_text_sha": "738069cbb15caec6",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": [
+          "horizontal_response_differs=true",
+          "VERDICT=scalar_shape_value_perturbs_the_horizontal_response_only",
+          "FORBIDDEN:VERDICT=spellings_agree"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "scalar_shaped_container_on_a_vector_element",
+      "claim": "hyperelasticity:11",
+      "claim_text_sha": "8a06c4012d83f852",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "container_under_test=scalar_std_vector_of_Tensor_1_on_a_vector_valued_element",
+          "result_mixes_two_components=true",
+          "result_matches_a_single_component=false",
+          "VERDICT=scalar_shaped_container_returns_silent_garbage"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "schaefer_turek_channel_height_shifts_the_drag",
+      "claim": "stokes:6",
+      "claim_text_sha": "4c916ec35bc1c9e8",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "offbyone_geometry_matches_schaefer_turek=false",
+          "difference_survives_refinement=true",
+          "VERDICT=wrong_channel_geometry_shifts_the_drag",
+          "FORBIDDEN:VERDICT=geometries_agree"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "single_field_q1_locks_at_the_volumetric_limit",
+      "claim": "hyperelasticity::4",
+      "claim_text_sha": "2168beebe42fa7ed",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.1,
+        "missing": [
+          "element_under_test=single_field_Q1_full_integration",
+          "element_under_test_is_off_by_more_than_30_percent=true",
+          "VERDICT=single_field_q1_locks_at_the_volumetric_limit",
+          "FORBIDDEN:VERDICT=element_does_not_lock"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "single_shot_active_set_gets_the_contact_zone_wrong",
+      "claim": "contact:0",
+      "claim_text_sha": "4eba1b03ed2da815",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "strategy=single_shot",
+          "equivalent_contact_radius_under_test_is_wrong_by_more_than_half=true",
+          "active_set_under_test_over_predicts_the_contact_area=true",
+          "VERDICT=single_shot_active_set_gives_the_wrong_contact_zone"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "single_step_extension_inverts_past_stretch_three",
+      "claim": "nonlinear_elasticity:1",
+      "claim_text_sha": "fcbdfd7824ef3815",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.4,
+        "missing": [
+          "load_application=whole_extension_in_one_step",
+          "diverged_within_three_newton_iterations=true",
+          "VERDICT=single_step_newton_fails_at_this_stretch",
+          "FORBIDDEN:VERDICT=load_path_reaches_the_target_stretch"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "sipg_penalty_below_the_rule_is_not_coercive",
+      "claim": "advection_dg::1",
+      "claim_text_sha": "914960fdd929b2ab",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.6,
+        "missing": [
+          "alpha_under_test=0.1",
+          "form_is_positive_definite_at_alpha_under_test=false",
+          "VERDICT=penalty_below_the_rule_loses_positive_definiteness",
+          "FORBIDDEN:VERDICT=penalty_at_the_rule_is_coercive_and_converges"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "skipping_solution_transfer_zeroes_the_state",
+      "claim": "heat:2",
+      "claim_text_sha": "81e9bacdb81260a2",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "solution_lost_across_mesh_change=true",
+          "VERDICT=skipping_solution_transfer_zeroes_the_state",
+          "FORBIDDEN:VERDICT=state_carried_across"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "slepc_absent_is_a_config_h_question",
+      "claim": "eigenvalue:0",
+      "claim_text_sha": "d94798447d6543cd",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": [
+          "names_a_slepc_class=true",
+          "compiles=false",
+          "has not been declared"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "solver_failure_is_noconvergence_not_excsolverfail",
+      "claim": "linear_elasticity:0",
+      "claim_text_sha": "63e1d0121a8c0e2a",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "exception_type=SolverControl::NoConvergence",
+          "Iterative method reported convergence failure in step",
+          "VERDICT=failure_is_SolverControl_NoConvergence"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "solvercg_on_indefinite",
+      "claim": "stokes:0",
+      "claim_text_sha": "8916e791ab3f2114",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:50+00:00",
+      "unmutated": {
+        "status": "SKIPPED",
+        "reason": "no runnable artefact"
+      },
+      "mutated": {
+        "status": "NO_CONTROL"
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "dealii",
+      "fixture": "spd_smoother_diverges_on_the_indefinite_operator",
+      "claim": "multigrid:2",
+      "claim_text_sha": "1f9e3d2adef1a85a",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "operator_under_test=laplace_minus_300_times_mass_indefinite",
+          "v_cycle_residual_grows_from_cycle_to_cycle=true",
+          "v_cycle_reduced_the_residual=false",
+          "VERDICT=spd_smoother_on_the_operator_under_test_diverges"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "squared_j_volumetric_form_is_a_model_error",
+      "claim": "hyperelasticity::2",
+      "claim_text_sha": "db14acb30e900d76",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.6,
+        "missing": [
+          "law_under_test=S=mu(I-Cinv)+lambda/2*(J^2-1)*Cinv",
+          "gap_grows_with_deformation=true",
+          "gap_is_order_one_at_large_strain=true",
+          "VERDICT=squared_j_form_is_a_model_error_refinement_cannot_remove"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "stale_linearisation_converges_to_the_wrong_problem",
+      "claim": "nonlinear:2",
+      "claim_text_sha": "9d3c9a7bc253f27c",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 2.5,
+        "missing": [
+          "linearisation_point=frozen_at_the_initial_guess",
+          "answer_differs_from_the_reference=true",
+          "VERDICT=stale_linearisation_converges_to_the_wrong_problem",
+          "FORBIDDEN:VERDICT=answer_matches_the_reference"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "strong_inflow_on_a_dg_space_is_ignored",
+      "claim": "dg_transport::7",
+      "claim_text_sha": "707040278b43fc4b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "element_under_test=FE_DGQ_1",
+          "boundary_values_size=0",
+          "n_constraints=0",
+          "prescribed_value_appears_in_the_answer=false"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "subdivided_rect_no_colorize",
+      "claim": "hyperelasticity:9",
+      "claim_text_sha": "d0e0b5d029fb62d7",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:01:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": [
+          "colorize=false",
+          "distinct_boundary_ids={0}",
+          "every_face_carries_id_zero=true",
+          "the_whole_boundary_is_clamped=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "sundials_absent_is_a_config_h_question",
+      "claim": "nonlinear:4",
+      "claim_text_sha": "a3c3e09c9cf23920",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 8.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": [
+          "names_a_sundials_class=true",
+          "compiles=false",
+          "has not been declared"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "supg_overshoots_survive_refinement_at_high_peclet",
+      "claim": "convection_diffusion:3",
+      "claim_text_sha": "3e6e78046c562d6b",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "scheme_under_test=FE_Q1_with_SUPG",
+          "leaves_the_zero_one_range=true",
+          "VERDICT=supg_still_oscillates_at_high_peclet",
+          "FORBIDDEN:VERDICT=scheme_stays_inside_the_data_range"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "supg_tau_needs_the_streamline_element_length",
+      "claim": "navier_stokes:5",
+      "claim_text_sha": "6ac63cc68004cb42",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "tau_under_test=h_over_2_sqrt2_a_as_the_claim_prescribes",
+          "overshoot_exceeds_half_the_exact_maximum=true",
+          "VERDICT=the_claims_2d_tau_leaves_a_large_outflow_overshoot",
+          "FORBIDDEN:VERDICT=tau_under_test_controls_the_outflow_overshoot"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "svk_tangent_turns_indefinite_in_compression",
+      "claim": "hyperelasticity::5",
+      "claim_text_sha": "7b70f8f1ef4aeb5a",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "law_under_test=saint_venant_kirchhoff",
+          "law_under_test_lost_positive_definiteness=true",
+          "VERDICT=svk_loses_stability_in_compression_neo_hookean_does_not",
+          "FORBIDDEN:VERDICT=law_stays_stable_through_the_whole_ladder"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "swapped_lame_constants_mesh_independent_factor",
+      "claim": "linear_elasticity:1",
+      "claim_text_sha": "2b5b1f27dccc18e5",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "ratio_differs_from_one=true",
+          "VERDICT=swapped_lame_is_a_mesh_independent_factor",
+          "FORBIDDEN:VERDICT=no_constant_factor"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "template_reproduces_analytic_spectrum",
+      "claim": "eigenvalue:8",
+      "claim_text_sha": "ca33c93e162b899e",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 4.7,
+        "missing": [
+          "mode0_within_half_a_percent=true",
+          "degenerate_pair_recovered=true",
+          "VERDICT=template_reproduces_the_analytic_spectrum",
+          "FORBIDDEN:VERDICT=template_does_not_reproduce"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "unconstrained_p_transition_jumps",
+      "claim": "hp_adaptive:4",
+      "claim_text_sha": "626b5acd5d324afa",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "solution_jumps_across_p_transitions=true",
+          "interface_constraints_applied=false",
+          "VERDICT=unconstrained_p_transition_leaves_a_solution_jump",
+          "FORBIDDEN:VERDICT=solution_is_continuous_across_p_transitions"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "unpreconditioned_cg_count_doubles_per_refinement",
+      "claim": "matrix_free:4",
+      "claim_text_sha": "64aa98c81377e947",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": [
+          "preconditioner_under_test=none",
+          "iteration_count_under_test_more_than_doubles_over_three_refinements=true",
+          "VERDICT=preconditioner_under_test_does_not_hold_the_count_flat",
+          "FORBIDDEN:VERDICT=preconditioner_under_test_holds_the_count_flat"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "whole_load_in_one_step_inverts_the_elements",
+      "claim": "hyperelasticity::0",
+      "claim_text_sha": "5c1a3ef1a99b7d29",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": [
+          "load_application=whole_load_in_one_step",
+          "residual_exceeds_1e3=true",
+          "residual_becomes_nan=true",
+          "elements_inverted=true"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "wrong_side_normal_loses_the_dg_convergence_rate",
+      "claim": "advection_dg:2",
+      "claim_text_sha": "561a99e7ec787747",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "under_test_rate_is_not_even_half_an_order=true",
+          "under_test_error_grew_under_refinement=true",
+          "VERDICT=wrong_side_normal_loses_the_convergence_rate",
+          "FORBIDDEN:VERDICT=rate_preserved"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "wrong_tangent_costs_iterations_not_accuracy",
+      "claim": "hyperelasticity:7",
+      "claim_text_sha": "5db5709d5cf1edf6",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": [
+          "implementation_under_test=hand_derived_tangent_with_a_k_geo_sign_error",
+          "VERDICT=a_tangent_sign_error_costs_iterations_not_accuracy",
+          "FORBIDDEN:VERDICT=implementation_under_test_matches_the_reference_exactly"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "dealii",
+      "fixture": "zeroed_initial_acceleration_shifts_the_transient",
+      "claim": "wave:3",
+      "claim_text_sha": "e2cdfe2ba8f36b4a",
+      "commit": "bbefc6597cbe",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T00:02:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": [
+          "early_deviation_is_measurable=true",
+          "initial_acceleration_solved=false",
+          "VERDICT=zeroing_the_initial_acceleration_moves_the_solution",
+          "FORBIDDEN:VERDICT=initial_acceleration_choice_left_no_trace"
+        ]
+      },
+      "discriminates": true
+    }
+  ]
+}
