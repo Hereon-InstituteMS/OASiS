@@ -161,8 +161,14 @@ def import_samples(imp, fallback, ncomp=2):
     vals = np.asarray(imp["values"], float).reshape(len(xs), -1)
     if vals.shape[1] < ncomp:
         vals = np.pad(vals, ((0, 0), (0, ncomp - vals.shape[1])))
-    o = np.argsort(xs)
-    return xs[o], vals[o, :ncomp]
+    # Collapse repeated x. A repeated interface coordinate is a zero-length
+    # segment, and the piecewise-linear form divides by segment length: one
+    # duplicate turns the whole FUNCT into inf and 4C then dies in the predictor
+    # with "Floating Point Exception: OVERFLOW", far from the cause.
+    xu, inv = np.unique(np.round(xs, 12), return_inverse=True)
+    acc = np.zeros((len(xu), ncomp)); cnt = np.zeros(len(xu))
+    np.add.at(acc, inv, vals[:, :ncomp]); np.add.at(cnt, inv, 1.0)
+    return xu, acc / cnt[:, None]
 
 
 def pwlin_expr(xs, vs):
@@ -224,7 +230,7 @@ def build_deck(exprs, monitor):
 
     cols = []
     for cx in CLAMP_X:
-        i = int(round((float(cx) - 0.0) / hx))
+        i = int(round(float(cx) / hx))
         if not (0 <= i <= NXS and abs(i * hx - float(cx)) < 1e-9 * max(LX, 1.0)):
             sys.exit(f"CLAMP_X={cx} is not on a mesh column: with NXS={NXS} on "
                      f"[0,{LX}] the columns sit at multiples of {hx:g}")
@@ -345,7 +351,6 @@ def main():
         rng = float(np.ptp(vals[:, c])) or float(np.max(np.abs(vals[:, c]))) or 1.0
         fit[nm] = {"max_abs_dev": float(d.max()), "max_rel_dev": float(d.max() / rng)}
 
-    x_if = np.linspace(0.0, LX, NXS + 1)
     monitor = bool(MONITOR_REACTION) and NXS >= 2
     deck, n_nodes = build_deck(exprs, monitor)
     t0 = time.time()

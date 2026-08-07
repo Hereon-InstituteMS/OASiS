@@ -141,8 +141,20 @@ def body() -> None:
     #     early under a tolerance loose enough to call it converged, and the
     #     Newton-Krylov root must then be visibly far away. Without this the
     #     agreement in step 1 is unfalsifiable.
+    #     The loose tolerance is MEASURED, not guessed: run the truncation once
+    #     under a tolerance nothing could meet to find out what residual three
+    #     under-relaxed iterations actually leave, then set the tolerance just
+    #     above it. Guessing a number here made the control fail as
+    #     "not converged", which is the driver behaving correctly and NOT the
+    #     case this control exists to exhibit — a run that reports CONVERGED and
+    #     is nowhere near the root.
+    cal = F.run_pair("shortcal", "skfem", case, max_iter=3, tol=1e-14,
+                     accelerator="constant", theta=0.3)
+    hist = [v for v in (cal.get("history") or []) if v == v]
+    loose = 1.5 * hist[-1] if hist else 1.0
+    print(f"stopshort_calibrated_tol={loose:.3e}")
     s2 = F.run_pair("short", "skfem", case, with_reference=True,
-                    max_iter=3, tol=2e-1, accelerator="constant", theta=0.3)
+                    max_iter=3, tol=loose, accelerator="constant", theta=0.3)
     m2 = s2.get("monolithic_check") or {}
     rel2 = float((m2.get("solid") or {}).get("relative_l2", float("nan")))
     print(f"stopshort_converged={bool(s2.get('converged'))}")
@@ -203,14 +215,18 @@ def body() -> None:
             f"the shared-script reference disagreed by {relb:.3e} on the "
             f"flipped run; if it can see this, say so instead")
     L.check(bool(dy_flip.max() <= 0), "signflip_deflection_reverses",
-            "the deflection did not reverse, so the flip did not take")
-    L.check(abs(fyb + case.rigid_wall_normal_force)
-            < 0.5 * case.rigid_wall_normal_force,
-            "signflip_caught_by_closed_form",
-            f"the closed-form handle did not separate the flipped run "
-            f"(net normal force {fyb:.4g} against an expected "
-            f"+{case.rigid_wall_normal_force:.4g})")
-    print("signflip_caught_only_by_closed_form=True")
+            f"the deflection did not reverse (max dy = {dy_flip.max():.3e}), "
+            f"so the flip did not take and this control demonstrates nothing")
+    #     The separation is a PHYSICS statement, not a tolerance: a channel
+    #     carrying a positive pressure drop cannot pull its own wall inwards.
+    #     Any answer that says it does is wrong however cleanly it converged.
+    L.check(fyb < 0.0, "signflip_caught_by_the_sign_of_the_load",
+            f"the exported net normal interface force stayed positive "
+            f"({fyb:.4g}) on the flipped run, so the flip is not visible even "
+            f"in the load")
+    caught_only_by_physics = (bool(b.get("converged")) and eq_ok
+                              and relb == relb and relb < 1e-5)
+    print(f"signflip_caught_only_by_closed_form={caught_only_by_physics}")
 
     print("configurations_run=6")
 

@@ -135,7 +135,24 @@ def stage(root: Path, name: str, backend: str, script: str, edits: dict,
         full.update(L.BINARY_EDITS[backend]())
     text = L.edit(src.read_text(), full)
     if extra:
-        text = text + "\n" + extra + "\n"
+        # INSIDE the entry point, after main() and before the exit. Appending
+        # to the end of the file does nothing at all: the shipped scripts end
+        # with `sys.exit(main() or 0)`, SystemExit propagates, and everything
+        # after it is dead code. That is not a hypothetical — the first version
+        # of the sign-flip control did exactly this, ran as an untampered
+        # coupling, and its output was indistinguishable from the correct run
+        # it was supposed to contradict.
+        anchor = 'if __name__ == "__main__":\n    sys.exit(main() or 0)\n'
+        if anchor not in text:
+            raise AssertionError(
+                "cannot inject into this participant: its entry point is not "
+                "the expected `sys.exit(main() or 0)` form, so the injection "
+                "would silently do nothing")
+        body = "\n".join("    " + ln if ln.strip() else ln
+                         for ln in extra.strip("\n").splitlines())
+        text = text.replace(
+            anchor,
+            'if __name__ == "__main__":\n    main()\n' + body + "\n    sys.exit(0)\n")
     out = wd / f"participant_{name}.py"
     out.write_text(text)
     interp = L.interpreter(backend)
@@ -207,6 +224,44 @@ def run_pair(tag: str, solid_backend: str, case: FsiCase | None = None,
     for spec in (fl, so):
         p = Path(spec["work_dir"]) / "exports.json"
         res[f"_raw_{spec['name']}"] = json.loads(p.read_text()) if p.is_file() else {}
+    return res
+
+
+def run_transient(tag: str, rho_s: float, dt: float,
+                  case: FsiCase | None = None, accelerator: str = "aitken",
+                  theta: float = 0.5, max_iter: int = 20, tol: float = 1e-7,
+                  timeout: int = 300) -> dict:
+    """One backward-Euler step from rest, coupled through the real `couple`
+    tool. This is the configuration in which added mass exists; the steady pair
+    has none, because a stationary interface never has to be accelerated.
+
+    `probe=False` deliberately: the sensitivity probe costs two extra solves
+    per participant and the question it answers (is each side a function of its
+    imports) is settled by the steady fixture on the same scripts. What this
+    one reads is the residual HISTORY.
+    """
+    case = case or FsiCase()
+    root = L.workroot(f"fsi_{tag}")
+    fe = fluid_edits(case, "solid", True)
+    fe["DT"] = f"{dt}"
+    se = solid_edits(case, "fluid", True)
+    se["RHO_S"] = f"{rho_s}"
+    se["DT"] = f"{dt}"
+    fl = stage(root, "fluid", "fenics", FLUID_SCRIPT, fe)
+    so = stage(root, "solid", "skfem", SOLID_SCRIPT["skfem"], se)
+    a, b = _clean(fl), _clean(so)
+    a["timeout"] = b["timeout"] = timeout
+    a["imports_from"] = ["solid"]
+    b["imports_from"] = ["fluid"]
+    raw = L.call_tool("couple", {
+        "participants": json.dumps([a, b]), "max_iter": max_iter, "tol": tol,
+        "accelerator": accelerator, "theta": theta, "critic_approved": True,
+        "probe": False})
+    try:
+        res = json.loads(raw)
+    except json.JSONDecodeError:
+        raise AssertionError(f"couple returned non-JSON: {raw[:400]}")
+    res["_root"] = str(root)
     return res
 
 
