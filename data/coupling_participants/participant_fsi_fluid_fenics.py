@@ -64,6 +64,12 @@ MU         = 1.0         # dynamic viscosity
 RHO_F      = 1.0         # fluid density
 U_MEAN     = 1.0         # mean inflow speed (parabolic profile)
 ALE_STIFF  = 1.0         # ALE Laplace stiffening exponent (1.0 = plain harmonic)
+DT         = 0.0         # 0.0 -> STEADY. >0 -> ONE backward-Euler step from rest:
+                         # the unsteady term rho_f/dt * (u - 0) enters, and the
+                         # interface is a MOVING wall with u = d/dt rather than a
+                         # stationary one. This is the setting in which the
+                         # added-mass instability of partitioned FSI exists at all;
+                         # a steady coupling has no added mass.
 D_INIT     = 0.0         # iteration-1 fallback interface displacement (both comps)
 MOVE_MESH  = True        # SET False ONLY to suppress the structure->fluid direction
                          # (the one-way control). A real FSI run keeps this True.
@@ -195,6 +201,9 @@ def main():
          + MU * ufl.inner(ufl.grad(u) + ufl.grad(u).T, ufl.grad(v)) * ufl.dx
          - ufl.inner(p, ufl.div(v)) * ufl.dx
          + ufl.inner(ufl.div(u), q) * ufl.dx)
+    if DT > 0.0:
+        # backward Euler, ONE step from rest: (u - u_old)/dt with u_old = 0
+        F += (RHO_F / DT) * ufl.inner(u, v) * ufl.dx
 
     W0 = W.sub(0)
     Vsub, _ = W0.collapse()
@@ -207,14 +216,23 @@ def main():
     u_in = fem.Function(Vsub)
     u_in.interpolate(_parabolic)
     u_zero = fem.Function(Vsub)
+    # THE INTERFACE VELOCITY. Steady: the interface is a stationary no-slip wall
+    # in its DEFORMED position, so u = 0 there and the mesh carries the whole
+    # coupling. Transient: the wall is MOVING, u = d/dt, and the kinematic
+    # condition is what makes the fluid feel the structure's inertia — this term
+    # is the added mass.
+    if DT > 0.0:
+        u_iface = fem.Function(Vsub)
+        u_iface.interpolate(d_ale)
+        u_iface.x.array[:] /= DT
+    else:
+        u_iface = u_zero
     bcs = [
         fem.dirichletbc(u_in, fem.locate_dofs_topological(
             (W0, Vsub), fdim, ft.find(1)), W0),
         fem.dirichletbc(u_zero, fem.locate_dofs_topological(
             (W0, Vsub), fdim, ft.find(3)), W0),
-        # steady state: the interface is a stationary no-slip wall in its
-        # DEFORMED position (the mesh already carries the displacement)
-        fem.dirichletbc(u_zero, fem.locate_dofs_topological(
+        fem.dirichletbc(u_iface, fem.locate_dofs_topological(
             (W0, Vsub), fdim, ft.find(4)), W0),
     ]
 
@@ -281,6 +299,7 @@ def main():
                                "normal_fluxes = sigma_f . n_f (own outward normal)",
             "net_force": [float(fx), float(fy)],
             "mesh_moved": bool(MOVE_MESH),
+            "dt": float(DT),
             "newton_iterations": int(nit),
             # what this participant ACTUALLY imposed on the interface, at its own
             # interface nodes — the kinematic-continuity check compares this

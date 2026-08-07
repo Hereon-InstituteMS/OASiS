@@ -24,7 +24,8 @@ from pathlib import Path
 
 import numpy as np
 from skfem import (Basis, FacetBasis, ElementVector, ElementTriP2, MeshTri,
-                   asm, condense, solve, LinearForm)
+                   asm, condense, solve, BilinearForm, LinearForm)
+from skfem.helpers import dot
 from skfem.models.elasticity import linear_elasticity
 
 # ── EDIT THIS BLOCK ─ every number below is an ARBITRARY PLACEHOLDER.
@@ -37,6 +38,10 @@ NXS, NYS   = 40, 4       # this body's OWN mesh; need not match the fluid's
 E_MOD      = 3.0e6       # Young's modulus
 NU         = 0.3         # Poisson ratio
 CLAMP_X    = (0.0, 1.0)  # x positions of the clamped ends
+RHO_S      = 0.0         # structure density; only used when DT > 0
+DT         = 0.0         # 0.0 -> STATIC. >0 -> ONE backward-Euler step from rest,
+                         # which adds rho_s/dt^2 * M to the stiffness. Pair it with
+                         # the same DT in the fluid participant.
 T_INIT     = 0.0         # iteration-1 fallback interface traction (both comps)
 FEEDBACK   = True        # SET False ONLY to suppress the fluid->structure
                          # direction (freezes the load at T_INIT). A real FSI
@@ -84,6 +89,14 @@ def main():
     basis = Basis(m, e)
 
     K = asm(linear_elasticity(lam, mu), basis)
+    if DT > 0.0 and RHO_S > 0.0:
+        # backward Euler from rest: d_tt ~ d/dt^2, so the effective operator is
+        # K + rho_s/dt^2 * M. Lowering rho_s (or dt) is what makes the structure
+        # light against the fluid it has to push, which is the added-mass regime.
+        @BilinearForm
+        def _mass(u, v, w):
+            return dot(u, v)
+        K = K + (RHO_S / DT**2) * asm(_mass, basis)
 
     imp = read_imports() if FEEDBACK else None
     sampler = make_sampler(imp, T_INIT, ncomp=2)
@@ -161,6 +174,7 @@ def main():
             "max_abs_disp": [float(np.max(np.abs(disp[:, 0]))),
                              float(np.max(np.abs(disp[:, 1])))],
             "n_dofs": int(K.shape[0]),
+            "dt": float(DT), "rho_s": float(RHO_S),
         },
     }
     Path("exports.json").write_text(json.dumps(out, indent=2))
